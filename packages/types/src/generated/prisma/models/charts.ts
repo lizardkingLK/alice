@@ -230,6 +230,7 @@ export type chartsWhereInput = {
   created_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   updated_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   shares?: Prisma.Chart_sharesListRelationFilter
+  saved_views?: Prisma.Saved_viewsListRelationFilter
 }
 
 export type chartsOrderByWithRelationInput = {
@@ -248,6 +249,7 @@ export type chartsOrderByWithRelationInput = {
   created_by_user?: Prisma.usersOrderByWithRelationInput
   updated_by_user?: Prisma.usersOrderByWithRelationInput
   shares?: Prisma.chart_sharesOrderByRelationAggregateInput
+  saved_views?: Prisma.saved_viewsOrderByRelationAggregateInput
 }
 
 export type chartsWhereUniqueInput = Prisma.AtLeast<{
@@ -269,6 +271,7 @@ export type chartsWhereUniqueInput = Prisma.AtLeast<{
   created_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   updated_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   shares?: Prisma.Chart_sharesListRelationFilter
+  saved_views?: Prisma.Saved_viewsListRelationFilter
 }, "id">
 
 export type chartsOrderByWithAggregationInput = {
@@ -318,6 +321,7 @@ export type chartsCreateInput = {
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_chartsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_chartsInput
   shares?: Prisma.chart_sharesCreateNestedManyWithoutChartInput
+  saved_views?: Prisma.saved_viewsCreateNestedManyWithoutChartInput
 }
 
 export type chartsUncheckedCreateInput = {
@@ -333,6 +337,7 @@ export type chartsUncheckedCreateInput = {
   updated_by?: string | null
   updated_at?: Date | string
   shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutChartInput
+  saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutChartInput
 }
 
 export type chartsUpdateInput = {
@@ -348,6 +353,7 @@ export type chartsUpdateInput = {
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_chartsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_chartsNestedInput
   shares?: Prisma.chart_sharesUpdateManyWithoutChartNestedInput
+  saved_views?: Prisma.saved_viewsUpdateManyWithoutChartNestedInput
 }
 
 export type chartsUncheckedUpdateInput = {
@@ -363,6 +369,7 @@ export type chartsUncheckedUpdateInput = {
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutChartNestedInput
+  saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutChartNestedInput
 }
 
 export type chartsCreateManyInput = {
@@ -412,6 +419,11 @@ export type ChartsListRelationFilter = {
 
 export type chartsOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type ChartsNullableScalarRelationFilter = {
+  is?: Prisma.chartsWhereInput | null
+  isNot?: Prisma.chartsWhereInput | null
 }
 
 export type chartsCountOrderByAggregateInput = {
@@ -585,6 +597,22 @@ export type chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput = {
   deleteMany?: Prisma.chartsScalarWhereInput | Prisma.chartsScalarWhereInput[]
 }
 
+export type chartsCreateNestedOneWithoutSaved_viewsInput = {
+  create?: Prisma.XOR<Prisma.chartsCreateWithoutSaved_viewsInput, Prisma.chartsUncheckedCreateWithoutSaved_viewsInput>
+  connectOrCreate?: Prisma.chartsCreateOrConnectWithoutSaved_viewsInput
+  connect?: Prisma.chartsWhereUniqueInput
+}
+
+export type chartsUpdateOneWithoutSaved_viewsNestedInput = {
+  create?: Prisma.XOR<Prisma.chartsCreateWithoutSaved_viewsInput, Prisma.chartsUncheckedCreateWithoutSaved_viewsInput>
+  connectOrCreate?: Prisma.chartsCreateOrConnectWithoutSaved_viewsInput
+  upsert?: Prisma.chartsUpsertWithoutSaved_viewsInput
+  disconnect?: Prisma.chartsWhereInput | boolean
+  delete?: Prisma.chartsWhereInput | boolean
+  connect?: Prisma.chartsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.chartsUpdateToOneWithWhereWithoutSaved_viewsInput, Prisma.chartsUpdateWithoutSaved_viewsInput>, Prisma.chartsUncheckedUpdateWithoutSaved_viewsInput>
+}
+
 export type chartsCreateNestedOneWithoutSharesInput = {
   create?: Prisma.XOR<Prisma.chartsCreateWithoutSharesInput, Prisma.chartsUncheckedCreateWithoutSharesInput>
   connectOrCreate?: Prisma.chartsCreateOrConnectWithoutSharesInput
@@ -611,6 +639,7 @@ export type chartsCreateWithoutOwnerInput = {
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_chartsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_chartsInput
   shares?: Prisma.chart_sharesCreateNestedManyWithoutChartInput
+  saved_views?: Prisma.saved_viewsCreateNestedManyWithoutChartInput
 }
 
 export type chartsUncheckedCreateWithoutOwnerInput = {
@@ -625,6 +654,7 @@ export type chartsUncheckedCreateWithoutOwnerInput = {
   updated_by?: string | null
   updated_at?: Date | string
   shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutChartInput
+  saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutChartInput
 }
 
 export type chartsCreateOrConnectWithoutOwnerInput = {
@@ -649,6 +679,7 @@ export type chartsCreateWithoutCreated_by_userInput = {
   owner: Prisma.usersCreateNestedOneWithoutOwned_chartsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_chartsInput
   shares?: Prisma.chart_sharesCreateNestedManyWithoutChartInput
+  saved_views?: Prisma.saved_viewsCreateNestedManyWithoutChartInput
 }
 
 export type chartsUncheckedCreateWithoutCreated_by_userInput = {
@@ -663,6 +694,7 @@ export type chartsUncheckedCreateWithoutCreated_by_userInput = {
   updated_by?: string | null
   updated_at?: Date | string
   shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutChartInput
+  saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutChartInput
 }
 
 export type chartsCreateOrConnectWithoutCreated_by_userInput = {
@@ -687,6 +719,7 @@ export type chartsCreateWithoutUpdated_by_userInput = {
   owner: Prisma.usersCreateNestedOneWithoutOwned_chartsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_chartsInput
   shares?: Prisma.chart_sharesCreateNestedManyWithoutChartInput
+  saved_views?: Prisma.saved_viewsCreateNestedManyWithoutChartInput
 }
 
 export type chartsUncheckedCreateWithoutUpdated_by_userInput = {
@@ -701,6 +734,7 @@ export type chartsUncheckedCreateWithoutUpdated_by_userInput = {
   created_at?: Date | string
   updated_at?: Date | string
   shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutChartInput
+  saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutChartInput
 }
 
 export type chartsCreateOrConnectWithoutUpdated_by_userInput = {
@@ -778,6 +812,82 @@ export type chartsUpdateManyWithWhereWithoutUpdated_by_userInput = {
   data: Prisma.XOR<Prisma.chartsUpdateManyMutationInput, Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userInput>
 }
 
+export type chartsCreateWithoutSaved_viewsInput = {
+  id?: string
+  title: string
+  description?: string | null
+  board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  is_overview?: boolean
+  status?: $Enums.RecordStatus
+  created_at?: Date | string
+  updated_at?: Date | string
+  owner: Prisma.usersCreateNestedOneWithoutOwned_chartsInput
+  created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_chartsInput
+  updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_chartsInput
+  shares?: Prisma.chart_sharesCreateNestedManyWithoutChartInput
+}
+
+export type chartsUncheckedCreateWithoutSaved_viewsInput = {
+  id?: string
+  owner_id: string
+  title: string
+  description?: string | null
+  board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  is_overview?: boolean
+  status?: $Enums.RecordStatus
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutChartInput
+}
+
+export type chartsCreateOrConnectWithoutSaved_viewsInput = {
+  where: Prisma.chartsWhereUniqueInput
+  create: Prisma.XOR<Prisma.chartsCreateWithoutSaved_viewsInput, Prisma.chartsUncheckedCreateWithoutSaved_viewsInput>
+}
+
+export type chartsUpsertWithoutSaved_viewsInput = {
+  update: Prisma.XOR<Prisma.chartsUpdateWithoutSaved_viewsInput, Prisma.chartsUncheckedUpdateWithoutSaved_viewsInput>
+  create: Prisma.XOR<Prisma.chartsCreateWithoutSaved_viewsInput, Prisma.chartsUncheckedCreateWithoutSaved_viewsInput>
+  where?: Prisma.chartsWhereInput
+}
+
+export type chartsUpdateToOneWithWhereWithoutSaved_viewsInput = {
+  where?: Prisma.chartsWhereInput
+  data: Prisma.XOR<Prisma.chartsUpdateWithoutSaved_viewsInput, Prisma.chartsUncheckedUpdateWithoutSaved_viewsInput>
+}
+
+export type chartsUpdateWithoutSaved_viewsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.usersUpdateOneRequiredWithoutOwned_chartsNestedInput
+  created_by_user?: Prisma.usersUpdateOneWithoutCreated_chartsNestedInput
+  updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_chartsNestedInput
+  shares?: Prisma.chart_sharesUpdateManyWithoutChartNestedInput
+}
+
+export type chartsUncheckedUpdateWithoutSaved_viewsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  owner_id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutChartNestedInput
+}
+
 export type chartsCreateWithoutSharesInput = {
   id?: string
   title: string
@@ -790,6 +900,7 @@ export type chartsCreateWithoutSharesInput = {
   owner: Prisma.usersCreateNestedOneWithoutOwned_chartsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_chartsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_chartsInput
+  saved_views?: Prisma.saved_viewsCreateNestedManyWithoutChartInput
 }
 
 export type chartsUncheckedCreateWithoutSharesInput = {
@@ -804,6 +915,7 @@ export type chartsUncheckedCreateWithoutSharesInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
+  saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutChartInput
 }
 
 export type chartsCreateOrConnectWithoutSharesInput = {
@@ -834,6 +946,7 @@ export type chartsUpdateWithoutSharesInput = {
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_chartsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_chartsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_chartsNestedInput
+  saved_views?: Prisma.saved_viewsUpdateManyWithoutChartNestedInput
 }
 
 export type chartsUncheckedUpdateWithoutSharesInput = {
@@ -848,6 +961,7 @@ export type chartsUncheckedUpdateWithoutSharesInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutChartNestedInput
 }
 
 export type chartsCreateManyOwnerInput = {
@@ -901,6 +1015,7 @@ export type chartsUpdateWithoutOwnerInput = {
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_chartsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_chartsNestedInput
   shares?: Prisma.chart_sharesUpdateManyWithoutChartNestedInput
+  saved_views?: Prisma.saved_viewsUpdateManyWithoutChartNestedInput
 }
 
 export type chartsUncheckedUpdateWithoutOwnerInput = {
@@ -915,6 +1030,7 @@ export type chartsUncheckedUpdateWithoutOwnerInput = {
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutChartNestedInput
+  saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutChartNestedInput
 }
 
 export type chartsUncheckedUpdateManyWithoutOwnerInput = {
@@ -942,6 +1058,7 @@ export type chartsUpdateWithoutCreated_by_userInput = {
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_chartsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_chartsNestedInput
   shares?: Prisma.chart_sharesUpdateManyWithoutChartNestedInput
+  saved_views?: Prisma.saved_viewsUpdateManyWithoutChartNestedInput
 }
 
 export type chartsUncheckedUpdateWithoutCreated_by_userInput = {
@@ -956,6 +1073,7 @@ export type chartsUncheckedUpdateWithoutCreated_by_userInput = {
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutChartNestedInput
+  saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutChartNestedInput
 }
 
 export type chartsUncheckedUpdateManyWithoutCreated_by_userInput = {
@@ -983,6 +1101,7 @@ export type chartsUpdateWithoutUpdated_by_userInput = {
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_chartsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_chartsNestedInput
   shares?: Prisma.chart_sharesUpdateManyWithoutChartNestedInput
+  saved_views?: Prisma.saved_viewsUpdateManyWithoutChartNestedInput
 }
 
 export type chartsUncheckedUpdateWithoutUpdated_by_userInput = {
@@ -997,6 +1116,7 @@ export type chartsUncheckedUpdateWithoutUpdated_by_userInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutChartNestedInput
+  saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutChartNestedInput
 }
 
 export type chartsUncheckedUpdateManyWithoutUpdated_by_userInput = {
@@ -1019,10 +1139,12 @@ export type chartsUncheckedUpdateManyWithoutUpdated_by_userInput = {
 
 export type ChartsCountOutputType = {
   shares: number
+  saved_views: number
 }
 
 export type ChartsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   shares?: boolean | ChartsCountOutputTypeCountSharesArgs
+  saved_views?: boolean | ChartsCountOutputTypeCountSaved_viewsArgs
 }
 
 /**
@@ -1042,6 +1164,13 @@ export type ChartsCountOutputTypeCountSharesArgs<ExtArgs extends runtime.Types.E
   where?: Prisma.chart_sharesWhereInput
 }
 
+/**
+ * ChartsCountOutputType without action
+ */
+export type ChartsCountOutputTypeCountSaved_viewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.saved_viewsWhereInput
+}
+
 
 export type chartsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1059,6 +1188,7 @@ export type chartsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   created_by_user?: boolean | Prisma.charts$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.charts$updated_by_userArgs<ExtArgs>
   shares?: boolean | Prisma.charts$sharesArgs<ExtArgs>
+  saved_views?: boolean | Prisma.charts$saved_viewsArgs<ExtArgs>
   _count?: boolean | Prisma.ChartsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["charts"]>
 
@@ -1116,6 +1246,7 @@ export type chartsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   created_by_user?: boolean | Prisma.charts$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.charts$updated_by_userArgs<ExtArgs>
   shares?: boolean | Prisma.charts$sharesArgs<ExtArgs>
+  saved_views?: boolean | Prisma.charts$saved_viewsArgs<ExtArgs>
   _count?: boolean | Prisma.ChartsCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type chartsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1136,6 +1267,7 @@ export type $chartsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     created_by_user: Prisma.$usersPayload<ExtArgs> | null
     updated_by_user: Prisma.$usersPayload<ExtArgs> | null
     shares: Prisma.$chart_sharesPayload<ExtArgs>[]
+    saved_views: Prisma.$saved_viewsPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1547,6 +1679,7 @@ export interface Prisma__chartsClient<T, Null = never, ExtArgs extends runtime.T
   created_by_user<T extends Prisma.charts$created_by_userArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.charts$created_by_userArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   updated_by_user<T extends Prisma.charts$updated_by_userArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.charts$updated_by_userArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   shares<T extends Prisma.charts$sharesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.charts$sharesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$chart_sharesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  saved_views<T extends Prisma.charts$saved_viewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.charts$saved_viewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$saved_viewsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2047,6 +2180,30 @@ export type charts$sharesArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   distinct?: Prisma.Chart_sharesScalarFieldEnum | Prisma.Chart_sharesScalarFieldEnum[]
+}
+
+/**
+ * charts.saved_views
+ */
+export type charts$saved_viewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the saved_views
+   */
+  select?: Prisma.saved_viewsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the saved_views
+   */
+  omit?: Prisma.saved_viewsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.saved_viewsInclude<ExtArgs> | null
+  where?: Prisma.saved_viewsWhereInput
+  orderBy?: Prisma.saved_viewsOrderByWithRelationInput | Prisma.saved_viewsOrderByWithRelationInput[]
+  cursor?: Prisma.saved_viewsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Saved_viewsScalarFieldEnum | Prisma.Saved_viewsScalarFieldEnum[]
 }
 
 /**

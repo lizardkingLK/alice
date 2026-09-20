@@ -97,9 +97,37 @@ export type ChartBoardWidgetInstance = {
    * Defaults to `status` when unset.
    */
   readonly labelField?: ChartsLabelFieldId;
+  /** Values measure — Tier 1 supports item count only. */
+  readonly measure?: 'item_count';
+  /** Customize: show slice labels as raw count or percent of total. */
+  readonly showValueAs?: ChartsShowValueAs;
+  /** Customize: sort slices in the pie/legend. */
+  readonly sortSlicesBy?: ChartsSortSlicesBy;
+  /** Customize: include zero-count slices when the series returns them. */
+  readonly showEmptySlices?: boolean;
+  /**
+   * Drilldown table columns to show (Task / Owner / Status / Type / Priority).
+   * When unset, all columns are visible.
+   */
+  readonly visibleTableColumns?: readonly ChartsTableColumnId[];
 };
 
-/** Persisted chart workspace (localStorage / future `charts` row). */
+export type ChartsShowValueAs = 'value' | 'percent';
+
+export type ChartsSortSlicesBy =
+  'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
+
+export type ChartsTableColumnId =
+  'task' | 'owner' | 'status' | 'type' | 'priority';
+
+export type ChartWidgetDisplaySettingsPatch = {
+  readonly showValueAs?: ChartsShowValueAs;
+  readonly sortSlicesBy?: ChartsSortSlicesBy;
+  readonly showEmptySlices?: boolean;
+  readonly visibleTableColumns?: readonly ChartsTableColumnId[];
+};
+
+/** Persisted chart workspace (`charts` row + local cache). */
 export type ChartWorkspaceRecord = {
   readonly id: string;
   readonly title: string;
@@ -107,6 +135,8 @@ export type ChartWorkspaceRecord = {
   readonly status: 'active' | 'archived';
   readonly isOverview: boolean;
   readonly updatedAt: string;
+  /** Owner vs shared-with-me; defaults to mine for legacy local rows. */
+  readonly ownership?: 'mine' | 'shared';
   readonly instances: ChartBoardWidgetInstance[];
   readonly layout: LayoutItem[];
 };

@@ -1,9 +1,10 @@
 # Charts (custom dashboards)
 
 Per-user **chart workspaces** (boards of widgets). Routing is id-based; the
-sidebar opens the last-used workspace. Layout persists in **localStorage** today
-(interim). **Tier 1 product** still requires cloud `charts` as source of truth
-plus Views indexing — see [Persistence](#persistence) and
+sidebar opens the last-used workspace. Layout persists in **`charts.board_json`**
+(source of truth) with a localStorage cache after hydrate. **Tier 1 product**
+workspace cloud + Views indexing + Widget settings are wired — see
+[Persistence](#persistence) and
 [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md#tier-1-product-remaining).
 
 ## Routes
@@ -58,32 +59,32 @@ No Boards section (use project filters).
 
 ### Widget settings sidebar
 
-| Section                      | Status today                         | Tier 1 product target                                         |
-| ---------------------------- | ------------------------------------ | ------------------------------------------------------------- |
-| Chart type                   | Pie / Donut live; others Coming soon | Keep                                                          |
-| Labels                       | Live API-backed columns              | Keep; hide Group / Name / Due date until rollup supports them |
-| Values                       | Static stub                          | **Required** — measure `item_count` only                      |
-| Customize                    | Static stub                          | **Required** — % vs count, sort, show empty slices            |
-| Groups                       | Static stub                          | **Deferred** (table already hides empty status groups)        |
-| Choose which columns to show | Static stub                          | **Required** — drilldown table column visibility              |
+| Section                      | Status today                         | Notes                                                     |
+| ---------------------------- | ------------------------------------ | --------------------------------------------------------- |
+| Chart type                   | Pie / Donut live; others Coming soon | Keep                                                      |
+| Labels                       | Live API-backed columns              | Group / Name / Due date hidden until rollup supports them |
+| Values                       | Count items only                     | Sum / Average / … deferred                                |
+| Customize                    | % vs count, sort, show empty slices  | Persisted on widget instance                              |
+| Groups                       | Coming soon (deferred)               | Table already hides empty status groups                   |
+| Choose which columns to show | Drilldown column visibility          | Persisted on widget                                       |
 
 Clicking a Labels slice opens Split and scopes the table (`focusedSliceKey`).
 Changing Labels clears the slice focus.
 
 ## Persistence
 
-### Client (interim)
+### Client (cache)
 
 Multi-workspace JSON in localStorage (migrates legacy single-board keys):
 
-- Workspaces: `{ id, title, description?, status, isOverview, updatedAt, instances, layout }`
+- Workspaces: `{ id, title, description?, status, isOverview, ownership?, updatedAt, instances, layout }`
 - `lastOpenedId`
 - Legacy `alice.charts.board.layout.v1` / `instances.v1` imported once into a default workspace
 
-Optional fire-and-forget `syncChartWorkspaceToApi` on save/share — **not** the
-list/load source of truth yet.
+On load, `hydrateChartWorkspacesFromApi` lists owned + shared charts, migrates
+any local-only boards via POST, then rewrites the local cache from the API.
 
-### Server (schema present; product wiring incomplete)
+### Server (source of truth)
 
 Table **`charts`**:
 
@@ -102,8 +103,7 @@ Sharing:
 
 Notification type: `chart_shared` (inbox deep-link to `/charts/[id]`).
 
-**Remaining Tier 1:** hydrate web from charts API, migrate local → cloud,
-upsert Views rows on create/rename/archive, sync last-opened.
+Create / update / archive / restore upsert the Views bookmark automatically.
 
 ## Data strategy (widget payloads)
 

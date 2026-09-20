@@ -6,6 +6,7 @@ import { BOARD_WORK_ITEM_STATUSES, type WorkItemStatus } from '@repo/types';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { Loader2 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
+import type { ChartsTableColumnId } from '@/app/charts/_components/charts.types';
 import type { ChartDrilldownTableItem } from '@/app/charts/_helpers/charts-analytics.ui';
 import { ChartsEmptyState } from '@/app/charts/_components/charts-empty-state';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
@@ -16,6 +17,14 @@ import { GroupedItemsPaginatedTable } from '@/components/grouped-items/grouped-i
 import { GroupedItemsSection } from '@/components/grouped-items/grouped-items-section';
 import { UserAvatar } from '@/components/user-avatar';
 
+const ALL_TABLE_COLUMNS: readonly ChartsTableColumnId[] = [
+  'task',
+  'owner',
+  'status',
+  'type',
+  'priority',
+] as const;
+
 type ChartsStatusGroupedTableProps = {
   readonly workItems: readonly ChartDrilldownTableItem[];
   /** When set, only this status group is shown (pie-slice filter). */
@@ -24,6 +33,7 @@ type ChartsStatusGroupedTableProps = {
   /** When `undefined` / empty, hide the empty state (e.g. dialog closing). */
   readonly emptyMessage?: string;
   readonly className?: string;
+  readonly visibleColumns?: readonly ChartsTableColumnId[];
 };
 
 /**
@@ -49,9 +59,16 @@ export function buildChartStatusGroups(
     .filter((group) => focusedStatus != null || group.items.length > 0);
 }
 
-function buildColumns(): ColumnDef<ChartDrilldownTableItem>[] {
-  return [
-    {
+function buildColumns(
+  visibleColumns: readonly ChartsTableColumnId[]
+): ColumnDef<ChartDrilldownTableItem>[] {
+  const allowed = new Set(
+    visibleColumns.length > 0 ? visibleColumns : ALL_TABLE_COLUMNS
+  );
+  const columns: ColumnDef<ChartDrilldownTableItem>[] = [];
+
+  if (allowed.has('task')) {
+    columns.push({
       accessorKey: 'title',
       header: 'Task',
       cell: ({ row }) => (
@@ -59,8 +76,10 @@ function buildColumns(): ColumnDef<ChartDrilldownTableItem>[] {
           {row.original.title}
         </TruncatedText>
       ),
-    },
-    {
+    });
+  }
+  if (allowed.has('owner')) {
+    columns.push({
       id: 'owner',
       header: 'Owner',
       cell: ({ row }) => {
@@ -83,23 +102,30 @@ function buildColumns(): ColumnDef<ChartDrilldownTableItem>[] {
           </div>
         );
       },
-    },
-    {
+    });
+  }
+  if (allowed.has('status')) {
+    columns.push({
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row }) => <WorkItemStatusBadge status={row.original.status} />,
-    },
-    {
+    });
+  }
+  if (allowed.has('type')) {
+    columns.push({
       accessorKey: 'type',
       header: 'Type',
       cell: ({ row }) => <WorkItemTypeBadge type={row.original.type} />,
-    },
-    {
+    });
+  }
+  if (allowed.has('priority')) {
+    columns.push({
       accessorKey: 'priority',
       header: 'Priority',
       cell: ({ row }) => <PriorityBadge priority={row.original.priority} />,
-    },
-  ];
+    });
+  }
+  return columns;
 }
 
 export function ChartsStatusGroupedTable({
@@ -108,13 +134,14 @@ export function ChartsStatusGroupedTable({
   loading = false,
   emptyMessage = 'No work items match the current filters.',
   className,
+  visibleColumns = ALL_TABLE_COLUMNS,
 }: Readonly<ChartsStatusGroupedTableProps>) {
   const groups = useMemo(
     () => buildChartStatusGroups(workItems, focusedStatus),
     [focusedStatus, workItems]
   );
 
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(() => buildColumns(visibleColumns), [visibleColumns]);
 
   if (loading) {
     return (

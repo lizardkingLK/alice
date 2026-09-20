@@ -77,8 +77,10 @@ export class ChartsService {
     };
   }
 
-  create(ownerId: string, input: CreateChartBody) {
-    return this.chartsRepository.create(ownerId, input);
+  async create(ownerId: string, input: CreateChartBody) {
+    const chart = await this.chartsRepository.create(ownerId, input);
+    await this.savedViewsRepository.upsertChartBookmark(ownerId, chart);
+    return chart;
   }
 
   listOwned(ownerId: string, status?: 'active' | 'archived') {
@@ -107,17 +109,35 @@ export class ChartsService {
 
   async update(actorId: string, chartId: string, input: UpdateChartBody) {
     const chart = await this.requireOwned(actorId, chartId);
-    return this.chartsRepository.update(chart.id, actorId, input);
+    const updated = await this.chartsRepository.update(
+      chart.id,
+      actorId,
+      input
+    );
+    await this.savedViewsRepository.upsertChartBookmark(actorId, updated);
+    return updated;
   }
 
   async archive(actorId: string, chartId: string) {
     await this.requireOwned(actorId, chartId);
-    return this.chartsRepository.setStatus(chartId, actorId, 'archived');
+    const archived = await this.chartsRepository.setStatus(
+      chartId,
+      actorId,
+      'archived'
+    );
+    await this.savedViewsRepository.upsertChartBookmark(actorId, archived);
+    return archived;
   }
 
   async restore(actorId: string, chartId: string) {
     await this.requireOwned(actorId, chartId);
-    return this.chartsRepository.setStatus(chartId, actorId, 'active');
+    const restored = await this.chartsRepository.setStatus(
+      chartId,
+      actorId,
+      'active'
+    );
+    await this.savedViewsRepository.upsertChartBookmark(actorId, restored);
+    return restored;
   }
 
   async hardDelete(actorId: string, chartId: string) {
@@ -155,12 +175,7 @@ export class ChartsService {
     }
 
     if (input.createSavedViewBookmark) {
-      await this.savedViewsRepository.create(actorId, {
-        title: chart.title,
-        description: chart.description,
-        pathname: `/charts/${chart.id}`,
-        search: '',
-      });
+      await this.savedViewsRepository.upsertChartBookmark(actorId, chart);
     }
 
     return {

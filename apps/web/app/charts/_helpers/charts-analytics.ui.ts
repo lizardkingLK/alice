@@ -188,32 +188,74 @@ function displayLabel(
 /**
  * Build pie wheel data from live series slices (same shape as the former sample builder).
  */
-export function buildChartsPieFromSeries(
-  slices: readonly ChartSeriesSlice[],
-  labelField: ChartSeriesLabelField
-): {
-  readonly data: ChartsStatusPieSlice[];
-  readonly config: ChartConfig;
-  readonly total: number;
-} {
-  const total = slices.reduce((sum, slice) => sum + slice.count, 0);
+export type BuildChartsPieOptions = {
+  readonly showEmptySlices?: boolean;
+  readonly sortSlicesBy?:
+    'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
+};
 
-  let ordered = [...slices];
-  if (labelField === 'status') {
-    const byKey = new Map(slices.map((slice) => [slice.key, slice]));
-    ordered = BOARD_WORK_ITEM_STATUSES.map((status) =>
-      byKey.get(status)
-    ).filter((slice): slice is ChartSeriesSlice => Boolean(slice));
-    for (const slice of slices) {
-      if (
-        !(BOARD_WORK_ITEM_STATUSES as readonly string[]).includes(slice.key)
-      ) {
-        ordered.push(slice);
+function expandEmptyStatusSlices(
+  slices: readonly ChartSeriesSlice[]
+): ChartSeriesSlice[] {
+  const byKey = new Map(slices.map((slice) => [slice.key, slice]));
+  const working = BOARD_WORK_ITEM_STATUSES.map(
+    (status) =>
+      byKey.get(status) ?? {
+        key: status,
+        label: STATUS_META[status]?.label ?? status,
+        count: 0,
       }
+  );
+  for (const slice of slices) {
+    if (!(BOARD_WORK_ITEM_STATUSES as readonly string[]).includes(slice.key)) {
+      working.push(slice);
     }
   }
+  return working;
+}
 
-  const data: ChartsStatusPieSlice[] = ordered.map((slice, index) => {
+function orderStatusSlicesBoardFirst(
+  slices: readonly ChartSeriesSlice[]
+): ChartSeriesSlice[] {
+  const byKey = new Map(slices.map((slice) => [slice.key, slice]));
+  const ordered = BOARD_WORK_ITEM_STATUSES.map((status) =>
+    byKey.get(status)
+  ).filter((slice): slice is ChartSeriesSlice => Boolean(slice));
+  for (const slice of slices) {
+    if (!(BOARD_WORK_ITEM_STATUSES as readonly string[]).includes(slice.key)) {
+      ordered.push(slice);
+    }
+  }
+  return ordered;
+}
+
+function sortSeriesSlices(
+  slices: readonly ChartSeriesSlice[],
+  sortBy: NonNullable<BuildChartsPieOptions['sortSlicesBy']>
+): ChartSeriesSlice[] {
+  const ordered = [...slices];
+  if (sortBy === 'value_asc') {
+    ordered.sort((a, b) => a.count - b.count || a.label.localeCompare(b.label));
+    return ordered;
+  }
+  if (sortBy === 'label_asc') {
+    ordered.sort((a, b) => a.label.localeCompare(b.label));
+    return ordered;
+  }
+  if (sortBy === 'label_desc') {
+    ordered.sort((a, b) => b.label.localeCompare(a.label));
+    return ordered;
+  }
+  ordered.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  return ordered;
+}
+
+function toPieSliceEntries(
+  ordered: readonly ChartSeriesSlice[],
+  labelField: ChartSeriesLabelField,
+  total: number
+): ChartsStatusPieSlice[] {
+  return ordered.map((slice, index) => {
     const label = displayLabel(labelField, slice);
     const chartKey =
       labelField === 'status' && slice.key
@@ -232,6 +274,38 @@ export function buildChartsPieFromSeries(
       swatch,
     };
   });
+}
+
+export function buildChartsPieFromSeries(
+  slices: readonly ChartSeriesSlice[],
+  labelField: ChartSeriesLabelField,
+  options: BuildChartsPieOptions = {}
+): {
+  readonly data: ChartsStatusPieSlice[];
+  readonly config: ChartConfig;
+  readonly total: number;
+} {
+  const showEmpty = options.showEmptySlices === true;
+  const sortBy = options.sortSlicesBy ?? 'value_desc';
+
+  let working =
+    labelField === 'status' && showEmpty
+      ? expandEmptyStatusSlices(slices)
+      : [...slices];
+
+  if (!showEmpty) {
+    working = working.filter((slice) => slice.count > 0);
+  }
+
+  const total = working.reduce((sum, slice) => sum + slice.count, 0);
+
+  const useBoardOrder =
+    labelField === 'status' && sortBy === 'value_desc' && !showEmpty;
+  const ordered = useBoardOrder
+    ? orderStatusSlicesBoardFirst(working)
+    : sortSeriesSlices(working, sortBy);
+
+  const data = toPieSliceEntries(ordered, labelField, total);
 
   const config: ChartConfig = {
     count: { label: 'Tasks' },

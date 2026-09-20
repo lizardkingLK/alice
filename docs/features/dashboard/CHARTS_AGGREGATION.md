@@ -1,8 +1,8 @@
 # Charts aggregation (work-item series)
 
-Status: **Tier 1 analytics shipped** — rollup + series/drilldown API + live Chart
-widget pie/table. **Tier 1 product incomplete** — cloud workspace persistence,
-Views indexing, and real Widget settings remain (see [remaining steps](#tier-1-product-remaining)).
+Status: **Tier 1 analytics + product shipped** — rollup + series/drilldown API +
+live Chart widget pie/table; cloud workspaces + Views `resource_kind` bookmarks +
+Widget settings (Values / Customize / columns). Groups remain deferred.
 Tier 2/3 remain design-only (see below).
 
 Replaces in-memory chart mocks with precomputed **rollup** statistics and
@@ -194,12 +194,12 @@ live pie path.
 3. User guide live Labels / filters
 4. `pnpm --filter web docs:sync`
 
-### Tier 1 product (remaining)
+### Tier 1 product (complete)
 
-Workspace cloud wiring and Widget settings are **not** done. Boards still use
-localStorage as source of truth with optional fire-and-forget API sync.
+Workspace cloud wiring and Widget settings are **done**. Boards hydrate from the
+charts API (localStorage is a cache). Steps 5–6 below are the shipped checklist.
 
-#### Step 5 — Workspace API + Views index ☐
+#### Step 5 — Workspace API + Views index ✅
 
 **Goal:** `charts` is the board source of truth; `/views` and Charts workspace
 lists index chart entries without scanning pathnames.
@@ -211,13 +211,13 @@ lists index chart entries without scanning pathnames.
 3. On chart create / rename / archive: upsert matching `saved_views` row
    (`pathname=/charts/{id}`, `search=''`, title synced)
 4. Web: hydrate workspace list/board from charts API; migrate localStorage →
-   cloud; last-opened from server or synced preference
+   cloud; last-opened from local preference (synced board list)
 5. Keep board JSON on `charts.board_json` only; `chart_shares` for board ACL;
    optional `saved_view_shares` for the Views bookmark entry
 
 **Docs:** [CHARTS.md](./CHARTS.md#persistence), [FAVORITES_AND_VIEWS.md](../views/FAVORITES_AND_VIEWS.md#chart-workspaces).
 
-#### Step 6 — Widget settings sidebar ☐
+#### Step 6 — Widget settings sidebar ✅
 
 **Goal:** Settings collapsibles are real (or honestly Coming soon), not
 `pointer-events-none` stubs.

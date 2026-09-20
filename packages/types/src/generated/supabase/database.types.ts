@@ -803,6 +803,8 @@ export type Database = {
           owner_id: string
           pathname: string
           project_id: string | null
+          resource_id: string | null
+          resource_kind: Database["public"]["Enums"]["SavedViewResourceKind"]
           search: string
           status: Database["public"]["Enums"]["RecordStatus"]
           title: string
@@ -817,6 +819,8 @@ export type Database = {
           owner_id: string
           pathname: string
           project_id?: string | null
+          resource_id?: string | null
+          resource_kind?: Database["public"]["Enums"]["SavedViewResourceKind"]
           search?: string
           status?: Database["public"]["Enums"]["RecordStatus"]
           title: string
@@ -831,6 +835,8 @@ export type Database = {
           owner_id?: string
           pathname?: string
           project_id?: string | null
+          resource_id?: string | null
+          resource_kind?: Database["public"]["Enums"]["SavedViewResourceKind"]
           search?: string
           status?: Database["public"]["Enums"]["RecordStatus"]
           title?: string
@@ -857,6 +863,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_views_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "charts"
             referencedColumns: ["id"]
           },
           {
@@ -1390,6 +1403,7 @@ export type Database = {
         | "access_request"
       ProjectStatus: "active" | "archived"
       RecordStatus: "active" | "inactive" | "archived" | "deleted"
+      SavedViewResourceKind: "page" | "chart"
       SprintStatus: "planned" | "active" | "closed" | "archived"
       UserMembershipStatus: "pending" | "active"
       UserRole: "admin" | "manager" | "member"
@@ -1554,6 +1568,7 @@ export const Constants = {
       ],
       ProjectStatus: ["active", "archived"],
       RecordStatus: ["active", "inactive", "archived", "deleted"],
+      SavedViewResourceKind: ["page", "chart"],
       SprintStatus: ["planned", "active", "closed", "archived"],
       UserMembershipStatus: ["pending", "active"],
       UserRole: ["admin", "manager", "member"],

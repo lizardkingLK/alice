@@ -11,6 +11,7 @@ import { preventDismissForFloatingPortal } from '@/lib/dialog-outside-events';
 import type {
   ChartPieVariant,
   ChartsLabelFieldId,
+  ChartsTableColumnId,
   ChartWidgetViewMode,
   ChartsWidgetFiltersChangeHandler,
   ChartsWidgetLabelFieldChangeHandler,
@@ -59,6 +60,11 @@ type ChartsWidgetConfigDialogProps = {
   readonly viewMode?: ChartWidgetViewMode;
   readonly pieVariant?: ChartPieVariant;
   readonly labelField?: ChartsLabelFieldId;
+  readonly showValueAs?: 'value' | 'percent';
+  readonly sortSlicesBy?:
+    'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
+  readonly showEmptySlices?: boolean;
+  readonly visibleTableColumns?: readonly ChartsTableColumnId[];
   readonly focusedSliceKey?: string;
   readonly accessibleProjects?: readonly ChartsProjectOption[];
   readonly accessibleSprints?: readonly ChartsSprintOption[];
@@ -68,6 +74,16 @@ type ChartsWidgetConfigDialogProps = {
   readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
   readonly onPieVariantChange?: ChartsWidgetPieVariantChangeHandler;
   readonly onLabelFieldChange?: ChartsWidgetLabelFieldChangeHandler;
+  readonly onDisplaySettingsChange?: (
+    // eslint-disable-next-line no-unused-vars -- settings patch
+    patch: {
+      readonly showValueAs?: 'value' | 'percent';
+      readonly sortSlicesBy?:
+        'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
+      readonly showEmptySlices?: boolean;
+      readonly visibleTableColumns?: readonly ChartsTableColumnId[];
+    }
+  ) => void;
   readonly onRename?: () => void;
   readonly onDuplicate?: () => void;
   readonly onDelete?: () => void;
@@ -290,6 +306,10 @@ export function ChartsWidgetConfigDialog({
   viewMode = 'chart',
   pieVariant = 'donut',
   labelField = DEFAULT_CHARTS_LABEL_FIELD,
+  showValueAs = 'percent',
+  sortSlicesBy = 'value_desc',
+  showEmptySlices = false,
+  visibleTableColumns,
   focusedSliceKey,
   accessibleProjects = [],
   accessibleSprints = [],
@@ -298,6 +318,7 @@ export function ChartsWidgetConfigDialog({
   onViewModeChange,
   onPieVariantChange,
   onLabelFieldChange,
+  onDisplaySettingsChange,
   onRename,
   onDuplicate,
   onDelete,
@@ -399,6 +420,9 @@ export function ChartsWidgetConfigDialog({
       pieVariant={pieVariant}
       selectedSliceKey={hasSliceFocus ? focusedSliceKey : null}
       onSliceClick={handleSliceToggle}
+      showValueAs={showValueAs}
+      sortSlicesBy={sortSlicesBy}
+      showEmptySlices={showEmptySlices}
     />
   );
 
@@ -410,6 +434,7 @@ export function ChartsWidgetConfigDialog({
         open && seriesLabelField && loadDrilldown && analytics.drilldownLoading
       )}
       emptyMessage={open ? (analytics.drilldownError ?? NO_MATCH_MESSAGE) : ''}
+      visibleColumns={visibleTableColumns}
     />
   );
 
@@ -469,6 +494,22 @@ export function ChartsWidgetConfigDialog({
             labelField={labelField}
             onPieVariantChange={onPieVariantChange}
             onLabelFieldChange={onLabelFieldChange}
+            showValueAs={showValueAs}
+            sortSlicesBy={sortSlicesBy}
+            showEmptySlices={showEmptySlices}
+            visibleTableColumns={visibleTableColumns}
+            onShowValueAsChange={(value) =>
+              onDisplaySettingsChange?.({ showValueAs: value })
+            }
+            onSortSlicesByChange={(value) =>
+              onDisplaySettingsChange?.({ sortSlicesBy: value })
+            }
+            onShowEmptySlicesChange={(value) =>
+              onDisplaySettingsChange?.({ showEmptySlices: value })
+            }
+            onVisibleTableColumnsChange={(columns) =>
+              onDisplaySettingsChange?.({ visibleTableColumns: columns })
+            }
           />
         ) : null}
       </div>

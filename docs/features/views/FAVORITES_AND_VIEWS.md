@@ -62,10 +62,10 @@ Related:
 
 ### Views (Supabase)
 
-| Table               | Role                                                                                                                                                |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `saved_views`       | Owner title, description, pathname, search, optional `project_id`, `status`; **planned:** `resource_kind` + `resource_id` for typed chart bookmarks |
-| `saved_view_shares` | `(view_id, user_id)` recipients                                                                                                                     |
+| Table               | Role                                                                                                                                   |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `saved_views`       | Owner title, description, pathname, search, optional `project_id`, `status`; `resource_kind` + `resource_id` for typed chart bookmarks |
+| `saved_view_shares` | `(view_id, user_id)` recipients                                                                                                        |
 
 - **Uniqueness:** one **active** row per owner per `(pathname, search)` (partial unique
   index). Saving the same URL again updates title/description (same `id`, shares
@@ -185,8 +185,8 @@ views fall back to `/views?tab=shared`.
 Chart boards live in the **`charts`** table (`board_json`), not in
 `saved_views.search`. See [CHARTS.md](../dashboard/CHARTS.md#persistence).
 
-**Planned (Tier 1 product):** extend `saved_views` so chart workspaces list
-performantly in `/views` and related pickers:
+**Shipped:** `saved_views` indexes chart workspaces for `/views` and related
+pickers:
 
 | Column          | Role                                                    |
 | --------------- | ------------------------------------------------------- |
@@ -200,7 +200,7 @@ performantly in `/views` and related pickers:
 - Board ACL stays on **`chart_shares`**; optional **`saved_view_shares`** only
   for the Views entry — do not duplicate board JSON on the view row
 
-Related checklist: [CHARTS_AGGREGATION.md](../dashboard/CHARTS_AGGREGATION.md#tier-1-product-remaining).
+Related: [CHARTS_AGGREGATION.md](../dashboard/CHARTS_AGGREGATION.md#tier-1-product-remaining).
 
 ---
 
@@ -211,7 +211,7 @@ Related checklist: [CHARTS_AGGREGATION.md](../dashboard/CHARTS_AGGREGATION.md#ti
 3. Views core (schema, API CRUD, Save dialog, sidebar, My + Archived)
 4. Share + notify + Shared with me
 5. Polish / IndexedDB upgrade only if needed
-6. **Chart resource pointers** (`resource_kind` / `resource_id`) — Tier 1 charts product
+6. **Chart resource pointers** (`resource_kind` / `resource_id`) — shipped with Tier 1 charts product
 
 ## Tests
 

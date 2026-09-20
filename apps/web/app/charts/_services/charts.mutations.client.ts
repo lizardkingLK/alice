@@ -1,15 +1,11 @@
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import type { ChartWorkspaceRecord } from '@/app/charts/_components/charts.types';
-
-type ChartApiRow = {
-  readonly id: string;
-  readonly title: string;
-  readonly description: string | null;
-  readonly board_json: unknown;
-  readonly is_overview: boolean;
-  readonly status: string;
-  readonly updated_at: string;
-};
+import {
+  chartWorkspaceFromApiRow,
+  getChartFromApi,
+  listChartsFromApi,
+  type ChartApiRow,
+} from '@/app/charts/_services/charts.workspaces.client';
 
 function boardJsonFromWorkspace(workspace: ChartWorkspaceRecord) {
   return {
@@ -18,17 +14,18 @@ function boardJsonFromWorkspace(workspace: ChartWorkspaceRecord) {
   };
 }
 
-/** Upsert local workspace into API `charts` (best-effort; local remains source of truth on failure). */
+/** Upsert local workspace into API `charts` (best-effort). */
 export async function syncChartWorkspaceToApi(
   workspace: ChartWorkspaceRecord
 ): Promise<ChartApiRow | null> {
-  try {
-    const existing = await apiFetch<{ data: ChartApiRow }>(
-      `/api/charts/${workspace.id}`,
-      { method: 'GET' }
-    ).catch(() => null);
+  if (workspace.ownership === 'shared') {
+    return null;
+  }
 
-    if (existing?.data) {
+  try {
+    const existing = await getChartFromApi(workspace.id);
+
+    if (existing) {
       const updated = await apiFetch<{ data: ChartApiRow }>(
         `/api/charts/${workspace.id}`,
         {
@@ -82,3 +79,5 @@ export async function shareChartWorkspace(params: {
     return null;
   }
 }
+
+export { chartWorkspaceFromApiRow, listChartsFromApi };

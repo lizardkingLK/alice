@@ -28,6 +28,7 @@ import type {
   ChartBoardWidgetInstance,
   ChartPieVariant,
   ChartsLabelFieldId,
+  ChartWidgetDisplaySettingsPatch,
   ChartWidgetTypeId,
   ChartWidgetViewMode,
 } from '@/app/charts/_components/charts.types';
@@ -268,6 +269,12 @@ type ChartsBoardCanvasProps = {
     // eslint-disable-next-line no-unused-vars
     labelField: ChartsLabelFieldId
   ) => void;
+  readonly onDisplaySettingsChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    patch: ChartWidgetDisplaySettingsPatch
+  ) => void;
   readonly focusWidgetId?: string;
   readonly onFocusWidgetDismiss?: () => void;
   /** Accessible projects for Chart widget filters / series. */
@@ -298,6 +305,7 @@ export function ChartsBoardCanvas({
   onViewModeChange,
   onPieVariantChange,
   onLabelFieldChange,
+  onDisplaySettingsChange,
   focusWidgetId,
   onFocusWidgetDismiss,
   accessibleProjects = [],
@@ -378,6 +386,7 @@ export function ChartsBoardCanvas({
           onViewModeChange={onViewModeChange}
           onPieVariantChange={onPieVariantChange}
           onLabelFieldChange={onLabelFieldChange}
+          onDisplaySettingsChange={onDisplaySettingsChange}
           focusWidgetId={focusWidgetId}
           onFocusWidgetDismiss={onFocusWidgetDismiss}
           accessibleProjects={accessibleProjects}
@@ -403,6 +412,7 @@ function BoardCanvasBody({
   onViewModeChange,
   onPieVariantChange,
   onLabelFieldChange,
+  onDisplaySettingsChange,
   focusWidgetId,
   onFocusWidgetDismiss,
   accessibleProjects = [],
@@ -453,6 +463,12 @@ function BoardCanvasBody({
     instanceId: string,
     // eslint-disable-next-line no-unused-vars
     labelField: ChartsLabelFieldId
+  ) => void;
+  onDisplaySettingsChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    patch: ChartWidgetDisplaySettingsPatch
   ) => void;
   focusWidgetId?: string;
   onFocusWidgetDismiss?: () => void;
@@ -517,6 +533,10 @@ function BoardCanvasBody({
               viewMode={entry?.instance.viewMode}
               pieVariant={entry?.instance.pieVariant}
               labelField={entry?.instance.labelField}
+              showValueAs={entry?.instance.showValueAs}
+              sortSlicesBy={entry?.instance.sortSlicesBy}
+              showEmptySlices={entry?.instance.showEmptySlices}
+              visibleTableColumns={entry?.instance.visibleTableColumns}
               focusedSliceKey={resolveFocusedSliceKey(entry?.instance ?? {})}
               accessibleProjects={accessibleProjects}
               accessibleSprints={accessibleSprints}
@@ -535,6 +555,9 @@ function BoardCanvasBody({
               }
               onLabelFieldChange={(nextField) =>
                 onLabelFieldChange(item.i, nextField)
+              }
+              onDisplaySettingsChange={(patch) =>
+                onDisplaySettingsChange(item.i, patch)
               }
               initialConfigOpen={focusWidgetId === item.i}
               onConfigOpenChange={(open) => {
@@ -685,12 +708,20 @@ type ChartInstanceFieldPatch = Partial<
     | 'focusedSliceKey'
     | 'pieVariant'
     | 'labelField'
+    | 'showValueAs'
+    | 'sortSlicesBy'
+    | 'showEmptySlices'
+    | 'visibleTableColumns'
   >
 > & {
   readonly clearFilters?: boolean;
   readonly clearFocusedSliceKey?: boolean;
   readonly clearPieVariant?: boolean;
   readonly clearLabelField?: boolean;
+  readonly clearShowValueAs?: boolean;
+  readonly clearSortSlicesBy?: boolean;
+  readonly clearShowEmptySlices?: boolean;
+  readonly clearVisibleTableColumns?: boolean;
 };
 
 /** Persist a field only when set and not the omitted default. */
@@ -768,6 +799,42 @@ function withInstanceFields(
     labelField === 'status'
   );
 
+  const showValueAs = patch.showValueAs ?? item.showValueAs;
+  assignUnlessCleared(
+    next,
+    patch.clearShowValueAs,
+    'showValueAs',
+    showValueAs,
+    showValueAs === 'percent'
+  );
+
+  const sortSlicesBy = patch.sortSlicesBy ?? item.sortSlicesBy;
+  assignUnlessCleared(
+    next,
+    patch.clearSortSlicesBy,
+    'sortSlicesBy',
+    sortSlicesBy,
+    sortSlicesBy === 'value_desc'
+  );
+
+  const showEmptySlices = patch.showEmptySlices ?? item.showEmptySlices;
+  assignUnlessCleared(
+    next,
+    patch.clearShowEmptySlices,
+    'showEmptySlices',
+    showEmptySlices,
+    showEmptySlices === false || showEmptySlices == null
+  );
+
+  const visibleTableColumns =
+    patch.visibleTableColumns ?? item.visibleTableColumns;
+  assignUnlessCleared(
+    next,
+    patch.clearVisibleTableColumns,
+    'visibleTableColumns',
+    visibleTableColumns
+  );
+
   return next;
 }
 
@@ -841,4 +908,56 @@ export function updateChartWidgetLabelField(
       clearFocusedSliceKey: true,
     });
   });
+}
+
+export function updateChartWidgetDisplaySettings(
+  instanceId: string,
+  patch: ChartWidgetDisplaySettingsPatch,
+  instances: ChartBoardWidgetInstance[]
+): ChartBoardWidgetInstance[] {
+  return instances.map((item) => {
+    if (item.instanceId !== instanceId) {
+      return item;
+    }
+    return withInstanceFields(item, displaySettingsPatch(patch));
+  });
+}
+
+function displaySettingsPatch(
+  patch: ChartWidgetDisplaySettingsPatch
+): ChartInstanceFieldPatch {
+  const next: ChartInstanceFieldPatch = {};
+
+  if (patch.showValueAs !== undefined) {
+    if (patch.showValueAs === 'percent') {
+      Object.assign(next, { clearShowValueAs: true });
+    } else {
+      Object.assign(next, { showValueAs: patch.showValueAs });
+    }
+  }
+
+  if (patch.sortSlicesBy !== undefined) {
+    if (patch.sortSlicesBy === 'value_desc') {
+      Object.assign(next, { clearSortSlicesBy: true });
+    } else {
+      Object.assign(next, { sortSlicesBy: patch.sortSlicesBy });
+    }
+  }
+
+  if (patch.showEmptySlices !== undefined) {
+    if (patch.showEmptySlices) {
+      Object.assign(next, { showEmptySlices: true });
+    } else {
+      Object.assign(next, { clearShowEmptySlices: true });
+    }
+  }
+
+  if (patch.visibleTableColumns !== undefined) {
+    Object.assign(next, {
+      visibleTableColumns: patch.visibleTableColumns,
+      clearVisibleTableColumns: false,
+    });
+  }
+
+  return next;
 }

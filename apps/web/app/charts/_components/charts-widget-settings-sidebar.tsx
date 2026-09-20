@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, type ComponentType, type ReactNode } from 'react';
-import { BOARD_WORK_ITEM_STATUSES } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import {
@@ -42,7 +41,6 @@ import {
   Info,
   LayoutGrid,
   List,
-  Paintbrush,
   PieChart,
   Settings,
   TextCursorInput,
@@ -53,10 +51,12 @@ import { cn } from '@repo/ui/lib/utils';
 import type {
   ChartPieVariant,
   ChartsLabelFieldId,
+  ChartsShowValueAs,
+  ChartsSortSlicesBy,
+  ChartsTableColumnId,
 } from '@/app/charts/_components/charts.types';
 import { DEFAULT_CHARTS_LABEL_FIELD } from '@/app/charts/_components/charts-sample.data';
 import { CHARTS_LIVE_LABEL_COLUMNS } from '@/app/charts/_helpers/charts-analytics.ui';
-import { STATUS_META } from '@/app/work-items/_helpers/work-item-status';
 
 type ChartsWidgetSettingsSidebarProps = {
   readonly pieVariant: ChartPieVariant;
@@ -65,6 +65,22 @@ type ChartsWidgetSettingsSidebarProps = {
   readonly labelField?: ChartsLabelFieldId;
   // eslint-disable-next-line no-unused-vars -- labels column change
   readonly onLabelFieldChange?: (field: ChartsLabelFieldId) => void;
+  readonly showValueAs?: ChartsShowValueAs;
+  // eslint-disable-next-line no-unused-vars -- customize show-as change
+  readonly onShowValueAsChange?: (value: ChartsShowValueAs) => void;
+  readonly sortSlicesBy?: ChartsSortSlicesBy;
+  readonly onSortSlicesByChange?: (
+    // eslint-disable-next-line no-unused-vars -- sort change
+    value: ChartsSortSlicesBy
+  ) => void;
+  readonly showEmptySlices?: boolean;
+  // eslint-disable-next-line no-unused-vars -- empty slices toggle
+  readonly onShowEmptySlicesChange?: (value: boolean) => void;
+  readonly visibleTableColumns?: readonly ChartsTableColumnId[];
+  readonly onVisibleTableColumnsChange?: (
+    // eslint-disable-next-line no-unused-vars -- columns change
+    columns: readonly ChartsTableColumnId[]
+  ) => void;
   readonly className?: string;
 };
 
@@ -150,12 +166,28 @@ const DISABLED_CHART_GROUPS: readonly {
   },
 ];
 
-const TABLE_COLUMN_LABELS = [
-  'Task',
-  'Owner',
-  'Status',
-  'Type',
-  'Priority',
+const TABLE_COLUMN_OPTIONS: readonly {
+  readonly id: ChartsTableColumnId;
+  readonly label: string;
+}[] = [
+  { id: 'task', label: 'Task' },
+  { id: 'owner', label: 'Owner' },
+  { id: 'status', label: 'Status' },
+  { id: 'type', label: 'Type' },
+  { id: 'priority', label: 'Priority' },
+] as const;
+
+const DEFAULT_VISIBLE_TABLE_COLUMNS: readonly ChartsTableColumnId[] =
+  TABLE_COLUMN_OPTIONS.map((column) => column.id);
+
+const SORT_OPTIONS: readonly {
+  readonly id: ChartsSortSlicesBy;
+  readonly label: string;
+}[] = [
+  { id: 'value_desc', label: 'Values descending' },
+  { id: 'value_asc', label: 'Values ascending' },
+  { id: 'label_asc', label: 'Labels A–Z' },
+  { id: 'label_desc', label: 'Labels Z–A' },
 ] as const;
 
 function SettingsSection({
@@ -276,6 +308,38 @@ function ChartTypeIconRow({
   );
 }
 
+function SegmentedControl({
+  options,
+  selected,
+  onSelect,
+}: Readonly<{
+  options: readonly string[];
+  selected: string;
+  // eslint-disable-next-line no-unused-vars -- option select
+  onSelect: (option: string) => void;
+}>) {
+  return (
+    <div className="bg-muted/50 flex w-full rounded-md p-0.5" role="group">
+      {options.map((option) => (
+        <button
+          key={option}
+          type="button"
+          className={cn(
+            'flex-1 cursor-pointer rounded-sm px-2 py-1.5 text-center text-xs font-medium transition-colors',
+            option === selected
+              ? 'bg-primary/15 text-primary shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+          aria-pressed={option === selected}
+          onClick={() => onSelect(option)}
+        >
+          {option}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function StaticSegmentedControl({
   options,
   selected,
@@ -313,19 +377,6 @@ function StaticFieldLabel({
     <div className="text-muted-foreground mb-1.5 flex items-center gap-1 text-xs font-medium">
       {children}
       {withInfo ? <Info className="size-3.5 shrink-0 opacity-70" /> : null}
-    </div>
-  );
-}
-
-function StaticSelectStub({
-  label,
-  leading,
-}: Readonly<{ label: string; leading?: ReactNode }>) {
-  return (
-    <div className="border-input bg-muted/20 text-muted-foreground flex h-9 items-center gap-2 rounded-md border px-2.5 text-sm">
-      {leading}
-      <span className="min-w-0 flex-1 truncate">{label}</span>
-      <ChevronDown className="size-3.5 shrink-0 opacity-60" />
     </div>
   );
 }
@@ -370,27 +421,6 @@ function ChartTypeSection({
           />
         </div>
       ))}
-    </div>
-  );
-}
-
-function StaticColumnSelectMode() {
-  return (
-    <div>
-      <StaticFieldLabel withInfo>Choose how to select columns</StaticFieldLabel>
-      <StaticSegmentedControl
-        options={['All at once', 'One by one']}
-        selected="All at once"
-      />
-    </div>
-  );
-}
-
-function StaticSubitemColumnsField() {
-  return (
-    <div>
-      <StaticFieldLabel>Subitem columns</StaticFieldLabel>
-      <StaticSelectStub label="No subitems column selected" />
     </div>
   );
 }
@@ -509,63 +539,114 @@ function LabelsSection({
 }>) {
   return (
     <div className="flex flex-col gap-3">
-      <StaticColumnSelectMode />
       <LabelsColumnSelect
         labelField={labelField}
         onLabelFieldChange={onLabelFieldChange}
       />
-      <StaticSubitemColumnsField />
     </div>
   );
 }
 
 function ValuesSection() {
   return (
-    <div className="pointer-events-none flex flex-col gap-3 opacity-90">
-      <StaticColumnSelectMode />
+    <div className="flex flex-col gap-3">
       <div>
         <StaticFieldLabel>Columns</StaticFieldLabel>
-        <StaticSelectStub
-          label="Count items"
-          leading={<List className="size-3.5 shrink-0 opacity-70" />}
-        />
+        <div className="border-input bg-background text-foreground flex h-9 items-center gap-2 rounded-md border px-2.5 text-sm">
+          <List className="size-3.5 shrink-0 opacity-70" />
+          <span className="min-w-0 flex-1 truncate">Count items</span>
+        </div>
       </div>
-      <StaticSubitemColumnsField />
       <div>
         <StaticFieldLabel>Calculation</StaticFieldLabel>
-        <StaticSegmentedControl
-          options={['Sum', 'Average', 'Median', 'Min', 'Max']}
-          selected="Sum"
-        />
+        <StaticSegmentedControl options={['Count']} selected="Count" />
+        <p className="text-muted-foreground mt-1.5 text-xs">
+          Tier 1 charts use item count only. Sum / Average / Median are coming
+          later.
+        </p>
       </div>
     </div>
   );
 }
 
-function CustomizeSection() {
+function CustomizeSection({
+  showValueAs,
+  onShowValueAsChange,
+  sortSlicesBy,
+  onSortSlicesByChange,
+  showEmptySlices,
+  onShowEmptySlicesChange,
+}: Readonly<{
+  showValueAs: ChartsShowValueAs;
+  // eslint-disable-next-line no-unused-vars
+  onShowValueAsChange?: (value: ChartsShowValueAs) => void;
+  sortSlicesBy: ChartsSortSlicesBy;
+  onSortSlicesByChange?: (
+    // eslint-disable-next-line no-unused-vars
+    value: ChartsSortSlicesBy
+  ) => void;
+  showEmptySlices: boolean;
+  // eslint-disable-next-line no-unused-vars
+  onShowEmptySlicesChange?: (value: boolean) => void;
+}>) {
+  const sortLabel =
+    SORT_OPTIONS.find((option) => option.id === sortSlicesBy)?.label ??
+    'Values descending';
+
   return (
-    <div className="pointer-events-none flex flex-col gap-3 opacity-90">
-      <div>
-        <StaticFieldLabel>Labels</StaticFieldLabel>
-        <div className="border-input bg-background text-foreground flex h-9 items-center justify-center gap-2 rounded-md border px-2.5 text-sm font-medium">
-          <Paintbrush className="size-3.5 shrink-0 opacity-70" />
-          Edit color, name and order
-        </div>
-      </div>
+    <div className="flex flex-col gap-3">
       <div>
         <StaticFieldLabel>Show value as</StaticFieldLabel>
-        <StaticSegmentedControl options={['Value', '%']} selected="%" />
+        <SegmentedControl
+          options={['Value', '%']}
+          selected={showValueAs === 'value' ? 'Value' : '%'}
+          onSelect={(option) =>
+            onShowValueAsChange?.(option === 'Value' ? 'value' : 'percent')
+          }
+        />
       </div>
       <div>
         <StaticFieldLabel withInfo>Sort by</StaticFieldLabel>
-        <StaticSelectStub label="Values descending" />
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 w-full justify-between px-2.5 text-sm font-normal"
+            >
+              <span className="truncate">{sortLabel}</span>
+              <ChevronDown className="size-3.5 shrink-0 opacity-60" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 p-1" align="start">
+            {SORT_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={cn(
+                  'hover:bg-muted flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm',
+                  option.id === sortSlicesBy && 'bg-muted'
+                )}
+                onClick={() => onSortSlicesByChange?.(option.id)}
+              >
+                {option.id === sortSlicesBy ? (
+                  <Check className="size-3.5 shrink-0" />
+                ) : (
+                  <span className="size-3.5 shrink-0" />
+                )}
+                {option.label}
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
       </div>
-      <label className="flex items-center gap-2 text-sm">
-        <Checkbox checked={false} disabled />
-        Show only top/bottom items
-      </label>
-      <label className="flex items-center gap-2 text-sm">
-        <Checkbox checked={false} disabled />
+      <label className="flex cursor-pointer items-center gap-2 text-sm">
+        <Checkbox
+          checked={showEmptySlices}
+          onCheckedChange={(checked) =>
+            onShowEmptySlicesChange?.(checked === true)
+          }
+        />
         <span className="flex items-center gap-1">
           Show empty values
           <Info className="text-muted-foreground size-3.5 opacity-70" />
@@ -575,58 +656,72 @@ function CustomizeSection() {
   );
 }
 
-function StaticCheckboxList({
-  heading,
-  allLabel,
-  items,
-}: Readonly<{
-  heading?: string;
-  allLabel: string;
-  items: readonly string[];
-}>) {
-  return (
-    <div className="pointer-events-none flex flex-col gap-2 opacity-90">
-      {heading ? (
-        <p className="text-muted-foreground text-xs font-medium">{heading}</p>
-      ) : null}
-      <label className="flex items-center justify-between gap-2 text-sm">
-        <span>{allLabel}</span>
-        <Checkbox checked disabled />
-      </label>
-      {items.map((item) => (
-        <label
-          key={item}
-          className="flex items-center justify-between gap-2 text-sm"
-        >
-          <span>{item}</span>
-          <Checkbox checked disabled />
-        </label>
-      ))}
-    </div>
-  );
-}
-
 function GroupsSection() {
-  const statusLabels = BOARD_WORK_ITEM_STATUSES.map(
-    (status) => STATUS_META[status]?.label ?? status
-  );
   return (
-    <StaticCheckboxList
-      heading="Statuses"
-      allLabel="All groups"
-      items={statusLabels}
-    />
+    <p className="text-muted-foreground text-sm">
+      Coming soon. Empty status groups are already hidden in the table.
+    </p>
   );
 }
 
-function ColumnsSection() {
+function ColumnsSection({
+  visibleTableColumns,
+  onVisibleTableColumnsChange,
+}: Readonly<{
+  visibleTableColumns: readonly ChartsTableColumnId[];
+  onVisibleTableColumnsChange?: (
+    // eslint-disable-next-line no-unused-vars
+    columns: readonly ChartsTableColumnId[]
+  ) => void;
+}>) {
+  const visible = new Set(visibleTableColumns);
+  const allSelected = TABLE_COLUMN_OPTIONS.every((column) =>
+    visible.has(column.id)
+  );
+
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm font-medium">Choose which columns to show</p>
-      <StaticCheckboxList
-        allLabel="All columns"
-        items={[...TABLE_COLUMN_LABELS]}
-      />
+      <label className="flex cursor-pointer items-center justify-between gap-2 text-sm">
+        <span>All columns</span>
+        <Checkbox
+          checked={allSelected}
+          onCheckedChange={(checked) => {
+            if (checked === true) {
+              onVisibleTableColumnsChange?.(DEFAULT_VISIBLE_TABLE_COLUMNS);
+              return;
+            }
+            onVisibleTableColumnsChange?.(['task']);
+          }}
+        />
+      </label>
+      {TABLE_COLUMN_OPTIONS.map((column) => {
+        const checked = visible.has(column.id);
+        return (
+          <label
+            key={column.id}
+            className="flex cursor-pointer items-center justify-between gap-2 text-sm"
+          >
+            <span>{column.label}</span>
+            <Checkbox
+              checked={checked}
+              disabled={checked && visible.size === 1}
+              onCheckedChange={(next) => {
+                if (next === true) {
+                  onVisibleTableColumnsChange?.([
+                    ...visibleTableColumns,
+                    column.id,
+                  ]);
+                  return;
+                }
+                onVisibleTableColumnsChange?.(
+                  visibleTableColumns.filter((id) => id !== column.id)
+                );
+              }}
+            />
+          </label>
+        );
+      })}
     </div>
   );
 }
@@ -636,6 +731,14 @@ export function ChartsWidgetSettingsSidebar({
   onPieVariantChange,
   labelField = DEFAULT_CHARTS_LABEL_FIELD,
   onLabelFieldChange,
+  showValueAs = 'percent',
+  onShowValueAsChange,
+  sortSlicesBy = 'value_desc',
+  onSortSlicesByChange,
+  showEmptySlices = false,
+  onShowEmptySlicesChange,
+  visibleTableColumns = DEFAULT_VISIBLE_TABLE_COLUMNS,
+  onVisibleTableColumnsChange,
   className,
 }: Readonly<ChartsWidgetSettingsSidebarProps>) {
   return (
@@ -670,13 +773,23 @@ export function ChartsWidgetSettingsSidebar({
             <ValuesSection />
           </SettingsSection>
           <SettingsSection title="Customize">
-            <CustomizeSection />
+            <CustomizeSection
+              showValueAs={showValueAs}
+              onShowValueAsChange={onShowValueAsChange}
+              sortSlicesBy={sortSlicesBy}
+              onSortSlicesByChange={onSortSlicesByChange}
+              showEmptySlices={showEmptySlices}
+              onShowEmptySlicesChange={onShowEmptySlicesChange}
+            />
           </SettingsSection>
           <SettingsSection title="Groups">
             <GroupsSection />
           </SettingsSection>
           <SettingsSection title="Choose which columns to show">
-            <ColumnsSection />
+            <ColumnsSection
+              visibleTableColumns={visibleTableColumns}
+              onVisibleTableColumnsChange={onVisibleTableColumnsChange}
+            />
           </SettingsSection>
         </div>
       </aside>

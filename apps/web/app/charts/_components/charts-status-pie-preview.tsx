@@ -31,6 +31,10 @@ type ChartsStatusPiePreviewProps = {
   /** When set, pie slices and legend rows are clickable toggles. */
   // eslint-disable-next-line no-unused-vars -- slice click callback
   readonly onSliceClick?: (sliceKey: string) => void;
+  readonly showValueAs?: 'value' | 'percent';
+  readonly sortSlicesBy?:
+    'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
+  readonly showEmptySlices?: boolean;
 };
 
 function findEntryByKey(
@@ -90,9 +94,23 @@ function ChartsPieLoadingState({
   );
 }
 
+function formatSliceMetric(
+  entry: ChartsStatusPieSlice,
+  showValueAs: 'value' | 'percent'
+): string {
+  if (showValueAs === 'value') {
+    return String(entry.count);
+  }
+  return entry.percent;
+}
+
 function ChartsPieCenterLabel({
   entry,
-}: Readonly<{ entry: ChartsStatusPieSlice }>) {
+  showValueAs,
+}: Readonly<{
+  entry: ChartsStatusPieSlice;
+  showValueAs: 'value' | 'percent';
+}>) {
   return (
     <div
       className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
@@ -103,7 +121,7 @@ function ChartsPieCenterLabel({
           {entry.label}
         </TruncatedText>
         <span className="text-muted-foreground text-xs tabular-nums">
-          {entry.count} · {entry.percent}
+          {formatSliceMetric(entry, showValueAs)}
         </span>
       </div>
     </div>
@@ -112,7 +130,11 @@ function ChartsPieCenterLabel({
 
 function ChartsPieLegendSwatchRow({
   entry,
-}: Readonly<{ entry: ChartsStatusPieSlice }>) {
+  showValueAs,
+}: Readonly<{
+  entry: ChartsStatusPieSlice;
+  showValueAs: 'value' | 'percent';
+}>) {
   return (
     <>
       <span
@@ -121,7 +143,7 @@ function ChartsPieLegendSwatchRow({
         aria-hidden
       />
       <TruncatedText className="text-foreground max-w-full min-w-0">
-        {`${entry.label}: ${entry.count} · ${entry.percent}`}
+        {`${entry.label}: ${formatSliceMetric(entry, showValueAs)}`}
       </TruncatedText>
     </>
   );
@@ -132,6 +154,7 @@ function ChartsPieLegendItem({
   interactive,
   isSelected,
   isHovered,
+  showValueAs,
   onHover,
   onSelect,
 }: Readonly<{
@@ -139,10 +162,13 @@ function ChartsPieLegendItem({
   interactive: boolean;
   isSelected: boolean;
   isHovered: boolean;
+  showValueAs: 'value' | 'percent';
   onHover: () => void;
   onSelect: () => void;
 }>) {
-  const row = <ChartsPieLegendSwatchRow entry={entry} />;
+  const row = (
+    <ChartsPieLegendSwatchRow entry={entry} showValueAs={showValueAs} />
+  );
 
   if (!interactive) {
     return (
@@ -191,6 +217,7 @@ function ChartsPieLegend({
   totalLabel,
   selectedEntry,
   interactive,
+  showValueAs,
   onHoverStatus,
   onSelectKey,
 }: Readonly<{
@@ -204,6 +231,7 @@ function ChartsPieLegend({
   totalLabel: string;
   selectedEntry: ChartsStatusPieSlice | undefined;
   interactive: boolean;
+  showValueAs: 'value' | 'percent';
   // eslint-disable-next-line no-unused-vars -- hover callback
   onHoverStatus: (status: string | null) => void;
   // eslint-disable-next-line no-unused-vars -- select callback
@@ -233,6 +261,7 @@ function ChartsPieLegend({
               interactive={interactive}
               isSelected={selectedSliceKey === entry.key}
               isHovered={hoveredChartStatus === entry.status}
+              showValueAs={showValueAs}
               onHover={() => onHoverStatus(entry.status)}
               onSelect={() => onSelectKey(entry.key)}
             />
@@ -256,6 +285,7 @@ function ChartsPieWheelPane({
   isDonut,
   sliceInteractive,
   focusEntry,
+  showValueAs,
   onHoverStatus,
   onSliceChartKey,
 }: Readonly<{
@@ -266,6 +296,7 @@ function ChartsPieWheelPane({
   isDonut: boolean;
   sliceInteractive: boolean;
   focusEntry: ChartsStatusPieSlice | null;
+  showValueAs: 'value' | 'percent';
   // eslint-disable-next-line no-unused-vars -- hover callback
   onHoverStatus: (status: string | null) => void;
   // eslint-disable-next-line no-unused-vars -- click callback
@@ -286,7 +317,7 @@ function ChartsPieWheelPane({
         onSliceClick={sliceInteractive ? onSliceChartKey : undefined}
       />
       {isDonut && focusEntry ? (
-        <ChartsPieCenterLabel entry={focusEntry} />
+        <ChartsPieCenterLabel entry={focusEntry} showValueAs={showValueAs} />
       ) : null}
     </div>
   );
@@ -303,11 +334,18 @@ export function ChartsStatusPiePreview({
   pieVariant = 'donut',
   selectedSliceKey = null,
   onSliceClick,
+  showValueAs = 'percent',
+  sortSlicesBy = 'value_desc',
+  showEmptySlices = false,
 }: Readonly<ChartsStatusPiePreviewProps>) {
   const isRoomy = size === 'dialog' || size === 'split';
   const { data, config, total } = useMemo(
-    () => buildChartsPieFromSeries(slices ?? [], labelField),
-    [labelField, slices]
+    () =>
+      buildChartsPieFromSeries(slices ?? [], labelField, {
+        showEmptySlices,
+        sortSlicesBy,
+      }),
+    [labelField, showEmptySlices, slices, sortSlicesBy]
   );
 
   const [hoveredChartStatus, setHoveredChartStatus] = useState<string | null>(
@@ -350,6 +388,7 @@ export function ChartsStatusPiePreview({
         isDonut={isDonut}
         sliceInteractive={sliceInteractive}
         focusEntry={focusEntry}
+        showValueAs={showValueAs}
         onHoverStatus={setHoveredChartStatus}
         onSliceChartKey={(chartKey) => {
           const sliceKey =
@@ -367,6 +406,7 @@ export function ChartsStatusPiePreview({
         total={total}
         totalLabel={totalLabel}
         selectedEntry={selectedEntry}
+        showValueAs={showValueAs}
         interactive={sliceInteractive}
         onHoverStatus={setHoveredChartStatus}
         onSelectKey={(key) => onSliceClick?.(key)}

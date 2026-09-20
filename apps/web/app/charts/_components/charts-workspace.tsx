@@ -34,6 +34,7 @@ import {
   updateChartWidgetLabelField,
   updateChartWidgetPieVariant,
   updateChartWidgetViewMode,
+  updateChartWidgetDisplaySettings,
 } from '@/app/charts/_components/charts-board-canvas';
 import {
   ChartsFilterDialog,
@@ -67,6 +68,7 @@ import {
   setLastOpenedChartWorkspace,
   suggestChartWorkspaceTitle,
 } from '@/app/charts/_helpers/charts-workspace-storage';
+import { hydrateChartWorkspacesFromApi } from '@/app/charts/_helpers/charts-workspace-hydrate';
 import { chartsWorkspaceHref } from '@/app/charts/_helpers/charts-links';
 import { createChartWidgetFiltersFromDefaults } from '@/app/charts/_helpers/charts-widget-defaults';
 import { useChartsWorkspaceDefaults } from '@/app/charts/_hooks/use-charts-workspace-defaults';
@@ -136,18 +138,33 @@ export function ChartsWorkspace({
   }, [currentUserId, ownership, searchQuery, status]);
 
   useEffect(() => {
-    const record = getChartWorkspace(currentUserId, workspaceId);
-    if (!record) {
-      const fallback = ensureDefaultChartWorkspace(currentUserId);
-      router.replace(`/charts/${fallback.id}`);
-      return;
+    let cancelled = false;
+
+    async function hydrate() {
+      await hydrateChartWorkspacesFromApi(currentUserId);
+      if (cancelled) {
+        return;
+      }
+
+      const record = getChartWorkspace(currentUserId, workspaceId);
+      if (!record) {
+        const fallback = ensureDefaultChartWorkspace(currentUserId);
+        void syncChartWorkspaceToApi(fallback);
+        router.replace(`/charts/${fallback.id}`);
+        return;
+      }
+      setLastOpenedChartWorkspace(currentUserId, record.id);
+      setWorkspace(record);
+      setInstances(record.instances);
+      setLayout(record.layout);
+      setHydrated(true);
+      refreshList();
     }
-    setLastOpenedChartWorkspace(currentUserId, record.id);
-    setWorkspace(record);
-    setInstances(record.instances);
-    setLayout(record.layout);
-    setHydrated(true);
-    refreshList();
+
+    void hydrate();
+    return () => {
+      cancelled = true;
+    };
   }, [currentUserId, refreshList, router, workspaceId]);
 
   useEffect(() => {
@@ -374,6 +391,24 @@ export function ChartsWorkspace({
     [commitInstances, instances]
   );
 
+  const handleDisplaySettingsChange = useCallback(
+    (
+      instanceId: string,
+      patch: {
+        readonly showValueAs?: 'value' | 'percent';
+        readonly sortSlicesBy?:
+          'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
+        readonly showEmptySlices?: boolean;
+        readonly visibleTableColumns?: ChartBoardWidgetInstance['visibleTableColumns'];
+      }
+    ) => {
+      commitInstances(
+        updateChartWidgetDisplaySettings(instanceId, patch, instances)
+      );
+    },
+    [commitInstances, instances]
+  );
+
   const handleCloseWidgetDeepLink = useCallback(() => {
     if (!focusWidgetId) {
       return;
@@ -495,6 +530,7 @@ export function ChartsWorkspace({
             onViewModeChange={handleViewModeChange}
             onPieVariantChange={handlePieVariantChange}
             onLabelFieldChange={handleLabelFieldChange}
+            onDisplaySettingsChange={handleDisplaySettingsChange}
             onFocusWidgetDismiss={handleCloseWidgetDeepLink}
           />
         </CardContent>

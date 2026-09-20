@@ -30,6 +30,7 @@ import type { ChartWidgetDefinition } from '@/app/charts/_components/charts-widg
 import type {
   ChartPieVariant,
   ChartsLabelFieldId,
+  ChartsTableColumnId,
   ChartWidgetTypeId,
   ChartWidgetViewMode,
   ChartsWidgetFiltersChangeHandler,
@@ -66,6 +67,11 @@ type ChartsWidgetCardProps = {
   readonly viewMode?: ChartWidgetViewMode;
   readonly pieVariant?: ChartPieVariant;
   readonly labelField?: ChartsLabelFieldId;
+  readonly showValueAs?: 'value' | 'percent';
+  readonly sortSlicesBy?:
+    'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
+  readonly showEmptySlices?: boolean;
+  readonly visibleTableColumns?: readonly ChartsTableColumnId[];
   readonly focusedSliceKey?: string;
   readonly accessibleProjects?: readonly ChartsProjectOption[];
   readonly accessibleSprints?: readonly ChartsSprintOption[];
@@ -78,6 +84,16 @@ type ChartsWidgetCardProps = {
   readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
   readonly onPieVariantChange?: ChartsWidgetPieVariantChangeHandler;
   readonly onLabelFieldChange?: ChartsWidgetLabelFieldChangeHandler;
+  readonly onDisplaySettingsChange?: (
+    // eslint-disable-next-line no-unused-vars
+    patch: {
+      readonly showValueAs?: 'value' | 'percent';
+      readonly sortSlicesBy?:
+        'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
+      readonly showEmptySlices?: boolean;
+      readonly visibleTableColumns?: readonly ChartsTableColumnId[];
+    }
+  ) => void;
   /** Open config when landing from `/charts/[id]/widget/[widgetId]`. */
   readonly initialConfigOpen?: boolean;
   readonly onConfigOpenChange?: (
@@ -96,6 +112,10 @@ export function ChartsWidgetCard({
   viewMode,
   pieVariant,
   labelField = DEFAULT_CHARTS_LABEL_FIELD,
+  showValueAs = 'percent',
+  sortSlicesBy = 'value_desc',
+  showEmptySlices = false,
+  visibleTableColumns,
   focusedSliceKey,
   accessibleProjects = [],
   accessibleSprints = [],
@@ -107,6 +127,7 @@ export function ChartsWidgetCard({
   onViewModeChange,
   onPieVariantChange,
   onLabelFieldChange,
+  onDisplaySettingsChange,
   initialConfigOpen = false,
   onConfigOpenChange,
   className,
@@ -193,6 +214,9 @@ export function ChartsWidgetCard({
       loading={Boolean(seriesLabelField && analytics.seriesLoading)}
       emptyMessage={pieEmptyMessage}
       pieVariant={pieVariant}
+      showValueAs={showValueAs}
+      sortSlicesBy={sortSlicesBy}
+      showEmptySlices={showEmptySlices}
     />
   ) : (
     placeholderBody
@@ -355,6 +379,10 @@ export function ChartsWidgetCard({
           viewMode={viewMode}
           pieVariant={pieVariant}
           labelField={labelField}
+          showValueAs={showValueAs}
+          sortSlicesBy={sortSlicesBy}
+          showEmptySlices={showEmptySlices}
+          visibleTableColumns={visibleTableColumns}
           focusedSliceKey={focusedSliceKey}
           accessibleProjects={accessibleProjects}
           accessibleSprints={accessibleSprints}
@@ -363,6 +391,7 @@ export function ChartsWidgetCard({
           onViewModeChange={onViewModeChange}
           onPieVariantChange={onPieVariantChange}
           onLabelFieldChange={onLabelFieldChange}
+          onDisplaySettingsChange={onDisplaySettingsChange}
           onRename={() => {
             window.setTimeout(() => openRename(), 0);
           }}
