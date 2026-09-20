@@ -15,6 +15,14 @@ import { BarChart3, X } from '@repo/ui/lib/icons';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { SearchInput } from '@/components/search-input';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
+import {
+  pickWorkspaceDefaultsDialogController,
+  WorkspaceDefaultsDialogHost,
+} from '@/app/board/_components/workspace-defaults-dialog-host';
+import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
+import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { ChartsAddMenu } from '@/app/charts/_components/charts-add-widget-menu';
 import {
   ChartsBoardCanvas,
@@ -45,7 +53,10 @@ import type {
   ChartWidgetViewMode,
   ChartWorkspaceRecord,
 } from '@/app/charts/_components/charts.types';
-import type { ChartsWidgetFilterDraft } from '@/app/charts/_components/charts-sample.data';
+import type {
+  ChartsSampleMember,
+  ChartsWidgetFilterDraft,
+} from '@/app/charts/_components/charts-sample.data';
 import {
   createChartWorkspace,
   ensureDefaultChartWorkspace,
@@ -57,6 +68,8 @@ import {
   suggestChartWorkspaceTitle,
 } from '@/app/charts/_helpers/charts-workspace-storage';
 import { chartsWorkspaceHref } from '@/app/charts/_helpers/charts-links';
+import { createChartWidgetFiltersFromDefaults } from '@/app/charts/_helpers/charts-widget-defaults';
+import { useChartsWorkspaceDefaults } from '@/app/charts/_hooks/use-charts-workspace-defaults';
 import { syncChartWorkspaceToApi } from '@/app/charts/_services/charts.mutations.client';
 import { useDashboardEntityBreadcrumb } from '@/app/dashboard/_components/dashboard-breadcrumb-runtime';
 
@@ -71,6 +84,10 @@ type ChartsWorkspaceProps = {
     readonly id: string;
     readonly name: string;
   }>;
+  readonly assigneeMembers: readonly ChartsSampleMember[];
+  readonly projects: readonly Project[];
+  readonly sprints: readonly Sprint[];
+  readonly suggestedDefaults: BoardDefaultsPreference | null;
 };
 
 export function ChartsWorkspace({
@@ -81,6 +98,10 @@ export function ChartsWorkspace({
   ownership,
   status,
   shareProjects,
+  assigneeMembers,
+  projects,
+  sprints,
+  suggestedDefaults,
 }: Readonly<ChartsWorkspaceProps>) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -96,6 +117,13 @@ export function ChartsWorkspace({
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+
+  const chartsDefaults = useChartsWorkspaceDefaults({
+    userId: currentUserId,
+    projects,
+    sprints,
+    suggestedDefaults,
+  });
 
   const refreshList = useCallback(() => {
     setWorkspaceList(
@@ -210,9 +238,19 @@ export function ChartsWorkspace({
       if (!isChartWidgetAvailable(typeId)) {
         return;
       }
-      commitBoard(appendChartWidget(typeId, instances, layout));
+      const filters =
+        typeId === 'chart'
+          ? createChartWidgetFiltersFromDefaults(
+              chartsDefaults.insertPreference
+            )
+          : undefined;
+      commitBoard(
+        appendChartWidget(typeId, instances, layout, {
+          ...(filters ? { filters } : {}),
+        })
+      );
     },
-    [commitBoard, instances, layout]
+    [chartsDefaults.insertPreference, commitBoard, instances, layout]
   );
 
   const handleAddWorkspace = useCallback(() => {
@@ -383,6 +421,10 @@ export function ChartsWorkspace({
             onSelectWorkspace={handleSelectWorkspace}
             onSaveWorkspace={handleSaveWorkspace}
           />
+          <WorkspaceDefaultsControls
+            onOpenDefaultsDialog={chartsDefaults.openDefaultsDialog}
+            savedDefaultsApplied={chartsDefaults.savedDefaultsApplied}
+          />
           {hasActiveFilters ? (
             <Button
               type="button"
@@ -426,13 +468,25 @@ export function ChartsWorkspace({
             />
           </div>
         </CardHeader>
-        <CardContent className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto pt-0">
+        <CardContent className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto pt-2 pb-2">
           <ChartsBoardCanvas
             instances={instances}
             layout={layout}
             hydrated={hydrated}
             focusWidgetId={focusWidgetId}
             accessibleProjects={shareProjects}
+            accessibleSprints={sprints.flatMap((sprint) =>
+              sprint.project?.id
+                ? [
+                    {
+                      id: sprint.id,
+                      name: sprint.name,
+                      projectId: sprint.project.id,
+                    },
+                  ]
+                : []
+            )}
+            assigneeMembers={assigneeMembers}
             onLayoutChange={handleLayoutChange}
             onRemoveWidget={handleRemoveWidget}
             onDuplicateWidget={handleDuplicateWidget}
@@ -468,6 +522,13 @@ export function ChartsWorkspace({
         workspace={workspace}
         projects={shareProjects}
         currentUserId={currentUserId}
+      />
+      <WorkspaceDefaultsDialogHost
+        enabled
+        projects={projects}
+        sprints={sprints}
+        defaults={pickWorkspaceDefaultsDialogController(chartsDefaults)}
+        showAllProjectsOption
       />
     </div>
   );

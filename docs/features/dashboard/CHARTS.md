@@ -43,9 +43,13 @@ picks / Browse cards are **Coming soon**.
 ### Chart widget (`typeId: chart`)
 
 Sample pie from `charts-sample.data.ts`. Canvas shows pie/donut. Fullscreen
-config: Advanced/Quick filters, assignee avatars, settings gear → Widget
-settings sidebar, layout Chart/Table/Split, pie vs donut (`pieVariant`), and
-Labels column (`labelField`: Project / Group / Name / Owner / Status / Due date).
+config: Advanced/Quick filters (Quick opens on **Project**; **Sprint** is
+available after a concrete project is selected — same rule in Advanced;
+**Assignee** lives in the filter popover only; Advanced allows at most one row
+per column — no duplicate Status/Type/… under AND; no Save filters or filter
+groups), settings gear → Widget settings sidebar, layout Chart/Table/Split,
+pie vs donut (`pieVariant`), and Labels column (`labelField`: Project / Group /
+Name / Owner / Status / Due date).
 
 ### Widget settings sidebar
 
@@ -64,7 +68,9 @@ Labels clears the slice focus. The legend uses a fixed-height scroll area.
 
 Status-grouped table UI shares `GroupedItemsSection` /
 `GroupedItemsPaginatedTable` (`apps/web/components/grouped-items/`) with the
-Board **Grouped** layout (board groups by workflow column; Charts by status).
+Board **Grouped** layout (board groups by workflow column; Charts by status in
+board order). Empty status groups are hidden; search/filter results remount
+matching groups expanded.
 
 No Boards section (use project filters).
 
@@ -105,9 +111,15 @@ only**.
 **API:** `GET /api/v1/charts/analytics/series` and `…/analytics/drilldown` —
 see [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md#apis).
 
-**Web:** Chart widgets load series/drilldown from that API when a **project** is
-selected in filters. Labels → Columns supports Project, Owner, Status, Type, and
-Priority (Group / Name / Due date are not on the rollup yet).
+**Web:** Chart widgets load series/drilldown from that API. **Project** filter
+supports **All projects** (aggregates every project the user can access) or a
+single project. Optional **sprint** is seeded from workspace defaults.
+Labels → Columns supports Project, Owner, Status, Type, and Priority
+(Group / Name / Due date are not on the rollup yet).
+
+**Defaults:** Charts uses the same workspace defaults dialog as Board / Work
+items / Backlog. Saving defaults seeds **project** (and **sprint** when set)
+onto newly inserted Chart widgets.
 
 Tier 2/3 (Neon read model, apps rename) and the completed step checklist:
 [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md).

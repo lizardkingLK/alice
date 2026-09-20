@@ -15,6 +15,7 @@ import {
   SquareDashed,
   Trash2,
 } from '@repo/ui/lib/icons';
+import { cn } from '@repo/ui/lib/utils';
 import { ChartsWidgetExportSubmenu } from '@/app/charts/_components/charts-widget-export-submenu';
 import type { ChartsExportFormatId } from '@/app/charts/_components/charts-sample.data';
 
@@ -27,6 +28,7 @@ type ChartsWidgetActionsMenuProps = {
   readonly onRename: () => void;
   readonly onDuplicate: () => void;
   readonly onDelete: () => void;
+  readonly onSettings?: () => void;
   // eslint-disable-next-line no-unused-vars -- export stub
   readonly onExport?: (format: ChartsExportFormatId) => void;
   readonly open?: boolean;
@@ -43,6 +45,7 @@ export function ChartsWidgetActionsMenu({
   onRename,
   onDuplicate,
   onDelete,
+  onSettings,
   onExport,
   open,
   onOpenChange,
@@ -52,7 +55,11 @@ export function ChartsWidgetActionsMenu({
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent align="end" className={contentClassName}>
         {leadingItem}
-        <DropdownMenuItem disabled className="gap-2">
+        <DropdownMenuItem
+          className={cn('gap-2', onSettings && 'cursor-pointer')}
+          disabled={!onSettings}
+          onSelect={() => onSettings?.()}
+        >
           <Settings className="size-4" />
           Settings
         </DropdownMenuItem>

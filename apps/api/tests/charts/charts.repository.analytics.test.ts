@@ -8,14 +8,14 @@ const {
   groupByMock,
   findManyWorkItemsMock,
   countWorkItemsMock,
-  findUniqueProjectMock,
+  findManyProjectsMock,
   findManyUsersMock,
   listAccessibleProjectIdsMock,
 } = vi.hoisted(() => ({
   groupByMock: vi.fn(),
   findManyWorkItemsMock: vi.fn(),
   countWorkItemsMock: vi.fn(),
-  findUniqueProjectMock: vi.fn(),
+  findManyProjectsMock: vi.fn(),
   findManyUsersMock: vi.fn(),
   listAccessibleProjectIdsMock: vi.fn(),
 }));
@@ -30,7 +30,7 @@ vi.mock('../../src/lib/prisma', () => ({
       count: countWorkItemsMock,
     },
     projects: {
-      findUnique: findUniqueProjectMock,
+      findMany: findManyProjectsMock,
     },
     users: {
       findMany: findManyUsersMock,
@@ -62,7 +62,7 @@ describe('ChartsRepository analytics', () => {
     ]);
 
     const result = await repository.sumSeries({
-      projectId: PROJECT_ID,
+      projectIds: [PROJECT_ID],
       labelField: 'status',
       from: '2026-01-01',
       to: '2026-01-31',
@@ -101,7 +101,7 @@ describe('ChartsRepository analytics', () => {
     ]);
 
     const result = await repository.sumSeries({
-      projectId: PROJECT_ID,
+      projectIds: [PROJECT_ID],
       labelField: 'owner',
     });
 
@@ -114,13 +114,49 @@ describe('ChartsRepository analytics', () => {
     ]);
   });
 
+  it('groups rollups across multiple projects when scoped with projectIds', async () => {
+    const other = '55555555-5555-4555-8555-555555555555';
+    groupByMock.mockResolvedValue([{ status: 'New', _sum: { item_count: 3 } }]);
+
+    await repository.sumSeries({
+      projectIds: [PROJECT_ID, other],
+      labelField: 'status',
+    });
+
+    expect(groupByMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          project_id: { in: [PROJECT_ID, other] },
+        }),
+      })
+    );
+  });
+
+  it('resolves board slice labels from project ids', async () => {
+    groupByMock.mockResolvedValue([
+      { project_id: PROJECT_ID, _sum: { item_count: 2 } },
+    ]);
+    findManyProjectsMock.mockResolvedValue([
+      { id: PROJECT_ID, key: 'ALP', name: 'Alpha' },
+    ]);
+
+    const result = await repository.sumSeries({
+      projectIds: [PROJECT_ID],
+      labelField: 'board',
+    });
+
+    expect(result.slices).toEqual([
+      { key: PROJECT_ID, label: 'ALP — Alpha', count: 2 },
+    ]);
+  });
+
   it('paginates drilldown work items with slice + created_at filters', async () => {
     const row = createWorkItemListRow();
     findManyWorkItemsMock.mockResolvedValue([row]);
     countWorkItemsMock.mockResolvedValue(1);
 
     const result = await repository.listDrilldown({
-      projectId: PROJECT_ID,
+      projectIds: [PROJECT_ID],
       labelField: 'status',
       sliceKey: 'New',
       from: '2026-01-01',
@@ -158,7 +194,7 @@ describe('ChartsRepository analytics', () => {
     countWorkItemsMock.mockResolvedValue(0);
 
     await repository.listDrilldown({
-      projectId: PROJECT_ID,
+      projectIds: [PROJECT_ID],
       labelField: 'owner',
       sliceKey: '',
       page: 2,

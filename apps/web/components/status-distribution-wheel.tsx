@@ -82,6 +82,11 @@ type StatusDistributionWheelProps = {
   readonly legend?: ReactNode;
   // eslint-disable-next-line no-unused-vars -- slice click callback
   readonly onSliceClick?: (status: string) => void;
+  /** `null` when the pointer leaves the pie. */
+  // eslint-disable-next-line no-unused-vars -- slice hover callback
+  readonly onSliceHover?: (status: string | null) => void;
+  /** Dim non-active slices when a slice is hovered or selected. */
+  readonly activeStatus?: string | null;
 };
 
 /**
@@ -102,8 +107,10 @@ export function StatusDistributionWheel({
   isAnimationActive = true,
   legend,
   onSliceClick,
+  onSliceHover,
+  activeStatus = null,
 }: Readonly<StatusDistributionWheelProps>) {
-  const interactive = Boolean(onSliceClick);
+  const interactive = Boolean(onSliceClick || onSliceHover);
 
   return (
     <ChartViewport
@@ -113,7 +120,11 @@ export function StatusDistributionWheel({
       className={cn('relative min-h-0 min-w-0', className)}
       chartClassName={chartClassName}
     >
-      <PieChart>
+      <PieChart
+        onMouseLeave={() => {
+          onSliceHover?.(null);
+        }}
+      >
         {showTooltip ? (
           <ChartTooltip
             cursor={false}
@@ -137,16 +148,24 @@ export function StatusDistributionWheel({
           }}
           className={interactive ? 'cursor-pointer outline-none' : undefined}
         >
-          {data.map((entry) => (
-            <Cell
-              key={entry.status}
-              fill={entry.fill}
-              className={
-                interactive ? 'cursor-pointer outline-none' : undefined
-              }
-              style={interactive ? { cursor: 'pointer' } : undefined}
-            />
-          ))}
+          {data.map((entry) => {
+            const isActive =
+              activeStatus == null || activeStatus === entry.status;
+            return (
+              <Cell
+                key={entry.status}
+                fill={entry.fill}
+                fillOpacity={isActive ? 1 : 0.35}
+                className={
+                  interactive ? 'cursor-pointer outline-none' : undefined
+                }
+                style={interactive ? { cursor: 'pointer' } : undefined}
+                onMouseEnter={() => {
+                  onSliceHover?.(entry.status);
+                }}
+              />
+            );
+          })}
         </Pie>
         {legend}
       </PieChart>

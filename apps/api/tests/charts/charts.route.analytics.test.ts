@@ -57,13 +57,30 @@ describe('charts analytics routes', () => {
     });
   });
 
-  it('rejects series without projectId', async () => {
+  it('returns series for all accessible projects when projectId is omitted', async () => {
+    getSeriesMock.mockResolvedValue({
+      projectId: null,
+      labelField: 'status',
+      slices: [{ key: 'New', label: 'New', count: 4 }],
+      totalCount: 4,
+    });
+
     await withMountedRouter('/api/v1/charts', chartsRouter, async (baseUrl) => {
       const response = await fetch(
         `${baseUrl}/api/v1/charts/analytics/series?labelField=status`
       );
-      expect(response.status).toBe(400);
-      expect(getSeriesMock).not.toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({
+        data: {
+          projectId: null,
+          labelField: 'status',
+          slices: [{ key: 'New', label: 'New', count: 4 }],
+          totalCount: 4,
+        },
+      });
+      expect(getSeriesMock).toHaveBeenCalledWith(MOCK_AUTH_USER_ID, {
+        labelField: 'status',
+      });
     });
   });
 

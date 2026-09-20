@@ -5,9 +5,9 @@ import ReactGridLayout, {
   type Layout,
   type LayoutItem,
 } from 'react-grid-layout';
-import { Skeleton } from '@repo/ui/components/ui/skeleton';
 import { cn } from '@repo/ui/lib/utils';
 import { ChartsWidgetCard } from '@/app/charts/_components/charts-widget-card';
+import { ChartsPieWidgetSkeleton } from '@/app/charts/_components/charts-workspace-skeleton';
 import {
   DASHBOARD_DRAG_CONFIG,
   DASHBOARD_GRID_CONFIG,
@@ -31,6 +31,10 @@ import type {
   ChartWidgetTypeId,
   ChartWidgetViewMode,
 } from '@/app/charts/_components/charts.types';
+import type {
+  ChartsSampleMember,
+  ChartsWidgetFilterDraft,
+} from '@/app/charts/_components/charts-sample.data';
 import 'react-grid-layout/css/styles.css';
 import '@/app/dashboard/_components/dashboard-grid.css';
 
@@ -271,6 +275,13 @@ type ChartsBoardCanvasProps = {
     readonly id: string;
     readonly name: string;
   }>;
+  /** Active sprints for Chart widget sprint filter (project-scoped). */
+  readonly accessibleSprints?: ReadonlyArray<{
+    readonly id: string;
+    readonly name: string;
+    readonly projectId: string;
+  }>;
+  readonly assigneeMembers?: readonly ChartsSampleMember[];
   /** False until localStorage board JSON has been read on the client. */
   readonly hydrated?: boolean;
   readonly className?: string;
@@ -290,6 +301,8 @@ export function ChartsBoardCanvas({
   focusWidgetId,
   onFocusWidgetDismiss,
   accessibleProjects = [],
+  accessibleSprints = [],
+  assigneeMembers = [],
   hydrated = true,
   className,
 }: Readonly<ChartsBoardCanvasProps>) {
@@ -320,7 +333,20 @@ export function ChartsBoardCanvas({
   };
 
   if (!hydrated) {
-    return <ChartsBoardCanvasSkeleton className={className} />;
+    return (
+      <div
+        className={cn(
+          'grid min-h-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3',
+          className
+        )}
+        aria-busy="true"
+        aria-label="Loading chart board"
+      >
+        <ChartsPieWidgetSkeleton />
+        <ChartsPieWidgetSkeleton />
+        <ChartsPieWidgetSkeleton className="sm:col-span-2 xl:col-span-1" />
+      </div>
+    );
   }
 
   return (
@@ -355,25 +381,9 @@ export function ChartsBoardCanvas({
           focusWidgetId={focusWidgetId}
           onFocusWidgetDismiss={onFocusWidgetDismiss}
           accessibleProjects={accessibleProjects}
+          accessibleSprints={accessibleSprints}
+          assigneeMembers={assigneeMembers}
         />
-      </div>
-    </div>
-  );
-}
-
-function ChartsBoardCanvasSkeleton({
-  className,
-}: Readonly<{ className?: string }>) {
-  return (
-    <div
-      className={cn('flex min-h-0 flex-1 flex-col gap-3', className)}
-      aria-busy="true"
-      aria-label="Loading chart board"
-    >
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Skeleton className="min-h-56 rounded-xl" />
-        <Skeleton className="min-h-56 rounded-xl" />
-        <Skeleton className="min-h-56 rounded-xl sm:col-span-2 xl:col-span-1" />
       </div>
     </div>
   );
@@ -396,6 +406,8 @@ function BoardCanvasBody({
   focusWidgetId,
   onFocusWidgetDismiss,
   accessibleProjects = [],
+  accessibleSprints = [],
+  assigneeMembers = [],
 }: Readonly<{
   isEmpty: boolean;
   mounted: boolean;
@@ -448,6 +460,12 @@ function BoardCanvasBody({
     readonly id: string;
     readonly name: string;
   }>;
+  accessibleSprints?: ReadonlyArray<{
+    readonly id: string;
+    readonly name: string;
+    readonly projectId: string;
+  }>;
+  assigneeMembers?: readonly ChartsSampleMember[];
 }>) {
   const { dragSessionKey, onDragStart, onDragStop } =
     useCancelGridDragOnEscape(onLayoutChange);
@@ -501,6 +519,8 @@ function BoardCanvasBody({
               labelField={entry?.instance.labelField}
               focusedSliceKey={resolveFocusedSliceKey(entry?.instance ?? {})}
               accessibleProjects={accessibleProjects}
+              accessibleSprints={accessibleSprints}
+              assigneeMembers={assigneeMembers}
               onRemove={() => onRemoveWidget(item.i)}
               onDuplicate={() => onDuplicateWidget(item.i)}
               onRename={(nextTitle) => onRenameWidget(item.i, nextTitle)}
@@ -535,8 +555,11 @@ export function appendChartWidget(
   typeId: ChartWidgetTypeId,
   instances: ChartBoardWidgetInstance[],
   layout: LayoutItem[],
-  title?: string,
-  sizeOverride?: Partial<Pick<LayoutItem, 'w' | 'h' | 'minW' | 'minH'>>
+  options?: {
+    title?: string;
+    sizeOverride?: Partial<Pick<LayoutItem, 'w' | 'h' | 'minW' | 'minH'>>;
+    filters?: ChartsWidgetFilterDraft;
+  }
 ): {
   instances: ChartBoardWidgetInstance[];
   layout: LayoutItem[];
@@ -547,12 +570,13 @@ export function appendChartWidget(
     {
       instanceId,
       typeId,
-      ...(title ? { title } : {}),
+      ...(options?.title ? { title: options.title } : {}),
+      ...(options?.filters ? { filters: options.filters } : {}),
     },
   ];
   const nextLayout = [
     ...layout,
-    nextChartLayoutItem(instanceId, layout, typeId, sizeOverride),
+    nextChartLayoutItem(instanceId, layout, typeId, options?.sizeOverride),
   ];
   return { instances: nextInstances, layout: nextLayout };
 }
@@ -598,13 +622,10 @@ export function duplicateChartWidget(
       }
     : undefined;
 
-  const next = appendChartWidget(
-    source.typeId,
-    instances,
-    layout,
-    `${baseTitle} (copy)`,
-    sizeOverride
-  );
+  const next = appendChartWidget(source.typeId, instances, layout, {
+    title: `${baseTitle} (copy)`,
+    sizeOverride,
+  });
   const copiedId = next.instances.at(-1)?.instanceId;
   if (!copiedId) {
     return next;

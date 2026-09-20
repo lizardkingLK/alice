@@ -25,10 +25,21 @@ export class ChartsService {
     actorId: string,
     query: ChartSeriesQuery
   ): Promise<ChartSeriesResponse> {
-    await this.assertProjectAccess(actorId, query.projectId);
-    const { slices, totalCount } = await this.chartsRepository.sumSeries(query);
+    const { responseProjectId, projectIds } = await this.resolveProjectScope(
+      actorId,
+      query.projectId
+    );
+    const dimensionFilters = this.pickDimensionFilters(query);
+    const { slices, totalCount } = await this.chartsRepository.sumSeries({
+      projectIds,
+      labelField: query.labelField,
+      ...dimensionFilters,
+      ...(query.from ? { from: query.from } : {}),
+      ...(query.to ? { to: query.to } : {}),
+      ...(query.sprintId ? { sprintId: query.sprintId } : {}),
+    });
     return {
-      projectId: query.projectId,
+      projectId: responseProjectId,
       labelField: query.labelField,
       ...(query.from ? { from: query.from } : {}),
       ...(query.to ? { to: query.to } : {}),
@@ -42,12 +53,26 @@ export class ChartsService {
     actorId: string,
     query: ChartDrilldownQuery
   ): Promise<ChartDrilldownResponse> {
-    await this.assertProjectAccess(actorId, query.projectId);
-    const page = await this.chartsRepository.listDrilldown(query);
-    return {
-      projectId: query.projectId,
+    const { responseProjectId, projectIds } = await this.resolveProjectScope(
+      actorId,
+      query.projectId
+    );
+    const dimensionFilters = this.pickDimensionFilters(query);
+    const page = await this.chartsRepository.listDrilldown({
+      projectIds,
       labelField: query.labelField,
-      sliceKey: query.sliceKey,
+      page: query.page,
+      limit: query.limit,
+      ...dimensionFilters,
+      ...(query.sliceKey !== undefined ? { sliceKey: query.sliceKey } : {}),
+      ...(query.from ? { from: query.from } : {}),
+      ...(query.to ? { to: query.to } : {}),
+      ...(query.sprintId ? { sprintId: query.sprintId } : {}),
+    });
+    return {
+      projectId: responseProjectId,
+      labelField: query.labelField,
+      sliceKey: query.sliceKey ?? '',
       ...page,
     };
   }
@@ -151,12 +176,38 @@ export class ChartsService {
     });
   }
 
-  private async assertProjectAccess(actorId: string, projectId: string) {
+  private pickDimensionFilters(query: ChartSeriesQuery | ChartDrilldownQuery): {
+    status: ChartSeriesQuery['status'];
+    type: ChartSeriesQuery['type'];
+    priority: ChartSeriesQuery['priority'];
+    assigneeId: string | undefined;
+  } {
+    return {
+      status: query.status,
+      type: query.type,
+      priority: query.priority,
+      assigneeId: query.assigneeId,
+    };
+  }
+
+  private async resolveProjectScope(
+    actorId: string,
+    projectId?: string
+  ): Promise<{
+    responseProjectId: string | null;
+    projectIds: string[];
+  }> {
     const accessible =
       await this.chartsRepository.listAccessibleProjectIds(actorId);
-    if (!accessible.includes(projectId)) {
-      throw new Error('Forbidden');
+
+    if (projectId) {
+      if (!accessible.includes(projectId)) {
+        throw new Error('Forbidden');
+      }
+      return { responseProjectId: projectId, projectIds: [projectId] };
     }
+
+    return { responseProjectId: null, projectIds: accessible };
   }
 
   private async requireOwned(actorId: string, chartId: string) {

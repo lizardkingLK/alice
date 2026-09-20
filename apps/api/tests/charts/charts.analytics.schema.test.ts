@@ -8,7 +8,14 @@ import {
 const PROJECT_ID = '33333333-3333-4333-8333-333333333333';
 
 describe('chart analytics query schemas', () => {
-  it('defaults labelField to status', () => {
+  it('defaults labelField to status and allows omitted projectId (all projects)', () => {
+    const parsed = chartSeriesQuerySchema.parse({});
+    expect(parsed).toEqual({
+      labelField: 'status',
+    });
+  });
+
+  it('accepts a concrete projectId', () => {
     const parsed = chartSeriesQuerySchema.parse({ projectId: PROJECT_ID });
     expect(parsed).toEqual({
       projectId: PROJECT_ID,
@@ -52,5 +59,13 @@ describe('chart analytics query schemas', () => {
       page: 1,
       limit: 20,
     });
+  });
+
+  it('allows omitted sliceKey for unscoped table drilldown', () => {
+    const parsed = chartDrilldownQuerySchema.parse({
+      labelField: 'status',
+    });
+    expect(parsed.sliceKey).toBeUndefined();
+    expect(parsed.labelField).toBe('status');
   });
 });

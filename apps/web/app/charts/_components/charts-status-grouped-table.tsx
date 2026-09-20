@@ -4,8 +4,10 @@ import { useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { BOARD_WORK_ITEM_STATUSES, type WorkItemStatus } from '@repo/types';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import { Loader2 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import type { ChartDrilldownTableItem } from '@/app/charts/_helpers/charts-analytics.ui';
+import { ChartsEmptyState } from '@/app/charts/_components/charts-empty-state';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
@@ -19,9 +21,33 @@ type ChartsStatusGroupedTableProps = {
   /** When set, only this status group is shown (pie-slice filter). */
   readonly focusedStatus?: WorkItemStatus | null;
   readonly loading?: boolean;
+  /** When `undefined` / empty, hide the empty state (e.g. dialog closing). */
   readonly emptyMessage?: string;
   readonly className?: string;
 };
+
+/**
+ * Board-order status groups (New → … → Done). Empty groups are omitted unless
+ * a pie-slice focus pins one status (even when that group has no rows).
+ */
+export function buildChartStatusGroups(
+  workItems: readonly ChartDrilldownTableItem[],
+  focusedStatus: WorkItemStatus | null = null
+): readonly {
+  readonly status: WorkItemStatus;
+  readonly items: ChartDrilldownTableItem[];
+}[] {
+  const statuses = focusedStatus
+    ? BOARD_WORK_ITEM_STATUSES.filter((status) => status === focusedStatus)
+    : BOARD_WORK_ITEM_STATUSES;
+
+  return statuses
+    .map((status) => ({
+      status,
+      items: workItems.filter((item) => item.status === status),
+    }))
+    .filter((group) => focusedStatus != null || group.items.length > 0);
+}
 
 function buildColumns(): ColumnDef<ChartDrilldownTableItem>[] {
   return [
@@ -83,46 +109,41 @@ export function ChartsStatusGroupedTable({
   emptyMessage = 'No work items match the current filters.',
   className,
 }: Readonly<ChartsStatusGroupedTableProps>) {
-  const groups = useMemo(() => {
-    const statuses = focusedStatus
-      ? BOARD_WORK_ITEM_STATUSES.filter((status) => status === focusedStatus)
-      : BOARD_WORK_ITEM_STATUSES;
-
-    return statuses
-      .map((status) => ({
-        status,
-        items: workItems.filter((item) => item.status === status),
-      }))
-      .filter((group) => focusedStatus || group.items.length > 0);
-  }, [focusedStatus, workItems]);
+  const groups = useMemo(
+    () => buildChartStatusGroups(workItems, focusedStatus),
+    [focusedStatus, workItems]
+  );
 
   const columns = useMemo(() => buildColumns(), []);
 
   if (loading) {
     return (
-      <div
+      <output
         className={cn(
-          'text-muted-foreground flex min-h-0 flex-1 items-center justify-center text-sm',
+          'text-muted-foreground flex min-h-0 flex-1 items-center justify-center',
           className
         )}
+        aria-label="Loading work items"
       >
-        Loading work items…
-      </div>
+        <Loader2 className="size-6 animate-spin" aria-hidden />
+      </output>
     );
   }
 
   if (groups.length === 0) {
-    return (
-      <div
-        className={cn(
-          'text-muted-foreground flex min-h-0 flex-1 items-center justify-center text-sm',
-          className
-        )}
-      >
-        {emptyMessage}
-      </div>
-    );
+    if (emptyMessage == null || emptyMessage === '') {
+      return (
+        <div className={cn('flex min-h-0 flex-1', className)} aria-hidden />
+      );
+    }
+    return <ChartsEmptyState message={emptyMessage} className={className} />;
   }
+
+  /**
+   * Remount when the visible status set changes (e.g. search) so matching
+   * groups open expanded — same idea as Monday hiding empty groups.
+   */
+  const groupsSignature = groups.map((group) => group.status).join('|');
 
   return (
     <div
@@ -136,11 +157,11 @@ export function ChartsStatusGroupedTable({
         const label = meta?.label ?? group.status;
         return (
           <GroupedItemsSection
-            key={group.status}
+            key={`${groupsSignature}:${group.status}`}
             label={label}
             labelClassName={meta?.textClass}
             itemCount={group.items.length}
-            defaultOpen={Boolean(focusedStatus) || group.items.length > 0}
+            defaultOpen
           >
             <GroupedItemsPaginatedTable
               data={group.items}

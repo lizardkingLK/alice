@@ -51,7 +51,32 @@ describe('ChartsService analytics', () => {
       totalCount: 2,
     });
     expect(listAccessibleProjectIdsMock).toHaveBeenCalledWith('user-1');
-    expect(sumSeriesMock).toHaveBeenCalledWith(seriesQuery);
+    expect(sumSeriesMock).toHaveBeenCalledWith({
+      projectIds: [PROJECT_ID],
+      labelField: 'status',
+    });
+  });
+
+  it('scopes series to all accessible projects when projectId is omitted', async () => {
+    const other = '44444444-4444-4444-8444-444444444444';
+    listAccessibleProjectIdsMock.mockResolvedValue([PROJECT_ID, other]);
+    sumSeriesMock.mockResolvedValue({
+      slices: [{ key: 'New', label: 'New', count: 5 }],
+      totalCount: 5,
+    });
+
+    await expect(
+      service.getSeries('user-1', { labelField: 'status' })
+    ).resolves.toEqual({
+      projectId: null,
+      labelField: 'status',
+      slices: [{ key: 'New', label: 'New', count: 5 }],
+      totalCount: 5,
+    });
+    expect(sumSeriesMock).toHaveBeenCalledWith({
+      projectIds: [PROJECT_ID, other],
+      labelField: 'status',
+    });
   });
 
   it('forbids series when project is not accessible', async () => {
@@ -90,6 +115,12 @@ describe('ChartsService analytics', () => {
       limit: 20,
       totalPages: 1,
     });
-    expect(listDrilldownMock).toHaveBeenCalledWith(query);
+    expect(listDrilldownMock).toHaveBeenCalledWith({
+      projectIds: [PROJECT_ID],
+      labelField: 'status',
+      sliceKey: 'New',
+      page: 1,
+      limit: 20,
+    });
   });
 });

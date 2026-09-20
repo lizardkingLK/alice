@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { WorkItemStatus } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { DropdownMenuItem } from '@repo/ui/components/ui/dropdown-menu';
@@ -18,7 +18,6 @@ import type {
   ChartsWidgetViewModeChangeHandler,
 } from '@/app/charts/_components/charts.types';
 import { ChartsAdvancedFiltersPopover } from '@/app/charts/_components/charts-advanced-filters-popover';
-import { ChartsAssigneeAvatarFilter } from '@/app/charts/_components/charts-assignee-avatar-filter';
 import { ChartsFullscreenDialogShell } from '@/app/charts/_components/charts-fullscreen-dialog-shell';
 import { ChartsStatusGroupedTable } from '@/app/charts/_components/charts-status-grouped-table';
 import { ChartsStatusPiePreview } from '@/app/charts/_components/charts-status-pie-preview';
@@ -30,22 +29,22 @@ import {
   type ChartsExportFormatId,
   type ChartsProjectOption,
   type ChartsSampleMember,
+  type ChartsSprintOption,
   type ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
 import {
   filterChartDrilldownTableItems,
   isChartSeriesLabelField,
+  resolveChartAnalyticsDimensionFilters,
   resolveChartAnalyticsProjectId,
+  resolveChartAnalyticsSprintId,
   workItemListRowToChartTableItem,
 } from '@/app/charts/_helpers/charts-analytics.ui';
 import { useChartWidgetAnalytics } from '@/app/charts/_hooks/use-chart-widget-analytics';
-import { fetchProjectMembersForForm } from '@/lib/form-read-actions';
 
-const PROJECT_EMPTY_MESSAGE =
-  'Select a project in filters to load live chart data.';
+const SCOPE_EMPTY_MESSAGE = 'No work items in the selected scope.';
 const UNSUPPORTED_LABEL_MESSAGE =
   'This Labels column is not available for live charts yet. Choose Status, Owner, Project, Type, or Priority.';
-const SLICE_HINT_MESSAGE = 'Click a pie slice to load matching work items.';
 const NO_MATCH_MESSAGE = 'No work items match the current filters.';
 
 type ChartsWidgetConfigDialogProps = {
@@ -54,12 +53,17 @@ type ChartsWidgetConfigDialogProps = {
   readonly onOpenChange: (open: boolean) => void;
   readonly title: string;
   readonly initialFiltersOpen?: boolean;
+  /** Open with the widget settings sidebar visible (Settings menu / cog). */
+  readonly initialSettingsOpen?: boolean;
   readonly filters?: ChartsWidgetFilterDraft | null;
   readonly viewMode?: ChartWidgetViewMode;
   readonly pieVariant?: ChartPieVariant;
   readonly labelField?: ChartsLabelFieldId;
   readonly focusedSliceKey?: string;
   readonly accessibleProjects?: readonly ChartsProjectOption[];
+  readonly accessibleSprints?: readonly ChartsSprintOption[];
+  /** Accessible project members for Assignee options in the filter popover. */
+  readonly assigneeMembers?: readonly ChartsSampleMember[];
   readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
   readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
   readonly onPieVariantChange?: ChartsWidgetPieVariantChangeHandler;
@@ -72,52 +76,33 @@ type ChartsWidgetConfigDialogProps = {
 };
 
 function pieEmptyMessage(params: {
-  readonly projectId: string | null;
   readonly hasSeriesLabel: boolean;
   readonly seriesError: string | null;
 }): string {
-  if (!params.projectId) {
-    return PROJECT_EMPTY_MESSAGE;
-  }
   if (!params.hasSeriesLabel) {
     return UNSUPPORTED_LABEL_MESSAGE;
   }
-  return params.seriesError ?? 'No work items in this project';
-}
-
-function tableEmptyMessage(params: {
-  readonly projectId: string | null;
-  readonly hasSliceFocus: boolean;
-  readonly drilldownError: string | null;
-}): string {
-  if (!params.projectId) {
-    return PROJECT_EMPTY_MESSAGE;
-  }
-  if (!params.hasSliceFocus) {
-    return SLICE_HINT_MESSAGE;
-  }
-  return params.drilldownError ?? NO_MATCH_MESSAGE;
+  return params.seriesError ?? SCOPE_EMPTY_MESSAGE;
 }
 
 function useConfigDialogBootstrap(params: {
   readonly open: boolean;
   readonly initialFiltersOpen: boolean;
+  readonly initialSettingsOpen: boolean;
   // eslint-disable-next-line no-unused-vars
   readonly setFiltersOpen: (open: boolean) => void;
   // eslint-disable-next-line no-unused-vars
   readonly setSettingsOpen: (open: boolean) => void;
   // eslint-disable-next-line no-unused-vars
   readonly setSearchQuery: (value: string) => void;
-  // eslint-disable-next-line no-unused-vars
-  readonly setAssigneeFilter: (value: string | null) => void;
 }) {
   const {
     open,
     initialFiltersOpen,
+    initialSettingsOpen,
     setFiltersOpen,
     setSettingsOpen,
     setSearchQuery,
-    setAssigneeFilter,
   } = params;
 
   useEffect(() => {
@@ -128,7 +113,7 @@ function useConfigDialogBootstrap(params: {
     }
 
     setSearchQuery('');
-    setAssigneeFilter(null);
+    setSettingsOpen(initialSettingsOpen);
     if (!initialFiltersOpen) {
       setFiltersOpen(false);
       return;
@@ -139,53 +124,11 @@ function useConfigDialogBootstrap(params: {
   }, [
     open,
     initialFiltersOpen,
-    setAssigneeFilter,
+    initialSettingsOpen,
     setFiltersOpen,
     setSearchQuery,
     setSettingsOpen,
   ]);
-}
-
-function useProjectMembersForChart(params: {
-  readonly open: boolean;
-  readonly projectId: string | null;
-}): readonly ChartsSampleMember[] {
-  const { open, projectId } = params;
-  const [members, setMembers] = useState<readonly ChartsSampleMember[]>([]);
-
-  useEffect(() => {
-    if (!open || !projectId) {
-      setMembers([]);
-      return;
-    }
-
-    let cancelled = false;
-    fetchProjectMembersForForm(projectId)
-      .then((rows) => {
-        if (cancelled) {
-          return;
-        }
-        setMembers(
-          rows.map((row) => ({
-            id: row.id,
-            name: row.name,
-            email: row.email,
-            profilePicture: row.profile_picture ?? null,
-          }))
-        );
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setMembers([]);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, projectId]);
-
-  return members;
 }
 
 function ChartsWidgetConfigToolbar(props: {
@@ -197,11 +140,9 @@ function ChartsWidgetConfigToolbar(props: {
   readonly onFiltersOpenChange: (open: boolean) => void;
   readonly filters: ChartsWidgetFilterDraft | null;
   readonly accessibleProjects: readonly ChartsProjectOption[];
+  readonly accessibleSprints: readonly ChartsSprintOption[];
   readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
   readonly members: readonly ChartsSampleMember[];
-  readonly assigneeFilter: string | null;
-  // eslint-disable-next-line no-unused-vars
-  readonly onAssigneeFilterChange: (id: string | null) => void;
   readonly viewMode: ChartWidgetViewMode;
   // eslint-disable-next-line no-unused-vars
   readonly onLayoutChange: (mode: ChartWidgetViewMode) => void;
@@ -221,7 +162,7 @@ function ChartsWidgetConfigToolbar(props: {
         value={props.searchQuery}
         onValueChange={props.onSearchQueryChange}
         onClear={() => props.onSearchQueryChange('')}
-        placeholder="Type to filter"
+        placeholder="Filter by task or assignee"
         enableFocusShortcut={false}
         className="w-full max-w-xs sm:w-56"
       />
@@ -232,6 +173,8 @@ function ChartsWidgetConfigToolbar(props: {
         appliedFilters={props.filters}
         onApply={(draft) => props.onFiltersChange?.(draft)}
         projects={props.accessibleProjects}
+        sprints={props.accessibleSprints}
+        members={props.members}
         trigger={
           <Button
             type="button"
@@ -249,12 +192,6 @@ function ChartsWidgetConfigToolbar(props: {
             <Filter className="size-4" />
           </Button>
         }
-      />
-
-      <ChartsAssigneeAvatarFilter
-        members={props.members}
-        selectedId={props.assigneeFilter}
-        onSelectedIdChange={props.onAssigneeFilterChange}
       />
 
       <div className="ml-auto flex items-center gap-1">
@@ -284,6 +221,7 @@ function ChartsWidgetConfigToolbar(props: {
           contentClassName="w-52"
           showExport
           onExport={props.onExport}
+          onSettings={props.onToggleSettings}
           onRename={() => {
             props.onExit();
             props.onRename?.();
@@ -347,12 +285,15 @@ export function ChartsWidgetConfigDialog({
   onOpenChange,
   title,
   initialFiltersOpen = false,
+  initialSettingsOpen = false,
   filters = null,
   viewMode = 'chart',
   pieVariant = 'donut',
   labelField = DEFAULT_CHARTS_LABEL_FIELD,
   focusedSliceKey,
   accessibleProjects = [],
+  accessibleSprints = [],
+  assigneeMembers = [],
   onFiltersChange,
   onViewModeChange,
   onPieVariantChange,
@@ -363,35 +304,73 @@ export function ChartsWidgetConfigDialog({
   onExport,
 }: Readonly<ChartsWidgetConfigDialogProps>) {
   const [filtersOpen, setFiltersOpen] = useState(initialFiltersOpen);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(initialSettingsOpen);
   const [searchQuery, setSearchQuery] = useState('');
-  const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
 
   const projectId = resolveChartAnalyticsProjectId(filters);
+  const sprintId = resolveChartAnalyticsSprintId(filters);
+  const dimensionFilters = useMemo(
+    () => resolveChartAnalyticsDimensionFilters(filters),
+    [filters]
+  );
   const seriesLabelField = isChartSeriesLabelField(labelField)
     ? labelField
     : null;
   const needsTable = viewMode === 'table' || viewMode === 'split';
   const hasSliceFocus =
     focusedSliceKey !== undefined && focusedSliceKey !== null;
+  /** No slice selected → all status groups; slice selected → that scope only. */
+  const showAllStatusGroups = !hasSliceFocus;
+  const loadDrilldown = open && needsTable;
 
   const analytics = useChartWidgetAnalytics({
     projectId,
     labelField: seriesLabelField,
+    ...(sprintId ? { sprintId } : {}),
+    dimensionFilters,
     focusedSliceKey: hasSliceFocus ? focusedSliceKey : null,
-    loadDrilldown: open && needsTable && hasSliceFocus,
+    loadDrilldown,
+    drilldownLimit: showAllStatusGroups ? 100 : 50,
   });
 
   useConfigDialogBootstrap({
     open,
     initialFiltersOpen,
+    initialSettingsOpen,
     setFiltersOpen,
     setSettingsOpen,
     setSearchQuery,
-    setAssigneeFilter,
   });
 
-  const members = useProjectMembersForChart({ open, projectId });
+  /**
+   * On first open in chart-only layout, promote to split so the drilldown table
+   * is visible. Mark the open session handled either way so a later user choice
+   * of Chart is not immediately forced back to Split.
+   */
+  const promotedSplitOnOpenRef = useRef(false);
+  useEffect(() => {
+    if (!open) {
+      promotedSplitOnOpenRef.current = false;
+      return;
+    }
+    if (promotedSplitOnOpenRef.current) {
+      return;
+    }
+    promotedSplitOnOpenRef.current = true;
+    if (viewMode === 'chart') {
+      onViewModeChange?.('split', focusedSliceKey ?? null);
+    }
+  }, [focusedSliceKey, onViewModeChange, open, viewMode]);
+
+  const handleSliceToggle = (sliceKey: string) => {
+    const nextMode: ChartWidgetViewMode =
+      viewMode === 'chart' ? 'split' : viewMode;
+    if (focusedSliceKey === sliceKey) {
+      onViewModeChange?.(nextMode, null);
+      return;
+    }
+    onViewModeChange?.('split', sliceKey);
+  };
 
   const tableItems = useMemo(() => {
     const rows = (analytics.drilldown?.workItems ?? []).map(
@@ -399,12 +378,11 @@ export function ChartsWidgetConfigDialog({
     );
     return filterChartDrilldownTableItems(rows, {
       search: searchQuery,
-      assigneeId: assigneeFilter,
     });
-  }, [analytics.drilldown?.workItems, assigneeFilter, searchQuery]);
+  }, [analytics.drilldown?.workItems, searchQuery]);
 
   const tableFocusedStatus =
-    labelField === 'status' && focusedSliceKey
+    hasSliceFocus && labelField === 'status' && focusedSliceKey
       ? (focusedSliceKey as WorkItemStatus)
       : null;
 
@@ -413,16 +391,14 @@ export function ChartsWidgetConfigDialog({
       size="dialog"
       slices={analytics.series?.slices ?? null}
       labelField={seriesLabelField ?? 'status'}
-      loading={Boolean(
-        projectId && seriesLabelField && analytics.seriesLoading
-      )}
+      loading={Boolean(open && seriesLabelField && analytics.seriesLoading)}
       emptyMessage={pieEmptyMessage({
-        projectId,
         hasSeriesLabel: Boolean(seriesLabelField),
         seriesError: analytics.seriesError,
       })}
       pieVariant={pieVariant}
-      onSliceClick={(sliceKey) => onViewModeChange?.('split', sliceKey)}
+      selectedSliceKey={hasSliceFocus ? focusedSliceKey : null}
+      onSliceClick={handleSliceToggle}
     />
   );
 
@@ -431,16 +407,9 @@ export function ChartsWidgetConfigDialog({
       workItems={tableItems}
       focusedStatus={tableFocusedStatus}
       loading={Boolean(
-        projectId &&
-        seriesLabelField &&
-        hasSliceFocus &&
-        analytics.drilldownLoading
+        open && seriesLabelField && loadDrilldown && analytics.drilldownLoading
       )}
-      emptyMessage={tableEmptyMessage({
-        projectId,
-        hasSliceFocus,
-        drilldownError: analytics.drilldownError,
-      })}
+      emptyMessage={open ? (analytics.drilldownError ?? NO_MATCH_MESSAGE) : ''}
     />
   );
 
@@ -465,12 +434,17 @@ export function ChartsWidgetConfigDialog({
         onFiltersOpenChange={setFiltersOpen}
         filters={filters}
         accessibleProjects={accessibleProjects}
+        accessibleSprints={accessibleSprints}
         onFiltersChange={onFiltersChange}
-        members={members}
-        assigneeFilter={assigneeFilter}
-        onAssigneeFilterChange={setAssigneeFilter}
+        members={assigneeMembers}
         viewMode={viewMode}
-        onLayoutChange={(mode) => onViewModeChange?.(mode, null)}
+        onLayoutChange={(mode) => {
+          if (mode === 'chart') {
+            onViewModeChange?.(mode, null);
+            return;
+          }
+          onViewModeChange?.(mode, focusedSliceKey ?? null);
+        }}
         settingsOpen={settingsOpen}
         onToggleSettings={() => setSettingsOpen((prev) => !prev)}
         onExport={onExport}

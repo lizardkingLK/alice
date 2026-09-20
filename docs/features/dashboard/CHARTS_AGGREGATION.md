@@ -116,12 +116,12 @@ No HTTP or queues inside the trigger.
 
 **Query (series):**
 
-| Param         | Required | Notes                                                            |
-| ------------- | -------- | ---------------------------------------------------------------- |
-| `projectId`   | yes      | UUID; must be in the actor’s accessible projects                 |
-| `labelField`  | no       | `status` (default) \| `owner` \| `board` \| `type` \| `priority` |
-| `from` / `to` | no       | `YYYY-MM-DD` on rollup `bucket_date`                             |
-| `sprintId`    | no       | UUID                                                             |
+| Param         | Required | Notes                                                                                     |
+| ------------- | -------- | ----------------------------------------------------------------------------------------- |
+| `projectId`   | no       | UUID for one project; omit for **all accessible** projects (Charts “All projects” filter) |
+| `labelField`  | no       | `status` (default) \| `owner` \| `board` \| `type` \| `priority`                          |
+| `from` / `to` | no       | `YYYY-MM-DD` on rollup `bucket_date`                                                      |
+| `sprintId`    | no       | UUID                                                                                      |
 
 **Query (drilldown):** same filters plus `sliceKey` (empty string = NULL, e.g. unassigned), `page` (default 1), `limit` (default 20, max 100).
 
