@@ -1,10 +1,13 @@
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import type { ChartWorkspaceRecord } from '@/app/charts/_components/charts.types';
 import {
-  chartWorkspaceFromApiRow,
   getChartFromApi,
-  listChartsFromApi,
   type ChartApiRow,
+} from '@/app/charts/_services/charts.workspaces.client';
+
+export {
+  chartWorkspaceFromApiRow,
+  listChartsFromApi,
 } from '@/app/charts/_services/charts.workspaces.client';
 
 function boardJsonFromWorkspace(workspace: ChartWorkspaceRecord) {
@@ -79,5 +82,3 @@ export async function shareChartWorkspace(params: {
     return null;
   }
 }
-
-export { chartWorkspaceFromApiRow, listChartsFromApi };

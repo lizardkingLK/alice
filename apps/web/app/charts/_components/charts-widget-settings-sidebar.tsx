@@ -319,7 +319,7 @@ function SegmentedControl({
   onSelect: (option: string) => void;
 }>) {
   return (
-    <div className="bg-muted/50 flex w-full rounded-md p-0.5" role="group">
+    <fieldset className="bg-muted/50 m-0 flex w-full min-w-0 rounded-md border-0 p-0.5">
       {options.map((option) => (
         <button
           key={option}
@@ -336,7 +336,7 @@ function SegmentedControl({
           {option}
         </button>
       ))}
-    </div>
+    </fieldset>
   );
 }
 

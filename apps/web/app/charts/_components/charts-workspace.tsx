@@ -50,6 +50,7 @@ import type {
   ChartBoardWidgetInstance,
   ChartPieVariant,
   ChartsLabelFieldId,
+  ChartWidgetDisplaySettingsPatch,
   ChartWidgetTypeId,
   ChartWidgetViewMode,
   ChartWorkspaceRecord,
@@ -392,16 +393,7 @@ export function ChartsWorkspace({
   );
 
   const handleDisplaySettingsChange = useCallback(
-    (
-      instanceId: string,
-      patch: {
-        readonly showValueAs?: 'value' | 'percent';
-        readonly sortSlicesBy?:
-          'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
-        readonly showEmptySlices?: boolean;
-        readonly visibleTableColumns?: ChartBoardWidgetInstance['visibleTableColumns'];
-      }
-    ) => {
+    (instanceId: string, patch: ChartWidgetDisplaySettingsPatch) => {
       commitInstances(
         updateChartWidgetDisplaySettings(instanceId, patch, instances)
       );
