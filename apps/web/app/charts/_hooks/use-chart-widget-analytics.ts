@@ -94,7 +94,7 @@ function drilldownCacheKey(params: {
 }): string {
   return [
     seriesCacheKey(params),
-    params.sliceKey === undefined ? '*' : params.sliceKey,
+    params.sliceKey ?? '*',
     String(params.page),
     String(params.limit),
   ].join('::');
@@ -242,10 +242,7 @@ export function useChartWidgetAnalytics(
       return;
     }
 
-    const sliceKey =
-      focusedSliceKey === null || focusedSliceKey === undefined
-        ? undefined
-        : focusedSliceKey;
+    const sliceKey = focusedSliceKey ?? undefined;
 
     const key = drilldownCacheKey({
       projectId,

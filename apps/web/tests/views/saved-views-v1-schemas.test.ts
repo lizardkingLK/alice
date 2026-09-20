@@ -14,6 +14,8 @@ const savedViewWire = {
   pathname: '/backlog',
   search: 'status=active',
   project_id: null,
+  resource_kind: 'page',
+  resource_id: null,
   status: 'active',
   created_by: '22222222-2222-4222-8222-222222222222',
   created_at: '2026-01-01T00:00:00.000Z',
