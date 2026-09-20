@@ -2,7 +2,8 @@
 
 Build personal **chart workspaces** — drag-and-drop widget boards. The sidebar
 opens your last-used workspace. You can save multiple workspaces, mark one for
-Overview, and deep-link into a widget’s configuration.
+Overview, and deep-link into a widget’s configuration. Workspaces are saved
+**on this device** until cloud workspaces ship (see product docs).
 
 **Audience:** All users
 
@@ -42,8 +43,8 @@ Each workspace is a named board of widgets.
 1. Open the workspace **⋯** menu.
 2. Choose **Share**.
 3. Pick a project (to load members), optionally a team, then select recipients.
-4. Share syncs the workspace to the cloud (when available) and notifies
-   recipients. Alice can also bookmark `/charts/[id]` in Views.
+4. Share notifies recipients when cloud sharing is available. Alice may also
+   bookmark `/charts/[id]` in Views once chart workspace cloud sync ships.
 
 ---
 
@@ -104,14 +105,12 @@ Pick another layout to clear the slice focus.
    **Coming soon**.
 3. Under **Labels** → **Columns**, choose how to group the chart: **Project**,
    **Owner**, **Status**, **Type**, or **Priority**. The pie and legend update
-   from live work-item counts. Selection is saved with the widget on this device
-   (and with the workspace when cloud save is enabled).
+   from live work-item counts. Selection is saved with the widget on this device.
 4. **Values**, **Customize**, **Groups**, and **Choose which columns to show**
-   are preview UI only for now.
+   are **Coming soon** (preview UI only).
 
 The legend scrolls when there are many slices. Pie vs donut and Labels are saved
-with the widget on this device (and with the workspace when cloud save is
-enabled).
+with the widget on this device.
 
 Chart slices reflect **counts** of work items (not story points yet). Filters
 default to **All projects** (or your saved workspace defaults). Clicking a
@@ -147,9 +146,10 @@ filters until you change them.
 
 ## Sharing
 
-Workspaces can be shared using the same model as **Views**: recipients get
-access to the chart board, and you can optionally bookmark `/charts/[id]` as a
-saved view. Board layout is **not** stored inside Views.
+Workspaces can be shared using the same model as **Views** once cloud
+workspaces ship: recipients get access to the chart board, and you can
+optionally bookmark `/charts/[id]` as a saved view. Board layout is **not**
+stored inside Views.
 
 ---
 

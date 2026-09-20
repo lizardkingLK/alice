@@ -72,7 +72,7 @@ describe('ChartsRepository analytics', () => {
     expect(groupByMock).toHaveBeenCalledWith({
       by: ['status'],
       where: {
-        project_id: PROJECT_ID,
+        project_id: { in: [PROJECT_ID] },
         sprint_id: '44444444-4444-4444-8444-444444444444',
         bucket_date: {
           gte: new Date('2026-01-01T00:00:00.000Z'),
@@ -167,7 +167,7 @@ describe('ChartsRepository analytics', () => {
 
     expect(findManyWorkItemsMock).toHaveBeenCalledWith({
       where: {
-        project_id: PROJECT_ID,
+        project_id: { in: [PROJECT_ID] },
         record_status: 'active',
         created_at: {
           gte: new Date('2026-01-01T00:00:00.000Z'),
