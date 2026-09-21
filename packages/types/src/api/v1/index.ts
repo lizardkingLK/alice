@@ -319,6 +319,7 @@ export {
   chartDrilldownQuerySchema,
   chartRollupGroupColumn,
   chartSeriesQuerySchema,
+  type ChartDrilldownItemRow,
   type ChartDrilldownQuery,
   type ChartDrilldownResponse,
   type ChartRollupGroupColumn,

@@ -13,6 +13,7 @@ import {
   fetchChartSeries,
 } from '@/app/charts/_services/charts.analytics.client';
 import type { ChartAnalyticsDimensionFilters } from '@/app/charts/_helpers/charts-analytics.ui';
+import { isSessionExpiredError } from '@/lib/errors/session-expired';
 
 type UseChartWidgetAnalyticsParams = {
   /**
@@ -214,6 +215,14 @@ export function useChartWidgetAnalytics(
         if (cancelled) {
           return;
         }
+        // Session expiry opens the shared dialog via apiFetch; skip inline error.
+        if (isSessionExpiredError(error)) {
+          setState((prev) => ({
+            ...prev,
+            seriesLoading: false,
+          }));
+          return;
+        }
         const message =
           error instanceof Error
             ? error.message
@@ -296,6 +305,13 @@ export function useChartWidgetAnalytics(
       })
       .catch((error: unknown) => {
         if (cancelled) {
+          return;
+        }
+        if (isSessionExpiredError(error)) {
+          setState((prev) => ({
+            ...prev,
+            drilldownLoading: false,
+          }));
           return;
         }
         const message =

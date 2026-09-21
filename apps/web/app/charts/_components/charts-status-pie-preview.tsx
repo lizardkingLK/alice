@@ -35,6 +35,8 @@ type ChartsStatusPiePreviewProps = {
   readonly sortSlicesBy?:
     'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
   readonly showEmptySlices?: boolean;
+  /** Per-slice theme token overrides (`sliceKey` → `chart-N`). */
+  readonly sliceColors?: Readonly<Record<string, string>> | null;
 };
 
 function findEntryByKey(
@@ -84,12 +86,13 @@ function ChartsPieLoadingState({
   return (
     <output
       className={cn(
-        'text-muted-foreground flex min-h-0 flex-1 items-center justify-center',
+        'text-muted-foreground flex min-h-40 flex-1 flex-col items-center justify-center gap-2',
         className
       )}
       aria-label="Loading chart"
     >
-      <Loader2 className="size-6 animate-spin" aria-hidden />
+      <Loader2 className="text-primary size-7 animate-spin" aria-hidden />
+      <span className="text-xs">Loading chart…</span>
     </output>
   );
 }
@@ -337,6 +340,7 @@ export function ChartsStatusPiePreview({
   showValueAs = 'percent',
   sortSlicesBy = 'value_desc',
   showEmptySlices = false,
+  sliceColors = null,
 }: Readonly<ChartsStatusPiePreviewProps>) {
   const isRoomy = size === 'dialog' || size === 'split';
   const { data, config, total } = useMemo(
@@ -344,8 +348,9 @@ export function ChartsStatusPiePreview({
       buildChartsPieFromSeries(slices ?? [], labelField, {
         showEmptySlices,
         sortSlicesBy,
+        sliceColors,
       }),
-    [labelField, showEmptySlices, slices, sortSlicesBy]
+    [labelField, showEmptySlices, sliceColors, slices, sortSlicesBy]
   );
 
   const [hoveredChartStatus, setHoveredChartStatus] = useState<string | null>(

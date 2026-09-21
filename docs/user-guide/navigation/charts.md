@@ -1,9 +1,9 @@
 # Charts
 
 Build personal **chart workspaces** — drag-and-drop widget boards. The sidebar
-opens your last-used workspace. You can save multiple workspaces, mark one for
+opens the Charts registry. You can save multiple workspaces, mark one for
 Overview, and deep-link into a widget’s configuration. Workspaces sync to your
-account (with a local cache on this device).
+account and are cached on this device.
 
 **Audience:** All users
 
@@ -14,46 +14,81 @@ account (with a local cache on this device).
 1. Sign in to Alice.
 2. In the sidebar under **Platform**, select **Charts**.
 
-Alice opens `/charts`, then redirects to your **last opened** workspace
-(`/charts/[id]`). If you have none yet, a default workspace is created.
+Alice opens the **Charts registry** at `/charts`. From there, open a workspace
+board (`/charts/[id]`). If you have no workspaces yet, the registry shows a
+centered prompt: _To customize charts, create a new workspace._ with
+**Create Workspace**. Alice does not invent a default workspace for you.
 
 ---
 
-## Workspaces
+## Workspaces registry
 
-Each workspace is a named board of widgets.
+The registry lists workspaces with search and tabs (same idea as **Views**).
 
 ### Switch or filter workspaces
 
-1. Select the **filter** control on the Charts toolbar.
-2. Filter by ownership (Mine / Shared) or status (Active / Archived).
-3. Select a workspace in the list to open it (updates last-opened).
+1. On `/charts`, use the tabs:
+   - **My workspaces** — your active boards
+   - **Shared with me** — boards others shared with you
+   - **Archived** — your soft-hidden boards
+2. Optionally search by title.
+3. Select a workspace title to open its board (updates last-opened).
+
+### Create a workspace
+
+1. Select **Create Workspace** (toolbar or empty-state CTA).
+2. Enter a name and optional overview mark, then create — Alice opens the new
+   empty board.
 
 ### Save or rename a workspace
 
-1. Open the workspace **⋯** menu (next to the title), or open the filter dialog
-   and choose **Save workspace**.
+1. Open a workspace board, then open the board **⋯** menu and choose
+   **Rename / Save**.
 2. Confirm or edit the name (for example `Charts` or `Charts (2)`).
 3. Optionally **Mark as overview** — only one overview workspace at a time;
-   Overview will use it when that binding ships. Last-opened (sidebar) stays
-   separate from the overview mark.
+   Overview will use it when that binding ships. Last-opened stays separate
+   from the overview mark.
 
 ### Share a workspace
 
-1. Open the workspace **⋯** menu.
-2. Choose **Share**.
-3. Pick a project (to load members), optionally a team, then select recipients.
-4. Share notifies recipients and can bookmark `/charts/[id]` in Views.
+1. From the registry row **⋯** menu or the board **⋯** menu, choose **Share**.
+2. Pick a project (to load members), optionally a team, then select recipients.
+3. Share notifies recipients and can bookmark `/charts/[id]` in Views.
+
+### Archive, restore, or delete a workspace
+
+Owned workspaces follow the same lifecycle as **Views**:
+
+1. Open the registry row **⋯** menu or the board **⋯** menu.
+2. On an **active** owned workspace, choose **Archive** to soft-hide it (share
+   access pauses until you restore). Find it again under the **Archived** tab.
+3. On an **archived** owned workspace, choose **Restore** to bring it back.
+4. Choose **Delete** at any time (active or archived) to remove it permanently
+   after confirming. Permanent delete also removes share records and the
+   matching Views bookmark.
+5. On a workspace **shared with you**, choose **Leave** to remove it from your
+   list only (the owner’s copy is unchanged).
+
+After delete or leave from a board, Alice returns to the registry. Empty
+**My workspaces** shows the create prompt again.
 
 ---
 
-## Add workspace or widget
+## Board toolbar
 
-1. Select the **+** button (top right).
-2. Choose **Add workspace**, enter a name (and optional overview mark), then
-   **Create** — Alice opens the new empty board.
-3. Or choose **Add widget** for the catalog on the **current** workspace.
-4. Under Add widget, pick **Chart** (other types show **Coming soon**), or
+On `/charts/[id]`:
+
+- **All workspaces** returns to the registry
+- **Defaults** (same as Board / Work items) seeds filters for new Chart widgets
+- **+** adds a widget or creates another workspace
+
+---
+
+## Add widget
+
+1. On a board, select the **+** button.
+2. Choose **Add widget** for the catalog on the **current** workspace.
+3. Under Add widget, pick **Chart** (other types show **Coming soon**), or
    **More widgets** to browse the full catalog.
 
 ---
@@ -89,11 +124,12 @@ Use the **split view** button in the toolbar to choose:
 | Table      | Collapsible groups of work items by status (paginated) |
 | Split mode | Chart on top and the status table underneath           |
 
-Click a pie slice (or legend row) to jump to **Split**. The table stays grouped
-by **status** in board order (New → To do → In progress → Testing → Done),
-scoped to the selected Labels slice. Status groups with no matching rows are
-hidden. Toolbar search (task title or assignee) keeps that order among matches
-and expands the groups that still have items.
+Click a pie slice (or legend row) on the **board** or in full screen to open
+the widget config in **Split**, with the table scoped to that Labels slice.
+The table stays grouped by **status** in board order (New → To do → In
+progress → Testing → Done). Status groups with no matching rows are hidden.
+Toolbar search (task title or assignee) keeps that order among matches and
+expands the groups that still have items.
 
 Pick another layout to clear the slice focus.
 
@@ -108,9 +144,13 @@ Pick another layout to clear the slice focus.
 4. Under **Values**, charts use **Count items** only (other calculations are
    coming later).
 5. Under **Customize**, choose **Value** or **%**, sort slices, and optionally
-   show empty values.
+   show empty values. **Slice colors** lets you pick a theme swatch per slice;
+   changing **Labels → Columns** resets colors to the defaults. Use
+   **Reset colors** to clear custom swatches without changing Labels.
 6. Under **Choose which columns to show**, pick which drilldown table columns
-   appear (Task, Owner, Status, Type, Priority).
+   appear. **Task**, **Owner**, **Status**, **Type**, and **Priority** are on by
+   default; **Project** and **Sprint** are available but off until you enable
+   them.
 7. **Groups** is **Coming soon** (empty status groups are already hidden in the
    table).
 
@@ -125,11 +165,10 @@ slice opens the table scoped to that group.
 
 ## Workspace defaults
 
-Charts uses the same **Defaults** control as Board and Work items (on the left
-side of the toolbar, next to search and workspace filters). Save a default
-**project** (including **All projects**) and optional **sprint**. New Chart
-widgets you insert inherit those filters. Existing widgets keep their own
-filters until you change them.
+Charts uses the same **Defaults** control as Board and Work items (on the board
+toolbar). Save a default **project** (including **All projects**) and optional
+**sprint**. New Chart widgets you insert inherit those filters. Existing widgets
+keep their own filters until you change them.
 
 ---
 
@@ -159,5 +198,5 @@ Board layout is **not** stored inside Views.
 
 ## Related
 
+- [Views](./views.md)
 - Feature notes: `docs/features/dashboard/CHARTS.md`
-- Aggregation design: `docs/features/dashboard/CHARTS_AGGREGATION.md`

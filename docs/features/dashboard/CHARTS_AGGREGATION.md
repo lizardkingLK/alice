@@ -214,6 +214,9 @@ lists index chart entries without scanning pathnames.
    cloud; last-opened from local preference (synced board list)
 5. Keep board JSON on `charts.board_json` only; `chart_shares` for board ACL;
    optional `saved_view_shares` for the Views bookmark entry
+6. Web lifecycle: Charts **registry** at `/charts` (Mine / Shared / Archived);
+   Archive / Restore / Delete / Leave via row or board **⋯**; empty Mine tab
+   shows create CTA (no auto-default workspace)
 
 **Docs:** [CHARTS.md](./CHARTS.md#persistence), [FAVORITES_AND_VIEWS.md](../views/FAVORITES_AND_VIEWS.md#chart-workspaces).
 

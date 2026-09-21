@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardContent, CardHeader } from '@repo/ui/components/ui/card';
 import {
@@ -26,11 +26,15 @@ import {
   MoreHorizontal,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
+import type { ChartSeriesLabelField } from '@repo/types';
+import { DIALOG_CLOSE_ANIMATION_MS } from '@/lib/dialog-close';
 import type { ChartWidgetDefinition } from '@/app/charts/_components/charts-widget-catalog';
 import type {
   ChartPieVariant,
   ChartsLabelFieldId,
+  ChartsSliceColorToken,
   ChartsTableColumnId,
+  ChartWidgetDisplaySettingsPatch,
   ChartWidgetTypeId,
   ChartWidgetViewMode,
   ChartsWidgetFiltersChangeHandler,
@@ -57,6 +61,110 @@ import {
 } from '@/app/charts/_helpers/charts-analytics.ui';
 import { useChartWidgetAnalytics } from '@/app/charts/_hooks/use-chart-widget-analytics';
 
+function resolvePieEmptyMessage(
+  seriesLabelField: string | null,
+  seriesError: string | null
+): string {
+  if (!seriesLabelField) {
+    return 'Choose a supported Labels column in settings';
+  }
+  if (seriesError) {
+    return seriesError;
+  }
+  return 'No work items in the selected scope';
+}
+
+function useChartsWidgetCardConfig(params: {
+  readonly initialConfigOpen: boolean;
+  readonly focusedSliceKey?: string;
+  readonly viewMode?: ChartWidgetViewMode;
+  readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
+  // eslint-disable-next-line no-unused-vars -- open callback
+  readonly onConfigOpenChange?: (open: boolean) => void;
+}) {
+  const {
+    initialConfigOpen,
+    focusedSliceKey,
+    viewMode,
+    onViewModeChange,
+    onConfigOpenChange,
+  } = params;
+
+  const [configOpen, setConfigOpen] = useState(initialConfigOpen);
+  const [configFiltersOpen, setConfigFiltersOpen] = useState(false);
+  const [configSettingsOpen, setConfigSettingsOpen] = useState(false);
+  const [pendingSliceKey, setPendingSliceKey] = useState<string | null>(null);
+  const configCloseResetTimerRef = useRef<number | null>(null);
+
+  const clearConfigCloseResetTimer = () => {
+    if (configCloseResetTimerRef.current == null) {
+      return;
+    }
+    window.clearTimeout(configCloseResetTimerRef.current);
+    configCloseResetTimerRef.current = null;
+  };
+
+  const openConfig = (options?: {
+    withFilters?: boolean;
+    withSettings?: boolean;
+  }) => {
+    clearConfigCloseResetTimer();
+    setConfigFiltersOpen(Boolean(options?.withFilters));
+    setConfigSettingsOpen(Boolean(options?.withSettings));
+    setConfigOpen(true);
+    onConfigOpenChange?.(true);
+  };
+
+  const handleConfigOpenChange = (open: boolean) => {
+    setConfigOpen(open);
+    onConfigOpenChange?.(open);
+    if (open) {
+      return;
+    }
+    clearConfigCloseResetTimer();
+    configCloseResetTimerRef.current = window.setTimeout(() => {
+      configCloseResetTimerRef.current = null;
+      setConfigFiltersOpen(false);
+      setConfigSettingsOpen(false);
+      setPendingSliceKey(null);
+      if (focusedSliceKey != null) {
+        onViewModeChange?.(viewMode ?? 'chart', null);
+      }
+    }, DIALOG_CLOSE_ANIMATION_MS);
+  };
+
+  const handleBoardSliceClick = (sliceKey: string) => {
+    setPendingSliceKey(sliceKey);
+    onViewModeChange?.('split', sliceKey);
+    openConfig();
+  };
+
+  const handleConfigViewModeChange: ChartsWidgetViewModeChangeHandler = (
+    mode,
+    nextFocused
+  ) => {
+    setPendingSliceKey(null);
+    onViewModeChange?.(mode, nextFocused);
+  };
+
+  useEffect(() => {
+    if (pendingSliceKey != null && focusedSliceKey === pendingSliceKey) {
+      setPendingSliceKey(null);
+    }
+  }, [focusedSliceKey, pendingSliceKey]);
+
+  return {
+    configOpen,
+    configFiltersOpen,
+    configSettingsOpen,
+    effectiveFocusedSliceKey: pendingSliceKey ?? focusedSliceKey,
+    openConfig,
+    handleConfigOpenChange,
+    handleBoardSliceClick,
+    handleConfigViewModeChange,
+  };
+}
+
 type ChartsWidgetCardProps = {
   readonly title: string;
   readonly typeId: ChartWidgetTypeId;
@@ -72,6 +180,7 @@ type ChartsWidgetCardProps = {
     'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
   readonly showEmptySlices?: boolean;
   readonly visibleTableColumns?: readonly ChartsTableColumnId[];
+  readonly sliceColors?: Readonly<Record<string, ChartsSliceColorToken>>;
   readonly focusedSliceKey?: string;
   readonly accessibleProjects?: readonly ChartsProjectOption[];
   readonly accessibleSprints?: readonly ChartsSprintOption[];
@@ -86,13 +195,7 @@ type ChartsWidgetCardProps = {
   readonly onLabelFieldChange?: ChartsWidgetLabelFieldChangeHandler;
   readonly onDisplaySettingsChange?: (
     // eslint-disable-next-line no-unused-vars
-    patch: {
-      readonly showValueAs?: 'value' | 'percent';
-      readonly sortSlicesBy?:
-        'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
-      readonly showEmptySlices?: boolean;
-      readonly visibleTableColumns?: readonly ChartsTableColumnId[];
-    }
+    patch: ChartWidgetDisplaySettingsPatch
   ) => void;
   /** Open config when landing from `/charts/[id]/widget/[widgetId]`. */
   readonly initialConfigOpen?: boolean;
@@ -102,6 +205,78 @@ type ChartsWidgetCardProps = {
   ) => void;
   readonly className?: string;
 };
+
+function ChartsWidgetCardChartBody({
+  isChart,
+  Icon,
+  description,
+  seriesLabelField,
+  analytics,
+  pieVariant,
+  showValueAs,
+  sortSlicesBy,
+  showEmptySlices,
+  sliceColors,
+  configOpen,
+  effectiveFocusedSliceKey,
+  canClickSlices,
+  onBoardSliceClick,
+}: Readonly<{
+  isChart: boolean;
+  Icon?: ChartWidgetDefinition['icon'];
+  description?: string;
+  seriesLabelField: ChartSeriesLabelField | null;
+  analytics: ReturnType<typeof useChartWidgetAnalytics>;
+  pieVariant?: ChartPieVariant;
+  showValueAs: 'value' | 'percent';
+  sortSlicesBy: 'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
+  showEmptySlices: boolean;
+  sliceColors?: Readonly<Record<string, ChartsSliceColorToken>>;
+  configOpen: boolean;
+  effectiveFocusedSliceKey?: string;
+  canClickSlices: boolean;
+  // eslint-disable-next-line no-unused-vars -- slice click
+  onBoardSliceClick: (sliceKey: string) => void;
+}>) {
+  if (!isChart) {
+    return (
+      <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
+        {Icon ? <Icon className="text-primary/70 size-10 stroke-1" /> : null}
+        <p className="text-foreground max-w-xs text-sm leading-snug font-medium">
+          {description ?? 'Configure this widget to get started'}
+        </p>
+        <p className="text-xs">Select a data source to get started</p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="flex min-h-0 min-w-0 flex-1 flex-col"
+      onMouseDown={(event) => event.stopPropagation()}
+    >
+      <ChartsStatusPiePreview
+        size="card"
+        slices={analytics.series?.slices ?? null}
+        labelField={seriesLabelField ?? 'status'}
+        loading={Boolean(seriesLabelField && analytics.seriesLoading)}
+        emptyMessage={resolvePieEmptyMessage(
+          seriesLabelField,
+          analytics.seriesError
+        )}
+        pieVariant={pieVariant}
+        showValueAs={showValueAs}
+        sortSlicesBy={sortSlicesBy}
+        showEmptySlices={showEmptySlices}
+        sliceColors={sliceColors}
+        selectedSliceKey={
+          configOpen ? (effectiveFocusedSliceKey ?? null) : null
+        }
+        onSliceClick={canClickSlices ? onBoardSliceClick : undefined}
+      />
+    </div>
+  );
+}
 
 export function ChartsWidgetCard({
   title,
@@ -116,6 +291,7 @@ export function ChartsWidgetCard({
   sortSlicesBy = 'value_desc',
   showEmptySlices = false,
   visibleTableColumns,
+  sliceColors,
   focusedSliceKey,
   accessibleProjects = [],
   accessibleSprints = [],
@@ -135,11 +311,24 @@ export function ChartsWidgetCard({
   const isChart = typeId === 'chart';
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
-  const [configOpen, setConfigOpen] = useState(initialConfigOpen);
-  const [configFiltersOpen, setConfigFiltersOpen] = useState(false);
-  const [configSettingsOpen, setConfigSettingsOpen] = useState(false);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [renameDraft, setRenameDraft] = useState(title);
+  const {
+    configOpen,
+    configFiltersOpen,
+    configSettingsOpen,
+    effectiveFocusedSliceKey,
+    openConfig,
+    handleConfigOpenChange,
+    handleBoardSliceClick,
+    handleConfigViewModeChange,
+  } = useChartsWidgetCardConfig({
+    initialConfigOpen,
+    focusedSliceKey,
+    viewMode,
+    onViewModeChange,
+    onConfigOpenChange,
+  });
 
   const projectId = resolveChartAnalyticsProjectId(filters ?? null);
   const sprintId = resolveChartAnalyticsSprintId(filters ?? null);
@@ -170,56 +359,23 @@ export function ChartsWidgetCard({
     setRenameOpen(false);
   };
 
-  const openConfig = (options?: {
-    withFilters?: boolean;
-    withSettings?: boolean;
-  }) => {
-    setConfigFiltersOpen(Boolean(options?.withFilters));
-    setConfigSettingsOpen(Boolean(options?.withSettings));
-    setConfigOpen(true);
-    onConfigOpenChange?.(true);
-  };
-
-  const handleConfigOpenChange = (open: boolean) => {
-    setConfigOpen(open);
-    onConfigOpenChange?.(open);
-    if (!open) {
-      setConfigFiltersOpen(false);
-      setConfigSettingsOpen(false);
-    }
-  };
-
-  const placeholderBody = (
-    <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
-      {Icon ? <Icon className="text-primary/70 size-10 stroke-1" /> : null}
-      <p className="text-foreground max-w-xs text-sm leading-snug font-medium">
-        {description ?? 'Configure this widget to get started'}
-      </p>
-      <p className="text-xs">Select a data source to get started</p>
-    </div>
-  );
-
-  let pieEmptyMessage = 'No work items in the selected scope';
-  if (!seriesLabelField) {
-    pieEmptyMessage = 'Choose a supported Labels column in settings';
-  } else if (analytics.seriesError) {
-    pieEmptyMessage = analytics.seriesError;
-  }
-
-  const body = isChart ? (
-    <ChartsStatusPiePreview
-      size="card"
-      slices={analytics.series?.slices ?? null}
-      labelField={seriesLabelField ?? 'status'}
-      loading={Boolean(seriesLabelField && analytics.seriesLoading)}
-      emptyMessage={pieEmptyMessage}
+  const body = (
+    <ChartsWidgetCardChartBody
+      isChart={isChart}
+      Icon={Icon}
+      description={description}
+      seriesLabelField={seriesLabelField}
+      analytics={analytics}
       pieVariant={pieVariant}
       showValueAs={showValueAs}
       sortSlicesBy={sortSlicesBy}
       showEmptySlices={showEmptySlices}
+      sliceColors={sliceColors}
+      configOpen={configOpen}
+      effectiveFocusedSliceKey={effectiveFocusedSliceKey}
+      canClickSlices={Boolean(seriesLabelField && onViewModeChange)}
+      onBoardSliceClick={handleBoardSliceClick}
     />
-  ) : (
-    placeholderBody
   );
 
   return (
@@ -383,12 +539,13 @@ export function ChartsWidgetCard({
           sortSlicesBy={sortSlicesBy}
           showEmptySlices={showEmptySlices}
           visibleTableColumns={visibleTableColumns}
-          focusedSliceKey={focusedSliceKey}
+          sliceColors={sliceColors}
+          focusedSliceKey={effectiveFocusedSliceKey}
           accessibleProjects={accessibleProjects}
           accessibleSprints={accessibleSprints}
           assigneeMembers={assigneeMembers}
           onFiltersChange={onFiltersChange}
-          onViewModeChange={onViewModeChange}
+          onViewModeChange={handleConfigViewModeChange}
           onPieVariantChange={onPieVariantChange}
           onLabelFieldChange={onLabelFieldChange}
           onDisplaySettingsChange={onDisplaySettingsChange}
@@ -406,7 +563,7 @@ export function ChartsWidgetCard({
           description={description ?? 'Widget preview'}
           sizeClassName="h-[min(90vh,800px)] w-[min(96vw,1100px)]"
         >
-          {placeholderBody}
+          {body}
         </ChartsFullscreenDialogShell>
       )}
     </>

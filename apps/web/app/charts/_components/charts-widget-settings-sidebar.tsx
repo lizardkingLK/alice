@@ -47,16 +47,37 @@ import {
   User,
   Rows3,
 } from '@repo/ui/lib/icons';
+import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
 import type {
   ChartPieVariant,
   ChartsLabelFieldId,
   ChartsShowValueAs,
+  ChartsSliceColorToken,
   ChartsSortSlicesBy,
   ChartsTableColumnId,
 } from '@/app/charts/_components/charts.types';
+import {
+  CHARTS_TABLE_COLUMN_IDS,
+  CHARTS_TABLE_COLUMN_LABELS,
+  DEFAULT_CHARTS_VISIBLE_TABLE_COLUMNS,
+} from '@/app/charts/_components/charts.types';
 import { DEFAULT_CHARTS_LABEL_FIELD } from '@/app/charts/_components/charts-sample.data';
-import { CHARTS_LIVE_LABEL_COLUMNS } from '@/app/charts/_helpers/charts-analytics.ui';
+import {
+  CHARTS_LIVE_LABEL_COLUMNS,
+  isChartSeriesLabelField,
+} from '@/app/charts/_helpers/charts-analytics.ui';
+import {
+  CHARTS_SLICE_COLOR_SWATCHES,
+  chartsSliceColorCssVar,
+  isChartsSliceColorToken,
+  resolveSliceSwatch,
+} from '@/app/charts/_helpers/charts-slice-colors';
+
+type ChartsSliceColorOption = {
+  readonly key: string;
+  readonly label: string;
+};
 
 type ChartsWidgetSettingsSidebarProps = {
   readonly pieVariant: ChartPieVariant;
@@ -80,6 +101,12 @@ type ChartsWidgetSettingsSidebarProps = {
   readonly onVisibleTableColumnsChange?: (
     // eslint-disable-next-line no-unused-vars -- columns change
     columns: readonly ChartsTableColumnId[]
+  ) => void;
+  readonly sliceColors?: Readonly<Record<string, ChartsSliceColorToken>>;
+  readonly sliceOptions?: readonly ChartsSliceColorOption[];
+  readonly onSliceColorsChange?: (
+    // eslint-disable-next-line no-unused-vars -- colors change
+    colors: Readonly<Record<string, ChartsSliceColorToken>> | null
   ) => void;
   readonly className?: string;
 };
@@ -169,16 +196,10 @@ const DISABLED_CHART_GROUPS: readonly {
 const TABLE_COLUMN_OPTIONS: readonly {
   readonly id: ChartsTableColumnId;
   readonly label: string;
-}[] = [
-  { id: 'task', label: 'Task' },
-  { id: 'owner', label: 'Owner' },
-  { id: 'status', label: 'Status' },
-  { id: 'type', label: 'Type' },
-  { id: 'priority', label: 'Priority' },
-] as const;
-
-const DEFAULT_VISIBLE_TABLE_COLUMNS: readonly ChartsTableColumnId[] =
-  TABLE_COLUMN_OPTIONS.map((column) => column.id);
+}[] = CHARTS_TABLE_COLUMN_IDS.map((id) => ({
+  id,
+  label: CHARTS_TABLE_COLUMN_LABELS[id],
+}));
 
 const SORT_OPTIONS: readonly {
   readonly id: ChartsSortSlicesBy;
@@ -576,6 +597,10 @@ function CustomizeSection({
   onSortSlicesByChange,
   showEmptySlices,
   onShowEmptySlicesChange,
+  labelField,
+  sliceColors,
+  sliceOptions,
+  onSliceColorsChange,
 }: Readonly<{
   showValueAs: ChartsShowValueAs;
   // eslint-disable-next-line no-unused-vars
@@ -588,10 +613,31 @@ function CustomizeSection({
   showEmptySlices: boolean;
   // eslint-disable-next-line no-unused-vars
   onShowEmptySlicesChange?: (value: boolean) => void;
+  labelField: ChartsLabelFieldId;
+  sliceColors?: Readonly<Record<string, ChartsSliceColorToken>>;
+  sliceOptions: readonly ChartsSliceColorOption[];
+  onSliceColorsChange?: (
+    // eslint-disable-next-line no-unused-vars
+    colors: Readonly<Record<string, ChartsSliceColorToken>> | null
+  ) => void;
 }>) {
   const sortLabel =
     SORT_OPTIONS.find((option) => option.id === sortSlicesBy)?.label ??
     'Values descending';
+  const seriesLabelField = isChartSeriesLabelField(labelField)
+    ? labelField
+    : 'status';
+  const hasCustomColors = Boolean(
+    sliceColors && Object.keys(sliceColors).length > 0
+  );
+
+  const setSliceToken = (sliceKey: string, token: ChartsSliceColorToken) => {
+    const next: Record<string, ChartsSliceColorToken> = {
+      ...(sliceColors ?? {}),
+      [sliceKey]: token,
+    };
+    onSliceColorsChange?.(next);
+  };
 
   return (
     <div className="flex flex-col gap-3">
@@ -652,6 +698,88 @@ function CustomizeSection({
           <Info className="text-muted-foreground size-3.5 opacity-70" />
         </span>
       </label>
+
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <StaticFieldLabel>Slice colors</StaticFieldLabel>
+          {hasCustomColors ? (
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground text-xs font-medium"
+              onClick={() => onSliceColorsChange?.(null)}
+            >
+              Reset colors
+            </button>
+          ) : null}
+        </div>
+        {sliceOptions.length === 0 ? (
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            Colors appear when the chart has slices.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-1.5">
+            {sliceOptions.map((slice, index) => {
+              const override = sliceColors?.[slice.key];
+              const selectedToken =
+                override && isChartsSliceColorToken(override) ? override : null;
+              const swatch = resolveSliceSwatch(
+                seriesLabelField,
+                slice.key,
+                index,
+                sliceColors
+              );
+              return (
+                <li
+                  key={`${slice.key || 'null'}:${index}`}
+                  className="flex items-center justify-between gap-2"
+                >
+                  <TruncatedText className="min-w-0 flex-1 text-sm">
+                    {slice.label || 'Unassigned'}
+                  </TruncatedText>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label={`Color for ${slice.label || 'Unassigned'}`}
+                        className="border-border size-7 shrink-0 rounded-full border shadow-sm"
+                        style={{ backgroundColor: swatch }}
+                      />
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-2" align="end">
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {CHARTS_SLICE_COLOR_SWATCHES.map((option) => {
+                          const isSelected = selectedToken === option.id;
+                          return (
+                            <button
+                              key={option.id}
+                              type="button"
+                              title={option.label}
+                              aria-label={option.label}
+                              aria-pressed={isSelected}
+                              className={cn(
+                                'border-border size-7 rounded-full border transition-shadow',
+                                isSelected && 'ring-ring ring-2 ring-offset-1'
+                              )}
+                              style={{
+                                backgroundColor: chartsSliceColorCssVar(
+                                  option.id
+                                ),
+                              }}
+                              onClick={() =>
+                                setSliceToken(slice.key, option.id)
+                              }
+                            />
+                          );
+                        })}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
@@ -688,7 +816,7 @@ function ColumnsSection({
           checked={allSelected}
           onCheckedChange={(checked) => {
             if (checked === true) {
-              onVisibleTableColumnsChange?.(DEFAULT_VISIBLE_TABLE_COLUMNS);
+              onVisibleTableColumnsChange?.(CHARTS_TABLE_COLUMN_IDS);
               return;
             }
             onVisibleTableColumnsChange?.(['task']);
@@ -737,8 +865,11 @@ export function ChartsWidgetSettingsSidebar({
   onSortSlicesByChange,
   showEmptySlices = false,
   onShowEmptySlicesChange,
-  visibleTableColumns = DEFAULT_VISIBLE_TABLE_COLUMNS,
+  visibleTableColumns = DEFAULT_CHARTS_VISIBLE_TABLE_COLUMNS,
   onVisibleTableColumnsChange,
+  sliceColors,
+  sliceOptions = [],
+  onSliceColorsChange,
   className,
 }: Readonly<ChartsWidgetSettingsSidebarProps>) {
   return (
@@ -780,6 +911,10 @@ export function ChartsWidgetSettingsSidebar({
               onSortSlicesByChange={onSortSlicesByChange}
               showEmptySlices={showEmptySlices}
               onShowEmptySlicesChange={onShowEmptySlicesChange}
+              labelField={labelField}
+              sliceColors={sliceColors}
+              sliceOptions={sliceOptions}
+              onSliceColorsChange={onSliceColorsChange}
             />
           </SettingsSection>
           <SettingsSection title="Groups">

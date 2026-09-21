@@ -9,7 +9,7 @@ import {
 import { BOARD_WORK_ITEM_STATUSES } from '@repo/types';
 import { PRIORITY_LABELS } from '@/app/work-items/_helpers/work-item-priority-ui';
 import { STATUS_META } from '@/app/work-items/_helpers/work-item-status';
-import { STATUS_CHART_COLORS } from '@/components/status-distribution-wheel';
+import { resolveSliceSwatch } from '@/app/charts/_helpers/charts-slice-colors';
 
 export type ChartsSampleMember = {
   readonly id: string;
@@ -83,14 +83,6 @@ export const CHARTS_SAMPLE_GROUPS = [
   'Working on it',
   'Stuck',
   'Done this week',
-] as const;
-
-const CHART_TOKEN_COLORS = [
-  'var(--chart-1)',
-  'var(--chart-2)',
-  'var(--chart-3)',
-  'var(--chart-4)',
-  'var(--chart-5)',
 ] as const;
 
 /** Sample project the signed-in user would be a member of.
@@ -210,7 +202,6 @@ export type ChartsStatusPieSlice = {
   readonly swatch: string;
 };
 
-const FALLBACK_STATUS_COLOR = 'var(--chart-1)';
 const NO_DUE_DATE_KEY = '__no_due_date__';
 const UNASSIGNED_KEY = 'unassigned';
 
@@ -289,13 +280,16 @@ function swatchForBucket(
   bucketKey: string,
   index: number
 ): string {
-  if (labelField === 'status') {
-    const statusColors = STATUS_CHART_COLORS as Partial<
-      Record<WorkItemStatus, string>
-    >;
-    return statusColors[bucketKey as WorkItemStatus] ?? FALLBACK_STATUS_COLOR;
+  if (
+    labelField === 'status' ||
+    labelField === 'owner' ||
+    labelField === 'board' ||
+    labelField === 'type' ||
+    labelField === 'priority'
+  ) {
+    return resolveSliceSwatch(labelField, bucketKey, index);
   }
-  return CHART_TOKEN_COLORS[index % CHART_TOKEN_COLORS.length] as string;
+  return resolveSliceSwatch('priority', bucketKey, index);
 }
 
 /**

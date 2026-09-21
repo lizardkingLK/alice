@@ -143,13 +143,19 @@ describe('charts analytics UI helpers', () => {
       priority: 'medium',
       assignee_id: 'u-1',
       project_id: 'p-1',
+      sprint_id: 's-1',
       assignee: {
         id: 'u-1',
         name: 'Ada',
         email: 'ada@alice.dev',
         profile_picture: null,
       },
-    } as WorkItemListRow;
+      project: { id: 'p-1', key: 'ALP', name: 'Alpha' },
+      sprint: { id: 's-1', name: 'Sprint 1' },
+    } as WorkItemListRow & {
+      project: { id: string; key: string; name: string };
+      sprint: { id: string; name: string };
+    };
 
     expect(workItemListRowToChartTableItem(row)).toEqual({
       id: 'wi-1',
@@ -161,6 +167,9 @@ describe('charts analytics UI helpers', () => {
       assigneeName: 'Ada',
       assigneeAvatar: null,
       projectId: 'p-1',
+      projectName: 'Alpha',
+      sprintId: 's-1',
+      sprintName: 'Sprint 1',
     });
   });
 
@@ -176,6 +185,9 @@ describe('charts analytics UI helpers', () => {
         assigneeName: 'Ada Lovelace',
         assigneeAvatar: null,
         projectId: 'p',
+        projectName: null,
+        sprintId: null,
+        sprintName: null,
       },
       {
         id: '2',
@@ -187,6 +199,9 @@ describe('charts analytics UI helpers', () => {
         assigneeName: 'Grace Hopper',
         assigneeAvatar: null,
         projectId: 'p',
+        projectName: null,
+        sprintId: null,
+        sprintName: null,
       },
     ];
 

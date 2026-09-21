@@ -7,7 +7,12 @@ import {
 import { WORK_ITEM_PRIORITIES } from '../../work-item-priorities.js';
 import { WORK_ITEM_STATUSES } from '../../work-item-status.js';
 import { WORK_ITEM_TYPES } from '../../work-item-types.js';
-import { type WorkItemListRow } from './work-items.js';
+import type { work_itemsGetPayload } from '../../generated/prisma/models/work_items.js';
+import {
+  workItemListSelect,
+  workItemProjectSelect,
+  workItemSprintSelect,
+} from './work-items.js';
 
 /**
  * Labels → Columns group-by fields backed by `work_item_chart_rollups`.
@@ -138,8 +143,16 @@ export type ChartSeriesResponse = {
   totalCount: number;
 };
 
-/** Drilldown rows reuse the compact work-item list select. */
-export { workItemListSelect as chartDrilldownItemSelect } from './work-items.js';
+/** Drilldown rows reuse the compact work-item list select + project/sprint names. */
+export const chartDrilldownItemSelect = {
+  ...workItemListSelect,
+  project: { select: workItemProjectSelect },
+  sprint: { select: workItemSprintSelect },
+} as const;
+
+export type ChartDrilldownItemRow = work_itemsGetPayload<{
+  select: typeof chartDrilldownItemSelect;
+}>;
 
 export type ChartDrilldownResponse = {
   /** Concrete project, or `null` when scoped to all accessible projects. */
@@ -147,7 +160,7 @@ export type ChartDrilldownResponse = {
   labelField: ChartSeriesLabelField;
   /** Empty when drilldown was not slice-scoped. */
   sliceKey: string;
-  workItems: WorkItemListRow[];
+  workItems: ChartDrilldownItemRow[];
   totalCount: number;
   page: number;
   limit: number;

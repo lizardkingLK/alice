@@ -5,6 +5,7 @@ import ReactGridLayout, {
   type Layout,
   type LayoutItem,
 } from 'react-grid-layout';
+import { BarChart3 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { ChartsWidgetCard } from '@/app/charts/_components/charts-widget-card';
 import { ChartsPieWidgetSkeleton } from '@/app/charts/_components/charts-workspace-skeleton';
@@ -155,6 +156,66 @@ export function nextChartLayoutItem(
     minW: size.minW,
     minH: size.minH,
   };
+}
+
+/**
+ * Ensure every widget instance has a layout item. Repairs boards after a
+ * spurious react-grid-layout `onLayoutChange([])` (common when adding the
+ * first widget) or cloud hydrate with mismatched board_json.
+ */
+export function reconcileChartBoardLayout(
+  instances: readonly ChartBoardWidgetInstance[],
+  layout: readonly LayoutItem[]
+): LayoutItem[] {
+  if (instances.length === 0) {
+    return [];
+  }
+
+  const layoutById = new Map<string, LayoutItem>();
+  for (const item of layout) {
+    if (typeof item.i === 'string') {
+      layoutById.set(item.i, item);
+    }
+  }
+
+  const next: LayoutItem[] = [];
+  for (const instance of instances) {
+    const stored = layoutById.get(instance.instanceId);
+    if (stored) {
+      const size = layoutSizeForWidgetType(instance.typeId);
+      next.push({
+        ...stored,
+        minW: size.minW,
+        minH: size.minH,
+      });
+      continue;
+    }
+    next.push(nextChartLayoutItem(instance.instanceId, next, instance.typeId));
+  }
+  return next;
+}
+
+function chartLayoutsEqual(
+  left: readonly LayoutItem[],
+  right: readonly LayoutItem[]
+): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+  for (let index = 0; index < left.length; index += 1) {
+    const a = left[index]!;
+    const b = right[index]!;
+    if (
+      a.i !== b.i ||
+      a.x !== b.x ||
+      a.y !== b.y ||
+      a.w !== b.w ||
+      a.h !== b.h
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
 
 export function readStoredChartBoard(): {
@@ -335,9 +396,17 @@ export function ChartsBoardCanvas({
   }, [instances]);
 
   const isEmpty = hydrated && instances.length === 0;
+  const displayLayout = useMemo(
+    () => reconcileChartBoardLayout(instances, layout),
+    [instances, layout]
+  );
 
   const handleLayoutChange = (next: Layout) => {
-    onLayoutChange([...next]);
+    const reconciled = reconcileChartBoardLayout(instances, next);
+    if (chartLayoutsEqual(reconciled, layout)) {
+      return;
+    }
+    onLayoutChange(reconciled);
   };
 
   if (!hydrated) {
@@ -376,7 +445,7 @@ export function ChartsBoardCanvas({
           isEmpty={isEmpty}
           mounted={mounted}
           stableWidth={stableWidth}
-          layout={layout}
+          layout={displayLayout}
           instanceById={instanceById}
           onLayoutChange={handleLayoutChange}
           onRemoveWidget={onRemoveWidget}
@@ -488,15 +557,30 @@ function BoardCanvasBody({
 
   if (isEmpty) {
     return (
-      <div className="border-border text-muted-foreground flex min-h-0 flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-6 py-12 text-center text-sm">
-        <p>No widgets yet. Use + to add a widget to this workspace.</p>
+      <div className="border-border text-muted-foreground flex min-h-72 flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed px-6 py-12 text-center">
+        <BarChart3
+          className="text-muted-foreground size-10 stroke-[1.5]"
+          aria-hidden
+        />
+        <p className="text-foreground text-sm font-medium">No widgets yet</p>
+        <p className="max-w-sm text-sm leading-relaxed">
+          Use the <span className="text-foreground font-medium">+</span> button
+          to add a Chart widget to this workspace.
+        </p>
       </div>
     );
   }
 
   if (!mounted) {
     return (
-      <div className="bg-muted/20 h-full min-h-64 animate-pulse rounded-xl" />
+      <div
+        className="grid min-h-72 flex-1 grid-cols-1 gap-4 sm:grid-cols-2"
+        aria-busy="true"
+        aria-label="Preparing chart board"
+      >
+        <ChartsPieWidgetSkeleton />
+        <ChartsPieWidgetSkeleton className="hidden sm:block" />
+      </div>
     );
   }
 
@@ -537,6 +621,7 @@ function BoardCanvasBody({
               sortSlicesBy={entry?.instance.sortSlicesBy}
               showEmptySlices={entry?.instance.showEmptySlices}
               visibleTableColumns={entry?.instance.visibleTableColumns}
+              sliceColors={entry?.instance.sliceColors}
               focusedSliceKey={resolveFocusedSliceKey(entry?.instance ?? {})}
               accessibleProjects={accessibleProjects}
               accessibleSprints={accessibleSprints}
@@ -712,6 +797,7 @@ type ChartInstanceFieldPatch = Partial<
     | 'sortSlicesBy'
     | 'showEmptySlices'
     | 'visibleTableColumns'
+    | 'sliceColors'
   >
 > & {
   readonly clearFilters?: boolean;
@@ -722,6 +808,7 @@ type ChartInstanceFieldPatch = Partial<
   readonly clearSortSlicesBy?: boolean;
   readonly clearShowEmptySlices?: boolean;
   readonly clearVisibleTableColumns?: boolean;
+  readonly clearSliceColors?: boolean;
 };
 
 /** Persist a field only when set and not the omitted default. */
@@ -835,6 +922,13 @@ function withInstanceFields(
     visibleTableColumns
   );
 
+  assignUnlessCleared(
+    next,
+    patch.clearSliceColors,
+    'sliceColors',
+    patch.sliceColors ?? item.sliceColors
+  );
+
   return next;
 }
 
@@ -901,11 +995,13 @@ export function updateChartWidgetLabelField(
       return withInstanceFields(item, {
         clearLabelField: true,
         clearFocusedSliceKey: true,
+        clearSliceColors: true,
       });
     }
     return withInstanceFields(item, {
       labelField,
       clearFocusedSliceKey: true,
+      clearSliceColors: true,
     });
   });
 }
@@ -927,37 +1023,85 @@ function displaySettingsPatch(
   patch: ChartWidgetDisplaySettingsPatch
 ): ChartInstanceFieldPatch {
   const next: ChartInstanceFieldPatch = {};
-
-  if (patch.showValueAs !== undefined) {
-    if (patch.showValueAs === 'percent') {
-      Object.assign(next, { clearShowValueAs: true });
-    } else {
-      Object.assign(next, { showValueAs: patch.showValueAs });
-    }
-  }
-
-  if (patch.sortSlicesBy !== undefined) {
-    if (patch.sortSlicesBy === 'value_desc') {
-      Object.assign(next, { clearSortSlicesBy: true });
-    } else {
-      Object.assign(next, { sortSlicesBy: patch.sortSlicesBy });
-    }
-  }
-
-  if (patch.showEmptySlices !== undefined) {
-    if (patch.showEmptySlices) {
-      Object.assign(next, { showEmptySlices: true });
-    } else {
-      Object.assign(next, { clearShowEmptySlices: true });
-    }
-  }
-
-  if (patch.visibleTableColumns !== undefined) {
-    Object.assign(next, {
-      visibleTableColumns: patch.visibleTableColumns,
-      clearVisibleTableColumns: false,
-    });
-  }
-
+  applyShowValueAsPatch(patch, next);
+  applySortSlicesByPatch(patch, next);
+  applyShowEmptySlicesPatch(patch, next);
+  applyVisibleTableColumnsPatch(patch, next);
+  applySliceColorsPatch(patch, next);
   return next;
+}
+
+function applyShowValueAsPatch(
+  patch: ChartWidgetDisplaySettingsPatch,
+  next: ChartInstanceFieldPatch
+): void {
+  if (patch.showValueAs === undefined) {
+    return;
+  }
+  if (patch.showValueAs === 'percent') {
+    Object.assign(next, { clearShowValueAs: true });
+    return;
+  }
+  Object.assign(next, { showValueAs: patch.showValueAs });
+}
+
+function applySortSlicesByPatch(
+  patch: ChartWidgetDisplaySettingsPatch,
+  next: ChartInstanceFieldPatch
+): void {
+  if (patch.sortSlicesBy === undefined) {
+    return;
+  }
+  if (patch.sortSlicesBy === 'value_desc') {
+    Object.assign(next, { clearSortSlicesBy: true });
+    return;
+  }
+  Object.assign(next, { sortSlicesBy: patch.sortSlicesBy });
+}
+
+function applyShowEmptySlicesPatch(
+  patch: ChartWidgetDisplaySettingsPatch,
+  next: ChartInstanceFieldPatch
+): void {
+  if (patch.showEmptySlices === undefined) {
+    return;
+  }
+  if (patch.showEmptySlices) {
+    Object.assign(next, { showEmptySlices: true });
+    return;
+  }
+  Object.assign(next, { clearShowEmptySlices: true });
+}
+
+function applyVisibleTableColumnsPatch(
+  patch: ChartWidgetDisplaySettingsPatch,
+  next: ChartInstanceFieldPatch
+): void {
+  if (patch.visibleTableColumns === undefined) {
+    return;
+  }
+  Object.assign(next, {
+    visibleTableColumns: patch.visibleTableColumns,
+    clearVisibleTableColumns: false,
+  });
+}
+
+function applySliceColorsPatch(
+  patch: ChartWidgetDisplaySettingsPatch,
+  next: ChartInstanceFieldPatch
+): void {
+  if (patch.sliceColors === undefined) {
+    return;
+  }
+  if (
+    patch.sliceColors == null ||
+    Object.keys(patch.sliceColors).length === 0
+  ) {
+    Object.assign(next, { clearSliceColors: true });
+    return;
+  }
+  Object.assign(next, {
+    sliceColors: patch.sliceColors,
+    clearSliceColors: false,
+  });
 }

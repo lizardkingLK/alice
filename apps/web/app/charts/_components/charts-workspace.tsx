@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { LayoutItem } from 'react-grid-layout';
 import {
@@ -11,10 +12,8 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { Button } from '@repo/ui/components/ui/button';
-import { BarChart3, X } from '@repo/ui/lib/icons';
+import { BarChart3, Layers } from '@repo/ui/lib/icons';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
-import { SearchInput } from '@/components/search-input';
-import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import {
   pickWorkspaceDefaultsDialogController,
   WorkspaceDefaultsDialogHost,
@@ -28,6 +27,7 @@ import {
   ChartsBoardCanvas,
   appendChartWidget,
   duplicateChartWidget,
+  reconcileChartBoardLayout,
   removeChartWidget,
   renameChartWidget,
   updateChartWidgetFilters,
@@ -36,17 +36,11 @@ import {
   updateChartWidgetViewMode,
   updateChartWidgetDisplaySettings,
 } from '@/app/charts/_components/charts-board-canvas';
-import {
-  ChartsFilterDialog,
-  type ChartsFilterDraft,
-} from '@/app/charts/_components/charts-filter-dialog';
 import { ChartsSaveWorkspaceDialog } from '@/app/charts/_components/charts-save-workspace-dialog';
 import { ChartsShareWorkspaceDialog } from '@/app/charts/_components/charts-share-workspace-dialog';
 import { ChartsWorkspaceActionsMenu } from '@/app/charts/_components/charts-workspace-actions-menu';
 import { isChartWidgetAvailable } from '@/app/charts/_components/charts-widget-catalog';
 import type {
-  ChartBoardOwnershipFilter,
-  ChartBoardStatusFilter,
   ChartBoardWidgetInstance,
   ChartPieVariant,
   ChartsLabelFieldId,
@@ -59,11 +53,14 @@ import type {
   ChartsSampleMember,
   ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
+import { DismissibleError } from '@/components/dismissible-error';
+import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
+import { isSessionExpiredError } from '@/lib/errors/session-expired';
 import {
   createChartWorkspace,
-  ensureDefaultChartWorkspace,
   getChartWorkspace,
-  listChartWorkspaces,
+  readChartWorkspacesStore,
+  removeChartWorkspace,
   renameChartWorkspaceMeta,
   saveChartWorkspaceBoard,
   setLastOpenedChartWorkspace,
@@ -73,16 +70,19 @@ import { hydrateChartWorkspacesFromApi } from '@/app/charts/_helpers/charts-work
 import { chartsWorkspaceHref } from '@/app/charts/_helpers/charts-links';
 import { createChartWidgetFiltersFromDefaults } from '@/app/charts/_helpers/charts-widget-defaults';
 import { useChartsWorkspaceDefaults } from '@/app/charts/_hooks/use-charts-workspace-defaults';
-import { syncChartWorkspaceToApi } from '@/app/charts/_services/charts.mutations.client';
+import {
+  archiveChartWorkspace,
+  deleteChartWorkspace,
+  leaveSharedChartWorkspace,
+  restoreChartWorkspace,
+  syncChartWorkspaceToApi,
+} from '@/app/charts/_services/charts.mutations.client';
 import { useDashboardEntityBreadcrumb } from '@/app/dashboard/_components/dashboard-breadcrumb-runtime';
 
 type ChartsWorkspaceProps = {
   readonly workspaceId: string;
   readonly currentUserId: string;
   readonly focusWidgetId?: string;
-  readonly search: string;
-  readonly ownership: ChartBoardOwnershipFilter;
-  readonly status: ChartBoardStatusFilter;
   readonly shareProjects: ReadonlyArray<{
     readonly id: string;
     readonly name: string;
@@ -97,9 +97,6 @@ export function ChartsWorkspace({
   workspaceId,
   currentUserId,
   focusWidgetId,
-  search,
-  ownership,
-  status,
   shareProjects,
   assigneeMembers,
   projects,
@@ -108,18 +105,18 @@ export function ChartsWorkspace({
 }: Readonly<ChartsWorkspaceProps>) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { searchQuery, setSearchQuery } = useDebouncedSearch(search);
 
   const [workspace, setWorkspace] = useState<ChartWorkspaceRecord | null>(null);
-  const [workspaceList, setWorkspaceList] = useState<ChartWorkspaceRecord[]>(
-    []
-  );
   const [instances, setInstances] = useState<ChartBoardWidgetInstance[]>([]);
   const [layout, setLayout] = useState<LayoutItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [deleteKind, setDeleteKind] = useState<'owned' | 'share' | null>(null);
+  const [deletePending, setDeletePending] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const deleteInFlightRef = useRef(false);
 
   const chartsDefaults = useChartsWorkspaceDefaults({
     userId: currentUserId,
@@ -128,92 +125,60 @@ export function ChartsWorkspace({
     suggestedDefaults,
   });
 
-  const refreshList = useCallback(() => {
-    setWorkspaceList(
-      listChartWorkspaces(currentUserId, {
-        ownership,
-        status,
-        search: searchQuery,
-      })
-    );
-  }, [currentUserId, ownership, searchQuery, status]);
-
   useEffect(() => {
     let cancelled = false;
 
     async function hydrate() {
-      await hydrateChartWorkspacesFromApi(currentUserId);
+      try {
+        await hydrateChartWorkspacesFromApi(currentUserId);
+      } catch {
+        // Fall through — local cache may still have the workspace.
+      }
       if (cancelled) {
         return;
       }
 
       const record = getChartWorkspace(currentUserId, workspaceId);
       if (!record) {
-        const fallback = ensureDefaultChartWorkspace(currentUserId);
-        void syncChartWorkspaceToApi(fallback);
-        router.replace(`/charts/${fallback.id}`);
+        const store = readChartWorkspacesStore(currentUserId);
+        const fallback =
+          store.workspaces.find((item) => item.status === 'active') ??
+          store.workspaces[0];
+        router.replace(fallback ? `/charts/${fallback.id}` : '/charts');
         return;
       }
+
       setLastOpenedChartWorkspace(currentUserId, record.id);
       setWorkspace(record);
+      const reconciledLayout = reconcileChartBoardLayout(
+        record.instances,
+        record.layout
+      );
       setInstances(record.instances);
-      setLayout(record.layout);
+      setLayout(reconciledLayout);
       setHydrated(true);
-      refreshList();
+      if (
+        reconciledLayout.length !== record.layout.length ||
+        !reconciledLayout.every(
+          (item, index) => item.i === record.layout[index]?.i
+        )
+      ) {
+        syncChartWorkspaceToApi({
+          ...record,
+          layout: reconciledLayout,
+        }).catch(() => {});
+        saveChartWorkspaceBoard(currentUserId, record.id, {
+          instances: record.instances,
+          layout: reconciledLayout,
+        });
+      }
     }
 
-    void hydrate();
+    hydrate().catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [currentUserId, refreshList, router, workspaceId]);
-
-  useEffect(() => {
-    refreshList();
-  }, [refreshList]);
-
-  const hasActiveFilters = ownership !== 'all' || status !== 'all';
-
-  const replaceQuery = useCallback(
-    // eslint-disable-next-line no-unused-vars
-    (mutate: (params: URLSearchParams) => void) => {
-      const params = new URLSearchParams(searchParams.toString());
-      mutate(params);
-      const query = params.toString();
-      const base = `/charts/${workspaceId}`;
-      router.push(query ? `${base}?${query}` : base);
-    },
-    [router, searchParams, workspaceId]
-  );
-
-  const handleApplyFilters = useCallback(
-    (draft: ChartsFilterDraft) => {
-      replaceQuery((params) => {
-        if (draft.ownership === 'all') {
-          params.delete('ownership');
-        } else {
-          params.set('ownership', draft.ownership);
-        }
-        if (draft.status === 'all') {
-          params.delete('status');
-        } else {
-          params.set('status', draft.status);
-        }
-      });
-    },
-    [replaceQuery]
-  );
-
-  const handleClearFilters = useCallback(() => {
-    replaceQuery((params) => {
-      params.delete('ownership');
-      params.delete('status');
-    });
-  }, [replaceQuery]);
-
-  const handleClearSearch = useCallback(() => {
-    setSearchQuery('');
-  }, [setSearchQuery]);
+  }, [currentUserId, router, workspaceId]);
 
   const persistBoard = useCallback(
     (nextInstances: ChartBoardWidgetInstance[], nextLayout: LayoutItem[]) => {
@@ -223,19 +188,22 @@ export function ChartsWorkspace({
       });
       if (updated) {
         setWorkspace(updated);
-        void syncChartWorkspaceToApi(updated);
+        syncChartWorkspaceToApi(updated).catch(() => {});
       }
-      refreshList();
     },
-    [currentUserId, refreshList, workspaceId]
+    [currentUserId, workspaceId]
   );
 
   const commitBoard = useCallback(
     (next: { instances: ChartBoardWidgetInstance[]; layout: LayoutItem[] }) => {
+      const reconciledLayout = reconcileChartBoardLayout(
+        next.instances,
+        next.layout
+      );
       setInstances(next.instances);
-      setLayout(next.layout);
+      setLayout(reconciledLayout);
       if (hydrated) {
-        persistBoard(next.instances, next.layout);
+        persistBoard(next.instances, reconciledLayout);
       }
     },
     [hydrated, persistBoard]
@@ -276,21 +244,19 @@ export function ChartsWorkspace({
   }, []);
 
   const handleCreateWorkspace = useCallback(
-    (payload: { title: string; isOverview: boolean }) => {
+    async (payload: { title: string; isOverview: boolean }) => {
       const created = createChartWorkspace(currentUserId, {
         title: payload.title,
         isOverview: payload.isOverview,
       });
-      void syncChartWorkspaceToApi(created);
+      try {
+        await syncChartWorkspaceToApi(created);
+      } catch (err) {
+        if (isSessionExpiredError(err)) {
+          return;
+        }
+      }
       router.push(`/charts/${created.id}`);
-    },
-    [currentUserId, router]
-  );
-
-  const handleSelectWorkspace = useCallback(
-    (id: string) => {
-      setLastOpenedChartWorkspace(currentUserId, id);
-      router.push(`/charts/${id}`);
     },
     [currentUserId, router]
   );
@@ -303,18 +269,94 @@ export function ChartsWorkspace({
       });
       if (updated) {
         setWorkspace(updated);
-        void syncChartWorkspaceToApi(updated);
+        syncChartWorkspaceToApi(updated).catch(() => {});
       }
-      refreshList();
     },
-    [currentUserId, refreshList, workspaceId]
+    [currentUserId, workspaceId]
   );
+
+  const handleArchiveWorkspace = useCallback(async () => {
+    setActionError(null);
+    try {
+      await archiveChartWorkspace(workspaceId);
+      const updated = renameChartWorkspaceMeta(currentUserId, workspaceId, {
+        status: 'archived',
+        isOverview: false,
+      });
+      if (updated) {
+        setWorkspace(updated);
+      }
+    } catch (err) {
+      if (isSessionExpiredError(err)) {
+        return;
+      }
+      setActionError(
+        err instanceof Error ? err.message : 'Failed to archive workspace'
+      );
+    }
+  }, [currentUserId, workspaceId]);
+
+  const handleRestoreWorkspace = useCallback(async () => {
+    setActionError(null);
+    try {
+      await restoreChartWorkspace(workspaceId);
+      const updated = renameChartWorkspaceMeta(currentUserId, workspaceId, {
+        status: 'active',
+      });
+      if (updated) {
+        setWorkspace(updated);
+      }
+    } catch (err) {
+      if (isSessionExpiredError(err)) {
+        return;
+      }
+      setActionError(
+        err instanceof Error ? err.message : 'Failed to restore workspace'
+      );
+    }
+  }, [currentUserId, workspaceId]);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteKind || deleteInFlightRef.current) {
+      return;
+    }
+    deleteInFlightRef.current = true;
+    const kind = deleteKind;
+    setDeletePending(true);
+    setActionError(null);
+    setDeleteKind(null);
+    // Leave the board immediately; API runs in the background.
+    removeChartWorkspace(currentUserId, workspaceId);
+    router.replace('/charts');
+
+    try {
+      if (kind === 'share') {
+        await leaveSharedChartWorkspace(workspaceId);
+      } else {
+        await deleteChartWorkspace(workspaceId);
+      }
+    } catch (err) {
+      let message = 'Failed to delete workspace';
+      if (err instanceof Error) {
+        message = err.message;
+      } else if (kind === 'share') {
+        message = 'Failed to leave shared workspace';
+      }
+      // Surface on registry after navigation via query is heavier; console is enough
+      // for board-level leave/delete failures once we already navigated away.
+      console.error(message, err);
+    } finally {
+      setDeletePending(false);
+      deleteInFlightRef.current = false;
+    }
+  }, [currentUserId, deleteKind, router, workspaceId]);
 
   const handleLayoutChange = useCallback(
     (nextLayout: LayoutItem[]) => {
-      setLayout(nextLayout);
+      const reconciled = reconcileChartBoardLayout(instances, nextLayout);
+      setLayout(reconciled);
       if (hydrated) {
-        persistBoard(instances, nextLayout);
+        persistBoard(instances, reconciled);
       }
     },
     [hydrated, instances, persistBoard]
@@ -428,42 +470,24 @@ export function ChartsWorkspace({
 
   return (
     <div className="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+      {actionError ? (
+        <DismissibleError
+          message={actionError}
+          onDismiss={() => setActionError(null)}
+        />
+      ) : null}
       <div className="flex shrink-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          <SearchInput
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-            onClear={handleClearSearch}
-            placeholder="Search workspaces…"
-          />
-          <ChartsFilterDialog
-            ownership={ownership}
-            status={status}
-            hasActiveFilters={hasActiveFilters}
-            workspaces={workspaceList}
-            currentWorkspaceId={workspaceId}
-            saveDefaultTitle={saveDefaultTitle}
-            currentIsOverview={workspace?.isOverview ?? false}
-            onApplyFilters={handleApplyFilters}
-            onSelectWorkspace={handleSelectWorkspace}
-            onSaveWorkspace={handleSaveWorkspace}
-          />
+          <Button asChild variant="outline" size="sm" className="h-9 gap-2">
+            <Link href="/charts">
+              <Layers className="size-3.5" data-icon="inline-start" />
+              All workspaces
+            </Link>
+          </Button>
           <WorkspaceDefaultsControls
             onOpenDefaultsDialog={chartsDefaults.openDefaultsDialog}
             savedDefaultsApplied={chartsDefaults.savedDefaultsApplied}
           />
-          {hasActiveFilters ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleClearFilters}
-              className="text-muted-foreground hover:text-foreground h-9 cursor-pointer px-3 text-xs"
-            >
-              Clear filters
-              <X className="size-3.5" />
-            </Button>
-          ) : null}
         </div>
 
         <div className="flex flex-wrap items-center gap-3 self-start">
@@ -485,14 +509,27 @@ export function ChartsWorkspace({
                 </TruncatedText>
               </CardTitle>
               <CardDescription>
-                Drag and resize widgets. Workspaces are saved on this device;
-                cloud sync comes next.
+                Customize your board by arranging widgets. Workspaces sync to
+                your account and are cached on this device.
               </CardDescription>
             </div>
-            <ChartsWorkspaceActionsMenu
-              onShare={() => setShareDialogOpen(true)}
-              onRename={() => setSaveDialogOpen(true)}
-            />
+            {workspace ? (
+              <ChartsWorkspaceActionsMenu
+                ownership={workspace.ownership ?? 'mine'}
+                status={workspace.status}
+                onShare={() => setShareDialogOpen(true)}
+                onRename={() => setSaveDialogOpen(true)}
+                onArchive={() => void handleArchiveWorkspace()}
+                onRestore={() => void handleRestoreWorkspace()}
+                onRequestDelete={() =>
+                  setDeleteKind(
+                    (workspace.ownership ?? 'mine') === 'shared'
+                      ? 'share'
+                      : 'owned'
+                  )
+                }
+              />
+            ) : null}
           </div>
         </CardHeader>
         <CardContent className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto pt-2 pb-2">
@@ -551,6 +588,28 @@ export function ChartsWorkspace({
         projects={shareProjects}
         currentUserId={currentUserId}
       />
+      {deleteKind ? (
+        <RegistryConfirmDialog
+          title={
+            deleteKind === 'share'
+              ? 'Leave shared workspace'
+              : 'Permanently delete workspace'
+          }
+          subject={workspace?.title ?? 'this workspace'}
+          detail={
+            deleteKind === 'share'
+              ? 'This removes the workspace from Shared with me only. The owner’s copy is unchanged, and they can share it with you again later.'
+              : 'This action is irreversible. The chart workspace, its board layout, and any share records linked to it will be permanently removed. The matching Views bookmark is removed as well.'
+          }
+          confirmLabel={deleteKind === 'share' ? 'Leave' : 'Delete'}
+          pendingLabel={deleteKind === 'share' ? 'Leaving...' : 'Deleting...'}
+          isPending={deletePending}
+          isSoft={false}
+          actionVerb={deleteKind === 'share' ? 'leave' : undefined}
+          onCancel={() => setDeleteKind(null)}
+          onConfirm={() => void handleConfirmDelete()}
+        />
+      ) : null}
       <WorkspaceDefaultsDialogHost
         enabled
         projects={projects}
