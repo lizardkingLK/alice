@@ -121,6 +121,7 @@ export async function fetchCalendarUnscheduledWorkItems(input: {
     {
       ...base,
       dueDate: 'null',
+      excludeStatuses: [WorkItemStatusEnum.Draft, WorkItemStatusEnum.Done],
     },
     { includeDescription: true }
   );
@@ -152,5 +153,6 @@ export async function fetchCalendarUnscheduledWorkItemsPaginated(input: {
   return getWorkItemsPaginated(input.page, input.limit, input.search, {
     ...base,
     dueDate: 'null',
+    excludeStatuses: [WorkItemStatusEnum.Draft, WorkItemStatusEnum.Done],
   });
 }
