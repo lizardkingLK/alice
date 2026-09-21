@@ -14,6 +14,7 @@ export const integrationKindSchema = z.enum([
   'chat_model',
   'slack_workspace',
   'figma_oauth',
+  'github_oauth',
 ]);
 
 export type IntegrationConfigKind = z.infer<typeof integrationKindSchema>;
@@ -68,11 +69,31 @@ const figmaOAuthConfigPublicSchema = figmaOAuthConfigStoredSchema
     has_refresh_token: z.boolean().optional(),
   });
 
+const githubOAuthConfigStoredSchema = z.object({
+  kind: z.literal('github_oauth'),
+  access_token: z.string().min(1).optional(),
+  refresh_token: z.string().min(1).optional(),
+  expires_at: z.string().optional(),
+  scope: z.string().optional(),
+  account_login: z.string().optional(),
+  account_id: z.union([z.string(), z.number()]).optional(),
+  account_name: z.string().optional(),
+  account_avatar_url: z.string().optional(),
+});
+
+const githubOAuthConfigPublicSchema = githubOAuthConfigStoredSchema
+  .omit({ access_token: true, refresh_token: true })
+  .extend({
+    has_access_token: z.boolean().optional(),
+    has_refresh_token: z.boolean().optional(),
+  });
+
 /** Stored integration `config` JSONB (may include plaintext or `v1:` ciphertext). */
 export const integrationConfigStoredSchema = z.discriminatedUnion('kind', [
   chatModelConfigStoredSchema,
   slackWorkspaceConfigStoredSchema,
   figmaOAuthConfigStoredSchema,
+  githubOAuthConfigStoredSchema,
 ]);
 
 /** API-facing config after secret stripping. */
@@ -80,6 +101,7 @@ export const integrationConfigPublicSchema = z.discriminatedUnion('kind', [
   chatModelConfigPublicSchema,
   slackWorkspaceConfigPublicSchema,
   figmaOAuthConfigPublicSchema,
+  githubOAuthConfigPublicSchema,
 ]);
 
 export type IntegrationConfigStored = z.infer<
@@ -99,6 +121,9 @@ export const integrationConfigPatchSchema = z.discriminatedUnion('kind', [
   }),
   figmaOAuthConfigStoredSchema.partial().extend({
     kind: z.literal('figma_oauth'),
+  }),
+  githubOAuthConfigStoredSchema.partial().extend({
+    kind: z.literal('github_oauth'),
   }),
 ]);
 

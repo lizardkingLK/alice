@@ -1,12 +1,9 @@
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import { mapToWorkItemType, UserRoleEnum } from '@repo/types';
+import { mapToWorkItemType, UserRoleEnum, utcNow } from '@repo/types';
+import { JiraConnectionStatus } from '@repo/types/prisma';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { env } from '../../../config/env';
-import {
-  decryptSecret,
-  encryptSecret,
-  resolveIntegrationEncryptionKey,
-} from '../../../lib/secrets/token-crypto';
+import { decryptSecret, encryptSecret } from '../../../lib/secrets/token-crypto';
+import { createOAuthState, verifyOAuthState } from '../../../lib/secrets/oauth-state';
 import type { JiraRepository } from './jira.repository';
 import type {
   AtlassianAccessibleResource,
@@ -20,14 +17,7 @@ import type {
 } from './jira.types';
 
 const OAUTH_SCOPES = 'read:jira-work read:jira-user offline_access';
-const STATE_TTL_MS = 10 * 60 * 1000;
 const ACCESS_TOKEN_SKEW_MS = 60 * 1000;
-
-type OAuthStatePayload = {
-  userId: string;
-  nonce: string;
-  exp: number;
-};
 
 function requireAtlassianConfig(): {
   clientId: string;
@@ -43,61 +33,6 @@ function requireAtlassianConfig(): {
     );
   }
   return { clientId, clientSecret, redirectUri };
-}
-
-function resolveHmacKey(): Buffer {
-  return resolveIntegrationEncryptionKey('sign Jira OAuth state (HMAC)');
-}
-
-function base64UrlEncode(value: string | Buffer): string {
-  const buf = typeof value === 'string' ? Buffer.from(value, 'utf8') : value;
-  return buf.toString('base64url');
-}
-
-function base64UrlDecode(value: string): Buffer {
-  return Buffer.from(value, 'base64url');
-}
-
-function signState(payload: OAuthStatePayload): string {
-  const body = base64UrlEncode(JSON.stringify(payload));
-  const sig = createHmac('sha256', resolveHmacKey()).update(body).digest();
-  return `${body}.${base64UrlEncode(sig)}`;
-}
-
-function verifyState(state: string): OAuthStatePayload {
-  const [body, sigPart] = state.split('.');
-  if (!body || !sigPart) {
-    throw new Error('Invalid OAuth state.');
-  }
-
-  const expected = createHmac('sha256', resolveHmacKey()).update(body).digest();
-  const actual = base64UrlDecode(sigPart);
-  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
-    throw new Error('Invalid OAuth state signature.');
-  }
-
-  let payload: OAuthStatePayload;
-  try {
-    payload = JSON.parse(
-      base64UrlDecode(body).toString('utf8')
-    ) as OAuthStatePayload;
-  } catch {
-    throw new Error('Invalid OAuth state payload.');
-  }
-
-  if (
-    typeof payload.userId !== 'string' ||
-    typeof payload.nonce !== 'string' ||
-    typeof payload.exp !== 'number'
-  ) {
-    throw new TypeError('Invalid OAuth state payload.');
-  }
-
-  if (Date.now() > payload.exp) {
-    throw new Error('OAuth state has expired. Please try connecting again.');
-  }
-
-  return payload;
 }
 
 function extractText(node: JiraNode | null | undefined): string {
@@ -154,11 +89,7 @@ export class JiraService {
 
   buildAuthorizeUrl(userId: string): string {
     const { clientId, redirectUri } = requireAtlassianConfig();
-    const state = signState({
-      userId,
-      nonce: randomBytes(16).toString('hex'),
-      exp: Date.now() + STATE_TTL_MS,
-    });
+    const state = createOAuthState(userId, 'sign Jira OAuth state (HMAC)');
 
     const params = new URLSearchParams({
       audience: 'api.atlassian.com',
@@ -182,22 +113,18 @@ export class JiraService {
     code: string,
     state: string
   ): Promise<JiraConnectionDto> {
-    const { userId } = verifyState(state);
+    const { userId } = verifyOAuthState(state, 'sign Jira OAuth state (HMAC)');
     await requireJiraManager(userId);
 
     const tokens = await this.exchangeAuthorizationCode(code);
     const resources = await this.fetchAccessibleResources(tokens.access_token);
-    const site =
-      resources.find((r) => r.scopes.some((s) => s.includes('jira'))) ??
-      resources[0];
-
-    if (!site) {
+    if (resources.length === 0) {
       throw new Error(
         'No accessible Atlassian Jira site found for this account.'
       );
     }
 
-    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+    const expiresAt = new Date(utcNow().getTime() + tokens.expires_in * 1000);
     const refreshToken = tokens.refresh_token;
     if (!refreshToken) {
       throw new Error(
@@ -205,17 +132,28 @@ export class JiraService {
       );
     }
 
-    return await this.jiraRepository.upsertByUserAndCloud({
-      user_id: userId,
-      cloud_id: site.id,
-      site_url: site.url,
-      account_email: null,
-      refresh_token_enc: encryptSecret(refreshToken),
-      access_token_enc: encryptSecret(tokens.access_token),
-      access_token_expires_at: expiresAt,
-      scopes: tokens.scope ?? site.scopes.join(' '),
-      status: 'active',
-    });
+    const jiraSites = resources.filter((r) =>
+      r.scopes.some((s) => s.includes('jira'))
+    );
+    const sitesToSave = jiraSites.length > 0 ? jiraSites : resources;
+
+    let primaryResult: JiraConnectionDto | null = null;
+    for (const site of sitesToSave) {
+      const saved = await this.jiraRepository.upsertByUserAndCloud({
+        user_id: userId,
+        cloud_id: site.id,
+        site_url: site.url,
+        account_email: null,
+        refresh_token_enc: encryptSecret(refreshToken),
+        access_token_enc: encryptSecret(tokens.access_token),
+        access_token_expires_at: expiresAt,
+        scopes: tokens.scope ?? site.scopes.join(' '),
+        status: JiraConnectionStatus.active,
+      });
+      primaryResult ??= saved;
+    }
+
+    return primaryResult!;
   }
 
   async listConnections(actorId: string): Promise<JiraConnectionDto[]> {
@@ -357,7 +295,7 @@ export class JiraService {
     const expiresAt = connection.access_token_expires_at?.getTime() ?? 0;
     const stillValid =
       connection.access_token_enc &&
-      expiresAt > Date.now() + ACCESS_TOKEN_SKEW_MS;
+      expiresAt > utcNow().getTime() + ACCESS_TOKEN_SKEW_MS;
 
     if (stillValid && connection.access_token_enc) {
       return decryptSecret(connection.access_token_enc);
@@ -385,7 +323,7 @@ export class JiraService {
 
     if (!response.ok) {
       await this.jiraRepository.updateTokens(connection.id, {
-        status: 'expired',
+        status: JiraConnectionStatus.expired,
       });
       const errorText = await response.text();
       throw new Error(
@@ -394,7 +332,7 @@ export class JiraService {
     }
 
     const tokens = (await response.json()) as AtlassianTokenResponse;
-    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+    const expiresAt = new Date(utcNow().getTime() + tokens.expires_in * 1000);
     const nextRefresh = tokens.refresh_token
       ? encryptSecret(tokens.refresh_token)
       : connection.refresh_token_enc;
@@ -403,7 +341,7 @@ export class JiraService {
       refresh_token_enc: nextRefresh,
       access_token_enc: encryptSecret(tokens.access_token),
       access_token_expires_at: expiresAt,
-      status: 'active',
+      status: JiraConnectionStatus.active,
     });
 
     return tokens.access_token;
