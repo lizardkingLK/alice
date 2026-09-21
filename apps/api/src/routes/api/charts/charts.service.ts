@@ -25,10 +25,21 @@ export class ChartsService {
     actorId: string,
     query: ChartSeriesQuery
   ): Promise<ChartSeriesResponse> {
-    await this.assertProjectAccess(actorId, query.projectId);
-    const { slices, totalCount } = await this.chartsRepository.sumSeries(query);
+    const { responseProjectId, projectIds } = await this.resolveProjectScope(
+      actorId,
+      query.projectId
+    );
+    const dimensionFilters = this.pickDimensionFilters(query);
+    const { slices, totalCount } = await this.chartsRepository.sumSeries({
+      projectIds,
+      labelField: query.labelField,
+      ...dimensionFilters,
+      ...(query.from ? { from: query.from } : {}),
+      ...(query.to ? { to: query.to } : {}),
+      ...(query.sprintId ? { sprintId: query.sprintId } : {}),
+    });
     return {
-      projectId: query.projectId,
+      projectId: responseProjectId,
       labelField: query.labelField,
       ...(query.from ? { from: query.from } : {}),
       ...(query.to ? { to: query.to } : {}),
@@ -42,18 +53,34 @@ export class ChartsService {
     actorId: string,
     query: ChartDrilldownQuery
   ): Promise<ChartDrilldownResponse> {
-    await this.assertProjectAccess(actorId, query.projectId);
-    const page = await this.chartsRepository.listDrilldown(query);
-    return {
-      projectId: query.projectId,
+    const { responseProjectId, projectIds } = await this.resolveProjectScope(
+      actorId,
+      query.projectId
+    );
+    const dimensionFilters = this.pickDimensionFilters(query);
+    const page = await this.chartsRepository.listDrilldown({
+      projectIds,
       labelField: query.labelField,
-      sliceKey: query.sliceKey,
+      page: query.page,
+      limit: query.limit,
+      ...dimensionFilters,
+      ...(query.sliceKey !== undefined ? { sliceKey: query.sliceKey } : {}),
+      ...(query.from ? { from: query.from } : {}),
+      ...(query.to ? { to: query.to } : {}),
+      ...(query.sprintId ? { sprintId: query.sprintId } : {}),
+    });
+    return {
+      projectId: responseProjectId,
+      labelField: query.labelField,
+      sliceKey: query.sliceKey ?? '',
       ...page,
     };
   }
 
-  create(ownerId: string, input: CreateChartBody) {
-    return this.chartsRepository.create(ownerId, input);
+  async create(ownerId: string, input: CreateChartBody) {
+    const chart = await this.chartsRepository.create(ownerId, input);
+    await this.savedViewsRepository.upsertChartBookmark(ownerId, chart);
+    return chart;
   }
 
   listOwned(ownerId: string, status?: 'active' | 'archived') {
@@ -82,17 +109,35 @@ export class ChartsService {
 
   async update(actorId: string, chartId: string, input: UpdateChartBody) {
     const chart = await this.requireOwned(actorId, chartId);
-    return this.chartsRepository.update(chart.id, actorId, input);
+    const updated = await this.chartsRepository.update(
+      chart.id,
+      actorId,
+      input
+    );
+    await this.savedViewsRepository.upsertChartBookmark(actorId, updated);
+    return updated;
   }
 
   async archive(actorId: string, chartId: string) {
     await this.requireOwned(actorId, chartId);
-    return this.chartsRepository.setStatus(chartId, actorId, 'archived');
+    const archived = await this.chartsRepository.setStatus(
+      chartId,
+      actorId,
+      'archived'
+    );
+    await this.savedViewsRepository.upsertChartBookmark(actorId, archived);
+    return archived;
   }
 
   async restore(actorId: string, chartId: string) {
     await this.requireOwned(actorId, chartId);
-    return this.chartsRepository.setStatus(chartId, actorId, 'active');
+    const restored = await this.chartsRepository.setStatus(
+      chartId,
+      actorId,
+      'active'
+    );
+    await this.savedViewsRepository.upsertChartBookmark(actorId, restored);
+    return restored;
   }
 
   async hardDelete(actorId: string, chartId: string) {
@@ -130,12 +175,7 @@ export class ChartsService {
     }
 
     if (input.createSavedViewBookmark) {
-      await this.savedViewsRepository.create(actorId, {
-        title: chart.title,
-        description: chart.description,
-        pathname: `/charts/${chart.id}`,
-        search: '',
-      });
+      await this.savedViewsRepository.upsertChartBookmark(actorId, chart);
     }
 
     return {
@@ -151,12 +191,38 @@ export class ChartsService {
     });
   }
 
-  private async assertProjectAccess(actorId: string, projectId: string) {
+  private pickDimensionFilters(query: ChartSeriesQuery | ChartDrilldownQuery): {
+    status: ChartSeriesQuery['status'];
+    type: ChartSeriesQuery['type'];
+    priority: ChartSeriesQuery['priority'];
+    assigneeId: string | undefined;
+  } {
+    return {
+      status: query.status,
+      type: query.type,
+      priority: query.priority,
+      assigneeId: query.assigneeId,
+    };
+  }
+
+  private async resolveProjectScope(
+    actorId: string,
+    projectId?: string
+  ): Promise<{
+    responseProjectId: string | null;
+    projectIds: string[];
+  }> {
     const accessible =
       await this.chartsRepository.listAccessibleProjectIds(actorId);
-    if (!accessible.includes(projectId)) {
-      throw new Error('Forbidden');
+
+    if (projectId) {
+      if (!accessible.includes(projectId)) {
+        throw new Error('Forbidden');
+      }
+      return { responseProjectId: projectId, projectIds: [projectId] };
     }
+
+    return { responseProjectId: null, projectIds: accessible };
   }
 
   private async requireOwned(actorId: string, chartId: string) {

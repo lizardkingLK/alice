@@ -32,6 +32,8 @@ export type Saved_viewsMinAggregateOutputType = {
   pathname: string | null
   search: string | null
   project_id: string | null
+  resource_kind: $Enums.SavedViewResourceKind | null
+  resource_id: string | null
   status: $Enums.RecordStatus | null
   created_by: string | null
   created_at: Date | null
@@ -47,6 +49,8 @@ export type Saved_viewsMaxAggregateOutputType = {
   pathname: string | null
   search: string | null
   project_id: string | null
+  resource_kind: $Enums.SavedViewResourceKind | null
+  resource_id: string | null
   status: $Enums.RecordStatus | null
   created_by: string | null
   created_at: Date | null
@@ -62,6 +66,8 @@ export type Saved_viewsCountAggregateOutputType = {
   pathname: number
   search: number
   project_id: number
+  resource_kind: number
+  resource_id: number
   status: number
   created_by: number
   created_at: number
@@ -79,6 +85,8 @@ export type Saved_viewsMinAggregateInputType = {
   pathname?: true
   search?: true
   project_id?: true
+  resource_kind?: true
+  resource_id?: true
   status?: true
   created_by?: true
   created_at?: true
@@ -94,6 +102,8 @@ export type Saved_viewsMaxAggregateInputType = {
   pathname?: true
   search?: true
   project_id?: true
+  resource_kind?: true
+  resource_id?: true
   status?: true
   created_by?: true
   created_at?: true
@@ -109,6 +119,8 @@ export type Saved_viewsCountAggregateInputType = {
   pathname?: true
   search?: true
   project_id?: true
+  resource_kind?: true
+  resource_id?: true
   status?: true
   created_by?: true
   created_at?: true
@@ -197,6 +209,8 @@ export type Saved_viewsGroupByOutputType = {
   pathname: string
   search: string
   project_id: string | null
+  resource_kind: $Enums.SavedViewResourceKind
+  resource_id: string | null
   status: $Enums.RecordStatus
   created_by: string | null
   created_at: Date
@@ -233,6 +247,8 @@ export type saved_viewsWhereInput = {
   pathname?: Prisma.StringFilter<"saved_views"> | string
   search?: Prisma.StringFilter<"saved_views"> | string
   project_id?: Prisma.UuidNullableFilter<"saved_views"> | string | null
+  resource_kind?: Prisma.EnumSavedViewResourceKindFilter<"saved_views"> | $Enums.SavedViewResourceKind
+  resource_id?: Prisma.UuidNullableFilter<"saved_views"> | string | null
   status?: Prisma.EnumRecordStatusFilter<"saved_views"> | $Enums.RecordStatus
   created_by?: Prisma.UuidNullableFilter<"saved_views"> | string | null
   created_at?: Prisma.DateTimeFilter<"saved_views"> | Date | string
@@ -240,6 +256,7 @@ export type saved_viewsWhereInput = {
   updated_at?: Prisma.DateTimeFilter<"saved_views"> | Date | string
   owner?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   project?: Prisma.XOR<Prisma.ProjectsNullableScalarRelationFilter, Prisma.projectsWhereInput> | null
+  chart?: Prisma.XOR<Prisma.ChartsNullableScalarRelationFilter, Prisma.chartsWhereInput> | null
   created_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   updated_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   shares?: Prisma.Saved_view_sharesListRelationFilter
@@ -253,6 +270,8 @@ export type saved_viewsOrderByWithRelationInput = {
   pathname?: Prisma.SortOrder
   search?: Prisma.SortOrder
   project_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  resource_kind?: Prisma.SortOrder
+  resource_id?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   created_by?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
@@ -260,6 +279,7 @@ export type saved_viewsOrderByWithRelationInput = {
   updated_at?: Prisma.SortOrder
   owner?: Prisma.usersOrderByWithRelationInput
   project?: Prisma.projectsOrderByWithRelationInput
+  chart?: Prisma.chartsOrderByWithRelationInput
   created_by_user?: Prisma.usersOrderByWithRelationInput
   updated_by_user?: Prisma.usersOrderByWithRelationInput
   shares?: Prisma.saved_view_sharesOrderByRelationAggregateInput
@@ -276,6 +296,8 @@ export type saved_viewsWhereUniqueInput = Prisma.AtLeast<{
   pathname?: Prisma.StringFilter<"saved_views"> | string
   search?: Prisma.StringFilter<"saved_views"> | string
   project_id?: Prisma.UuidNullableFilter<"saved_views"> | string | null
+  resource_kind?: Prisma.EnumSavedViewResourceKindFilter<"saved_views"> | $Enums.SavedViewResourceKind
+  resource_id?: Prisma.UuidNullableFilter<"saved_views"> | string | null
   status?: Prisma.EnumRecordStatusFilter<"saved_views"> | $Enums.RecordStatus
   created_by?: Prisma.UuidNullableFilter<"saved_views"> | string | null
   created_at?: Prisma.DateTimeFilter<"saved_views"> | Date | string
@@ -283,6 +305,7 @@ export type saved_viewsWhereUniqueInput = Prisma.AtLeast<{
   updated_at?: Prisma.DateTimeFilter<"saved_views"> | Date | string
   owner?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   project?: Prisma.XOR<Prisma.ProjectsNullableScalarRelationFilter, Prisma.projectsWhereInput> | null
+  chart?: Prisma.XOR<Prisma.ChartsNullableScalarRelationFilter, Prisma.chartsWhereInput> | null
   created_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   updated_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   shares?: Prisma.Saved_view_sharesListRelationFilter
@@ -296,6 +319,8 @@ export type saved_viewsOrderByWithAggregationInput = {
   pathname?: Prisma.SortOrder
   search?: Prisma.SortOrder
   project_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  resource_kind?: Prisma.SortOrder
+  resource_id?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   created_by?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
@@ -317,6 +342,8 @@ export type saved_viewsScalarWhereWithAggregatesInput = {
   pathname?: Prisma.StringWithAggregatesFilter<"saved_views"> | string
   search?: Prisma.StringWithAggregatesFilter<"saved_views"> | string
   project_id?: Prisma.UuidNullableWithAggregatesFilter<"saved_views"> | string | null
+  resource_kind?: Prisma.EnumSavedViewResourceKindWithAggregatesFilter<"saved_views"> | $Enums.SavedViewResourceKind
+  resource_id?: Prisma.UuidNullableWithAggregatesFilter<"saved_views"> | string | null
   status?: Prisma.EnumRecordStatusWithAggregatesFilter<"saved_views"> | $Enums.RecordStatus
   created_by?: Prisma.UuidNullableWithAggregatesFilter<"saved_views"> | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"saved_views"> | Date | string
@@ -330,11 +357,13 @@ export type saved_viewsCreateInput = {
   description?: string | null
   pathname: string
   search?: string
+  resource_kind?: $Enums.SavedViewResourceKind
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
   owner: Prisma.usersCreateNestedOneWithoutOwned_saved_viewsInput
   project?: Prisma.projectsCreateNestedOneWithoutSaved_viewsInput
+  chart?: Prisma.chartsCreateNestedOneWithoutSaved_viewsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_saved_viewsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_saved_viewsInput
   shares?: Prisma.saved_view_sharesCreateNestedManyWithoutViewInput
@@ -348,6 +377,8 @@ export type saved_viewsUncheckedCreateInput = {
   pathname: string
   search?: string
   project_id?: string | null
+  resource_kind?: $Enums.SavedViewResourceKind
+  resource_id?: string | null
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -362,11 +393,13 @@ export type saved_viewsUpdateInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_saved_viewsNestedInput
   project?: Prisma.projectsUpdateOneWithoutSaved_viewsNestedInput
+  chart?: Prisma.chartsUpdateOneWithoutSaved_viewsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_saved_viewsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_saved_viewsNestedInput
   shares?: Prisma.saved_view_sharesUpdateManyWithoutViewNestedInput
@@ -380,6 +413,8 @@ export type saved_viewsUncheckedUpdateInput = {
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
+  resource_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -396,6 +431,8 @@ export type saved_viewsCreateManyInput = {
   pathname: string
   search?: string
   project_id?: string | null
+  resource_kind?: $Enums.SavedViewResourceKind
+  resource_id?: string | null
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -409,6 +446,7 @@ export type saved_viewsUpdateManyMutationInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -422,6 +460,8 @@ export type saved_viewsUncheckedUpdateManyInput = {
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
+  resource_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -447,6 +487,8 @@ export type saved_viewsCountOrderByAggregateInput = {
   pathname?: Prisma.SortOrder
   search?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
+  resource_kind?: Prisma.SortOrder
+  resource_id?: Prisma.SortOrder
   status?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
@@ -462,6 +504,8 @@ export type saved_viewsMaxOrderByAggregateInput = {
   pathname?: Prisma.SortOrder
   search?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
+  resource_kind?: Prisma.SortOrder
+  resource_id?: Prisma.SortOrder
   status?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
@@ -477,6 +521,8 @@ export type saved_viewsMinOrderByAggregateInput = {
   pathname?: Prisma.SortOrder
   search?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
+  resource_kind?: Prisma.SortOrder
+  resource_id?: Prisma.SortOrder
   status?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
@@ -657,6 +703,10 @@ export type saved_viewsUncheckedUpdateManyWithoutProjectNestedInput = {
   deleteMany?: Prisma.saved_viewsScalarWhereInput | Prisma.saved_viewsScalarWhereInput[]
 }
 
+export type EnumSavedViewResourceKindFieldUpdateOperationsInput = {
+  set?: $Enums.SavedViewResourceKind
+}
+
 export type saved_viewsCreateNestedOneWithoutSharesInput = {
   create?: Prisma.XOR<Prisma.saved_viewsCreateWithoutSharesInput, Prisma.saved_viewsUncheckedCreateWithoutSharesInput>
   connectOrCreate?: Prisma.saved_viewsCreateOrConnectWithoutSharesInput
@@ -671,16 +721,60 @@ export type saved_viewsUpdateOneRequiredWithoutSharesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.saved_viewsUpdateToOneWithWhereWithoutSharesInput, Prisma.saved_viewsUpdateWithoutSharesInput>, Prisma.saved_viewsUncheckedUpdateWithoutSharesInput>
 }
 
+export type saved_viewsCreateNestedManyWithoutChartInput = {
+  create?: Prisma.XOR<Prisma.saved_viewsCreateWithoutChartInput, Prisma.saved_viewsUncheckedCreateWithoutChartInput> | Prisma.saved_viewsCreateWithoutChartInput[] | Prisma.saved_viewsUncheckedCreateWithoutChartInput[]
+  connectOrCreate?: Prisma.saved_viewsCreateOrConnectWithoutChartInput | Prisma.saved_viewsCreateOrConnectWithoutChartInput[]
+  createMany?: Prisma.saved_viewsCreateManyChartInputEnvelope
+  connect?: Prisma.saved_viewsWhereUniqueInput | Prisma.saved_viewsWhereUniqueInput[]
+}
+
+export type saved_viewsUncheckedCreateNestedManyWithoutChartInput = {
+  create?: Prisma.XOR<Prisma.saved_viewsCreateWithoutChartInput, Prisma.saved_viewsUncheckedCreateWithoutChartInput> | Prisma.saved_viewsCreateWithoutChartInput[] | Prisma.saved_viewsUncheckedCreateWithoutChartInput[]
+  connectOrCreate?: Prisma.saved_viewsCreateOrConnectWithoutChartInput | Prisma.saved_viewsCreateOrConnectWithoutChartInput[]
+  createMany?: Prisma.saved_viewsCreateManyChartInputEnvelope
+  connect?: Prisma.saved_viewsWhereUniqueInput | Prisma.saved_viewsWhereUniqueInput[]
+}
+
+export type saved_viewsUpdateManyWithoutChartNestedInput = {
+  create?: Prisma.XOR<Prisma.saved_viewsCreateWithoutChartInput, Prisma.saved_viewsUncheckedCreateWithoutChartInput> | Prisma.saved_viewsCreateWithoutChartInput[] | Prisma.saved_viewsUncheckedCreateWithoutChartInput[]
+  connectOrCreate?: Prisma.saved_viewsCreateOrConnectWithoutChartInput | Prisma.saved_viewsCreateOrConnectWithoutChartInput[]
+  upsert?: Prisma.saved_viewsUpsertWithWhereUniqueWithoutChartInput | Prisma.saved_viewsUpsertWithWhereUniqueWithoutChartInput[]
+  createMany?: Prisma.saved_viewsCreateManyChartInputEnvelope
+  set?: Prisma.saved_viewsWhereUniqueInput | Prisma.saved_viewsWhereUniqueInput[]
+  disconnect?: Prisma.saved_viewsWhereUniqueInput | Prisma.saved_viewsWhereUniqueInput[]
+  delete?: Prisma.saved_viewsWhereUniqueInput | Prisma.saved_viewsWhereUniqueInput[]
+  connect?: Prisma.saved_viewsWhereUniqueInput | Prisma.saved_viewsWhereUniqueInput[]
+  update?: Prisma.saved_viewsUpdateWithWhereUniqueWithoutChartInput | Prisma.saved_viewsUpdateWithWhereUniqueWithoutChartInput[]
+  updateMany?: Prisma.saved_viewsUpdateManyWithWhereWithoutChartInput | Prisma.saved_viewsUpdateManyWithWhereWithoutChartInput[]
+  deleteMany?: Prisma.saved_viewsScalarWhereInput | Prisma.saved_viewsScalarWhereInput[]
+}
+
+export type saved_viewsUncheckedUpdateManyWithoutChartNestedInput = {
+  create?: Prisma.XOR<Prisma.saved_viewsCreateWithoutChartInput, Prisma.saved_viewsUncheckedCreateWithoutChartInput> | Prisma.saved_viewsCreateWithoutChartInput[] | Prisma.saved_viewsUncheckedCreateWithoutChartInput[]
+  connectOrCreate?: Prisma.saved_viewsCreateOrConnectWithoutChartInput | Prisma.saved_viewsCreateOrConnectWithoutChartInput[]
+  upsert?: Prisma.saved_viewsUpsertWithWhereUniqueWithoutChartInput | Prisma.saved_viewsUpsertWithWhereUniqueWithoutChartInput[]
+  createMany?: Prisma.saved_viewsCreateManyChartInputEnvelope
+  set?: Prisma.saved_viewsWhereUniqueInput | Prisma.saved_viewsWhereUniqueInput[]
+  disconnect?: Prisma.saved_viewsWhereUniqueInput | Prisma.saved_viewsWhereUniqueInput[]
+  delete?: Prisma.saved_viewsWhereUniqueInput | Prisma.saved_viewsWhereUniqueInput[]
+  connect?: Prisma.saved_viewsWhereUniqueInput | Prisma.saved_viewsWhereUniqueInput[]
+  update?: Prisma.saved_viewsUpdateWithWhereUniqueWithoutChartInput | Prisma.saved_viewsUpdateWithWhereUniqueWithoutChartInput[]
+  updateMany?: Prisma.saved_viewsUpdateManyWithWhereWithoutChartInput | Prisma.saved_viewsUpdateManyWithWhereWithoutChartInput[]
+  deleteMany?: Prisma.saved_viewsScalarWhereInput | Prisma.saved_viewsScalarWhereInput[]
+}
+
 export type saved_viewsCreateWithoutOwnerInput = {
   id?: string
   title: string
   description?: string | null
   pathname: string
   search?: string
+  resource_kind?: $Enums.SavedViewResourceKind
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
   project?: Prisma.projectsCreateNestedOneWithoutSaved_viewsInput
+  chart?: Prisma.chartsCreateNestedOneWithoutSaved_viewsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_saved_viewsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_saved_viewsInput
   shares?: Prisma.saved_view_sharesCreateNestedManyWithoutViewInput
@@ -693,6 +787,8 @@ export type saved_viewsUncheckedCreateWithoutOwnerInput = {
   pathname: string
   search?: string
   project_id?: string | null
+  resource_kind?: $Enums.SavedViewResourceKind
+  resource_id?: string | null
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -717,11 +813,13 @@ export type saved_viewsCreateWithoutCreated_by_userInput = {
   description?: string | null
   pathname: string
   search?: string
+  resource_kind?: $Enums.SavedViewResourceKind
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
   owner: Prisma.usersCreateNestedOneWithoutOwned_saved_viewsInput
   project?: Prisma.projectsCreateNestedOneWithoutSaved_viewsInput
+  chart?: Prisma.chartsCreateNestedOneWithoutSaved_viewsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_saved_viewsInput
   shares?: Prisma.saved_view_sharesCreateNestedManyWithoutViewInput
 }
@@ -734,6 +832,8 @@ export type saved_viewsUncheckedCreateWithoutCreated_by_userInput = {
   pathname: string
   search?: string
   project_id?: string | null
+  resource_kind?: $Enums.SavedViewResourceKind
+  resource_id?: string | null
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_by?: string | null
@@ -757,11 +857,13 @@ export type saved_viewsCreateWithoutUpdated_by_userInput = {
   description?: string | null
   pathname: string
   search?: string
+  resource_kind?: $Enums.SavedViewResourceKind
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
   owner: Prisma.usersCreateNestedOneWithoutOwned_saved_viewsInput
   project?: Prisma.projectsCreateNestedOneWithoutSaved_viewsInput
+  chart?: Prisma.chartsCreateNestedOneWithoutSaved_viewsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_saved_viewsInput
   shares?: Prisma.saved_view_sharesCreateNestedManyWithoutViewInput
 }
@@ -774,6 +876,8 @@ export type saved_viewsUncheckedCreateWithoutUpdated_by_userInput = {
   pathname: string
   search?: string
   project_id?: string | null
+  resource_kind?: $Enums.SavedViewResourceKind
+  resource_id?: string | null
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -818,6 +922,8 @@ export type saved_viewsScalarWhereInput = {
   pathname?: Prisma.StringFilter<"saved_views"> | string
   search?: Prisma.StringFilter<"saved_views"> | string
   project_id?: Prisma.UuidNullableFilter<"saved_views"> | string | null
+  resource_kind?: Prisma.EnumSavedViewResourceKindFilter<"saved_views"> | $Enums.SavedViewResourceKind
+  resource_id?: Prisma.UuidNullableFilter<"saved_views"> | string | null
   status?: Prisma.EnumRecordStatusFilter<"saved_views"> | $Enums.RecordStatus
   created_by?: Prisma.UuidNullableFilter<"saved_views"> | string | null
   created_at?: Prisma.DateTimeFilter<"saved_views"> | Date | string
@@ -863,10 +969,12 @@ export type saved_viewsCreateWithoutProjectInput = {
   description?: string | null
   pathname: string
   search?: string
+  resource_kind?: $Enums.SavedViewResourceKind
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
   owner: Prisma.usersCreateNestedOneWithoutOwned_saved_viewsInput
+  chart?: Prisma.chartsCreateNestedOneWithoutSaved_viewsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_saved_viewsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_saved_viewsInput
   shares?: Prisma.saved_view_sharesCreateNestedManyWithoutViewInput
@@ -879,6 +987,8 @@ export type saved_viewsUncheckedCreateWithoutProjectInput = {
   description?: string | null
   pathname: string
   search?: string
+  resource_kind?: $Enums.SavedViewResourceKind
+  resource_id?: string | null
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -919,11 +1029,13 @@ export type saved_viewsCreateWithoutSharesInput = {
   description?: string | null
   pathname: string
   search?: string
+  resource_kind?: $Enums.SavedViewResourceKind
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
   owner: Prisma.usersCreateNestedOneWithoutOwned_saved_viewsInput
   project?: Prisma.projectsCreateNestedOneWithoutSaved_viewsInput
+  chart?: Prisma.chartsCreateNestedOneWithoutSaved_viewsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_saved_viewsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_saved_viewsInput
 }
@@ -936,6 +1048,8 @@ export type saved_viewsUncheckedCreateWithoutSharesInput = {
   pathname: string
   search?: string
   project_id?: string | null
+  resource_kind?: $Enums.SavedViewResourceKind
+  resource_id?: string | null
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -965,11 +1079,13 @@ export type saved_viewsUpdateWithoutSharesInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_saved_viewsNestedInput
   project?: Prisma.projectsUpdateOneWithoutSaved_viewsNestedInput
+  chart?: Prisma.chartsUpdateOneWithoutSaved_viewsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_saved_viewsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_saved_viewsNestedInput
 }
@@ -982,11 +1098,73 @@ export type saved_viewsUncheckedUpdateWithoutSharesInput = {
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
+  resource_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type saved_viewsCreateWithoutChartInput = {
+  id?: string
+  title: string
+  description?: string | null
+  pathname: string
+  search?: string
+  resource_kind?: $Enums.SavedViewResourceKind
+  status?: $Enums.RecordStatus
+  created_at?: Date | string
+  updated_at?: Date | string
+  owner: Prisma.usersCreateNestedOneWithoutOwned_saved_viewsInput
+  project?: Prisma.projectsCreateNestedOneWithoutSaved_viewsInput
+  created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_saved_viewsInput
+  updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_saved_viewsInput
+  shares?: Prisma.saved_view_sharesCreateNestedManyWithoutViewInput
+}
+
+export type saved_viewsUncheckedCreateWithoutChartInput = {
+  id?: string
+  owner_id: string
+  title: string
+  description?: string | null
+  pathname: string
+  search?: string
+  project_id?: string | null
+  resource_kind?: $Enums.SavedViewResourceKind
+  status?: $Enums.RecordStatus
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutViewInput
+}
+
+export type saved_viewsCreateOrConnectWithoutChartInput = {
+  where: Prisma.saved_viewsWhereUniqueInput
+  create: Prisma.XOR<Prisma.saved_viewsCreateWithoutChartInput, Prisma.saved_viewsUncheckedCreateWithoutChartInput>
+}
+
+export type saved_viewsCreateManyChartInputEnvelope = {
+  data: Prisma.saved_viewsCreateManyChartInput | Prisma.saved_viewsCreateManyChartInput[]
+  skipDuplicates?: boolean
+}
+
+export type saved_viewsUpsertWithWhereUniqueWithoutChartInput = {
+  where: Prisma.saved_viewsWhereUniqueInput
+  update: Prisma.XOR<Prisma.saved_viewsUpdateWithoutChartInput, Prisma.saved_viewsUncheckedUpdateWithoutChartInput>
+  create: Prisma.XOR<Prisma.saved_viewsCreateWithoutChartInput, Prisma.saved_viewsUncheckedCreateWithoutChartInput>
+}
+
+export type saved_viewsUpdateWithWhereUniqueWithoutChartInput = {
+  where: Prisma.saved_viewsWhereUniqueInput
+  data: Prisma.XOR<Prisma.saved_viewsUpdateWithoutChartInput, Prisma.saved_viewsUncheckedUpdateWithoutChartInput>
+}
+
+export type saved_viewsUpdateManyWithWhereWithoutChartInput = {
+  where: Prisma.saved_viewsScalarWhereInput
+  data: Prisma.XOR<Prisma.saved_viewsUpdateManyMutationInput, Prisma.saved_viewsUncheckedUpdateManyWithoutChartInput>
 }
 
 export type saved_viewsCreateManyOwnerInput = {
@@ -996,6 +1174,8 @@ export type saved_viewsCreateManyOwnerInput = {
   pathname: string
   search?: string
   project_id?: string | null
+  resource_kind?: $Enums.SavedViewResourceKind
+  resource_id?: string | null
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -1011,6 +1191,8 @@ export type saved_viewsCreateManyCreated_by_userInput = {
   pathname: string
   search?: string
   project_id?: string | null
+  resource_kind?: $Enums.SavedViewResourceKind
+  resource_id?: string | null
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_by?: string | null
@@ -1025,6 +1207,8 @@ export type saved_viewsCreateManyUpdated_by_userInput = {
   pathname: string
   search?: string
   project_id?: string | null
+  resource_kind?: $Enums.SavedViewResourceKind
+  resource_id?: string | null
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -1037,10 +1221,12 @@ export type saved_viewsUpdateWithoutOwnerInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project?: Prisma.projectsUpdateOneWithoutSaved_viewsNestedInput
+  chart?: Prisma.chartsUpdateOneWithoutSaved_viewsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_saved_viewsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_saved_viewsNestedInput
   shares?: Prisma.saved_view_sharesUpdateManyWithoutViewNestedInput
@@ -1053,6 +1239,8 @@ export type saved_viewsUncheckedUpdateWithoutOwnerInput = {
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
+  resource_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1068,6 +1256,8 @@ export type saved_viewsUncheckedUpdateManyWithoutOwnerInput = {
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
+  resource_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1081,11 +1271,13 @@ export type saved_viewsUpdateWithoutCreated_by_userInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_saved_viewsNestedInput
   project?: Prisma.projectsUpdateOneWithoutSaved_viewsNestedInput
+  chart?: Prisma.chartsUpdateOneWithoutSaved_viewsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_saved_viewsNestedInput
   shares?: Prisma.saved_view_sharesUpdateManyWithoutViewNestedInput
 }
@@ -1098,6 +1290,8 @@ export type saved_viewsUncheckedUpdateWithoutCreated_by_userInput = {
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
+  resource_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1113,6 +1307,8 @@ export type saved_viewsUncheckedUpdateManyWithoutCreated_by_userInput = {
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
+  resource_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1125,11 +1321,13 @@ export type saved_viewsUpdateWithoutUpdated_by_userInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_saved_viewsNestedInput
   project?: Prisma.projectsUpdateOneWithoutSaved_viewsNestedInput
+  chart?: Prisma.chartsUpdateOneWithoutSaved_viewsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_saved_viewsNestedInput
   shares?: Prisma.saved_view_sharesUpdateManyWithoutViewNestedInput
 }
@@ -1142,6 +1340,8 @@ export type saved_viewsUncheckedUpdateWithoutUpdated_by_userInput = {
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
+  resource_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1157,6 +1357,8 @@ export type saved_viewsUncheckedUpdateManyWithoutUpdated_by_userInput = {
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
+  resource_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1170,6 +1372,8 @@ export type saved_viewsCreateManyProjectInput = {
   description?: string | null
   pathname: string
   search?: string
+  resource_kind?: $Enums.SavedViewResourceKind
+  resource_id?: string | null
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -1183,10 +1387,12 @@ export type saved_viewsUpdateWithoutProjectInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_saved_viewsNestedInput
+  chart?: Prisma.chartsUpdateOneWithoutSaved_viewsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_saved_viewsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_saved_viewsNestedInput
   shares?: Prisma.saved_view_sharesUpdateManyWithoutViewNestedInput
@@ -1199,6 +1405,8 @@ export type saved_viewsUncheckedUpdateWithoutProjectInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
+  resource_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1214,6 +1422,74 @@ export type saved_viewsUncheckedUpdateManyWithoutProjectInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pathname?: Prisma.StringFieldUpdateOperationsInput | string
   search?: Prisma.StringFieldUpdateOperationsInput | string
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
+  resource_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type saved_viewsCreateManyChartInput = {
+  id?: string
+  owner_id: string
+  title: string
+  description?: string | null
+  pathname: string
+  search?: string
+  project_id?: string | null
+  resource_kind?: $Enums.SavedViewResourceKind
+  status?: $Enums.RecordStatus
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+}
+
+export type saved_viewsUpdateWithoutChartInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pathname?: Prisma.StringFieldUpdateOperationsInput | string
+  search?: Prisma.StringFieldUpdateOperationsInput | string
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.usersUpdateOneRequiredWithoutOwned_saved_viewsNestedInput
+  project?: Prisma.projectsUpdateOneWithoutSaved_viewsNestedInput
+  created_by_user?: Prisma.usersUpdateOneWithoutCreated_saved_viewsNestedInput
+  updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_saved_viewsNestedInput
+  shares?: Prisma.saved_view_sharesUpdateManyWithoutViewNestedInput
+}
+
+export type saved_viewsUncheckedUpdateWithoutChartInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  owner_id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pathname?: Prisma.StringFieldUpdateOperationsInput | string
+  search?: Prisma.StringFieldUpdateOperationsInput | string
+  project_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutViewNestedInput
+}
+
+export type saved_viewsUncheckedUpdateManyWithoutChartInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  owner_id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pathname?: Prisma.StringFieldUpdateOperationsInput | string
+  search?: Prisma.StringFieldUpdateOperationsInput | string
+  project_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resource_kind?: Prisma.EnumSavedViewResourceKindFieldUpdateOperationsInput | $Enums.SavedViewResourceKind
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1260,6 +1536,8 @@ export type saved_viewsSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   pathname?: boolean
   search?: boolean
   project_id?: boolean
+  resource_kind?: boolean
+  resource_id?: boolean
   status?: boolean
   created_by?: boolean
   created_at?: boolean
@@ -1267,6 +1545,7 @@ export type saved_viewsSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   updated_at?: boolean
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   project?: boolean | Prisma.saved_views$projectArgs<ExtArgs>
+  chart?: boolean | Prisma.saved_views$chartArgs<ExtArgs>
   created_by_user?: boolean | Prisma.saved_views$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.saved_views$updated_by_userArgs<ExtArgs>
   shares?: boolean | Prisma.saved_views$sharesArgs<ExtArgs>
@@ -1281,6 +1560,8 @@ export type saved_viewsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   pathname?: boolean
   search?: boolean
   project_id?: boolean
+  resource_kind?: boolean
+  resource_id?: boolean
   status?: boolean
   created_by?: boolean
   created_at?: boolean
@@ -1288,6 +1569,7 @@ export type saved_viewsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   updated_at?: boolean
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   project?: boolean | Prisma.saved_views$projectArgs<ExtArgs>
+  chart?: boolean | Prisma.saved_views$chartArgs<ExtArgs>
   created_by_user?: boolean | Prisma.saved_views$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.saved_views$updated_by_userArgs<ExtArgs>
 }, ExtArgs["result"]["saved_views"]>
@@ -1300,6 +1582,8 @@ export type saved_viewsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   pathname?: boolean
   search?: boolean
   project_id?: boolean
+  resource_kind?: boolean
+  resource_id?: boolean
   status?: boolean
   created_by?: boolean
   created_at?: boolean
@@ -1307,6 +1591,7 @@ export type saved_viewsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   updated_at?: boolean
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   project?: boolean | Prisma.saved_views$projectArgs<ExtArgs>
+  chart?: boolean | Prisma.saved_views$chartArgs<ExtArgs>
   created_by_user?: boolean | Prisma.saved_views$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.saved_views$updated_by_userArgs<ExtArgs>
 }, ExtArgs["result"]["saved_views"]>
@@ -1319,6 +1604,8 @@ export type saved_viewsSelectScalar = {
   pathname?: boolean
   search?: boolean
   project_id?: boolean
+  resource_kind?: boolean
+  resource_id?: boolean
   status?: boolean
   created_by?: boolean
   created_at?: boolean
@@ -1326,10 +1613,11 @@ export type saved_viewsSelectScalar = {
   updated_at?: boolean
 }
 
-export type saved_viewsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "owner_id" | "title" | "description" | "pathname" | "search" | "project_id" | "status" | "created_by" | "created_at" | "updated_by" | "updated_at", ExtArgs["result"]["saved_views"]>
+export type saved_viewsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "owner_id" | "title" | "description" | "pathname" | "search" | "project_id" | "resource_kind" | "resource_id" | "status" | "created_by" | "created_at" | "updated_by" | "updated_at", ExtArgs["result"]["saved_views"]>
 export type saved_viewsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   project?: boolean | Prisma.saved_views$projectArgs<ExtArgs>
+  chart?: boolean | Prisma.saved_views$chartArgs<ExtArgs>
   created_by_user?: boolean | Prisma.saved_views$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.saved_views$updated_by_userArgs<ExtArgs>
   shares?: boolean | Prisma.saved_views$sharesArgs<ExtArgs>
@@ -1338,12 +1626,14 @@ export type saved_viewsInclude<ExtArgs extends runtime.Types.Extensions.Internal
 export type saved_viewsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   project?: boolean | Prisma.saved_views$projectArgs<ExtArgs>
+  chart?: boolean | Prisma.saved_views$chartArgs<ExtArgs>
   created_by_user?: boolean | Prisma.saved_views$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.saved_views$updated_by_userArgs<ExtArgs>
 }
 export type saved_viewsIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   project?: boolean | Prisma.saved_views$projectArgs<ExtArgs>
+  chart?: boolean | Prisma.saved_views$chartArgs<ExtArgs>
   created_by_user?: boolean | Prisma.saved_views$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.saved_views$updated_by_userArgs<ExtArgs>
 }
@@ -1353,6 +1643,7 @@ export type $saved_viewsPayload<ExtArgs extends runtime.Types.Extensions.Interna
   objects: {
     owner: Prisma.$usersPayload<ExtArgs>
     project: Prisma.$projectsPayload<ExtArgs> | null
+    chart: Prisma.$chartsPayload<ExtArgs> | null
     created_by_user: Prisma.$usersPayload<ExtArgs> | null
     updated_by_user: Prisma.$usersPayload<ExtArgs> | null
     shares: Prisma.$saved_view_sharesPayload<ExtArgs>[]
@@ -1368,6 +1659,14 @@ export type $saved_viewsPayload<ExtArgs extends runtime.Types.Extensions.Interna
      */
     search: string
     project_id: string | null
+    /**
+     * `page` = URL snapshot; `chart` = pointer to `charts.id` via `resource_id`.
+     */
+    resource_kind: $Enums.SavedViewResourceKind
+    /**
+     * Chart workspace id when `resource_kind = chart`; null for page snapshots.
+     */
+    resource_id: string | null
     status: $Enums.RecordStatus
     created_by: string | null
     created_at: Date
@@ -1769,6 +2068,7 @@ export interface Prisma__saved_viewsClient<T, Null = never, ExtArgs extends runt
   readonly [Symbol.toStringTag]: "PrismaPromise"
   owner<T extends Prisma.usersDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.usersDefaultArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   project<T extends Prisma.saved_views$projectArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.saved_views$projectArgs<ExtArgs>>): Prisma.Prisma__projectsClient<runtime.Types.Result.GetResult<Prisma.$projectsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  chart<T extends Prisma.saved_views$chartArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.saved_views$chartArgs<ExtArgs>>): Prisma.Prisma__chartsClient<runtime.Types.Result.GetResult<Prisma.$chartsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   created_by_user<T extends Prisma.saved_views$created_by_userArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.saved_views$created_by_userArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   updated_by_user<T extends Prisma.saved_views$updated_by_userArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.saved_views$updated_by_userArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   shares<T extends Prisma.saved_views$sharesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.saved_views$sharesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$saved_view_sharesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -1808,6 +2108,8 @@ export interface saved_viewsFieldRefs {
   readonly pathname: Prisma.FieldRef<"saved_views", 'String'>
   readonly search: Prisma.FieldRef<"saved_views", 'String'>
   readonly project_id: Prisma.FieldRef<"saved_views", 'String'>
+  readonly resource_kind: Prisma.FieldRef<"saved_views", 'SavedViewResourceKind'>
+  readonly resource_id: Prisma.FieldRef<"saved_views", 'String'>
   readonly status: Prisma.FieldRef<"saved_views", 'RecordStatus'>
   readonly created_by: Prisma.FieldRef<"saved_views", 'String'>
   readonly created_at: Prisma.FieldRef<"saved_views", 'DateTime'>
@@ -2230,6 +2532,25 @@ export type saved_views$projectArgs<ExtArgs extends runtime.Types.Extensions.Int
    */
   include?: Prisma.projectsInclude<ExtArgs> | null
   where?: Prisma.projectsWhereInput
+}
+
+/**
+ * saved_views.chart
+ */
+export type saved_views$chartArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the charts
+   */
+  select?: Prisma.chartsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the charts
+   */
+  omit?: Prisma.chartsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.chartsInclude<ExtArgs> | null
+  where?: Prisma.chartsWhereInput
 }
 
 /**

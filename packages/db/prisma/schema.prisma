@@ -28,6 +28,12 @@ enum RecordStatus {
   deleted
 }
 
+/// Discriminator for saved_views rows: URL page snapshot vs chart workspace bookmark.
+enum SavedViewResourceKind {
+  page
+  chart
+}
+
 enum ProjectStatus {
   active
   archived
@@ -553,30 +559,38 @@ model chat_attachments {
 
 /// Personal saved navigation snapshots (pathname + query); shareable via saved_view_shares.
 model saved_views {
-  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  owner_id    String       @db.Uuid
-  title       String
-  description String?
-  pathname    String
+  id            String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_id      String                @db.Uuid
+  title         String
+  description   String?
+  pathname      String
   /// Query string without leading `?`.
-  search      String       @default("")
-  project_id  String?      @db.Uuid
-  status      RecordStatus @default(active)
-  created_by  String?      @db.Uuid
-  created_at  DateTime     @default(now()) @db.Timestamptz(6)
-  updated_by  String?      @db.Uuid
-  updated_at  DateTime     @updatedAt @db.Timestamptz(6)
+  search        String                @default("")
+  project_id    String?               @db.Uuid
+  /// `page` = URL snapshot; `chart` = pointer to `charts.id` via `resource_id`.
+  resource_kind SavedViewResourceKind @default(page)
+  /// Chart workspace id when `resource_kind = chart`; null for page snapshots.
+  resource_id   String?               @db.Uuid
+  status        RecordStatus          @default(active)
+  created_by    String?               @db.Uuid
+  created_at    DateTime              @default(now()) @db.Timestamptz(6)
+  updated_by    String?               @db.Uuid
+  updated_at    DateTime              @updatedAt @db.Timestamptz(6)
 
   owner           users               @relation("SavedViewOwner", fields: [owner_id], references: [id], onDelete: Cascade)
   project         projects?           @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  chart           charts?             @relation("ChartSavedViewBookmark", fields: [resource_id], references: [id], onDelete: Cascade)
   created_by_user users?              @relation("SavedViewCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users?              @relation("SavedViewUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
   shares          saved_view_shares[]
 
   @@index([owner_id, status])
+  @@index([owner_id, status, resource_kind])
   @@index([project_id])
   /// Partial unique index `saved_views_owner_path_active_key` enforces one active row
   /// per (owner_id, pathname, search) — see migration add_saved_views_owner_path_unique.
+  /// Partial unique `saved_views_owner_chart_resource_active_key` — one active chart
+  /// bookmark per owner per resource_id — see add_saved_views_resource_kind.
 }
 
 model saved_view_shares {
@@ -616,6 +630,7 @@ model charts {
   created_by_user users?         @relation("ChartCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users?         @relation("ChartUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
   shares          chart_shares[]
+  saved_views     saved_views[]  @relation("ChartSavedViewBookmark")
 
   @@index([owner_id, status])
 }

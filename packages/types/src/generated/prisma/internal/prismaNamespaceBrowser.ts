@@ -407,6 +407,8 @@ export const Saved_viewsScalarFieldEnum = {
   pathname: 'pathname',
   search: 'search',
   project_id: 'project_id',
+  resource_kind: 'resource_kind',
+  resource_id: 'resource_id',
   status: 'status',
   created_by: 'created_by',
   created_at: 'created_at',

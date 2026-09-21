@@ -9,7 +9,7 @@ import {
 
 /** PostgREST column list for saved-view list/detail reads (RSC + mutation follow-ups). */
 export const SAVED_VIEW_POSTGREST_SELECT =
-  'id, owner_id, title, description, pathname, search, project_id, status, created_by, created_at, updated_by, updated_at' as const;
+  'id, owner_id, title, description, pathname, search, project_id, resource_kind, resource_id, status, created_by, created_at, updated_by, updated_at' as const;
 
 /** Prisma `select` for unused Express saved-view GETs (future Prisma list/detail). */
 export const savedViewListSelect = {
@@ -20,6 +20,8 @@ export const savedViewListSelect = {
   pathname: true,
   search: true,
   project_id: true,
+  resource_kind: true,
+  resource_id: true,
   status: true,
   created_by: true,
   created_at: true,
@@ -48,6 +50,8 @@ export const savedViewWireSchema = z.object({
   pathname: z.string(),
   search: z.string(),
   project_id: z.uuid().nullable(),
+  resource_kind: z.enum(['page', 'chart']),
+  resource_id: z.uuid().nullable(),
   status: recordStatusSchema,
   created_by: z.uuid().nullable(),
   created_at: z.string(),

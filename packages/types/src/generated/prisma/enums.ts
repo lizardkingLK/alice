@@ -36,6 +36,14 @@ export const RecordStatus = {
 export type RecordStatus = (typeof RecordStatus)[keyof typeof RecordStatus]
 
 
+export const SavedViewResourceKind = {
+  page: 'page',
+  chart: 'chart'
+} as const
+
+export type SavedViewResourceKind = (typeof SavedViewResourceKind)[keyof typeof SavedViewResourceKind]
+
+
 export const ProjectStatus = {
   active: 'active',
   archived: 'archived'

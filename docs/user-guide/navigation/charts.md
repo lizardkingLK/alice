@@ -2,7 +2,8 @@
 
 Build personal **chart workspaces** — drag-and-drop widget boards. The sidebar
 opens your last-used workspace. You can save multiple workspaces, mark one for
-Overview, and deep-link into a widget’s configuration.
+Overview, and deep-link into a widget’s configuration. Workspaces sync to your
+account (with a local cache on this device).
 
 **Audience:** All users
 
@@ -42,8 +43,7 @@ Each workspace is a named board of widgets.
 1. Open the workspace **⋯** menu.
 2. Choose **Share**.
 3. Pick a project (to load members), optionally a team, then select recipients.
-4. Share syncs the workspace to the cloud (when available) and notifies
-   recipients. Alice can also bookmark `/charts/[id]` in Views.
+4. Share notifies recipients and can bookmark `/charts/[id]` in Views.
 
 ---
 
@@ -90,9 +90,12 @@ Use the **split view** button in the toolbar to choose:
 | Split mode | Chart on top and the status table underneath           |
 
 Click a pie slice (or legend row) to jump to **Split**. The table stays grouped
-by **status**, scoped to the selected Labels slice (for example, Owner → only
-that assignee’s New / To do / In progress groups). Pick another layout to clear
-the slice focus.
+by **status** in board order (New → To do → In progress → Testing → Done),
+scoped to the selected Labels slice. Status groups with no matching rows are
+hidden. Toolbar search (task title or assignee) keeps that order among matches
+and expands the groups that still have items.
+
+Pick another layout to clear the slice focus.
 
 ### Widget settings
 
@@ -101,36 +104,56 @@ the slice focus.
    **Coming soon**.
 3. Under **Labels** → **Columns**, choose how to group the chart: **Project**,
    **Owner**, **Status**, **Type**, or **Priority**. The pie and legend update
-   from live work-item counts. Selection is saved with the widget on this device
-   (and with the workspace when cloud save is enabled).
-4. **Values**, **Customize**, **Groups**, and **Choose which columns to show**
-   are preview UI only for now.
+   from live work-item counts.
+4. Under **Values**, charts use **Count items** only (other calculations are
+   coming later).
+5. Under **Customize**, choose **Value** or **%**, sort slices, and optionally
+   show empty values.
+6. Under **Choose which columns to show**, pick which drilldown table columns
+   appear (Task, Owner, Status, Type, Priority).
+7. **Groups** is **Coming soon** (empty status groups are already hidden in the
+   table).
 
-The legend scrolls when there are many slices. Pie vs donut and Labels are saved
-with the widget on this device (and with the workspace when cloud save is
-enabled).
+The legend scrolls when there are many slices. Settings are saved with the
+widget and workspace.
 
-Chart slices reflect **counts** of work items (not story points yet). Choose a
-**project** in widget filters first — without a project the chart stays empty.
-Clicking a slice opens the table scoped to that group.
+Chart slices reflect **counts** of work items (not story points yet). Filters
+default to **All projects** (or your saved workspace defaults). Clicking a
+slice opens the table scoped to that group.
+
+---
+
+## Workspace defaults
+
+Charts uses the same **Defaults** control as Board and Work items (on the left
+side of the toolbar, next to search and workspace filters). Save a default
+**project** (including **All projects**) and optional **sprint**. New Chart
+widgets you insert inherit those filters. Existing widgets keep their own
+filters until you change them.
 
 ---
 
 ## Chart widget filters
 
 1. Select the **filter** icon on the widget header to open fullscreen config.
-2. Pick a **project** (required for live data). Optional Advanced / Quick
-   filters, search, and assignee avatars refine the table after a slice click.
-3. Dismiss the filter popover by clicking outside it, or **Close** / **Apply**.
-4. Use layout, settings, and **⋯** as described above.
+2. Choose **All projects** or a specific **project** (Quick filters opens on
+   **Project** by default). Optionally pick a **sprint** for that project
+   (disabled until a single project is selected). Use **Assignee** (and other
+   fields) in Quick / Advanced filters. The toolbar search filters the table by
+   task title or assignee name after a slice click.
+3. In **Advanced**, project and sprint sit above the rule rows. Each column
+   (Status, Type, …) can appear at most once — two “Status is …” rows cannot
+   both be true under AND.
+4. Dismiss the filter popover by clicking outside it, or **Close** / **Apply**.
+5. Use layout, settings, and **⋯** as described above.
 
 ---
 
 ## Sharing
 
 Workspaces can be shared using the same model as **Views**: recipients get
-access to the chart board, and you can optionally bookmark `/charts/[id]` as a
-saved view. Board layout is **not** stored inside Views.
+access to the chart board, and you can bookmark `/charts/[id]` as a saved view.
+Board layout is **not** stored inside Views.
 
 ---
 

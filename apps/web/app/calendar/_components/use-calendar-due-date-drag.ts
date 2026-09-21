@@ -132,6 +132,12 @@ export function useCalendarDueDateDrag({
         return;
       }
 
+      // Done work items are read-only. Ignore stale/existing calendar entries
+      // before applying an optimistic due-date change or calling the API.
+      if (currentItem.status === 'Done') {
+        return;
+      }
+
       const previousDueDate = currentItem.due_date;
       const previousDateOnly = previousDueDate?.split('T')[0] ?? null;
       if (previousDateOnly === targetDate) {

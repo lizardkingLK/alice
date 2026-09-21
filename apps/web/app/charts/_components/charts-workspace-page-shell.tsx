@@ -1,8 +1,7 @@
 import { Suspense } from 'react';
 import { ChartsDashboardShell } from '@/app/charts/_components/charts-dashboard-shell';
 import { ChartsData } from '@/app/charts/_components/charts-data';
-import { RegistryPageSkeleton } from '@/components/registry-page-skeleton';
-import { REGISTRY_PAGES } from '@/components/registry-page-shell';
+import { ChartsWorkspaceSkeleton } from '@/app/charts/_components/charts-workspace-skeleton';
 import type { RawSearchParams } from '@/lib/search-params';
 
 type ChartsWorkspacePageShellProps = {
@@ -19,10 +18,9 @@ export function ChartsWorkspacePageShell({
   currentUserId,
   focusWidgetId,
 }: Readonly<ChartsWorkspacePageShellProps>) {
-  const meta = REGISTRY_PAGES.charts;
   return (
     <ChartsDashboardShell workspaceId={workspaceId} breadcrumbAsTrail>
-      <Suspense fallback={<RegistryPageSkeleton {...meta.skeleton} />}>
+      <Suspense fallback={<ChartsWorkspaceSkeleton />}>
         <ChartsData
           searchParams={searchParams}
           workspaceId={workspaceId}
