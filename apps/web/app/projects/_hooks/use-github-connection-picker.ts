@@ -2,61 +2,64 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  listJiraConnectionProjects,
-  listJiraConnections,
-  startJiraOAuth,
-  type JiraCloudProject,
-  type JiraConnection,
-} from '@/app/projects/_services/projects.jira.mutations.client';
+  listGithubConnections,
+  listGithubRepositories,
+  startGithubOAuth,
+  type GithubConnectionDto,
+  type GithubRepoOption,
+} from '@/app/projects/_services/projects.github.mutations.client';
 import {
   subscribeToOAuthCompletion,
   IntegrationOAuthProvider,
   OAuthCompletionStatus,
 } from '@/app/integrations/_types/oauth-completion.types';
 
-const OAUTH_WINDOW_NAME = 'alice-jira-oauth';
+const OAUTH_WINDOW_NAME = 'alice-github-oauth';
 
-export type UseJiraConnectionPickerResult = {
-  connections: JiraConnection[];
-  jiraProjects: JiraCloudProject[];
+export type UseGithubConnectionPickerResult = {
+  connections: GithubConnectionDto[];
+  activeConnection: GithubConnectionDto | null;
+  repositories: GithubRepoOption[];
   isLoadingConnections: boolean;
-  isLoadingProjects: boolean;
+  isLoadingRepositories: boolean;
   isConnecting: boolean;
   loadError: string | null;
   clearError: () => void;
   // eslint-disable-next-line no-unused-vars
   setLoadError: (message: string | null) => void;
   refreshConnections: () => void;
-  handleConnectJira: () => void;
+  handleConnectGithub: () => void;
 };
 
 /**
- * Shared load/connect state for Jira OAuth connection + project pickers
- * (create wizard Imports step and project details Integrations card).
+ * Shared load/connect state for GitHub OAuth connection + repository pickers
+ * (create wizard Source Control step and project details Integrations card).
  *
- * Connect opens Atlassian consent in a **new tab/window** so modal create
+ * Connect opens GitHub consent in a **new tab/window** so modal create
  * dialogs stay open; connections refresh when this window regains focus.
  */
-export function useJiraConnectionPicker(
-  jiraConnectionId: string
-): UseJiraConnectionPickerResult {
-  const [connections, setConnections] = useState<JiraConnection[]>([]);
-  const [jiraProjects, setJiraProjects] = useState<JiraCloudProject[]>([]);
+export function useGithubConnectionPicker(
+  selectedConnectionId?: string
+): UseGithubConnectionPickerResult {
+  const [connections, setConnections] = useState<GithubConnectionDto[]>([]);
+  const [repositories, setRepositories] = useState<GithubRepoOption[]>([]);
   const [isLoadingConnections, setIsLoadingConnections] = useState(true);
-  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [isLoadingRepositories, setIsLoadingRepositories] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const oauthWindowRef = useRef<Window | null>(null);
 
   const refreshConnections = useCallback(() => {
     setIsLoadingConnections(true);
-    listJiraConnections()
+    listGithubConnections()
       .then((rows) => {
         setConnections(rows.filter((row) => row.status === 'active'));
       })
       .catch((err: unknown) => {
         setLoadError(
-          err instanceof Error ? err.message : 'Failed to load Jira connections'
+          err instanceof Error
+            ? err.message
+            : 'Failed to load GitHub connections'
         );
       })
       .finally(() => {
@@ -71,7 +74,7 @@ export function useJiraConnectionPicker(
   // Direct notification from the OAuth completion window/tab
   useEffect(() => {
     return subscribeToOAuthCompletion(
-      IntegrationOAuthProvider.Jira,
+      IntegrationOAuthProvider.GitHub,
       (status, error) => {
         setIsConnecting(false);
         if (status === OAuthCompletionStatus.Connected) {
@@ -80,15 +83,15 @@ export function useJiraConnectionPicker(
           return;
         }
         if (status === OAuthCompletionStatus.Denied) {
-          setLoadError('Jira authorization was cancelled.');
+          setLoadError('GitHub authorization was cancelled.');
           return;
         }
-        setLoadError(error || 'Failed to connect Jira.');
+        setLoadError(error || 'Failed to connect GitHub.');
       }
     );
   }, [refreshConnections]);
 
-  // After OAuth in another tab, reload connections when the user returns here.
+  // After OAuth in another tab, reload connections when user returns here.
   useEffect(() => {
     const onVisibleOrFocus = () => {
       if (document.visibilityState === 'hidden') {
@@ -106,7 +109,7 @@ export function useJiraConnectionPicker(
     };
   }, [refreshConnections]);
 
-  // Clear "connecting" when the OAuth tab is closed.
+  // Clear "connecting" when OAuth tab is closed.
   useEffect(() => {
     if (!isConnecting) {
       return;
@@ -127,60 +130,67 @@ export function useJiraConnectionPicker(
     };
   }, [isConnecting, refreshConnections]);
 
+  const activeConnection =
+    (selectedConnectionId
+      ? connections.find((c) => c.id === selectedConnectionId)
+      : null) ??
+    connections[0] ??
+    null;
+
   useEffect(() => {
-    if (!jiraConnectionId) {
-      setJiraProjects([]);
+    if (!activeConnection) {
+      setRepositories([]);
       return;
     }
 
     let cancelled = false;
-    setIsLoadingProjects(true);
+    setIsLoadingRepositories(true);
 
-    listJiraConnectionProjects(jiraConnectionId)
-      .then((projects) => {
+    listGithubRepositories(activeConnection.id)
+      .then((repos) => {
         if (!cancelled) {
-          setJiraProjects(projects);
+          setRepositories(repos);
         }
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setJiraProjects([]);
+          setRepositories([]);
           setLoadError(
             err instanceof Error
               ? err.message
-              : 'Failed to load Jira projects for this site'
+              : 'Failed to load GitHub repositories'
           );
         }
       })
       .finally(() => {
         if (!cancelled) {
-          setIsLoadingProjects(false);
+          setIsLoadingRepositories(false);
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [jiraConnectionId]);
+  }, [activeConnection]);
 
-  const handleConnectJira = () => {
+  const handleConnectGithub = () => {
     setIsConnecting(true);
     setLoadError(null);
 
-    // Open synchronously on the click gesture so popup blockers stay quiet,
-    // then navigate once the authorize URL is ready.
+    // Open synchronously on click gesture so popup blockers stay quiet,
+    // then navigate once authorize URL is ready.
     const popup = window.open('about:blank', OAUTH_WINDOW_NAME);
     oauthWindowRef.current = popup;
 
     if (!popup) {
       setIsConnecting(false);
       setLoadError(
-        'Could not open a new tab for Jira. Allow popups for this site, then try again.'
+        'Could not open a new tab for GitHub. Allow popups for this site, then try again.'
       );
       return;
     }
 
-    startJiraOAuth()
+    startGithubOAuth()
       .then((url) => {
         popup.location.href = url;
       })
@@ -189,21 +199,22 @@ export function useJiraConnectionPicker(
         oauthWindowRef.current = null;
         setIsConnecting(false);
         setLoadError(
-          err instanceof Error ? err.message : 'Failed to start Jira OAuth'
+          err instanceof Error ? err.message : 'Failed to start GitHub OAuth'
         );
       });
   };
 
   return {
     connections,
-    jiraProjects,
+    activeConnection,
+    repositories,
     isLoadingConnections,
-    isLoadingProjects,
+    isLoadingRepositories,
     isConnecting,
     loadError,
     clearError: () => setLoadError(null),
     setLoadError,
     refreshConnections,
-    handleConnectJira,
+    handleConnectGithub,
   };
 }

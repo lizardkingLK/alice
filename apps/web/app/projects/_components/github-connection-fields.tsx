@@ -1,0 +1,426 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Button } from '@repo/ui/components/ui/button';
+import { Input } from '@repo/ui/components/ui/input';
+import { Label } from '@repo/ui/components/ui/label';
+import { Badge } from '@repo/ui/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@repo/ui/components/ui/select';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@repo/ui/components/ui/avatar';
+import {
+  CheckCircle2,
+  Loader2,
+  Plug,
+  RefreshCw,
+  Unplug,
+} from '@repo/ui/lib/icons';
+import type {
+  GithubConnectionDto,
+  GithubRepoOption,
+} from '@/app/projects/_services/projects.github.mutations.client';
+import { parseGithubRepoPath } from '@/lib/projects/github-repo-path';
+
+type GithubUnlinkedCardProps = {
+  emptyHint: string;
+  isConnecting: boolean;
+  onConnect: () => void;
+  showConnectChrome: boolean;
+};
+
+function GithubUnlinkedCard({
+  emptyHint,
+  isConnecting,
+  onConnect,
+  showConnectChrome,
+}: Readonly<GithubUnlinkedCardProps>) {
+  return (
+    <div className="border-border/60 bg-muted/20 space-y-3 rounded-lg border p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-amber-500" />
+          <span className="text-xs font-medium text-muted-foreground">
+            Status: Not connected
+          </span>
+        </div>
+        {showConnectChrome ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onConnect}
+            disabled={isConnecting}
+            className="h-8 text-xs"
+          >
+            {isConnecting ? (
+              <>
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                Connecting...
+              </>
+            ) : (
+              <>
+                <Plug className="mr-1.5 h-3.5 w-3.5" />
+                Connect GitHub
+              </>
+            )}
+          </Button>
+        ) : null}
+      </div>
+      <p className="text-muted-foreground text-xs">{emptyHint}</p>
+    </div>
+  );
+}
+
+type GithubLinkedCardProps = {
+  activeConnection: GithubConnectionDto;
+  isConnecting: boolean;
+  onConnect: () => void;
+  // eslint-disable-next-line no-unused-vars
+  onDisconnect?: (connectionId: string) => void;
+  isDisconnecting: boolean;
+  showConnectChrome: boolean;
+};
+
+function GithubLinkedCard({
+  activeConnection,
+  isConnecting,
+  onConnect,
+  onDisconnect,
+  isDisconnecting,
+  showConnectChrome,
+}: Readonly<GithubLinkedCardProps>) {
+  const accountLabel = activeConnection.account_login
+    ? `@${activeConnection.account_login}`
+    : activeConnection.name;
+
+  const fallbackLetters = (
+    activeConnection.account_login ||
+    activeConnection.name ||
+    'GH'
+  )
+    .slice(0, 2)
+    .toUpperCase();
+
+  return (
+    <div className="border-border/60 bg-muted/20 space-y-3 rounded-lg border p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <Avatar size="sm" className="h-8 w-8 border">
+            {activeConnection.account_avatar_url ? (
+              <AvatarImage
+                src={activeConnection.account_avatar_url}
+                alt={activeConnection.account_login || activeConnection.name}
+              />
+            ) : null}
+            <AvatarFallback>{fallbackLetters}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 leading-tight">
+            <div className="flex items-center gap-2">
+              <span className="truncate text-sm font-semibold">
+                {accountLabel}
+              </span>
+              <Badge
+                variant="outline"
+                className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 h-4 px-1.5 text-[10px] font-medium"
+              >
+                <CheckCircle2 className="mr-1 h-2.5 w-2.5" />
+                Connected
+              </Badge>
+            </div>
+            <p className="text-muted-foreground truncate text-[11px]">
+              {activeConnection.name}
+            </p>
+          </div>
+        </div>
+
+        {showConnectChrome ? (
+          <div className="flex items-center gap-2">
+            {onDisconnect ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onDisconnect(activeConnection.id)}
+                disabled={isDisconnecting}
+                className="text-destructive hover:text-destructive h-8 px-2 text-xs"
+              >
+                {isDisconnecting ? (
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Unplug className="mr-1 h-3.5 w-3.5" />
+                )}
+                Disconnect
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onConnect}
+              disabled={isConnecting}
+              className="h-8 px-2 text-xs"
+              title="Switch account or reconnect"
+            >
+              {isConnecting ? (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-1 h-3.5 w-3.5" />
+              )}
+              Switch Account
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+type GithubConnectionStatusCardProps = {
+  isLoading: boolean;
+  activeConnection: GithubConnectionDto | null;
+  hasConnections: boolean;
+  isConnecting: boolean;
+  onConnect: () => void;
+  // eslint-disable-next-line no-unused-vars
+  onDisconnect?: (connectionId: string) => void;
+  isDisconnecting: boolean;
+  showConnectChrome: boolean;
+  emptyHint: string;
+};
+
+function GithubConnectionStatusCard({
+  isLoading,
+  activeConnection,
+  hasConnections,
+  isConnecting,
+  onConnect,
+  onDisconnect,
+  isDisconnecting,
+  showConnectChrome,
+  emptyHint,
+}: Readonly<GithubConnectionStatusCardProps>) {
+  if (isLoading) {
+    return (
+      <div className="border-border/60 bg-muted/20 flex items-center gap-2 rounded-lg border p-3 text-xs text-muted-foreground">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        Checking GitHub connection status...
+      </div>
+    );
+  }
+
+  if (!hasConnections || !activeConnection) {
+    return (
+      <GithubUnlinkedCard
+        emptyHint={emptyHint}
+        isConnecting={isConnecting}
+        onConnect={onConnect}
+        showConnectChrome={showConnectChrome}
+      />
+    );
+  }
+
+  return (
+    <GithubLinkedCard
+      activeConnection={activeConnection}
+      isConnecting={isConnecting}
+      onConnect={onConnect}
+      onDisconnect={onDisconnect}
+      isDisconnecting={isDisconnecting}
+      showConnectChrome={showConnectChrome}
+    />
+  );
+}
+
+type GithubRepositoryPickerProps = {
+  repositories: GithubRepoOption[];
+  selectedRepoFullName: string;
+  isLoading: boolean;
+  // eslint-disable-next-line no-unused-vars
+  onSelectRepo: (fullName: string) => void;
+};
+
+function GithubRepositoryPicker({
+  repositories,
+  selectedRepoFullName,
+  isLoading,
+  onSelectRepo,
+}: Readonly<GithubRepositoryPickerProps>) {
+  if (repositories.length === 0) {
+    return null;
+  }
+
+  const placeholder = isLoading
+    ? 'Loading repositories...'
+    : 'Choose a repository from your account...';
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="githubRepoSelect" className="text-xs font-semibold">
+        Select Repository
+      </Label>
+      <Select
+        value={selectedRepoFullName || undefined}
+        onValueChange={onSelectRepo}
+        disabled={isLoading}
+      >
+        <SelectTrigger
+          id="githubRepoSelect"
+          className="bg-background/50 h-9 text-sm"
+        >
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {repositories.map((repo) => (
+            <SelectItem key={repo.id} value={repo.full_name}>
+              {repo.full_name} {repo.private ? '(private)' : ''}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+export type GithubConnectionFieldsProps = {
+  connections: GithubConnectionDto[];
+  activeConnection: GithubConnectionDto | null;
+  repositories: GithubRepoOption[];
+  isLoadingConnections: boolean;
+  isLoadingRepositories: boolean;
+  isConnecting: boolean;
+  onConnect: () => void;
+  githubOwner: string;
+  // eslint-disable-next-line no-unused-vars
+  setGithubOwner: (owner: string) => void;
+  githubRepoName: string;
+  // eslint-disable-next-line no-unused-vars
+  setGithubRepoName: (repoName: string) => void;
+  // eslint-disable-next-line no-unused-vars
+  onDisconnect?: (connectionId: string) => void;
+  isDisconnecting?: boolean;
+  emptyHint?: string;
+  footerHint?: string;
+  showConnectChrome?: boolean;
+};
+
+export function GithubConnectionFields({
+  connections,
+  activeConnection,
+  repositories,
+  isLoadingConnections,
+  isLoadingRepositories,
+  isConnecting,
+  onConnect,
+  githubOwner,
+  setGithubOwner,
+  githubRepoName,
+  setGithubRepoName,
+  onDisconnect,
+  isDisconnecting = false,
+  emptyHint = 'Authorize GitHub once to link repositories, pull requests, and commit activity.',
+  footerHint,
+  showConnectChrome = true,
+}: Readonly<GithubConnectionFieldsProps>) {
+  const [githubUrl, setGithubUrl] = useState(() => {
+    if (githubOwner && githubRepoName) {
+      return `https://github.com/${githubOwner}/${githubRepoName}`;
+    }
+    return '';
+  });
+
+  useEffect(() => {
+    if (githubOwner && githubRepoName) {
+      const currentParsed = parseGithubRepoPath(githubUrl);
+      if (
+        currentParsed.owner !== githubOwner ||
+        currentParsed.repoName !== githubRepoName
+      ) {
+        setGithubUrl(`https://github.com/${githubOwner}/${githubRepoName}`);
+      }
+    } else if (!githubOwner && !githubRepoName && githubUrl) {
+      setGithubUrl('');
+    }
+  }, [githubOwner, githubRepoName, githubUrl]);
+
+  const handleUrlChange = (value: string) => {
+    setGithubUrl(value);
+    const { owner, repoName } = parseGithubRepoPath(value);
+    setGithubOwner(owner);
+    setGithubRepoName(repoName);
+  };
+
+  const handleSelectRepo = (selectedFullName: string) => {
+    const repo = repositories.find((r) => r.full_name === selectedFullName);
+    if (repo) {
+      setGithubOwner(repo.owner.login);
+      setGithubRepoName(repo.name);
+      return;
+    }
+    const { owner, repoName } = parseGithubRepoPath(selectedFullName);
+    setGithubOwner(owner);
+    setGithubRepoName(repoName);
+  };
+
+  const selectedRepoFullName =
+    githubOwner && githubRepoName ? `${githubOwner}/${githubRepoName}` : '';
+  const hasDropdownOption = connections.length > 0 && repositories.length > 0;
+
+  return (
+    <div className="space-y-4">
+      {/* OAuth Connection Status & Identity Card */}
+      <GithubConnectionStatusCard
+        isLoading={isLoadingConnections}
+        activeConnection={activeConnection}
+        hasConnections={connections.length > 0}
+        isConnecting={isConnecting}
+        onConnect={onConnect}
+        onDisconnect={onDisconnect}
+        isDisconnecting={isDisconnecting}
+        showConnectChrome={showConnectChrome}
+        emptyHint={emptyHint}
+      />
+
+      {/* Repository Picker (dropdown when repositories available) */}
+      {connections.length > 0 ? (
+        <GithubRepositoryPicker
+          repositories={repositories}
+          selectedRepoFullName={selectedRepoFullName}
+          isLoading={isLoadingRepositories}
+          onSelectRepo={handleSelectRepo}
+        />
+      ) : null}
+
+      {/* GitHub Repository URL input (manual URL entry & fallback) */}
+      <div className="space-y-2">
+        <Label htmlFor="githubUrl" className="text-xs font-semibold">
+          GitHub Repository URL
+        </Label>
+        <Input
+          id="githubUrl"
+          value={githubUrl}
+          onChange={(e) => handleUrlChange(e.target.value)}
+          placeholder="e.g. https://github.com/facebook/react"
+          className="bg-background/50 h-9 text-sm"
+        />
+        <p className="text-muted-foreground text-[11px]">
+          Enter or paste a GitHub repository URL (e.g.
+          https://github.com/owner/repository)
+          {hasDropdownOption ? ' or choose from the dropdown above' : ''}.
+        </p>
+      </div>
+
+      {footerHint ? (
+        <p className="text-muted-foreground text-xs">{footerHint}</p>
+      ) : null}
+    </div>
+  );
+}

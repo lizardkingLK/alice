@@ -1,5 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import { mapToWorkItemType, UserRoleEnum } from '@repo/types';
+import { mapToWorkItemType, UserRoleEnum, utcNow } from '@repo/types';
+import { JiraConnectionStatus } from '@repo/types/prisma';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { env } from '../../../config/env';
 import {
@@ -93,7 +94,7 @@ function verifyState(state: string): OAuthStatePayload {
     throw new TypeError('Invalid OAuth state payload.');
   }
 
-  if (Date.now() > payload.exp) {
+  if (utcNow().getTime() > payload.exp) {
     throw new Error('OAuth state has expired. Please try connecting again.');
   }
 
@@ -157,7 +158,7 @@ export class JiraService {
     const state = signState({
       userId,
       nonce: randomBytes(16).toString('hex'),
-      exp: Date.now() + STATE_TTL_MS,
+      exp: utcNow().getTime() + STATE_TTL_MS,
     });
 
     const params = new URLSearchParams({
@@ -187,17 +188,13 @@ export class JiraService {
 
     const tokens = await this.exchangeAuthorizationCode(code);
     const resources = await this.fetchAccessibleResources(tokens.access_token);
-    const site =
-      resources.find((r) => r.scopes.some((s) => s.includes('jira'))) ??
-      resources[0];
-
-    if (!site) {
+    if (resources.length === 0) {
       throw new Error(
         'No accessible Atlassian Jira site found for this account.'
       );
     }
 
-    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+    const expiresAt = new Date(utcNow().getTime() + tokens.expires_in * 1000);
     const refreshToken = tokens.refresh_token;
     if (!refreshToken) {
       throw new Error(
@@ -205,17 +202,30 @@ export class JiraService {
       );
     }
 
-    return await this.jiraRepository.upsertByUserAndCloud({
-      user_id: userId,
-      cloud_id: site.id,
-      site_url: site.url,
-      account_email: null,
-      refresh_token_enc: encryptSecret(refreshToken),
-      access_token_enc: encryptSecret(tokens.access_token),
-      access_token_expires_at: expiresAt,
-      scopes: tokens.scope ?? site.scopes.join(' '),
-      status: 'active',
-    });
+    const jiraSites = resources.filter((r) =>
+      r.scopes.some((s) => s.includes('jira'))
+    );
+    const sitesToSave = jiraSites.length > 0 ? jiraSites : resources;
+
+    let primaryResult: JiraConnectionDto | null = null;
+    for (const site of sitesToSave) {
+      const saved = await this.jiraRepository.upsertByUserAndCloud({
+        user_id: userId,
+        cloud_id: site.id,
+        site_url: site.url,
+        account_email: null,
+        refresh_token_enc: encryptSecret(refreshToken),
+        access_token_enc: encryptSecret(tokens.access_token),
+        access_token_expires_at: expiresAt,
+        scopes: tokens.scope ?? site.scopes.join(' '),
+        status: JiraConnectionStatus.active,
+      });
+      if (!primaryResult) {
+        primaryResult = saved;
+      }
+    }
+
+    return primaryResult!;
   }
 
   async listConnections(actorId: string): Promise<JiraConnectionDto[]> {
@@ -357,7 +367,7 @@ export class JiraService {
     const expiresAt = connection.access_token_expires_at?.getTime() ?? 0;
     const stillValid =
       connection.access_token_enc &&
-      expiresAt > Date.now() + ACCESS_TOKEN_SKEW_MS;
+      expiresAt > utcNow().getTime() + ACCESS_TOKEN_SKEW_MS;
 
     if (stillValid && connection.access_token_enc) {
       return decryptSecret(connection.access_token_enc);
@@ -385,7 +395,7 @@ export class JiraService {
 
     if (!response.ok) {
       await this.jiraRepository.updateTokens(connection.id, {
-        status: 'expired',
+        status: JiraConnectionStatus.expired,
       });
       const errorText = await response.text();
       throw new Error(
@@ -394,7 +404,7 @@ export class JiraService {
     }
 
     const tokens = (await response.json()) as AtlassianTokenResponse;
-    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+    const expiresAt = new Date(utcNow().getTime() + tokens.expires_in * 1000);
     const nextRefresh = tokens.refresh_token
       ? encryptSecret(tokens.refresh_token)
       : connection.refresh_token_enc;
@@ -403,7 +413,7 @@ export class JiraService {
       refresh_token_enc: nextRefresh,
       access_token_enc: encryptSecret(tokens.access_token),
       access_token_expires_at: expiresAt,
-      status: 'active',
+      status: JiraConnectionStatus.active,
     });
 
     return tokens.access_token;

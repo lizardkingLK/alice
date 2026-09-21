@@ -33,6 +33,7 @@ export {
   type WorkItemStatusTransition,
 } from './board-config.js';
 export * from './jira-import-types.js';
+export * from './github-integration-types.js';
 export {
   createWorkItemBodySchema,
   isBlockedPastDueDateChange,

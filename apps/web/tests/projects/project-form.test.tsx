@@ -129,12 +129,26 @@ const mockJiraConnection = {
   updated_at: '2026-07-09T10:00:00Z',
 };
 
+const mockGithubConnection = {
+  id: 'conn-gh-1',
+  name: 'GitHub (octocat)',
+  status: 'active' as const,
+  account_login: 'octocat',
+  account_avatar_url: 'https://github.com/images/error/octocat_happy.gif',
+  created_at: '2026-07-09T10:00:00Z',
+  updated_at: '2026-07-09T10:00:00Z',
+};
+
 function mockJiraApiFetch(options?: {
   connections?: (typeof mockJiraConnection)[];
   importedCount?: number;
+  githubConnections?: (typeof mockGithubConnection)[];
+  githubRepos?: unknown[];
 }) {
   const connections = options?.connections ?? [mockJiraConnection];
   const importedCount = options?.importedCount ?? 2;
+  const githubConnections = options?.githubConnections ?? [];
+  const githubRepos = options?.githubRepos ?? [];
 
   vi.mocked(apiFetch).mockImplementation(async (path: string) => {
     if (path === '/api/jira/connections') {
@@ -150,6 +164,15 @@ function mockJiraApiFetch(options?: {
     }
     if (path === '/api/jira/oauth/start') {
       return { url: 'https://auth.atlassian.com/authorize' };
+    }
+    if (path === '/api/github/connections') {
+      return { connections: githubConnections };
+    }
+    if (path.startsWith('/api/github/repositories')) {
+      return { repositories: githubRepos };
+    }
+    if (path === '/api/github/oauth/start') {
+      return { url: 'https://github.com/login/oauth/authorize' };
     }
     throw new Error(`Unexpected apiFetch path: ${path}`);
   });
@@ -472,12 +495,6 @@ describe('ProjectForm Component', () => {
     fireEvent.change(screen.getByLabelText(/GitHub Repository URL/i), {
       target: { value: 'https://github.com/facebook/react' },
     });
-    fireEvent.change(
-      screen.getByLabelText(/Personal Access Token \(optional\)/i),
-      {
-        target: { value: 'ghp_secret_token_123' },
-      }
-    );
 
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
@@ -485,10 +502,54 @@ describe('ProjectForm Component', () => {
       expect(createProject).toHaveBeenCalledWith(
         expect.objectContaining({
           github_repo: 'facebook/react',
-          github_token: 'ghp_secret_token_123',
+          github_token: null,
         })
       );
     });
+  });
+
+  it('renders Connect GitHub button and not connected status when no OAuth connection exists', async () => {
+    render(<ProjectForm users={mockUsers} />);
+
+    await fillStep1Basics();
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
+
+    expect(
+      await screen.findByText(/Status: Not connected/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Connect GitHub/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/Personal Access Token/i)
+    ).not.toBeInTheDocument();
+  });
+
+  it('displays authenticated GitHub account identity and status when OAuth is connected', async () => {
+    mockJiraApiFetch({
+      connections: [],
+      githubConnections: [mockGithubConnection],
+    });
+
+    render(<ProjectForm users={mockUsers} />);
+
+    await fillStep1Basics();
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
+
+    expect(await screen.findByText('@octocat')).toBeInTheDocument();
+    expect(screen.getByText('Connected')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Switch Account/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Disconnect/i })
+    ).toBeInTheDocument();
   });
 
   it('automatically splits GitHub Repository URL into owner and repository name', async () => {

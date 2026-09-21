@@ -1,6 +1,7 @@
 import type { WorkItemType } from '@repo/types';
+import { JiraConnectionStatus } from '@repo/types/prisma';
 
-export type JiraConnectionStatus = 'active' | 'revoked' | 'expired';
+export { JiraConnectionStatus };
 
 /** Public DTO — never includes encrypted token fields. */
 export type JiraConnectionDto = {

@@ -40,6 +40,7 @@ import {
   StatusTransitionForbiddenError,
   WorkItemValidationError,
 } from './workItems.errors';
+import type { GithubService } from '../github/github.service';
 import { prisma } from '../../../lib/prisma';
 import { decryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
 
@@ -49,18 +50,6 @@ async function requireAdmin(actorId: string) {
     [UserRoleEnum.admin],
     'Unauthorized. Only administrators can permanently delete work items.'
   );
-}
-
-function githubApiHeaders(encryptedOrPlainToken: string | null | undefined) {
-  const headers: Record<string, string> = {
-    'User-Agent': 'Alice-App',
-    Accept: 'application/vnd.github.v3+json',
-  };
-  const token = decryptSecretIfPresent(encryptedOrPlainToken);
-  if (token) {
-    headers.Authorization = `token ${token}`;
-  }
-  return headers;
 }
 
 interface GithubPRApiResponse {
@@ -125,7 +114,42 @@ function throwWorkflowConfigLoadError(error: unknown): void {
 }
 
 export class WorkItemService {
-  constructor(private readonly workItems: WorkItemRepository) {}
+  constructor(
+    private readonly workItems: WorkItemRepository,
+    private readonly githubService?: GithubService
+  ) {}
+
+  private async resolveGithubHeaders(
+    fallbackToken?: string | null
+  ): Promise<Record<string, string>> {
+    const headers: Record<string, string> = {
+      'User-Agent': 'Alice-App',
+      Accept: 'application/vnd.github.v3+json',
+    };
+
+    if (this.githubService) {
+      try {
+        const accessToken = await this.githubService.getValidAccessToken();
+        headers.Authorization = `Bearer ${accessToken}`;
+        return headers;
+      } catch (err) {
+        if (fallbackToken) {
+          const legacy = decryptSecretIfPresent(fallbackToken);
+          if (legacy) {
+            headers.Authorization = `token ${legacy}`;
+            return headers;
+          }
+        }
+        throw err;
+      }
+    }
+
+    const token = decryptSecretIfPresent(fallbackToken);
+    if (token) {
+      headers.Authorization = `token ${token}`;
+    }
+    return headers;
+  }
 
   async listWorkItemsPaginated(
     query: ListWorkItemsQuery,
@@ -946,7 +970,7 @@ export class WorkItemService {
     const settings =
       await this.workItems.getProjectGithubSettingsByWorkItem(workItemId);
 
-    const headers = githubApiHeaders(settings?.github_token);
+    const headers = await this.resolveGithubHeaders(settings?.github_token);
 
     const result = [];
     for (const pr of prs) {
@@ -1045,7 +1069,7 @@ export class WorkItemService {
     let status = 'open';
 
     try {
-      const headers = githubApiHeaders(settings.github_token);
+      const headers = await this.resolveGithubHeaders(settings.github_token);
 
       const res = await fetch(
         `https://api.github.com/repos/${configOwner}/${configRepo}/pulls/${prNumber}`,

@@ -50,6 +50,9 @@ import { createProjectsRouter } from '../routes/api/projects/projects.route';
 import { JiraRepository } from '../routes/api/jira/jira.repository';
 import { JiraService } from '../routes/api/jira/jira.service';
 import { createJiraRouter } from '../routes/api/jira/jira.route';
+import { GithubRepository } from '../routes/api/github/github.repository';
+import { GithubService } from '../routes/api/github/github.service';
+import { createGithubRouter } from '../routes/api/github/github.route';
 import { UsersRepository } from '../routes/api/users/users.repository';
 import { UsersService } from '../routes/api/users/users.service';
 import { createUsersRouter } from '../routes/api/users/users.route';
@@ -190,9 +193,15 @@ function createNotificationsConfig(
   };
 }
 
-function createWorkItemsConfig(notificationsService: NotificationsService) {
+function createWorkItemsConfig(
+  notificationsService: NotificationsService,
+  githubService?: GithubService
+) {
   const workItemRepository = new WorkItemRepository(supabase);
-  const workItemService = new WorkItemService(workItemRepository);
+  const workItemService = new WorkItemService(
+    workItemRepository,
+    githubService
+  );
   const router = createWorkItemsRouter({
     workItemService,
     notificationsService,
@@ -234,6 +243,18 @@ function createJiraConfig() {
   return {
     jiraRepository,
     jiraService,
+    router,
+  };
+}
+
+function createGithubConfig() {
+  const githubRepository = new GithubRepository();
+  const githubService = new GithubService(githubRepository);
+  const router = createGithubRouter({ githubService });
+
+  return {
+    githubRepository,
+    githubService,
     router,
   };
 }
@@ -392,8 +413,10 @@ export const accessAllowlist = createAccessAllowlistConfig(
 export const notifications = createNotificationsConfig(
   accessRequests.accessRequestsService
 );
+export const github = createGithubConfig();
 export const workItems = createWorkItemsConfig(
-  notifications.notificationsService
+  notifications.notificationsService,
+  github.githubService
 );
 export const attachments = createAttachmentsConfig(
   workItems.workItemRepository
