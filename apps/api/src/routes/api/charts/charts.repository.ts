@@ -4,9 +4,7 @@ import {
   chartRollupGroupColumn,
   CHART_SERIES_NULL_SLICE_KEY,
   paginationMeta,
-  type ChartDrilldownQuery,
   type ChartSeriesLabelField,
-  type ChartSeriesQuery,
   type ChartSeriesSlice,
   type Database,
   type WorkItemListRow,
@@ -116,8 +114,11 @@ function createdAtWhere(
 
 function sliceDimensionWhere(
   labelField: ChartSeriesLabelField,
-  sliceKey: string
+  sliceKey: string | undefined
 ): Prisma.work_itemsWhereInput {
+  if (sliceKey === undefined) {
+    return {};
+  }
   const column = chartRollupGroupColumn(labelField);
   const isNull = sliceKey === CHART_SERIES_NULL_SLICE_KEY;
   switch (column) {
@@ -134,9 +135,53 @@ function sliceDimensionWhere(
   }
 }
 
+function dimensionFiltersWhere(query: {
+  readonly status?: WorkItemStatus;
+  readonly type?: WorkItemType;
+  readonly priority?: WorkItemPriority;
+  readonly assigneeId?: string;
+}): Prisma.work_item_chart_rollupsWhereInput & Prisma.work_itemsWhereInput {
+  return {
+    ...(query.status ? { status: query.status } : {}),
+    ...(query.type ? { type: query.type } : {}),
+    ...(query.priority ? { priority: query.priority } : {}),
+    ...(query.assigneeId !== undefined
+      ? {
+          assignee_id:
+            query.assigneeId === CHART_SERIES_NULL_SLICE_KEY
+              ? null
+              : query.assigneeId,
+        }
+      : {}),
+  };
+}
+
 function dimensionKey(value: string | null | undefined): string {
   return value ?? CHART_SERIES_NULL_SLICE_KEY;
 }
+
+function projectIdWhere(projectIds: readonly string[]): { in: string[] } {
+  return { in: [...projectIds] };
+}
+
+/** Series/drilldown query after service resolves accessible project scope. */
+export type ChartAnalyticsScopedQuery = {
+  readonly projectIds: readonly string[];
+  readonly labelField: ChartSeriesLabelField;
+  readonly from?: string;
+  readonly to?: string;
+  readonly sprintId?: string;
+  readonly status?: WorkItemStatus;
+  readonly type?: WorkItemType;
+  readonly priority?: WorkItemPriority;
+  readonly assigneeId?: string;
+};
+
+export type ChartDrilldownScopedQuery = ChartAnalyticsScopedQuery & {
+  readonly sliceKey?: string;
+  readonly page: number;
+  readonly limit: number;
+};
 
 export class ChartsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
@@ -145,18 +190,23 @@ export class ChartsRepository {
     return listAccessibleProjectIds(this.db, actorId);
   }
 
-  async sumSeries(query: ChartSeriesQuery): Promise<{
+  async sumSeries(query: ChartAnalyticsScopedQuery): Promise<{
     slices: ChartSeriesSlice[];
     totalCount: number;
   }> {
+    if (query.projectIds.length === 0) {
+      return { slices: [], totalCount: 0 };
+    }
+
     const column = chartRollupGroupColumn(query.labelField);
     const bucket_date = bucketDateWhere(query.from, query.to);
     const grouped = await prisma.work_item_chart_rollups.groupBy({
       by: [column],
       where: {
-        project_id: query.projectId,
+        project_id: projectIdWhere(query.projectIds),
         ...(query.sprintId ? { sprint_id: query.sprintId } : {}),
         ...(bucket_date ? { bucket_date } : {}),
+        ...dimensionFiltersWhere(query),
       },
       _sum: { item_count: true },
       orderBy: { _sum: { item_count: 'desc' } },
@@ -169,28 +219,32 @@ export class ChartsRepository {
       return { key, label: key || 'Unassigned', count };
     });
 
-    const labeled = await this.enrichSeriesLabels(
-      query.labelField,
-      query.projectId,
-      rawSlices
-    );
+    const labeled = await this.enrichSeriesLabels(query.labelField, rawSlices);
     const totalCount = labeled.reduce((sum, slice) => sum + slice.count, 0);
     return { slices: labeled, totalCount };
   }
 
-  async listDrilldown(query: ChartDrilldownQuery): Promise<{
+  async listDrilldown(query: ChartDrilldownScopedQuery): Promise<{
     workItems: WorkItemListRow[];
     totalCount: number;
     page: number;
     limit: number;
     totalPages: number;
   }> {
+    if (query.projectIds.length === 0) {
+      return {
+        workItems: [],
+        ...paginationMeta(0, query.page, query.limit),
+      };
+    }
+
     const created_at = createdAtWhere(query.from, query.to);
     const where: Prisma.work_itemsWhereInput = {
-      project_id: query.projectId,
+      project_id: projectIdWhere(query.projectIds),
       record_status: RecordStatus.active,
       ...(query.sprintId ? { sprint_id: query.sprintId } : {}),
       ...(created_at ? { created_at } : {}),
+      ...dimensionFiltersWhere(query),
       ...sliceDimensionWhere(query.labelField, query.sliceKey),
     };
 
@@ -214,18 +268,35 @@ export class ChartsRepository {
 
   private async enrichSeriesLabels(
     labelField: ChartSeriesLabelField,
-    projectId: string,
     slices: ChartSeriesSlice[]
   ): Promise<ChartSeriesSlice[]> {
     if (labelField === 'board') {
-      const project = await prisma.projects.findUnique({
-        where: { id: projectId },
-        select: { name: true, key: true },
+      const projectIds = slices
+        .map((slice) => slice.key)
+        .filter((key) => key !== CHART_SERIES_NULL_SLICE_KEY);
+      if (projectIds.length === 0) {
+        return slices.map((slice) => ({
+          ...slice,
+          label: 'Unknown project',
+        }));
+      }
+
+      const projects = await prisma.projects.findMany({
+        where: { id: { in: projectIds } },
+        select: { id: true, name: true, key: true },
       });
-      const label = project ? `${project.key} — ${project.name}` : projectId;
+      const labelById = new Map(
+        projects.map((project) => [
+          project.id,
+          `${project.key} — ${project.name}`,
+        ])
+      );
+
       return slices.map((slice) => ({
         ...slice,
-        label: slice.key ? label : 'Unknown project',
+        label: slice.key
+          ? (labelById.get(slice.key) ?? slice.key)
+          : 'Unknown project',
       }));
     }
 

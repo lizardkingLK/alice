@@ -4,6 +4,9 @@ import {
   paginatedListLimitField,
   paginatedListPageField,
 } from './query-preprocess.js';
+import { WORK_ITEM_PRIORITIES } from '../../work-item-priorities.js';
+import { WORK_ITEM_STATUSES } from '../../work-item-status.js';
+import { WORK_ITEM_TYPES } from '../../work-item-types.js';
 import { type WorkItemListRow } from './work-items.js';
 
 /**
@@ -55,7 +58,11 @@ const optionalDateOnly = z.preprocess(
 );
 
 const chartAnalyticsFilterFields = {
-  projectId: z.uuid(),
+  /**
+   * When omitted, series/drilldown aggregate across all projects the actor can
+   * access (Charts “All projects” filter).
+   */
+  projectId: optionalUuid,
   labelField: z.preprocess(
     (value) => (value === undefined || value === '' ? 'status' : value),
     z.enum(CHART_SERIES_LABEL_FIELDS)
@@ -63,6 +70,26 @@ const chartAnalyticsFilterFields = {
   from: optionalDateOnly,
   to: optionalDateOnly,
   sprintId: optionalUuid,
+  /** Quick / advanced equality filters applied on rollups and drilldown. */
+  status: z.preprocess(emptyToUndefined, z.enum(WORK_ITEM_STATUSES).optional()),
+  type: z.preprocess(emptyToUndefined, z.enum(WORK_ITEM_TYPES).optional()),
+  priority: z.preprocess(
+    emptyToUndefined,
+    z.enum(WORK_ITEM_PRIORITIES).optional()
+  ),
+  /**
+   * Assignee UUID; omit for any assignee.
+   * Empty string means unassigned (NULL assignee_id).
+   */
+  assigneeId: z.preprocess(
+    (value) => {
+      if (value === '' || value === 'unassigned') {
+        return '';
+      }
+      return emptyToUndefined(value);
+    },
+    z.union([z.uuid(), z.literal('')]).optional()
+  ),
 } as const;
 
 export const chartSeriesQuerySchema = z
@@ -77,8 +104,11 @@ export type ChartSeriesQuery = z.infer<typeof chartSeriesQuerySchema>;
 export const chartDrilldownQuerySchema = z
   .object({
     ...chartAnalyticsFilterFields,
-    /** Dimension value; empty string selects NULL (e.g. unassigned). */
-    sliceKey: z.string(),
+    /**
+     * Dimension value; empty string selects NULL (e.g. unassigned).
+     * Omit to return all items in scope (table layout, all status groups).
+     */
+    sliceKey: z.string().optional(),
     page: paginatedListPageField,
     limit: paginatedListLimitField(20, 100),
   })
@@ -98,7 +128,8 @@ export type ChartSeriesSlice = {
 };
 
 export type ChartSeriesResponse = {
-  projectId: string;
+  /** Concrete project, or `null` when scoped to all accessible projects. */
+  projectId: string | null;
   labelField: ChartSeriesLabelField;
   from?: string;
   to?: string;
@@ -111,8 +142,10 @@ export type ChartSeriesResponse = {
 export { workItemListSelect as chartDrilldownItemSelect } from './work-items.js';
 
 export type ChartDrilldownResponse = {
-  projectId: string;
+  /** Concrete project, or `null` when scoped to all accessible projects. */
+  projectId: string | null;
   labelField: ChartSeriesLabelField;
+  /** Empty when drilldown was not slice-scoped. */
   sliceKey: string;
   workItems: WorkItemListRow[];
   totalCount: number;

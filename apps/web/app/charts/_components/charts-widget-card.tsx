@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardContent, CardHeader } from '@repo/ui/components/ui/card';
 import {
@@ -30,6 +30,7 @@ import type { ChartWidgetDefinition } from '@/app/charts/_components/charts-widg
 import type {
   ChartPieVariant,
   ChartsLabelFieldId,
+  ChartsTableColumnId,
   ChartWidgetTypeId,
   ChartWidgetViewMode,
   ChartsWidgetFiltersChangeHandler,
@@ -40,6 +41,8 @@ import type {
 import {
   DEFAULT_CHARTS_LABEL_FIELD,
   type ChartsProjectOption,
+  type ChartsSprintOption,
+  type ChartsSampleMember,
   type ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
 import { ChartsFullscreenDialogShell } from '@/app/charts/_components/charts-fullscreen-dialog-shell';
@@ -48,7 +51,9 @@ import { ChartsWidgetActionsMenu } from '@/app/charts/_components/charts-widget-
 import { ChartsWidgetConfigDialog } from '@/app/charts/_components/charts-widget-config-dialog';
 import {
   isChartSeriesLabelField,
+  resolveChartAnalyticsDimensionFilters,
   resolveChartAnalyticsProjectId,
+  resolveChartAnalyticsSprintId,
 } from '@/app/charts/_helpers/charts-analytics.ui';
 import { useChartWidgetAnalytics } from '@/app/charts/_hooks/use-chart-widget-analytics';
 
@@ -62,8 +67,15 @@ type ChartsWidgetCardProps = {
   readonly viewMode?: ChartWidgetViewMode;
   readonly pieVariant?: ChartPieVariant;
   readonly labelField?: ChartsLabelFieldId;
+  readonly showValueAs?: 'value' | 'percent';
+  readonly sortSlicesBy?:
+    'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
+  readonly showEmptySlices?: boolean;
+  readonly visibleTableColumns?: readonly ChartsTableColumnId[];
   readonly focusedSliceKey?: string;
   readonly accessibleProjects?: readonly ChartsProjectOption[];
+  readonly accessibleSprints?: readonly ChartsSprintOption[];
+  readonly assigneeMembers?: readonly ChartsSampleMember[];
   readonly onRemove: () => void;
   readonly onDuplicate: () => void;
   // eslint-disable-next-line no-unused-vars -- rename callback
@@ -72,6 +84,16 @@ type ChartsWidgetCardProps = {
   readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
   readonly onPieVariantChange?: ChartsWidgetPieVariantChangeHandler;
   readonly onLabelFieldChange?: ChartsWidgetLabelFieldChangeHandler;
+  readonly onDisplaySettingsChange?: (
+    // eslint-disable-next-line no-unused-vars
+    patch: {
+      readonly showValueAs?: 'value' | 'percent';
+      readonly sortSlicesBy?:
+        'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
+      readonly showEmptySlices?: boolean;
+      readonly visibleTableColumns?: readonly ChartsTableColumnId[];
+    }
+  ) => void;
   /** Open config when landing from `/charts/[id]/widget/[widgetId]`. */
   readonly initialConfigOpen?: boolean;
   readonly onConfigOpenChange?: (
@@ -90,8 +112,14 @@ export function ChartsWidgetCard({
   viewMode,
   pieVariant,
   labelField = DEFAULT_CHARTS_LABEL_FIELD,
+  showValueAs = 'percent',
+  sortSlicesBy = 'value_desc',
+  showEmptySlices = false,
+  visibleTableColumns,
   focusedSliceKey,
   accessibleProjects = [],
+  accessibleSprints = [],
+  assigneeMembers = [],
   onRemove,
   onDuplicate,
   onRename,
@@ -99,6 +127,7 @@ export function ChartsWidgetCard({
   onViewModeChange,
   onPieVariantChange,
   onLabelFieldChange,
+  onDisplaySettingsChange,
   initialConfigOpen = false,
   onConfigOpenChange,
   className,
@@ -108,16 +137,24 @@ export function ChartsWidgetCard({
   const [renameOpen, setRenameOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(initialConfigOpen);
   const [configFiltersOpen, setConfigFiltersOpen] = useState(false);
+  const [configSettingsOpen, setConfigSettingsOpen] = useState(false);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [renameDraft, setRenameDraft] = useState(title);
 
   const projectId = resolveChartAnalyticsProjectId(filters ?? null);
+  const sprintId = resolveChartAnalyticsSprintId(filters ?? null);
+  const dimensionFilters = useMemo(
+    () => resolveChartAnalyticsDimensionFilters(filters ?? null),
+    [filters]
+  );
   const seriesLabelField = isChartSeriesLabelField(labelField)
     ? labelField
     : null;
   const analytics = useChartWidgetAnalytics({
-    projectId: isChart ? projectId : null,
+    projectId: isChart ? projectId : undefined,
     labelField: isChart ? seriesLabelField : null,
+    ...(sprintId ? { sprintId } : {}),
+    dimensionFilters,
   });
 
   const openRename = () => {
@@ -133,8 +170,12 @@ export function ChartsWidgetCard({
     setRenameOpen(false);
   };
 
-  const openConfig = (withFilters: boolean) => {
-    setConfigFiltersOpen(withFilters);
+  const openConfig = (options?: {
+    withFilters?: boolean;
+    withSettings?: boolean;
+  }) => {
+    setConfigFiltersOpen(Boolean(options?.withFilters));
+    setConfigSettingsOpen(Boolean(options?.withSettings));
     setConfigOpen(true);
     onConfigOpenChange?.(true);
   };
@@ -144,6 +185,7 @@ export function ChartsWidgetCard({
     onConfigOpenChange?.(open);
     if (!open) {
       setConfigFiltersOpen(false);
+      setConfigSettingsOpen(false);
     }
   };
 
@@ -157,10 +199,8 @@ export function ChartsWidgetCard({
     </div>
   );
 
-  let pieEmptyMessage = 'No work items in this project';
-  if (!projectId) {
-    pieEmptyMessage = 'Select a project in filters to load chart data';
-  } else if (!seriesLabelField) {
+  let pieEmptyMessage = 'No work items in the selected scope';
+  if (!seriesLabelField) {
     pieEmptyMessage = 'Choose a supported Labels column in settings';
   } else if (analytics.seriesError) {
     pieEmptyMessage = analytics.seriesError;
@@ -171,11 +211,12 @@ export function ChartsWidgetCard({
       size="card"
       slices={analytics.series?.slices ?? null}
       labelField={seriesLabelField ?? 'status'}
-      loading={Boolean(
-        projectId && seriesLabelField && analytics.seriesLoading
-      )}
+      loading={Boolean(seriesLabelField && analytics.seriesLoading)}
       emptyMessage={pieEmptyMessage}
       pieVariant={pieVariant}
+      showValueAs={showValueAs}
+      sortSlicesBy={sortSlicesBy}
+      showEmptySlices={showEmptySlices}
     />
   ) : (
     placeholderBody
@@ -222,7 +263,7 @@ export function ChartsWidgetCard({
                 )}
                 onClick={() => {
                   if (isChart) {
-                    openConfig(true);
+                    openConfig({ withFilters: true });
                   }
                 }}
                 onMouseDown={(event) => event.stopPropagation()}
@@ -244,12 +285,19 @@ export function ChartsWidgetCard({
             onRename={openRename}
             onDuplicate={onDuplicate}
             onDelete={onRemove}
+            onSettings={
+              isChart
+                ? () => {
+                    openConfig({ withSettings: true });
+                  }
+                : undefined
+            }
             leadingItem={
               <DropdownMenuItem
                 className="cursor-pointer gap-2"
                 onSelect={() => {
                   if (isChart) {
-                    openConfig(false);
+                    openConfig();
                   } else {
                     setFullscreenOpen(true);
                   }
@@ -326,16 +374,24 @@ export function ChartsWidgetCard({
           onOpenChange={handleConfigOpenChange}
           title={title}
           initialFiltersOpen={configFiltersOpen}
+          initialSettingsOpen={configSettingsOpen}
           filters={filters ?? null}
           viewMode={viewMode}
           pieVariant={pieVariant}
           labelField={labelField}
+          showValueAs={showValueAs}
+          sortSlicesBy={sortSlicesBy}
+          showEmptySlices={showEmptySlices}
+          visibleTableColumns={visibleTableColumns}
           focusedSliceKey={focusedSliceKey}
           accessibleProjects={accessibleProjects}
+          accessibleSprints={accessibleSprints}
+          assigneeMembers={assigneeMembers}
           onFiltersChange={onFiltersChange}
           onViewModeChange={onViewModeChange}
           onPieVariantChange={onPieVariantChange}
           onLabelFieldChange={onLabelFieldChange}
+          onDisplaySettingsChange={onDisplaySettingsChange}
           onRename={() => {
             window.setTimeout(() => openRename(), 0);
           }}

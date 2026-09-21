@@ -5,9 +5,9 @@ import ReactGridLayout, {
   type Layout,
   type LayoutItem,
 } from 'react-grid-layout';
-import { Skeleton } from '@repo/ui/components/ui/skeleton';
 import { cn } from '@repo/ui/lib/utils';
 import { ChartsWidgetCard } from '@/app/charts/_components/charts-widget-card';
+import { ChartsPieWidgetSkeleton } from '@/app/charts/_components/charts-workspace-skeleton';
 import {
   DASHBOARD_DRAG_CONFIG,
   DASHBOARD_GRID_CONFIG,
@@ -28,9 +28,14 @@ import type {
   ChartBoardWidgetInstance,
   ChartPieVariant,
   ChartsLabelFieldId,
+  ChartWidgetDisplaySettingsPatch,
   ChartWidgetTypeId,
   ChartWidgetViewMode,
 } from '@/app/charts/_components/charts.types';
+import type {
+  ChartsSampleMember,
+  ChartsWidgetFilterDraft,
+} from '@/app/charts/_components/charts-sample.data';
 import 'react-grid-layout/css/styles.css';
 import '@/app/dashboard/_components/dashboard-grid.css';
 
@@ -264,6 +269,12 @@ type ChartsBoardCanvasProps = {
     // eslint-disable-next-line no-unused-vars
     labelField: ChartsLabelFieldId
   ) => void;
+  readonly onDisplaySettingsChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    patch: ChartWidgetDisplaySettingsPatch
+  ) => void;
   readonly focusWidgetId?: string;
   readonly onFocusWidgetDismiss?: () => void;
   /** Accessible projects for Chart widget filters / series. */
@@ -271,6 +282,13 @@ type ChartsBoardCanvasProps = {
     readonly id: string;
     readonly name: string;
   }>;
+  /** Active sprints for Chart widget sprint filter (project-scoped). */
+  readonly accessibleSprints?: ReadonlyArray<{
+    readonly id: string;
+    readonly name: string;
+    readonly projectId: string;
+  }>;
+  readonly assigneeMembers?: readonly ChartsSampleMember[];
   /** False until localStorage board JSON has been read on the client. */
   readonly hydrated?: boolean;
   readonly className?: string;
@@ -287,9 +305,12 @@ export function ChartsBoardCanvas({
   onViewModeChange,
   onPieVariantChange,
   onLabelFieldChange,
+  onDisplaySettingsChange,
   focusWidgetId,
   onFocusWidgetDismiss,
   accessibleProjects = [],
+  accessibleSprints = [],
+  assigneeMembers = [],
   hydrated = true,
   className,
 }: Readonly<ChartsBoardCanvasProps>) {
@@ -320,7 +341,20 @@ export function ChartsBoardCanvas({
   };
 
   if (!hydrated) {
-    return <ChartsBoardCanvasSkeleton className={className} />;
+    return (
+      <div
+        className={cn(
+          'grid min-h-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3',
+          className
+        )}
+        aria-busy="true"
+        aria-label="Loading chart board"
+      >
+        <ChartsPieWidgetSkeleton />
+        <ChartsPieWidgetSkeleton />
+        <ChartsPieWidgetSkeleton className="sm:col-span-2 xl:col-span-1" />
+      </div>
+    );
   }
 
   return (
@@ -352,28 +386,13 @@ export function ChartsBoardCanvas({
           onViewModeChange={onViewModeChange}
           onPieVariantChange={onPieVariantChange}
           onLabelFieldChange={onLabelFieldChange}
+          onDisplaySettingsChange={onDisplaySettingsChange}
           focusWidgetId={focusWidgetId}
           onFocusWidgetDismiss={onFocusWidgetDismiss}
           accessibleProjects={accessibleProjects}
+          accessibleSprints={accessibleSprints}
+          assigneeMembers={assigneeMembers}
         />
-      </div>
-    </div>
-  );
-}
-
-function ChartsBoardCanvasSkeleton({
-  className,
-}: Readonly<{ className?: string }>) {
-  return (
-    <div
-      className={cn('flex min-h-0 flex-1 flex-col gap-3', className)}
-      aria-busy="true"
-      aria-label="Loading chart board"
-    >
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Skeleton className="min-h-56 rounded-xl" />
-        <Skeleton className="min-h-56 rounded-xl" />
-        <Skeleton className="min-h-56 rounded-xl sm:col-span-2 xl:col-span-1" />
       </div>
     </div>
   );
@@ -393,9 +412,12 @@ function BoardCanvasBody({
   onViewModeChange,
   onPieVariantChange,
   onLabelFieldChange,
+  onDisplaySettingsChange,
   focusWidgetId,
   onFocusWidgetDismiss,
   accessibleProjects = [],
+  accessibleSprints = [],
+  assigneeMembers = [],
 }: Readonly<{
   isEmpty: boolean;
   mounted: boolean;
@@ -442,12 +464,24 @@ function BoardCanvasBody({
     // eslint-disable-next-line no-unused-vars
     labelField: ChartsLabelFieldId
   ) => void;
+  onDisplaySettingsChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    patch: ChartWidgetDisplaySettingsPatch
+  ) => void;
   focusWidgetId?: string;
   onFocusWidgetDismiss?: () => void;
   accessibleProjects?: ReadonlyArray<{
     readonly id: string;
     readonly name: string;
   }>;
+  accessibleSprints?: ReadonlyArray<{
+    readonly id: string;
+    readonly name: string;
+    readonly projectId: string;
+  }>;
+  assigneeMembers?: readonly ChartsSampleMember[];
 }>) {
   const { dragSessionKey, onDragStart, onDragStop } =
     useCancelGridDragOnEscape(onLayoutChange);
@@ -499,8 +533,14 @@ function BoardCanvasBody({
               viewMode={entry?.instance.viewMode}
               pieVariant={entry?.instance.pieVariant}
               labelField={entry?.instance.labelField}
+              showValueAs={entry?.instance.showValueAs}
+              sortSlicesBy={entry?.instance.sortSlicesBy}
+              showEmptySlices={entry?.instance.showEmptySlices}
+              visibleTableColumns={entry?.instance.visibleTableColumns}
               focusedSliceKey={resolveFocusedSliceKey(entry?.instance ?? {})}
               accessibleProjects={accessibleProjects}
+              accessibleSprints={accessibleSprints}
+              assigneeMembers={assigneeMembers}
               onRemove={() => onRemoveWidget(item.i)}
               onDuplicate={() => onDuplicateWidget(item.i)}
               onRename={(nextTitle) => onRenameWidget(item.i, nextTitle)}
@@ -515,6 +555,9 @@ function BoardCanvasBody({
               }
               onLabelFieldChange={(nextField) =>
                 onLabelFieldChange(item.i, nextField)
+              }
+              onDisplaySettingsChange={(patch) =>
+                onDisplaySettingsChange(item.i, patch)
               }
               initialConfigOpen={focusWidgetId === item.i}
               onConfigOpenChange={(open) => {
@@ -535,8 +578,11 @@ export function appendChartWidget(
   typeId: ChartWidgetTypeId,
   instances: ChartBoardWidgetInstance[],
   layout: LayoutItem[],
-  title?: string,
-  sizeOverride?: Partial<Pick<LayoutItem, 'w' | 'h' | 'minW' | 'minH'>>
+  options?: {
+    title?: string;
+    sizeOverride?: Partial<Pick<LayoutItem, 'w' | 'h' | 'minW' | 'minH'>>;
+    filters?: ChartsWidgetFilterDraft;
+  }
 ): {
   instances: ChartBoardWidgetInstance[];
   layout: LayoutItem[];
@@ -547,12 +593,13 @@ export function appendChartWidget(
     {
       instanceId,
       typeId,
-      ...(title ? { title } : {}),
+      ...(options?.title ? { title: options.title } : {}),
+      ...(options?.filters ? { filters: options.filters } : {}),
     },
   ];
   const nextLayout = [
     ...layout,
-    nextChartLayoutItem(instanceId, layout, typeId, sizeOverride),
+    nextChartLayoutItem(instanceId, layout, typeId, options?.sizeOverride),
   ];
   return { instances: nextInstances, layout: nextLayout };
 }
@@ -598,13 +645,10 @@ export function duplicateChartWidget(
       }
     : undefined;
 
-  const next = appendChartWidget(
-    source.typeId,
-    instances,
-    layout,
-    `${baseTitle} (copy)`,
-    sizeOverride
-  );
+  const next = appendChartWidget(source.typeId, instances, layout, {
+    title: `${baseTitle} (copy)`,
+    sizeOverride,
+  });
   const copiedId = next.instances.at(-1)?.instanceId;
   if (!copiedId) {
     return next;
@@ -664,12 +708,20 @@ type ChartInstanceFieldPatch = Partial<
     | 'focusedSliceKey'
     | 'pieVariant'
     | 'labelField'
+    | 'showValueAs'
+    | 'sortSlicesBy'
+    | 'showEmptySlices'
+    | 'visibleTableColumns'
   >
 > & {
   readonly clearFilters?: boolean;
   readonly clearFocusedSliceKey?: boolean;
   readonly clearPieVariant?: boolean;
   readonly clearLabelField?: boolean;
+  readonly clearShowValueAs?: boolean;
+  readonly clearSortSlicesBy?: boolean;
+  readonly clearShowEmptySlices?: boolean;
+  readonly clearVisibleTableColumns?: boolean;
 };
 
 /** Persist a field only when set and not the omitted default. */
@@ -747,6 +799,42 @@ function withInstanceFields(
     labelField === 'status'
   );
 
+  const showValueAs = patch.showValueAs ?? item.showValueAs;
+  assignUnlessCleared(
+    next,
+    patch.clearShowValueAs,
+    'showValueAs',
+    showValueAs,
+    showValueAs === 'percent'
+  );
+
+  const sortSlicesBy = patch.sortSlicesBy ?? item.sortSlicesBy;
+  assignUnlessCleared(
+    next,
+    patch.clearSortSlicesBy,
+    'sortSlicesBy',
+    sortSlicesBy,
+    sortSlicesBy === 'value_desc'
+  );
+
+  const showEmptySlices = patch.showEmptySlices ?? item.showEmptySlices;
+  assignUnlessCleared(
+    next,
+    patch.clearShowEmptySlices,
+    'showEmptySlices',
+    showEmptySlices,
+    showEmptySlices === false || showEmptySlices == null
+  );
+
+  const visibleTableColumns =
+    patch.visibleTableColumns ?? item.visibleTableColumns;
+  assignUnlessCleared(
+    next,
+    patch.clearVisibleTableColumns,
+    'visibleTableColumns',
+    visibleTableColumns
+  );
+
   return next;
 }
 
@@ -820,4 +908,56 @@ export function updateChartWidgetLabelField(
       clearFocusedSliceKey: true,
     });
   });
+}
+
+export function updateChartWidgetDisplaySettings(
+  instanceId: string,
+  patch: ChartWidgetDisplaySettingsPatch,
+  instances: ChartBoardWidgetInstance[]
+): ChartBoardWidgetInstance[] {
+  return instances.map((item) => {
+    if (item.instanceId !== instanceId) {
+      return item;
+    }
+    return withInstanceFields(item, displaySettingsPatch(patch));
+  });
+}
+
+function displaySettingsPatch(
+  patch: ChartWidgetDisplaySettingsPatch
+): ChartInstanceFieldPatch {
+  const next: ChartInstanceFieldPatch = {};
+
+  if (patch.showValueAs !== undefined) {
+    if (patch.showValueAs === 'percent') {
+      Object.assign(next, { clearShowValueAs: true });
+    } else {
+      Object.assign(next, { showValueAs: patch.showValueAs });
+    }
+  }
+
+  if (patch.sortSlicesBy !== undefined) {
+    if (patch.sortSlicesBy === 'value_desc') {
+      Object.assign(next, { clearSortSlicesBy: true });
+    } else {
+      Object.assign(next, { sortSlicesBy: patch.sortSlicesBy });
+    }
+  }
+
+  if (patch.showEmptySlices !== undefined) {
+    if (patch.showEmptySlices) {
+      Object.assign(next, { showEmptySlices: true });
+    } else {
+      Object.assign(next, { clearShowEmptySlices: true });
+    }
+  }
+
+  if (patch.visibleTableColumns !== undefined) {
+    Object.assign(next, {
+      visibleTableColumns: patch.visibleTableColumns,
+      clearVisibleTableColumns: false,
+    });
+  }
+
+  return next;
 }

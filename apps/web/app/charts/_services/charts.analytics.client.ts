@@ -32,6 +32,10 @@ export async function fetchChartSeries(
     from: query.from,
     to: query.to,
     sprintId: query.sprintId,
+    status: query.status,
+    type: query.type,
+    priority: query.priority,
+    assigneeId: query.assigneeId,
   });
   const result = await apiFetch<{ data: ChartSeriesResponse }>(
     `${SERIES_PATH}?${search}`
@@ -52,6 +56,10 @@ export async function fetchChartDrilldown(
     from: query.from,
     to: query.to,
     sprintId: query.sprintId,
+    status: query.status,
+    type: query.type,
+    priority: query.priority,
+    assigneeId: query.assigneeId,
   });
   const result = await apiFetch<{ data: ChartDrilldownResponse }>(
     `${DRILLDOWN_PATH}?${search}`

@@ -91,6 +91,7 @@ function migrateLegacyBoard(): ChartWorkspaceRecord | null {
     description: null,
     status: 'active',
     isOverview: false,
+    ownership: 'mine',
     updatedAt: new Date().toISOString(),
     instances,
     layout,
@@ -147,6 +148,7 @@ export function ensureDefaultChartWorkspace(
     description: null,
     status: 'active',
     isOverview: false,
+    ownership: 'mine',
     updatedAt: new Date().toISOString(),
     instances: [],
     layout: [],
@@ -226,6 +228,7 @@ export function createChartWorkspace(
     description: null,
     status: 'active',
     isOverview: wantsOverview,
+    ownership: 'mine',
     updatedAt: new Date().toISOString(),
     instances: [],
     layout: [],
@@ -302,8 +305,11 @@ export function listChartWorkspaces(
   const search = filters?.search?.trim().toLowerCase() ?? '';
 
   return store.workspaces.filter((workspace) => {
-    // Local store is owner-only until API shares land.
-    if (ownership === 'shared') {
+    const workspaceOwnership = workspace.ownership ?? 'mine';
+    if (ownership === 'mine' && workspaceOwnership !== 'mine') {
+      return false;
+    }
+    if (ownership === 'shared' && workspaceOwnership !== 'shared') {
       return false;
     }
     if (status !== 'all' && workspace.status !== status) {

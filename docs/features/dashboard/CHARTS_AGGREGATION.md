@@ -1,6 +1,8 @@
 # Charts aggregation (work-item series)
 
-Status: **Tier 1 shipped** — rollup + series/drilldown API + live Chart widget.
+Status: **Tier 1 analytics + product shipped** — rollup + series/drilldown API +
+live Chart widget pie/table; cloud workspaces + Views `resource_kind` bookmarks +
+Widget settings (Values / Customize / columns). Groups remain deferred.
 Tier 2/3 remain design-only (see below).
 
 Replaces in-memory chart mocks with precomputed **rollup** statistics and
@@ -12,6 +14,7 @@ Related:
 - DB access: [DATABASE.md](../../guides/DATABASE.md)
 - Performance: [PERFORMANCE.md](../../guides/PERFORMANCE.md)
 - User guide: [charts.md](../../user-guide/navigation/charts.md)
+- Views indexing plan: [FAVORITES_AND_VIEWS.md](../views/FAVORITES_AND_VIEWS.md#chart-workspaces)
 
 ---
 
@@ -27,11 +30,11 @@ Related:
 
 ## Tiers
 
-| Tier  | Scope                                                                                                                                            | Status      |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
-| **1** | Same Supabase DB: rollup + indexes + series API + paginated drilldown; Chart widget on live data                                                 | **Shipped** |
-| **2** | Lean `work_items` read model on **Neon**; **Render `reader`**; **Upstash** queue; Express **post-commit** publisher; **Pusher** auth as streamer | Later       |
-| **3** | Whole-app reads on Neon; **apps rename** first; separate architecture doc                                                                        | Later       |
+| Tier  | Scope                                                                                                                                                | Status                                 |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| **1** | Same Supabase DB: rollup + indexes + series API + paginated drilldown; Chart widget on live data; **plus** cloud workspaces + Views index + settings | **Analytics done; product incomplete** |
+| **2** | Lean `work_items` read model on **Neon**; **Render `reader`**; **Upstash** queue; Express **post-commit** publisher; **Pusher** auth as streamer     | Later                                  |
+| **3** | Whole-app reads on Neon; **apps rename** first; separate architecture doc                                                                            | Later                                  |
 
 ### Tier 1 locks
 
@@ -39,6 +42,8 @@ Related:
 - Bucket: `(created_at)::date`
 - One shared dimensional rollup for categorical charts (pie now; bar later via `GROUP BY`)
 - Slice → table: live `work_items`, paginated (not ID lists in the rollup)
+- Board JSON lives on **`charts.board_json`** — never inside `saved_views.search`
+- Chart listing in Views uses typed `saved_views.resource_kind` / `resource_id` (see remaining steps)
 
 ### Tier 2 locks
 
@@ -116,12 +121,12 @@ No HTTP or queues inside the trigger.
 
 **Query (series):**
 
-| Param         | Required | Notes                                                            |
-| ------------- | -------- | ---------------------------------------------------------------- |
-| `projectId`   | yes      | UUID; must be in the actor’s accessible projects                 |
-| `labelField`  | no       | `status` (default) \| `owner` \| `board` \| `type` \| `priority` |
-| `from` / `to` | no       | `YYYY-MM-DD` on rollup `bucket_date`                             |
-| `sprintId`    | no       | UUID                                                             |
+| Param         | Required | Notes                                                                                     |
+| ------------- | -------- | ----------------------------------------------------------------------------------------- |
+| `projectId`   | no       | UUID for one project; omit for **all accessible** projects (Charts “All projects” filter) |
+| `labelField`  | no       | `status` (default) \| `owner` \| `board` \| `type` \| `priority`                          |
+| `from` / `to` | no       | `YYYY-MM-DD` on rollup `bucket_date`                                                      |
+| `sprintId`    | no       | UUID                                                                                      |
 
 **Query (drilldown):** same filters plus `sliceKey` (empty string = NULL, e.g. unassigned), `page` (default 1), `limit` (default 20, max 100).
 
@@ -135,9 +140,12 @@ Also mounted at `/api/charts/…` (legacy alias).
 
 ## Tier 1 implementation steps
 
-All four steps are **done**. Kept here as a historical checklist.
+### Analytics (done)
 
-### Step 1 — Schema: indexes + rollup + backfill + triggers ✅
+Steps 1–4 below are **done**. Kept as a historical checklist for the rollup /
+live pie path.
+
+#### Step 1 — Schema: indexes + rollup + backfill + triggers ✅
 
 **Migration:** `packages/db/prisma/migrations/add_work_item_chart_rollups/`
 
@@ -152,7 +160,7 @@ All four steps are **done**. Kept here as a historical checklist.
 
 **Verify:** insert/update/delete a work item in dev; rollup counts move correctly.
 
-### Step 2 — API: series + drilldown ✅
+#### Step 2 — API: series + drilldown ✅
 
 **Docs:** routes documented under [APIs](#apis) above.
 
@@ -165,7 +173,7 @@ All four steps are **done**. Kept here as a historical checklist.
 
 **Verify:** authenticated HTTP against a project with known WI distribution.
 
-### Step 3 — Web: replace mocks ✅
+#### Step 3 — Web: replace mocks ✅
 
 **Docs:** [CHARTS.md](./CHARTS.md) widget section (mock → live); user guide Labels/filters.
 
@@ -174,19 +182,58 @@ All four steps are **done**. Kept here as a historical checklist.
 1. Client `fetchChartSeries` / `fetchChartDrilldown` + `useChartWidgetAnalytics`
 2. Chart widget pie from series; slice click → drilldown into grouped table
 3. Chart widget no longer uses `CHARTS_SAMPLE_WORK_ITEMS` (sample helpers remain for unit tests / stubs)
-4. Filters require a concrete project; Labels columns limited to API-backed fields
+4. Project filter supports All projects or a concrete project; Labels columns limited to API-backed fields
 5. Web tests: `apps/web/tests/charts/charts-analytics.ui.test.ts`
 
 **Verify:** `/charts/[id]` pie matches board/work-item reality for a project filter.
 
-### Step 4 — Docs polish + sync ✅
+#### Step 4 — Analytics docs polish + sync ✅
 
-1. This file: status **Tier 1 shipped**, exact API paths, migration folder name
+1. Exact API paths, migration folder name
 2. [CHARTS.md](./CHARTS.md) + [README.md](./README.md) links
-3. User guide: [charts.md](../../user-guide/navigation/charts.md) (project filter + live Labels)
+3. User guide live Labels / filters
 4. `pnpm --filter web docs:sync`
 
-### Code map (Tier 1)
+### Tier 1 product (complete)
+
+Workspace cloud wiring and Widget settings are **done**. Boards hydrate from the
+charts API (localStorage is a cache). Steps 5–6 below are the shipped checklist.
+
+#### Step 5 — Workspace API + Views index ✅
+
+**Goal:** `charts` is the board source of truth; `/views` and Charts workspace
+lists index chart entries without scanning pathnames.
+
+1. Extend `saved_views` with `resource_kind` (`page` \| `chart`) and nullable
+   `resource_id` (chart uuid when kind=`chart`)
+2. Indexes: `(owner_id, status, resource_kind)`; partial unique one active chart
+   bookmark per owner per `resource_id`
+3. On chart create / rename / archive: upsert matching `saved_views` row
+   (`pathname=/charts/{id}`, `search=''`, title synced)
+4. Web: hydrate workspace list/board from charts API; migrate localStorage →
+   cloud; last-opened from local preference (synced board list)
+5. Keep board JSON on `charts.board_json` only; `chart_shares` for board ACL;
+   optional `saved_view_shares` for the Views bookmark entry
+
+**Docs:** [CHARTS.md](./CHARTS.md#persistence), [FAVORITES_AND_VIEWS.md](../views/FAVORITES_AND_VIEWS.md#chart-workspaces).
+
+#### Step 6 — Widget settings sidebar ✅
+
+**Goal:** Settings collapsibles are real (or honestly Coming soon), not
+`pointer-events-none` stubs.
+
+| Section                      | Tier 1 product target                                                            |
+| ---------------------------- | -------------------------------------------------------------------------------- |
+| Chart type                   | Keep Pie/Donut; other types Coming soon                                          |
+| Labels                       | Keep API-backed columns; hide Group / Name / Due date until rollup supports them |
+| Values                       | Measure = `item_count` only; hide or disable Sum/Average/… beyond count          |
+| Customize                    | Wire show as % vs count, sort, show empty slices; persist on widget instance     |
+| Groups                       | **Deferred** — empty status groups already hidden in the table                   |
+| Choose which columns to show | Wire drilldown table column visibility; persist on widget                        |
+
+**Docs:** [CHARTS.md](./CHARTS.md#widget-settings-sidebar).
+
+### Code map (Tier 1 analytics)
 
 | Layer                  | Path                                                                                               |
 | ---------------------- | -------------------------------------------------------------------------------------------------- |
@@ -220,3 +267,5 @@ architecture doc when that program starts.
 - Postgres `REFRESH MATERIALIZED VIEW`
 - Per-chart-type duplicate rollup tables
 - Non-pie chart types in the UI (schema remains reusable)
+- Storing board JSON inside `saved_views.search` (use `charts.board_json` +
+  typed `resource_*` on Views instead)

@@ -606,6 +606,23 @@ export type EnumJiraConnectionStatusWithAggregatesFilter<$PrismaModel = never> =
   _max?: Prisma.NestedEnumJiraConnectionStatusFilter<$PrismaModel>
 }
 
+export type EnumSavedViewResourceKindFilter<$PrismaModel = never> = {
+  equals?: $Enums.SavedViewResourceKind | Prisma.EnumSavedViewResourceKindFieldRefInput<$PrismaModel>
+  in?: $Enums.SavedViewResourceKind[] | Prisma.ListEnumSavedViewResourceKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.SavedViewResourceKind[] | Prisma.ListEnumSavedViewResourceKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumSavedViewResourceKindFilter<$PrismaModel> | $Enums.SavedViewResourceKind
+}
+
+export type EnumSavedViewResourceKindWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.SavedViewResourceKind | Prisma.EnumSavedViewResourceKindFieldRefInput<$PrismaModel>
+  in?: $Enums.SavedViewResourceKind[] | Prisma.ListEnumSavedViewResourceKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.SavedViewResourceKind[] | Prisma.ListEnumSavedViewResourceKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumSavedViewResourceKindWithAggregatesFilter<$PrismaModel> | $Enums.SavedViewResourceKind
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumSavedViewResourceKindFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumSavedViewResourceKindFilter<$PrismaModel>
+}
+
 export type EnumIntegrationCategoryFilter<$PrismaModel = never> = {
   equals?: $Enums.IntegrationCategory | Prisma.EnumIntegrationCategoryFieldRefInput<$PrismaModel>
   in?: $Enums.IntegrationCategory[] | Prisma.ListEnumIntegrationCategoryFieldRefInput<$PrismaModel>
@@ -1174,6 +1191,23 @@ export type NestedEnumJiraConnectionStatusWithAggregatesFilter<$PrismaModel = ne
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumJiraConnectionStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumJiraConnectionStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumSavedViewResourceKindFilter<$PrismaModel = never> = {
+  equals?: $Enums.SavedViewResourceKind | Prisma.EnumSavedViewResourceKindFieldRefInput<$PrismaModel>
+  in?: $Enums.SavedViewResourceKind[] | Prisma.ListEnumSavedViewResourceKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.SavedViewResourceKind[] | Prisma.ListEnumSavedViewResourceKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumSavedViewResourceKindFilter<$PrismaModel> | $Enums.SavedViewResourceKind
+}
+
+export type NestedEnumSavedViewResourceKindWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.SavedViewResourceKind | Prisma.EnumSavedViewResourceKindFieldRefInput<$PrismaModel>
+  in?: $Enums.SavedViewResourceKind[] | Prisma.ListEnumSavedViewResourceKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.SavedViewResourceKind[] | Prisma.ListEnumSavedViewResourceKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumSavedViewResourceKindWithAggregatesFilter<$PrismaModel> | $Enums.SavedViewResourceKind
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumSavedViewResourceKindFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumSavedViewResourceKindFilter<$PrismaModel>
 }
 
 export type NestedEnumIntegrationCategoryFilter<$PrismaModel = never> = {

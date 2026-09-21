@@ -397,7 +397,8 @@ export type ChartsFilterOption = {
 };
 
 export function chartsFilterValueOptions(
-  column: ChartsFilterColumnId
+  column: ChartsFilterColumnId,
+  members: readonly ChartsSampleMember[] = CHARTS_SAMPLE_MEMBERS
 ): readonly ChartsFilterOption[] {
   switch (column) {
     case 'status':
@@ -413,7 +414,7 @@ export function chartsFilterValueOptions(
     case 'assignee':
       return [
         { value: 'unassigned', label: 'Unassigned' },
-        ...CHARTS_SAMPLE_MEMBERS.map((member) => ({
+        ...members.map((member) => ({
           value: member.id,
           label: member.name,
         })),
@@ -447,10 +448,16 @@ export type ChartsAdvancedFilterRow = {
 };
 
 export type ChartsQuickFieldId =
-  'project' | 'status' | 'type' | 'assignee' | 'priority';
+  'project' | 'sprint' | 'status' | 'type' | 'assignee' | 'priority';
+
+export type ChartsSprintOption = {
+  readonly id: string;
+  readonly name: string;
+  readonly projectId: string;
+};
 
 const QUICK_FIELD_ALL_LABELS: Record<
-  Exclude<ChartsQuickFieldId, 'project' | 'assignee'>,
+  Exclude<ChartsQuickFieldId, 'project' | 'sprint' | 'assignee'>,
   string
 > = {
   status: 'All statuses',
@@ -458,10 +465,35 @@ const QUICK_FIELD_ALL_LABELS: Record<
   priority: 'All priorities',
 };
 
+/** Sprint options for a concrete project (All projects → All sprints only). */
+export function chartsSprintFieldOptions(
+  sprints: readonly ChartsSprintOption[],
+  projectId: string | null | undefined
+): readonly ChartsFilterOption[] {
+  const all = { value: 'all', label: 'All sprints' } as const;
+  if (!projectId || projectId === 'all') {
+    return [all];
+  }
+  return [
+    all,
+    ...sprints
+      .filter((sprint) => sprint.projectId === projectId)
+      .map((sprint) => ({
+        value: sprint.id,
+        label: sprint.name,
+      })),
+  ];
+}
+
 /** Quick-filter option lists (includes an “all” sentinel). */
 export function chartsQuickFieldOptions(
   field: ChartsQuickFieldId,
-  projects: readonly ChartsProjectOption[] = CHARTS_SAMPLE_PROJECTS
+  projects: readonly ChartsProjectOption[] = CHARTS_SAMPLE_PROJECTS,
+  options?: {
+    readonly sprints?: readonly ChartsSprintOption[];
+    readonly projectId?: string | null;
+    readonly members?: readonly ChartsSampleMember[];
+  }
 ): readonly ChartsFilterOption[] {
   if (field === 'project') {
     return [
@@ -472,21 +504,26 @@ export function chartsQuickFieldOptions(
       })),
     ];
   }
+  if (field === 'sprint') {
+    return chartsSprintFieldOptions(options?.sprints ?? [], options?.projectId);
+  }
   if (field === 'assignee') {
     return [
       { value: 'all', label: 'Anyone' },
-      ...chartsFilterValueOptions('assignee'),
+      ...chartsFilterValueOptions('assignee', options?.members),
     ];
   }
   return [
     { value: 'all', label: QUICK_FIELD_ALL_LABELS[field] },
-    ...chartsFilterValueOptions(field),
+    ...chartsFilterValueOptions(field, options?.members),
   ];
 }
 
 export type ChartsWidgetFilterDraft = {
   readonly mode: 'advanced' | 'quick';
   readonly projectId: string;
+  /** Optional sprint scope (seeded from workspace defaults; passed to analytics). */
+  readonly sprintId?: string;
   readonly rows: readonly ChartsAdvancedFilterRow[];
   readonly quickSelections: Readonly<Record<ChartsQuickFieldId, string>>;
 };
@@ -549,6 +586,10 @@ function matchesQuickSelection(
   }
   if (field === 'project') {
     return item.projectId === value;
+  }
+  if (field === 'sprint') {
+    // Sample items are not sprint-scoped; live analytics applies sprintId.
+    return true;
   }
   return fieldValueForColumn(item, field) === value;
 }

@@ -13,7 +13,8 @@ export const DASHBOARD_GRID_CONFIG = {
   cols: 12,
   rowHeight: 48,
   margin: [16, 16] as [number, number],
-  containerPadding: [0, 0] as [number, number],
+  /** Inset so widget borders (esp. top row) are not clipped by overflow parents. */
+  containerPadding: [16, 8] as [number, number],
 };
 
 export const DASHBOARD_DRAG_CONFIG = {
