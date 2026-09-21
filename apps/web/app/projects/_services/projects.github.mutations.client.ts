@@ -1,8 +1,5 @@
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
-import type {
-  GithubConnectionDto,
-  GithubRepoOption,
-} from '@repo/types/api/v1';
+import type { GithubConnectionDto, GithubRepoOption } from '@repo/types/api/v1';
 
 export type { GithubConnectionDto, GithubRepoOption };
 
@@ -38,10 +35,11 @@ export async function deleteGithubConnection(
   });
 }
 
-export function githubConnectionLabel(
-  connection: GithubConnectionDto
-): string {
-  if (connection.account_name && connection.account_name !== connection.account_login) {
+export function githubConnectionLabel(connection: GithubConnectionDto): string {
+  if (
+    connection.account_name &&
+    connection.account_name !== connection.account_login
+  ) {
     return `@${connection.account_login} (${connection.account_name})`;
   }
   return `@${connection.account_login}`;

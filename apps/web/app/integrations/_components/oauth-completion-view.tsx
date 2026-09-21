@@ -78,7 +78,8 @@ export function OAuthCompletionView({
   searchParamKey,
 }: Readonly<OAuthCompletionViewProps>) {
   const searchParams = useSearchParams();
-  const rawStatus = searchParams.get(searchParamKey) || searchParams.get('status');
+  const rawStatus =
+    searchParams.get(searchParamKey) || searchParams.get('status');
   const errorDetail = searchParams.get('error');
 
   const status = parseOAuthCompletionStatus(rawStatus);
@@ -100,12 +101,12 @@ export function OAuthCompletionView({
 
   return (
     <main className="bg-background text-foreground flex min-h-screen flex-col items-center justify-center gap-4 p-6">
-      <div className="border-border bg-card flex w-full max-w-md flex-col items-center gap-4 rounded-xl border p-8 text-center shadow-lg animate-in fade-in zoom-in-95 duration-300">
+      <div className="border-border bg-card animate-in fade-in zoom-in-95 flex w-full max-w-md flex-col items-center gap-4 rounded-xl border p-8 text-center shadow-lg duration-300">
         <div className="relative flex items-center justify-center">
           <div className="bg-muted/40 flex size-14 items-center justify-center rounded-2xl border p-3">
             {logo}
           </div>
-          <div className="absolute -bottom-1 -right-1 rounded-full bg-card p-0.5 shadow-sm">
+          <div className="bg-card absolute -right-1 -bottom-1 rounded-full p-0.5 shadow-sm">
             <IconComponent className={`size-5 ${config.iconClass}`} />
           </div>
         </div>
@@ -131,7 +132,7 @@ export function OAuthCompletionView({
             variant={config.buttonVariant}
             className={`w-full ${
               status === OAuthCompletionStatus.Connected
-                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
                 : ''
             }`}
             onClick={handleClose}

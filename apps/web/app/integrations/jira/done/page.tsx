@@ -14,7 +14,9 @@ export default function JiraOAuthDonePage() {
     <Suspense
       fallback={
         <main className="bg-background text-foreground flex min-h-screen items-center justify-center p-6">
-          <p className="text-muted-foreground text-sm">Processing Jira connection...</p>
+          <p className="text-muted-foreground text-sm">
+            Processing Jira connection...
+          </p>
         </main>
       }
     >

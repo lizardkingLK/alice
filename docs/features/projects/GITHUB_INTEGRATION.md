@@ -9,16 +9,16 @@
 
 GitHub integration enables Alice workspaces to link pull requests, commits, and branches to work items, following the same OAuth UX pattern established by the Jira integration.
 
-| Concern | Approach |
-| --- | --- |
-| **Authentication Flow** | **GitHub OAuth 2.1 / OIDC Authorization Code Flow** with signed HMAC state parameter for CSRF protection |
-| **Client Credentials** | Configured via environment variables: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_REDIRECT_URI` |
-| **Requested Scopes** | Least privilege: `repo read:user` (or `repo:status read:user`) |
-| **Token Storage** | Stored in the `integrations` table (`provider: 'github'`, `category: 'productivity'`). Both `access_token` and `refresh_token` are encrypted at rest with AES-256-GCM (`v1:...`) |
-| **Project Binding** | `projects.github_repo` stores the target repository path (`owner/repo`). Pull requests and repository links resolve credentials through the user's active GitHub OAuth integration |
-| **Token Refresh** | **Just-In-Time (JIT) refresh**: `getValidAccessToken()` validates expiration with clock skew buffer (60s) and automatically refreshes tokens via GitHub OAuth refresh endpoint before making upstream requests |
-| **Client DTO** | Decrypted tokens are **never** returned to the browser or logged. The frontend only receives connection metadata (`GithubConnectionDto`: `id`, `name`, `status`, `account_login`, `account_avatar_url`, `scopes`) |
-| **Backward Compatibility** | Legacy project-level encrypted PATs in `projects.github_token` are supported as fallback if no OAuth connection exists for the user |
+| Concern                    | Approach                                                                                                                                                                                                          |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Authentication Flow**    | **GitHub OAuth 2.1 / OIDC Authorization Code Flow** with signed HMAC state parameter for CSRF protection                                                                                                          |
+| **Client Credentials**     | Configured via environment variables: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_REDIRECT_URI`                                                                                                           |
+| **Requested Scopes**       | Least privilege: `repo read:user` (or `repo:status read:user`)                                                                                                                                                    |
+| **Token Storage**          | Stored in the `integrations` table (`provider: 'github'`, `category: 'productivity'`). Both `access_token` and `refresh_token` are encrypted at rest with AES-256-GCM (`v1:...`)                                  |
+| **Project Binding**        | `projects.github_repo` stores the target repository path (`owner/repo`). Pull requests and repository links resolve credentials through the user's active GitHub OAuth integration                                |
+| **Token Refresh**          | **Just-In-Time (JIT) refresh**: `getValidAccessToken()` validates expiration with clock skew buffer (60s) and automatically refreshes tokens via GitHub OAuth refresh endpoint before making upstream requests    |
+| **Client DTO**             | Decrypted tokens are **never** returned to the browser or logged. The frontend only receives connection metadata (`GithubConnectionDto`: `id`, `name`, `status`, `account_login`, `account_avatar_url`, `scopes`) |
+| **Backward Compatibility** | Legacy project-level encrypted PATs in `projects.github_token` are supported as fallback if no OAuth connection exists for the user                                                                               |
 
 ---
 
@@ -37,6 +37,7 @@ INTEGRATION_TOKEN_ENCRYPTION_KEY=3q2+7vF9...
 ```
 
 To generate a new 32-byte base64 encryption key:
+
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```

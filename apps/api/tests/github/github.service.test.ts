@@ -121,7 +121,10 @@ describe('GithubService', () => {
       updated_at: new Date(),
     });
 
-    const connection = await service.handleOAuthCallback('test-auth-code', state!);
+    const connection = await service.handleOAuthCallback(
+      'test-auth-code',
+      state!
+    );
 
     expect(connection.account_login).toBe('octocat');
     expect(connection.status).toBe('active');

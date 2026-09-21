@@ -48,7 +48,7 @@ function GithubUnlinkedCard({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-amber-500" />
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="text-muted-foreground text-xs font-medium">
             Status: Not connected
           </span>
         </div>
@@ -130,7 +130,7 @@ function GithubLinkedCard({
               </span>
               <Badge
                 variant="outline"
-                className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 h-4 px-1.5 text-[10px] font-medium"
+                className="h-4 border-emerald-500/30 bg-emerald-500/10 px-1.5 text-[10px] font-medium text-emerald-600"
               >
                 <CheckCircle2 className="mr-1 h-2.5 w-2.5" />
                 Connected
@@ -210,7 +210,7 @@ function GithubConnectionStatusCard({
 }: Readonly<GithubConnectionStatusCardProps>) {
   if (isLoading) {
     return (
-      <div className="border-border/60 bg-muted/20 flex items-center gap-2 rounded-lg border p-3 text-xs text-muted-foreground">
+      <div className="border-border/60 bg-muted/20 text-muted-foreground flex items-center gap-2 rounded-lg border p-3 text-xs">
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
         Checking GitHub connection status...
       </div>

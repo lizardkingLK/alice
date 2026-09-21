@@ -216,7 +216,8 @@ export class GithubService {
       ? new Date(config.expires_at).getTime()
       : null;
     const isExpired =
-      expiresAt !== null && expiresAt <= utcNow().getTime() + ACCESS_TOKEN_SKEW_MS;
+      expiresAt !== null &&
+      expiresAt <= utcNow().getTime() + ACCESS_TOKEN_SKEW_MS;
 
     if (!isExpired) {
       return decryptSecret(config.access_token);
