@@ -1,10 +1,6 @@
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { env } from '../../../config/env';
-import {
-  decryptSecret,
-  encryptSecret,
-  resolveIntegrationEncryptionKey,
-} from '../../../lib/secrets/token-crypto';
+import { decryptSecret, encryptSecret } from '../../../lib/secrets/token-crypto';
+import { createOAuthState, verifyOAuthState } from '../../../lib/secrets/oauth-state';
 import {
   IntegrationStatus,
   Prisma,
@@ -22,11 +18,9 @@ import {
   type GithubRepoOption,
   type GithubTokenResponse,
   type GithubUserResponse,
-  type OAuthStatePayload,
 } from './github.types';
 
 const OAUTH_SCOPES = 'repo read:user';
-const STATE_TTL_MS = 10 * 60 * 1000;
 const ACCESS_TOKEN_SKEW_MS = 60 * 1000;
 const GITHUB_API_URL = 'https://api.github.com';
 const GITHUB_OAUTH_URL = 'https://github.com/login/oauth';
@@ -47,71 +41,12 @@ function requireGithubConfig(): {
   return { clientId, clientSecret, redirectUri };
 }
 
-function resolveHmacKey(): Buffer {
-  return resolveIntegrationEncryptionKey('sign GitHub OAuth state (HMAC)');
-}
-
-function base64UrlEncode(value: string | Buffer): string {
-  const buf = typeof value === 'string' ? Buffer.from(value, 'utf8') : value;
-  return buf.toString('base64url');
-}
-
-function base64UrlDecode(value: string): Buffer {
-  return Buffer.from(value, 'base64url');
-}
-
-function signState(payload: OAuthStatePayload): string {
-  const body = base64UrlEncode(JSON.stringify(payload));
-  const sig = createHmac('sha256', resolveHmacKey()).update(body).digest();
-  return `${body}.${base64UrlEncode(sig)}`;
-}
-
-function verifyState(state: string): OAuthStatePayload {
-  const [body, sigPart] = state.split('.');
-  if (!body || !sigPart) {
-    throw new Error('Invalid OAuth state.');
-  }
-
-  const expected = createHmac('sha256', resolveHmacKey()).update(body).digest();
-  const actual = base64UrlDecode(sigPart);
-  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
-    throw new Error('Invalid OAuth state signature.');
-  }
-
-  let payload: OAuthStatePayload;
-  try {
-    payload = JSON.parse(
-      base64UrlDecode(body).toString('utf8')
-    ) as OAuthStatePayload;
-  } catch {
-    throw new Error('Invalid OAuth state payload.');
-  }
-
-  if (
-    typeof payload.userId !== 'string' ||
-    typeof payload.nonce !== 'string' ||
-    typeof payload.exp !== 'number'
-  ) {
-    throw new TypeError('Invalid OAuth state payload.');
-  }
-
-  if (utcNow().getTime() > payload.exp) {
-    throw new Error('OAuth state has expired. Please try connecting again.');
-  }
-
-  return payload;
-}
-
 export class GithubService {
   constructor(private readonly githubRepository: GithubRepository) {}
 
   buildAuthorizeUrl(userId: string): string {
     const { clientId, redirectUri } = requireGithubConfig();
-    const state = signState({
-      userId,
-      nonce: randomBytes(16).toString('hex'),
-      exp: utcNow().getTime() + STATE_TTL_MS,
-    });
+    const state = createOAuthState(userId, 'sign GitHub OAuth state (HMAC)');
 
     const params = new URLSearchParams({
       client_id: clientId,
@@ -132,7 +67,7 @@ export class GithubService {
     code: string,
     state: string
   ): Promise<GithubConnectionDto> {
-    const { userId } = verifyState(state);
+    const { userId } = verifyOAuthState(state, 'sign GitHub OAuth state (HMAC)');
 
     const tokens = await this.exchangeAuthorizationCode(code);
     const userInfo = await this.fetchUserProfile(tokens.access_token);
@@ -200,7 +135,7 @@ export class GithubService {
     }
 
     const config = connection.config as unknown as GithubOAuthConfigStored;
-    if (!config || !config.access_token) {
+    if (!config?.access_token) {
       throw new GithubReauthorizationRequiredError(
         'GitHub access token is missing. Please reconnect GitHub.'
       );
@@ -285,11 +220,13 @@ export class GithubService {
     if (!grantedScope) {
       return true;
     }
-    const scopes = grantedScope
-      .split(',')
-      .map((s) => s.trim())
-      .concat(grantedScope.split(' ').map((s) => s.trim()));
-    return scopes.includes('repo') || scopes.includes('public_repo');
+    const scopes = new Set(
+      grantedScope
+        .split(/[,\s]+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+    );
+    return scopes.has('repo') || scopes.has('public_repo');
   }
 
   private async refreshAccessToken(

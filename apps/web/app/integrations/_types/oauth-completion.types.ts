@@ -118,8 +118,7 @@ export function subscribeToOAuthCompletion(
     }
     const data = event.data;
     if (
-      data &&
-      data.type === OAuthMessageType.OAuthComplete &&
+      data?.type === OAuthMessageType.OAuthComplete &&
       data.provider === expectedProvider
     ) {
       onComplete(data.status, data.error);
@@ -135,8 +134,7 @@ export function subscribeToOAuthCompletion(
       channel.onmessage = (event) => {
         const data = event.data;
         if (
-          data &&
-          data.type === OAuthMessageType.OAuthComplete &&
+          data?.type === OAuthMessageType.OAuthComplete &&
           data.provider === expectedProvider
         ) {
           onComplete(data.status, data.error);
@@ -154,8 +152,7 @@ export function subscribeToOAuthCompletion(
     try {
       const data = JSON.parse(event.newValue);
       if (
-        data &&
-        data.type === OAuthMessageType.OAuthComplete &&
+        data?.type === OAuthMessageType.OAuthComplete &&
         data.provider === expectedProvider
       ) {
         onComplete(data.status, data.error);

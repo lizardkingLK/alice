@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   listGithubConnections,
   listGithubRepositories,
@@ -8,11 +8,8 @@ import {
   type GithubConnectionDto,
   type GithubRepoOption,
 } from '@/app/projects/_services/projects.github.mutations.client';
-import {
-  subscribeToOAuthCompletion,
-  IntegrationOAuthProvider,
-  OAuthCompletionStatus,
-} from '@/app/integrations/_types/oauth-completion.types';
+import { IntegrationOAuthProvider } from '@/app/integrations/_types/oauth-completion.types';
+import { useOAuthPopupManager } from './use-oauth-popup-manager';
 
 const OAUTH_WINDOW_NAME = 'alice-github-oauth';
 
@@ -45,9 +42,7 @@ export function useGithubConnectionPicker(
   const [repositories, setRepositories] = useState<GithubRepoOption[]>([]);
   const [isLoadingConnections, setIsLoadingConnections] = useState(true);
   const [isLoadingRepositories, setIsLoadingRepositories] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const oauthWindowRef = useRef<Window | null>(null);
 
   const refreshConnections = useCallback(() => {
     setIsLoadingConnections(true);
@@ -71,64 +66,16 @@ export function useGithubConnectionPicker(
     refreshConnections();
   }, [refreshConnections]);
 
-  // Direct notification from the OAuth completion window/tab
-  useEffect(() => {
-    return subscribeToOAuthCompletion(
-      IntegrationOAuthProvider.GitHub,
-      (status, error) => {
-        setIsConnecting(false);
-        if (status === OAuthCompletionStatus.Connected) {
-          refreshConnections();
-          setLoadError(null);
-          return;
-        }
-        if (status === OAuthCompletionStatus.Denied) {
-          setLoadError('GitHub authorization was cancelled.');
-          return;
-        }
-        setLoadError(error || 'Failed to connect GitHub.');
-      }
-    );
-  }, [refreshConnections]);
-
-  // After OAuth in another tab, reload connections when user returns here.
-  useEffect(() => {
-    const onVisibleOrFocus = () => {
-      if (document.visibilityState === 'hidden') {
-        return;
-      }
-      refreshConnections();
-      setIsConnecting(false);
-    };
-
-    window.addEventListener('focus', onVisibleOrFocus);
-    document.addEventListener('visibilitychange', onVisibleOrFocus);
-    return () => {
-      window.removeEventListener('focus', onVisibleOrFocus);
-      document.removeEventListener('visibilitychange', onVisibleOrFocus);
-    };
-  }, [refreshConnections]);
-
-  // Clear "connecting" when OAuth tab is closed.
-  useEffect(() => {
-    if (!isConnecting) {
-      return;
-    }
-
-    const timer = window.setInterval(() => {
-      const popup = oauthWindowRef.current;
-      if (!popup || popup.closed) {
-        oauthWindowRef.current = null;
-        setIsConnecting(false);
-        refreshConnections();
-        window.clearInterval(timer);
-      }
-    }, 800);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [isConnecting, refreshConnections]);
+  const { isConnecting, handleConnect: handleConnectGithub } =
+    useOAuthPopupManager({
+      provider: IntegrationOAuthProvider.GitHub,
+      providerName: 'GitHub',
+      windowName: OAUTH_WINDOW_NAME,
+      startOAuth: startGithubOAuth,
+      onRefresh: refreshConnections,
+      loadError,
+      setLoadError,
+    });
 
   const activeConnection =
     (selectedConnectionId
@@ -172,37 +119,6 @@ export function useGithubConnectionPicker(
       cancelled = true;
     };
   }, [activeConnection]);
-
-  const handleConnectGithub = () => {
-    setIsConnecting(true);
-    setLoadError(null);
-
-    // Open synchronously on click gesture so popup blockers stay quiet,
-    // then navigate once authorize URL is ready.
-    const popup = window.open('about:blank', OAUTH_WINDOW_NAME);
-    oauthWindowRef.current = popup;
-
-    if (!popup) {
-      setIsConnecting(false);
-      setLoadError(
-        'Could not open a new tab for GitHub. Allow popups for this site, then try again.'
-      );
-      return;
-    }
-
-    startGithubOAuth()
-      .then((url) => {
-        popup.location.href = url;
-      })
-      .catch((err: unknown) => {
-        popup.close();
-        oauthWindowRef.current = null;
-        setIsConnecting(false);
-        setLoadError(
-          err instanceof Error ? err.message : 'Failed to start GitHub OAuth'
-        );
-      });
-  };
 
   return {
     connections,

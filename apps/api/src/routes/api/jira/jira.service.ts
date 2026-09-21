@@ -1,13 +1,9 @@
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { mapToWorkItemType, UserRoleEnum, utcNow } from '@repo/types';
 import { JiraConnectionStatus } from '@repo/types/prisma';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { env } from '../../../config/env';
-import {
-  decryptSecret,
-  encryptSecret,
-  resolveIntegrationEncryptionKey,
-} from '../../../lib/secrets/token-crypto';
+import { decryptSecret, encryptSecret } from '../../../lib/secrets/token-crypto';
+import { createOAuthState, verifyOAuthState } from '../../../lib/secrets/oauth-state';
 import type { JiraRepository } from './jira.repository';
 import type {
   AtlassianAccessibleResource,
@@ -21,14 +17,7 @@ import type {
 } from './jira.types';
 
 const OAUTH_SCOPES = 'read:jira-work read:jira-user offline_access';
-const STATE_TTL_MS = 10 * 60 * 1000;
 const ACCESS_TOKEN_SKEW_MS = 60 * 1000;
-
-type OAuthStatePayload = {
-  userId: string;
-  nonce: string;
-  exp: number;
-};
 
 function requireAtlassianConfig(): {
   clientId: string;
@@ -44,61 +33,6 @@ function requireAtlassianConfig(): {
     );
   }
   return { clientId, clientSecret, redirectUri };
-}
-
-function resolveHmacKey(): Buffer {
-  return resolveIntegrationEncryptionKey('sign Jira OAuth state (HMAC)');
-}
-
-function base64UrlEncode(value: string | Buffer): string {
-  const buf = typeof value === 'string' ? Buffer.from(value, 'utf8') : value;
-  return buf.toString('base64url');
-}
-
-function base64UrlDecode(value: string): Buffer {
-  return Buffer.from(value, 'base64url');
-}
-
-function signState(payload: OAuthStatePayload): string {
-  const body = base64UrlEncode(JSON.stringify(payload));
-  const sig = createHmac('sha256', resolveHmacKey()).update(body).digest();
-  return `${body}.${base64UrlEncode(sig)}`;
-}
-
-function verifyState(state: string): OAuthStatePayload {
-  const [body, sigPart] = state.split('.');
-  if (!body || !sigPart) {
-    throw new Error('Invalid OAuth state.');
-  }
-
-  const expected = createHmac('sha256', resolveHmacKey()).update(body).digest();
-  const actual = base64UrlDecode(sigPart);
-  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
-    throw new Error('Invalid OAuth state signature.');
-  }
-
-  let payload: OAuthStatePayload;
-  try {
-    payload = JSON.parse(
-      base64UrlDecode(body).toString('utf8')
-    ) as OAuthStatePayload;
-  } catch {
-    throw new Error('Invalid OAuth state payload.');
-  }
-
-  if (
-    typeof payload.userId !== 'string' ||
-    typeof payload.nonce !== 'string' ||
-    typeof payload.exp !== 'number'
-  ) {
-    throw new TypeError('Invalid OAuth state payload.');
-  }
-
-  if (utcNow().getTime() > payload.exp) {
-    throw new Error('OAuth state has expired. Please try connecting again.');
-  }
-
-  return payload;
 }
 
 function extractText(node: JiraNode | null | undefined): string {
@@ -155,11 +89,7 @@ export class JiraService {
 
   buildAuthorizeUrl(userId: string): string {
     const { clientId, redirectUri } = requireAtlassianConfig();
-    const state = signState({
-      userId,
-      nonce: randomBytes(16).toString('hex'),
-      exp: utcNow().getTime() + STATE_TTL_MS,
-    });
+    const state = createOAuthState(userId, 'sign Jira OAuth state (HMAC)');
 
     const params = new URLSearchParams({
       audience: 'api.atlassian.com',
@@ -183,7 +113,7 @@ export class JiraService {
     code: string,
     state: string
   ): Promise<JiraConnectionDto> {
-    const { userId } = verifyState(state);
+    const { userId } = verifyOAuthState(state, 'sign Jira OAuth state (HMAC)');
     await requireJiraManager(userId);
 
     const tokens = await this.exchangeAuthorizationCode(code);
@@ -220,9 +150,7 @@ export class JiraService {
         scopes: tokens.scope ?? site.scopes.join(' '),
         status: JiraConnectionStatus.active,
       });
-      if (!primaryResult) {
-        primaryResult = saved;
-      }
+      primaryResult ??= saved;
     }
 
     return primaryResult!;

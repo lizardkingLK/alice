@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   listJiraConnectionProjects,
   listJiraConnections,
@@ -8,11 +8,8 @@ import {
   type JiraCloudProject,
   type JiraConnection,
 } from '@/app/projects/_services/projects.jira.mutations.client';
-import {
-  subscribeToOAuthCompletion,
-  IntegrationOAuthProvider,
-  OAuthCompletionStatus,
-} from '@/app/integrations/_types/oauth-completion.types';
+import { IntegrationOAuthProvider } from '@/app/integrations/_types/oauth-completion.types';
+import { useOAuthPopupManager } from './use-oauth-popup-manager';
 
 const OAUTH_WINDOW_NAME = 'alice-jira-oauth';
 
@@ -44,9 +41,7 @@ export function useJiraConnectionPicker(
   const [jiraProjects, setJiraProjects] = useState<JiraCloudProject[]>([]);
   const [isLoadingConnections, setIsLoadingConnections] = useState(true);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const oauthWindowRef = useRef<Window | null>(null);
 
   const refreshConnections = useCallback(() => {
     setIsLoadingConnections(true);
@@ -68,64 +63,16 @@ export function useJiraConnectionPicker(
     refreshConnections();
   }, [refreshConnections]);
 
-  // Direct notification from the OAuth completion window/tab
-  useEffect(() => {
-    return subscribeToOAuthCompletion(
-      IntegrationOAuthProvider.Jira,
-      (status, error) => {
-        setIsConnecting(false);
-        if (status === OAuthCompletionStatus.Connected) {
-          refreshConnections();
-          setLoadError(null);
-          return;
-        }
-        if (status === OAuthCompletionStatus.Denied) {
-          setLoadError('Jira authorization was cancelled.');
-          return;
-        }
-        setLoadError(error || 'Failed to connect Jira.');
-      }
-    );
-  }, [refreshConnections]);
-
-  // After OAuth in another tab, reload connections when the user returns here.
-  useEffect(() => {
-    const onVisibleOrFocus = () => {
-      if (document.visibilityState === 'hidden') {
-        return;
-      }
-      refreshConnections();
-      setIsConnecting(false);
-    };
-
-    window.addEventListener('focus', onVisibleOrFocus);
-    document.addEventListener('visibilitychange', onVisibleOrFocus);
-    return () => {
-      window.removeEventListener('focus', onVisibleOrFocus);
-      document.removeEventListener('visibilitychange', onVisibleOrFocus);
-    };
-  }, [refreshConnections]);
-
-  // Clear "connecting" when the OAuth tab is closed.
-  useEffect(() => {
-    if (!isConnecting) {
-      return;
-    }
-
-    const timer = window.setInterval(() => {
-      const popup = oauthWindowRef.current;
-      if (!popup || popup.closed) {
-        oauthWindowRef.current = null;
-        setIsConnecting(false);
-        refreshConnections();
-        window.clearInterval(timer);
-      }
-    }, 800);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [isConnecting, refreshConnections]);
+  const { isConnecting, handleConnect: handleConnectJira } =
+    useOAuthPopupManager({
+      provider: IntegrationOAuthProvider.Jira,
+      providerName: 'Jira',
+      windowName: OAUTH_WINDOW_NAME,
+      startOAuth: startJiraOAuth,
+      onRefresh: refreshConnections,
+      loadError,
+      setLoadError,
+    });
 
   useEffect(() => {
     if (!jiraConnectionId) {
@@ -162,37 +109,6 @@ export function useJiraConnectionPicker(
       cancelled = true;
     };
   }, [jiraConnectionId]);
-
-  const handleConnectJira = () => {
-    setIsConnecting(true);
-    setLoadError(null);
-
-    // Open synchronously on the click gesture so popup blockers stay quiet,
-    // then navigate once the authorize URL is ready.
-    const popup = window.open('about:blank', OAUTH_WINDOW_NAME);
-    oauthWindowRef.current = popup;
-
-    if (!popup) {
-      setIsConnecting(false);
-      setLoadError(
-        'Could not open a new tab for Jira. Allow popups for this site, then try again.'
-      );
-      return;
-    }
-
-    startJiraOAuth()
-      .then((url) => {
-        popup.location.href = url;
-      })
-      .catch((err: unknown) => {
-        popup.close();
-        oauthWindowRef.current = null;
-        setIsConnecting(false);
-        setLoadError(
-          err instanceof Error ? err.message : 'Failed to start Jira OAuth'
-        );
-      });
-  };
 
   return {
     connections,
