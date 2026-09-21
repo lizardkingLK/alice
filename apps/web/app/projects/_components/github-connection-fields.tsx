@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useGithubRepoUrl } from '../_hooks/use-github-repo-url';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
@@ -330,33 +330,12 @@ export function GithubConnectionFields({
   footerHint,
   showConnectChrome = true,
 }: Readonly<GithubConnectionFieldsProps>) {
-  const [githubUrl, setGithubUrl] = useState(() => {
-    if (githubOwner && githubRepoName) {
-      return `https://github.com/${githubOwner}/${githubRepoName}`;
-    }
-    return '';
+  const { githubUrl, handleUrlChange } = useGithubRepoUrl({
+    githubOwner,
+    setGithubOwner,
+    githubRepoName,
+    setGithubRepoName,
   });
-
-  useEffect(() => {
-    if (githubOwner && githubRepoName) {
-      const currentParsed = parseGithubRepoPath(githubUrl);
-      if (
-        currentParsed.owner !== githubOwner ||
-        currentParsed.repoName !== githubRepoName
-      ) {
-        setGithubUrl(`https://github.com/${githubOwner}/${githubRepoName}`);
-      }
-    } else if (!githubOwner && !githubRepoName && githubUrl) {
-      setGithubUrl('');
-    }
-  }, [githubOwner, githubRepoName, githubUrl]);
-
-  const handleUrlChange = (value: string) => {
-    setGithubUrl(value);
-    const { owner, repoName } = parseGithubRepoPath(value);
-    setGithubOwner(owner);
-    setGithubRepoName(repoName);
-  };
 
   const handleSelectRepo = (selectedFullName: string) => {
     const repo = repositories.find((r) => r.full_name === selectedFullName);
