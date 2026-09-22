@@ -32,7 +32,16 @@ import {
 } from '../_services/teams.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runRegistryLockedAction } from '@/lib/optimistic-lock/run-locked-mutation';
-import { Users, Shield, Plus, Search, FolderOpen } from '@repo/ui/lib/icons';
+import {
+  Users,
+  Shield,
+  Plus,
+  Search,
+  FolderOpen,
+  Archive,
+  CircleDot,
+  Ban,
+} from '@repo/ui/lib/icons';
 import { Pagination } from '@/components/pagination';
 import { DataTable } from '@/components/data-table';
 import { DismissibleError } from '@/components/dismissible-error';
@@ -41,13 +50,7 @@ import {
   RegistryRowActions,
   registryActionsHeader,
 } from '@/components/registry-row-actions';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
+import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
 import type { Team } from '../_services/teams.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import type {
@@ -56,6 +59,12 @@ import type {
 } from '@/app/projects/_services/projects.mutations.shared';
 
 type TeamTab = 'active' | 'inactive' | 'archived';
+
+const TEAM_STATUS_TABS = [
+  { id: 'active' as const, label: 'Active', icon: CircleDot },
+  { id: 'inactive' as const, label: 'Inactive', icon: Ban },
+  { id: 'archived' as const, label: 'Archived', icon: Archive },
+] as const;
 
 interface TeamRegistryProps {
   readonly teams: Team[];
@@ -391,23 +400,14 @@ export function TeamRegistry({
         </div>
 
         <div className="flex items-center gap-2">
-          <Select
-            value={tab}
-            onValueChange={(val) => changeTabSelection(val as TeamTab)}
-          >
-            <SelectTrigger
-              id="team-status-filter"
+          {currentUserRole !== 'member' ? (
+            <RegistryTabSwitcher
+              tabs={TEAM_STATUS_TABS}
+              value={tab}
+              onChange={changeTabSelection}
               aria-label="Filter by Status"
-              className="bg-background/50 h-10 w-40"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-            </SelectContent>
-          </Select>
+            />
+          ) : null}
 
           {isManagerOrAdmin ? (
             <Button
@@ -416,6 +416,7 @@ export function TeamRegistry({
                 setIsAddTeamOpen(true);
               }}
               className="flex h-10 w-32 shrink-0 cursor-pointer items-center justify-center rounded-lg px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
+              title="Add team"
             >
               <Plus className="mr-1.5 h-4 w-4 shrink-0" />
               Add Team

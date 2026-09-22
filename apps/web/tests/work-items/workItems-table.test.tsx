@@ -121,6 +121,7 @@ async function renderTable(
     assigneeFilter: string;
     listView: 'flat' | 'hierarchy';
     lockedProjectId: string;
+    lockedAssigneeId: string;
   }> = {}
 ) {
   const projects = projectFactory.buildList(1);
@@ -155,6 +156,7 @@ async function renderTable(
       assigneeFilter={overrides.assigneeFilter ?? ''}
       listView={overrides.listView}
       lockedProjectId={overrides.lockedProjectId}
+      lockedAssigneeId={overrides.lockedAssigneeId}
       currentUserId={overrides.currentUserId}
       currentUserRole={overrides.currentUserRole}
       tab={overrides.tab}
@@ -655,7 +657,11 @@ describe('WorkItemsTable', () => {
   });
 
   it('switches to the archived tab via the toolbar', async () => {
-    await renderTable({ totalCount: 1, totalPages: 1 });
+    await renderTable({
+      totalCount: 1,
+      totalPages: 1,
+      currentUserRole: 'manager',
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'Archived' }));
 
@@ -675,6 +681,7 @@ describe('WorkItemsTable', () => {
       totalPages: 1,
       lockedProjectId: 'proj-1',
       projectFilter: 'proj-1',
+      currentUserRole: 'manager',
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Archived' }));
@@ -682,6 +689,35 @@ describe('WorkItemsTable', () => {
     expect(mockPush).toHaveBeenCalledWith(
       '/projects/proj-1?tab=work-items&recordStatus=archived&page=1'
     );
+  });
+
+  it('hides Active/Archived tabs for members outside My Work', async () => {
+    await renderTable({
+      totalCount: 1,
+      totalPages: 1,
+      currentUserRole: 'member',
+    });
+
+    expect(
+      screen.queryByRole('button', { name: 'Archived' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Active' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps Active/Archived tabs for members on My Work', async () => {
+    await renderTable({
+      totalCount: 1,
+      totalPages: 1,
+      currentUserRole: 'member',
+      lockedAssigneeId: 'user-1',
+    });
+
+    expect(
+      screen.getByRole('button', { name: 'Archived' })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Active' })).toBeInTheDocument();
   });
 
   it('archives a work item after confirmation', async () => {

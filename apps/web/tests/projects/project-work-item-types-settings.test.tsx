@@ -89,9 +89,10 @@ describe('ProjectSettingsTab Component', () => {
       <ProjectSettingsTab project={mockProject} isManagerOrAdmin={true} />
     );
 
-    // Uncheck Story
+    // Uncheck Story — confirm migration dialog first
     const storyCheckbox = screen.getByRole('checkbox', { name: /story/i });
     fireEvent.click(storyCheckbox);
+    fireEvent.click(screen.getByRole('button', { name: /Remove type/i }));
 
     expect(
       screen.getByText(/Work items will be migrated/i)
@@ -118,6 +119,7 @@ describe('ProjectSettingsTab Component', () => {
 
     const taskCheckbox = screen.getByRole('checkbox', { name: /task/i });
     fireEvent.click(taskCheckbox);
+    fireEvent.click(screen.getByRole('button', { name: /Remove type/i }));
 
     const saveButton = screen.getByRole('button', { name: /Save Settings/i });
     expect(saveButton).toBeDisabled();

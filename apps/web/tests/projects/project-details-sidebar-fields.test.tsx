@@ -6,6 +6,7 @@ import {
   act,
   waitFor,
 } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { parseProjectDetailsTab } from '@/lib/search-params';
 import { ProjectDetailsWorkspace } from '@/app/projects/_components/project-details/project-details-workspace';
 import { ProjectFieldsWorkspace } from '@/app/projects/_components/project-details/project-fields-workspace';
@@ -31,6 +32,22 @@ vi.mock('next/navigation', () => {
     },
   };
 });
+
+vi.mock('next/link', () => ({
+  default: ({
+    href,
+    children,
+    ...props
+  }: {
+    href: string;
+    children: ReactNode;
+    [key: string]: unknown;
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
 
 vi.mock(
   '@/app/projects/_components/project-details/project-summary-banner',
@@ -250,27 +267,23 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       />
     );
 
+    expect(screen.getByRole('link', { name: /details/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /members/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /teams/i })).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /details/i })
+      screen.getByRole('link', { name: /work items/i })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /members/i })
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /teams/i })).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /work items/i })
+      screen.getByRole('link', { name: /^sprints$/i })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /^sprints$/i })
+      screen.getByRole('link', { name: /integrations/i })
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /integrations/i })
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /fields/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /board/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /fields/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /board/i })).toBeInTheDocument();
   });
 
-  it('hides Sprints nav for members', () => {
+  it('hides manager-only nav for members', () => {
     render(
       <ProjectDetailsWorkspace
         project={mockProject}
@@ -310,8 +323,28 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
     );
 
     expect(
-      screen.queryByRole('button', { name: /^sprints$/i })
+      screen.queryByRole('link', { name: /^sprints$/i })
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /teams/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /integrations/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /fields/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /board/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /settings/i })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /details/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /members/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /work items/i })
+    ).toBeInTheDocument();
   });
 
   it('renders ProjectSummaryBanner when Details tab is active', () => {
@@ -396,21 +429,23 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       />
     );
 
-    // Clicking Fields tab pushes ?tab=fields
-    fireEvent.click(screen.getByRole('button', { name: /fields/i }));
-    expect(mockPush).toHaveBeenCalledWith('/projects/project-1?tab=fields');
-
-    // Clicking Work Items tab pushes ?tab=work-items
-    fireEvent.click(screen.getByRole('button', { name: /work items/i }));
-    expect(mockPush).toHaveBeenCalledWith('/projects/project-1?tab=work-items');
-
-    // Clicking Members tab pushes ?tab=members
-    fireEvent.click(screen.getByRole('button', { name: /members/i }));
-    expect(mockPush).toHaveBeenCalledWith('/projects/project-1?tab=members');
-
-    // Clicking Details tab removes tab query param
-    fireEvent.click(screen.getByRole('button', { name: /details/i }));
-    expect(mockPush).toHaveBeenCalledWith('/projects/project-1');
+    // Sidebar uses Next.js Links with tab hrefs (prefetchable).
+    expect(screen.getByRole('link', { name: /fields/i })).toHaveAttribute(
+      'href',
+      '/projects/project-1?tab=fields'
+    );
+    expect(screen.getByRole('link', { name: /work items/i })).toHaveAttribute(
+      'href',
+      '/projects/project-1?tab=work-items'
+    );
+    expect(screen.getByRole('link', { name: /members/i })).toHaveAttribute(
+      'href',
+      '/projects/project-1?tab=members'
+    );
+    expect(screen.getByRole('link', { name: /details/i })).toHaveAttribute(
+      'href',
+      '/projects/project-1'
+    );
   });
 
   it('isolates ProjectSummaryBanner strictly to details tab (absent on fields and work-items)', () => {

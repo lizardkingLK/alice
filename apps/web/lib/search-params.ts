@@ -200,6 +200,14 @@ export function parseTeamStatusFilter(
   return 'active';
 }
 
+export type BoardDesignerSection = 'columns' | 'rules';
+
+export function parseBoardDesignerSection(
+  value?: string | null
+): BoardDesignerSection {
+  return value === 'rules' ? 'rules' : 'columns';
+}
+
 export function parseManagerTabStatus(
   tab?: string
 ): 'active' | 'inactive' | 'archived' {

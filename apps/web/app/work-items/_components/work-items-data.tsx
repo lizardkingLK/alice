@@ -91,7 +91,7 @@ export async function WorkItemsData({
   const { page, limit, search } = parseStandardParams(resolvedSearchParams, 10);
   const filters = parseWorkItemFilters(resolvedSearchParams);
   const listView = parseWorkItemListView(resolvedSearchParams.view);
-  const tab = parseWorkItemRecordStatus(resolvedSearchParams);
+  const parsedTab = parseWorkItemRecordStatus(resolvedSearchParams);
   const projectId = lockedProjectId ?? filters.projectId;
   const assigneeId = lockedAssigneeId ?? filters.assigneeId;
   const { type, sprintId, labels } = filters;
@@ -100,6 +100,9 @@ export async function WorkItemsData({
   const currentUserRole = dbUser?.role ?? 'member';
   const isProjectLocked = Boolean(lockedProjectId);
   const isAssigneeLocked = Boolean(lockedAssigneeId);
+  // Members browse active items on /work-items; archived lives on My Work.
+  const tab =
+    currentUserRole === 'member' && !isAssigneeLocked ? 'active' : parsedTab;
   const needsClientBootstrap =
     !isProjectLocked &&
     !isAssigneeLocked &&

@@ -11,6 +11,14 @@ import {
 } from '@repo/ui/components/ui/card';
 import { Button } from '@repo/ui/components/ui/button';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@repo/ui/components/ui/dialog';
 import { Label } from '@repo/ui/components/ui/label';
 import {
   AlertTriangle,
@@ -32,6 +40,10 @@ import {
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import { errorMessage } from '@/lib/errors/error-message';
+import {
+  WORK_ITEM_TYPE_BADGE_STYLES,
+  WORK_ITEM_TYPE_ICONS,
+} from '@/app/work-items/_helpers/work-item-type';
 
 export type ProjectSettingsTabProps = {
   readonly project: Project;
@@ -39,6 +51,14 @@ export type ProjectSettingsTabProps = {
 };
 
 const ALL_TYPES: readonly WorkItemType[] = CANONICAL_HIERARCHY_ORDER;
+
+const TYPE_DESCRIPTIONS: Record<WorkItemType, string> = {
+  [WorkItemTypeEnum.Epic]: 'Top-level initiative',
+  [WorkItemTypeEnum.Feature]: 'Product capability',
+  [WorkItemTypeEnum.Story]: 'User story / deliverable',
+  [WorkItemTypeEnum.Task]: 'Standard work unit',
+  [WorkItemTypeEnum.Issue]: 'Bug or leaf work item',
+};
 
 export function ProjectSettingsTab({
   project,
@@ -62,9 +82,20 @@ export function ProjectSettingsTab({
     type: 'success' | 'error';
     text: string;
   } | null>(null);
+  const [pendingUncheck, setPendingUncheck] = useState<WorkItemType | null>(
+    null
+  );
 
   const removedTypes = initialTypes.filter((t) => !selectedTypes.includes(t));
   const hasRemovedTypes = removedTypes.length > 0;
+  const isDirty =
+    selectedTypes.length !== initialTypes.length ||
+    selectedTypes.some((type) => !initialTypes.includes(type));
+
+  const applyUncheck = (type: WorkItemType) => {
+    setSelectedTypes(selectedTypes.filter((t) => t !== type));
+    setPendingUncheck(null);
+  };
 
   const handleToggleType = (type: WorkItemType, checked: boolean) => {
     setFeedback(null);
@@ -73,9 +104,15 @@ export function ProjectSettingsTab({
         (t) => t === type || selectedTypes.includes(t)
       );
       setSelectedTypes(next);
-    } else {
-      setSelectedTypes(selectedTypes.filter((t) => t !== type));
+      return;
     }
+
+    if (initialTypes.includes(type)) {
+      setPendingUncheck(type);
+      return;
+    }
+
+    applyUncheck(type);
   };
 
   const handleSave = async (e: FormEvent) => {
@@ -133,7 +170,7 @@ export function ProjectSettingsTab({
 
   if (!isManagerOrAdmin) {
     return (
-      <Card className="border-border/60">
+      <Card className="border-border/60 h-full w-full">
         <CardContent className="p-6 text-center">
           <p className="text-muted-foreground text-sm">
             Only Project Managers and Administrators can configure project
@@ -145,8 +182,8 @@ export function ProjectSettingsTab({
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="border-border/60 shadow-sm">
+    <div className="flex h-full min-h-0 w-full flex-1 flex-col">
+      <Card className="border-border/60 flex h-full min-h-0 w-full flex-1 flex-col shadow-sm">
         <CardHeader>
           <CardTitle className="text-primary flex items-center gap-2 text-base font-semibold">
             <Settings className="h-5 w-5" />
@@ -158,12 +195,15 @@ export function ProjectSettingsTab({
           </CardDescription>
         </CardHeader>
 
-        <CardContent>
-          <form onSubmit={handleSave} className="space-y-6">
+        <CardContent className="flex min-h-0 flex-1 flex-col">
+          <form
+            onSubmit={handleSave}
+            className="flex min-h-0 flex-1 flex-col gap-6"
+          >
             {feedback && (
               <div
                 className={cn(
-                  'flex items-center gap-2 rounded-md p-3 text-sm',
+                  'flex items-center gap-2 rounded-md border p-3 text-sm',
                   feedback.type === 'success'
                     ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
                     : 'border-destructive/20 bg-destructive/10 text-destructive'
@@ -178,23 +218,39 @@ export function ProjectSettingsTab({
               </div>
             )}
 
-            {/* Types Selection List */}
             <div className="space-y-3">
               <Label className="text-sm font-medium">Permitted Types</Label>
-              <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+              <div className="flex flex-col gap-3">
                 {ALL_TYPES.map((type) => {
                   const isChecked = selectedTypes.includes(type);
+                  const Icon = WORK_ITEM_TYPE_ICONS[type];
                   return (
                     <label
                       key={type}
                       htmlFor={`type-checkbox-${type}`}
                       className={cn(
-                        'border-border flex cursor-pointer items-center gap-3 rounded-lg border p-3.5 transition-colors',
+                        'border-border flex cursor-pointer items-center gap-4 rounded-xl border p-4 transition-colors',
                         isChecked
-                          ? 'border-primary/50 bg-primary/5'
-                          : 'bg-muted/10 opacity-75 hover:opacity-100'
+                          ? 'border-primary/40 bg-primary/5'
+                          : 'bg-muted/10 hover:bg-muted/20'
                       )}
                     >
+                      <div
+                        className={cn(
+                          'flex size-12 shrink-0 items-center justify-center rounded-xl border',
+                          WORK_ITEM_TYPE_BADGE_STYLES[type]
+                        )}
+                      >
+                        <Icon className="size-6" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-foreground text-base font-semibold">
+                          {type}
+                        </span>
+                        <p className="text-muted-foreground text-sm">
+                          {TYPE_DESCRIPTIONS[type]}
+                        </p>
+                      </div>
                       <Checkbox
                         id={`type-checkbox-${type}`}
                         aria-label={type}
@@ -202,22 +258,8 @@ export function ProjectSettingsTab({
                         onCheckedChange={(val) =>
                           handleToggleType(type, val === true)
                         }
+                        className="size-5"
                       />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">{type}</span>
-                        <span className="text-muted-foreground text-xs">
-                          {type === WorkItemTypeEnum.Epic &&
-                            'Top-level initiative'}
-                          {type === WorkItemTypeEnum.Feature &&
-                            'Product capability'}
-                          {type === WorkItemTypeEnum.Story &&
-                            'User story / deliverable'}
-                          {type === WorkItemTypeEnum.Task &&
-                            'Standard work unit'}
-                          {type === WorkItemTypeEnum.Issue &&
-                            'Bug or leaf work item'}
-                        </span>
-                      </div>
                     </label>
                   );
                 })}
@@ -237,13 +279,14 @@ export function ProjectSettingsTab({
                 </div>
               )}
 
-            {/* Warning if types are being removed */}
             {hasRemovedTypes && (
-              <div className="flex items-start gap-3 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3.5 text-amber-800 dark:text-amber-200">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                <div className="space-y-1 text-xs">
-                  <p className="font-semibold">Work items will be migrated</p>
-                  <p>
+              <div className="flex items-start gap-3 rounded-lg border border-amber-700/30 bg-amber-100 p-3.5 text-amber-950 dark:border-amber-500/40 dark:bg-amber-950 dark:text-amber-100">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-800 dark:text-amber-300" />
+                <div className="space-y-1 text-sm">
+                  <p className="font-semibold text-amber-950 dark:text-amber-50">
+                    Work items will be migrated
+                  </p>
+                  <p className="text-amber-900 dark:text-amber-100/90">
                     Removing{' '}
                     <span className="font-bold">{removedTypes.join(', ')}</span>{' '}
                     will cause all existing items of those types in this project
@@ -255,11 +298,12 @@ export function ProjectSettingsTab({
               </div>
             )}
 
-            <div className="flex justify-end pt-2">
+            <div className="mt-auto flex justify-end pt-2">
               <Button
                 type="submit"
-                disabled={isSaving || selectedTypes.length === 0}
+                disabled={isSaving || selectedTypes.length === 0 || !isDirty}
                 size="sm"
+                title="Save settings"
               >
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Settings
@@ -268,6 +312,44 @@ export function ProjectSettingsTab({
           </form>
         </CardContent>
       </Card>
+
+      <Dialog
+        open={Boolean(pendingUncheck)}
+        onOpenChange={(open) => !open && setPendingUncheck(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Remove {pendingUncheck} from this project?
+            </DialogTitle>
+            <DialogDescription>
+              Existing work items of type{' '}
+              <span className="font-semibold">{pendingUncheck}</span> in this
+              project will fall back to{' '}
+              <span className="font-semibold">Issue</span>
+              {'. '}
+              Any subtask relations that are invalid under the new hierarchy
+              will be cleared when you save.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPendingUncheck(null)}
+            >
+              Keep type
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => pendingUncheck && applyUncheck(pendingUncheck)}
+            >
+              Remove type
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

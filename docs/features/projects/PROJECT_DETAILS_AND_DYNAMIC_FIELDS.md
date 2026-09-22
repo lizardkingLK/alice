@@ -592,6 +592,7 @@ The AI bot **does not write directly to the database**. All AI-generated schemas
 | **Member**  | Yes (Read-only summary)  | No (Hidden/Locked) |  No (Hidden / Locked)  |     Yes (Optional input)      |
 
 - **Client side**: When viewed by a Member, action buttons (`Load Template`, `Beautify`, `Generate with Alice`, `Save Changes`) are disabled or hidden, and an amber view-only banner is displayed (`Lock` icon).
+- **Members sidebar**: Only Details, Members, and Work Items. Teams, Integrations, Fields, Board, Sprints, and Settings are hidden (deep links fall back to Details). Active/Archived on project Work Items and `/work-items` is hidden; use My Work (`/member`) for archived items. Nav uses Next.js `Link`s with tab-scoped RSC loads.
 - **Server side**: Server actions and PUT endpoints verify `isManagerOrAdmin(currentUserRole)` and check project membership before updating `projects.attributes_config`.
 
 ---

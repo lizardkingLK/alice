@@ -15,6 +15,12 @@ Edit project name, dates, and metadata.
 
 Managers and admins who can access the project workspace can edit metadata.
 **Admins** can also hard-delete projects from admin-only actions where shown.
+**Members** do not see the Settings, Board, Fields, Teams, or Integrations
+sidebar entries.
+
+On **Settings**, permitted work-item types use a stacked list with confirmation
+before removing a previously saved type (existing items fall back to Issue on
+save).
 
 ---
 
