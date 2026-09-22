@@ -28,7 +28,7 @@ import {
 import { SearchInput } from '@/components/search-input';
 import { SearchableSelect } from '@/components/searchable-select';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
-import { preventDismissForComboboxPortal } from '@/lib/dialog-outside-events';
+import { preventDismissForFloatingPortal } from '@/lib/dialog-outside-events';
 import {
   MessageSquareText,
   Plus,
@@ -694,8 +694,8 @@ export function CommentsFeed({
       <Dialog open={showNewCommentModal} onOpenChange={setShowNewCommentModal}>
         <DialogContent
           className="sm:max-w-125"
-          onPointerDownOutside={preventDismissForComboboxPortal}
-          onInteractOutside={preventDismissForComboboxPortal}
+          onPointerDownOutside={preventDismissForFloatingPortal}
+          onInteractOutside={preventDismissForFloatingPortal}
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
