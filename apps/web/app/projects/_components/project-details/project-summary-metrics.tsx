@@ -125,6 +125,7 @@ export function ProjectSummaryMetrics({
       caption: 'Teams linked to this project',
       tone: 'blue',
       icon: <Network className="h-5 w-5" />,
+      managerOrAdminOnly: true,
     },
     {
       tab: 'work-items',
@@ -150,6 +151,7 @@ export function ProjectSummaryMetrics({
       caption: 'Connected integrations',
       tone: 'emerald',
       icon: <Plug className="h-5 w-5" />,
+      managerOrAdminOnly: true,
     },
     {
       tab: 'fields',
@@ -158,6 +160,7 @@ export function ProjectSummaryMetrics({
       caption: 'Custom dynamic fields',
       tone: 'slate',
       icon: <SlidersHorizontal className="h-5 w-5" />,
+      managerOrAdminOnly: true,
     },
   ];
 

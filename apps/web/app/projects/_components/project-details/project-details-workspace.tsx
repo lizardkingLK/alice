@@ -1,6 +1,7 @@
 'use client';
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   ClipboardPenLine,
   Info,
@@ -21,6 +22,7 @@ import { ProjectIntegrationsTab } from '@/app/projects/_components/project-detai
 import { ProjectFieldsWorkspace } from '@/app/projects/_components/project-details/project-fields-workspace';
 import { BoardDesignerWorkspace } from '@/app/projects/_components/project-details/board-designer-workspace';
 import { ProjectSettingsTab } from '@/app/projects/_components/project-details/project-settings-tab';
+import { projectDetailHref } from '@/app/projects/_helpers/project-links';
 import type {
   Project,
   ProjectMemberWithUser,
@@ -93,6 +95,15 @@ interface ProjectDetailsWorkspaceProps {
   readonly columnVisibilityHasCookie?: boolean;
 }
 
+const MANAGER_ONLY_TABS = new Set<ProjectDetailsTabId>([
+  'teams',
+  'sprints',
+  'integrations',
+  'fields',
+  'board',
+  'settings',
+]);
+
 const PROJECT_NAV_ITEMS: ReadonlyArray<{
   readonly id: ProjectDetailsTabId;
   readonly label: string;
@@ -113,6 +124,7 @@ const PROJECT_NAV_ITEMS: ReadonlyArray<{
     id: 'teams',
     label: 'Teams',
     Icon: Network,
+    managerOrAdminOnly: true,
   },
   {
     id: 'work-items',
@@ -129,16 +141,19 @@ const PROJECT_NAV_ITEMS: ReadonlyArray<{
     id: 'integrations',
     label: 'Integrations',
     Icon: Plug,
+    managerOrAdminOnly: true,
   },
   {
     id: 'fields',
     label: 'Fields',
     Icon: SlidersHorizontal,
+    managerOrAdminOnly: true,
   },
   {
     id: 'board',
     label: 'Board',
     Icon: Kanban,
+    managerOrAdminOnly: true,
   },
   {
     id: 'settings',
@@ -147,6 +162,16 @@ const PROJECT_NAV_ITEMS: ReadonlyArray<{
     managerOrAdminOnly: true,
   },
 ];
+
+function resolveVisibleProjectTab(
+  requestedTab: ProjectDetailsTabId,
+  canEditProject: boolean
+): ProjectDetailsTabId {
+  if (!canEditProject && MANAGER_ONLY_TABS.has(requestedTab)) {
+    return 'details';
+  }
+  return requestedTab;
+}
 
 export function ProjectDetailsWorkspace({
   project,
@@ -161,40 +186,17 @@ export function ProjectDetailsWorkspace({
   initialColumnVisibility,
   columnVisibilityHasCookie,
 }: Readonly<ProjectDetailsWorkspaceProps>) {
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const requestedTab = parseProjectDetailsTab(searchParams.get('tab'));
 
   const appRole = isAppRole(currentUserRole) ? currentUserRole : null;
   const canEditProject = isManagerOrAdmin(appRole);
 
-  const activeTab =
-    (requestedTab === 'sprints' || requestedTab === 'settings') &&
-    !canEditProject
-      ? 'details'
-      : requestedTab;
+  const activeTab = resolveVisibleProjectTab(requestedTab, canEditProject);
 
   const visibleNavItems = PROJECT_NAV_ITEMS.filter(
     (item) => !item.managerOrAdminOnly || canEditProject
   );
-
-  const handleTabChange = (nextTab: ProjectDetailsTabId) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (nextTab === 'details') {
-      params.delete('tab');
-    } else {
-      params.set('tab', nextTab);
-    }
-    if (nextTab !== 'sprints') {
-      params.delete('sprintStatus');
-    }
-    if (nextTab !== 'work-items') {
-      params.delete('recordStatus');
-    }
-    const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname);
-  };
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col md:flex-row">
@@ -220,11 +222,11 @@ export function ProjectDetailsWorkspace({
               const isActive = activeTab === id;
               return (
                 <li key={id} className="shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleTabChange(id)}
+                  <Link
+                    href={projectDetailHref(project.id, id)}
+                    prefetch
                     className={cn(
-                      'flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm whitespace-nowrap transition-colors',
+                      'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm whitespace-nowrap transition-colors',
                       isActive
                         ? 'bg-muted text-foreground font-medium'
                         : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
@@ -233,7 +235,7 @@ export function ProjectDetailsWorkspace({
                   >
                     <Icon className="size-4 shrink-0" />
                     <span className="min-w-0 leading-snug">{label}</span>
-                  </button>
+                  </Link>
                 </li>
               );
             })}
@@ -274,7 +276,7 @@ export function ProjectDetailsWorkspace({
           </div>
         )}
 
-        {activeTab === 'teams' && (
+        {activeTab === 'teams' && canEditProject && (
           <div className="p-6">
             <ProjectTeamsPanel
               project={project}
@@ -348,13 +350,13 @@ export function ProjectDetailsWorkspace({
           </div>
         )}
 
-        {activeTab === 'integrations' && (
+        {activeTab === 'integrations' && canEditProject && (
           <div className="space-y-6 p-6">
             <ProjectIntegrationsTab project={project} />
           </div>
         )}
 
-        {activeTab === 'fields' && (
+        {activeTab === 'fields' && canEditProject && (
           <div className="p-6">
             <ProjectFieldsWorkspace
               project={project}
@@ -363,7 +365,7 @@ export function ProjectDetailsWorkspace({
           </div>
         )}
 
-        {activeTab === 'board' && (
+        {activeTab === 'board' && canEditProject && (
           <div className="p-6">
             <BoardDesignerWorkspace
               project={project}
@@ -374,11 +376,7 @@ export function ProjectDetailsWorkspace({
                 name: team.name,
               }))}
               members={members
-                .filter(
-                  (member) =>
-                    member.user !== null &&
-                    allUsers.some((user) => user.id === member.user_id)
-                )
+                .filter((member) => member.user !== null)
                 .map((member) => ({
                   userId: member.user_id,
                   name: member.user?.name ?? member.user_id,

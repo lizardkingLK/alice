@@ -41,11 +41,11 @@ Left side (filters and columns):
 
 Right side (views and actions):
 
-| Control                   | Purpose                                                |
-| ------------------------- | ------------------------------------------------------ |
-| **Flat** / **Hierarchy**  | Flat list vs parent/child tree (icon segment switcher) |
-| **Active** / **Archived** | Same icon segment style as Flat/Hierarchy              |
-| **Add Work-Item**         | Open the create form                                   |
+| Control                   | Purpose                                                                                               |
+| ------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Flat** / **Hierarchy**  | Flat list vs parent/child tree (icon segment switcher)                                                |
+| **Active** / **Archived** | Same icon segment style as Flat/Hierarchy (managers/admins on `/work-items`; members use **My Work**) |
+| **Add Work-Item**         | Open the create form                                                                                  |
 
 In hierarchy mode, use **Expand all** / **Collapse all** on the table for the
 current page.

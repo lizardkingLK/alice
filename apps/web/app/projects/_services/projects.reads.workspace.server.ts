@@ -111,6 +111,198 @@ function shouldFetchProjectSprints(options: {
   return options.isSprintsTab || options.activeTab === 'details';
 }
 
+const MANAGER_ONLY_PROJECT_TABS = new Set([
+  'teams',
+  'sprints',
+  'integrations',
+  'fields',
+  'board',
+  'settings',
+] as const);
+
+function resolveWorkspaceTab(
+  requestedTab: ReturnType<typeof parseProjectDetailsTab>,
+  isManagerOrAdmin: boolean
+): ReturnType<typeof parseProjectDetailsTab> {
+  if (
+    !isManagerOrAdmin &&
+    (MANAGER_ONLY_PROJECT_TABS as Set<string>).has(requestedTab)
+  ) {
+    return 'details';
+  }
+  return requestedTab;
+}
+
+function shouldFetchAllUsers(
+  activeTab: ReturnType<typeof parseProjectDetailsTab>
+) {
+  return activeTab === 'members' || activeTab === 'teams';
+}
+
+function shouldFetchProjectTeams(options: {
+  readonly activeTab: ReturnType<typeof parseProjectDetailsTab>;
+  readonly isManagerOrAdmin: boolean;
+}): boolean {
+  if (!options.isManagerOrAdmin) {
+    return false;
+  }
+  return options.activeTab === 'teams' || options.activeTab === 'details';
+}
+
+function shouldFetchProjectWorkItems(options: {
+  readonly activeTab: ReturnType<typeof parseProjectDetailsTab>;
+}): boolean {
+  return options.activeTab === 'work-items' || options.activeTab === 'details';
+}
+
+function resolveWorkItemListQuery(options: {
+  readonly isWorkItemsTab: boolean;
+  readonly page: number;
+  readonly limit: number;
+  readonly search: string;
+}): {
+  readonly page: number;
+  readonly limit: number;
+  readonly search: string | undefined;
+} {
+  if (options.isWorkItemsTab) {
+    return {
+      page: options.page,
+      limit: options.limit,
+      search: options.search,
+    };
+  }
+  return { page: 1, limit: 1, search: undefined };
+}
+
+function resolveWorkItemRecordStatusForRole(options: {
+  readonly isManagerOrAdmin: boolean;
+  readonly isWorkItemsTab: boolean;
+  readonly parsedRecordStatus: 'active' | 'archived';
+}): 'active' | 'archived' {
+  if (!options.isManagerOrAdmin && options.isWorkItemsTab) {
+    return 'active';
+  }
+  return options.parsedRecordStatus;
+}
+
+async function fetchProjectUsers(
+  shouldLoad: boolean
+): Promise<Awaited<ReturnType<typeof getUserList>>> {
+  if (!shouldLoad) {
+    return [];
+  }
+  return safeServerFetch(getUserList(), [], 'fetch users for project members');
+}
+
+async function fetchProjectWorkItemsBundle(options: {
+  readonly shouldLoad: boolean;
+  readonly isWorkItemsTab: boolean;
+  readonly page: number;
+  readonly limit: number;
+  readonly search: string;
+  readonly projectId: string;
+  readonly type: ReturnType<typeof parseWorkItemFilters>['type'];
+  readonly assigneeId: string | undefined;
+  readonly labels: string[] | undefined;
+  readonly sprintId: string | undefined;
+  readonly recordStatus: 'active' | 'archived';
+  readonly listView: ReturnType<typeof parseWorkItemListView>;
+}): Promise<WorkItemsResult> {
+  if (!options.shouldLoad) {
+    return EMPTY_WORK_ITEMS;
+  }
+
+  const listQuery = resolveWorkItemListQuery({
+    isWorkItemsTab: options.isWorkItemsTab,
+    page: options.page,
+    limit: options.limit,
+    search: options.search,
+  });
+
+  return safeServerFetch(
+    getWorkItemsPaginated(
+      listQuery.page,
+      listQuery.limit,
+      listQuery.search,
+      buildProjectWorkItemFilters({
+        projectId: options.projectId,
+        isWorkItemsTab: options.isWorkItemsTab,
+        type: options.type,
+        assigneeId: options.assigneeId,
+        labels: options.labels,
+        sprintId: options.sprintId,
+        recordStatus: options.recordStatus,
+        listView: options.listView,
+      })
+    ),
+    EMPTY_WORK_ITEMS,
+    'fetch project work items'
+  );
+}
+
+async function fetchProjectTeamsBundle(options: {
+  readonly shouldLoad: boolean;
+  readonly page: number;
+  readonly limit: number;
+  readonly status: ReturnType<typeof parseTeamStatusFilter>;
+  readonly search: string | undefined;
+  readonly projectId: string;
+}): Promise<TeamsResult> {
+  if (!options.shouldLoad) {
+    return EMPTY_TEAMS;
+  }
+  return safeServerFetch(
+    getTeamListPaginated(
+      options.page,
+      options.limit,
+      options.status,
+      options.search,
+      options.projectId
+    ),
+    EMPTY_TEAMS,
+    'fetch project teams'
+  );
+}
+
+async function fetchProjectSprintsBundle(options: {
+  readonly shouldLoad: boolean;
+  readonly status: 'active' | 'archived';
+  readonly page: number;
+  readonly limit: number;
+  readonly search: string | undefined;
+  readonly projectId: string;
+}): Promise<PaginatedSprints> {
+  if (!options.shouldLoad) {
+    return EMPTY_SPRINTS;
+  }
+  return safeServerFetch(
+    getSprintsPaginatedServer(
+      options.status,
+      options.page,
+      options.limit,
+      options.search,
+      { projectId: options.projectId }
+    ),
+    EMPTY_SPRINTS,
+    'fetch project sprints'
+  );
+}
+
+async function fetchBoardRuleTeams(
+  shouldLoad: boolean,
+  projectId: string
+): Promise<Team[]> {
+  if (!shouldLoad) {
+    return [];
+  }
+  return safeServerFetch(
+    getActiveProjectTeams(projectId),
+    [] as Team[],
+    'fetch board rule teams'
+  );
+}
+
 function buildProjectWorkItemFilters(options: {
   readonly projectId: string;
   readonly isWorkItemsTab: boolean;
@@ -283,15 +475,16 @@ export async function getProjectWorkspace(
     return { access: 'denied', project };
   }
 
-  const activeTab = parseProjectDetailsTab(searchParams.tab);
+  const requestedTab = parseProjectDetailsTab(searchParams.tab);
   const { page, limit, search } = parseStandardParams(searchParams, 10);
   const { type, assigneeId, labels, sprintId } =
     parseWorkItemFilters(searchParams);
   const listView = parseWorkItemListView(searchParams.view);
   const teamStatus = parseTeamStatusFilter(searchParams.teamStatus);
-  const isWorkItemsTab = activeTab === 'work-items';
   const isManagerOrAdmin =
     dbUser.role === UserRoleEnum.admin || dbUser.role === UserRoleEnum.manager;
+  const activeTab = resolveWorkspaceTab(requestedTab, isManagerOrAdmin);
+  const isWorkItemsTab = activeTab === 'work-items';
   const isSprintsTab = activeTab === 'sprints' && isManagerOrAdmin;
   const shouldLoadSprints = shouldFetchProjectSprints({
     isWorkItemsTab,
@@ -299,6 +492,12 @@ export async function getProjectWorkspace(
     isManagerOrAdmin,
     activeTab,
   });
+  const shouldLoadTeams = shouldFetchProjectTeams({
+    activeTab,
+    isManagerOrAdmin,
+  });
+  const shouldLoadWorkItems = shouldFetchProjectWorkItems({ activeTab });
+  const shouldLoadUsers = shouldFetchAllUsers(activeTab);
   const sprintListStatus = resolveSprintListStatusForTab(
     isWorkItemsTab,
     searchParams
@@ -313,7 +512,12 @@ export async function getProjectWorkspace(
   const teamsPage = activeTab === 'teams' ? page : 1;
   const teamsLimit = activeTab === 'teams' ? limit : 1;
   const teamsSearch = activeTab === 'teams' ? search : undefined;
-  const workItemRecordStatus = parseWorkItemRecordStatus(searchParams);
+  const parsedRecordStatus = parseWorkItemRecordStatus(searchParams);
+  const workItemRecordStatus = resolveWorkItemRecordStatusForRole({
+    isManagerOrAdmin,
+    isWorkItemsTab,
+    parsedRecordStatus,
+  });
 
   const [
     members,
@@ -328,57 +532,38 @@ export async function getProjectWorkspace(
       [] as ProjectMemberWithUser[],
       'load project members'
     ),
-    safeServerFetch(getUserList(), [], 'fetch users for project members'),
-    safeServerFetch(
-      getWorkItemsPaginated(
-        isWorkItemsTab ? page : 1,
-        isWorkItemsTab ? limit : 1,
-        isWorkItemsTab ? search : undefined,
-        buildProjectWorkItemFilters({
-          projectId,
-          isWorkItemsTab,
-          type,
-          assigneeId,
-          labels,
-          sprintId,
-          recordStatus: workItemRecordStatus,
-          listView,
-        })
-      ),
-      EMPTY_WORK_ITEMS,
-      'fetch project work items'
-    ),
-    safeServerFetch(
-      getTeamListPaginated(
-        teamsPage,
-        teamsLimit,
-        teamStatus,
-        teamsSearch,
-        projectId
-      ),
-      EMPTY_TEAMS,
-      'fetch project teams'
-    ),
-    shouldLoadSprints
-      ? safeServerFetch(
-          getSprintsPaginatedServer(
-            sprintListStatus,
-            sprintsPage,
-            sprintsLimit,
-            sprintsSearch,
-            { projectId }
-          ),
-          EMPTY_SPRINTS,
-          'fetch project sprints'
-        )
-      : Promise.resolve(EMPTY_SPRINTS),
-    activeTab === 'board'
-      ? safeServerFetch(
-          getActiveProjectTeams(projectId),
-          [] as Team[],
-          'fetch board rule teams'
-        )
-      : Promise.resolve([] as Team[]),
+    fetchProjectUsers(shouldLoadUsers),
+    fetchProjectWorkItemsBundle({
+      shouldLoad: shouldLoadWorkItems,
+      isWorkItemsTab,
+      page,
+      limit,
+      search,
+      projectId,
+      type,
+      assigneeId,
+      labels,
+      sprintId,
+      recordStatus: workItemRecordStatus,
+      listView,
+    }),
+    fetchProjectTeamsBundle({
+      shouldLoad: shouldLoadTeams,
+      page: teamsPage,
+      limit: teamsLimit,
+      status: teamStatus,
+      search: teamsSearch,
+      projectId,
+    }),
+    fetchProjectSprintsBundle({
+      shouldLoad: shouldLoadSprints,
+      status: sprintListStatus,
+      page: sprintsPage,
+      limit: sprintsLimit,
+      search: sprintsSearch,
+      projectId,
+    }),
+    fetchBoardRuleTeams(activeTab === 'board' && isManagerOrAdmin, projectId),
   ]);
 
   return {
