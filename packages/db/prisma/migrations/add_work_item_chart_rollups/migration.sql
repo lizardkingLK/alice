@@ -104,6 +104,20 @@ BEGIN
     p_assignee_id
   );
 
+  -- Negative deltas must not INSERT (project hard-delete CASCADE + AFTER DELETE
+  -- on work_items would recreate rollup rows for a dying project_id).
+  IF p_delta < 0 THEN
+    UPDATE public.work_item_chart_rollups AS r
+    SET item_count = r.item_count + p_delta
+    WHERE r.grain_key = v_key;
+
+    DELETE FROM public.work_item_chart_rollups
+    WHERE grain_key = v_key
+      AND item_count <= 0;
+
+    RETURN;
+  END IF;
+
   INSERT INTO public.work_item_chart_rollups AS r (
     grain_key,
     bucket_date,
@@ -128,10 +142,6 @@ BEGIN
   )
   ON CONFLICT (grain_key) DO UPDATE
   SET item_count = r.item_count + EXCLUDED.item_count;
-
-  DELETE FROM public.work_item_chart_rollups
-  WHERE grain_key = v_key
-    AND item_count <= 0;
 END;
 $$;
 
