@@ -105,6 +105,14 @@ Tier 2 may add `reader` / `worker` without renaming `web` / `api`. Rename
 
 No HTTP or queues inside the trigger.
 
+**Project hard-delete:** `projects` → `work_items` and `work_item_chart_rollups`
+both use `ON DELETE CASCADE`. Cascade-deleting work items still fires the
+`AFTER DELETE` rollup trigger. Negative deltas must **only UPDATE/DELETE**
+existing rollup rows — never `INSERT…ON CONFLICT` — or Postgres recreates a
+rollup row for the dying `project_id` and raises
+`work_item_chart_rollups_project_id_fkey`. Fix migration:
+`fix_chart_rollup_delta_on_project_cascade`.
+
 ### Indexes on `work_items`
 
 - `(assignee_id)`
