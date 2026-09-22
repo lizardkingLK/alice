@@ -85,6 +85,10 @@ export function useCancelGridDragOnEscape(
 /**
  * Freeze measured grid width while the sidebar CSS transition runs, then snap.
  * Remeasures after settle so Charts/Overview pick up width released by collapse.
+ *
+ * If `useContainerWidth` never flips `mounted` (flex/`overflow` measure races
+ * after client navigations), force readiness so the board is not stuck on
+ * skeletons forever.
  */
 export function useStableDashboardGridWidth(initialWidth = 1200): {
   readonly stableWidth: number;
@@ -98,13 +102,26 @@ export function useStableDashboardGridWidth(initialWidth = 1200): {
   });
   const isSidebarSettling = useSidebarLayoutSettling();
   const [stableWidth, setStableWidth] = useState(width);
+  const [forceMounted, setForceMounted] = useState(false);
+
+  useEffect(() => {
+    if (mounted) {
+      setForceMounted(false);
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      measureWidth();
+      setForceMounted(true);
+    }, 400);
+    return () => window.clearTimeout(timeoutId);
+  }, [measureWidth, mounted]);
 
   useEffect(() => {
     if (isSidebarSettling) {
       return;
     }
-    setStableWidth(width);
-  }, [width, isSidebarSettling]);
+    setStableWidth(width > 0 ? width : initialWidth);
+  }, [width, isSidebarSettling, initialWidth]);
 
   useEffect(() => {
     if (isSidebarSettling) {
@@ -122,5 +139,18 @@ export function useStableDashboardGridWidth(initialWidth = 1200): {
     };
   }, [isSidebarSettling, measureWidth]);
 
-  return { stableWidth, containerRef, mounted, isSidebarSettling };
+  const gridMounted = mounted || forceMounted;
+  let resolvedWidth = initialWidth;
+  if (stableWidth > 0) {
+    resolvedWidth = stableWidth;
+  } else if (width > 0) {
+    resolvedWidth = width;
+  }
+
+  return {
+    stableWidth: resolvedWidth,
+    containerRef,
+    mounted: gridMounted,
+    isSidebarSettling,
+  };
 }

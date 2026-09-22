@@ -1,35 +1,47 @@
 # Charts (custom dashboards)
 
-Per-user **chart workspaces** (boards of widgets). Routing is id-based; the
-sidebar opens the last-used workspace. Layout persists in **`charts.board_json`**
-(source of truth) with a localStorage cache after hydrate. **Tier 1 product**
-workspace cloud + Views indexing + Widget settings are wired — see
-[Persistence](#persistence) and
+Per-user **chart workspaces** (boards of widgets). `/charts` is a **registry**
+(list + tabs); `/charts/[id]` is the board canvas. Layout persists in
+**`charts.board_json`** (source of truth) with a localStorage cache after
+hydrate. **Tier 1 product** workspace cloud + Views indexing + Widget settings
+are wired — see [Persistence](#persistence) and
 [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md#tier-1-product-remaining).
 
 ## Routes
 
-| Path                             | Behavior                                                                           |
-| -------------------------------- | ---------------------------------------------------------------------------------- |
-| `/charts`                        | Redirect to last-opened workspace id (localStorage), or create a default workspace |
-| `/charts/[id]`                   | Workspace canvas (widgets + layout)                                                |
-| `/charts/[id]/widget/[widgetId]` | Same workspace; auto-opens that widget’s config dialog                             |
+| Path                             | Behavior                                                           |
+| -------------------------------- | ------------------------------------------------------------------ |
+| `/charts`                        | Workspace registry (Mine / Shared / Archived + search + create)    |
+| `/charts/[id]`                   | Workspace canvas (widgets + layout); **All workspaces** → registry |
+| `/charts/[id]/widget/[widgetId]` | Same workspace; auto-opens that widget’s config dialog             |
 
-- Sidebar **Charts** stays `path: '/charts'` in `nav-registry.ts` (redirect resolves the id).
+Loading UI is route-scoped: `(registry)/loading.tsx` → registry table skeleton;
+`[id]/loading.tsx` → board pie-grid skeleton (parent `charts/loading.tsx` removed
+so board navigations no longer flash the registry skeleton and vice versa).
+
+- Sidebar **Charts** stays `path: '/charts'` in `nav-registry.ts` (registry home).
 - Use UUID ids (same as sprints/projects).
 - Nested widget route keeps Monday-style modal/sidebar config — it does not invent a second product shell.
 
-Shell: `DashboardShell` with `contentScrollable={false}`.
+Shell: registry uses `RegistrySuspensePage`; board uses `DashboardShell` with
+`contentScrollable={false}`.
 
 ## Last-opened vs overview
 
-| Concern       | Storage                                                | Used by                      |
-| ------------- | ------------------------------------------------------ | ---------------------------- |
-| Last opened   | `alice.charts.workspaces.v1:{userId}` → `lastOpenedId` | Sidebar / `/charts` redirect |
-| Overview mark | `isOverview` on one workspace per user                 | Overview page (later bind)   |
+| Concern       | Storage                                                | Used by                         |
+| ------------- | ------------------------------------------------------ | ------------------------------- |
+| Last opened   | `alice.charts.workspaces.v1:{userId}` → `lastOpenedId` | Prefer when opening a board URL |
+| Overview mark | `isOverview` on one workspace per user                 | Overview page (later bind)      |
 
 Do not conflate these flags. After cloud wiring, last-opened should sync from
 the server (or a synced preference), not only localStorage.
+
+## Client auth
+
+Expired Supabase access tokens used to surface as generic **Request failed** /
+`NEXT_REDIRECT` from client `apiFetch`. Client fetches now refresh once, then
+emit a dashboard **Session expired** dialog (sign-in with `next` back to the
+board) instead of calling Next `redirect()` from the browser.
 
 ## Current UI
 
@@ -59,17 +71,17 @@ No Boards section (use project filters).
 
 ### Widget settings sidebar
 
-| Section                      | Status today                         | Notes                                                     |
-| ---------------------------- | ------------------------------------ | --------------------------------------------------------- |
-| Chart type                   | Pie / Donut live; others Coming soon | Keep                                                      |
-| Labels                       | Live API-backed columns              | Group / Name / Due date hidden until rollup supports them |
-| Values                       | Count items only                     | Sum / Average / … deferred                                |
-| Customize                    | % vs count, sort, show empty slices  | Persisted on widget instance                              |
-| Groups                       | Coming soon (deferred)               | Table already hides empty status groups                   |
-| Choose which columns to show | Drilldown column visibility          | Persisted on widget                                       |
+| Section                      | Status today                                     | Notes                                                               |
+| ---------------------------- | ------------------------------------------------ | ------------------------------------------------------------------- |
+| Chart type                   | Pie / Donut live; others Coming soon             | Keep                                                                |
+| Labels                       | Live API-backed columns                          | Group / Name / Due date hidden until rollup supports them           |
+| Values                       | Count items only                                 | Sum / Average / … deferred                                          |
+| Customize                    | % vs count, sort, empty slices, **slice colors** | Theme swatches (`chart-1`…`8`); reset on Labels change              |
+| Groups                       | Coming soon (deferred)                           | Table already hides empty status groups                             |
+| Choose which columns to show | Drilldown column visibility                      | Default: Task/Owner/Status/Type/Priority; Project + Sprint optional |
 
-Clicking a Labels slice opens Split and scopes the table (`focusedSliceKey`).
-Changing Labels clears the slice focus.
+Clicking a Labels slice on the board or in fullscreen opens Split and scopes
+the table (`focusedSliceKey`). Changing Labels clears the slice focus.
 
 ## Persistence
 
@@ -83,6 +95,9 @@ Multi-workspace JSON in localStorage (migrates legacy single-board keys):
 
 On load, `hydrateChartWorkspacesFromApi` lists owned + shared charts, migrates
 any local-only boards via POST, then rewrites the local cache from the API.
+Empty accounts stay empty — `/charts` registry shows a create CTA (no
+auto-default workspace). Deleting the last workspace returns to that empty
+registry state.
 
 ### Server (source of truth)
 
@@ -104,6 +119,12 @@ Sharing:
 Notification type: `chart_shared` (inbox deep-link to `/charts/[id]`).
 
 Create / update / archive / restore upsert the Views bookmark automatically.
+Hard delete of an owned chart (active or archived) cascades the bookmark (and
+`chart_shares`) via `ON DELETE CASCADE` on `resource_id`.
+
+**Workspace lifecycle (web):** Archive (active) / Restore (archived) from the
+workspace **⋯** menu; **Delete** always available for owned charts (confirm
+dialog); **Leave** for shared recipients. Empty store → `/charts` create CTA.
 
 ## Data strategy (widget payloads)
 

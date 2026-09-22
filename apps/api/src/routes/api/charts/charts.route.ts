@@ -23,10 +23,7 @@ function sendError(res: Response, error: unknown, fallback: string) {
     status = 403;
   } else if (message === 'Chart not found') {
     status = 404;
-  } else if (
-    message === 'Only archived charts can be permanently deleted' ||
-    message === 'Only active charts can be shared'
-  ) {
+  } else if (message === 'Only active charts can be shared') {
     status = 400;
   }
   res.status(status).json({ error: message });
@@ -194,7 +191,7 @@ export function createChartsRouter(deps: ChartsRouterDeps) {
     async (req: AuthenticatedRequest, res) => {
       try {
         await chartsService.hardDelete(req.userId!, req.params.id!);
-        res.status(204).send();
+        res.json({ success: true });
       } catch (error) {
         sendError(res, error, 'Failed to delete chart');
       }
@@ -230,7 +227,7 @@ export function createChartsRouter(deps: ChartsRouterDeps) {
     async (req: AuthenticatedRequest, res) => {
       try {
         await chartsService.deleteShare(req.userId!, req.params.id!);
-        res.status(204).send();
+        res.json({ success: true });
       } catch (error) {
         sendError(res, error, 'Failed to leave shared chart');
       }

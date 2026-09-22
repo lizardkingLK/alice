@@ -23,9 +23,9 @@ export interface RawSearchParams {
   fromAssignee?: string;
   /** Work-items list layout: flat (default) or hierarchy (roots + expand). */
   view?: string;
-  /** Charts board ownership filter (`all` | `mine` | `shared`). */
+  /** Charts registry no longer uses these; kept for older bookmarked URLs. */
   ownership?: string;
-  /** Charts board status filter (`all` | `active` | `archived`). */
+  /** Charts registry no longer uses these; kept for older bookmarked URLs. */
   status?: string;
 }
 

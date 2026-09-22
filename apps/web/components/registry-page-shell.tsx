@@ -48,8 +48,8 @@ export const REGISTRY_PAGES = {
   },
   charts: {
     description:
-      'Build and arrange chart widgets for personalized, shareable dashboards.',
-    skeleton: { columnCount: 4, rowCount: 6, showTabs: false },
+      'Manage chart workspaces, share them with teammates, and open a board to arrange widgets.',
+    skeleton: { columnCount: 4, rowCount: 8, showTabs: true },
   },
 } as const satisfies Record<string, RegistryPageMeta>;
 

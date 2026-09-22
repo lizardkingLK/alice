@@ -3,7 +3,9 @@ import type {
   ChartsLabelFieldId,
   ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
+import type { ChartsSliceColorToken } from '@/app/charts/_helpers/charts-slice-colors';
 
+export type { ChartsSliceColorToken };
 export type ChartBoardOwnershipFilter = 'all' | 'mine' | 'shared';
 export type ChartBoardStatusFilter = 'all' | 'active' | 'archived';
 
@@ -106,10 +108,16 @@ export type ChartBoardWidgetInstance = {
   /** Customize: include zero-count slices when the series returns them. */
   readonly showEmptySlices?: boolean;
   /**
-   * Drilldown table columns to show (Task / Owner / Status / Type / Priority).
-   * When unset, all columns are visible.
+   * Drilldown table columns to show.
+   * When unset, defaults to Task / Owner / Status / Type / Priority
+   * (Project and Sprint stay optional / off).
    */
   readonly visibleTableColumns?: readonly ChartsTableColumnId[];
+  /**
+   * Customize: per-slice theme token overrides (`sliceKey` → `chart-N`).
+   * Cleared when Labels → Columns changes.
+   */
+  readonly sliceColors?: Readonly<Record<string, ChartsSliceColorToken>>;
 };
 
 export type ChartsShowValueAs = 'value' | 'percent';
@@ -117,14 +125,39 @@ export type ChartsShowValueAs = 'value' | 'percent';
 export type ChartsSortSlicesBy =
   'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
 
-export type ChartsTableColumnId =
-  'task' | 'owner' | 'status' | 'type' | 'priority';
+export const CHARTS_TABLE_COLUMN_IDS = [
+  'task',
+  'owner',
+  'status',
+  'type',
+  'priority',
+  'project',
+  'sprint',
+] as const;
+
+export type ChartsTableColumnId = (typeof CHARTS_TABLE_COLUMN_IDS)[number];
+
+/** Columns checked by default in widget settings (and when unset on a widget). */
+export const DEFAULT_CHARTS_VISIBLE_TABLE_COLUMNS: readonly ChartsTableColumnId[] =
+  ['task', 'owner', 'status', 'type', 'priority'];
+
+export const CHARTS_TABLE_COLUMN_LABELS: Record<ChartsTableColumnId, string> = {
+  task: 'Task',
+  owner: 'Owner',
+  status: 'Status',
+  type: 'Type',
+  priority: 'Priority',
+  project: 'Project',
+  sprint: 'Sprint',
+};
 
 export type ChartWidgetDisplaySettingsPatch = {
   readonly showValueAs?: ChartsShowValueAs;
   readonly sortSlicesBy?: ChartsSortSlicesBy;
   readonly showEmptySlices?: boolean;
   readonly visibleTableColumns?: readonly ChartsTableColumnId[];
+  /** Pass `null` or `{}` to clear overrides. */
+  readonly sliceColors?: Readonly<Record<string, ChartsSliceColorToken>> | null;
 };
 
 /** Persisted chart workspace (`charts` row + local cache). */

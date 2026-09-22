@@ -13,6 +13,7 @@ import {
 import { Label } from '@repo/ui/components/ui/label';
 import { MemberCheckboxList } from '@/components/member-checkbox-list';
 import { SearchableSelect } from '@/components/searchable-select';
+import { isSessionExpiredError } from '@/lib/errors/session-expired';
 import {
   fetchShareViewProjectScope,
   type ShareViewMemberOption,
@@ -224,6 +225,9 @@ export function ChartsShareWorkspaceDialog({
       }
       onOpenChange(false);
     } catch (err) {
+      if (isSessionExpiredError(err)) {
+        return;
+      }
       setError(
         err instanceof Error ? err.message : 'Failed to share workspace'
       );

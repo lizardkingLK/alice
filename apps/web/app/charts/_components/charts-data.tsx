@@ -8,10 +8,6 @@ import {
   getSuggestedBoardDefaults,
 } from '@/app/board/_services/board.reads.defaults.server';
 import { ChartsWorkspace } from '@/app/charts/_components/charts-workspace';
-import type {
-  ChartBoardOwnershipFilter,
-  ChartBoardStatusFilter,
-} from '@/app/charts/_components/charts.types';
 import { getProjectMembersByProjectIds } from '@/app/projects/_services/projects.reads.server';
 import { unionProjectMembers } from '@/app/work-items/_helpers/work-item-assignee-filter-members';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
@@ -29,24 +25,8 @@ export async function ChartsData({
   currentUserId,
   focusWidgetId,
 }: Readonly<ChartsDataProps>) {
-  const resolved = await searchParams;
-  const search =
-    typeof resolved.search === 'string' ? resolved.search.trim() : '';
-
-  const ownership =
-    typeof resolved.ownership === 'string' ? resolved.ownership : 'all';
-  let workspaceOwnership: ChartBoardOwnershipFilter = 'all';
-  if (ownership === 'mine' || ownership === 'shared') {
-    workspaceOwnership = ownership;
-  }
-
-  const status = typeof resolved.status === 'string' ? resolved.status : 'all';
-  let workspaceStatus: ChartBoardStatusFilter = 'all';
-  if (status === 'archived') {
-    workspaceStatus = 'archived';
-  } else if (status === 'active') {
-    workspaceStatus = 'active';
-  }
+  // Keep awaiting searchParams so Next can associate the request with the URL.
+  await searchParams;
 
   const dbUser = await getDbUser();
   const projects = dbUser
@@ -97,9 +77,6 @@ export async function ChartsData({
       workspaceId={workspaceId}
       currentUserId={currentUserId}
       focusWidgetId={focusWidgetId}
-      search={search}
-      ownership={workspaceOwnership}
-      status={workspaceStatus}
       shareProjects={shareProjects}
       assigneeMembers={assigneeMembers}
       projects={activeProjects}

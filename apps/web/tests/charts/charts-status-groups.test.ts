@@ -17,6 +17,9 @@ function item(
     assigneeName: null,
     assigneeAvatar: null,
     projectId: 'p',
+    projectName: null,
+    sprintId: null,
+    sprintName: null,
   };
 }
 

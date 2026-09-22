@@ -291,6 +291,36 @@ export function renameChartWorkspaceMeta(
   return updated;
 }
 
+/**
+ * Remove a workspace from the local cache.
+ * Returns the next workspace to open (last remaining active/owned preference),
+ * or `null` when the store is empty after removal.
+ */
+export function removeChartWorkspace(
+  userId: string,
+  workspaceId: string
+): ChartWorkspaceRecord | null {
+  const store = readChartWorkspacesStore(userId);
+  const nextWorkspaces = store.workspaces.filter(
+    (item) => item.id !== workspaceId
+  );
+  if (nextWorkspaces.length === store.workspaces.length) {
+    return null;
+  }
+
+  const preferred =
+    nextWorkspaces.find((item) => item.id === store.lastOpenedId) ??
+    nextWorkspaces.find((item) => item.status === 'active') ??
+    nextWorkspaces[0] ??
+    null;
+
+  writeChartWorkspacesStore(userId, {
+    workspaces: nextWorkspaces,
+    lastOpenedId: preferred?.id ?? null,
+  });
+  return preferred;
+}
+
 export function listChartWorkspaces(
   userId: string,
   filters?: {

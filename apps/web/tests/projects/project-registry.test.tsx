@@ -328,7 +328,7 @@ describe('ProjectRegistry Component', () => {
     fireEvent.click(deleteBtn!);
 
     // Dialog should open
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(
       screen.getByText(/Are you sure you want to archive/i)
     ).toBeInTheDocument();
@@ -367,7 +367,7 @@ describe('ProjectRegistry Component', () => {
     fireEvent.click(purgeBtn!);
 
     // Dialog should open
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(
       screen.getByText(/Are you sure you want to permanently delete/i)
     ).toBeInTheDocument();

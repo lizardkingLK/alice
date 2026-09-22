@@ -7,6 +7,10 @@ import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { Loader2 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import type { ChartsTableColumnId } from '@/app/charts/_components/charts.types';
+import {
+  CHARTS_TABLE_COLUMN_LABELS,
+  DEFAULT_CHARTS_VISIBLE_TABLE_COLUMNS,
+} from '@/app/charts/_components/charts.types';
 import type { ChartDrilldownTableItem } from '@/app/charts/_helpers/charts-analytics.ui';
 import { ChartsEmptyState } from '@/app/charts/_components/charts-empty-state';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
@@ -16,14 +20,6 @@ import { STATUS_META } from '@/app/work-items/_helpers/work-item-status';
 import { GroupedItemsPaginatedTable } from '@/components/grouped-items/grouped-items-paginated-table';
 import { GroupedItemsSection } from '@/components/grouped-items/grouped-items-section';
 import { UserAvatar } from '@/components/user-avatar';
-
-const ALL_TABLE_COLUMNS: readonly ChartsTableColumnId[] = [
-  'task',
-  'owner',
-  'status',
-  'type',
-  'priority',
-] as const;
 
 type ChartsStatusGroupedTableProps = {
   readonly workItems: readonly ChartDrilldownTableItem[];
@@ -63,14 +59,16 @@ function buildColumns(
   visibleColumns: readonly ChartsTableColumnId[]
 ): ColumnDef<ChartDrilldownTableItem>[] {
   const allowed = new Set(
-    visibleColumns.length > 0 ? visibleColumns : ALL_TABLE_COLUMNS
+    visibleColumns.length > 0
+      ? visibleColumns
+      : DEFAULT_CHARTS_VISIBLE_TABLE_COLUMNS
   );
   const columns: ColumnDef<ChartDrilldownTableItem>[] = [];
 
   if (allowed.has('task')) {
     columns.push({
       accessorKey: 'title',
-      header: 'Task',
+      header: CHARTS_TABLE_COLUMN_LABELS.task,
       cell: ({ row }) => (
         <TruncatedText className="max-w-56 text-sm font-medium">
           {row.original.title}
@@ -81,7 +79,7 @@ function buildColumns(
   if (allowed.has('owner')) {
     columns.push({
       id: 'owner',
-      header: 'Owner',
+      header: CHARTS_TABLE_COLUMN_LABELS.owner,
       cell: ({ row }) => {
         const { assigneeName, assigneeAvatar } = row.original;
         if (!assigneeName) {
@@ -107,22 +105,44 @@ function buildColumns(
   if (allowed.has('status')) {
     columns.push({
       accessorKey: 'status',
-      header: 'Status',
+      header: CHARTS_TABLE_COLUMN_LABELS.status,
       cell: ({ row }) => <WorkItemStatusBadge status={row.original.status} />,
     });
   }
   if (allowed.has('type')) {
     columns.push({
       accessorKey: 'type',
-      header: 'Type',
+      header: CHARTS_TABLE_COLUMN_LABELS.type,
       cell: ({ row }) => <WorkItemTypeBadge type={row.original.type} />,
     });
   }
   if (allowed.has('priority')) {
     columns.push({
       accessorKey: 'priority',
-      header: 'Priority',
+      header: CHARTS_TABLE_COLUMN_LABELS.priority,
       cell: ({ row }) => <PriorityBadge priority={row.original.priority} />,
+    });
+  }
+  if (allowed.has('project')) {
+    columns.push({
+      id: 'project',
+      header: CHARTS_TABLE_COLUMN_LABELS.project,
+      cell: ({ row }) => (
+        <TruncatedText className="max-w-40 text-sm">
+          {row.original.projectName ?? '—'}
+        </TruncatedText>
+      ),
+    });
+  }
+  if (allowed.has('sprint')) {
+    columns.push({
+      id: 'sprint',
+      header: CHARTS_TABLE_COLUMN_LABELS.sprint,
+      cell: ({ row }) => (
+        <TruncatedText className="text-muted-foreground max-w-36 text-sm">
+          {row.original.sprintName ?? 'No sprint'}
+        </TruncatedText>
+      ),
     });
   }
   return columns;
@@ -134,7 +154,7 @@ export function ChartsStatusGroupedTable({
   loading = false,
   emptyMessage = 'No work items match the current filters.',
   className,
-  visibleColumns = ALL_TABLE_COLUMNS,
+  visibleColumns = DEFAULT_CHARTS_VISIBLE_TABLE_COLUMNS,
 }: Readonly<ChartsStatusGroupedTableProps>) {
   const groups = useMemo(
     () => buildChartStatusGroups(workItems, focusedStatus),

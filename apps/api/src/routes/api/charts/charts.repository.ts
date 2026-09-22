@@ -4,10 +4,10 @@ import {
   chartRollupGroupColumn,
   CHART_SERIES_NULL_SLICE_KEY,
   paginationMeta,
+  type ChartDrilldownItemRow,
   type ChartSeriesLabelField,
   type ChartSeriesSlice,
   type Database,
-  type WorkItemListRow,
   type WorkItemPriority,
   type WorkItemStatus,
   type WorkItemType,
@@ -225,7 +225,7 @@ export class ChartsRepository {
   }
 
   async listDrilldown(query: ChartDrilldownScopedQuery): Promise<{
-    workItems: WorkItemListRow[];
+    workItems: ChartDrilldownItemRow[];
     totalCount: number;
     page: number;
     limit: number;
@@ -261,7 +261,7 @@ export class ChartsRepository {
     ]);
 
     return {
-      workItems: workItems as WorkItemListRow[],
+      workItems: workItems as ChartDrilldownItemRow[],
       ...paginationMeta(totalCount, query.page, query.limit),
     };
   }

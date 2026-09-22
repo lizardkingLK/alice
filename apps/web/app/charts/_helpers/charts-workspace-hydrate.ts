@@ -3,7 +3,6 @@ import type {
   ChartWorkspacesStore,
 } from '@/app/charts/_components/charts.types';
 import {
-  ensureDefaultChartWorkspace,
   readChartWorkspacesStore,
   writeChartWorkspacesStore,
 } from '@/app/charts/_helpers/charts-workspace-storage';
@@ -34,7 +33,12 @@ async function migrateLocalOnlyWorkspaces(
       continue;
     }
     if (!ownedIds.has(workspace.id)) {
-      await syncChartWorkspaceToApi(workspace);
+      try {
+        await syncChartWorkspaceToApi(workspace);
+      } catch {
+        // Session expiry opens the dialog; other errors are best-effort.
+        return;
+      }
     }
   }
 }
@@ -52,34 +56,26 @@ function resolveLastOpenedId(
   return workspaces[0]?.id ?? null;
 }
 
-function offlineFallbackStore(
-  userId: string,
+/**
+ * Prefer API rows, but keep any local-only owned boards that failed to sync
+ * so hydrate never erases the URL the user is currently on.
+ */
+function mergeApiAndLocalOnly(
+  apiWorkspaces: readonly ChartWorkspaceRecord[],
   local: ChartWorkspacesStore
-): ChartWorkspacesStore {
-  if (local.workspaces.length > 0) {
-    return local;
-  }
-  const fallback = ensureDefaultChartWorkspace(userId);
-  return {
-    workspaces: [fallback],
-    lastOpenedId: readChartWorkspacesStore(userId).lastOpenedId,
-  };
-}
-
-async function createDefaultCloudWorkspace(
-  userId: string
-): Promise<ChartWorkspaceRecord[]> {
-  const created = ensureDefaultChartWorkspace(userId);
-  const synced = await syncChartWorkspaceToApi(created);
-  if (synced) {
-    return [chartWorkspaceFromApiRow(synced, 'mine')];
-  }
-  return [{ ...created, ownership: 'mine' }];
+): ChartWorkspaceRecord[] {
+  const apiIds = new Set(apiWorkspaces.map((row) => row.id));
+  const localOnly = local.workspaces.filter(
+    (workspace) =>
+      (workspace.ownership ?? 'mine') === 'mine' && !apiIds.has(workspace.id)
+  );
+  return [...apiWorkspaces, ...localOnly];
 }
 
 /**
  * Load owned + shared charts from the API, migrate any local-only boards,
  * and rewrite the local cache so cloud is the source of truth.
+ * Does not create a default workspace when the list is empty.
  */
 export async function hydrateChartWorkspacesFromApi(
   userId: string
@@ -95,7 +91,7 @@ export async function hydrateChartWorkspacesFromApi(
   try {
     ({ ownedRows, sharedRows } = await fetchOwnedAndSharedCharts());
   } catch {
-    return offlineFallbackStore(userId, local);
+    return local;
   }
 
   await migrateLocalOnlyWorkspaces(
@@ -109,14 +105,12 @@ export async function hydrateChartWorkspacesFromApi(
     // Keep first fetch.
   }
 
-  let workspaces = [
+  const fromApi = [
     ...ownedRows.map((row) => chartWorkspaceFromApiRow(row, 'mine')),
     ...sharedRows.map((row) => chartWorkspaceFromApiRow(row, 'shared')),
   ];
 
-  if (workspaces.length === 0) {
-    workspaces = await createDefaultCloudWorkspace(userId);
-  }
+  const workspaces = mergeApiAndLocalOnly(fromApi, local);
 
   const next: ChartWorkspacesStore = {
     workspaces,

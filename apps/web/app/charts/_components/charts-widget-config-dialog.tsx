@@ -7,11 +7,14 @@ import { DropdownMenuItem } from '@repo/ui/components/ui/dropdown-menu';
 import { Filter, LogOut, MoreHorizontal, Settings } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { SearchInput } from '@/components/search-input';
+import { DIALOG_CLOSE_ANIMATION_MS } from '@/lib/dialog-close';
 import { preventDismissForFloatingPortal } from '@/lib/dialog-outside-events';
 import type {
   ChartPieVariant,
   ChartsLabelFieldId,
+  ChartsSliceColorToken,
   ChartsTableColumnId,
+  ChartWidgetDisplaySettingsPatch,
   ChartWidgetViewMode,
   ChartsWidgetFiltersChangeHandler,
   ChartsWidgetLabelFieldChangeHandler,
@@ -65,6 +68,7 @@ type ChartsWidgetConfigDialogProps = {
     'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
   readonly showEmptySlices?: boolean;
   readonly visibleTableColumns?: readonly ChartsTableColumnId[];
+  readonly sliceColors?: Readonly<Record<string, ChartsSliceColorToken>>;
   readonly focusedSliceKey?: string;
   readonly accessibleProjects?: readonly ChartsProjectOption[];
   readonly accessibleSprints?: readonly ChartsSprintOption[];
@@ -76,13 +80,7 @@ type ChartsWidgetConfigDialogProps = {
   readonly onLabelFieldChange?: ChartsWidgetLabelFieldChangeHandler;
   readonly onDisplaySettingsChange?: (
     // eslint-disable-next-line no-unused-vars -- settings patch
-    patch: {
-      readonly showValueAs?: 'value' | 'percent';
-      readonly sortSlicesBy?:
-        'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
-      readonly showEmptySlices?: boolean;
-      readonly visibleTableColumns?: readonly ChartsTableColumnId[];
-    }
+    patch: ChartWidgetDisplaySettingsPatch
   ) => void;
   readonly onRename?: () => void;
   readonly onDuplicate?: () => void;
@@ -123,9 +121,13 @@ function useConfigDialogBootstrap(params: {
 
   useEffect(() => {
     if (!open) {
-      setFiltersOpen(false);
-      setSettingsOpen(false);
-      return;
+      // Keep sidebar / filter chrome through the dialog exit animation, then
+      // clear — same deferred-close pattern as registry menus.
+      const timer = window.setTimeout(() => {
+        setFiltersOpen(false);
+        setSettingsOpen(false);
+      }, DIALOG_CLOSE_ANIMATION_MS);
+      return () => window.clearTimeout(timer);
     }
 
     setSearchQuery('');
@@ -310,6 +312,7 @@ export function ChartsWidgetConfigDialog({
   sortSlicesBy = 'value_desc',
   showEmptySlices = false,
   visibleTableColumns,
+  sliceColors,
   focusedSliceKey,
   accessibleProjects = [],
   accessibleSprints = [],
@@ -423,6 +426,7 @@ export function ChartsWidgetConfigDialog({
       showValueAs={showValueAs}
       sortSlicesBy={sortSlicesBy}
       showEmptySlices={showEmptySlices}
+      sliceColors={sliceColors}
     />
   );
 
@@ -498,6 +502,13 @@ export function ChartsWidgetConfigDialog({
             sortSlicesBy={sortSlicesBy}
             showEmptySlices={showEmptySlices}
             visibleTableColumns={visibleTableColumns}
+            sliceColors={sliceColors}
+            sliceOptions={
+              analytics.series?.slices.map((slice) => ({
+                key: slice.key,
+                label: slice.label,
+              })) ?? []
+            }
             onShowValueAsChange={(value) =>
               onDisplaySettingsChange?.({ showValueAs: value })
             }
@@ -509,6 +520,9 @@ export function ChartsWidgetConfigDialog({
             }
             onVisibleTableColumnsChange={(columns) =>
               onDisplaySettingsChange?.({ visibleTableColumns: columns })
+            }
+            onSliceColorsChange={(next) =>
+              onDisplaySettingsChange?.({ sliceColors: next })
             }
           />
         ) : null}

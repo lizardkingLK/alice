@@ -10,22 +10,12 @@ import {
 } from '@repo/types';
 import { BOARD_WORK_ITEM_STATUSES } from '@repo/types';
 import { STATUS_META } from '@/app/work-items/_helpers/work-item-status';
-import { STATUS_CHART_COLORS } from '@/components/status-distribution-wheel';
 import type {
   ChartsLabelFieldId,
   ChartsWidgetFilterDraft,
   ChartsStatusPieSlice,
 } from '@/app/charts/_components/charts-sample.data';
-
-const CHART_TOKEN_COLORS = [
-  'var(--chart-1)',
-  'var(--chart-2)',
-  'var(--chart-3)',
-  'var(--chart-4)',
-  'var(--chart-5)',
-] as const;
-
-const FALLBACK_STATUS_COLOR = 'var(--muted-foreground)';
+import { resolveSliceSwatch } from '@/app/charts/_helpers/charts-slice-colors';
 
 const LIVE_LABEL_FIELD_SET = new Set<string>(CHART_SERIES_LABEL_FIELDS);
 
@@ -161,15 +151,10 @@ function chartSafeKey(raw: string, index: number): string {
 function swatchForBucket(
   labelField: ChartSeriesLabelField,
   bucketKey: string,
-  index: number
+  index: number,
+  sliceColors?: Readonly<Record<string, string>> | null
 ): string {
-  if (labelField === 'status') {
-    const statusColors = STATUS_CHART_COLORS as Partial<
-      Record<WorkItemStatus, string>
-    >;
-    return statusColors[bucketKey as WorkItemStatus] ?? FALLBACK_STATUS_COLOR;
-  }
-  return CHART_TOKEN_COLORS[index % CHART_TOKEN_COLORS.length] as string;
+  return resolveSliceSwatch(labelField, bucketKey, index, sliceColors);
 }
 
 function displayLabel(
@@ -192,6 +177,7 @@ export type BuildChartsPieOptions = {
   readonly showEmptySlices?: boolean;
   readonly sortSlicesBy?:
     'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
+  readonly sliceColors?: Readonly<Record<string, string>> | null;
 };
 
 function expandEmptyStatusSlices(
@@ -253,7 +239,8 @@ function sortSeriesSlices(
 function toPieSliceEntries(
   ordered: readonly ChartSeriesSlice[],
   labelField: ChartSeriesLabelField,
-  total: number
+  total: number,
+  sliceColors?: Readonly<Record<string, string>> | null
 ): ChartsStatusPieSlice[] {
   return ordered.map((slice, index) => {
     const label = displayLabel(labelField, slice);
@@ -261,7 +248,7 @@ function toPieSliceEntries(
       labelField === 'status' && slice.key
         ? slice.key
         : chartSafeKey(slice.key || 'null', index);
-    const swatch = swatchForBucket(labelField, slice.key, index);
+    const swatch = swatchForBucket(labelField, slice.key, index, sliceColors);
     const percent =
       total === 0 ? '0%' : `${((slice.count / total) * 100).toFixed(1)}%`;
     return {
@@ -305,7 +292,12 @@ export function buildChartsPieFromSeries(
     ? orderStatusSlicesBoardFirst(working)
     : sortSeriesSlices(working, sortBy);
 
-  const data = toPieSliceEntries(ordered, labelField, total);
+  const data = toPieSliceEntries(
+    ordered,
+    labelField,
+    total,
+    options.sliceColors
+  );
 
   const config: ChartConfig = {
     count: { label: 'Tasks' },
@@ -331,10 +323,16 @@ export type ChartDrilldownTableItem = {
   readonly assigneeName: string | null;
   readonly assigneeAvatar: string | null;
   readonly projectId: string;
+  readonly projectName: string | null;
+  readonly sprintId: string | null;
+  readonly sprintName: string | null;
 };
 
 export function workItemListRowToChartTableItem(
-  row: WorkItemListRow
+  row: WorkItemListRow & {
+    readonly project?: { readonly name: string } | null;
+    readonly sprint?: { readonly name: string } | null;
+  }
 ): ChartDrilldownTableItem {
   return {
     id: row.id,
@@ -346,6 +344,9 @@ export function workItemListRowToChartTableItem(
     assigneeName: row.assignee?.name ?? null,
     assigneeAvatar: row.assignee?.profile_picture ?? null,
     projectId: row.project_id,
+    projectName: row.project?.name ?? null,
+    sprintId: row.sprint_id,
+    sprintName: row.sprint?.name ?? null,
   };
 }
 

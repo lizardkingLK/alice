@@ -3,6 +3,7 @@ import {
   createChartWorkspace,
   ensureDefaultChartWorkspace,
   listChartWorkspaces,
+  removeChartWorkspace,
   renameChartWorkspaceMeta,
   suggestChartWorkspaceTitle,
 } from '@/app/charts/_helpers/charts-workspace-storage';
@@ -52,5 +53,28 @@ describe('charts-workspace-storage', () => {
     const list = listChartWorkspaces('user-1');
     expect(list.filter((item) => item.isOverview)).toHaveLength(1);
     expect(list.find((item) => item.id === first.id)?.isOverview).toBe(true);
+  });
+
+  it('archives via meta rename and removes workspaces from the local store', () => {
+    const first = ensureDefaultChartWorkspace('user-1');
+    const second = createChartWorkspace('user-1', { title: 'Charts (2)' });
+
+    renameChartWorkspaceMeta('user-1', first.id, { status: 'archived' });
+    expect(
+      listChartWorkspaces('user-1', { status: 'archived' }).map(
+        (item) => item.id
+      )
+    ).toEqual([first.id]);
+    expect(
+      listChartWorkspaces('user-1', { status: 'active' }).map((item) => item.id)
+    ).toEqual([second.id]);
+
+    const next = removeChartWorkspace('user-1', second.id);
+    expect(next?.id).toBe(first.id);
+    expect(listChartWorkspaces('user-1')).toHaveLength(1);
+    expect(listChartWorkspaces('user-1')[0]?.id).toBe(first.id);
+
+    expect(removeChartWorkspace('user-1', first.id)).toBeNull();
+    expect(listChartWorkspaces('user-1')).toHaveLength(0);
   });
 });

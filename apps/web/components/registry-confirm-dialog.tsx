@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, Loader2 } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
@@ -26,6 +26,9 @@ interface RegistryConfirmDialogProps {
  * Shared archive / restore / hard-delete confirmation modal used by registries.
  * Portaled to `document.body` so the backdrop covers the full viewport even
  * when opened from inside the dashboard scroll shell (`overflow-y-auto`).
+ *
+ * Prefer opening this *after* a Radix dropdown has closed (`afterDialogClose`)
+ * so body `pointer-events` / scroll-lock from the menu are released first.
  */
 export function RegistryConfirmDialog({
   title,
@@ -40,10 +43,37 @@ export function RegistryConfirmDialog({
   onConfirm,
 }: Readonly<RegistryConfirmDialogProps>) {
   const [mounted, setMounted] = useState(false);
+  const onCancelRef = useRef(onCancel);
+  const onConfirmRef = useRef(onConfirm);
+  const confirmLockRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    onCancelRef.current = onCancel;
+  }, [onCancel]);
+
+  useEffect(() => {
+    onConfirmRef.current = onConfirm;
+  }, [onConfirm]);
+
+  useEffect(() => {
+    confirmLockRef.current = false;
+  }, [isPending]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || isPending) {
+        return;
+      }
+      event.preventDefault();
+      onCancelRef.current();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isPending]);
 
   const confirmButtonText = isPending ? (
     <>
@@ -60,18 +90,35 @@ export function RegistryConfirmDialog({
   }
 
   return createPortal(
-    <div className="animate-in fade-in fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
-      <dialog
-        open
-        className="bg-card border-border animate-in fade-in zoom-in-95 relative block w-full max-w-md overflow-hidden rounded-xl border shadow-2xl duration-200"
+    <div className="animate-in fade-in fixed inset-0 z-[200] flex items-center justify-center p-4 duration-200">
+      <button
+        type="button"
+        aria-label="Dismiss"
+        disabled={isPending}
+        className="absolute inset-0 cursor-default bg-black/60 backdrop-blur-sm disabled:cursor-not-allowed"
+        onClick={() => {
+          if (!isPending) {
+            onCancelRef.current();
+          }
+        }}
+      />
+      <div
+        role="alertdialog"
         aria-modal="true"
+        aria-labelledby="registry-confirm-title"
+        className="bg-card border-border animate-in fade-in zoom-in-95 relative z-10 block w-full max-w-md overflow-hidden rounded-xl border shadow-2xl duration-200"
       >
         <div className="p-6">
           <div className="mb-3 flex items-center gap-3 text-rose-500">
             <div className="rounded-full border border-rose-500/20 bg-rose-500/10 p-2">
               <AlertTriangle className="h-6 w-6" />
             </div>
-            <h3 className="text-foreground text-lg font-bold">{title}</h3>
+            <h3
+              id="registry-confirm-title"
+              className="text-foreground text-lg font-bold"
+            >
+              {title}
+            </h3>
           </div>
 
           <p className="text-muted-foreground text-sm leading-relaxed">
@@ -89,7 +136,7 @@ export function RegistryConfirmDialog({
             type="button"
             variant="outline"
             disabled={isPending}
-            onClick={onCancel}
+            onClick={() => onCancelRef.current()}
             className="h-9 px-4 text-xs font-semibold"
           >
             Cancel
@@ -97,13 +144,19 @@ export function RegistryConfirmDialog({
           <Button
             type="button"
             disabled={isPending}
-            onClick={onConfirm}
+            onClick={() => {
+              if (isPending || confirmLockRef.current) {
+                return;
+              }
+              confirmLockRef.current = true;
+              onConfirmRef.current();
+            }}
             className="bg-rose-600 px-4 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
           >
             {confirmButtonText}
           </Button>
         </div>
-      </dialog>
+      </div>
     </div>,
     document.body
   );

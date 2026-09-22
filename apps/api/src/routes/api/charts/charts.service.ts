@@ -78,8 +78,29 @@ export class ChartsService {
   }
 
   async create(ownerId: string, input: CreateChartBody) {
+    if (input.id) {
+      const existing = await this.chartsRepository.getById(input.id);
+      if (existing) {
+        if (existing.owner_id !== ownerId) {
+          throw new Error('Forbidden');
+        }
+        const updated = await this.chartsRepository.update(
+          existing.id,
+          ownerId,
+          {
+            title: input.title,
+            description: input.description ?? null,
+            board_json: input.board_json,
+            is_overview: input.is_overview,
+          }
+        );
+        await this.safeUpsertChartBookmark(ownerId, updated);
+        return updated;
+      }
+    }
+
     const chart = await this.chartsRepository.create(ownerId, input);
-    await this.savedViewsRepository.upsertChartBookmark(ownerId, chart);
+    await this.safeUpsertChartBookmark(ownerId, chart);
     return chart;
   }
 
@@ -114,7 +135,7 @@ export class ChartsService {
       actorId,
       input
     );
-    await this.savedViewsRepository.upsertChartBookmark(actorId, updated);
+    await this.safeUpsertChartBookmark(actorId, updated);
     return updated;
   }
 
@@ -125,7 +146,7 @@ export class ChartsService {
       actorId,
       'archived'
     );
-    await this.savedViewsRepository.upsertChartBookmark(actorId, archived);
+    await this.safeUpsertChartBookmark(actorId, archived);
     return archived;
   }
 
@@ -136,15 +157,12 @@ export class ChartsService {
       actorId,
       'active'
     );
-    await this.savedViewsRepository.upsertChartBookmark(actorId, restored);
+    await this.safeUpsertChartBookmark(actorId, restored);
     return restored;
   }
 
   async hardDelete(actorId: string, chartId: string) {
-    const chart = await this.requireOwned(actorId, chartId);
-    if (chart.status !== 'archived') {
-      throw new Error('Only archived charts can be permanently deleted');
-    }
+    await this.requireOwned(actorId, chartId);
     await this.chartsRepository.hardDelete(chartId);
   }
 
@@ -175,7 +193,7 @@ export class ChartsService {
     }
 
     if (input.createSavedViewBookmark) {
-      await this.savedViewsRepository.upsertChartBookmark(actorId, chart);
+      await this.safeUpsertChartBookmark(actorId, chart);
     }
 
     return {
@@ -223,6 +241,19 @@ export class ChartsService {
     }
 
     return { responseProjectId: null, projectIds: accessible };
+  }
+
+  private async safeUpsertChartBookmark(
+    ownerId: string,
+    chart: ChartRow
+  ): Promise<void> {
+    try {
+      await this.savedViewsRepository.upsertChartBookmark(ownerId, chart);
+    } catch (error) {
+      // Chart row is the source of truth; Views bookmark is best-effort
+      // (e.g. migration not applied yet should not block create/update).
+      console.error('Failed to upsert chart saved-view bookmark', error);
+    }
   }
 
   private async requireOwned(actorId: string, chartId: string) {
