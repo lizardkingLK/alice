@@ -2,9 +2,9 @@
 
 Status: **Implemented** (IndexedDB upgrade still Plan-only)
 
-Personal **Favorites** bookmark a page pathname (no query). **Saved Views**
-snapshot pathname + query, live in Supabase, and can be shared / archived from
-the `/views` workspace.
+Personal **Favorites** bookmark a page pathname + query (same URL shape as
+opening the page). **Saved Views** snapshot pathname + query, live in Supabase,
+and can be shared / archived from the `/views` workspace.
 
 Related:
 
@@ -22,9 +22,12 @@ Related:
   solid).
 - Layers icon beside the star opens **Save View** (title required, description
   optional).
-- Sidebar **Favorites** group renders only when count &gt; 0 (collapsible; no
-  group star icon). Favorite row icons follow a pathname → nav icon map
-  (same icons as Platform / Projects / Help).
+- Sidebar **Favorites** group renders at the **top** of the sidebar (above
+  Platform) only when count &gt; 0 (collapsible; no group star icon). Favorite
+  row icons follow a pathname → nav icon map (same icons as Platform /
+  Projects / Help). Opening a favorited URL that 404s **removes that favorite**
+  automatically (see not-found cleanup). Access/RBAC denials that do not 404
+  leave the favorite in place.
 - **Views** is always a Platform nav item (Layers icon) that navigates to
   `/views` — no collapsible children list.
 - Favorites open in the same tab.
@@ -46,22 +49,23 @@ Related:
 
 ### Favorites (client)
 
-| Key                                        | Value                                              |
-| ------------------------------------------ | -------------------------------------------------- |
-| `alice:favorites:v1:{userId}`              | JSON array of `{ id, pathname, label, createdAt }` |
-| `alice:favorites-sidebar-open:v1:{userId}` | JSON boolean — Favorites group expanded/collapsed  |
+| Key                                        | Value                                                      |
+| ------------------------------------------ | ---------------------------------------------------------- |
+| `alice:favorites:v1:{userId}`              | JSON array of `{ id, pathname, search, label, createdAt }` |
+| `alice:favorites-sidebar-open:v1:{userId}` | JSON boolean — Favorites group expanded/collapsed          |
 
-- Unique per **pathname** (query stripped).
+- Unique per **pathname + search** (`search` without a leading `?`; empty when
+  none). Legacy rows missing `search` migrate to `''` on read.
 - ~200 small entries fit comfortably in localStorage.
 - **IndexedDB upgrade** (later): if quota errors or very large libraries appear,
   migrate the same shape into IndexedDB; keep the v1 key as a one-shot source.
 
 ### Views (Supabase)
 
-| Table               | Role                                                                        |
-| ------------------- | --------------------------------------------------------------------------- |
-| `saved_views`       | Owner title, description, pathname, search, optional `project_id`, `status` |
-| `saved_view_shares` | `(view_id, user_id)` recipients                                             |
+| Table               | Role                                                                                                                                   |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `saved_views`       | Owner title, description, pathname, search, optional `project_id`, `status`; `resource_kind` + `resource_id` for typed chart bookmarks |
+| `saved_view_shares` | `(view_id, user_id)` recipients                                                                                                        |
 
 - **Uniqueness:** one **active** row per owner per `(pathname, search)` (partial unique
   index). Saving the same URL again updates title/description (same `id`, shares
@@ -76,10 +80,10 @@ Related:
 
 | Kind     | Stored            | Sidebar label                                                    |
 | -------- | ----------------- | ---------------------------------------------------------------- |
-| Favorite | pathname only     | Breadcrumb / page label (work-item detail → truncated **title**) |
+| Favorite | pathname + search | Breadcrumb / page label (work-item detail → truncated **title**) |
 | View     | pathname + search | View **title**                                                   |
 
-Href for a view: `` `${pathname}${search ? `?${search}` : ''}` ``.
+Href for a favorite or view: `` `${pathname}${search ? `?${search}` : ''}` ``.
 
 ---
 
@@ -87,7 +91,7 @@ Href for a view: `` `${pathname}${search ? `?${search}` : ''}` ``.
 
 In dashboard page meta, after the last breadcrumb segment:
 
-1. **Star** — toggle Favorite for current pathname.
+1. **Star** — toggle Favorite for current pathname + search.
 2. **Layers** — open Save View dialog for current pathname + search.
 
 Pass `favoriteLabel` (and optional `projectId`) from page shells when the
@@ -97,11 +101,22 @@ breadcrumb last segment is not a good label (e.g. work-item title).
 
 ## Sidebar UX
 
-- **Favorites** — collapsible group (label only, chevron; no star on the group).
-  Shown when count &gt; 0. Expanded/collapsed state persists in localStorage per
-  user. Each item uses `resolveFavoriteNavIcon(pathname)` from the shared
-  dashboard nav registry (`apps/web/lib/dashboard/nav-registry.ts`) and opens in
-  the same tab. Truncate long labels with `TruncatedText`.
+- **Favorites** — collapsible group at the **top** of the sidebar (above
+  Platform; label only, chevron; no star on the group). Shown when count &gt; 0.
+  Expanded/collapsed state persists in localStorage per user. Each item uses
+  `resolveFavoriteNavIcon(pathname)` from the shared dashboard nav registry
+  (`apps/web/lib/dashboard/nav-registry.ts`) and opens
+  `` `${pathname}${search ? `?${search}` : ''}` `` in the same tab. Active
+  highlight matches the exact pathname + search. Truncate long labels with
+  `TruncatedText`. Opening a favorite whose destination **404s** removes that
+  favorite from localStorage (not-found page cleanup) and tells the user. For
+  `/chat?conversationId=…`, a missing conversation renders **Page not found**
+  (bootstrap does not fall back to another thread). A freshly created id that is
+  briefly missing from the conversations list is resolved by live list / by-id
+  ownership lookup so new chats are not false-404ed. On `/chat`, the favorite
+  star stays disabled until conversations/history have loaded and the URL
+  `conversationId` matches the active thread. RBAC / access errors that
+  do not 404 leave the favorite in place.
 - **Views** — always shown as a Platform item (`/views`, Layers icon). Click
   navigates to the Views workspace (same tab). No sidebar children.
 
@@ -117,6 +132,10 @@ Aligned with other registry list pages ([PERFORMANCE.md](../../guides/PERFORMANC
 - **URL state** — `search`, `page`, `limit`, and `tab` (`mine` | `shared` |
   `archived`) via `searchParams` (debounced search, pagination controls).
 - **Skeleton** — `loading.tsx` / Suspense use `REGISTRY_PAGES.views`.
+- **Toolbar** — left: Search → **Columns** (icon); right: My views / Shared /
+  Archived **icon segment** tabs (`RegistryTabSwitcher`, same style as
+  Flat/Hierarchy and Active/Archived — not underline page tabs). Matches other
+  registry toolbars (filters and actions stay right-aligned when present).
 - **Columns** — optional visibility (title required) in localStorage
   `alice:views-table-columns:v1:{userId}`.
 
@@ -161,6 +180,30 @@ views fall back to `/views?tab=shared`.
 
 ---
 
+## Chart workspaces
+
+Chart boards live in the **`charts`** table (`board_json`), not in
+`saved_views.search`. See [CHARTS.md](../dashboard/CHARTS.md#persistence).
+
+**Shipped:** `saved_views` indexes chart workspaces for `/views` and related
+pickers:
+
+| Column          | Role                                                    |
+| --------------- | ------------------------------------------------------- |
+| `resource_kind` | Discriminator: `page` (default URL snapshot) or `chart` |
+| `resource_id`   | Nullable uuid — `charts.id` when kind is `chart`        |
+
+- Index `(owner_id, status, resource_kind)`
+- Partial unique: one active chart bookmark per owner per `resource_id`
+- On chart create / rename / archive: upsert the matching view
+  (`pathname=/charts/{id}`, `search=''`, title synced)
+- Board ACL stays on **`chart_shares`**; optional **`saved_view_shares`** only
+  for the Views entry — do not duplicate board JSON on the view row
+
+Related: [CHARTS_AGGREGATION.md](../dashboard/CHARTS_AGGREGATION.md#tier-1-product-remaining).
+
+---
+
 ## Phases
 
 1. Docs (this file)
@@ -168,14 +211,15 @@ views fall back to `/views?tab=shared`.
 3. Views core (schema, API CRUD, Save dialog, sidebar, My + Archived)
 4. Share + notify + Shared with me
 5. Polish / IndexedDB upgrade only if needed
+6. **Chart resource pointers** (`resource_kind` / `resource_id`) — shipped with Tier 1 charts product
 
 ## Tests
 
-- Unit: favorites serialize/strip/dedupe; `resolveFavoriteNavIcon` prefix map;
-  view URL normalize; share recipient expansion; Views column visibility
-  storage; `parseViewsListTab`
-- Component: star, save dialog, share modes; sidebar Favorites collapsible;
-  Platform Views link always present
+- Unit: favorites serialize/search/dedupe/href/migrate; `resolveFavoriteNavIcon`
+  prefix map; view URL normalize; share recipient expansion; Views column
+  visibility storage; `parseViewsListTab`
+- Component: star, save dialog, share modes; sidebar Favorites above Platform
+  with query hrefs; Platform Views link always present
 - API: CRUD auth, archive, share + notification create
 - Sidebar RBAC suite extended for Favorites visibility / Views always-on
 - Views registry: SSR list + URL search/tab/pagination (covered via helpers +

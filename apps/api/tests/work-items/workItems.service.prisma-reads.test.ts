@@ -51,12 +51,16 @@ const query: ListWorkItemsQuery = {
   labels: ['api'],
   recordStatus: 'active',
   includeDescription: false,
+  dueDate: undefined,
+  excludeStatuses: undefined,
 };
 
 describe('WorkItemService Prisma reads', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    listAccessibleProjectIdsMock.mockResolvedValue('all');
+    listAccessibleProjectIdsMock.mockResolvedValue([
+      '33333333-3333-4333-8333-333333333333',
+    ]);
     requireProjectMemberMock.mockResolvedValue({
       projectId: query.projectId,
     });
@@ -84,6 +88,8 @@ describe('WorkItemService Prisma reads', () => {
         assigneeId: undefined,
         labels: ['api'],
         recordStatus: 'active',
+        dueDate: undefined,
+        excludeStatuses: undefined,
       },
       search: 'Ship',
       page: 1,

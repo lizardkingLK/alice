@@ -160,6 +160,9 @@ function defaultApiUrlForProvider(provider: string, model: string): string {
   if (provider === 'gemini') {
     return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   }
+  if (provider === 'spacexai') {
+    return 'https://api.x.ai/v1/chat/completions';
+  }
   if (provider === 'openai') {
     return 'https://api.openai.com/v1/chat/completions';
   }

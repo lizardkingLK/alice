@@ -3,14 +3,17 @@ import {
   accessAllowlist,
   accessRequests,
   attachments,
+  charts,
   chat,
   comments,
   health,
   integrations,
   jira,
+  github,
   notifications,
   profile,
   projects,
+  pusher,
   root,
   savedViews,
   sprints,
@@ -28,6 +31,8 @@ routesConfig.use('/', root.router);
 routesConfig.use('/api/health', health.v1Router);
 routesConfig.use('/api/v1/health', health.v1Router);
 routesConfig.use('/api/v2/health', health.v2Router);
+routesConfig.use('/api/charts', charts.router);
+routesConfig.use('/api/v1/charts', charts.router);
 routesConfig.use('/api/integrations', integrations.router);
 routesConfig.use('/api/v1/integrations', integrations.router);
 routesConfig.use('/api/accessAllowlist', accessAllowlist.router);
@@ -39,11 +44,14 @@ routesConfig.use('/api/v1/chat', chat.router);
 routesConfig.use('/api/comments', comments.router);
 routesConfig.use('/api/v1/comments', comments.router);
 routesConfig.use('/api/jira', jira.router);
+routesConfig.use('/api/github', github.router);
+routesConfig.use('/api/v1/github', github.router);
 routesConfig.use('/api/notifications', notifications.router);
 routesConfig.use('/api/profile', profile.router);
 routesConfig.use('/api/v1/profile', profile.router);
 routesConfig.use('/api/projects', projects.router);
 routesConfig.use('/api/v1/projects', projects.router);
+routesConfig.use('/api/pusher', pusher.router);
 routesConfig.use('/api/saved-views', savedViews.router);
 routesConfig.use('/api/v1/saved-views', savedViews.router);
 routesConfig.use('/api/sprints', sprints.router);

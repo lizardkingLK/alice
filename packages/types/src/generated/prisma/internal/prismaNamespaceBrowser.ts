@@ -58,6 +58,7 @@ export const ModelName = {
   team_members: 'team_members',
   sprints: 'sprints',
   work_items: 'work_items',
+  work_item_chart_rollups: 'work_item_chart_rollups',
   work_item_worklogs: 'work_item_worklogs',
   comments: 'comments',
   attachments: 'attachments',
@@ -66,8 +67,11 @@ export const ModelName = {
   access_requests: 'access_requests',
   jira_connections: 'jira_connections',
   chat_conversations: 'chat_conversations',
+  chat_attachments: 'chat_attachments',
   saved_views: 'saved_views',
   saved_view_shares: 'saved_view_shares',
+  charts: 'charts',
+  chart_shares: 'chart_shares',
   github_pull_requests: 'github_pull_requests',
   integrations: 'integrations'
 } as const
@@ -215,6 +219,7 @@ export const Work_itemsScalarFieldEnum = {
   due_date: 'due_date',
   story_points: 'story_points',
   status: 'status',
+  board_column_id: 'board_column_id',
   record_status: 'record_status',
   done_at: 'done_at',
   created_by: 'created_by',
@@ -225,6 +230,21 @@ export const Work_itemsScalarFieldEnum = {
 } as const
 
 export type Work_itemsScalarFieldEnum = (typeof Work_itemsScalarFieldEnum)[keyof typeof Work_itemsScalarFieldEnum]
+
+
+export const Work_item_chart_rollupsScalarFieldEnum = {
+  grain_key: 'grain_key',
+  bucket_date: 'bucket_date',
+  project_id: 'project_id',
+  sprint_id: 'sprint_id',
+  status: 'status',
+  type: 'type',
+  priority: 'priority',
+  assignee_id: 'assignee_id',
+  item_count: 'item_count'
+} as const
+
+export type Work_item_chart_rollupsScalarFieldEnum = (typeof Work_item_chart_rollupsScalarFieldEnum)[keyof typeof Work_item_chart_rollupsScalarFieldEnum]
 
 
 export const Work_item_worklogsScalarFieldEnum = {
@@ -362,6 +382,23 @@ export const Chat_conversationsScalarFieldEnum = {
 export type Chat_conversationsScalarFieldEnum = (typeof Chat_conversationsScalarFieldEnum)[keyof typeof Chat_conversationsScalarFieldEnum]
 
 
+export const Chat_attachmentsScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  conversation_id: 'conversation_id',
+  file_name: 'file_name',
+  storage_path: 'storage_path',
+  file_size: 'file_size',
+  mime_type: 'mime_type',
+  status: 'status',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  expires_at: 'expires_at'
+} as const
+
+export type Chat_attachmentsScalarFieldEnum = (typeof Chat_attachmentsScalarFieldEnum)[keyof typeof Chat_attachmentsScalarFieldEnum]
+
+
 export const Saved_viewsScalarFieldEnum = {
   id: 'id',
   owner_id: 'owner_id',
@@ -370,6 +407,8 @@ export const Saved_viewsScalarFieldEnum = {
   pathname: 'pathname',
   search: 'search',
   project_id: 'project_id',
+  resource_kind: 'resource_kind',
+  resource_id: 'resource_id',
   status: 'status',
   created_by: 'created_by',
   created_at: 'created_at',
@@ -392,6 +431,37 @@ export const Saved_view_sharesScalarFieldEnum = {
 } as const
 
 export type Saved_view_sharesScalarFieldEnum = (typeof Saved_view_sharesScalarFieldEnum)[keyof typeof Saved_view_sharesScalarFieldEnum]
+
+
+export const ChartsScalarFieldEnum = {
+  id: 'id',
+  owner_id: 'owner_id',
+  title: 'title',
+  description: 'description',
+  board_json: 'board_json',
+  is_overview: 'is_overview',
+  status: 'status',
+  created_by: 'created_by',
+  created_at: 'created_at',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type ChartsScalarFieldEnum = (typeof ChartsScalarFieldEnum)[keyof typeof ChartsScalarFieldEnum]
+
+
+export const Chart_sharesScalarFieldEnum = {
+  id: 'id',
+  chart_id: 'chart_id',
+  user_id: 'user_id',
+  status: 'status',
+  created_by: 'created_by',
+  created_at: 'created_at',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type Chart_sharesScalarFieldEnum = (typeof Chart_sharesScalarFieldEnum)[keyof typeof Chart_sharesScalarFieldEnum]
 
 
 export const Github_pull_requestsScalarFieldEnum = {

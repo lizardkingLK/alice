@@ -36,6 +36,14 @@ export const RecordStatus = {
 export type RecordStatus = (typeof RecordStatus)[keyof typeof RecordStatus]
 
 
+export const SavedViewResourceKind = {
+  page: 'page',
+  chart: 'chart'
+} as const
+
+export type SavedViewResourceKind = (typeof SavedViewResourceKind)[keyof typeof SavedViewResourceKind]
+
+
 export const ProjectStatus = {
   active: 'active',
   archived: 'archived'
@@ -96,6 +104,7 @@ export const NotificationType = {
   sprint: 'sprint',
   due_date: 'due_date',
   view_shared: 'view_shared',
+  chart_shared: 'chart_shared',
   chat_processed: 'chat_processed',
   access_request: 'access_request'
 } as const

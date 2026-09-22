@@ -7,6 +7,11 @@ export type UseProjectMembersArgs = {
   readonly projectMembers: readonly WorkItemMemberLike[];
   readonly assigneeId: string | null | undefined;
   readonly lockAssignee?: boolean;
+  /**
+   * When true, skip network fetch and keep using the provided `projectMembers`
+   * list (e.g. charts mock board).
+   */
+  readonly preferProvidedMembers?: boolean;
   // eslint-disable-next-line no-unused-vars
   readonly onAssigneeChange: (assigneeId: string | null) => void;
 };
@@ -16,12 +21,16 @@ export function useProjectMembers({
   projectMembers,
   assigneeId,
   lockAssignee = false,
+  preferProvidedMembers = false,
   onAssigneeChange,
 }: UseProjectMembersArgs) {
   const [currentMembers, setCurrentMembers] = useState<
     readonly WorkItemMemberLike[]
   >(() => {
     if (!projectId) {
+      return projectMembers;
+    }
+    if (preferProvidedMembers) {
       return projectMembers;
     }
     if (assigneeId) {
@@ -45,6 +54,22 @@ export function useProjectMembers({
 
   useEffect(() => {
     let isMounted = true;
+
+    if (preferProvidedMembers) {
+      setCurrentMembers(projectMembers);
+      const latestAssigneeId = assigneeIdRef.current;
+      if (
+        latestAssigneeId &&
+        !lockAssignee &&
+        !projectMembers.some((m) => m.id === latestAssigneeId)
+      ) {
+        onAssigneeChangeRef.current(null);
+      }
+      return () => {
+        isMounted = false;
+      };
+    }
+
     if (projectId) {
       fetchProjectMembersForForm(projectId)
         .then((mapped) => {
@@ -78,7 +103,7 @@ export function useProjectMembers({
     return () => {
       isMounted = false;
     };
-  }, [projectId, projectMembers, lockAssignee]);
+  }, [projectId, projectMembers, lockAssignee, preferProvidedMembers]);
 
   return currentMembers;
 }

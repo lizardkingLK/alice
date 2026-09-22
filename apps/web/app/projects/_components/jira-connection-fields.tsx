@@ -14,7 +14,7 @@ import {
   connectionLabel,
   type JiraCloudProject,
   type JiraConnection,
-} from '../_services/projects.jira.mutations.client';
+} from '@/app/projects/_services/projects.jira.mutations.client';
 
 function ConnectJiraButton({
   isConnecting,

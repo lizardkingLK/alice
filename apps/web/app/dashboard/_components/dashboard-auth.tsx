@@ -4,27 +4,17 @@ import Link from 'next/link';
 import { Button } from '@repo/ui/components/ui/button';
 import { signOut } from '@/app/auth/actions';
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@repo/ui/components/ui/avatar';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
-import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { User } from '@repo/ui/lib/icons';
 import Image from 'next/image';
 import { cn } from '@repo/ui/lib/utils';
 import { PendingSubmitButton } from '@/components/pending-submit-button';
-import {
-  formatLabelFirstLetterCapitalized,
-  getInitials,
-} from '@/app/_shared/utility';
-import { Badge } from '@repo/ui/components/ui/badge';
+import { UserMentionCard } from '@/components/user-mention-card';
 
 type AuthControlsProps = {
   email?: string | null;
@@ -47,9 +37,6 @@ const UserProfile = ({
   role,
   image,
 }: Readonly<UserProfileProps>) => {
-  const displayName = name?.trim() || email;
-  const roleLabel = role ? formatLabelFirstLetterCapitalized(role) : null;
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -71,38 +58,14 @@ const UserProfile = ({
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72">
-        <DropdownMenuItem
-          asChild
-          className="bg-muted/30 hover:bg-muted h-auto cursor-pointer p-2"
-        >
-          <Link
-            href="/profile"
-            className="flex min-w-0 items-start gap-3 rounded-lg"
-          >
-            <Avatar className="size-9 shrink-0">
-              {image ? <AvatarImage src={image} alt={displayName} /> : null}
-              <AvatarFallback className="text-xs font-semibold">
-                {getInitials(displayName)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1 space-y-1">
-              <div className="flex min-w-0 items-center gap-2">
-                <TruncatedText className="min-w-0 flex-1 text-sm font-medium">
-                  {displayName}
-                </TruncatedText>
-                {roleLabel ? (
-                  <Badge variant="outline" className="shrink-0 font-normal">
-                    {roleLabel}
-                  </Badge>
-                ) : null}
-              </div>
-              <TruncatedText className="text-muted-foreground text-xs">
-                {email}
-              </TruncatedText>
-            </div>
-          </Link>
-        </DropdownMenuItem>
+      <DropdownMenuContent align="end" className="w-72 p-1">
+        <UserMentionCard
+          name={name}
+          email={email}
+          role={role}
+          imageUrl={image}
+          href="/profile"
+        />
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className="justify-center">
           <form action={signOut} className="w-full">

@@ -58,6 +58,16 @@ function toAccessRequestRow(row: {
   };
 }
 
+/** Always returns JSON (empty array when unset) so Sonar sees one return type. */
+function toRequestedProjectKeysJson(
+  keys: string[] | null | undefined
+): Prisma.InputJsonValue {
+  if (!keys || keys.length === 0) {
+    return [];
+  }
+  return keys;
+}
+
 export class AccessRequestsRepository {
   async findById(id: string): Promise<AccessRequestRow | null> {
     const row = await prisma.access_requests.findUnique({ where: { id } });
@@ -103,6 +113,7 @@ export class AccessRequestsRepository {
     message: string;
     kind?: AccessRequestKind;
     requestCount?: number;
+    requestedProjectKeys?: string[] | null;
   }): Promise<AccessRequestRow> {
     const row = await prisma.access_requests.create({
       data: {
@@ -111,6 +122,9 @@ export class AccessRequestsRepository {
         message: params.message,
         kind: params.kind ?? AccessRequestKindEnum.admission,
         request_count: params.requestCount ?? 1,
+        requested_project_keys: toRequestedProjectKeysJson(
+          params.requestedProjectKeys
+        ),
       },
     });
     return toAccessRequestRow(row);
@@ -118,26 +132,45 @@ export class AccessRequestsRepository {
 
   async updatePendingSubmission(
     id: string,
-    params: { message: string; requestCount: number }
+    params: {
+      message: string;
+      requestCount: number;
+      requestedProjectKeys?: string[] | null;
+    }
   ): Promise<AccessRequestRow> {
+    const data: Prisma.access_requestsUpdateInput = {
+      message: params.message,
+      request_count: params.requestCount,
+      last_requested_at: new Date(),
+    };
+    if (params.requestedProjectKeys !== undefined) {
+      data.requested_project_keys = toRequestedProjectKeysJson(
+        params.requestedProjectKeys
+      );
+    }
     const row = await prisma.access_requests.update({
       where: { id },
-      data: {
-        message: params.message,
-        request_count: params.requestCount,
-        last_requested_at: new Date(),
-      },
+      data,
     });
     return toAccessRequestRow(row);
   }
 
   async updateMessageOnly(
     id: string,
-    message: string
+    message: string,
+    requestedProjectKeys?: string[] | null
   ): Promise<AccessRequestRow> {
+    const data: Prisma.access_requestsUpdateInput = {
+      message,
+      last_requested_at: new Date(),
+    };
+    if (requestedProjectKeys !== undefined) {
+      data.requested_project_keys =
+        toRequestedProjectKeysJson(requestedProjectKeys);
+    }
     const row = await prisma.access_requests.update({
       where: { id },
-      data: { message, last_requested_at: new Date() },
+      data,
     });
     return toAccessRequestRow(row);
   }

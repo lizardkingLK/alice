@@ -1,11 +1,13 @@
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
-import { SprintStatusEnum } from '@repo/types';
+import { SprintStatusEnum, UserRoleEnum } from '@repo/types';
 
 /**
- * Prefer owned active projects for managers, else membership, else first active.
+ * Prefer owned active projects for managers, else membership.
  * Used when there is no stored preferred-project preference yet.
+ * Does not fall back to unrelated projects — callers should pass a
+ * membership-scoped list.
  */
 export function resolveDefaultBoardProject(
   projects: Project[],
@@ -22,7 +24,10 @@ export function resolveDefaultBoardProject(
 
   const memberSet = new Set(options.memberProjectIds);
 
-  if (options.role === 'manager') {
+  if (
+    options.role === UserRoleEnum.manager ||
+    options.role === UserRoleEnum.admin
+  ) {
     const owned = active.find((project) => project.owner_id === options.userId);
     if (owned) {
       return owned;
@@ -34,7 +39,7 @@ export function resolveDefaultBoardProject(
     return membership;
   }
 
-  // Fallback: first active project (keeps board usable if membership lags).
+  // Prefer first active in the already-scoped list (owners ∪ members).
   return active[0] ?? null;
 }
 

@@ -14,11 +14,16 @@ import {
 } from '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog';
 import { IncompleteSubtasksDoneBlockedDialog } from '@/app/work-items/_components/work-item-subtasks/incomplete-subtasks-done-blocked-dialog';
 import { hasIncompleteStatuses } from '@/app/work-items/_helpers/work-item-status';
+import {
+  extractDynamicFieldValues,
+  patchWorkItemDynamicFields,
+} from '@/app/work-items/_helpers/work-item-dynamic-fields';
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import {
   parseWorkItemLabels,
   type WorkItemStatus,
   type WorkItemWorkLog,
+  ProjectFieldsConfigSchema,
 } from '@repo/types';
 import {
   Avatar,
@@ -71,14 +76,20 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
+  useRef,
   type Dispatch,
   type ReactNode,
   type SetStateAction,
 } from 'react';
+import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import {
   linkPR,
   unlinkPR,
+  updateWorkItem,
 } from '@/app/work-items/_services/work-items.mutations.client';
+import { SafeDynamicFieldsSection } from './safe-dynamic-fields-section';
+import { ProjectFieldsErrorDialog } from '@/app/projects/_components/project-details/project-fields-error-dialog';
 import {
   getLinkedPRs,
   type GithubCommit,
@@ -390,6 +401,7 @@ export default function WorkItemSidebar({
   workItem,
   childStatuses = [],
   projectMembers = [],
+  project,
   workLogs = [],
   detailsOpen,
   setDetailsOpen,
@@ -402,6 +414,7 @@ export default function WorkItemSidebar({
   workItem: DbWorkItem;
   childStatuses?: readonly WorkItemStatus[];
   projectMembers?: readonly WorkItemPatchMemberOption[];
+  project?: DbProject | null;
   workLogs?: WorkItemWorkLog[];
   detailsOpen: boolean;
   setDetailsOpen: Dispatch<SetStateAction<boolean>>;
@@ -417,7 +430,85 @@ export default function WorkItemSidebar({
     'assignee_id' | 'reporter_id' | 'labels' | null
   >(null);
   const [developmentOpen, setDevelopmentOpen] = useState(true);
+  const [additionalFieldsOpen, setAdditionalFieldsOpen] = useState(true);
   const labels = parseWorkItemLabels(workItem.labels);
+
+  const hasValidDynamicFields = useMemo(() => {
+    if (!project?.attributes_config) return false;
+    const validated = ProjectFieldsConfigSchema.safeParse(
+      project.attributes_config
+    );
+    return (
+      validated.success &&
+      Boolean(validated.data.properties) &&
+      Object.keys(validated.data.properties).length > 0
+    );
+  }, [project?.attributes_config]);
+
+  const dynamicFieldValues = useMemo(() => {
+    return extractDynamicFieldValues(workItem.description);
+  }, [workItem.description]);
+
+  const [dynamicFieldsError, setDynamicFieldsError] = useState<string | null>(
+    null
+  );
+
+  const latestUpdatedAtRef = useRef(workItem.updated_at);
+  const latestDescriptionRef = useRef(workItem.description);
+  const mutationQueueRef = useRef<Promise<void>>(Promise.resolve());
+
+  useEffect(() => {
+    latestUpdatedAtRef.current = workItem.updated_at;
+  }, [workItem.updated_at]);
+
+  useEffect(() => {
+    latestDescriptionRef.current = workItem.description;
+  }, [workItem.description]);
+
+  const handleDynamicFieldChange = useCallback(
+    (key: string, value: unknown) => {
+      mutationQueueRef.current = mutationQueueRef.current
+        .then(async () => {
+          const currentDesc = latestDescriptionRef.current;
+          const currentUpdated = latestUpdatedAtRef.current;
+          const updatedDescription = patchWorkItemDynamicFields(
+            currentDesc,
+            key,
+            value
+          );
+          latestDescriptionRef.current =
+            updatedDescription as DbWorkItem['description'];
+
+          // Optimistically notify parent so UI updates immediately
+          onWorkItemPatched({
+            description: updatedDescription as DbWorkItem['description'],
+          });
+
+          const formData = new FormData();
+          formData.set('description', JSON.stringify(updatedDescription));
+          const res = await updateWorkItem(
+            workItem.id,
+            formData,
+            currentUpdated
+          );
+          if (res.data) {
+            latestUpdatedAtRef.current = res.data.updated_at;
+            onWorkItemPatched({
+              description: updatedDescription as DbWorkItem['description'],
+              updated_at: res.data.updated_at,
+            });
+          }
+        })
+        .catch((err) => {
+          const msg =
+            err instanceof Error
+              ? err.message
+              : 'Failed to update dynamic field';
+          setDynamicFieldsError(msg);
+        });
+    },
+    [workItem.id, onWorkItemPatched]
+  );
 
   const activeConfig = activeField
     ? WORK_ITEM_PATCH_FIELD_CONFIG[activeField]
@@ -474,6 +565,30 @@ export default function WorkItemSidebar({
           />
         </DetailRow>
       </SidebarCollapsibleSection>
+
+      {hasValidDynamicFields && (
+        <SidebarCollapsibleSection
+          title="Additional Fields"
+          open={additionalFieldsOpen}
+          onOpenChange={setAdditionalFieldsOpen}
+          collapsedHint={`${
+            Object.keys(
+              (
+                project?.attributes_config as {
+                  properties?: Record<string, unknown>;
+                }
+              )?.properties || {}
+            ).length
+          } project fields`}
+        >
+          <SafeDynamicFieldsSection
+            schema={project?.attributes_config}
+            values={dynamicFieldValues}
+            onFieldChange={handleDynamicFieldChange}
+            readOnly={readOnly}
+          />
+        </SidebarCollapsibleSection>
+      )}
 
       <SidebarCollapsibleSection
         title="Development"
@@ -568,6 +683,14 @@ export default function WorkItemSidebar({
           onPatched={onWorkItemPatched}
         />
       ) : null}
+
+      <ProjectFieldsErrorDialog
+        open={Boolean(dynamicFieldsError)}
+        title="Dynamic Field Update Error"
+        description="Could not save the updated field value to this work item."
+        error={dynamicFieldsError}
+        onClose={() => setDynamicFieldsError(null)}
+      />
     </aside>
   );
 }

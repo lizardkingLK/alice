@@ -14,6 +14,17 @@ const validCreateInput = {
   status: 'active' as const,
 };
 
+const validBoardConfig = {
+  version: '1',
+  columns: [
+    { id: 'new', name: 'New', status: 'New' },
+    { id: 'todo', name: 'Ready', status: 'ToDo' },
+    { id: 'doing', name: 'Doing', status: 'InProgress' },
+    { id: 'testing', name: 'Testing', status: 'Testing' },
+    { id: 'done', name: 'Done', status: 'Done' },
+  ],
+};
+
 describe('projects schemas', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -24,6 +35,21 @@ describe('projects schemas', () => {
     it('accepts valid input', () => {
       const parsed = createProjectSchema.safeParse(validCreateInput);
       expect(parsed.success).toBe(true);
+    });
+
+    it('accepts workflow config in the create contract', () => {
+      const parsed = createProjectSchema.safeParse({
+        ...validCreateInput,
+        workflow_config: {
+          work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+        },
+      });
+      expect(parsed.success).toBe(true);
+      if (parsed.success) {
+        expect(parsed.data.workflow_config).toEqual({
+          work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+        });
+      }
     });
 
     it('rejects end_date in the past', () => {
@@ -78,6 +104,36 @@ describe('projects schemas', () => {
   });
 
   describe('updateProjectSchema', () => {
+    it('accepts a valid workflow config', () => {
+      expect(
+        updateProjectSchema.safeParse({
+          workflow_config: validBoardConfig,
+          expectedUpdatedAt: '2026-08-25T12:00:00.000Z',
+        }).success
+      ).toBe(true);
+    });
+
+    it('accepts null workflow config for reset', () => {
+      expect(
+        updateProjectSchema.safeParse({
+          workflow_config: null,
+          expectedUpdatedAt: '2026-08-25T12:00:00.000Z',
+        }).success
+      ).toBe(true);
+    });
+
+    it('rejects an invalid workflow config', () => {
+      expect(
+        updateProjectSchema.safeParse({
+          workflow_config: {
+            ...validBoardConfig,
+            columns: validBoardConfig.columns.slice(1),
+          },
+          expectedUpdatedAt: '2026-08-25T12:00:00.000Z',
+        }).success
+      ).toBe(false);
+    });
+
     it('accepts partial valid input', () => {
       const parsed = updateProjectSchema.safeParse({
         name: 'New Name',

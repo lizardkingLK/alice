@@ -53,6 +53,12 @@ export type sprints = Prisma.sprintsModel
  */
 export type work_items = Prisma.work_itemsModel
 /**
+ * Model work_item_chart_rollups
+ * Precomputed categorical counts for Charts Tier 1 (trigger-maintained).
+ * `grain_key` encodes bucket + dimensions so upserts ignore SQL NULL uniqueness quirks.
+ */
+export type work_item_chart_rollups = Prisma.work_item_chart_rollupsModel
+/**
  * Model work_item_worklogs
  * 
  */
@@ -93,6 +99,11 @@ export type jira_connections = Prisma.jira_connectionsModel
  */
 export type chat_conversations = Prisma.chat_conversationsModel
 /**
+ * Model chat_attachments
+ * 
+ */
+export type chat_attachments = Prisma.chat_attachmentsModel
+/**
  * Model saved_views
  * Personal saved navigation snapshots (pathname + query); shareable via saved_view_shares.
  */
@@ -102,6 +113,16 @@ export type saved_views = Prisma.saved_viewsModel
  * 
  */
 export type saved_view_shares = Prisma.saved_view_sharesModel
+/**
+ * Model charts
+ * Per-user chart workspace (board JSON: widgets + layout).
+ */
+export type charts = Prisma.chartsModel
+/**
+ * Model chart_shares
+ * 
+ */
+export type chart_shares = Prisma.chart_sharesModel
 /**
  * Model github_pull_requests
  * 

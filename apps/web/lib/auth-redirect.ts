@@ -15,7 +15,8 @@ export function resolveSafeRedirectPath(
     pathOnly === '/login' ||
     pathOnly === '/signup' ||
     pathOnly === '/forgot-password' ||
-    pathOnly === '/access-denied'
+    pathOnly === '/access-denied' ||
+    pathOnly === '/check-email'
   ) {
     return fallback;
   }
@@ -40,6 +41,24 @@ export function buildLoginPath(
   }
   const query = params.toString();
   return query ? `/login?${query}` : '/login';
+}
+
+/** Builds `/check-email` for allowlisted users who need invite / set-password help. */
+export function buildCheckEmailPath(options?: {
+  readonly email?: string | null;
+  readonly next?: string | null;
+}): string {
+  const params = new URLSearchParams();
+  const email = options?.email?.trim();
+  if (email) {
+    params.set('email', email);
+  }
+  const safeNext = resolveSafeRedirectPath(options?.next, '');
+  if (safeNext) {
+    params.set('next', safeNext);
+  }
+  const query = params.toString();
+  return query ? `/check-email?${query}` : '/check-email';
 }
 
 /**

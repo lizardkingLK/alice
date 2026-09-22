@@ -60,6 +60,8 @@ interface AccessAllowlistFormProps {
   readonly onSuccess?: () => void;
   readonly initialKind?: AccessAllowlistKind;
   readonly initialValue?: string;
+  /** Prefill guest project ACL checkboxes (e.g. from an access request). */
+  readonly initialProjectKeys?: readonly string[];
   readonly className?: string;
 }
 
@@ -97,15 +99,16 @@ function validateAllowlistValue(
 }
 
 function initialSelectedProjectKeys(
-  entry: AccessAllowlistEntry | undefined
+  entry: AccessAllowlistEntry | undefined,
+  initialProjectKeys?: readonly string[]
 ): string[] {
-  if (
-    !entry?.allowed_project_ids ||
-    !Array.isArray(entry.allowed_project_ids)
-  ) {
-    return [];
+  if (entry?.allowed_project_ids && Array.isArray(entry.allowed_project_ids)) {
+    return entry.allowed_project_ids.map(String).filter(Boolean);
   }
-  return entry.allowed_project_ids.map(String).filter(Boolean);
+  if (initialProjectKeys && initialProjectKeys.length > 0) {
+    return [...initialProjectKeys];
+  }
+  return [];
 }
 
 type AllowlistSubmitValidation =
@@ -146,6 +149,7 @@ export function AccessAllowlistForm({
   onSuccess,
   initialKind,
   initialValue,
+  initialProjectKeys,
   className,
 }: Readonly<AccessAllowlistFormProps>) {
   const isEdit = Boolean(entry);
@@ -171,7 +175,7 @@ export function AccessAllowlistForm({
     entry?.status ?? 'active'
   );
   const [selectedProjectKeys, setSelectedProjectKeys] = useState<string[]>(() =>
-    initialSelectedProjectKeys(entry)
+    initialSelectedProjectKeys(entry, initialProjectKeys)
   );
 
   const projectCheckboxOptions = useMemo(

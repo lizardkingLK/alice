@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   BookOpen,
   CircleDot,
   CircleHelp,
@@ -37,6 +38,7 @@ export const PLATFORM_NAV: readonly DashboardNavItem[] = [
   { path: '/member', label: 'My Work', icon: CircleDot },
   { path: '/chat', label: 'Alice', icon: Sparkles },
   { path: '/views', label: 'Views', icon: Layers },
+  { path: '/charts', label: 'Charts', icon: BarChart3 },
 ];
 
 export const SYSTEM_NAV: readonly DashboardNavItem[] = [

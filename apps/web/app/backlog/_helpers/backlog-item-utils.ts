@@ -4,9 +4,18 @@ import {
   mapPriorityToBacklogPriority,
   type BacklogPriority,
 } from '@/app/work-items/_helpers/work-item-priority-ui';
-import type { WorkItemPriority } from '@repo/types';
+import { SprintStatusEnum, type WorkItemPriority } from '@repo/types';
 
-export type BacklogActiveTab = 'active' | 'completed';
+/* eslint-disable no-unused-vars */
+export enum BacklogActiveTabEnum {
+  Active = 'active',
+  Completed = 'completed',
+}
+/* eslint-enable no-unused-vars */
+
+export { BacklogActiveTabEnum as BacklogTabEnum };
+
+export type BacklogActiveTab = `${BacklogActiveTabEnum}` | BacklogActiveTabEnum;
 
 export type BacklogAssignee = {
   id: string;
@@ -122,4 +131,54 @@ export function updateWorkItemField<K extends keyof DbWorkItem>(
     return updated;
   }
   return item;
+}
+
+type FilterBacklogDisplayedSprintsOptions<T extends { readonly id: string }> = {
+  readonly sprints: readonly T[];
+  readonly activeTab: BacklogActiveTab;
+  readonly projectFilter: string;
+  /** Empty string means all sprints for the project (or all projects). */
+  readonly sprintFilter: string;
+  // eslint-disable-next-line no-unused-vars
+  readonly getStatus: (sprint: T) => string;
+  // eslint-disable-next-line no-unused-vars
+  readonly getProjectId: (sprint: T) => string | null | undefined;
+};
+
+/** Active/completed tab + project + optional default sprint narrowing. */
+export function filterBacklogDisplayedSprints<
+  T extends { readonly id: string },
+>(options: FilterBacklogDisplayedSprintsOptions<T>): T[] {
+  const {
+    sprints,
+    activeTab,
+    projectFilter,
+    sprintFilter,
+    getStatus,
+    getProjectId,
+  } = options;
+
+  const byTab =
+    activeTab === BacklogActiveTabEnum.Completed
+      ? sprints.filter(
+          (sprint) => getStatus(sprint) === SprintStatusEnum.Closed
+        )
+      : sprints.filter((sprint) => {
+          const status = getStatus(sprint);
+          return (
+            status === SprintStatusEnum.Active ||
+            status === SprintStatusEnum.Planned
+          );
+        });
+
+  const byProject =
+    projectFilter === 'all'
+      ? byTab
+      : byTab.filter((sprint) => getProjectId(sprint) === projectFilter);
+
+  if (!sprintFilter || sprintFilter === 'all') {
+    return byProject;
+  }
+
+  return byProject.filter((sprint) => sprint.id === sprintFilter);
 }

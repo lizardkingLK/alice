@@ -5,6 +5,8 @@ import { cn } from '@repo/ui/lib/utils';
 import { ChatRoles } from '@repo/types';
 import type { ChatMessage } from './chat-client.types';
 import { ChatExecutedActionCard } from './chat-executed-action-card';
+import { ChatMarkdown } from './chat-markdown';
+import { ChatAttachmentLink } from './chat-attachment-link';
 import ChatBotAvatar from '@/app/chat/_components/chat-client-bot-avatar';
 import ChatUserAvatar from '@/app/chat/_components/chat-client-user-avatar';
 import ChatAliceStatusRow from '@/app/chat/_components/chat-client-alice-status-row';
@@ -19,6 +21,14 @@ type ChatClientThreadProps = {
   readonly currentUserImageUrl?: string | null;
   readonly messagesEndRef: React.RefObject<HTMLDivElement | null>;
 };
+
+function actionKey(
+  action: NonNullable<ChatMessage['actions']>[number]
+): string {
+  return action.type === 'configure_board'
+    ? `${action.type}-${action.entity.projectId}`
+    : `${action.type}-${action.entity.id}`;
+}
 
 export default function ChatClientThread({
   isPage,
@@ -65,13 +75,34 @@ export default function ChatClientThread({
 
                   <div
                     className={cn(
-                      'w-full rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap',
+                      'w-full rounded-2xl px-4 py-3 text-sm',
                       isUser
-                        ? 'bg-primary text-primary-foreground rounded-tr-md font-medium'
+                        ? 'bg-primary text-primary-foreground rounded-tr-md font-medium whitespace-pre-wrap'
                         : 'bg-muted/50 border-border text-foreground rounded-tl-md border leading-relaxed'
                     )}
                   >
-                    <div>{message.content}</div>
+                    {isUser ? (
+                      <div>{message.content}</div>
+                    ) : (
+                      <ChatMarkdown content={message.content} />
+                    )}
+
+                    {message.attachments && message.attachments.length > 0 ? (
+                      <div
+                        className={cn(
+                          'flex flex-wrap gap-1.5',
+                          message.content ? 'mt-2.5' : ''
+                        )}
+                      >
+                        {message.attachments.map((attachment) => (
+                          <ChatAttachmentLink
+                            key={attachment.id}
+                            attachment={attachment}
+                            isUser={isUser}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
 
                     {message.actions && message.actions.length > 0 ? (
                       <div className="border-border/40 mt-3 space-y-2 border-t pt-3">
@@ -81,7 +112,7 @@ export default function ChatClientThread({
                         <div className="grid grid-cols-1 gap-2">
                           {message.actions.map((act) => (
                             <ChatExecutedActionCard
-                              key={`${act.type}-${act.entity.id}`}
+                              key={actionKey(act)}
                               action={act}
                             />
                           ))}

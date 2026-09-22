@@ -6,7 +6,6 @@ import { ChatLauncherButton } from '@/app/chat/_components/chat-launcher';
 import { getDbUser, getUser } from '@/lib/auth';
 import { buildLoginPath } from '@/lib/auth-redirect';
 import { getRequestPathForLoginNext } from '@/lib/auth-redirect.server';
-import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import type { DashboardBreadcrumbOverride } from './dashboard-breadcrumb';
 import {
@@ -38,26 +37,6 @@ export async function DashboardHeader({
     redirect(buildLoginPath(await getRequestPathForLoginNext()));
   }
 
-  const supabase = await createClient();
-  const NOTIFICATION_QUERY_TIMEOUT_MS = 5_000;
-  const { data: initialNotifications, error: notificationsError } =
-    await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(50)
-      .abortSignal(AbortSignal.timeout(NOTIFICATION_QUERY_TIMEOUT_MS));
-
-  const notificationsLoadFailed = Boolean(notificationsError);
-  if (notificationsError) {
-    console.error(
-      'error. failed to load dashboard notifications:',
-      notificationsError.message
-    );
-  }
-
   return (
     <header className="bg-background flex h-16 shrink-0 items-center gap-2 border-b px-4">
       <TooltipProvider>
@@ -80,11 +59,7 @@ export async function DashboardHeader({
         projectId={projectId}
       />
       <div className="flex shrink-0 items-center gap-2">
-        <NotificationInbox
-          userId={user.id}
-          initialNotifications={initialNotifications ?? []}
-          initialLoadFailed={notificationsLoadFailed}
-        />
+        <NotificationInbox userId={user.id} />
         <ChatLauncherButton />
         <AuthControls
           email={user.email}

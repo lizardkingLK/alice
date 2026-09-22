@@ -164,6 +164,32 @@ export class ChatRepository {
     });
   }
 
+  async renameConversation(
+    userId: string,
+    conversationId: string,
+    title: string
+  ): Promise<{ id: string; title: string; updated_at: string } | null> {
+    const result = await prisma.chat_conversations.updateMany({
+      where: { id: conversationId, user_id: userId },
+      data: { title, updated_at: new Date() },
+    });
+    if (result.count === 0) {
+      return null;
+    }
+    const updated = await prisma.chat_conversations.findFirst({
+      where: { id: conversationId, user_id: userId },
+      select: { id: true, title: true, updated_at: true },
+    });
+    if (!updated) {
+      return null;
+    }
+    return {
+      id: updated.id,
+      title: updated.title,
+      updated_at: updated.updated_at.toISOString(),
+    };
+  }
+
   async listUsersSnapshot(): Promise<ChatUserSnapshot[]> {
     const { data, error } = await filterProductUsableUsers(
       this.db.from('users').select('id, name, email')

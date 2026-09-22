@@ -6,6 +6,7 @@ import { projectRelationSelect } from './projects.js';
 import { userRelationSelect } from '../../users.js';
 import { WORK_ITEM_PRIORITIES } from '../../work-item-priorities.js';
 import { WORK_ITEM_STATUSES } from '../../work-item-status.js';
+import type { WorkItemStatus } from '../../work-item-status.js';
 import { WORK_ITEM_TYPES, type WorkItemType } from '../../work-item-types.js';
 import {
   coerceLabelsFormField,
@@ -43,7 +44,7 @@ export const WORK_ITEM_REPORTER_POSTGREST_SELECT = userRelationSelect(
  * Field list must stay aligned with `workItemListSelect` keys.
  */
 export const WORK_ITEM_LIST_POSTGREST_COLUMNS =
-  'id, project_id, sprint_id, parent_id, title, type, priority, labels, assignee_id, reporter_id, due_date, story_points, status, record_status, done_at, created_by, created_at, updated_by, updated_at, jira_issue_key' as const;
+  'id, project_id, sprint_id, parent_id, title, type, priority, labels, assignee_id, reporter_id, due_date, story_points, status, board_column_id, record_status, done_at, created_by, created_at, updated_by, updated_at, jira_issue_key' as const;
 
 /** PostgREST select for list/board reads (optional TipTap description). */
 export function workItemListPostgrestSelect(
@@ -89,6 +90,7 @@ export const workItemListSelect = {
   due_date: true,
   story_points: true,
   status: true,
+  board_column_id: true,
   record_status: true,
   done_at: true,
   created_by: true,
@@ -169,6 +171,14 @@ export type WorkItemAncestorWireRow = Pick<
   'id' | 'type' | 'title' | 'parent_id'
 >;
 
+export type WorkItemDueDateFilter =
+  | 'null'
+  | 'not_null'
+  | {
+      readonly from: string;
+      readonly to: string;
+    };
+
 export type WorkItemPrismaListFilters = {
   sprintId?: string | null;
   projectId?: string;
@@ -180,6 +190,13 @@ export type WorkItemPrismaListFilters = {
   labels?: string[];
   /** Lifecycle filter. Defaults to `active` on list endpoints. */
   recordStatus?: 'active' | 'archived';
+  /**
+   * Due-date filter: `null` (unscheduled), `not_null` (any due date), or inclusive
+   * `YYYY-MM-DD` range for calendar month grids.
+   */
+  dueDate?: WorkItemDueDateFilter;
+  /** Exclude workflow statuses (e.g. Draft on board/calendar). */
+  excludeStatuses?: readonly WorkItemStatus[];
 };
 
 const optionalUuid = z.preprocess(emptyToUndefined, z.uuid().optional());
@@ -202,9 +219,29 @@ function resolveListParentId(
   return undefined;
 }
 
+const listQueryDateStringSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
+
+function parseExcludeStatusesParam(
+  value: string | undefined
+): WorkItemStatus[] | undefined {
+  if (!value?.trim()) {
+    return undefined;
+  }
+  const statuses = value
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part): part is WorkItemStatus =>
+      (WORK_ITEM_STATUSES as readonly string[]).includes(part)
+    );
+  return statuses.length > 0 ? statuses : undefined;
+}
+
 /**
  * GET `/api/workItems` query. Zod for filters/pagination; response is Prisma payload.
  * `sprintId=null` / `parentId=null` mean IS NULL (backlog / hierarchy roots).
+ * `dueDate=null` / `dueDate=not_null`, or `dueDateFrom`+`dueDateTo` for a range.
  */
 export const listWorkItemsQuerySchema = z
   .object({
@@ -235,11 +272,33 @@ export const listWorkItemsQuerySchema = z
       emptyToUndefined,
       z.enum(['active', 'archived']).optional()
     ),
+    dueDate: z.preprocess(
+      emptyToUndefined,
+      z.enum(['null', 'not_null']).optional()
+    ),
+    dueDateFrom: z.preprocess(
+      emptyToUndefined,
+      listQueryDateStringSchema.optional()
+    ),
+    dueDateTo: z.preprocess(
+      emptyToUndefined,
+      listQueryDateStringSchema.optional()
+    ),
+    excludeStatuses: z.preprocess(emptyToUndefined, z.string().optional()),
   })
   .transform((query) => {
     const sprintId = query.sprintId === 'null' ? null : query.sprintId;
     const explicitParentId = query.parentId === 'null' ? null : query.parentId;
     const parentId = resolveListParentId(explicitParentId, query.view);
+
+    let dueDate: WorkItemDueDateFilter | undefined;
+    if (query.dueDateFrom && query.dueDateTo) {
+      dueDate = { from: query.dueDateFrom, to: query.dueDateTo };
+    } else if (query.dueDate === 'null' || query.dueDate === 'not_null') {
+      dueDate = query.dueDate;
+    }
+
+    const excludeStatuses = parseExcludeStatusesParam(query.excludeStatuses);
 
     return {
       page: query.page,
@@ -253,6 +312,8 @@ export const listWorkItemsQuerySchema = z
       labels: parseWorkItemLabelsFilterParam(query.labels),
       includeDescription: query.includeDescription === 'true',
       recordStatus: query.recordStatus ?? 'active',
+      dueDate,
+      excludeStatuses,
     };
   });
 
@@ -422,6 +483,11 @@ export const createWorkItemBodySchema = workItemCoreObject.refine(
 export const patchWorkItemBodySchema = workItemCoreObject
   .extend({
     status: workItemStatusSchema,
+    board_column_id: z
+      .string()
+      .trim()
+      .min(1, 'Board column ID is required')
+      .nullable(),
   })
   .partial()
   .extend({
@@ -436,6 +502,12 @@ export const patchWorkItemBodySchema = workItemCoreObject
 
 export const patchWorkItemStatusBodySchema = z.object({
   status: workItemStatusSchema,
+  board_column_id: z
+    .string()
+    .trim()
+    .min(1, 'Board column ID is required')
+    .nullable()
+    .optional(),
   expectedUpdatedAt: expectedUpdatedAtSchema,
 });
 
@@ -471,6 +543,7 @@ export type LinkWorkItemGithubPrBody = z.infer<
 
 export type WorkItemUpdateBody = CreateWorkItemBody & {
   status: z.infer<typeof workItemStatusSchema>;
+  board_column_id: string | null;
 };
 
 export type WorkItemMutationDescriptionParseMode = 'strict' | 'lenient';

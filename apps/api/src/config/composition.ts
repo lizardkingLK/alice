@@ -13,6 +13,8 @@ import {
 } from '../routes/api/sprints/sprints.service';
 import { createSprintsRouter } from '../routes/api/sprints/sprints.route';
 import { ChatRepository } from '../routes/api/chat/chat.repository';
+import { ChatAttachmentsRepository } from '../routes/api/chat/chat-attachments.repository';
+import { WorkItemDeduplicationAgent } from '../routes/api/chat/work-item-deduplication.agent';
 import { ChatService } from '../routes/api/chat/chat.service';
 import { createChatRouter } from '../routes/api/chat/chat.route';
 import { AttachmentsRepository } from '../routes/api/attachments/attachments.repository';
@@ -48,6 +50,9 @@ import { createProjectsRouter } from '../routes/api/projects/projects.route';
 import { JiraRepository } from '../routes/api/jira/jira.repository';
 import { JiraService } from '../routes/api/jira/jira.service';
 import { createJiraRouter } from '../routes/api/jira/jira.route';
+import { GithubRepository } from '../routes/api/github/github.repository';
+import { GithubService } from '../routes/api/github/github.service';
+import { createGithubRouter } from '../routes/api/github/github.route';
 import { UsersRepository } from '../routes/api/users/users.repository';
 import { UsersService } from '../routes/api/users/users.service';
 import { createUsersRouter } from '../routes/api/users/users.route';
@@ -60,9 +65,15 @@ import { createProfileRouter } from '../routes/api/profile/profile.route';
 import { SavedViewsRepository } from '../routes/api/savedViews/savedViews.repository';
 import { SavedViewsService } from '../routes/api/savedViews/savedViews.service';
 import { createSavedViewsRouter } from '../routes/api/savedViews/savedViews.route';
+import { ChartsRepository } from '../routes/api/charts/charts.repository';
+import { ChartsService } from '../routes/api/charts/charts.service';
+import { createChartsRouter } from '../routes/api/charts/charts.route';
 import { IntegrationsRepository } from '../routes/api/integrations/integrations.repository';
 import { IntegrationsService } from '../routes/api/integrations/integrations.service';
 import { createIntegrationsRouter } from '../routes/api/integrations/integrations.route';
+import { pusher as pusherClient } from '../lib/pusher';
+import { PusherService } from '../routes/api/pusher/pusher.service';
+import { createPusherRouter } from '../routes/api/pusher/pusher.route';
 
 function createRootConfig() {
   const router = createRootRouter();
@@ -182,9 +193,15 @@ function createNotificationsConfig(
   };
 }
 
-function createWorkItemsConfig(notificationsService: NotificationsService) {
+function createWorkItemsConfig(
+  notificationsService: NotificationsService,
+  githubService?: GithubService
+) {
   const workItemRepository = new WorkItemRepository(supabase);
-  const workItemService = new WorkItemService(workItemRepository);
+  const workItemService = new WorkItemService(
+    workItemRepository,
+    githubService
+  );
   const router = createWorkItemsRouter({
     workItemService,
     notificationsService,
@@ -226,6 +243,18 @@ function createJiraConfig() {
   return {
     jiraRepository,
     jiraService,
+    router,
+  };
+}
+
+function createGithubConfig() {
+  const githubRepository = new GithubRepository();
+  const githubService = new GithubService(githubRepository);
+  const router = createGithubRouter({ githubService });
+
+  return {
+    githubRepository,
+    githubService,
     router,
   };
 }
@@ -307,21 +336,28 @@ function createChatConfig(
   sprintsService: SprintsService,
   projectsService: ProjectsService,
   projectsRepository: ProjectsRepository,
+  teamsRepository: TeamsRepository,
   integrationsService: IntegrationsService
 ) {
   const chatRepository = new ChatRepository(supabase);
+  const chatAttachmentsRepository = new ChatAttachmentsRepository(supabase);
+  const deduplicationAgent = new WorkItemDeduplicationAgent();
   const chatService = new ChatService({
     chat: chatRepository,
+    chatAttachments: chatAttachmentsRepository,
+    deduplicationAgent,
     workItemService,
     sprintsService,
     projectsService,
     projectsRepository,
+    teamsRepository,
     integrationsService,
   });
   const router = createChatRouter({ chatService });
 
   return {
     chatRepository,
+    chatAttachmentsRepository,
     chatService,
     router,
   };
@@ -355,6 +391,18 @@ function createIntegrationsConfig() {
   };
 }
 
+function createPusherConfig(
+  usersRepository: Pick<UsersRepository, 'findById'>
+) {
+  const pusherService = new PusherService(usersRepository, pusherClient);
+  const router = createPusherRouter({ pusherService });
+
+  return {
+    pusherService,
+    router,
+  };
+}
+
 /** Production configs graph (repo → service → router). */
 export const root = createRootConfig();
 export const health = createHealthConfig();
@@ -365,8 +413,10 @@ export const accessAllowlist = createAccessAllowlistConfig(
 export const notifications = createNotificationsConfig(
   accessRequests.accessRequestsService
 );
+export const github = createGithubConfig();
 export const workItems = createWorkItemsConfig(
-  notifications.notificationsService
+  notifications.notificationsService,
+  github.githubService
 );
 export const attachments = createAttachmentsConfig(
   workItems.workItemRepository
@@ -387,11 +437,32 @@ export const profile = createProfileConfig();
 export const savedViews = createSavedViewsConfig(
   notifications.notificationsRepository
 );
+
+function createChartsConfig(
+  notificationsRepository: NotificationsRepository,
+  savedViewsRepository: SavedViewsRepository
+) {
+  const chartsRepository = new ChartsRepository(supabase);
+  const chartsService = new ChartsService(
+    chartsRepository,
+    notificationsRepository,
+    savedViewsRepository
+  );
+  const router = createChartsRouter({ chartsService });
+  return { chartsRepository, chartsService, router };
+}
+
+export const charts = createChartsConfig(
+  notifications.notificationsRepository,
+  savedViews.savedViewsRepository
+);
 export const integrations = createIntegrationsConfig();
+export const pusher = createPusherConfig(users.usersRepository);
 export const chat = createChatConfig(
   workItems.workItemService,
   sprints.sprintsService,
   projects.projectsService,
   projects.projectsRepository,
+  teams.teamsRepository,
   integrations.integrationsService
 );

@@ -27,6 +27,7 @@ interface UsersWorkspaceProps {
   readonly search: string;
   readonly currentUserId?: string | null;
   readonly currentUserRole?: string | null;
+  readonly activeAdminCount?: number;
   readonly allowlistEntries: AccessAllowlistEntry[];
   readonly allowlistTotalCount: number;
   readonly allowlistPage: number;
@@ -51,6 +52,7 @@ export function UsersWorkspace({
   search,
   currentUserId,
   currentUserRole,
+  activeAdminCount = 0,
   allowlistEntries,
   allowlistTotalCount,
   allowlistPage,
@@ -102,6 +104,7 @@ export function UsersWorkspace({
         search={search}
         currentUserId={currentUserId}
         currentUserRole={currentUserRole}
+        activeAdminCount={activeAdminCount}
       />
     );
   }
@@ -140,6 +143,7 @@ export function UsersWorkspace({
           search={search}
           currentUserId={currentUserId}
           currentUserRole={currentUserRole}
+          activeAdminCount={activeAdminCount}
         />
       </TabsContent>
 

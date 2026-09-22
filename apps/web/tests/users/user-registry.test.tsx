@@ -9,6 +9,14 @@ vi.mock(
   () => import('../mocks/dropdown-menu')
 );
 
+const { isUserOnlineMock } = vi.hoisted(() => ({
+  isUserOnlineMock: vi.fn((userId: string) => userId === 'user-admin-id'),
+}));
+
+vi.mock('@/components/realtime/realtime-provider', () => ({
+  useRealtime: () => ({ isUserOnline: isUserOnlineMock }),
+}));
+
 const mockPush = vi.fn();
 const mockRefresh = vi.fn();
 
@@ -120,6 +128,10 @@ describe('UserRegistry Component', () => {
 
     // Verify "You" badge for current logged-in user
     expect(screen.getByText('You')).toBeInTheDocument();
+
+    expect(isUserOnlineMock).toHaveBeenCalledWith('user-admin-id');
+    expect(isUserOnlineMock).toHaveBeenCalledWith('user-bob-id');
+    expect(screen.getAllByLabelText('Online')).toHaveLength(1);
   });
 
   it('shows Pending badge for invitees who have not joined', () => {

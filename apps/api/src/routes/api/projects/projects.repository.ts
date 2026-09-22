@@ -9,6 +9,10 @@ import {
   type ProjectListRow,
   type ProjectDetailRow,
   type ProjectMemberRow,
+  type WorkItemType,
+  WorkItemTypeEnum,
+  resolveProjectHierarchy,
+  type ActorProjectsSummary,
 } from '@repo/types';
 import { Prisma, ProjectStatus, RecordStatus } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -17,14 +21,11 @@ import {
   prismaAuditCreate,
   prismaAuditCreateWithoutStatus,
   prismaAuditUpdate,
-  prismaLockTimestamp,
+  prismaLockTimestampRange,
   prismaOptionalDate,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
-import {
-  listAccessibleProjectIds,
-  ALL_PROJECTS,
-} from '../../../lib/project-access';
+import { listAccessibleProjectIds } from '../../../lib/project-access';
 import type {
   ProjectMemberWithUser,
   ProjectRow,
@@ -41,6 +42,13 @@ export type {
   ProjectUpdateInput,
   UpdateProjectInput,
 } from './projects.types';
+
+export type ActiveProjectMember = {
+  readonly id: string;
+  readonly name: string;
+  readonly email: string;
+  readonly role: string;
+};
 
 export { withoutIntegrationSecrets };
 
@@ -81,6 +89,15 @@ function buildProjectUpdateData(data: ProjectUpdateInput, actorId: string) {
   if (data.deleted_at !== undefined) {
     patch.deleted_at = prismaOptionalDate(data.deleted_at);
   }
+  if (data.attributes_config !== undefined) {
+    patch.attributes_config = data.attributes_config;
+  }
+  if (data.workflow_config !== undefined) {
+    patch.workflow_config =
+      data.workflow_config === null
+        ? Prisma.DbNull
+        : (data.workflow_config as Prisma.InputJsonValue);
+  }
 
   applyOptionalProjectIntegrations(patch, data);
   return patch;
@@ -99,14 +116,66 @@ function unsafeCast<T>(val: unknown): T {
 export class ProjectsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
-  async listAccessibleProjectIds(
-    actorId: string
-  ): Promise<typeof ALL_PROJECTS | string[]> {
+  async listAccessibleProjectIds(actorId: string): Promise<string[]> {
     return listAccessibleProjectIds(this.db, actorId);
   }
 
+  async listAccessibleSummaries(input: {
+    accessibleIds: string[];
+    status?: ProjectStatus;
+    search?: string;
+  }): Promise<ActorProjectsSummary[]> {
+    const where: Prisma.projectsWhereInput = {
+      id: { in: input.accessibleIds },
+    };
+
+    if (input.status === ProjectStatus.archived) {
+      where.deleted_at = { not: null };
+    } else {
+      where.deleted_at = null;
+    }
+
+    const term = input.search?.trim();
+    if (term) {
+      where.OR = [
+        { name: { contains: term, mode: 'insensitive' } },
+        { key: { contains: term, mode: 'insensitive' } },
+        { description: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+
+    try {
+      const rows = await prisma.projects.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          key: true,
+          description: true,
+          status: true,
+        },
+        orderBy: { name: 'asc' },
+      });
+
+      return rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        key: r.key,
+        description: r.description,
+        status: r.status as ProjectStatus,
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(
+        'error. failed to list accessible project summaries:',
+        message
+      );
+      throw new Error('Failed to list projects');
+    }
+  }
+
   async listPaginated(input: {
-    accessibleIds: typeof ALL_PROJECTS | string[];
+    accessibleIds: string[];
     filters: {
       status?: ProjectStatus;
       search?: string;
@@ -123,11 +192,9 @@ export class ProjectsRepository {
     const skip = (input.page - 1) * input.limit;
     const take = input.limit;
 
-    const where: Prisma.projectsWhereInput = {};
-
-    if (input.accessibleIds !== ALL_PROJECTS) {
-      where.id = { in: input.accessibleIds };
-    }
+    const where: Prisma.projectsWhereInput = {
+      id: { in: input.accessibleIds },
+    };
 
     if (input.filters.status === ProjectStatus.archived) {
       where.deleted_at = { not: null };
@@ -222,6 +289,24 @@ export class ProjectsRepository {
       );
       throw new Error('Failed to list project members');
     }
+  }
+
+  async listActiveBoardMembers(
+    projectId: string
+  ): Promise<ActiveProjectMember[]> {
+    const memberships = await prisma.project_members.findMany({
+      where: {
+        project_id: projectId,
+        status: RecordStatus.active,
+        user: { active: true, membership_status: 'active' },
+      },
+      select: {
+        user: { select: { id: true, name: true, email: true, role: true } },
+      },
+      orderBy: { user: { name: 'asc' } },
+    });
+
+    return memberships.map(({ user }) => user);
   }
 
   async listAll(): Promise<ProjectRowWithOwner[]> {
@@ -363,18 +448,25 @@ export class ProjectsRepository {
           github_token: data.github_token,
           logo_url: data.logo_url ?? null,
           cover_picture: data.cover_picture ?? null,
+          attributes_config:
+            (data.attributes_config as Prisma.InputJsonValue) ?? null,
+          workflow_config:
+            (data.workflow_config as Prisma.InputJsonValue) ?? null,
           deleted_at: null,
           ...prismaAuditCreateWithoutStatus(actorId),
         },
       });
 
-      // Owner is always a project member so ACL and Members UI stay consistent.
-      await tx.project_members.create({
-        data: {
+      // Owner (manager) is always a project member so ACL and Members UI stay
+      // consistent. The creating admin is also a member when they are not the
+      // owner, so they keep workspace access under membership-scoped ACL.
+      const memberUserIds = [...new Set([data.owner_id, actorId])];
+      await tx.project_members.createMany({
+        data: memberUserIds.map((userId) => ({
           project_id: project.id,
-          user_id: data.owner_id,
+          user_id: userId,
           ...prismaAuditCreate(actorId),
-        },
+        })),
       });
 
       return project;
@@ -394,7 +486,7 @@ export class ProjectsRepository {
     expectedUpdatedAt: string
   ): Promise<ProjectRow> {
     const { count } = await prisma.projects.updateMany({
-      where: { id, updated_at: prismaLockTimestamp(expectedUpdatedAt) },
+      where: { id, updated_at: prismaLockTimestampRange(expectedUpdatedAt) },
       data: buildProjectUpdateData(data, actorId),
     });
 
@@ -420,36 +512,129 @@ export class ProjectsRepository {
     await prisma.projects.deleteMany({ where: { id } });
   }
 
+  async migrateWorkItemTypesAndPruneHierarchy(
+    projectId: string,
+    allowedTypes: WorkItemType[],
+    customHierarchy?: Record<string, string | null> | null
+  ): Promise<{ migratedCount: number; unlinkedCount: number }> {
+    const fallbackType: WorkItemType = allowedTypes.includes(
+      WorkItemTypeEnum.Issue
+    )
+      ? WorkItemTypeEnum.Issue
+      : (allowedTypes.at(-1) ?? WorkItemTypeEnum.Issue);
+
+    const { parentToChild } = resolveProjectHierarchy(
+      allowedTypes,
+      customHierarchy
+    );
+
+    // 1. Find all work items in project whose type is no longer allowed
+    const workItemsToMigrate = await prisma.work_items.findMany({
+      where: {
+        project_id: projectId,
+        type: { notIn: allowedTypes },
+      },
+      select: { id: true, type: true },
+    });
+
+    const migratedIds = workItemsToMigrate.map((item) => item.id);
+    let migratedCount = 0;
+
+    if (migratedIds.length > 0) {
+      const updateResult = await prisma.work_items.updateMany({
+        where: { id: { in: migratedIds } },
+        data: { type: fallbackType },
+      });
+      migratedCount = updateResult.count;
+
+      // Leaf items (Issue) cannot have children; clear parent_id of any children of migrated items
+      await prisma.work_items.updateMany({
+        where: { parent_id: { in: migratedIds } },
+        data: { parent_id: null },
+      });
+    }
+
+    // 2. Fetch all work items in the project that have a parent to verify hierarchy compliance
+    const itemsWithParents = await prisma.work_items.findMany({
+      where: {
+        project_id: projectId,
+        parent_id: { not: null },
+      },
+      select: {
+        id: true,
+        type: true,
+        parent_id: true,
+        parent: {
+          select: { id: true, type: true },
+        },
+      },
+    });
+
+    const invalidChildIds: string[] = [];
+    for (const item of itemsWithParents) {
+      if (!item.parent) {
+        invalidChildIds.push(item.id);
+        continue;
+      }
+      const allowedChildForParent =
+        parentToChild[item.parent.type as WorkItemType];
+      if (allowedChildForParent !== item.type) {
+        invalidChildIds.push(item.id);
+      }
+    }
+
+    let unlinkedCount = 0;
+    if (invalidChildIds.length > 0) {
+      const unlinkResult = await prisma.work_items.updateMany({
+        where: { id: { in: invalidChildIds } },
+        data: { parent_id: null },
+      });
+      unlinkedCount = unlinkResult.count;
+    }
+
+    return { migratedCount, unlinkedCount };
+  }
+
   async linkImportedJiraParents(
     projectId: string,
-    issues: { key: string; parentKey?: string | null }[]
+    issues: { key: string; parentKey?: string | null }[],
+    hierarchy?: Record<string, string | null> | null,
+    allowedTypes?: WorkItemType[] | null
   ): Promise<void> {
     const allWorkItems = await prisma.work_items.findMany({
       where: { project_id: projectId },
-      select: { id: true, jira_issue_key: true, parent_id: true },
+      select: { id: true, jira_issue_key: true, parent_id: true, type: true },
     });
 
-    const keyToIdMap = new Map<string, string>();
+    const keyToItemMap = new Map<string, (typeof allWorkItems)[number]>();
     for (const item of allWorkItems) {
       if (item.jira_issue_key) {
-        keyToIdMap.set(item.jira_issue_key, item.id);
+        keyToItemMap.set(item.jira_issue_key, item);
       }
     }
+
+    const { parentToChild } = resolveProjectHierarchy(allowedTypes, hierarchy);
 
     for (const issue of issues) {
       if (!issue.parentKey) {
         continue;
       }
-      const childId = keyToIdMap.get(issue.key);
-      const parentId = keyToIdMap.get(issue.parentKey);
-      if (childId && parentId) {
-        const currentItem = allWorkItems.find((item) => item.id === childId);
-        if (currentItem && currentItem.parent_id !== parentId) {
-          await prisma.work_items.update({
-            where: { id: childId },
-            data: { parent_id: parentId },
-          });
-        }
+      const childItem = keyToItemMap.get(issue.key);
+      const parentItem = keyToItemMap.get(issue.parentKey);
+      if (!childItem || !parentItem) {
+        continue;
+      }
+
+      const allowedChildForParent =
+        parentToChild[parentItem.type as WorkItemType];
+      const isAllowedHierarchy = allowedChildForParent === childItem.type;
+      const needsUpdate = childItem.parent_id !== parentItem.id;
+
+      if (isAllowedHierarchy && needsUpdate) {
+        await prisma.work_items.update({
+          where: { id: childItem.id },
+          data: { parent_id: parentItem.id },
+        });
       }
     }
   }

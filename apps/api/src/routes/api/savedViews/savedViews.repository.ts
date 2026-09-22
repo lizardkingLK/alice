@@ -11,6 +11,7 @@ import { RecordStatus } from '@repo/types/prisma';
 import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditCreate,
+  prismaAuditCreateWithoutStatus,
   prismaAuditUpdate,
 } from '../../../lib/prisma-audit';
 
@@ -25,6 +26,8 @@ function toSavedViewRow(row: {
   pathname: string;
   search: string;
   project_id: string | null;
+  resource_kind: SavedViewRow['resource_kind'];
+  resource_id: string | null;
   status: SavedViewRow['status'];
   created_by: string | null;
   created_at: Date;
@@ -39,6 +42,8 @@ function toSavedViewRow(row: {
     pathname: row.pathname,
     search: row.search,
     project_id: row.project_id,
+    resource_kind: row.resource_kind,
+    resource_id: row.resource_id,
     status: row.status,
     created_by: row.created_by,
     created_at: row.created_at.toISOString(),
@@ -138,10 +143,73 @@ export class SavedViewsRepository {
         pathname: input.pathname,
         search,
         project_id: input.projectId ?? null,
+        resource_kind: 'page',
+        resource_id: null,
         ...prismaAuditCreate(ownerId),
       },
     });
 
+    return toSavedViewRow(created);
+  }
+
+  /**
+   * Upsert a typed chart-workspace bookmark (`resource_kind=chart`).
+   * Keeps title/description/status in sync with the charts row.
+   */
+  async upsertChartBookmark(
+    ownerId: string,
+    chart: {
+      readonly id: string;
+      readonly title: string;
+      readonly description: string | null;
+      readonly status: 'active' | 'archived' | 'inactive' | 'deleted';
+    }
+  ): Promise<SavedViewRow> {
+    const pathname = `/charts/${chart.id}`;
+    const viewStatus =
+      chart.status === 'archived' ? RecordStatus.archived : RecordStatus.active;
+
+    const existing = await prisma.saved_views.findFirst({
+      where: {
+        owner_id: ownerId,
+        OR: [
+          { resource_kind: 'chart', resource_id: chart.id },
+          { pathname, search: '', resource_kind: 'page' },
+        ],
+      },
+      orderBy: { updated_at: 'desc' },
+    });
+
+    if (existing) {
+      const updated = await prisma.saved_views.update({
+        where: { id: existing.id },
+        data: {
+          title: chart.title,
+          description: chart.description,
+          pathname,
+          search: '',
+          resource_kind: 'chart',
+          resource_id: chart.id,
+          status: viewStatus,
+          ...prismaAuditUpdate(ownerId),
+        },
+      });
+      return toSavedViewRow(updated);
+    }
+
+    const created = await prisma.saved_views.create({
+      data: {
+        owner_id: ownerId,
+        title: chart.title,
+        description: chart.description,
+        pathname,
+        search: '',
+        resource_kind: 'chart',
+        resource_id: chart.id,
+        status: viewStatus,
+        ...prismaAuditCreateWithoutStatus(ownerId),
+      },
+    });
     return toSavedViewRow(created);
   }
 
@@ -333,21 +401,26 @@ export class SavedViewsRepository {
       return 0;
     }
 
-    const results = await prisma.$transaction(
-      params.userIds.map((userId) =>
-        prisma.saved_view_shares.upsert({
-          where: {
-            view_id_user_id: { view_id: params.viewId, user_id: userId },
-          },
-          create: {
-            view_id: params.viewId,
-            user_id: userId,
-            ...prismaAuditCreate(params.actorId),
-          },
-          update: prismaAuditCreate(params.actorId),
-        })
-      )
-    );
-    return results.length;
+    // Sequential upserts (same pattern as chart_shares). A batched
+    // `$transaction([...])` needs a pool connection for BEGIN…COMMIT; under
+    // adapter-pg that often fails with "Unable to start a transaction in the
+    // given time" when the pool is busy or the DB is slow to hand out a conn.
+    for (const userId of params.userIds) {
+      await prisma.saved_view_shares.upsert({
+        where: {
+          view_id_user_id: { view_id: params.viewId, user_id: userId },
+        },
+        create: {
+          view_id: params.viewId,
+          user_id: userId,
+          ...prismaAuditCreate(params.actorId),
+        },
+        update: {
+          status: RecordStatus.active,
+          ...prismaAuditUpdate(params.actorId),
+        },
+      });
+    }
+    return params.userIds.length;
   }
 }

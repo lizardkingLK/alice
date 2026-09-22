@@ -97,6 +97,31 @@ describe('buildWorkItemPrismaListWhere', () => {
       ],
     });
   });
+  it('maps dueDate null, not_null, range, and excludeStatuses', () => {
+    expect(
+      buildWorkItemPrismaListWhere({
+        dueDate: 'null',
+        excludeStatuses: ['Draft'],
+      })
+    ).toEqual({
+      record_status: 'active',
+      due_date: null,
+      status: { notIn: ['Draft'] },
+    });
+
+    expect(buildWorkItemPrismaListWhere({ dueDate: 'not_null' })).toEqual({
+      record_status: 'active',
+      due_date: { not: null },
+    });
+
+    const ranged = buildWorkItemPrismaListWhere({
+      dueDate: { from: '2026-09-01', to: '2026-10-12' },
+    });
+    expect(ranged.due_date).toEqual({
+      gte: new Date('2026-09-01T00:00:00.000Z'),
+      lte: new Date('2026-10-12T23:59:59.999Z'),
+    });
+  });
 });
 
 describe('workItemListPageSlice / paginationMeta', () => {
@@ -138,6 +163,28 @@ describe('listWorkItemsQuerySchema', () => {
       expect(parsed.data.labels).toEqual(['Mobile']);
       expect(parsed.data.page).toBe(2);
       expect(parsed.data.limit).toBe(5);
+    }
+  });
+
+  it('parses dueDate null and range query params', () => {
+    const nullDue = listWorkItemsQuerySchema.safeParse({ dueDate: 'null' });
+    expect(nullDue.success).toBe(true);
+    if (nullDue.success) {
+      expect(nullDue.data.dueDate).toBe('null');
+    }
+
+    const range = listWorkItemsQuerySchema.safeParse({
+      dueDateFrom: '2026-09-01',
+      dueDateTo: '2026-10-12',
+      excludeStatuses: 'Draft',
+    });
+    expect(range.success).toBe(true);
+    if (range.success) {
+      expect(range.data.dueDate).toEqual({
+        from: '2026-09-01',
+        to: '2026-10-12',
+      });
+      expect(range.data.excludeStatuses).toEqual(['Draft']);
     }
   });
 

@@ -5,12 +5,17 @@ import {
   type WorkItemListFilters,
 } from '@/app/work-items/_services/work-items.reads.server';
 import { needsWorkspaceProjectBootstrap } from '@/app/board/_helpers/workspace-defaults-shared';
+import { ALL_PROJECTS_ID } from '@/app/board/_helpers/board-defaults-storage';
 import {
   EMPTY_ACTIVE_SPRINTS_PAGE,
   getSuggestedBoardDefaults,
 } from '@/app/board/_services/board.reads.defaults.server';
-import { getUserList } from '@/app/users/_services/users.reads.server';
-import { getProjectList } from '@/app/projects/_services/projects.reads.server';
+import { getProjectMembersByProjectIds } from '@/app/projects/_services/projects.reads.server';
+import {
+  resolveAssigneeFilterMembers,
+  unionProjectMembers,
+} from '@/app/work-items/_helpers/work-item-assignee-filter-members';
+import { getAccessibleProjectList } from '@/lib/projects/accessible-project-list';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
 import { getDbUser } from '@/lib/auth';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
@@ -44,7 +49,7 @@ type WorkItemsDataProps = {
 };
 
 function resolveScopedWorkItemFilters(options: {
-  readonly accessible: 'all' | string[];
+  readonly accessible: string[];
   readonly projectId?: string;
   readonly type: WorkItemListFilters['type'];
   readonly assigneeId?: string;
@@ -61,10 +66,6 @@ function resolveScopedWorkItemFilters(options: {
     recordStatus: options.recordStatus,
     ...options.hierarchy,
   };
-
-  if (options.accessible === 'all') {
-    return { ...base, projectId: options.projectId };
-  }
 
   if (options.accessible.length === 0) {
     return null;
@@ -105,19 +106,29 @@ export async function WorkItemsData({
     needsWorkspaceProjectBootstrap(resolvedSearchParams.project);
 
   const accessibleProjects = dbUser
-    ? await listAccessibleProjectIds(dbUser.id, dbUser.role)
+    ? await listAccessibleProjectIds(dbUser.id)
     : [];
 
   const [
     columnVisibilityBootstrap,
     projects,
-    projectMembers,
+    membersByProjectId,
     sprintsResult,
     workItemsResult,
   ] = await Promise.all([
     readWorkItemTableColumnVisibilityBootstrap(),
-    safeServerFetch(getProjectList(), [], 'fetch projects for work items'),
-    safeServerFetch(getUserList(), [], 'fetch users for work items'),
+    dbUser
+      ? safeServerFetch(
+          getAccessibleProjectList(dbUser.id),
+          [],
+          'fetch projects for work items'
+        )
+      : Promise.resolve([]),
+    safeServerFetch(
+      getProjectMembersByProjectIds(accessibleProjects),
+      {},
+      'fetch project members for work items filters'
+    ),
     safeServerFetch(
       getSprintsPaginatedServer('active', 1, 100),
       EMPTY_ACTIVE_SPRINTS_PAGE,
@@ -151,22 +162,32 @@ export async function WorkItemsData({
     })(),
   ]);
 
-  const visibleProjects =
-    accessibleProjects === 'all'
-      ? projects
-      : projects.filter((project) => accessibleProjects.includes(project.id));
-
-  const activeProjects = filterActiveProjects(visibleProjects);
+  const activeProjects = filterActiveProjects(projects);
   const sprints = sprintsResult.sprints;
   const suggestedDefaults =
     !isProjectLocked && !isAssigneeLocked && dbUser
       ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
       : null;
 
+  const effectiveProjectId =
+    projectId ??
+    (suggestedDefaults && suggestedDefaults.projectId !== ALL_PROJECTS_ID
+      ? suggestedDefaults.projectId
+      : null);
+
+  const projectMembersForFilter = resolveAssigneeFilterMembers({
+    membersByProjectId,
+    projectId: effectiveProjectId,
+  });
+  const projectMembersUnion = unionProjectMembers(membersByProjectId);
+
   return (
     <WorkItemsWorkspace
-      projects={isProjectLocked ? visibleProjects : activeProjects}
-      projectMembers={projectMembers}
+      projects={isProjectLocked ? projects : activeProjects}
+      projectMembers={
+        effectiveProjectId ? projectMembersForFilter : projectMembersUnion
+      }
+      projectMembersByProjectId={membersByProjectId}
       sprints={sprints}
       initialWorkItems={workItemsResult.workItems}
       totalCount={workItemsResult.totalCount}

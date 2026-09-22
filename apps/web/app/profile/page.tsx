@@ -7,7 +7,6 @@ export default function ProfilePage() {
   return (
     <DashboardShell
       description="Your profile and account details."
-      sidebarDefaultOpen={false}
       contentClassName="p-0"
     >
       <Suspense fallback={<ProfilePageSkeleton />}>

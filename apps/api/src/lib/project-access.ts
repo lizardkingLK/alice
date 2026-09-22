@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
-  UserRoleEnum,
   type Database,
   RecordStatusEnum,
   resolveProjectIdsFromAllowlistValue,
@@ -8,6 +7,7 @@ import {
 } from '@repo/types';
 import { AccessAllowlistKind as AccessAllowlistKindEnum } from '@repo/types/prisma';
 
+/** @deprecated Admins no longer receive every project; kept for call-site migrators. */
 export const ALL_PROJECTS = 'all';
 
 async function resolveAllowedProjectIdsFromAcl(
@@ -48,19 +48,20 @@ async function resolveAllowedProjectIdsFromAcl(
   }
 }
 
+/**
+ * Project ids the actor may use (registry, lists, mutations).
+ * Same for every role (“my projects”): owners ∪ active members, or guest
+ * allowlist ACL when present.
+ */
 export async function listAccessibleProjectIds(
   db: SupabaseClient<Database>,
   actorId: string
-): Promise<typeof ALL_PROJECTS | string[]> {
+): Promise<string[]> {
   const { data: systemUser } = await db
     .from('users')
-    .select('role, email')
+    .select('email')
     .eq('id', actorId)
     .maybeSingle();
-
-  if (systemUser?.role === UserRoleEnum.admin) {
-    return ALL_PROJECTS;
-  }
 
   const [
     { data: memberships, error: memberError },

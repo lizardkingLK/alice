@@ -11,6 +11,7 @@ import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
 import { UserAvatar } from '@/components/user-avatar';
+import { useRealtime } from '@/components/realtime/realtime-provider';
 
 type CalendarDayItemProps = {
   readonly item: DbWorkItem;
@@ -27,6 +28,14 @@ type CalendarDayItemProps = {
   readonly onOpen: (item: DbWorkItem) => void;
 };
 
+function resolveOnlineStatus(
+  userId: string | null,
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  isUserOnline: (userId: string) => boolean
+) {
+  return userId ? isUserOnline(userId) : false;
+}
+
 export function CalendarDayItem({
   item,
   compact,
@@ -38,6 +47,7 @@ export function CalendarDayItem({
   onDragEnd,
   onOpen,
 }: Readonly<CalendarDayItemProps>) {
+  const { isUserOnline } = useRealtime();
   const isIssue = item.type === WorkItemTypeEnum.Issue;
   const isStory = item.type === WorkItemTypeEnum.Story;
 
@@ -89,7 +99,7 @@ export function CalendarDayItem({
         onOpen(item);
       }}
       className={cn(
-        'border-border bg-card flex w-full min-w-0 flex-col gap-2 rounded-lg border p-3 text-left shadow-sm transition-all duration-150 select-none sm:flex-row sm:items-center sm:justify-between sm:gap-3',
+        'border-border bg-card flex w-full min-w-0 cursor-pointer flex-col gap-2 rounded-lg border p-3 text-left shadow-sm transition-all duration-150 select-none sm:flex-row sm:items-center sm:justify-between sm:gap-3',
         'hover:border-primary/30 hover:translate-x-0.5 hover:shadow-md',
         enableDrag && 'cursor-grab active:cursor-grabbing',
         isIssue && 'border-red-500/20 bg-red-500/5 hover:bg-red-500/10',
@@ -118,6 +128,7 @@ export function CalendarDayItem({
           name={item.assignee?.name}
           imageUrl={item.assignee?.profile_picture}
           title={item.assignee?.name ?? 'Unassigned'}
+          isOnline={resolveOnlineStatus(item.assignee_id, isUserOnline)}
         />
       </div>
     </button>

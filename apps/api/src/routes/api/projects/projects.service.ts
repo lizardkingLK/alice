@@ -1,13 +1,18 @@
-import { requireUserWithRole } from '../../../lib/auth-helpers';
-import { ALL_PROJECTS } from '../../../lib/project-access';
+import { getActorUser, requireUserWithRole } from '../../../lib/auth-helpers';
 import {
   ProjectStatusEnum,
   UserRoleEnum,
+  getProjectRegistryPermissions,
+  type ListProjectsForActorResponse,
   type ListProjectsQuery,
   type ProjectListRow,
   type ProjectDetailRow,
   type ProjectMemberRow,
+  type WorkItemType,
+  CANONICAL_HIERARCHY_ORDER,
+  type ProjectWorkflowConfig,
 } from '@repo/types';
+import type { ProjectStatus } from '@repo/types/prisma';
 import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
 import { encryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
 import type { ProjectsRepository } from './projects.repository';
@@ -90,7 +95,7 @@ export class ProjectsService {
   }> {
     const accessible =
       await this.projectsRepository.listAccessibleProjectIds(actorId);
-    if (accessible !== ALL_PROJECTS && accessible.length === 0) {
+    if (accessible.length === 0) {
       return {
         projects: [],
         totalCount: 0,
@@ -111,13 +116,48 @@ export class ProjectsService {
     });
   }
 
+  async listProjectsForActor(
+    actorId: string,
+    options?: {
+      status?: ProjectStatus;
+      search?: string;
+    }
+  ): Promise<ListProjectsForActorResponse> {
+    const user = await getActorUser(actorId);
+    const permissions = getProjectRegistryPermissions(user.role);
+    const accessible =
+      await this.projectsRepository.listAccessibleProjectIds(actorId);
+
+    if (accessible.length === 0) {
+      return {
+        projects: [],
+        totalCount: 0,
+        userRole: user.role,
+        permissions,
+      };
+    }
+
+    const projects = await this.projectsRepository.listAccessibleSummaries({
+      accessibleIds: accessible,
+      status: options?.status ?? (ProjectStatusEnum.active as ProjectStatus),
+      search: options?.search,
+    });
+
+    return {
+      projects,
+      totalCount: projects.length,
+      userRole: user.role,
+      permissions,
+    };
+  }
+
   async getProjectDetail(
     projectId: string,
     actorId: string
   ): Promise<ProjectDetailRow | null> {
     const accessible =
       await this.projectsRepository.listAccessibleProjectIds(actorId);
-    if (accessible !== ALL_PROJECTS && !accessible.includes(projectId)) {
+    if (!accessible.includes(projectId)) {
       throw new Error('Unauthorized project workspace access.');
     }
     return await this.projectsRepository.getDetailById(projectId);
@@ -129,7 +169,7 @@ export class ProjectsService {
   ): Promise<ProjectMemberRow[]> {
     const accessible =
       await this.projectsRepository.listAccessibleProjectIds(actorId);
-    if (accessible !== ALL_PROJECTS && !accessible.includes(projectId)) {
+    if (!accessible.includes(projectId)) {
       throw new Error('Unauthorized project workspace access.');
     }
     return await this.projectsRepository.listMembersPrisma(projectId);
@@ -178,6 +218,11 @@ export class ProjectsService {
         'Cannot remove the project owner from members. Change the project owner first.'
       );
     }
+    if (project.created_by && project.created_by === userId) {
+      throw new Error(
+        'Cannot remove the project creator from members. The admin who created this project stays assigned.'
+      );
+    }
 
     await this.projectsRepository.removeMember(projectId, userId);
   }
@@ -198,7 +243,23 @@ export class ProjectsService {
       'create'
     ) as CreateProjectInput;
 
-    return await this.projectsRepository.create(prepared, actorId);
+    const workflowConfig =
+      (prepared.workflow_config as ProjectWorkflowConfig | null) ?? null;
+    const workItemTypes =
+      workflowConfig?.work_item_types &&
+      workflowConfig.work_item_types.length > 0
+        ? workflowConfig.work_item_types
+        : [...CANONICAL_HIERARCHY_ORDER];
+
+    const preparedWithWorkflow: CreateProjectInput = {
+      ...prepared,
+      workflow_config: {
+        ...workflowConfig,
+        work_item_types: workItemTypes,
+      },
+    };
+
+    return await this.projectsRepository.create(preparedWithWorkflow, actorId);
   }
 
   async updateProject(
@@ -226,10 +287,13 @@ export class ProjectsService {
       'update'
     ) as UpdateProjectInput;
 
-    const previous =
-      prepared.owner_id !== undefined
-        ? await this.projectsRepository.findById(projectId)
-        : null;
+    const previous = await this.projectsRepository.findById(projectId);
+
+    await this.handleWorkItemTypeMigrationIfNeeded(
+      projectId,
+      prepared,
+      previous
+    );
 
     const updated = await this.projectsRepository.update(
       projectId,
@@ -265,7 +329,7 @@ export class ProjectsService {
       projectId,
       {
         deleted_at: new Date().toISOString(),
-        status: 'archived',
+        status: ProjectStatusEnum.archived,
       },
       actorId,
       expectedUpdatedAt
@@ -299,10 +363,17 @@ export class ProjectsService {
   async linkImportedJiraParents(
     actorId: string,
     projectId: string,
-    issues: { key: string; parentKey?: string | null }[]
+    issues: { key: string; parentKey?: string | null }[],
+    hierarchy?: Record<string, string | null> | null,
+    allowedTypes?: WorkItemType[] | null
   ): Promise<void> {
     await requireProjectManager(actorId);
-    await this.projectsRepository.linkImportedJiraParents(projectId, issues);
+    await this.projectsRepository.linkImportedJiraParents(
+      projectId,
+      issues,
+      hierarchy,
+      allowedTypes
+    );
   }
 
   async updateProjectLogo(
@@ -388,5 +459,43 @@ export class ProjectsService {
       path: uploaded.path,
       project,
     };
+  }
+
+  private async handleWorkItemTypeMigrationIfNeeded(
+    projectId: string,
+    prepared: UpdateProjectInput,
+    previous: ProjectRow | null
+  ): Promise<void> {
+    if (
+      !prepared.workflow_config ||
+      typeof prepared.workflow_config !== 'object'
+    ) {
+      return;
+    }
+
+    const newConfig = prepared.workflow_config as ProjectWorkflowConfig;
+    if (!newConfig.work_item_types || newConfig.work_item_types.length === 0) {
+      return;
+    }
+
+    const previousConfig = previous?.workflow_config as
+      ProjectWorkflowConfig | null | undefined;
+    const previousTypes: WorkItemType[] =
+      previousConfig?.work_item_types &&
+      previousConfig.work_item_types.length > 0
+        ? previousConfig.work_item_types
+        : [...CANONICAL_HIERARCHY_ORDER];
+
+    const hasRemovedTypes = previousTypes.some(
+      (t) => !newConfig.work_item_types!.includes(t)
+    );
+
+    if (hasRemovedTypes) {
+      await this.projectsRepository.migrateWorkItemTypesAndPruneHierarchy(
+        projectId,
+        newConfig.work_item_types,
+        newConfig.hierarchy
+      );
+    }
   }
 }

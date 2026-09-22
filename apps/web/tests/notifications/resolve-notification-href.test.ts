@@ -48,4 +48,13 @@ describe('resolveNotificationHref', () => {
       )
     ).toBe(VIEW_SHARED_FALLBACK_HREF);
   });
+
+  it('routes chart_shared to the chart workspace', () => {
+    expect(
+      resolveNotificationHref(
+        { type: 'chart_shared', related_item_id: 'chart-1' },
+        null
+      )
+    ).toBe('/charts/chart-1');
+  });
 });

@@ -803,6 +803,8 @@ export type Database = {
           owner_id: string
           pathname: string
           project_id: string | null
+          resource_id: string | null
+          resource_kind: Database["public"]["Enums"]["SavedViewResourceKind"]
           search: string
           status: Database["public"]["Enums"]["RecordStatus"]
           title: string
@@ -817,6 +819,8 @@ export type Database = {
           owner_id: string
           pathname: string
           project_id?: string | null
+          resource_id?: string | null
+          resource_kind?: Database["public"]["Enums"]["SavedViewResourceKind"]
           search?: string
           status?: Database["public"]["Enums"]["RecordStatus"]
           title: string
@@ -831,6 +835,8 @@ export type Database = {
           owner_id?: string
           pathname?: string
           project_id?: string | null
+          resource_id?: string | null
+          resource_kind?: Database["public"]["Enums"]["SavedViewResourceKind"]
           search?: string
           status?: Database["public"]["Enums"]["RecordStatus"]
           title?: string
@@ -857,6 +863,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_views_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "charts"
             referencedColumns: ["id"]
           },
           {
@@ -1210,6 +1223,7 @@ export type Database = {
       work_items: {
         Row: {
           assignee_id: string | null
+          board_column_id: string | null
           created_at: string
           created_by: string | null
           description: Json | null
@@ -1233,6 +1247,7 @@ export type Database = {
         }
         Insert: {
           assignee_id?: string | null
+          board_column_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: Json | null
@@ -1256,6 +1271,7 @@ export type Database = {
         }
         Update: {
           assignee_id?: string | null
+          board_column_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: Json | null
@@ -1382,10 +1398,12 @@ export type Database = {
         | "sprint"
         | "due_date"
         | "view_shared"
+        | "chart_shared"
         | "chat_processed"
         | "access_request"
       ProjectStatus: "active" | "archived"
       RecordStatus: "active" | "inactive" | "archived" | "deleted"
+      SavedViewResourceKind: "page" | "chart"
       SprintStatus: "planned" | "active" | "closed" | "archived"
       UserMembershipStatus: "pending" | "active"
       UserRole: "admin" | "manager" | "member"
@@ -1544,11 +1562,13 @@ export const Constants = {
         "sprint",
         "due_date",
         "view_shared",
+        "chart_shared",
         "chat_processed",
         "access_request",
       ],
       ProjectStatus: ["active", "archived"],
       RecordStatus: ["active", "inactive", "archived", "deleted"],
+      SavedViewResourceKind: ["page", "chart"],
       SprintStatus: ["planned", "active", "closed", "archived"],
       UserMembershipStatus: ["pending", "active"],
       UserRole: ["admin", "manager", "member"],

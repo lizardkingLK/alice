@@ -13,12 +13,20 @@ Discuss work on the item and review what changed.
 
 Use the rich-text composer to add comments. You can:
 
-- **@mention** teammates
+- **@mention** project members (and the project owner). Workspace admins who are
+  not members of the project are not suggested.
+- **#mention** other work items in the **same project**
+- Hover an `@` or `#` mention to preview a card (user profile or Kanban-style
+  work item summary) after a short delay
 - Use quick replies where shown (e.g. "Looks good!", "Need help?")
 - Submit with **Ctrl/⌘+Enter**
 - Press **M** to focus the composer from elsewhere on the page
 
-Mentions and replies can generate [notifications](../notifications/dashboard-inbox.md).
+On the global **Comments** page, `#` suggestions appear after you pick a target
+work item (scoped to that item's project).
+
+Mentions and replies can generate [notifications](../notifications/dashboard-inbox.md)
+for mentionable teammates.
 
 ---
 

@@ -81,19 +81,44 @@ export const STAT_VALUES = {
 } as const;
 
 export const STATUS_MIX_DATA = [
-  { status: 'new', count: 8, fill: 'var(--color-new)' },
-  { status: 'todo', count: 12, fill: 'var(--color-todo)' },
-  { status: 'progress', count: 9, fill: 'var(--color-progress)' },
-  { status: 'testing', count: 5, fill: 'var(--color-testing)' },
-  { status: 'done', count: 18, fill: 'var(--color-done)' },
+  {
+    status: 'New',
+    label: 'New',
+    count: 8,
+    fill: 'var(--color-New)',
+  },
+  {
+    status: 'ToDo',
+    label: 'To Do',
+    count: 12,
+    fill: 'var(--color-ToDo)',
+  },
+  {
+    status: 'InProgress',
+    label: 'In Progress',
+    count: 9,
+    fill: 'var(--color-InProgress)',
+  },
+  {
+    status: 'Testing',
+    label: 'Testing',
+    count: 5,
+    fill: 'var(--color-Testing)',
+  },
+  {
+    status: 'Done',
+    label: 'Done',
+    count: 18,
+    fill: 'var(--color-Done)',
+  },
 ] as const;
 
 export const STATUS_MIX_CONFIG = {
-  new: { label: 'New', color: 'var(--chart-1)' },
-  todo: { label: 'To Do', color: 'var(--chart-2)' },
-  progress: { label: 'In Progress', color: 'var(--chart-3)' },
-  testing: { label: 'Testing', color: 'var(--chart-4)' },
-  done: { label: 'Done', color: 'var(--chart-5)' },
+  New: { label: 'New', color: 'var(--chart-1)' },
+  ToDo: { label: 'To Do', color: 'var(--chart-2)' },
+  InProgress: { label: 'In Progress', color: 'var(--chart-3)' },
+  Testing: { label: 'Testing', color: 'var(--chart-4)' },
+  Done: { label: 'Done', color: 'var(--chart-5)' },
   count: { label: 'Issues' },
 } satisfies ChartConfig;
 

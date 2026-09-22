@@ -1,20 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useState, type ComponentProps } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
-  ChartContainer,
   ChartLegend,
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   XAxis,
   YAxis,
 } from '@repo/ui/components/ui/chart';
@@ -30,6 +26,8 @@ import {
   type WidgetId,
 } from './dashboard-mock-data';
 import { DashboardWidgetShell } from './dashboard-widget-shell';
+import { ChartViewport } from '@/components/chart-viewport';
+import { StatusDistributionWheel } from '@/components/status-distribution-wheel';
 import { SIDEBAR_LAYOUT_SETTLE_MS } from '@/hooks/use-sidebar-layout-settling';
 import { createClient } from '@/lib/supabase/client';
 import { readBoardDefaults } from '@/app/board/_helpers/board-defaults-storage';
@@ -61,99 +59,21 @@ function StatWidget({ id }: Readonly<StatWidgetProps>) {
   );
 }
 
-type ChartSize = {
-  width: number;
-  height: number;
-};
-
-type ChartViewportType = {
-  config: ComponentProps<typeof ChartContainer>['config'];
-  children: ComponentProps<typeof ChartContainer>['children'];
-};
-
-function ChartViewport({ config, children }: Readonly<ChartViewportType>) {
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState<ChartSize | null>(null);
-  const pendingSizeRef = useRef<ChartSize | null>(null);
-  const settleTimerRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const element = viewportRef.current;
-    if (!element) {
-      return;
-    }
-
-    const applySize = (next: ChartSize) => {
-      setSize((previous) => {
-        if (previous?.width === next.width && previous.height === next.height) {
-          return previous;
-        }
-        return next;
-      });
-    };
-
-    const measure = (): ChartSize | null => {
-      const { width, height } = element.getBoundingClientRect();
-      const nextWidth = Math.floor(width);
-      const nextHeight = Math.floor(height);
-
-      if (nextWidth <= 0 || nextHeight <= 0) {
-        return null;
-      }
-
-      return { width: nextWidth, height: nextHeight };
-    };
-
-    const scheduleSizeUpdate = () => {
-      const next = measure();
-      if (!next) {
-        return;
-      }
-
-      pendingSizeRef.current = next;
-
-      if (settleTimerRef.current !== null) {
-        window.clearTimeout(settleTimerRef.current);
-      }
-
-      // Coalesce ResizeObserver spam (sidebar / grid transitions) into one paint.
-      settleTimerRef.current = window.setTimeout(() => {
-        settleTimerRef.current = null;
-        if (pendingSizeRef.current) {
-          applySize(pendingSizeRef.current);
-        }
-      }, SIDEBAR_LAYOUT_SETTLE_MS);
-    };
-
-    const initial = measure();
-    if (initial) {
-      applySize(initial);
-    }
-
-    const observer = new ResizeObserver(scheduleSizeUpdate);
-    observer.observe(element);
-
-    return () => {
-      observer.disconnect();
-      if (settleTimerRef.current !== null) {
-        window.clearTimeout(settleTimerRef.current);
-      }
-    };
-  }, []);
-
+function DashboardChartViewport({
+  config,
+  children,
+}: Readonly<{
+  config: React.ComponentProps<typeof ChartViewport>['config'];
+  children: React.ComponentProps<typeof ChartViewport>['children'];
+}>) {
   return (
-    <div ref={viewportRef} className="relative min-h-0 w-full flex-1">
-      {size ? (
-        <ChartContainer
-          config={config}
-          width={size.width}
-          height={size.height}
-          className="aspect-auto h-full w-full justify-center"
-        >
-          {children}
-        </ChartContainer>
-      ) : null}
-    </div>
+    <ChartViewport
+      config={config}
+      settleMs={SIDEBAR_LAYOUT_SETTLE_MS}
+      className="min-h-0 w-full flex-1"
+    >
+      {children}
+    </ChartViewport>
   );
 }
 
@@ -162,28 +82,15 @@ function StatusMixWidget() {
 
   return (
     <DashboardWidgetShell title={meta.title} description={meta.description}>
-      <ChartViewport config={STATUS_MIX_CONFIG}>
-        <PieChart>
-          <ChartTooltip
-            cursor={false}
-            content={<ChartTooltipContent hideLabel nameKey="status" />}
-          />
-          <Pie
-            data={[...STATUS_MIX_DATA]}
-            dataKey="count"
-            nameKey="status"
-            innerRadius="48%"
-            outerRadius="78%"
-            paddingAngle={2}
-            strokeWidth={2}
-          >
-            {STATUS_MIX_DATA.map((entry) => (
-              <Cell key={entry.status} fill={entry.fill} />
-            ))}
-          </Pie>
+      <StatusDistributionWheel
+        data={[...STATUS_MIX_DATA]}
+        config={STATUS_MIX_CONFIG}
+        settleMs={SIDEBAR_LAYOUT_SETTLE_MS}
+        className="min-h-0 w-full flex-1"
+        legend={
           <ChartLegend content={<ChartLegendContent nameKey="status" />} />
-        </PieChart>
-      </ChartViewport>
+        }
+      />
     </DashboardWidgetShell>
   );
 }
@@ -409,7 +316,7 @@ function BurndownWidget({ bootstrap }: BurndownWidgetProps) {
   return (
     <DashboardWidgetShell title={meta.title} description={meta.description}>
       <div className="relative flex min-h-0 flex-1 flex-col">
-        <ChartViewport config={BURNDOWN_CONFIG}>
+        <DashboardChartViewport config={BURNDOWN_CONFIG}>
           <LineChart
             data={[...chartData]}
             margin={{ left: 4, right: 8, top: 8, bottom: 0 }}
@@ -452,7 +359,7 @@ function BurndownWidget({ bootstrap }: BurndownWidgetProps) {
               </>
             ) : null}
           </LineChart>
-        </ChartViewport>
+        </DashboardChartViewport>
         {emptyHint ? (
           <p className="text-muted-foreground pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center text-sm">
             {emptyHint}
@@ -468,7 +375,7 @@ function VelocityWidget() {
 
   return (
     <DashboardWidgetShell title={meta.title} description={meta.description}>
-      <ChartViewport config={VELOCITY_CONFIG}>
+      <DashboardChartViewport config={VELOCITY_CONFIG}>
         <BarChart
           data={[...VELOCITY_DATA]}
           margin={{ left: 4, right: 8, top: 8, bottom: 0 }}
@@ -488,7 +395,7 @@ function VelocityWidget() {
             radius={[6, 6, 0, 0]}
           />
         </BarChart>
-      </ChartViewport>
+      </DashboardChartViewport>
     </DashboardWidgetShell>
   );
 }

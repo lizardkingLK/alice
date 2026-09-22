@@ -4,9 +4,12 @@ import {
   configuredModelLabel,
   createFormStateForNewModel,
   createFormStateFromRow,
+  createFormStateFromRows,
+  defaultModelForProvider,
   integrationApiKeyPlaceholder,
   integrationDialogStatusLabel,
   integrationSaveButtonLabel,
+  providerForCatalog,
 } from '@/app/settings/_components/settings-integration-detail-dialog.helpers';
 import { WORKSPACE_INTEGRATIONS } from '@/app/settings/_components/settings-integration-catalog';
 
@@ -28,6 +31,31 @@ const chatRow: IntegrationWire = {
   created_at: new Date('2026-01-01T00:00:00.000Z'),
   updated_at: new Date('2026-01-01T00:00:00.000Z'),
 } satisfies IntegrationWire;
+
+describe('providerForCatalog', () => {
+  it('maps configurable catalog ids to provider slugs', () => {
+    expect(providerForCatalog('alice-gemini')).toBe('gemini');
+    expect(providerForCatalog('alice-spacexai')).toBe('spacexai');
+    expect(providerForCatalog('openai')).toBe('openai');
+    expect(providerForCatalog('unknown')).toBeNull();
+  });
+});
+
+describe('defaultModelForProvider', () => {
+  it('returns Gemini defaults for gemini', () => {
+    expect(defaultModelForProvider('gemini')).toEqual({
+      value: 'gemini-3.6-flash',
+      label: 'Gemini 3.6',
+    });
+  });
+
+  it('returns SpaceXAI / Grok defaults for spacexai', () => {
+    expect(defaultModelForProvider('spacexai')).toEqual({
+      value: 'grok-4.3',
+      label: 'Grok 4.3',
+    });
+  });
+});
 
 describe('integrationSaveButtonLabel', () => {
   it('returns connecting copy for new models', () => {
@@ -68,8 +96,29 @@ describe('createFormStateFromRow', () => {
 
 describe('createFormStateForNewModel', () => {
   it('marks the first model as default when none exist', () => {
-    expect(createFormStateForNewModel([]).isDefault).toBe(true);
-    expect(createFormStateForNewModel([chatRow]).isDefault).toBe(false);
+    expect(createFormStateForNewModel([], 'gemini').isDefault).toBe(true);
+    expect(createFormStateForNewModel([chatRow], 'gemini').isDefault).toBe(
+      false
+    );
+  });
+
+  it('seeds SpaceXAI defaults when adding a model for spacexai', () => {
+    expect(createFormStateForNewModel([], 'spacexai')).toMatchObject({
+      modelId: 'grok-4.3',
+      displayLabel: 'Grok 4.3',
+      isDefault: true,
+    });
+  });
+});
+
+describe('createFormStateFromRows', () => {
+  it('seeds provider defaults when no rows are configured', () => {
+    expect(createFormStateFromRows([], 'spacexai')).toMatchObject({
+      selectedRowId: null,
+      modelId: 'grok-4.3',
+      displayLabel: 'Grok 4.3',
+      isDefault: true,
+    });
   });
 });
 

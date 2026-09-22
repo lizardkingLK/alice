@@ -14,6 +14,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { DialogFooter } from '@repo/ui/components/ui/dialog';
 import { Loader2 } from '@repo/ui/lib/icons';
+import { cn } from '@repo/ui/lib/utils';
 import { User as DbUser } from '@/app/users/_services/users.mutations.client';
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import {
@@ -29,6 +30,7 @@ import { Project as DbProject } from '@/app/projects/_services/projects.mutation
 import { useProjectMembers } from '@/app/work-items/_hooks/use-project-members';
 import { delay, toShortId } from '@/app/_shared/utility';
 import { ResponseDTO } from '@repo/types/connection';
+import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import type { SearchableSelectOption } from '@/components/searchable-select';
@@ -69,6 +71,26 @@ export interface WorkItemFormProps {
    * Defaults to classic when omitted.
    */
   createFormMode?: WorkItemCreateFormMode;
+  /**
+   * When set, skips API create/update and uses this handler instead
+   * (charts mock board / local-only demos). Still calls `onSuccess`.
+   */
+  // eslint-disable-next-line no-unused-vars -- local mutate signature
+  localMutate?: (args: {
+    mode: 'create' | 'update';
+    formData: FormData;
+    itemToEdit: DbWorkItem | null;
+  }) => Promise<DbWorkItem> | DbWorkItem;
+  /**
+   * Keep the provided `projectMembers` list and skip fetching members for the
+   * selected project (charts sample projects are not real API ids).
+   */
+  preferProvidedMembers?: boolean;
+  /**
+   * Pin form actions to the bottom (calendar day-sheet create). Scrolls fields
+   * above a sticky footer with equal top/bottom/right padding.
+   */
+  stickyActions?: boolean;
 }
 
 const taskTypes = WORK_ITEM_TYPES;
@@ -117,6 +139,34 @@ const SubmitButtonText = ({
   return modernCreate ? 'Create' : 'Create Work Item';
 };
 
+function resolveAvailableTypes(
+  explicitAllowedTypes?: readonly WorkItemType[] | null,
+  projectConfig?: ProjectWorkflowConfig | null
+): readonly WorkItemType[] {
+  if (explicitAllowedTypes && explicitAllowedTypes.length > 0) {
+    return explicitAllowedTypes;
+  }
+  if (
+    projectConfig?.work_item_types &&
+    projectConfig.work_item_types.length > 0
+  ) {
+    return projectConfig.work_item_types;
+  }
+  return taskTypes;
+}
+
+function resolveAllowedParentType(
+  type: string,
+  parentLocked: boolean,
+  availableTypes: readonly WorkItemType[],
+  hierarchy?: Record<string, string | null> | null
+): WorkItemType | null {
+  if (!isWorkItemType(type) || parentLocked) {
+    return null;
+  }
+  return getAllowedParentType(type, availableTypes, hierarchy);
+}
+
 export function WorkItemForm({
   onClose,
   onSuccess,
@@ -135,11 +185,11 @@ export function WorkItemForm({
   defaultDueDate,
   lockDueDate = false,
   createFormMode = 'classic',
+  localMutate,
+  preferProvidedMembers = false,
+  stickyActions = false,
 }: Readonly<WorkItemFormProps>) {
   const { handleMutationError } = useOptimisticLock();
-  const availableTypes =
-    allowedTypes && allowedTypes.length > 0 ? allowedTypes : taskTypes;
-  const typeLocked = lockType || availableTypes.length === 1;
   const isEditMode = itemToEdit !== null;
   const useModernLayout = createFormMode === 'modern';
   const parentLocked = lockParent;
@@ -155,12 +205,39 @@ export function WorkItemForm({
   const [projectId, setProjectId] = useState(
     itemToEdit?.project_id ?? (lockProject ? (projects[0]?.id ?? '') : '')
   );
+
+  const selectedProject = projects.find((p) => p.id === projectId);
+  const projectWorkflowConfig = selectedProject?.workflow_config as
+    ProjectWorkflowConfig | null | undefined;
+  const availableTypes = resolveAvailableTypes(
+    allowedTypes,
+    projectWorkflowConfig
+  );
+  const typeLocked = lockType || availableTypes.length === 1;
+
   const [assigneeId, setAssigneeId] = useState(
     itemToEdit?.assignee_id ?? lockAssigneeId ?? ''
   );
   const [type, setType] = useState(
     itemToEdit?.type ?? (typeLocked ? (availableTypes[0] ?? '') : '')
   );
+
+  useEffect(() => {
+    if (
+      availableTypes.length > 0 &&
+      type &&
+      !availableTypes.includes(type as WorkItemType)
+    ) {
+      setType(availableTypes[0] ?? '');
+    }
+  }, [availableTypes, type]);
+
+  useEffect(() => {
+    if (typeLocked && availableTypes[0] && type !== availableTypes[0]) {
+      setType(availableTypes[0]);
+    }
+  }, [typeLocked, availableTypes, type]);
+
   const [priority, setPriority] = useState<WorkItemPriority>(() => {
     const existing = itemToEdit?.priority;
     if (existing && isWorkItemPriority(existing)) {
@@ -184,11 +261,16 @@ export function WorkItemForm({
     projectMembers,
     assigneeId,
     lockAssignee,
+    preferProvidedMembers,
     onAssigneeChange: (val) => setAssigneeId(val ?? ''),
   });
 
-  const allowedParentType =
-    isWorkItemType(type) && !parentLocked ? getAllowedParentType(type) : null;
+  const allowedParentType = resolveAllowedParentType(
+    type,
+    parentLocked,
+    availableTypes,
+    projectWorkflowConfig?.hierarchy
+  );
 
   useEffect(() => {
     if (parentLocked) {
@@ -257,7 +339,15 @@ export function WorkItemForm({
     try {
       const isUpdate = isEditMode && itemToEdit;
       let response: ResponseDTO<DbWorkItem> | null = null;
-      if (isUpdate) {
+
+      if (localMutate) {
+        const data = await localMutate({
+          mode: isUpdate ? 'update' : 'create',
+          formData,
+          itemToEdit: isUpdate ? itemToEdit : null,
+        });
+        response = { data, error: null };
+      } else if (isUpdate) {
         const expectedUpdatedAt = itemToEdit.updated_at;
         response = await runLockedMutationOrThrow({
           mutate: () =>
@@ -322,13 +412,21 @@ export function WorkItemForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex min-h-0 flex-1 flex-col justify-between space-y-4 overflow-hidden"
+      className={cn(
+        'flex min-h-0 flex-1 flex-col overflow-hidden',
+        stickyActions ? 'h-full' : 'justify-between space-y-4'
+      )}
     >
       {!isEditMode && defaultSprintId ? (
         <input type="hidden" name="sprint_id" value={defaultSprintId} />
       ) : null}
 
-      <div className="no-scrollbar flex-1 space-y-4 overflow-y-auto pr-1">
+      <div
+        className={cn(
+          'no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto',
+          stickyActions ? 'p-6' : 'pr-1'
+        )}
+      >
         {useModernLayout ? (
           <WorkItemFormModernFields
             {...fieldProps}
@@ -347,13 +445,20 @@ export function WorkItemForm({
             lockDueDate={!isEditMode && lockDueDate}
             storyPointsDefault={itemToEdit?.story_points ?? null}
             labelsDefault={parseWorkItemLabels(itemToEdit?.labels)}
+            descriptionDefault={itemToEdit?.description ?? null}
           />
         )}
 
         <FormStatusAlerts error={state?.error} success={state?.success} />
       </div>
 
-      <DialogFooter className="shrink-0">
+      <DialogFooter
+        className={cn(
+          'shrink-0',
+          stickyActions &&
+            'bg-muted/50 -mx-0 mt-auto mb-0 rounded-none border-t px-6 py-4'
+        )}
+      >
         {onClose ? (
           <Button
             type="button"

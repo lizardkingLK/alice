@@ -22,14 +22,14 @@ export type LoadWorkItemChildrenResult =
  */
 async function canLoadWorkItemChildren(
   userId: string,
-  role: string,
+  _role: string,
   parent: DbWorkItem
 ): Promise<boolean> {
   // Project-scoped items: workspace ACL is terminal. Do not fall back to
   // assignee/reporter — a removed member who remains assignee must not load
   // project children.
   if (parent.project_id) {
-    return canAccessProjectWorkspace(userId, role, parent.project_id);
+    return canAccessProjectWorkspace(userId, parent.project_id);
   }
 
   if (parent.assignee_id === userId || parent.reporter_id === userId) {

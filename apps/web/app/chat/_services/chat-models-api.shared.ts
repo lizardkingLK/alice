@@ -37,6 +37,65 @@ export function chatModelDisplayLabel(model: ChatModelOption): string {
   return model.display_label.trim() || model.name;
 }
 
+const CHAT_PROVIDER_DISPLAY_LABELS: Readonly<Record<string, string>> = {
+  gemini: 'Gemini',
+  spacexai: 'SpaceXAI',
+  openai: 'OpenAI',
+  anthropic: 'Anthropic',
+};
+
+/** Human label for a chat provider slug in the model menu. */
+export function chatProviderDisplayLabel(provider: string): string {
+  const known = CHAT_PROVIDER_DISPLAY_LABELS[provider];
+  if (known) {
+    return known;
+  }
+  if (!provider) {
+    return 'Other';
+  }
+  return provider.charAt(0).toUpperCase() + provider.slice(1);
+}
+
+export type ChatModelProviderGroup = {
+  readonly provider: string;
+  readonly models: readonly ChatModelOption[];
+};
+
+/** Mark one integration as the workspace default in a local model list. */
+export function withDefaultChatIntegration(
+  models: readonly ChatModelOption[],
+  integrationId: string
+): ChatModelOption[] {
+  return models.map((model) => ({
+    ...model,
+    is_default: model.id === integrationId,
+  }));
+}
+
+/** Group active chat models by provider, preserving first-seen order. */
+export function groupChatModelsByProvider(
+  models: readonly ChatModelOption[]
+): ChatModelProviderGroup[] {
+  const order: string[] = [];
+  const byProvider = new Map<string, ChatModelOption[]>();
+
+  for (const model of models) {
+    const provider = model.provider.trim() || 'other';
+    const existing = byProvider.get(provider);
+    if (existing) {
+      existing.push(model);
+      continue;
+    }
+    order.push(provider);
+    byProvider.set(provider, [model]);
+  }
+
+  return order.map((provider) => ({
+    provider,
+    models: byProvider.get(provider) ?? [],
+  }));
+}
+
 /* eslint-disable no-unused-vars */
 export function createChatModelsService(
   apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>

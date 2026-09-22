@@ -46,6 +46,11 @@ export const REGISTRY_PAGES = {
       'Manage saved page snapshots, share them with teammates, and archive ones you no longer need.',
     skeleton: { columnCount: 5, rowCount: 8, showTabs: true },
   },
+  charts: {
+    description:
+      'Manage chart workspaces, share them with teammates, and open a board to arrange widgets.',
+    skeleton: { columnCount: 4, rowCount: 8, showTabs: true },
+  },
 } as const satisfies Record<string, RegistryPageMeta>;
 
 type RegistrySuspensePageProps = {

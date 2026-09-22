@@ -6,11 +6,8 @@ import {
 } from '@/app/projects/_services/projects.reads.server';
 import { getUserList } from '@/app/users/_services/users.reads.server';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
-import {
-  parseStandardParams,
-  parseTabStatus,
-  type RawSearchParams,
-} from '@/lib/search-params';
+import { parseStandardParams, type RawSearchParams } from '@/lib/search-params';
+import { parseProjectStatusTab } from '@/app/projects/_helpers/project-status';
 
 const EMPTY_PROJECTS = {
   projects: [] as Project[],
@@ -29,7 +26,7 @@ export async function ProjectsData({
 }: Readonly<ProjectsDataProps>) {
   const resolvedSearchParams = await searchParams;
   const { page, limit, search } = parseStandardParams(resolvedSearchParams, 10);
-  const status = parseTabStatus(resolvedSearchParams.tab);
+  const status = parseProjectStatusTab(resolvedSearchParams.tab);
 
   const [dbUser, usersList, projectsResult] = await Promise.all([
     getDbUser(),

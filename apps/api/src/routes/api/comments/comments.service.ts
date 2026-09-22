@@ -12,7 +12,6 @@ import {
   createCommentSnippet,
 } from './comments.utils';
 
-import { UserRoleEnum } from '@repo/types';
 import { RecordStatus } from '@repo/types/prisma';
 import { prisma } from '../../../lib/prisma';
 
@@ -38,7 +37,7 @@ export class CommentsService {
         return new Set();
       }
 
-      const [project, members, admins] = await Promise.all([
+      const [project, members] = await Promise.all([
         prisma.projects.findUnique({
           where: { id: workItem.project_id },
           select: { owner_id: true },
@@ -50,10 +49,6 @@ export class CommentsService {
           },
           select: { user_id: true },
         }),
-        prisma.users.findMany({
-          where: { role: UserRoleEnum.admin, status: RecordStatus.active },
-          select: { id: true },
-        }),
       ]);
 
       const allowed = new Set<string>();
@@ -62,9 +57,6 @@ export class CommentsService {
       }
       for (const m of members) {
         if (m.user_id) allowed.add(m.user_id);
-      }
-      for (const a of admins) {
-        if (a.id) allowed.add(a.id);
       }
 
       return allowed;
@@ -183,7 +175,7 @@ export class CommentsService {
     const accessible =
       await this.commentsRepository.listAccessibleProjectIds(actorId);
 
-    if (accessible !== 'all' && accessible.length === 0) {
+    if (accessible.length === 0) {
       return {
         comments: [],
         ...paginationMeta(0, query.page, query.limit),
@@ -199,7 +191,7 @@ export class CommentsService {
 
     const filters = {
       workItemId: query.workItemId,
-      projectIds: accessible === 'all' ? undefined : accessible,
+      projectIds: accessible,
     };
 
     return await this.commentsRepository.listPaginated({

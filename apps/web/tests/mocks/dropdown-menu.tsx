@@ -10,6 +10,7 @@ type ItemProps = ChildrenProps & {
   'aria-label'?: string;
   className?: string;
   role?: string;
+  asChild?: boolean;
 };
 
 type RadioGroupProps = ChildrenProps & {
@@ -47,8 +48,13 @@ export function DropdownMenuItem({
   onClick,
   onSelect,
   role,
+  asChild,
   ...props
 }: Readonly<ItemProps>) {
+  if (asChild) {
+    return <>{children}</>;
+  }
+
   const handleClick = () => {
     onClick?.();
     onSelect?.();

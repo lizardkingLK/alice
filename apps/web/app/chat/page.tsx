@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { notFound } from 'next/navigation';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import { getDbUser } from '@/lib/auth';
@@ -14,18 +15,25 @@ export const metadata = {
 async function ChatPageData({
   conversationId,
 }: Readonly<{ conversationId?: string }>) {
-  const [bootstrap, chatModels, dbUser] = await Promise.all([
+  const [bootstrapResult, chatModels, dbUser] = await Promise.all([
     safeServerFetch(
       getChatPageBootstrap(conversationId),
-      { conversations: [], messages: [] },
+      { ok: true as const, data: { conversations: [], messages: [] } },
       'fetch chat page bootstrap'
     ),
     safeServerFetch(listChatModelsForChat(), [], 'fetch chat models'),
     getDbUser(),
   ]);
 
+  if (!bootstrapResult.ok) {
+    notFound();
+  }
+
+  const bootstrap = bootstrapResult.data;
+
   return (
     <ChatClient
+      key={conversationId ?? 'new'}
       initialConversations={bootstrap.conversations}
       initialConversationId={bootstrap.activeConversationId}
       initialMessages={bootstrap.messages}
@@ -33,6 +41,7 @@ async function ChatPageData({
       currentUserName={dbUser?.name}
       currentUserImageUrl={dbUser?.profile_picture}
       currentUserId={dbUser?.id}
+      currentUserRole={dbUser?.role}
     />
   );
 }

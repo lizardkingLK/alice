@@ -12,18 +12,16 @@ import {
   type WorkItemListRowWithDescription,
   type WorkItemPrismaListFilters,
   paginationMeta,
+  type UserRole,
 } from '@repo/types';
-import { Prisma } from '@repo/types/prisma';
+import { Prisma, RecordStatus, UserMembershipStatus } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import {
-  listAccessibleProjectIds,
-  ALL_PROJECTS,
-} from '../../../lib/project-access';
+import { listAccessibleProjectIds } from '../../../lib/project-access';
 import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditCreateWithoutStatus,
   prismaAuditUpdate,
-  prismaLockTimestamp,
+  prismaLockTimestampRange,
   prismaOptionalDate,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
@@ -51,6 +49,12 @@ export interface DbGithubPullRequest {
   updated_at: string;
 }
 
+export type BoardActorContext = {
+  role: UserRole;
+  isActiveProjectMember: boolean;
+  activeTeamIds: string[];
+};
+
 export type CreateWorkItemRecord = WorkItemBody & {
   createdBy: string;
 };
@@ -69,11 +73,9 @@ export class WorkItemRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
   /**
-   * Admin: all projects. Member/manager: active membership ∪ owned projects.
+   * Membership ∪ ownership (same for every role — “my projects”).
    */
-  async listAccessibleProjectIds(
-    actorId: string
-  ): Promise<typeof ALL_PROJECTS | string[]> {
+  async listAccessibleProjectIds(actorId: string): Promise<string[]> {
     return listAccessibleProjectIds(this.db, actorId);
   }
 
@@ -82,9 +84,6 @@ export class WorkItemRepository {
     projectId: string
   ): Promise<void> {
     const accessible = await this.listAccessibleProjectIds(actorId);
-    if (accessible === ALL_PROJECTS) {
-      return;
-    }
     if (!accessible.includes(projectId)) {
       throw new WorkItemAccessError();
     }
@@ -190,6 +189,74 @@ export class WorkItemRepository {
     return data as unknown as DbWorkItem;
   }
 
+  async getProjectWorkflowConfig(
+    projectId: string
+  ): Promise<Tables<'projects'>['workflow_config']> {
+    const { data, error } = await this.db
+      .from('projects')
+      .select('workflow_config')
+      .eq('id', projectId)
+      .maybeSingle();
+
+    if (error) {
+      console.error(
+        'error. failed to load project workflow config:',
+        error.message
+      );
+      throw new Error('Failed to validate board column');
+    }
+
+    if (!data) {
+      throw new WorkItemAccessError();
+    }
+
+    return data.workflow_config;
+  }
+
+  /** Resolve all actor facts needed by a board rule in one database query. */
+  async getBoardActorContext(
+    actorId: string,
+    projectId: string
+  ): Promise<BoardActorContext | null> {
+    const actor = await prisma.users.findFirst({
+      where: {
+        id: actorId,
+        active: true,
+        membership_status: UserMembershipStatus.active,
+      },
+      select: {
+        role: true,
+        project_memberships: {
+          where: {
+            project_id: projectId,
+            status: RecordStatus.active,
+          },
+          select: { user_id: true },
+        },
+        team_memberships: {
+          where: {
+            status: RecordStatus.active,
+            team: {
+              project_id: projectId,
+              status: RecordStatus.active,
+            },
+          },
+          select: { team_id: true },
+        },
+      },
+    });
+
+    if (!actor) return null;
+
+    return {
+      role: actor.role,
+      isActiveProjectMember: actor.project_memberships.length > 0,
+      activeTeamIds: actor.team_memberships.map(
+        (membership) => membership.team_id
+      ),
+    };
+  }
+
   /** Count direct children that are not yet Done (for Done-gate validation). */
   async countIncompleteChildren(parentId: string): Promise<number> {
     const { count, error } = await this.db
@@ -270,7 +337,7 @@ export class WorkItemRepository {
     const { count } = await prisma.work_items.updateMany({
       where: {
         id: input.id,
-        updated_at: prismaLockTimestamp(input.expectedUpdatedAt),
+        updated_at: prismaLockTimestampRange(input.expectedUpdatedAt),
       },
       data: {
         title: input.title,
@@ -283,6 +350,7 @@ export class WorkItemRepository {
         description: descriptionUpdate,
         labels: (input.labels ?? []) as Prisma.InputJsonValue,
         status: input.status,
+        board_column_id: input.board_column_id,
         sprint_id: input.sprint_id,
         story_points: input.story_points,
         parent_id: input.parent_id ?? null,
@@ -445,7 +513,7 @@ export class WorkItemRepository {
       const rootUpdate = await tx.work_items.updateMany({
         where: {
           id: rootId,
-          updated_at: prismaLockTimestamp(expectedUpdatedAt),
+          updated_at: prismaLockTimestampRange(expectedUpdatedAt),
         },
         data: {
           record_status: recordStatus,

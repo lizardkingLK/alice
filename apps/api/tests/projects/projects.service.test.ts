@@ -11,6 +11,9 @@ const {
   createMock,
   updateMock,
   deleteMock,
+  migrateWorkItemTypesAndPruneHierarchyMock,
+  listAccessibleProjectIdsMock,
+  listAccessibleSummariesMock,
 } = vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
   return {
@@ -24,6 +27,9 @@ const {
     createMock: vi.fn(),
     updateMock: vi.fn(),
     deleteMock: vi.fn(),
+    migrateWorkItemTypesAndPruneHierarchyMock: vi.fn(),
+    listAccessibleProjectIdsMock: vi.fn(),
+    listAccessibleSummariesMock: vi.fn(),
   };
 });
 
@@ -54,6 +60,7 @@ const mockProject = {
   start_date: '2026-01-01',
   end_date: '2026-12-31',
   owner_id: 'user-manager',
+  created_by: 'user-admin',
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: '2026-01-01T00:00:00.000Z',
   deleted_at: null,
@@ -63,6 +70,17 @@ const mockProject = {
   github_token: null,
   logo_url: null,
   cover_picture: null,
+};
+
+const boardConfig = {
+  version: '1' as const,
+  columns: [
+    { id: 'new', name: 'New', status: 'New' as const },
+    { id: 'todo', name: 'Ready', status: 'ToDo' as const },
+    { id: 'doing', name: 'Doing', status: 'InProgress' as const },
+    { id: 'testing', name: 'Testing', status: 'Testing' as const },
+    { id: 'done', name: 'Done', status: 'Done' as const },
+  ],
 };
 
 describe('ProjectsService backend tests', () => {
@@ -76,6 +94,10 @@ describe('ProjectsService backend tests', () => {
     create: createMock,
     update: updateMock,
     delete: deleteMock,
+    migrateWorkItemTypesAndPruneHierarchy:
+      migrateWorkItemTypesAndPruneHierarchyMock,
+    listAccessibleProjectIds: listAccessibleProjectIdsMock,
+    listAccessibleSummaries: listAccessibleSummariesMock,
   } as unknown as ProjectsRepository;
 
   const service = new ProjectsService(projectsRepository);
@@ -123,7 +145,40 @@ describe('ProjectsService backend tests', () => {
       const result = await service.createProject('user-admin', input);
 
       expect(findByKeyMock).toHaveBeenCalledWith('ALICE');
-      expect(createMock).toHaveBeenCalledWith(input, 'user-admin');
+      expect(createMock).toHaveBeenCalledWith(
+        {
+          ...input,
+          workflow_config: {
+            work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+          },
+        },
+        'user-admin'
+      );
+      expect(result).toEqual(mockProject);
+    });
+
+    it('creates project with configured work_item_types', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      createMock.mockResolvedValue(mockProject);
+
+      const input = createProjectInput({
+        workflow_config: {
+          work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+        },
+      });
+
+      const result = await service.createProject('user-admin', input);
+
+      expect(createMock).toHaveBeenCalledWith(
+        {
+          ...input,
+          workflow_config: {
+            work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+          },
+        },
+        'user-admin'
+      );
       expect(result).toEqual(mockProject);
     });
 
@@ -168,6 +223,47 @@ describe('ProjectsService backend tests', () => {
   });
 
   describe('updateProject', () => {
+    it.each(['manager', 'admin'] as const)(
+      'allows a %s to save workflow configuration',
+      async (role) => {
+        mockActorRole(role);
+        updateMock.mockResolvedValue({
+          ...mockProject,
+          workflow_config: boardConfig,
+        });
+
+        await service.updateProject(
+          'actor-id',
+          'project-1',
+          { workflow_config: boardConfig },
+          mockProject.updated_at
+        );
+
+        expect(updateMock).toHaveBeenCalledWith(
+          'project-1',
+          { workflow_config: boardConfig },
+          'actor-id',
+          mockProject.updated_at
+        );
+      }
+    );
+
+    it('does not allow a member to save workflow configuration', async () => {
+      mockActorRole('member');
+
+      await expect(
+        service.updateProject(
+          'user-member',
+          'project-1',
+          { workflow_config: boardConfig },
+          mockProject.updated_at
+        )
+      ).rejects.toThrow(
+        'Unauthorized. Only admins and managers can manage projects.'
+      );
+      expect(updateMock).not.toHaveBeenCalled();
+    });
+
     it('updates project successfully as manager/admin', async () => {
       mockActorRole('manager');
       findByKeyMock.mockResolvedValue(null);
@@ -190,6 +286,39 @@ describe('ProjectsService backend tests', () => {
         mockProject.updated_at
       );
       expect(result.name).toBe('Updated name');
+    });
+
+    it('migrates work items to Issue and prunes hierarchy when types are removed on update', async () => {
+      mockActorRole('manager');
+      findByKeyMock.mockResolvedValue(null);
+      findByIdMock.mockResolvedValue({
+        ...mockProject,
+        workflow_config: {
+          work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+        },
+      });
+      updateMock.mockResolvedValue(mockProject);
+      migrateWorkItemTypesAndPruneHierarchyMock.mockResolvedValue({
+        migratedCount: 2,
+        unlinkedCount: 1,
+      });
+
+      await service.updateProject(
+        'user-manager',
+        'project-1',
+        {
+          workflow_config: {
+            work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+          },
+        },
+        mockProject.updated_at
+      );
+
+      expect(migrateWorkItemTypesAndPruneHierarchyMock).toHaveBeenCalledWith(
+        'project-1',
+        ['Epic', 'Story', 'Task', 'Issue'],
+        undefined
+      );
     });
 
     it('validates key uniqueness on update', async () => {
@@ -365,6 +494,19 @@ describe('ProjectsService backend tests', () => {
 
       expect(removeMemberMock).not.toHaveBeenCalled();
     });
+
+    it('rejects removing the project creator', async () => {
+      mockActorRole('manager');
+      findByIdMock.mockResolvedValue(mockProject);
+
+      await expect(
+        service.removeMember('user-manager', 'project-1', 'user-admin')
+      ).rejects.toThrow(
+        'Cannot remove the project creator from members. The admin who created this project stays assigned.'
+      );
+
+      expect(removeMemberMock).not.toHaveBeenCalled();
+    });
   });
 
   describe('hardDeleteProject', () => {
@@ -387,6 +529,111 @@ describe('ProjectsService backend tests', () => {
       );
 
       expect(deleteMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('listProjectsForActor', () => {
+    const accessibleProjects = [
+      {
+        id: 'proj-1',
+        name: 'Alpha Project',
+        key: 'ALPHA',
+        description: 'First project',
+        status: 'active' as const,
+      },
+      {
+        id: 'proj-2',
+        name: 'Beta Project',
+        key: 'BETA',
+        description: 'Second project',
+        status: 'active' as const,
+      },
+    ];
+
+    it('returns accessible projects and permissions for member role', async () => {
+      mockActorRole('member');
+      listAccessibleProjectIdsMock.mockResolvedValue(['proj-1']);
+      listAccessibleSummariesMock.mockResolvedValue([accessibleProjects[0]]);
+
+      const result = await service.listProjectsForActor('user-member');
+
+      expect(listAccessibleProjectIdsMock).toHaveBeenCalledWith('user-member');
+      expect(listAccessibleSummariesMock).toHaveBeenCalledWith({
+        accessibleIds: ['proj-1'],
+        status: 'active',
+        search: undefined,
+      });
+      expect(result).toEqual({
+        projects: [accessibleProjects[0]],
+        totalCount: 1,
+        userRole: 'member',
+        permissions: {
+          role: 'member',
+          canCreate: false,
+          canManage: false,
+          canPurge: false,
+        },
+      });
+    });
+
+    it('returns manager permissions and accessible projects for manager role', async () => {
+      mockActorRole('manager');
+      listAccessibleProjectIdsMock.mockResolvedValue(['proj-1', 'proj-2']);
+      listAccessibleSummariesMock.mockResolvedValue(accessibleProjects);
+
+      const result = await service.listProjectsForActor('user-manager');
+
+      expect(result).toEqual({
+        projects: accessibleProjects,
+        totalCount: 2,
+        userRole: 'manager',
+        permissions: {
+          role: 'manager',
+          canCreate: false,
+          canManage: true,
+          canPurge: false,
+        },
+      });
+    });
+
+    it('returns admin permissions and accessible projects for admin role', async () => {
+      mockActorRole('admin');
+      listAccessibleProjectIdsMock.mockResolvedValue(['proj-1', 'proj-2']);
+      listAccessibleSummariesMock.mockResolvedValue(accessibleProjects);
+
+      const result = await service.listProjectsForActor('user-admin');
+
+      expect(result).toEqual({
+        projects: accessibleProjects,
+        totalCount: 2,
+        userRole: 'admin',
+        permissions: {
+          role: 'admin',
+          canCreate: true,
+          canManage: true,
+          canPurge: true,
+        },
+      });
+    });
+
+    it('returns empty list without calling listAccessibleSummaries when user has no accessible projects', async () => {
+      mockActorRole('member');
+      listAccessibleProjectIdsMock.mockResolvedValue([]);
+
+      const result = await service.listProjectsForActor('user-member');
+
+      expect(listAccessibleSummariesMock).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        projects: [],
+        totalCount: 0,
+        userRole: 'member',
+        permissions: {
+          role: 'member',
+          canCreate: false,
+          canManage: false,
+          canPurge: false,
+        },
+      });
     });
   });
 });

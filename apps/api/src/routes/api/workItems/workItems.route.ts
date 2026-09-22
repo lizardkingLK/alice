@@ -6,6 +6,8 @@ import {
 } from '../../../middlewares/auth';
 import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import {
+  BoardMoveForbiddenError,
+  StatusTransitionForbiddenError,
   WorkItemAccessError,
   WorkItemValidationError,
 } from './workItems.errors';
@@ -21,7 +23,10 @@ import {
   type WorkItemUpdateBody,
 } from './workItems.schemas';
 import type { DbWorkItem } from './workItems.repository';
-import { coalescePatchField } from './workItems.patch-utils';
+import {
+  coalescePatchField,
+  resolveBoardColumnPatchValue,
+} from './workItems.patch-utils';
 import { listWorkItemsQuerySchema, parseWorkItemLabels } from '@repo/types';
 
 type PatchUpdateWorkItemPayload = z.infer<typeof patchWorkItemBodySchema>;
@@ -35,12 +40,19 @@ function buildWorkItemPayload(
   parsedData: PatchUpdateWorkItemPayload,
   existingWorkItem: DbWorkItem
 ) {
+  const projectId = coalescePatchField(
+    parsedData.project_id,
+    existingWorkItem.project_id
+  );
+  const status = coalescePatchField(parsedData.status, existingWorkItem.status);
+  const boardColumnWasProvided = Object.hasOwn(parsedData, 'board_column_id');
+  const workflowContextChanged =
+    projectId !== existingWorkItem.project_id ||
+    status !== existingWorkItem.status;
+
   return {
     title: coalescePatchField(parsedData.title, existingWorkItem.title),
-    project_id: coalescePatchField(
-      parsedData.project_id,
-      existingWorkItem.project_id
-    ),
+    project_id: projectId,
     type: coalescePatchField(parsedData.type, existingWorkItem.type),
     priority: coalescePatchField(
       parsedData.priority,
@@ -58,7 +70,13 @@ function buildWorkItemPayload(
       parsedData.due_date,
       existingWorkItem.due_date
     ),
-    status: coalescePatchField(parsedData.status, existingWorkItem.status),
+    status,
+    board_column_id: resolveBoardColumnPatchValue({
+      wasProvided: boardColumnWasProvided,
+      value: parsedData.board_column_id,
+      currentValue: existingWorkItem.board_column_id,
+      workflowContextChanged,
+    }),
     sprint_id: coalescePatchField(
       parsedData.sprint_id,
       existingWorkItem.sprint_id
@@ -120,9 +138,21 @@ function sendWorkItemMutationError(
 
   const message = error instanceof Error ? error.message : fallbackMessage;
   if (error instanceof WorkItemAccessError) {
-    return res.status(403).json({ data: null, error: message });
+    const code =
+      error instanceof BoardMoveForbiddenError ||
+      error instanceof StatusTransitionForbiddenError
+        ? error.code
+        : undefined;
+    return res.status(403).json({
+      data: null,
+      error: message,
+      ...(code ? { code } : {}),
+    });
   }
-  if (error instanceof WorkItemValidationError) {
+  if (
+    error instanceof WorkItemValidationError ||
+    /capacity exceeded/i.test(message)
+  ) {
     return res.status(400).json({ data: null, error: message });
   }
   return res.status(500).json({ data: null, error: message });
@@ -152,6 +182,10 @@ function listWorkItemsQueryFromRequest(query: Record<string, unknown>) {
     view: firstQueryValue(query.view),
     includeDescription: firstQueryValue(query.includeDescription),
     recordStatus: firstQueryValue(query.recordStatus),
+    dueDate: firstQueryValue(query.dueDate),
+    dueDateFrom: firstQueryValue(query.dueDateFrom),
+    dueDateTo: firstQueryValue(query.dueDateTo),
+    excludeStatuses: firstQueryValue(query.excludeStatuses),
   });
 }
 

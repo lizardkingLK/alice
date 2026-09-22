@@ -6,7 +6,7 @@ import {
   contactRequestSchema,
 } from '@repo/types';
 import { env } from '../../../config/env';
-import { NotificationsService } from './notifications.service';
+import type { NotificationsService } from './notifications.service';
 import type { AccessRequestsService } from '../accessRequests/accessRequests.service';
 
 const sendSchema = z.object({
@@ -31,6 +31,24 @@ function assertCronAuthorized(req: {
   }
   const header = req.headers.authorization;
   return header === `Bearer ${secret}`;
+}
+
+async function runAuthorizedCron<T extends object>(
+  req: { headers: { authorization?: string } },
+  res: Response,
+  run: () => Promise<T>
+): Promise<void> {
+  if (!assertCronAuthorized(req)) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  try {
+    const result = await run();
+    res.json({ success: true, ...result });
+  } catch (error) {
+    routeError(res, error);
+  }
 }
 
 export type NotificationsRouterDeps = {
@@ -88,17 +106,15 @@ export function createNotificationsRouter(deps: NotificationsRouterDeps) {
   });
 
   notificationsRouter.get('/check-due-dates', async (req, res) => {
-    if (!assertCronAuthorized(req)) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+    await runAuthorizedCron(req, res, () =>
+      notificationsService.checkAndSendDueDateNotifications()
+    );
+  });
 
-    try {
-      const result =
-        await notificationsService.checkAndSendDueDateNotifications();
-      res.json({ success: true, ...result });
-    } catch (error) {
-      routeError(res, error);
-    }
+  notificationsRouter.get('/prune-read', async (req, res) => {
+    await runAuthorizedCron(req, res, () =>
+      notificationsService.pruneReadNotifications()
+    );
   });
 
   return notificationsRouter;

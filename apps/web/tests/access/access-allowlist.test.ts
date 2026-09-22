@@ -22,6 +22,7 @@ describe('isPublicAccessPath', () => {
     '/forgot-password',
     '/reset-password',
     '/access-denied',
+    '/check-email',
     '/auth',
     '/auth/callback',
   ])('treats %s as public', (pathname) => {

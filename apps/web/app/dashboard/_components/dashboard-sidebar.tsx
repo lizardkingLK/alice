@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Settings, User, ChevronRight } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import {
@@ -10,6 +10,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@repo/ui/components/ui/collapsible';
+import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import {
   Sidebar,
   SidebarContent,
@@ -27,6 +28,10 @@ import { useWorkspaceDefaultsNavPreference } from '@/app/board/_hooks/use-worksp
 import { buildWorkspaceNavHref } from '@/app/board/_services/board.defaults.shared';
 import { useFavorites } from '@/lib/favorites/use-favorites';
 import {
+  favoriteHref,
+  isFavoriteActive,
+} from '@/lib/favorites/favorites-storage';
+import {
   readFavoritesSidebarOpen,
   writeFavoritesSidebarOpen,
 } from '@/lib/favorites/favorites-sidebar-storage';
@@ -35,11 +40,10 @@ import {
   HELP_NAV,
   PLATFORM_NAV,
   PROJECTS_NAV,
-  SPRINTS_NAV,
   SYSTEM_NAV,
   type DashboardNavItem,
 } from '@/lib/dashboard/nav-registry';
-import { canAccessNavGroup, canAccessPath } from '@/lib/rbac/route-policy';
+import { canAccessNavGroup } from '@/lib/rbac/route-policy';
 import type { AppRole } from '@/lib/rbac/roles';
 import { SidebarNavLink } from '@/app/dashboard/_components/sidebar-nav-link';
 
@@ -99,10 +103,12 @@ function SidebarNavGroup({
 function FavoritesSidebarGroup({
   favorites,
   pathname,
+  search,
   userId,
 }: Readonly<{
   favorites: ReturnType<typeof useFavorites>['favorites'];
   pathname: string;
+  search: string;
   userId: string | null | undefined;
 }>) {
   const [open, setOpen] = useState(true);
@@ -139,10 +145,10 @@ function FavoritesSidebarGroup({
               {favorites.map((favorite) => (
                 <SidebarNavLink
                   key={favorite.id}
-                  href={favorite.pathname}
+                  href={favoriteHref(favorite)}
                   label={favorite.label}
                   icon={resolveFavoriteNavIcon(favorite.pathname)}
-                  isActive={isNavActive(pathname, favorite.pathname)}
+                  isActive={isFavoriteActive(pathname, search, favorite)}
                   truncateLabel
                 />
               ))}
@@ -156,7 +162,7 @@ function FavoritesSidebarGroup({
 
 type DashboardSidebarProps = {
   readonly userId?: string | null;
-  /** App role from `public.users.role`; null hides role-gated nav groups. */
+  /** App role from `public.users.role`; null hides role-gated nav items. */
   readonly role?: AppRole | null;
 };
 
@@ -165,16 +171,20 @@ export function DashboardSidebar({
   role = null,
 }: Readonly<DashboardSidebarProps>) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams.toString();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const preference = useWorkspaceDefaultsNavPreference(userId);
   const { favorites } = useFavorites(userId);
   const showSystem = canAccessNavGroup(role, 'system');
   const showProjects = canAccessNavGroup(role, 'projects');
-  const showSprints = canAccessPath(role, '/sprints');
-  const projectsNavItems = showSprints
-    ? [...PROJECTS_NAV, ...SPRINTS_NAV]
-    : [...PROJECTS_NAV];
+
+  const platformItems: DashboardNavItem[] = [
+    ...PLATFORM_NAV,
+    ...(showSystem ? SYSTEM_NAV : []),
+    ...(showProjects ? PROJECTS_NAV : []),
+  ];
 
   return (
     <Sidebar collapsible="icon">
@@ -191,77 +201,70 @@ export function DashboardSidebar({
         </Link>
       </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarNavGroup
-          label="Platform"
-          items={PLATFORM_NAV}
-          pathname={pathname}
-          preference={preference}
-        />
+      <SidebarContent className="p-0">
+        <ScrollArea className="h-full min-h-0 flex-1">
+          <div
+            className={cn(
+              'flex flex-col',
+              isCollapsed ? 'gap-1 px-1 py-2' : 'gap-0'
+            )}
+          >
+            {favorites.length > 0 ? (
+              <FavoritesSidebarGroup
+                favorites={favorites}
+                pathname={pathname}
+                search={search}
+                userId={userId}
+              />
+            ) : null}
 
-        {favorites.length > 0 ? (
-          <FavoritesSidebarGroup
-            favorites={favorites}
-            pathname={pathname}
-            userId={userId}
-          />
-        ) : null}
+            <SidebarNavGroup
+              label="Platform"
+              items={platformItems}
+              pathname={pathname}
+              preference={preference}
+            />
 
-        {showSystem ? (
-          <SidebarNavGroup
-            label="System"
-            items={SYSTEM_NAV}
-            pathname={pathname}
-            preference={preference}
-          />
-        ) : null}
-        {showProjects ? (
-          <SidebarNavGroup
-            label="Projects"
-            items={projectsNavItems}
-            pathname={pathname}
-            preference={preference}
-          />
-        ) : null}
+            <SidebarGroup>
+              <SidebarGroupLabel>Account</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isNavActive(pathname, '/profile')}
+                      tooltip="Profile"
+                    >
+                      <Link href="/profile">
+                        <User />
+                        <span>Profile</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isNavActive(pathname, '/settings')}
+                      tooltip="Settings"
+                    >
+                      <Link href="/settings">
+                        <Settings />
+                        <span>Settings</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Account</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isNavActive(pathname, '/profile')}
-                  tooltip="Profile"
-                >
-                  <Link href="/profile">
-                    <User />
-                    <span>Profile</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isNavActive(pathname, '/settings')}
-                  tooltip="Settings"
-                >
-                  <Link href="/settings">
-                    <Settings />
-                    <span>Settings</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarNavGroup
-          label="Help"
-          items={HELP_NAV}
-          pathname={pathname}
-          preference={preference}
-        />
+            <SidebarNavGroup
+              label="Help"
+              items={HELP_NAV}
+              pathname={pathname}
+              preference={preference}
+            />
+          </div>
+        </ScrollArea>
       </SidebarContent>
     </Sidebar>
   );

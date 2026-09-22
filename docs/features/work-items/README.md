@@ -12,7 +12,7 @@ Quick links:
 - Implementation: `apps/web/app/work-items/`
 - Client services: `apps/web/app/work-items/_services/workItem.service.client.ts`
 - Server reads: `apps/web/app/work-items/_services/workItem.service.server.ts`
-- Retrieval toggle (Plan): [DATA_RETRIEVAL.md](../../architecture/DATA_RETRIEVAL.md) — list/detail can switch to Express Prisma GETs; default remains SSR
+- Retrieval toggle: [DATA_RETRIEVAL.md](../../architecture/DATA_RETRIEVAL.md) + [API_VERSIONING.md](../../architecture/API_VERSIONING.md) — **work-items** has dual readers (`reads.supabase` / `reads.api`); default remains SSR unless `DATA_READS_VIA_API=true`
 - API: `apps/api/src/routes/api/workItems/`
 - Schema: `work_items` in `packages/db/prisma/schema.prisma`
 - Shared hierarchy helpers: `packages/types/src/work-item-types.ts`
@@ -60,11 +60,17 @@ The dashboard shell breadcrumb on work-item detail is always project-scoped when
 | _(absent)_ / `flat` | Default: paginated flat list of all matching work items                                   |
 | `hierarchy`         | Paginated **roots only** (`parent_id IS NULL`); expand a row to lazy-load direct children |
 
-Toolbar:
+Toolbar (same left / right split as other registries):
 
-- **Flat / Hierarchy** segmented control writes `view` and resets `page=1`
-- In hierarchy mode: **Expand all** recursively loads children for expandable types on the current page; **Collapse all** hides nested rows
-- Filters (project, sprint, type, assignee, search) apply to the **root query** only; expanded children are not re-filtered so the tree stays coherent
+- **Left:** Search → Filters → **Columns** (icon) → Defaults → Clear filters
+  when active
+- **Right:** **Flat / Hierarchy** segmented control (writes `view`, resets
+  `page=1`) → Active / Archived **icon segment** tabs (`RegistryTabSwitcher`) →
+  Add Work-Item
+- In hierarchy mode: **Expand all** recursively loads children for expandable
+  types on the current page; **Collapse all** hides nested rows
+- Filters (project, sprint, type, assignee, search) apply to the **root query**
+  only; expanded children are not re-filtered so the tree stays coherent
 
 Chevron affordances follow `getAllowedChildType` (Epic / Story / Task). Issues are leaves.
 

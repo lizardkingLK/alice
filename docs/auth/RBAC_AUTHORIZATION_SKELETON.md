@@ -30,7 +30,8 @@ Related: `AUTHENTICATION.md`, `docs/features/users/USER_MANAGEMENT.md`, `docs/RE
 
 - Role hierarchy helpers and route/nav policy in `apps/web/lib/rbac/`.
 - Layout guards: `/users` (admin); `/projects`, `/sprints`, `/manager` (manager+).
-- Sidebar filtering for System and Projects groups.
+- Sidebar filtering for System (**Users**) and Projects items (shown under
+  Platform).
 - Shared `requireAdmin` / `requireManagerOrAdmin` (and existing `requireManagerRole` wrapper).
 
 ### Out of Scope (Phase 2+)
@@ -107,5 +108,6 @@ Denied layout access uses `redirect('/dashboard')` — do not throw opaque diges
 ## 10. Test Plan
 
 - Unit: route policy matrix and role hierarchy.
-- Component: sidebar omits System for manager/member; omits Projects for member.
+- Component: sidebar omits **Users** for manager/member; Projects stays under
+  Platform for authenticated roles.
 - Guard: non-admin hitting `/users` layout redirects; member hitting Projects layouts redirects.

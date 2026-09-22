@@ -461,7 +461,7 @@ export function TeamRegistry({
 
       {isAddTeamOpen || teamToEdit ? (
         <div className="bg-background/80 animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm duration-300">
-          <div className="flex max-h-[85vh] sm:max-h-[90vh] w-full max-w-xl flex-col">
+          <div className="flex max-h-[85vh] w-full max-w-xl flex-col sm:max-h-[90vh]">
             <TeamForm
               users={users}
               activeProjects={activeProjects}

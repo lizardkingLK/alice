@@ -27,6 +27,10 @@ import { workItemFactory } from '../factories/workItem.factory';
 import { assertDebouncedSearchRedirect } from '../helpers/assert-debounced-search';
 import { paginationFactory } from '../factories/pagination.factory';
 
+vi.mock('@/components/realtime/realtime-provider', () => ({
+  useRealtime: () => ({ isUserOnline: () => false }),
+}));
+
 async function ensureFilterDialogOpen() {
   const existing = screen.queryByRole('dialog');
   if (existing) {
@@ -704,9 +708,9 @@ describe('WorkItemsTable', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Archive' }));
 
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     fireEvent.click(
-      within(screen.getByRole('dialog')).getByRole('button', {
+      within(screen.getByRole('alertdialog')).getByRole('button', {
         name: 'Archive',
       })
     );
@@ -786,7 +790,7 @@ describe('WorkItemsTable', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
 
-    const dialog = screen.getByRole('dialog');
+    const dialog = screen.getByRole('alertdialog');
     expect(dialog).toHaveTextContent(/unlink this work item from its parent/i);
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Restore' }));
@@ -820,9 +824,9 @@ describe('WorkItemsTable', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Purge' }));
 
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     fireEvent.click(
-      within(screen.getByRole('dialog')).getByRole('button', {
+      within(screen.getByRole('alertdialog')).getByRole('button', {
         name: 'Delete permanently',
       })
     );
@@ -853,12 +857,12 @@ describe('WorkItemsTable', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Purge' }));
 
-    expect(screen.getByRole('dialog')).toHaveTextContent(
+    expect(screen.getByRole('alertdialog')).toHaveTextContent(
       /unlinks it from its parent/i
     );
 
     fireEvent.click(
-      within(screen.getByRole('dialog')).getByRole('button', {
+      within(screen.getByRole('alertdialog')).getByRole('button', {
         name: 'Delete permanently',
       })
     );

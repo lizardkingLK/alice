@@ -22,7 +22,9 @@ import {
 } from '@/app/settings/_components/settings-integration-catalog';
 import { IntegrationDetailDialog } from '@/app/settings/_components/settings-integration-detail-dialog';
 import { IntegrationIdentity } from '@/app/settings/_components/settings-integration-identity';
+import { workspaceIntegrationDisconnectCopy } from '@/app/settings/_helpers/workspace-integration-disconnect-copy';
 import { deleteWorkspaceIntegration } from '@/app/settings/_services/integrations.mutations.client';
+import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import { errorMessage } from '@/lib/errors/error-message';
 
 const FILTER_TAB_TRIGGER_CLASS =
@@ -113,6 +115,8 @@ export function SettingsIntegrationsView({
     null
   );
   const [listError, setListError] = useState<string | null>(null);
+  const [integrationToDisconnect, setIntegrationToDisconnect] =
+    useState<WorkspaceIntegration | null>(null);
 
   const filteredIntegrations = useMemo(
     () =>
@@ -124,12 +128,20 @@ export function SettingsIntegrationsView({
     [activeFilter, searchQuery]
   );
 
+  const disconnectCopy = useMemo(
+    () =>
+      integrationToDisconnect
+        ? workspaceIntegrationDisconnectCopy(integrationToDisconnect.name)
+        : null,
+    [integrationToDisconnect]
+  );
+
   const openDetail = (integration: WorkspaceIntegration) => {
     setDetailIntegration(integration);
     setDetailOpen(true);
   };
 
-  const handleConnectedChange = async (
+  const handleConnectedChange = (
     integration: WorkspaceIntegration,
     connected: boolean
   ) => {
@@ -149,9 +161,29 @@ export function SettingsIntegrationsView({
       return;
     }
 
-    setUpdatingCatalogId(integration.id);
+    setIntegrationToDisconnect(integration);
+  };
+
+  const handleConfirmDisconnect = async () => {
+    if (!integrationToDisconnect || updatingCatalogId) {
+      return;
+    }
+
+    const rows = integrationRowsForCatalog(
+      initialIntegrations,
+      integrationToDisconnect.id
+    ).filter((row) => row.status === 'active');
+
+    if (rows.length === 0) {
+      setIntegrationToDisconnect(null);
+      return;
+    }
+
+    setUpdatingCatalogId(integrationToDisconnect.id);
+    setListError(null);
     try {
       await Promise.all(rows.map((row) => deleteWorkspaceIntegration(row.id)));
+      setIntegrationToDisconnect(null);
       router.refresh();
     } catch (error) {
       setListError(errorMessage(error, 'Failed to disconnect integration'));
@@ -198,7 +230,10 @@ export function SettingsIntegrationsView({
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className={cn(FILTER_TAB_TRIGGER_CLASS, 'shrink-0')}
+                  className={cn(
+                    FILTER_TAB_TRIGGER_CLASS,
+                    'shrink-0 cursor-pointer'
+                  )}
                 >
                   {tab.label}
                 </TabsTrigger>
@@ -240,7 +275,7 @@ export function SettingsIntegrationsView({
                   )}
                   isUpdating={updatingCatalogId === integration.id}
                   onConnectedChange={(connected) =>
-                    void handleConnectedChange(integration, connected)
+                    handleConnectedChange(integration, connected)
                   }
                   onView={() => openDetail(integration)}
                 />
@@ -264,6 +299,28 @@ export function SettingsIntegrationsView({
         }
         onSaved={() => router.refresh()}
       />
+
+      {integrationToDisconnect && disconnectCopy ? (
+        <RegistryConfirmDialog
+          title={disconnectCopy.title}
+          subject={disconnectCopy.subject}
+          detail={disconnectCopy.detail}
+          confirmLabel={disconnectCopy.confirmLabel}
+          pendingLabel={disconnectCopy.pendingLabel}
+          actionVerb={disconnectCopy.actionVerb}
+          isPending={updatingCatalogId === integrationToDisconnect.id}
+          isSoft={false}
+          onCancel={() => {
+            if (updatingCatalogId) {
+              return;
+            }
+            setIntegrationToDisconnect(null);
+          }}
+          onConfirm={() => {
+            handleConfirmDisconnect().catch(() => undefined);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

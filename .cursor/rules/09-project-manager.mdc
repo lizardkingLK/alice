@@ -1,0 +1,65 @@
+---
+description: >-
+  Keep product user-guide and engineering feature docs in sync after
+  implementing or changing user-facing features.
+alwaysApply: true
+---
+
+# Docs: user-guide + feature docs (together)
+
+When you **implement or update a product feature** (UI, API, RBAC, or flows
+users can see), treat documentation as part of delivery — not a follow-up.
+
+Quality gates for code (dedupe offer + unit tests) stay in
+`.cursor/rules/07-qa-dev-member.mdc`. This rule covers **docs only**.
+
+## Dual update (required)
+
+For user-facing behavior changes, update **both** when applicable:
+
+| Layer | Where | Audience |
+| ----- | ----- | -------- |
+| **Dev / feature docs** | `docs/features/<area>/…`, plus auth/architecture guides if needed | Engineers |
+| **User guide** | `docs/user-guide/<topic>/…` + `docs/docs-publish.json` if new pages | End users (prod `/docs`) |
+
+Do **not** only update engineering docs and leave the user guide stale (or the
+reverse).
+
+## When this applies
+
+- New screens, flows, filters, roles, or settings users interact with
+- Behavior changes that alter steps, labels, who can access what, or outcomes
+- Fixes that change the documented user path (not one-line typos in code)
+
+## When to skip
+
+- Pure refactors with no user-visible behavior change
+- Test-only, tooling, CI, or cursor/rule/skill edits
+- Internal-only APIs with no product surface (still update `docs/features/` if
+  engineers need it; skip user-guide)
+
+## Authoring checklist
+
+1. Prefer **Living** prose in the user guide (steps, tables, related links) —
+   match tone of existing `docs/user-guide/**` pages (no stub TODOs for shipped
+   behavior).
+2. Align UI labels and routes with the app (`/board`, **Allowlist**, etc.).
+3. Reflect **RBAC** accurately (`minimumRole` in `docs-publish.json` when a page
+   is manager/admin-only).
+4. New user-guide page → add it under the right topic in
+   `docs/docs-publish.json` (`path`, `order`, optional `minimumRole`).
+5. Cross-link related user-guide pages; link from feature README to the
+   user-guide topic when helpful.
+6. After markdown edits: `pnpm --filter web docs:sync` (or rely on
+   `predev`/`prebuild`).
+
+## Finish the turn
+
+If you shipped user-facing behavior and docs were in scope, briefly note what
+user-guide / feature docs you updated (or why docs were skipped).
+
+## Related
+
+- In-app docs architecture: `docs/features/docs/README.md`
+- Publish manifest: `docs/docs-publish.json`, `docs/docs-publish.schema.json`
+- Product overview: `docs/user-guide/README.md`

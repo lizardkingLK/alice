@@ -15,8 +15,8 @@ decides who can:
 - See the project in the **Projects** registry (for managers)
 - Use project-scoped data in board, backlog, and forms
 
-**Admins** can access every project. **Owners** and listed **members** can
-access that project. Everyone else is denied.
+**Admins**, **owners**, and listed **members** can access projects they own or
+belong to (membership-scoped). Everyone else is denied.
 
 ---
 
@@ -50,8 +50,10 @@ manager) and they can work on that project's items.
 1. On **Members**, find the person in **Allocated members**.
 2. Select the remove action (trash icon).
 
-You **cannot** remove the **project owner** from the list. Change the owner in
-project settings first if ownership should move.
+You **cannot** remove the **project owner** or the **project creator** (the
+admin who created the project) from the list. Change the owner in project
+settings first if ownership should move. Creator membership is locked by the
+system.
 
 ---
 

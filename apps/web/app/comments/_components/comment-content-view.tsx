@@ -7,10 +7,18 @@ import {
   toCommentTiptapContent,
   type CommentTiptapNode,
   type Json,
+  type Tables,
 } from '@repo/types';
 import { Badge } from '@repo/ui/components/ui/badge';
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from '@repo/ui/components/ui/hover-card';
 import { cn } from '@repo/ui/lib/utils';
 import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
+import { UserMentionCard } from '@/components/user-mention-card';
+import { WorkItemPreviewCard } from '@/components/work-item-preview-card';
 import { resolveEmojiPlainText } from '@/lib/editor/resolve-emoji';
 import { foldMarks, mapInlineMark } from '@/lib/editor/tiptap-marks';
 
@@ -18,6 +26,33 @@ const MENTION_BADGE_CLASS =
   'border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400';
 const ISSUE_BADGE_CLASS =
   'border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400';
+
+const MENTION_HOVER_OPEN_DELAY_MS = 400;
+const MENTION_HOVER_CLOSE_DELAY_MS = 200;
+
+function MentionHoverCard({
+  children,
+  content,
+  contentClassName,
+}: Readonly<{
+  children: ReactNode;
+  content: ReactNode;
+  contentClassName?: string;
+}>) {
+  return (
+    <HoverCard
+      openDelay={MENTION_HOVER_OPEN_DELAY_MS}
+      closeDelay={MENTION_HOVER_CLOSE_DELAY_MS}
+    >
+      <HoverCardTrigger asChild>
+        <span className="inline-flex">{children}</span>
+      </HoverCardTrigger>
+      <HoverCardContent className={contentClassName} align="start">
+        {content}
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
 
 export type CommentUserMentionTarget = {
   id: string;
@@ -28,21 +63,32 @@ export type CommentUserMentionTarget = {
 type UserMentionClickHandler = (mention: CommentUserMentionTarget) => void;
 /* eslint-enable no-unused-vars */
 
+type CommentContentUser = {
+  id: string;
+  name: string | null;
+  email?: string | null;
+  role?: string | null;
+  profile_picture?: string | null;
+};
+
+type CommentContentWorkItem = {
+  id: string;
+  key: string;
+  title: string;
+  type?: Tables<'work_items'>['type'];
+  priority?: Tables<'work_items'>['priority'] | null;
+  description_plain?: string | null;
+  assignee_name?: string | null;
+  assignee_profile_picture?: string | null;
+};
+
 type CommentContentViewProps = {
   content: Json | string | null | undefined;
   className?: string;
   /** Used to recover display names when a stored mention is missing `label`. */
-  users?: ReadonlyArray<{
-    id: string;
-    name: string | null;
-    email?: string | null;
-  }>;
+  users?: ReadonlyArray<CommentContentUser>;
   /** Used to recover work-item key/title when stored mention attrs are incomplete. */
-  workItems?: ReadonlyArray<{
-    id: string;
-    key: string;
-    title: string;
-  }>;
+  workItems?: ReadonlyArray<CommentContentWorkItem>;
   /** When set, user mention pills become buttons that start a reply-to-user flow. */
   onUserMentionClick?: UserMentionClickHandler;
 };
@@ -120,34 +166,57 @@ function renderUserMention(
   const id = getAttrString(node.attrs, 'id');
   const label = mentionDisplayLabel(node, users);
   const text = `@${label || 'user'}`;
+  const matchedUser = id ? users?.find((user) => user.id === id) : undefined;
 
-  if (id && onUserMentionClick && label) {
+  const badge = (() => {
+    if (id && onUserMentionClick && label) {
+      return (
+        <Badge
+          variant="outline"
+          asChild
+          className={cn('mx-0.5 font-semibold', MENTION_BADGE_CLASS)}
+        >
+          <button
+            type="button"
+            className="cursor-pointer"
+            onClick={() => onUserMentionClick({ id, label })}
+          >
+            {text}
+          </button>
+        </Badge>
+      );
+    }
+
     return (
       <Badge
-        key={key}
         variant="outline"
-        asChild
         className={cn('mx-0.5 font-semibold', MENTION_BADGE_CLASS)}
       >
-        <button
-          type="button"
-          className="cursor-pointer"
-          onClick={() => onUserMentionClick({ id, label })}
-        >
-          {text}
-        </button>
+        {text}
       </Badge>
     );
+  })();
+
+  if (!matchedUser && !label) {
+    return <span key={key}>{badge}</span>;
   }
 
   return (
-    <Badge
-      key={key}
-      variant="outline"
-      className={cn('mx-0.5 font-semibold', MENTION_BADGE_CLASS)}
-    >
-      {text}
-    </Badge>
+    <span key={key}>
+      <MentionHoverCard
+        contentClassName="w-72 p-1"
+        content={
+          <UserMentionCard
+            name={matchedUser?.name ?? label}
+            email={matchedUser?.email}
+            role={matchedUser?.role}
+            imageUrl={matchedUser?.profile_picture}
+          />
+        }
+      >
+        {badge}
+      </MentionHoverCard>
+    </span>
   );
 }
 
@@ -159,10 +228,10 @@ function renderWorkItemMention(
   const { id, label, title } = workItemDisplay(node, workItems);
   const href = id ? workItemDetailHref(id) : '/work-items';
   const display = title ? `#${label} · ${title}` : `#${label || 'item'}`;
+  const matched = id ? workItems?.find((item) => item.id === id) : undefined;
 
-  return (
+  const badge = (
     <Badge
-      key={key}
       variant="outline"
       asChild
       className={cn('mx-0.5 max-w-56 font-semibold', ISSUE_BADGE_CLASS)}
@@ -173,6 +242,31 @@ function renderWorkItemMention(
         </span>
       </Link>
     </Badge>
+  );
+
+  if (!matched?.type && !title) {
+    return <span key={key}>{badge}</span>;
+  }
+
+  return (
+    <span key={key}>
+      <MentionHoverCard
+        contentClassName="w-auto border-0 bg-transparent p-0 shadow-none"
+        content={
+          <WorkItemPreviewCard
+            title={matched?.title || title || label || 'Work item'}
+            type={matched?.type ?? 'Task'}
+            priority={matched?.priority}
+            descriptionPlain={matched?.description_plain}
+            assigneeName={matched?.assignee_name}
+            assigneeImageUrl={matched?.assignee_profile_picture}
+            workItemKey={matched?.key || label}
+          />
+        }
+      >
+        {badge}
+      </MentionHoverCard>
+    </span>
   );
 }
 

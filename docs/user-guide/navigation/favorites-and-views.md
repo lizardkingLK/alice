@@ -13,8 +13,13 @@ Star pages you open often and save filtered list URLs to reopen later.
 
 The star fills when the page is favorited. Select again to remove it.
 
-Favorites store the **pathname only** (not query filters). They appear under
-**Favorites** in the sidebar when you have at least one.
+Favorites store **pathname + query string** (same as the URL you starred). They
+appear at the **top** of the sidebar under **Favorites** when you have at least
+one. Chat favorites include `?conversationId=…`; opening one switches to that
+thread. On Chat, the star stays disabled until the conversation URL has finished
+loading so you do not pin the wrong thread by accident. If a favorited page was
+deleted or you no longer have access, opening it shows **Page not found** and
+that favorite is **removed automatically** from the sidebar.
 
 ---
 
@@ -34,11 +39,18 @@ open the view.
 
 Open **Views** in the sidebar (`/views`) to manage saved views:
 
+Toolbar: **Search** and the **Columns** icon on the left; icon segment tabs on
+the right (**My views**, **Shared with me**, **Archived**) — same bordered
+switcher style as Flat/Hierarchy and Active/Archived elsewhere (not underline
+page tabs).
+
 | Tab                | Contents                     |
 | ------------------ | ---------------------------- |
 | **My views**       | Views you created            |
 | **Shared with me** | Views others shared with you |
 | **Archived**       | Views you archived           |
+
+Use **Columns** to show or hide table columns (title always stays visible).
 
 Row actions include **Open** (new tab), **Share**, **Archive** / **Restore**, and
 **Delete** (for shared copies).
@@ -50,11 +62,11 @@ respects your normal role and project access.
 
 ## Favorites vs views
 
-|             | Favorites     | Saved views                             |
-| ----------- | ------------- | --------------------------------------- |
-| **Stores**  | Path only     | Path + filters                          |
-| **Sharing** | Personal      | Can share with teammates                |
-| **Where**   | Sidebar group | **Views** page + optional notifications |
+|             | Favorites                     | Saved views                             |
+| ----------- | ----------------------------- | --------------------------------------- |
+| **Stores**  | Path + filters                | Path + filters                          |
+| **Sharing** | Personal                      | Can share with teammates                |
+| **Where**   | Sidebar group (top, when any) | **Views** page + optional notifications |
 
 ---
 

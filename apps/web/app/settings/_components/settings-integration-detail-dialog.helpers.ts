@@ -1,8 +1,9 @@
-import { CHAT_MODELS, type IntegrationWire } from '@repo/types';
+import { defaultChatModelForProvider, type IntegrationWire } from '@repo/types';
 import {
   CONFIGURABLE_CATALOG_PROVIDERS,
   integrationStatusLabel,
   isConfigurableCatalog,
+  type ConfigurableCatalogId,
   type WorkspaceIntegration,
 } from '@/app/settings/_components/settings-integration-catalog';
 import {
@@ -10,10 +11,6 @@ import {
   patchWorkspaceIntegration,
 } from '@/app/settings/_services/integrations.mutations.client';
 import { errorMessage } from '@/lib/errors/error-message';
-
-const DEFAULT_GEMINI_MODEL = CHAT_MODELS.GEMINI_3_6_FLASH;
-
-export { DEFAULT_GEMINI_MODEL };
 
 export type IntegrationFormState = {
   selectedRowId: string | null;
@@ -26,6 +23,20 @@ export type IntegrationSaveFeedback = {
   success: string | null;
   error: string | null;
 };
+
+export function providerForCatalog(catalogId: string): string | null {
+  if (!isConfigurableCatalog(catalogId)) {
+    return null;
+  }
+  return CONFIGURABLE_CATALOG_PROVIDERS[catalogId].provider;
+}
+
+export function defaultModelForProvider(provider: string) {
+  return defaultChatModelForProvider(provider);
+}
+
+/** @deprecated Prefer `defaultModelForProvider(provider)`. */
+export const DEFAULT_MODEL = defaultChatModelForProvider('gemini');
 
 export function integrationSaveButtonLabel(
   isSaving: boolean,
@@ -75,32 +86,36 @@ export function configuredModelLabel(row: IntegrationWire): string {
 }
 
 export function createFormStateFromRows(
-  activeRows: readonly IntegrationWire[]
+  activeRows: readonly IntegrationWire[],
+  provider: string
 ): IntegrationFormState {
   const defaultRow =
     activeRows.find((row) => row.is_default) ?? activeRows[0] ?? null;
+  const fallback = defaultChatModelForProvider(provider);
 
   return {
     selectedRowId: defaultRow?.id ?? null,
     modelId:
       defaultRow?.config.kind === 'chat_model'
         ? defaultRow.config.model
-        : DEFAULT_GEMINI_MODEL.value,
+        : fallback.value,
     displayLabel:
       defaultRow?.config.kind === 'chat_model'
         ? defaultRow.config.display_label
-        : DEFAULT_GEMINI_MODEL.label,
+        : fallback.label,
     isDefault: defaultRow?.is_default ?? activeRows.length === 0,
   };
 }
 
 export function createFormStateForNewModel(
-  activeRows: readonly IntegrationWire[]
+  activeRows: readonly IntegrationWire[],
+  provider: string
 ): IntegrationFormState {
+  const fallback = defaultChatModelForProvider(provider);
   return {
     selectedRowId: null,
-    modelId: DEFAULT_GEMINI_MODEL.value,
-    displayLabel: DEFAULT_GEMINI_MODEL.label,
+    modelId: fallback.value,
+    displayLabel: fallback.label,
     isDefault: activeRows.length === 0,
   };
 }
@@ -109,17 +124,18 @@ export function createFormStateFromRow(
   row: IntegrationWire
 ): IntegrationFormState {
   const chatConfig = row.config.kind === 'chat_model' ? row.config : null;
+  const fallback = defaultChatModelForProvider(row.provider);
 
   return {
     selectedRowId: row.id,
-    modelId: chatConfig?.model ?? DEFAULT_GEMINI_MODEL.value,
-    displayLabel: chatConfig?.display_label ?? DEFAULT_GEMINI_MODEL.label,
+    modelId: chatConfig?.model ?? fallback.value,
+    displayLabel: chatConfig?.display_label ?? fallback.label,
     isDefault: row.is_default,
   };
 }
 
 export async function saveIntegrationModel(params: {
-  catalogId: keyof typeof CONFIGURABLE_CATALOG_PROVIDERS;
+  catalogId: ConfigurableCatalogId;
   selectedRow: IntegrationWire | null;
   modelId: string;
   displayLabel: string;

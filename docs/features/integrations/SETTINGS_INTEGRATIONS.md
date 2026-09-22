@@ -120,9 +120,14 @@ Settings sidebar adds **Integrations** (admin only). Content sections:
 
 Card pattern reuses project integration visuals (`Card`, status `Badge`, disabled primary actions with “Coming soon” copy).
 
+Turning a connected card **switch off** opens the shared hard-delete-style
+`RegistryConfirmDialog` (rose warning). Confirming deletes active
+`integrations` rows for that catalog; cancel leaves the switch on.
+
 Implementation:
 
 - `apps/web/app/settings/_components/settings-integrations-view.tsx`
+- `apps/web/app/settings/_helpers/workspace-integration-disconnect-copy.ts`
 - `apps/web/app/settings/_components/settings-integration-catalog.ts` — static catalog metadata
 - `settings-workspace.tsx` — conditional nav item
 - `settings-data.tsx` — admin gate + tab routing
@@ -284,7 +289,7 @@ Chat sends `integration_id` (UUID) on `POST /api/chat` instead of a free-form mo
 
 ### Provider strategy (backend)
 
-Replace the monolithic `callGeminiAPI` path with a small registry in `apps/api`:
+Chat providers live in a small registry under `apps/api`:
 
 ```text
 apps/api/src/routes/api/integrations/
@@ -292,8 +297,10 @@ apps/api/src/routes/api/integrations/
   integrations.service.ts      # CRUD, encrypt config secrets, strip for JSON
   integrations.repository.ts
   chat-providers/
-    chat-provider.types.ts     # ChatModelProvider interface
-    gemini-chat.provider.ts
+    chat-provider.types.ts     # ChatModelProvider (ChatService shapes)
+    fetch-chat-provider-with-retries.ts  # shared retry / error loop
+    gemini/                    # Gemini wire adapters + provider
+    spacexai/                  # OpenAI-compatible xAI adapters + provider
     openai-chat.provider.ts
     anthropic-chat.provider.ts
     resolve-chat-provider.ts   # provider slug → implementation
@@ -307,12 +314,15 @@ interface ChatModelProvider {
     apiKey: string;
     apiUrl: string;
     model: string;
-    contents: ContentTurn[];
+    contents: ChatContentTurn[];
     systemInstruction: string;
-    tools: unknown;
-  }): Promise<LlmResponse>;
+    tools: AliceChatTools;
+  }): Promise<ChatLlmResponse>;
 }
 ```
+
+Strategies map `AliceChatTools` / `ChatContentTurn` / `ChatLlmResponse` to each
+vendor’s wire format (Gemini `functionDeclarations`, OpenAI `tools`, etc.).
 
 Flow:
 
@@ -327,9 +337,9 @@ sequenceDiagram
   API->>Repo: findActiveChatModel(integrationId)
   Repo-->>API: row + decrypted api_key (server only)
   API->>Strat: resolveChatProvider(row.provider)
-  Strat-->>API: GeminiChatProvider | OpenAIChatProvider | …
-  API->>Strat: generateWithTools(…)
-  Strat-->>API: LlmResponse
+  Strat-->>API: GeminiChatProvider | SpaceXAIChatProvider | …
+  API->>Strat: generateWithTools(ChatService shapes)
+  Strat-->>API: ChatLlmResponse
   API-->>UI: assistant message + tool actions
 ```
 
@@ -457,17 +467,18 @@ Per-model API keys and optional `config.api_url` live in `integrations.config`. 
 
 ## Testing
 
-| Test                               | Location                                                       | Scope                                                 |
-| ---------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------- |
-| `parseSettingsTab('integrations')` | `apps/web/tests/lib/search-params-settings-tab.test.ts`        | Returns `integrations`                                |
-| `resolveSettingsTabForUser`        | `apps/web/tests/lib/search-params-settings-tab.test.ts`        | Non-admin + `integrations` → `general`                |
-| Catalog helpers                    | `apps/web/tests/settings/settings-integration-catalog.test.ts` | Filter/search, `isCatalogConnected`, configurable ids |
-| Settings API client                | `apps/web/tests/settings/integrations-api.shared.test.ts`      | List/create via `/api/integrations`                   |
-| Chat model helpers                 | `apps/web/tests/chat/chat-models-api.shared.test.ts`           | Default + selection resolution                        |
-| Integration config Zod             | `apps/web/tests/integrations/integrations-config.test.ts`      | Stored/public config, create/patch bodies             |
-| `integrations.service`             | `apps/api/tests/integrations/integrations.service.test.ts`     | Encrypt/strip, chat model pool, resolve for chat      |
-| `integrations` routes              | `apps/api/tests/integrations/integrations.route.test.ts`       | List, chat-models, create, admin RBAC 403             |
-| `resolveChatProvider`              | `apps/api/tests/integrations/resolve-chat-provider.test.ts`    | Provider registry                                     |
+| Test                               | Location                                                                | Scope                                                 |
+| ---------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------- |
+| `parseSettingsTab('integrations')` | `apps/web/tests/lib/search-params-settings-tab.test.ts`                 | Returns `integrations`                                |
+| `resolveSettingsTabForUser`        | `apps/web/tests/lib/search-params-settings-tab.test.ts`                 | Non-admin + `integrations` → `general`                |
+| Catalog helpers                    | `apps/web/tests/settings/settings-integration-catalog.test.ts`          | Filter/search, `isCatalogConnected`, configurable ids |
+| Disconnect confirm copy            | `apps/web/tests/settings/workspace-integration-disconnect-copy.test.ts` | Hard-disconnect warning strings                       |
+| Settings API client                | `apps/web/tests/settings/integrations-api.shared.test.ts`               | List/create via `/api/integrations`                   |
+| Chat model helpers                 | `apps/web/tests/chat/chat-models-api.shared.test.ts`                    | Default + selection resolution                        |
+| Integration config Zod             | `apps/web/tests/integrations/integrations-config.test.ts`               | Stored/public config, create/patch bodies             |
+| `integrations.service`             | `apps/api/tests/integrations/integrations.service.test.ts`              | Encrypt/strip, chat model pool, resolve for chat      |
+| `integrations` routes              | `apps/api/tests/integrations/integrations.route.test.ts`                | List, chat-models, create, admin RBAC 403             |
+| `resolveChatProvider`              | `apps/api/tests/integrations/resolve-chat-provider.test.ts`             | Provider registry                                     |
 
 ---
 

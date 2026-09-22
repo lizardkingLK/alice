@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import type { Json } from '@repo/types';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
+import { Textarea } from '@repo/ui/components/ui/textarea';
 import { SearchableSelect } from '@/components/searchable-select';
 import type { WorkItemFormSharedFieldProps } from '@/app/work-items/_components/work-item-form/work-item-form-field-props';
 import {
@@ -10,12 +12,14 @@ import {
   WorkItemFormParentStatusSection,
 } from '@/app/work-items/_components/work-item-form/work-item-form-parent-status';
 import { WorkItemFormTypeSelect } from '@/app/work-items/_components/work-item-form/work-item-form-type-select';
+import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
 import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels/work-item-labels-input';
 import { WorkItemPrioritySelect } from '@/app/work-items/_components/work-item-priority-select';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
 
 export type WorkItemFormClassicFieldsProps = WorkItemFormSharedFieldProps & {
   readonly titleDefault?: string;
+  readonly descriptionDefault?: unknown;
   readonly dueDateDefault?: string;
   readonly lockDueDate?: boolean;
   readonly storyPointsDefault?: number | null;
@@ -45,6 +49,7 @@ export function WorkItemFormClassicFields({
   lockStatus,
   status,
   titleDefault = '',
+  descriptionDefault = null,
   dueDateDefault = '',
   lockDueDate = false,
   storyPointsDefault = null,
@@ -58,6 +63,11 @@ export function WorkItemFormClassicFields({
   const [labels, setLabels] = useState<string[]>(() => [...labelsDefault]);
   const showParentPicker = resolveShowParentPicker(lockParent, parentTypeLabel);
 
+  const initialDescriptionText =
+    typeof descriptionDefault === 'string'
+      ? descriptionDefault
+      : descriptionToPlainText(descriptionDefault as Json);
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <div className="space-y-2 sm:col-span-2">
@@ -67,6 +77,17 @@ export function WorkItemFormClassicFields({
           name="title"
           placeholder="e.g. Implement dashboard filters"
           defaultValue={titleDefault}
+        />
+      </div>
+
+      <div className="space-y-2 sm:col-span-2">
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          name="description"
+          placeholder="e.g. Detailed description of the work item"
+          defaultValue={initialDescriptionText}
+          rows={3}
         />
       </div>
 

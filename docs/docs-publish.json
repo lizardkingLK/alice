@@ -57,12 +57,16 @@
           "order": 2
         },
         {
-          "path": "user-guide/navigation/keyboard-shortcuts.md",
+          "path": "user-guide/navigation/charts.md",
           "order": 3
         },
         {
-          "path": "user-guide/navigation/favorites-and-views.md",
+          "path": "user-guide/navigation/keyboard-shortcuts.md",
           "order": 4
+        },
+        {
+          "path": "user-guide/navigation/favorites-and-views.md",
+          "order": 5
         }
       ]
     },
@@ -143,6 +147,60 @@
           "path": "user-guide/projects/project-integrations.md",
           "order": 6,
           "minimumRole": "manager"
+        },
+        {
+          "path": "user-guide/projects/dynamic-fields.md",
+          "title": "Dynamic fields & sidebar",
+          "order": 7,
+          "minimumRole": "member"
+        },
+        {
+          "path": "user-guide/projects/dynamic-fields-testing.md",
+          "title": "Dynamic fields user testing",
+          "order": 8,
+          "minimumRole": "member"
+        },
+        {
+          "path": "features/projects/PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md",
+          "title": "Technical spec: Dynamic fields & sidebar",
+          "order": 9,
+          "minimumRole": "member"
+        },
+        {
+          "path": "user-guide/projects/work-item-types-and-hierarchy.md",
+          "title": "Work-item types & hierarchy",
+          "order": 10,
+          "minimumRole": "manager"
+        },
+        {
+          "path": "user-guide/projects/work-item-types-testing.md",
+          "title": "Work-item types user testing",
+          "order": 11,
+          "minimumRole": "member"
+        },
+        {
+          "path": "features/projects/WORK_ITEM_TYPES_AND_HIERARCHY.md",
+          "title": "Technical spec: Work-item types & hierarchy",
+          "order": 12,
+          "minimumRole": "member"
+        },
+        {
+          "path": "user-guide/projects/project-registry-and-chat-access.md",
+          "title": "Role-based project & chat access",
+          "order": 13,
+          "minimumRole": "member"
+        },
+        {
+          "path": "user-guide/projects/project-registry-and-chat-access-testing.md",
+          "title": "Role-based project access testing",
+          "order": 14,
+          "minimumRole": "member"
+        },
+        {
+          "path": "features/projects/UNIFIED_PROJECT_REGISTRY_AND_CHAT_VALIDATION.md",
+          "title": "Technical spec: Unified project validations",
+          "order": 15,
+          "minimumRole": "member"
         }
       ]
     },
@@ -236,6 +294,10 @@
         {
           "path": "user-guide/chat/use-ai-assistant.md",
           "order": 2
+        },
+        {
+          "path": "user-guide/chat/user-test-guide.md",
+          "order": 3
         }
       ]
     },

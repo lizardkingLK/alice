@@ -53,6 +53,8 @@ type DashboardPageActionsProps = {
   readonly userId: string | null;
   readonly favoriteLabel?: string;
   readonly projectId?: string | null;
+  /** When false, the star stays disabled (e.g. chat URL still hydrating). */
+  readonly favoritesReady?: boolean;
   /** Fallback label from breadcrumb last segment when favoriteLabel is omitted. */
   readonly breadcrumbLabel: string;
 };
@@ -61,6 +63,7 @@ export function DashboardPageActions({
   userId,
   favoriteLabel,
   projectId = null,
+  favoritesReady = true,
   breadcrumbLabel,
 }: Readonly<DashboardPageActionsProps>) {
   const pathname = usePathname();
@@ -68,9 +71,9 @@ export function DashboardPageActions({
   const { isFavorited, toggle } = useFavorites(userId);
   const [saveOpen, setSaveOpen] = useState(false);
 
-  const favorited = isFavorited(pathname);
-  const label = favoriteLabel?.trim() || breadcrumbLabel.trim() || pathname;
   const search = useMemo(() => searchParams.toString(), [searchParams]);
+  const favorited = isFavorited(pathname, search);
+  const label = favoriteLabel?.trim() || breadcrumbLabel.trim() || pathname;
   const resolvedProjectId = useMemo(() => {
     if (projectId) {
       return projectId;
@@ -79,19 +82,20 @@ export function DashboardPageActions({
     if (fromQuery && fromQuery !== 'all') {
       return fromQuery;
     }
-    const projectMatch = pathname.match(/^\/projects\/([^/]+)/);
+    const projectMatch = /^\/projects\/([^/]+)/.exec(pathname);
     return projectMatch?.[1] ?? null;
   }, [pathname, projectId, searchParams]);
 
   const favoriteActionLabel = favorited ? 'Remove favorite' : 'Add favorite';
+  const favoriteDisabled = !userId || !favoritesReady;
 
   return (
     <div className="flex shrink-0 items-center gap-0.5">
       <HeaderIconAction
         label={favoriteActionLabel}
         pressed={favorited}
-        disabled={!userId}
-        onClick={() => toggle(pathname, label)}
+        disabled={favoriteDisabled}
+        onClick={() => toggle(pathname, label, search)}
       >
         <Star
           className={cn(

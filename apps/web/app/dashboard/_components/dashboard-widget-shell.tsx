@@ -23,6 +23,8 @@ type DashboardWidgetShellProps = {
   children: ReactNode;
   className?: string;
   contentClassName?: string;
+  /** Optional controls rendered before the drag handle (e.g. remove). */
+  headerActions?: ReactNode;
 };
 
 export function DashboardWidgetShell({
@@ -31,6 +33,7 @@ export function DashboardWidgetShell({
   children,
   className,
   contentClassName,
+  headerActions,
 }: Readonly<DashboardWidgetShellProps>) {
   return (
     <Card
@@ -48,20 +51,23 @@ export function DashboardWidgetShell({
             </CardDescription>
           ) : null}
         </div>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Drag ${title}`}
-              className="widget-drag-handle text-muted-foreground hover:text-foreground shrink-0 cursor-grab select-none active:cursor-grabbing"
-            >
-              <MoreHorizontal className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="left">Hold to drag</TooltipContent>
-        </Tooltip>
+        <div className="flex shrink-0 items-center gap-0.5">
+          {headerActions}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Drag ${title}`}
+                className="widget-drag-handle text-muted-foreground hover:text-foreground shrink-0 cursor-grab select-none active:cursor-grabbing"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">Hold to drag</TooltipContent>
+          </Tooltip>
+        </div>
       </CardHeader>
       <CardContent
         className={cn(

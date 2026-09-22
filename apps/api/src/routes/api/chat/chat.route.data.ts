@@ -1,12 +1,14 @@
 import { WORK_ITEM_PRIORITIES } from '@repo/types';
+import type { AliceChatTools } from './chat.route.types';
 
 export const systemInstruction = `You are Alice Assistant, an AI assistant built into the Alice monorepo.
-Your main task is to guide the user in creating work items (tasks, stories, bugs) on a project and sprint, assigning them to relevant users.
+Your main task is to help users manage Alice projects, sprints, work items, and reviewable board-configuration drafts.
 
 CRITICAL SCOPE BOUNDARY:
-- You must ONLY assist with project management, sprints, work items, and users within this system.
-- If the user asks a question or makes a request that is outside this project management scope (such as cooking recipes like "how to make a rice", general knowledge, coding help, or any other topic unrelated to managing projects/sprints/tasks in Alice), you MUST politely refuse to answer. 
-- When refusing, state clearly that your scope is limited to assisting with project and sprint management in Alice, and suggest general relevant tasks (like listing projects, creating sprints, or creating work items).
+- You must ONLY assist with project management, sprints, work items, and users within Alice.
+- In-Scope: Managing projects, sprints, work items, and board-configuration drafts in Alice; summarizing workspace projects, sprints, and users; explaining Alice's supported work item types (epic, feature, story, task, bug) and priorities (low, medium, high, highest); providing work-item JSON/CSV templates for import; and parsing/importing attached backlog files.
+- Out-of-Scope: Requests completely unrelated to project and sprint management in Alice (such as cooking recipes like "how to make a rice", general life advice, weather, unrelated coding help, or general knowledge topics outside Alice's project scope). You MUST politely refuse such off-topic requests.
+- When refusing, state clearly that your scope is limited to assisting with project and sprint management in Alice, and suggest relevant actions (such as listing projects, managing sprints, or importing work items).
 - IMPORTANT: When refusing, do NOT reference, suggest, or mention details of any specific project, project names (such as "EasyPass"), or project descriptions (such as "C# .NET CLI password generator app") from the user's ongoing work. Keep the refusal message clean, general, and focused strictly on the Alice chat service capabilities.
 
 When a user says they want to create a work item, follow this protocol:
@@ -43,105 +45,443 @@ MANDATORY CONFIRMATION PROTOCOL BEFORE MUTATING ACTIONS:
 - If the user mentions a project name from the list, or answers a clarifying question about the project, you must still present the confirmation table and ask for confirmation before creating the item.
 
 Keep your responses friendly, helpful, and concise. Always confirm with the user before performing actions.
+
+ATTACHMENTS & WORK ITEM IMPORT PROTOCOL:
+- When the user attaches a document (JSON or CSV) or asks to import work items from an attachment:
+  1. Call \`parse_work_item_attachment\` using the attachment's signed URL to parse the items, hierarchy (parents and children), and dynamic fields.
+  2. If the target project is not specified by the user, list active projects using \`list_projects\` and ask the user which project to import into.
+  3. Once the project is selected, call \`check_work_item_duplicates\` to detect existing duplicates or updates in that project.
+  4. Present a clear Markdown summary table to the user detailing:
+     - Target project
+     - Work items identified (with types, priorities, and hierarchy: parent -> child)
+     - Dynamic / custom fields identified from the file
+     - Deduplication/Update summary: count of new items to create, existing items to update/preserve, and potential duplicates
+  5. Ask the user for explicit confirmation before importing (e.g. "Should I proceed with importing these work items into project [Name]?").
+  6. Upon confirmation, call \`batch_import_work_items\` to create/update the hierarchy of work items in the project and report the results.
+
+WORK ITEM HIERARCHY RULES IN ALICE:
+- The strict hierarchy in Alice is: Epic -> Feature -> Story -> Task -> Issue.
+- Bug is an alias for Issue.
+- Issue (and Bug) is a leaf work item and CANNOT have subtasks or children.
+- Subtask creation and parent-child links must strictly adhere to this hierarchy.
+
+ATOMIC IMPORT & INVALID HIERARCHY PROTOCOL:
+- By default, \`batch_import_work_items\` is strictly atomic: if any item contains an invalid hierarchy (such as subtasks under an Issue), the import fails immediately with an error and ZERO work items are created in the database.
+- When an import fails due to invalid hierarchy:
+  1. Explain the error clearly to the user (e.g., that an item of type Issue cannot have subtasks).
+  2. Confirm explicitly to the user that **no work items were created**.
+  3. Offer the user two options:
+     - **1. Re-parse the file after you update it**, or
+     - **2. Proceed with importing only the valid items (skipping the invalid hierarchy)**.
+  4. **CRITICAL GUARDRAIL**: You MUST pause and wait for the user to respond before calling any tools. DO NOT call \`batch_import_work_items\` again until the user makes their choice.
+  5. If the user chooses Option 1 or uploads an updated file: re-parse and import the updated file.
+  6. If the user chooses Option 2 (e.g. "proceed with 2", "import only valid items"): call \`batch_import_work_items\` with \`skipInvalidHierarchy: true\`.
+
+UPDATING & SYNCHRONIZING BACKLOG FROM UPDATED FILES:
+- If a user uploads an updated version of a file (JSON, CSV, TSV, Markdown table, text outline, YAML) after previously importing work items (or when work items already exist in the project):
+  1. Check changes with \`check_work_item_duplicates\` against existing project work items.
+  2. HIERARCHY CHANGE REPORTING (MANDATORY):
+     - If hierarchy changes are detected (e.g. an item has a different parent or subtasks moved):
+       You MUST explicitly state in your message that the hierarchy was changed based on the updated file changes!
+       Specifically list each item whose parent or hierarchy modified (e.g., "- [Item Title] hierarchy updated: parent changed to [New Parent Title]").
+       NEVER claim that items are "Exact duplicates (no change)" when their parent, hierarchy, or fields differ.
+     - If field changes (priority, estimate, description, type) are detected, list those field updates.
+     - If new items were added to the file, list them.
+  3. WORK ITEM DELETION POLICY (STRICTLY DISALLOWED):
+     - Deleting work items is STRICTLY NOT ALLOWED from Alice chat.
+     - You MUST NEVER delete, archive, or remove existing work items.
+     - If the updated file omits or removes work items that previously existed in the project, you MUST explicitly inform the user:
+       "Note: Deletion of work items is not allowed via Alice chat. The omitted work items ([Item titles/keys]) have been retained in your project backlog."
+  4. Ask for confirmation before applying updates (or if the user already asked to update the file / make changes, proceed with \`batch_import_work_items\`).
+  5. Call \`batch_import_work_items\` with \`updateExisting: true\`.
+  6. In your final response after \`batch_import_work_items\`:
+     - Explicitly state that the hierarchy of work items was changed/updated based on the updated file changes.
+     - List each item whose hierarchy or fields were updated, and any new items created.
+     - If any items were omitted from the file, reiterate that deletion of work items is not allowed from Alice chat and they remain safely in the backlog.
+     - This protocol applies to all file types (JSON, CSV, TSV, Markdown tables, text outlines, YAML).
+
+PROJECT DYNAMIC FIELDS & SCHEMA GENERATION PROTOCOL:
+- When the user asks to configure, define, or generate dynamic fields or custom metadata for a project (e.g. "I want every work-item to optionally have a MoSCoW rating and acceptance criteria"):
+  1. Call \`generate_project_fields_schema\` or provide a valid JSON Schema meeting Alice's Project Dynamic Fields specifications:
+     - Root type must be "object".
+     - "$schema": "https://json-schema.org/draft/2020-12/schema".
+     - "title": "Project Dynamic Work-Item Fields".
+     - "description": descriptive text.
+     - "properties": an object map where keys are valid alphanumeric/underscore identifiers.
+     - Each property must specify a recognized type ("string", "number", "integer", "boolean", "array").
+     - Single-select or multi-select dropdowns should define non-empty "enum" string options.
+     - Multiline text fields use format "multiline".
+     - Date fields use format "date".
+     - "additionalProperties": true.
+  2. Output the schema in a formatted JSON block or tool response.
+  3. SECURITY GUARDRAIL: You MUST NOT write directly to the database. Instruct the user to review, validate, and save the schema in the Project Fields workspace editor.
+
+BOARD CONFIGURATION DRAFT PROTOCOL:
+1. Resolve the project through the existing project context and \`list_projects\`.
+2. Call \`list_board_entities\` with the resolved project UUID before proposing a structured draft. Use its current board, active teams, and active project members.
+3. If a requested person or team name has more than one match, ask the user to clarify and do not call \`configure_board_draft\` yet.
+4. Call \`configure_board_draft\` to create a reviewable draft, then tell the user to open it in Board Designer, review it, and explicitly save it there.
+- Never invent team IDs or user IDs. Use only IDs returned by \`list_board_entities\`.
+- Existing columns are identified only by their current stable IDs. Never match or merge an existing column by name.
+- Never invent persistent column UUIDs. Give each new column a temporaryKey; the application replaces it with a UUID.
+- Preserve existing column IDs, order, statuses, and transition rules unless the user's request changes them.
+- Use column-only version 1 behavior when no transition rules exist. Transition rules require version 2; editing an existing version 2 board remains version 2.
+- Never claim that a board draft was saved, never save it automatically, and never bypass Board Designer review, save, deletion confirmation, or permission checks.
+- After creating a draft, say "Board draft created. Review it in Board Designer." Never say "Board updated", "Board saved", or "Configuration applied" for a draft.
+- Members may receive conversational suggestions, but must not receive a structured \`configure_board_draft\` action. Admins and managers may receive drafts.
+
+PROJECT LISTING & ACCESS CONTROL PROTOCOL:
+- When the user asks to "show all projects", "list all projects", "list down all the projects", or similar queries:
+  1. Call \`list_projects\`.
+  2. The \`list_projects\` tool automatically enforces role-based access validation and project membership permissions for the current user.
+  3. If accessible projects are returned:
+     - You MUST introduce the list with this exact sentence:
+       "Here are all the projects that are available to you:"
+     - Directly follow with a Markdown table with the following columns:
+       | Project Name | Key | Description |
+     - Populate each row with the accessible project's name, key, and description (or "-" if description is empty/null).
+  4. If no projects are available to the user, state:
+     "You do not currently have access to any projects. Please contact your workspace administrator to request access."
 `;
 
-export const geminiTools = [
+/** Provider-agnostic Alice chat tools. Strategies map these to wire formats. */
+export const aliceChatTools: AliceChatTools = [
   {
-    functionDeclarations: [
-      {
-        name: 'list_projects',
-        description:
-          'Retrieve all active projects in the system. Use this to see if a project exists.',
-      },
-      {
-        name: 'create_project',
-        description: 'Create a new project in the system.',
-        parameters: {
-          type: 'OBJECT',
-          properties: {
-            name: { type: 'STRING', description: 'Name of the project.' },
-            key: {
-              type: 'STRING',
-              description: 'Short unique capitalized key (2-10 letters).',
-            },
-            description: {
-              type: 'STRING',
-              description: 'Description of the project (optional).',
-            },
-          },
-          required: ['name', 'key'],
+    name: 'list_projects',
+    description:
+      'Retrieve all accessible projects available to the current user. Use this when the user asks to show or list projects, or to check if a project exists.',
+  },
+  {
+    name: 'create_project',
+    description: 'Create a new project in the system.',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Name of the project.' },
+        key: {
+          type: 'string',
+          description: 'Short unique capitalized key (2-10 letters).',
+        },
+        description: {
+          type: 'string',
+          description: 'Description of the project (optional).',
         },
       },
-      {
-        name: 'list_sprints',
-        description: 'Retrieve all sprints for a specific project.',
-        parameters: {
-          type: 'OBJECT',
-          properties: {
-            projectId: { type: 'STRING', description: 'UUID of the project.' },
-          },
-          required: ['projectId'],
+      required: ['name', 'key'],
+    },
+  },
+  {
+    name: 'list_sprints',
+    description: 'Retrieve all sprints for a specific project.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'string', description: 'UUID of the project.' },
+      },
+      required: ['projectId'],
+    },
+  },
+  {
+    name: 'create_sprint',
+    description: 'Create a new sprint for a specific project.',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Name of the sprint.' },
+        projectId: { type: 'string', description: 'UUID of the project.' },
+        startDate: {
+          type: 'string',
+          description: 'Start date YYYY-MM-DD (optional).',
+        },
+        endDate: {
+          type: 'string',
+          description: 'End date YYYY-MM-DD (optional).',
         },
       },
-      {
-        name: 'create_sprint',
-        description: 'Create a new sprint for a specific project.',
-        parameters: {
-          type: 'OBJECT',
-          properties: {
-            name: { type: 'STRING', description: 'Name of the sprint.' },
-            projectId: { type: 'STRING', description: 'UUID of the project.' },
-            startDate: {
-              type: 'STRING',
-              description: 'Start date YYYY-MM-DD (optional).',
+      required: ['name', 'projectId'],
+    },
+  },
+  {
+    name: 'list_users',
+    description: 'Retrieve list of all users in the system to find assignees.',
+  },
+  {
+    name: 'list_board_entities',
+    description:
+      "Return the accessible project's current valid board config, active project teams, active project members, and project information. Call before configure_board_draft.",
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'string', description: 'UUID of the project.' },
+      },
+      required: ['projectId'],
+    },
+  },
+  {
+    name: 'configure_board_draft',
+    description:
+      'Create a validated board draft for review only. Supply the complete desired ordered columns. Existing columns require existingColumnId; new columns require temporaryKey. Omit transitions to preserve existing rules, or supply the complete desired rules when changing them. This never saves the project.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'string', description: 'UUID of the project.' },
+        columns: {
+          type: 'array',
+          description:
+            'Complete desired ordered board columns. Omission of an existing column means deletion.',
+          items: {
+            type: 'object',
+            properties: {
+              existingColumnId: {
+                type: 'string',
+                description:
+                  'Stored ID for an existing column. Never resolve this by name.',
+              },
+              temporaryKey: {
+                type: 'string',
+                description:
+                  'Draft-local reference for a new column; never a UUID.',
+              },
+              name: { type: 'string', description: 'Column display name.' },
+              status: {
+                type: 'string',
+                enum: ['New', 'ToDo', 'InProgress', 'Testing', 'Done'],
+                description: 'Canonical work-item status.',
+              },
             },
-            endDate: {
-              type: 'STRING',
-              description: 'End date YYYY-MM-DD (optional).',
-            },
+            required: ['name', 'status'],
           },
-          required: ['name', 'projectId'],
+        },
+        transitions: {
+          type: 'array',
+          description:
+            'Complete desired transitions when rules are being changed. Omit this property to preserve existing rules.',
+          items: {
+            type: 'object',
+            properties: {
+              fromColumnRef: {
+                type: 'string',
+                description: 'Existing column ID or new-column temporaryKey.',
+              },
+              toColumnRef: {
+                type: 'string',
+                description: 'Existing column ID or new-column temporaryKey.',
+              },
+              allowAnyOf: {
+                type: 'array',
+                description:
+                  'OR matchers. Roles are exact; team/user UUIDs must come from list_board_entities.',
+                items: {
+                  type: 'object',
+                  properties: {
+                    scope: {
+                      type: 'string',
+                      enum: ['role', 'team', 'user'],
+                    },
+                    role: {
+                      type: 'string',
+                      enum: ['admin', 'manager', 'member'],
+                    },
+                    teamId: { type: 'string' },
+                    userId: { type: 'string' },
+                  },
+                  required: ['scope'],
+                },
+              },
+            },
+            required: ['fromColumnRef', 'toColumnRef', 'allowAnyOf'],
+          },
         },
       },
-      {
-        name: 'list_users',
-        description:
-          'Retrieve list of all users in the system to find assignees.',
-      },
-      {
-        name: 'create_work_item',
-        description: 'Create a new work item.',
-        parameters: {
-          type: 'OBJECT',
-          properties: {
-            title: { type: 'STRING', description: 'Title of the work item.' },
-            projectId: { type: 'STRING', description: 'UUID of the project.' },
-            sprintId: {
-              type: 'STRING',
-              description: 'UUID of the sprint (optional).',
-            },
-            assigneeId: {
-              type: 'STRING',
-              description: 'UUID of the user assigned (optional).',
-            },
-            type: {
-              type: 'STRING',
-              enum: ['story', 'task', 'bug'],
-              description: 'Type of work item.',
-            },
-            priority: {
-              type: 'STRING',
-              enum: [...WORK_ITEM_PRIORITIES],
-              description: 'Priority level.',
-            },
-            description: {
-              type: 'STRING',
-              description: 'Description of the work item (optional).',
-            },
-          },
-          required: ['title', 'projectId', 'type', 'priority'],
+      required: ['projectId', 'columns'],
+    },
+  },
+  {
+    name: 'create_work_item',
+    description: 'Create a new work item.',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Title of the work item.' },
+        projectId: { type: 'string', description: 'UUID of the project.' },
+        sprintId: {
+          type: 'string',
+          description: 'UUID of the sprint (optional).',
+        },
+        assigneeId: {
+          type: 'string',
+          description: 'UUID of the user assigned (optional).',
+        },
+        type: {
+          type: 'string',
+          enum: ['epic', 'feature', 'story', 'task', 'bug'],
+          description: 'Type of work item.',
+        },
+        priority: {
+          type: 'string',
+          enum: [...WORK_ITEM_PRIORITIES],
+          description: 'Priority level.',
+        },
+        description: {
+          type: 'string',
+          description: 'Description of the work item (optional).',
         },
       },
-    ],
+      required: ['title', 'projectId', 'type', 'priority'],
+    },
+  },
+  {
+    name: 'parse_work_item_attachment',
+    description:
+      'Download and parse an attached JSON or CSV work item document, extracting work items, hierarchy, and dynamic fields.',
+    parameters: {
+      type: 'object',
+      properties: {
+        attachmentUrl: {
+          type: 'string',
+          description: 'The signed URL of the attachment to parse.',
+        },
+        fileName: {
+          type: 'string',
+          description: 'The original file name (optional).',
+        },
+      },
+      required: ['attachmentUrl'],
+    },
+  },
+  {
+    name: 'check_work_item_duplicates',
+    description:
+      'Analyze parsed work items against existing work items in a project to detect duplicates, matching keys, and high similarity.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: {
+          type: 'string',
+          description: 'UUID of the target project.',
+        },
+        attachmentUrl: {
+          type: 'string',
+          description:
+            'Signed URL or file name of the attachment to analyze (optional if items provided).',
+        },
+        items: {
+          type: 'array',
+          description:
+            'Direct list of parsed work item objects to analyze for duplicates (optional).',
+          items: {
+            type: 'object',
+          },
+        },
+      },
+      required: ['projectId'],
+    },
+  },
+  {
+    name: 'batch_import_work_items',
+    description:
+      'Import and create a batch of work items with hierarchy (parents and children) and dynamic fields into a project.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: {
+          type: 'string',
+          description: 'UUID of the target project.',
+        },
+        sprintId: {
+          type: 'string',
+          description: 'UUID of the sprint (optional).',
+        },
+        attachmentUrl: {
+          type: 'string',
+          description:
+            'Signed URL or file name of the attachment containing items to import (optional if items provided).',
+        },
+        items: {
+          type: 'array',
+          description:
+            'Direct list of parsed work item objects to import (optional if attachmentUrl provided).',
+          items: {
+            type: 'object',
+          },
+        },
+        skipInvalidHierarchy: {
+          type: 'boolean',
+          description:
+            'If true, skip any invalid hierarchy items (such as subtasks under Issue) and import only valid items. If false (default), fail the entire import atomically without creating any items.',
+        },
+        updateExisting: {
+          type: 'boolean',
+          description:
+            'If true (default), updates existing matching work items and their hierarchy rather than creating duplicates.',
+        },
+        removeDeleted: {
+          type: 'boolean',
+          description:
+            'Disallowed in Alice chat. Work item deletion/archival via chat is not permitted; omitted items are always preserved in the project backlog.',
+        },
+      },
+      required: ['projectId'],
+    },
+  },
+  {
+    name: 'generate_project_fields_schema',
+    description:
+      'Generate a validated Project Dynamic Fields JSON Schema based on requested fields.',
+    parameters: {
+      type: 'object',
+      properties: {
+        fields: {
+          type: 'array',
+          description:
+            'Array of dynamic field definitions to include in the schema.',
+          items: {
+            type: 'object',
+            properties: {
+              key: {
+                type: 'string',
+                description:
+                  'Identifier for the field (alphanumeric/underscore).',
+              },
+              title: { type: 'string', description: 'User-friendly label.' },
+              type: {
+                type: 'string',
+                enum: ['string', 'number', 'integer', 'boolean', 'array'],
+                description: 'JSON Schema type.',
+              },
+              description: {
+                type: 'string',
+                description: 'Field description.',
+              },
+              enum: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Allowed values for select fields.',
+              },
+              format: {
+                type: 'string',
+                description: 'e.g. multiline, date, uri.',
+              },
+            },
+            required: ['key', 'title', 'type'],
+          },
+        },
+      },
+      required: ['fields'],
+    },
   },
 ];
+
+export const dynamicFieldsSystemPrompt = `You are Alice, an AI assistant configuring custom dynamic fields for project management.
+You must generate a valid JSON Schema object representing the dynamic fields requested by the user.
+Constraints:
+- Root "type": "object"
+- "properties": a key-value object of field definitions where each key matches /^[a-zA-Z0-9_-]+$/
+- Allowed field types: "string", "number", "integer", "boolean", "array"
+- String format options: "multiline", "date", "uri", or omit for standard single-line text
+- Select options: Use "enum": ["Option1", "Option2"]
+- Metadata: "title" (required human-readable label), "description" (optional description)
+- Array types must have "items" (e.g. { "type": "string" })
+- Root "additionalProperties": true
+If a Current Schema is provided with existing fields in "properties", you MUST preserve all existing fields and add or update the newly requested fields to "properties". Do not omit or delete existing fields unless explicitly requested.
+Respond by calling the "generate_project_fields_schema" tool or by returning ONLY a valid JSON object matching this schema.`;

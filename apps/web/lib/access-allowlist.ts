@@ -20,6 +20,7 @@ const PUBLIC_ACCESS_PATHS = new Set([
   '/forgot-password',
   '/reset-password',
   '/access-denied',
+  '/check-email',
 ]);
 
 /**

@@ -1,4 +1,5 @@
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
+import type { JiraImportConfig } from '@repo/types/api/v1';
 
 /**
  * Jira Cloud search + bulk work-item create often exceeds the default 20s
@@ -53,13 +54,28 @@ export async function deleteJiraConnection(
   });
 }
 
-export async function importJiraIssues(
+export async function previewJiraImport(
   projectId: string
+): Promise<{ issues: unknown[]; issueTypes: string[] }> {
+  return apiFetch<{ issues: unknown[]; issueTypes: string[] }>(
+    `/api/projects/${projectId}/jira/preview`,
+    {
+      method: 'POST',
+      timeoutMs: JIRA_IMPORT_FETCH_TIMEOUT_MS,
+    }
+  );
+}
+
+export async function importJiraIssues(
+  projectId: string,
+  config?: JiraImportConfig
 ): Promise<{ importedCount: number }> {
   return apiFetch<{ importedCount: number }>(
     `/api/projects/${projectId}/jira/import`,
     {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config ?? {}),
       timeoutMs: JIRA_IMPORT_FETCH_TIMEOUT_MS,
     }
   );

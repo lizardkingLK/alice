@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ACCESS_REQUEST_TITLE } from '@repo/types';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import {
@@ -10,9 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/ui/select';
+import { RequestedProjectKeysField } from '@/components/requested-project-keys-field';
 
 export const CONTACT_SUBJECT_OPTIONS = [
-  'Access request',
+  ACCESS_REQUEST_TITLE,
   'Product feedback',
   'Bug report',
   'Feature request',
@@ -23,11 +25,19 @@ export const CONTACT_SUBJECT_OPTIONS = [
 
 const OTHER_SUBJECT = 'Other';
 
-export function ContactSubjectField() {
-  const [subject, setSubject] = useState('');
+type ContactSubjectFieldProps = {
+  readonly defaultSubject?: string;
+};
+
+export function ContactSubjectField({
+  defaultSubject = '',
+}: Readonly<ContactSubjectFieldProps>) {
+  const [subject, setSubject] = useState(defaultSubject);
   const [otherReason, setOtherReason] = useState('');
 
   const title = subject === OTHER_SUBJECT ? otherReason.trim() : subject.trim();
+  const isAccessRequest =
+    subject.trim().toLowerCase() === ACCESS_REQUEST_TITLE.toLowerCase();
 
   return (
     <div className="space-y-4">
@@ -77,6 +87,8 @@ export function ContactSubjectField() {
           />
         </div>
       ) : null}
+
+      {isAccessRequest ? <RequestedProjectKeysField /> : null}
     </div>
   );
 }

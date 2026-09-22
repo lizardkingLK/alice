@@ -86,18 +86,25 @@ describe('canAccessProjectWorkspace', () => {
     mockSupabase();
   });
 
-  it('allows admins without membership', async () => {
+  it('denies admins without membership or ownership (my-projects mode)', async () => {
     await expect(
-      canAccessProjectWorkspace('user-1', 'admin', 'project-1')
+      canAccessProjectWorkspace('user-1', 'project-1')
+    ).resolves.toBe(false);
+  });
+
+  it('allows admins who are active project members', async () => {
+    getActiveMemberProjectIdsMock.mockResolvedValue(['project-1']);
+
+    await expect(
+      canAccessProjectWorkspace('user-1', 'project-1')
     ).resolves.toBe(true);
-    expect(getActiveMemberProjectIdsMock).not.toHaveBeenCalled();
   });
 
   it('allows active project members', async () => {
     getActiveMemberProjectIdsMock.mockResolvedValue(['project-1']);
 
     await expect(
-      canAccessProjectWorkspace('user-1', 'manager', 'project-1')
+      canAccessProjectWorkspace('user-1', 'project-1')
     ).resolves.toBe(true);
   });
 
@@ -105,7 +112,7 @@ describe('canAccessProjectWorkspace', () => {
     getActiveMemberProjectIdsMock.mockResolvedValue(['other-project']);
 
     await expect(
-      canAccessProjectWorkspace('user-1', 'manager', 'project-1')
+      canAccessProjectWorkspace('user-1', 'project-1')
     ).resolves.toBe(false);
   });
 
@@ -114,7 +121,7 @@ describe('canAccessProjectWorkspace', () => {
 
     await expect(isProjectOwner('user-1', 'project-1')).resolves.toBe(true);
     await expect(
-      canAccessProjectWorkspace('user-1', 'manager', 'project-1')
+      canAccessProjectWorkspace('user-1', 'project-1')
     ).resolves.toBe(true);
   });
 
@@ -126,10 +133,10 @@ describe('canAccessProjectWorkspace', () => {
     getActiveMemberProjectIdsMock.mockResolvedValue(['other-project']);
 
     await expect(
-      canAccessProjectWorkspace('user-1', 'member', 'acl-project')
+      canAccessProjectWorkspace('user-1', 'acl-project')
     ).resolves.toBe(true);
     await expect(
-      canAccessProjectWorkspace('user-1', 'member', 'other-project')
+      canAccessProjectWorkspace('user-1', 'other-project')
     ).resolves.toBe(false);
   });
 
@@ -138,7 +145,7 @@ describe('canAccessProjectWorkspace', () => {
     getActiveMemberProjectIdsMock.mockResolvedValue(['member-project']);
 
     await expect(
-      canAccessProjectWorkspace('user-1', 'member', 'member-project')
+      canAccessProjectWorkspace('user-1', 'member-project')
     ).resolves.toBe(false);
   });
 });
@@ -150,19 +157,24 @@ describe('listAccessibleProjectIds', () => {
     mockSupabase();
   });
 
-  it('returns all for admins', async () => {
-    await expect(listAccessibleProjectIds('user-1', 'admin')).resolves.toBe(
-      'all'
-    );
+  it('returns membership ∪ owned ids for admins (not all projects)', async () => {
+    getActiveMemberProjectIdsMock.mockResolvedValue(['member-project']);
+    mockSupabase({ ownedIds: ['owned-project'] });
+
+    await expect(listAccessibleProjectIds('user-1')).resolves.toEqual([
+      'member-project',
+      'owned-project',
+    ]);
   });
 
   it('unions member and owned project ids for managers', async () => {
     getActiveMemberProjectIdsMock.mockResolvedValue(['member-project']);
     mockSupabase({ ownedIds: ['owned-project', 'member-project'] });
 
-    await expect(
-      listAccessibleProjectIds('user-1', 'manager')
-    ).resolves.toEqual(['member-project', 'owned-project']);
+    await expect(listAccessibleProjectIds('user-1')).resolves.toEqual([
+      'member-project',
+      'owned-project',
+    ]);
   });
 
   it('returns allowlist project ids for email guests without requiring membership', async () => {
@@ -173,9 +185,9 @@ describe('listAccessibleProjectIds', () => {
       projectsByKey: [{ id: 'acl-project', key: 'SG' }],
     });
 
-    await expect(listAccessibleProjectIds('user-1', 'member')).resolves.toEqual(
-      ['acl-project']
-    );
+    await expect(listAccessibleProjectIds('user-1')).resolves.toEqual([
+      'acl-project',
+    ]);
   });
 
   it('returns an empty list for email guests with no allowlisted projects', async () => {
@@ -185,8 +197,6 @@ describe('listAccessibleProjectIds', () => {
       allowedProjectIds: [],
     });
 
-    await expect(listAccessibleProjectIds('user-1', 'member')).resolves.toEqual(
-      []
-    );
+    await expect(listAccessibleProjectIds('user-1')).resolves.toEqual([]);
   });
 });

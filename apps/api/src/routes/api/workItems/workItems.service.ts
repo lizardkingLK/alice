@@ -1,6 +1,15 @@
 import {
+  boardConfigSchema,
+  findBoardTransition,
+  findStatusTransition,
   getAllowedChildType,
+  normalizeBoardConfig,
+  resolveBoardDestinationColumn,
+  resolveBoardSourceColumn,
+  type BoardRuleMatcher,
   type WorkItemType,
+  CANONICAL_HIERARCHY_ORDER,
+  type ProjectWorkflowConfig,
   parseWorkItemLabels,
   paginationMeta,
   type ListWorkItemsQuery,
@@ -14,7 +23,11 @@ import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { env } from '../../../config/env';
 import { removeStorageObjects } from '../../../lib/file-helpers';
 import { WorkItemRepository } from './workItems.repository';
-import type { DbWorkItem, DbGithubPullRequest } from './workItems.repository';
+import type {
+  BoardActorContext,
+  DbWorkItem,
+  DbGithubPullRequest,
+} from './workItems.repository';
 import type { WorkItemPaginatedList } from './workItems.prisma-query';
 import { sameNullable } from './workItems.patch-utils';
 import {
@@ -22,7 +35,12 @@ import {
   WorkItemBody,
   WorkItemUpdateBody,
 } from './workItems.schemas';
-import { WorkItemValidationError } from './workItems.errors';
+import {
+  BoardMoveForbiddenError,
+  StatusTransitionForbiddenError,
+  WorkItemValidationError,
+} from './workItems.errors';
+import type { GithubService } from '../github/github.service';
 import { prisma } from '../../../lib/prisma';
 import { decryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
 
@@ -32,18 +50,6 @@ async function requireAdmin(actorId: string) {
     [UserRoleEnum.admin],
     'Unauthorized. Only administrators can permanently delete work items.'
   );
-}
-
-function githubApiHeaders(encryptedOrPlainToken: string | null | undefined) {
-  const headers: Record<string, string> = {
-    'User-Agent': 'Alice-App',
-    Accept: 'application/vnd.github.v3+json',
-  };
-  const token = decryptSecretIfPresent(encryptedOrPlainToken);
-  if (token) {
-    headers.Authorization = `token ${token}`;
-  }
-  return headers;
 }
 
 interface GithubPRApiResponse {
@@ -81,8 +87,69 @@ export const WorkItemDefaults = {
   USER: 'User',
 } as const;
 
+function doesTransitionRuleAllowActor(
+  allowAnyOf: readonly BoardRuleMatcher[],
+  actor: BoardActorContext | null,
+  actorId: string
+): boolean {
+  if (!actor) return false;
+
+  const activeTeamIds = new Set(
+    actor.activeTeamIds.map((teamId) => teamId.toLowerCase())
+  );
+  return allowAnyOf.some((matcher) => {
+    if (matcher.scope === 'role') return matcher.role === actor.role;
+    if (matcher.scope === 'team') {
+      return activeTeamIds.has(matcher.teamId.toLowerCase());
+    }
+    return (
+      actor.isActiveProjectMember &&
+      matcher.userId.toLowerCase() === actorId.toLowerCase()
+    );
+  });
+}
+
+function throwWorkflowConfigLoadError(error: unknown): void {
+  if (error) throw error;
+}
+
 export class WorkItemService {
-  constructor(private readonly workItems: WorkItemRepository) {}
+  constructor(
+    private readonly workItems: WorkItemRepository,
+    private readonly githubService?: GithubService
+  ) {}
+
+  private async resolveGithubHeaders(
+    fallbackToken?: string | null
+  ): Promise<Record<string, string>> {
+    const headers: Record<string, string> = {
+      'User-Agent': 'Alice-App',
+      Accept: 'application/vnd.github.v3+json',
+    };
+
+    if (this.githubService) {
+      try {
+        const accessToken = await this.githubService.getValidAccessToken();
+        headers.Authorization = `Bearer ${accessToken}`;
+        return headers;
+      } catch (err) {
+        if (fallbackToken) {
+          const legacy = decryptSecretIfPresent(fallbackToken);
+          if (legacy) {
+            headers.Authorization = `token ${legacy}`;
+            return headers;
+          }
+        }
+        throw err;
+      }
+    }
+
+    const token = decryptSecretIfPresent(fallbackToken);
+    if (token) {
+      headers.Authorization = `token ${token}`;
+    }
+    return headers;
+  }
 
   async listWorkItemsPaginated(
     query: ListWorkItemsQuery,
@@ -130,10 +197,21 @@ export class WorkItemService {
   ): Promise<DbWorkItem> {
     await this.workItems.assertCanAccessProject(userId, input.project_id);
 
+    const { allowedTypes, hierarchy } = await this.getProjectAllowedTypes(
+      input.project_id
+    );
+    if (!allowedTypes.includes(input.type)) {
+      throw new WorkItemValidationError(
+        `Work item type "${input.type}" is not allowed in this project`
+      );
+    }
+
     await this.assertValidParentLink({
       parentId: input.parent_id,
       projectId: input.project_id,
       childType: input.type,
+      allowedTypes,
+      hierarchy,
     });
 
     await this.validateAllocation(
@@ -192,12 +270,52 @@ export class WorkItemService {
 
     const current = await this.workItems.getById(workItemId);
 
-    if (!sameNullable(input.parent_id, current?.parent_id)) {
+    const { allowedTypes, hierarchy, workflowConfig, workflowConfigError } =
+      await this.getProjectAllowedTypes(input.project_id);
+    if (input.type && !allowedTypes.includes(input.type)) {
+      throw new WorkItemValidationError(
+        `Work item type "${input.type}" is not allowed in this project`
+      );
+    }
+
+    const statusChanged = current.status !== input.status;
+    const workflow = await this.resolveWorkflowValidation(
+      current,
+      input,
+      workflowConfig,
+      workflowConfigError
+    );
+    const boardTransition =
+      workflow.config && workflow.boardMove
+        ? findBoardTransition(
+            workflow.config,
+            workflow.boardMove.source.id,
+            workflow.boardMove.destination.id
+          )
+        : null;
+    const statusTransition =
+      statusChanged && workflow.config
+        ? findStatusTransition(workflow.config, current.status, input.status)
+        : null;
+    await this.assertWorkflowTransitionsAllowed(
+      userId,
+      current.project_id,
+      boardTransition,
+      statusTransition
+    );
+
+    if (
+      !sameNullable(input.parent_id, current?.parent_id) ||
+      (input.type && input.type !== current?.type)
+    ) {
       await this.assertValidParentLink({
-        parentId: input.parent_id,
+        parentId:
+          input.parent_id !== undefined ? input.parent_id : current?.parent_id,
         projectId: input.project_id,
-        childType: input.type,
+        childType: input.type ?? (current.type as WorkItemType),
         childId: workItemId,
+        allowedTypes,
+        hierarchy,
       });
     }
 
@@ -250,6 +368,97 @@ export class WorkItemService {
     }
 
     return updated;
+  }
+
+  private async resolveWorkflowValidation(
+    current: DbWorkItem,
+    input: WorkItemUpdateBody,
+    workflowConfig: unknown,
+    workflowConfigError: unknown
+  ) {
+    if (input.project_id !== current.project_id) {
+      if (input.board_column_id !== null) {
+        throw new WorkItemValidationError(
+          'Board column placement cannot be carried to another project'
+        );
+      }
+      return { config: null, boardMove: null };
+    }
+
+    const statusChanged = current.status !== input.status;
+    const boardPlacementChanged =
+      statusChanged || current.board_column_id !== input.board_column_id;
+    if (!boardPlacementChanged) {
+      return { config: null, boardMove: null };
+    }
+
+    throwWorkflowConfigLoadError(workflowConfigError);
+
+    const parsed = boardConfigSchema.safeParse(workflowConfig);
+    if (!parsed.success) {
+      if (input.board_column_id !== null) {
+        throw new WorkItemValidationError(
+          'This project does not have a valid custom board configuration'
+        );
+      }
+      return { config: null, boardMove: null };
+    }
+
+    const config = normalizeBoardConfig(parsed.data);
+    if (input.board_column_id !== null) {
+      const configuredColumn = config.columns.find(
+        (candidate) => candidate.id === input.board_column_id
+      );
+      if (!configuredColumn) {
+        throw new WorkItemValidationError(
+          'Board column does not exist in this project'
+        );
+      }
+      if (configuredColumn.status !== input.status) {
+        throw new WorkItemValidationError(
+          'Board column does not match the work item status'
+        );
+      }
+    }
+
+    const destination = resolveBoardDestinationColumn(
+      { status: input.status, board_column_id: input.board_column_id },
+      config.columns
+    );
+    if (!destination) {
+      throw new WorkItemValidationError(
+        'Board column does not exist in this project'
+      );
+    }
+
+    const source = resolveBoardSourceColumn(current, config.columns);
+    const boardMove =
+      source && source.id !== destination.id ? { source, destination } : null;
+
+    return { config, boardMove };
+  }
+
+  private async assertWorkflowTransitionsAllowed(
+    actorId: string,
+    projectId: string,
+    boardTransition: ReturnType<typeof findBoardTransition>,
+    statusTransition: ReturnType<typeof findStatusTransition>
+  ): Promise<void> {
+    if (!boardTransition && !statusTransition) return;
+
+    const actor = await this.workItems.getBoardActorContext(actorId, projectId);
+    if (
+      boardTransition &&
+      !doesTransitionRuleAllowActor(boardTransition.allowAnyOf, actor, actorId)
+    ) {
+      throw new BoardMoveForbiddenError();
+    }
+    if (
+      statusTransition &&
+      !doesTransitionRuleAllowActor(statusTransition.allowAnyOf, actor, actorId)
+    ) {
+      throw new StatusTransitionForbiddenError();
+    }
   }
 
   private async createWorkItemUpdateWorklog(params: {
@@ -448,7 +657,7 @@ export class WorkItemService {
    */
   private resolveScopedListFilters(
     query: ListWorkItemsQuery,
-    accessible: 'all' | string[]
+    accessible: string[]
   ): {
     sprintId?: string | null;
     projectId?: string;
@@ -458,6 +667,8 @@ export class WorkItemService {
     assigneeId?: string;
     labels?: string[];
     recordStatus?: 'active' | 'archived';
+    dueDate: ListWorkItemsQuery['dueDate'];
+    excludeStatuses: ListWorkItemsQuery['excludeStatuses'];
   } | null {
     const base = {
       sprintId: query.sprintId,
@@ -466,11 +677,9 @@ export class WorkItemService {
       assigneeId: query.assigneeId,
       labels: query.labels,
       recordStatus: query.recordStatus,
+      dueDate: query.dueDate,
+      excludeStatuses: query.excludeStatuses,
     };
-
-    if (accessible === 'all') {
-      return { ...base, projectId: query.projectId };
-    }
 
     if (accessible.length === 0) {
       return null;
@@ -548,11 +757,43 @@ export class WorkItemService {
     }
   }
 
+  private async getProjectAllowedTypes(projectId: string): Promise<{
+    allowedTypes: WorkItemType[];
+    hierarchy?: Record<string, string | null> | null;
+    workflowConfig: unknown;
+    workflowConfigError: unknown;
+  }> {
+    try {
+      const rawConfig =
+        await this.workItems.getProjectWorkflowConfig(projectId);
+      const config = rawConfig as ProjectWorkflowConfig | null;
+      const allowedTypes =
+        config?.work_item_types && config.work_item_types.length > 0
+          ? config.work_item_types
+          : [...CANONICAL_HIERARCHY_ORDER];
+      return {
+        allowedTypes,
+        hierarchy: config?.hierarchy,
+        workflowConfig: rawConfig,
+        workflowConfigError: null,
+      };
+    } catch (error) {
+      return {
+        allowedTypes: [...CANONICAL_HIERARCHY_ORDER],
+        hierarchy: null,
+        workflowConfig: null,
+        workflowConfigError: error,
+      };
+    }
+  }
+
   private async assertValidParentLink(params: {
     parentId?: string | null;
     projectId: string;
     childType: WorkItemType;
     childId?: string;
+    allowedTypes?: readonly WorkItemType[] | null;
+    hierarchy?: Record<string, string | null> | null;
   }): Promise<void> {
     const { parentId, projectId, childType, childId } = params;
 
@@ -575,10 +816,22 @@ export class WorkItemService {
       );
     }
 
-    const allowedChildType = getAllowedChildType(parent.type as WorkItemType);
+    let allowedTypes = params.allowedTypes;
+    let hierarchy = params.hierarchy;
+    if (!allowedTypes) {
+      const projectTypes = await this.getProjectAllowedTypes(projectId);
+      allowedTypes = projectTypes.allowedTypes;
+      hierarchy = projectTypes.hierarchy;
+    }
+
+    const allowedChildType = getAllowedChildType(
+      parent.type as WorkItemType,
+      allowedTypes,
+      hierarchy
+    );
     if (!allowedChildType) {
       throw new WorkItemValidationError(
-        `Parent of type ${parent.type} cannot have subtasks`
+        `Parent of type ${parent.type} cannot have subtasks in this project`
       );
     }
 
@@ -717,7 +970,7 @@ export class WorkItemService {
     const settings =
       await this.workItems.getProjectGithubSettingsByWorkItem(workItemId);
 
-    const headers = githubApiHeaders(settings?.github_token);
+    const headers = await this.resolveGithubHeaders(settings?.github_token);
 
     const result = [];
     for (const pr of prs) {
@@ -816,7 +1069,7 @@ export class WorkItemService {
     let status = 'open';
 
     try {
-      const headers = githubApiHeaders(settings.github_token);
+      const headers = await this.resolveGithubHeaders(settings.github_token);
 
       const res = await fetch(
         `https://api.github.com/repos/${configOwner}/${configRepo}/pulls/${prNumber}`,
@@ -907,14 +1160,8 @@ export class WorkItemService {
 
     for (const team of teams) {
       for (const member of team.members) {
-        const cap =
-          member.capacity !== null
-            ? member.capacity
-            : AllocationConfig.DEFAULT_CAPACITY;
-        const alloc =
-          member.allocation !== null
-            ? member.allocation
-            : AllocationConfig.DEFAULT_ALLOCATION;
+        const cap = member.capacity ?? AllocationConfig.DEFAULT_CAPACITY;
+        const alloc = member.allocation ?? AllocationConfig.DEFAULT_ALLOCATION;
         totalSprintCapacity += cap * (alloc / 100);
         if (member.capacity !== null || member.allocation !== null) {
           hasConfiguredCapacity = true;
@@ -971,14 +1218,8 @@ export class WorkItemService {
 
     for (const team of memberTeams) {
       for (const member of team.members) {
-        const cap =
-          member.capacity !== null
-            ? member.capacity
-            : AllocationConfig.DEFAULT_CAPACITY;
-        const alloc =
-          member.allocation !== null
-            ? member.allocation
-            : AllocationConfig.DEFAULT_ALLOCATION;
+        const cap = member.capacity ?? AllocationConfig.DEFAULT_CAPACITY;
+        const alloc = member.allocation ?? AllocationConfig.DEFAULT_ALLOCATION;
         memberCapacity += cap * (alloc / 100);
       }
     }

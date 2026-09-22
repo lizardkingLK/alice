@@ -5,7 +5,7 @@ import {
   parseViewsListTab,
   type RawSearchParams,
 } from '@/lib/search-params';
-import { getProjectList } from '@/app/projects/_services/projects.reads.server';
+import { getAccessibleProjectList } from '@/lib/projects/accessible-project-list';
 import { ViewsWorkspace } from '@/app/views/_components/views-workspace';
 import {
   getSavedViewsPaginated,
@@ -36,7 +36,13 @@ export async function ViewsData({ searchParams }: Readonly<ViewsDataProps>) {
       EMPTY_VIEWS,
       'fetch saved views list'
     ),
-    safeServerFetch(getProjectList(), [], 'fetch projects for share dialog'),
+    dbUser
+      ? safeServerFetch(
+          getAccessibleProjectList(dbUser.id),
+          [],
+          'fetch projects for share dialog'
+        )
+      : Promise.resolve([]),
   ]);
 
   const shareProjects = projects

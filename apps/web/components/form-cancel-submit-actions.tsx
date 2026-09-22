@@ -39,11 +39,7 @@ export function FormCancelSubmitActions({
             Cancel
           </Button>
         ) : null}
-        <Button
-          type="submit"
-          disabled={isBusy}
-          className="min-w-32 rounded-lg"
-        >
+        <Button type="submit" disabled={isBusy} className="min-w-32 rounded-lg">
           {submitLabel}
         </Button>
       </div>

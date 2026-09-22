@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from 'react';
 import { cn } from '@repo/ui/lib/utils';
 import { Textarea } from '@repo/ui/components/ui/textarea';
 import { Button } from '@repo/ui/components/ui/button';
@@ -10,17 +16,40 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
-import { Send, Sparkles, PanelLeft, PanelLeftClose } from '@repo/ui/lib/icons';
-import { useRouter } from 'next/navigation';
-import { ChatRoles, type ChatModelOption } from '@repo/types';
+import {
+  Send,
+  Sparkles,
+  PanelLeft,
+  PanelLeftClose,
+  Paperclip,
+} from '@repo/ui/lib/icons';
+import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  ChatRoles,
+  detectChatAttachmentFileType,
+  type ChatModelOption,
+  type ChatAttachmentWire,
+} from '@repo/types';
 import { createClient } from '@/lib/supabase/client';
 import type { ChatMessage, ActionItem } from './chat-client.types';
 import {
   sendChatMessage,
   deleteConversation,
+  renameConversation,
   type ChatConversation,
 } from '../_services/chat.mutations.client';
-import { revalidateAfterChatActions } from '@/lib/cache/revalidate-after-chat';
+import {
+  uploadChatAttachment,
+  deleteChatAttachment,
+} from '../_services/chat-attachments.client';
+import {
+  ChatAttachmentTiles,
+  type PendingChatAttachment,
+} from './chat-attachment-tiles';
+import {
+  revalidateAfterChatActions,
+  type ChatMutationActionType,
+} from '@/lib/cache/revalidate-after-chat';
 import {
   bootstrapLatestChat,
   loadConversationHistory,
@@ -31,17 +60,438 @@ import {
 } from '../_services/chat.reads.actions.server';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import ChatClientSidebar from '@/app/chat/_components/chat-client-sidebar';
+import { ChatRenameDialog } from '@/app/chat/_components/chat-rename-dialog';
 import ChatClientHeaderActions from '@/app/chat/_components/chat-client-header-actions';
+import ChatClientHeaderLeading from '@/app/chat/_components/chat-client-header-leading';
 import ChatClientMain from '@/app/chat/_components/chat-client-main';
 import { useWorkspaceChatModels } from '@/app/chat/_components/use-workspace-chat-models';
+import { useDashboardTrailBreadcrumb } from '@/app/dashboard/_components/dashboard-breadcrumb-runtime';
+import type { DashboardBreadcrumbOverride } from '@/app/dashboard/_components/dashboard-breadcrumb';
+import { isAdmin, type AppRole } from '@/lib/rbac';
+import { isChatFavoritesReady } from '../_helpers/is-chat-favorites-ready';
+
+function ChatPageTrailBreadcrumb({
+  trail,
+  isLoadingConversations,
+  isLoadingHistory,
+  activeConversationId,
+}: Readonly<{
+  trail: readonly DashboardBreadcrumbOverride[] | null;
+  isLoadingConversations: boolean;
+  isLoadingHistory: boolean;
+  activeConversationId: string | undefined;
+}>) {
+  const searchParams = useSearchParams();
+  const favoritesReady = isChatFavoritesReady({
+    isLoadingConversations,
+    isLoadingHistory,
+    activeConversationId,
+    urlConversationId: searchParams.get('conversationId'),
+  });
+  useDashboardTrailBreadcrumb(trail, { favoritesReady });
+  return null;
+}
+
+function resolveActiveConversationTitle(
+  activeConversationId: string | undefined,
+  conversations: readonly ChatConversation[]
+): string | null {
+  if (!activeConversationId) {
+    return null;
+  }
+  return (
+    conversations.find((conv) => conv.id === activeConversationId)?.title ??
+    null
+  );
+}
+
+function buildChatBreadcrumbTrail(
+  isPage: boolean,
+  activeConversationId: string | undefined,
+  activeConversationTitle: string | null
+): readonly DashboardBreadcrumbOverride[] | null {
+  if (!isPage || !activeConversationId || !activeConversationTitle) {
+    return null;
+  }
+  return [
+    { label: 'Dashboard', url: '/dashboard' },
+    { label: 'Chat', url: '/chat' },
+    {
+      label: activeConversationTitle,
+      url: `/chat?conversationId=${activeConversationId}`,
+    },
+  ];
+}
+
+async function hydrateActiveConversationIfNeeded(params: {
+  readonly conversationId: string;
+  readonly hydratedRef: React.RefObject<string | null>;
+  readonly setIsLoadingHistory: React.Dispatch<React.SetStateAction<boolean>>;
+  readonly setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  readonly setError: React.Dispatch<React.SetStateAction<string | null>>;
+}): Promise<void> {
+  const {
+    conversationId,
+    hydratedRef,
+    setIsLoadingHistory,
+    setMessages,
+    setError,
+  } = params;
+  if (hydratedRef.current === conversationId) {
+    return;
+  }
+  hydratedRef.current = conversationId;
+  setIsLoadingHistory(true);
+  const result = await loadConversationHistory(conversationId);
+  setMessages(result.messages);
+  setError(result.error);
+  setIsLoadingHistory(false);
+}
+
+function useChatConversationsRealtime(params: {
+  readonly currentUserId: string | null | undefined;
+  readonly activeConversationId: string | undefined;
+  readonly hydratedRef: React.RefObject<string | null>;
+  readonly setConversations: React.Dispatch<
+    React.SetStateAction<ChatConversation[]>
+  >;
+  readonly setIsLoadingHistory: React.Dispatch<React.SetStateAction<boolean>>;
+  readonly setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  readonly setError: React.Dispatch<React.SetStateAction<string | null>>;
+  // eslint-disable-next-line no-unused-vars -- new-chat callback
+  readonly onActiveConversationDeleted: (force?: boolean) => void;
+}) {
+  const {
+    currentUserId,
+    activeConversationId,
+    hydratedRef,
+    setConversations,
+    setIsLoadingHistory,
+    setMessages,
+    setError,
+    onActiveConversationDeleted,
+  } = params;
+
+  const handleRealtimeInsert = useCallback(
+    (updatedConv: ChatConversation) => {
+      setConversations((prev) => {
+        const exists = prev.some((c) => c.id === updatedConv.id);
+        return exists ? prev : [updatedConv, ...prev];
+      });
+    },
+    [setConversations]
+  );
+
+  const handleRealtimeUpdate = useCallback(
+    async (updatedConv: ChatConversation, activeId?: string) => {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === updatedConv.id ? { ...c, ...updatedConv } : c
+        )
+      );
+
+      if (updatedConv.id !== activeId || updatedConv.is_processing) {
+        return;
+      }
+      await hydrateActiveConversationIfNeeded({
+        conversationId: updatedConv.id,
+        hydratedRef,
+        setIsLoadingHistory,
+        setMessages,
+        setError,
+      });
+    },
+    [hydratedRef, setConversations, setError, setIsLoadingHistory, setMessages]
+  );
+
+  const handleRealtimeDelete = useCallback(
+    (deletedId: string, activeId?: string) => {
+      setConversations((prev) => prev.filter((c) => c.id !== deletedId));
+      if (activeId === deletedId) {
+        onActiveConversationDeleted(true);
+      }
+    },
+    [onActiveConversationDeleted, setConversations]
+  );
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    const supabase = createClient();
+
+    const handleRealtimeChange = async (payload: {
+      eventType: string;
+      new: unknown;
+      old: unknown;
+    }) => {
+      const updatedConv = payload.new as ChatConversation;
+
+      if (payload.eventType === 'INSERT') {
+        handleRealtimeInsert(updatedConv);
+        return;
+      }
+      if (payload.eventType === 'UPDATE') {
+        await handleRealtimeUpdate(
+          updatedConv,
+          activeConversationId || undefined
+        );
+        return;
+      }
+      if (payload.eventType === 'DELETE') {
+        const deletedConv = payload.old as { id: string };
+        handleRealtimeDelete(deletedConv.id, activeConversationId || undefined);
+      }
+    };
+
+    const channel = supabase
+      .channel(`chat_conversations_changes:${currentUserId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chat_conversations',
+          filter: `user_id=eq.${currentUserId}`,
+        },
+        handleRealtimeChange
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [
+    currentUserId,
+    activeConversationId,
+    handleRealtimeInsert,
+    handleRealtimeUpdate,
+    handleRealtimeDelete,
+  ]);
+}
+
+function useChatProcessingPoll(params: {
+  activeConversationId: string | undefined;
+  conversations: ChatConversation[];
+  hydratedRef: React.RefObject<string | null>;
+  setConversations: React.Dispatch<React.SetStateAction<ChatConversation[]>>;
+  setIsLoadingHistory: React.Dispatch<React.SetStateAction<boolean>>;
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  setError: React.Dispatch<React.SetStateAction<string | null>>;
+}) {
+  const {
+    activeConversationId,
+    conversations,
+    hydratedRef,
+    setConversations,
+    setIsLoadingHistory,
+    setMessages,
+    setError,
+  } = params;
+
+  useEffect(() => {
+    if (!activeConversationId) return;
+
+    const isActiveProcessing = conversations.find(
+      (c) => c.id === activeConversationId
+    )?.is_processing;
+
+    if (!isActiveProcessing) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const latestConversations = await listChatConversationsAction();
+        setConversations(latestConversations);
+
+        const currentInLatest = latestConversations.find(
+          (c) => c.id === activeConversationId
+        );
+
+        if (currentInLatest && !currentInLatest.is_processing) {
+          clearInterval(intervalId);
+          await hydrateActiveConversationIfNeeded({
+            conversationId: activeConversationId,
+            hydratedRef,
+            setIsLoadingHistory,
+            setMessages,
+            setError,
+          });
+        }
+      } catch (err) {
+        console.error('Error polling conversation status:', err);
+      }
+    }, 500);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [
+    activeConversationId,
+    conversations,
+    hydratedRef,
+    setConversations,
+    setIsLoadingHistory,
+    setMessages,
+    setError,
+  ]);
+}
+
+function useChatClientBootstrap(params: {
+  hasServerBootstrap: boolean;
+  activeConversationId: string | undefined;
+  initialMessagesLength: number;
+  setConversations: React.Dispatch<React.SetStateAction<ChatConversation[]>>;
+  setActiveConversationId: React.Dispatch<
+    React.SetStateAction<string | undefined>
+  >;
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  setIsLoadingHistory: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsLoadingConversations: React.Dispatch<React.SetStateAction<boolean>>;
+  setError: React.Dispatch<React.SetStateAction<string | null>>;
+}) {
+  const {
+    hasServerBootstrap,
+    activeConversationId,
+    initialMessagesLength,
+    setConversations,
+    setActiveConversationId,
+    setMessages,
+    setIsLoadingHistory,
+    setIsLoadingConversations,
+    setError,
+  } = params;
+
+  useEffect(() => {
+    if (!hasServerBootstrap || !activeConversationId) return;
+    if (initialMessagesLength > 0) return;
+
+    let cancelled = false;
+
+    async function hydrateHistory() {
+      const conversationId = activeConversationId;
+      if (!conversationId) return;
+
+      setIsLoadingHistory(true);
+      setError(null);
+      const result = await loadConversationHistory(conversationId);
+      if (cancelled) return;
+      setError(result.error);
+      setMessages(result.messages);
+      setIsLoadingHistory(false);
+    }
+
+    void hydrateHistory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    hasServerBootstrap,
+    activeConversationId,
+    initialMessagesLength,
+    setIsLoadingHistory,
+    setMessages,
+    setError,
+  ]);
+
+  useEffect(() => {
+    if (hasServerBootstrap) return;
+
+    async function initChat() {
+      try {
+        setIsLoadingConversations(true);
+        const bootstrap = await bootstrapLatestChat();
+        setConversations(bootstrap.conversations);
+        setActiveConversationId(bootstrap.activeConversationId);
+        setMessages(bootstrap.messages);
+      } catch (err) {
+        console.error('Failed to initialize chat:', err);
+      } finally {
+        setIsLoadingConversations(false);
+        setIsLoadingHistory(false);
+      }
+    }
+    void initChat();
+  }, [
+    hasServerBootstrap,
+    setConversations,
+    setActiveConversationId,
+    setMessages,
+    setIsLoadingConversations,
+    setIsLoadingHistory,
+  ]);
+}
 
 let messageCounter = 0;
+let attachmentCounter = 0;
 
 const CHAT_PANEL_HEADER_CLASS =
   'border-border flex h-14 shrink-0 items-center border-b px-4';
 
 const NO_CHAT_MODEL_ERROR =
   'No chat model is configured. Use Add Model to connect one in Settings.';
+
+const inferChatAttachmentFileType = detectChatAttachmentFileType;
+
+async function uploadSelectedChatFiles(params: {
+  selectedFiles: FileList | File[];
+  activeConversationId: string | undefined;
+  setPendingAttachments: React.Dispatch<
+    React.SetStateAction<PendingChatAttachment[]>
+  >;
+  setError: React.Dispatch<React.SetStateAction<string | null>>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+}) {
+  const {
+    selectedFiles,
+    activeConversationId,
+    setPendingAttachments,
+    setError,
+    fileInputRef,
+  } = params;
+  const fileArray = Array.from(selectedFiles);
+  if (fileArray.length === 0) return;
+
+  for (const file of fileArray) {
+    const tempId = `temp-${Date.now()}-${++attachmentCounter}`;
+    const optimisticAttachment: PendingChatAttachment = {
+      id: tempId,
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType: file.type || 'application/octet-stream',
+      storagePath: '',
+      url: '',
+      fileType: inferChatAttachmentFileType(file.name, file.type || ''),
+      isUploading: true,
+    };
+
+    setPendingAttachments((prev) => [...prev, optimisticAttachment]);
+
+    try {
+      const uploaded = await uploadChatAttachment(file, activeConversationId);
+      setPendingAttachments((prev) => {
+        const stillPresent = prev.some((item) => item.id === tempId);
+        if (!stillPresent) {
+          void deleteChatAttachment(uploaded.id);
+          return prev;
+        }
+        return prev.map((item) =>
+          item.id === tempId ? { ...uploaded, isUploading: false } : item
+        );
+      });
+    } catch (uploadError) {
+      console.error('Failed to upload chat attachment:', uploadError);
+      setPendingAttachments((prev) =>
+        prev.filter((item) => item.id !== tempId)
+      );
+      setError(
+        `Failed to upload ${file.name}: ${uploadError instanceof Error ? uploadError.message : 'Upload failed'}`
+      );
+    }
+  }
+
+  if (fileInputRef.current) {
+    fileInputRef.current.value = '';
+  }
+}
 
 /* eslint-disable no-unused-vars */
 type ChatResponseRouter = { replace: (href: string) => void };
@@ -61,7 +511,7 @@ function applySuccessfulChatResponse(params: {
     React.SetStateAction<string | undefined>
   >;
   setConversations: React.Dispatch<React.SetStateAction<ChatConversation[]>>;
-  hydratedRef: React.MutableRefObject<string | null>;
+  hydratedRef: React.RefObject<string | null>;
   router: ChatResponseRouter;
 }) {
   const {
@@ -82,6 +532,7 @@ function applySuccessfulChatResponse(params: {
     if (!response.is_processing) {
       hydratedRef.current = response.conversationId;
     }
+    // Keep Next searchParams in sync so favorites / breadcrumbs use the new id.
     router.replace(`/chat?conversationId=${response.conversationId}`);
     setActiveConversationId(response.conversationId);
     setConversations((prev) => [
@@ -133,6 +584,7 @@ interface ChatClientProps {
   readonly initialMessages?: ChatMessage[];
   readonly initialChatModels?: ChatModelOption[];
   readonly currentUserId?: string | null;
+  readonly currentUserRole?: AppRole | null;
 }
 
 export function ChatClient({
@@ -145,9 +597,11 @@ export function ChatClient({
   initialMessages,
   initialChatModels,
   currentUserId,
+  currentUserRole,
 }: Readonly<ChatClientProps>) {
   const router = useRouter();
   const isPage = variant === 'page';
+  const canManageChatModels = isAdmin(currentUserRole);
   const hasServerBootstrap = initialConversations !== undefined;
   const [conversations, setConversations] = useState<ChatConversation[]>(
     () => initialConversations ?? []
@@ -159,7 +613,12 @@ export function ChatClient({
     () => initialMessages ?? []
   );
   const [inputValue, setInputValue] = useState('');
+  const [pendingAttachments, setPendingAttachments] = useState<
+    PendingChatAttachment[]
+  >([]);
   const [isPending, setIsPending] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isLoadingConversations, setIsLoadingConversations] = useState(
@@ -167,214 +626,74 @@ export function ChatClient({
   );
   const [conversationToDelete, setConversationToDelete] =
     useState<ChatConversation | null>(null);
+  const [conversationToRename, setConversationToRename] =
+    useState<ChatConversation | null>(null);
+  const isConversationBusy = isPending || isRenaming || isDeleting;
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const [conversationSearch, setConversationSearch] = useState('');
-  const { chatModels, selectedIntegrationId, setSelectedIntegrationId } =
-    useWorkspaceChatModels(initialChatModels);
+  const {
+    chatModels,
+    selectedIntegrationId,
+    setSelectedIntegrationId,
+    isMarkingDefault,
+    markSelectedAsDefault,
+  } = useWorkspaceChatModels(initialChatModels);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const hydratedRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    if (!hasServerBootstrap || !activeConversationId) return;
-    if ((initialMessages?.length ?? 0) > 0) return;
-
-    let cancelled = false;
-
-    async function hydrateHistory() {
-      const conversationId = activeConversationId;
-      if (!conversationId) return;
-
-      setIsLoadingHistory(true);
-      setError(null);
-      const result = await loadConversationHistory(conversationId);
-      if (cancelled) return;
-      setError(result.error);
-      setMessages(result.messages);
-      setIsLoadingHistory(false);
-    }
-
-    void hydrateHistory();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [hasServerBootstrap, activeConversationId, initialMessages?.length]);
-
-  useEffect(() => {
-    if (hasServerBootstrap) return;
-
-    async function initChat() {
-      try {
-        setIsLoadingConversations(true);
-        const bootstrap = await bootstrapLatestChat();
-        setConversations(bootstrap.conversations);
-        setActiveConversationId(bootstrap.activeConversationId);
-        setMessages(bootstrap.messages);
-      } catch (err) {
-        console.error('Failed to initialize chat:', err);
-      } finally {
-        setIsLoadingConversations(false);
-        setIsLoadingHistory(false);
-      }
-    }
-    void initChat();
-  }, [hasServerBootstrap]);
-
-  const handleRealtimeInsert = useCallback((updatedConv: ChatConversation) => {
-    setConversations((prev) => {
-      const exists = prev.some((c) => c.id === updatedConv.id);
-      return exists ? prev : [updatedConv, ...prev];
-    });
-  }, []);
-
-  const handleRealtimeUpdate = useCallback(
-    async (updatedConv: ChatConversation, activeId?: string) => {
-      setConversations((prev) =>
-        prev.map((c) =>
-          c.id === updatedConv.id ? { ...c, ...updatedConv } : c
-        )
-      );
-
-      if (updatedConv.id === activeId && !updatedConv.is_processing) {
-        if (hydratedRef.current !== activeId) {
-          hydratedRef.current = activeId;
-          setIsLoadingHistory(true);
-          const result = await loadConversationHistory(updatedConv.id);
-          setMessages(result.messages);
-          setError(result.error);
-          setIsLoadingHistory(false);
-        }
-      }
-    },
-    []
-  );
-
-  const handleRealtimeDelete = useCallback(
-    (
-      deletedId: string,
-      activeId?: string,
-      // eslint-disable-next-line no-unused-vars
-      onNewChat?: (force?: boolean) => void
-    ) => {
-      setConversations((prev) => prev.filter((c) => c.id !== deletedId));
-      if (activeId === deletedId && onNewChat) {
-        onNewChat(true);
-      }
-    },
-    []
-  );
+  useChatClientBootstrap({
+    hasServerBootstrap,
+    activeConversationId,
+    initialMessagesLength: initialMessages?.length ?? 0,
+    setConversations,
+    setActiveConversationId,
+    setMessages,
+    setIsLoadingHistory,
+    setIsLoadingConversations,
+    setError,
+  });
 
   const handleNewChat = useCallback(
     (force = false) => {
-      if (isPending && !force) return;
+      if (isConversationBusy && !force) return;
       router.replace('/chat');
       setActiveConversationId(undefined);
       setMessages([]);
+      setPendingAttachments([]);
       setError(null);
     },
-    [isPending, router]
+    [isConversationBusy, router]
   );
 
-  useEffect(() => {
-    if (!currentUserId) return;
-    const supabase = createClient();
-
-    const handleRealtimeChange = async (payload: {
-      eventType: string;
-      new: unknown;
-      old: unknown;
-    }) => {
-      const updatedConv = payload.new as ChatConversation;
-
-      if (payload.eventType === 'INSERT') {
-        handleRealtimeInsert(updatedConv);
-      } else if (payload.eventType === 'UPDATE') {
-        await handleRealtimeUpdate(
-          updatedConv,
-          activeConversationId || undefined
-        );
-      } else if (payload.eventType === 'DELETE') {
-        const deletedConv = payload.old as { id: string };
-        handleRealtimeDelete(
-          deletedConv.id,
-          activeConversationId || undefined,
-          handleNewChat
-        );
-      }
-    };
-
-    const channel = supabase
-      .channel(`chat_conversations_changes:${currentUserId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'chat_conversations',
-          filter: `user_id=eq.${currentUserId}`,
-        },
-        handleRealtimeChange
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [
+  useChatConversationsRealtime({
     currentUserId,
     activeConversationId,
-    handleRealtimeInsert,
-    handleRealtimeUpdate,
-    handleRealtimeDelete,
-    handleNewChat,
-  ]);
+    hydratedRef,
+    setConversations,
+    setIsLoadingHistory,
+    setMessages,
+    setError,
+    onActiveConversationDeleted: handleNewChat,
+  });
 
-  useEffect(() => {
-    if (!activeConversationId) return;
-
-    const isActiveProcessing = conversations.find(
-      (c) => c.id === activeConversationId
-    )?.is_processing;
-
-    if (!isActiveProcessing) return;
-
-    const intervalId = setInterval(async () => {
-      try {
-        const latestConversations = await listChatConversationsAction();
-        setConversations(latestConversations);
-
-        const currentInLatest = latestConversations.find(
-          (c) => c.id === activeConversationId
-        );
-
-        if (currentInLatest && !currentInLatest.is_processing) {
-          clearInterval(intervalId);
-          if (hydratedRef.current !== activeConversationId) {
-            hydratedRef.current = activeConversationId;
-            setIsLoadingHistory(true);
-            const result = await loadConversationHistory(activeConversationId);
-            setMessages(result.messages);
-            setError(result.error);
-            setIsLoadingHistory(false);
-          }
-        }
-      } catch (err) {
-        console.error('Error polling conversation status:', err);
-      }
-    }, 500);
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [activeConversationId, conversations]);
+  useChatProcessingPoll({
+    activeConversationId,
+    conversations,
+    hydratedRef,
+    setConversations,
+    setIsLoadingHistory,
+    setMessages,
+    setError,
+  });
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isPending]);
 
   const handleSelectConversation = async (id: string) => {
-    if (isPending) return;
+    if (isConversationBusy) return;
     if (id === activeConversationId && messages.length > 0) return;
 
     router.replace(`/chat?conversationId=${id}`);
@@ -393,54 +712,155 @@ export function ChatClient({
     conv: ChatConversation
   ) => {
     e.stopPropagation();
-    if (isPending) return;
+    if (isConversationBusy) return;
     setConversationToDelete(conv);
   };
 
-  const handleConfirmDelete = async () => {
-    if (!conversationToDelete || isPending) return;
+  const handleRenameConversationClick = (
+    e: React.MouseEvent,
+    conv: ChatConversation
+  ) => {
+    e.stopPropagation();
+    if (isConversationBusy) return;
+    setConversationToRename(conv);
+  };
 
-    setIsPending(true);
+  const handleConfirmRename = async (title: string) => {
+    if (!conversationToRename || isRenaming) return;
+
+    setIsRenaming(true);
+    setError(null);
+    try {
+      const renamed = await renameConversation(conversationToRename.id, title);
+      await revalidateChatConversations();
+      router.refresh();
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === renamed.id
+            ? {
+                ...conv,
+                title: renamed.title,
+                updated_at: renamed.updated_at,
+              }
+            : conv
+        )
+      );
+      setConversationToRename(null);
+    } catch (err) {
+      console.error('Failed to rename conversation:', err);
+      setError('Failed to rename conversation.');
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!conversationToDelete || isDeleting) return;
+
+    setIsDeleting(true);
     setError(null);
     try {
       const response = await deleteConversation(conversationToDelete.id);
-      if (response.success) {
-        await revalidateChatConversations();
-        router.refresh();
-
-        setConversations((prev) =>
-          prev.filter((c) => c.id !== conversationToDelete.id)
-        );
-
-        if (activeConversationId === conversationToDelete.id) {
-          handleNewChat(true);
-        }
-        setConversationToDelete(null);
+      if (!response.success) {
+        return;
       }
+      await revalidateChatConversations();
+      router.refresh();
+
+      setConversations((prev) =>
+        prev.filter((c) => c.id !== conversationToDelete.id)
+      );
+
+      if (activeConversationId === conversationToDelete.id) {
+        handleNewChat(true);
+      }
+      setConversationToDelete(null);
     } catch (err) {
       console.error('Failed to delete conversation:', err);
       setError('Failed to delete conversation.');
     } finally {
-      setIsPending(false);
+      setIsDeleting(false);
+    }
+  };
+
+  const handleFileSelect = useCallback(
+    async (selectedFiles: FileList | File[]) => {
+      await uploadSelectedChatFiles({
+        selectedFiles,
+        activeConversationId,
+        setPendingAttachments,
+        setError,
+        fileInputRef,
+      });
+    },
+    [activeConversationId]
+  );
+
+  const handleRemoveAttachment = useCallback(async (attachmentId: string) => {
+    setPendingAttachments((prev) =>
+      prev.filter((item) => item.id !== attachmentId)
+    );
+    if (!attachmentId.startsWith('temp-')) {
+      try {
+        await deleteChatAttachment(attachmentId);
+      } catch (err) {
+        console.error('Failed to delete chat attachment:', err);
+      }
+    }
+  }, []);
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+      e.preventDefault();
+      void handleFileSelect(e.clipboardData.files);
     }
   };
 
   const handleSendMessage = async (textToSend: string) => {
-    if (!textToSend.trim() || isPending) return;
+    const trimmedText = textToSend.trim();
+    const isUploadingAny = pendingAttachments.some((a) => a.isUploading);
+    if (
+      (!trimmedText && pendingAttachments.length === 0) ||
+      isPending ||
+      isUploadingAny
+    ) {
+      return;
+    }
 
     if (!selectedIntegrationId) {
       setError(NO_CHAT_MODEL_ERROR);
       return;
     }
 
+    const attachmentsToSend: ChatAttachmentWire[] = pendingAttachments
+      .filter((a) => !a.isUploading)
+      .map((a) => ({
+        id: a.id,
+        fileName: a.fileName,
+        fileSize: a.fileSize,
+        mimeType: a.mimeType,
+        storagePath: a.storagePath,
+        url: a.url,
+        fileType: a.fileType,
+        expiresAt: a.expiresAt,
+      }));
+
+    const messageContent =
+      trimmedText ||
+      (attachmentsToSend.length > 0
+        ? `Please process the attached document(s): ${attachmentsToSend.map((a) => a.fileName).join(', ')}`
+        : '');
+
     const userMessage: ChatMessage = {
       id: `msg-${Date.now()}-${++messageCounter}`,
       role: ChatRoles.User,
-      content: textToSend,
+      content: messageContent,
+      attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
+    setPendingAttachments([]);
     setIsPending(true);
     hydratedRef.current = null;
     setError(null);
@@ -451,7 +871,8 @@ export function ChatClient({
       const response = await sendChatMessage(
         history,
         activeConversationId,
-        selectedIntegrationId
+        selectedIntegrationId,
+        attachmentsToSend.length > 0 ? attachmentsToSend : undefined
       );
 
       applySuccessfulChatResponse({
@@ -463,11 +884,15 @@ export function ChatClient({
         hydratedRef,
         router,
       });
+      void revalidateChatConversations();
 
       if (response.actions && response.actions.length > 0) {
-        await revalidateAfterChatActions(
-          response.actions.map((action: ActionItem) => action.type)
-        );
+        const mutationActionTypes = response.actions
+          .map((action: ActionItem) => action.type)
+          .filter(
+            (type): type is ChatMutationActionType => type !== 'configure_board'
+          );
+        await revalidateAfterChatActions(mutationActionTypes);
         router.refresh();
       }
     } catch (err: unknown) {
@@ -498,11 +923,31 @@ export function ChatClient({
   ) => {
     if (e.key !== 'Enter' || e.shiftKey) return;
     e.preventDefault();
-    if (!inputValue.trim() || isInputDisabled) return;
+    const canSend =
+      (Boolean(inputValue.trim()) || pendingAttachments.length > 0) &&
+      !isInputDisabled &&
+      !pendingAttachments.some((a) => a.isUploading);
+    if (!canSend) return;
     void handleSendMessage(inputValue);
   };
 
   const showHistory = isPage && isHistoryOpen;
+
+  const activeConversationTitle = useMemo(
+    () => resolveActiveConversationTitle(activeConversationId, conversations),
+    [activeConversationId, conversations]
+  );
+
+  const chatBreadcrumbTrail = useMemo(
+    () =>
+      buildChatBreadcrumbTrail(
+        isPage,
+        activeConversationId,
+        activeConversationTitle
+      ),
+    [activeConversationId, activeConversationTitle, isPage]
+  );
+
   const showHero = !activeConversationId && messages.length === 0 && !isPending;
   const showEmptyThread =
     Boolean(activeConversationId) &&
@@ -517,7 +962,15 @@ export function ChatClient({
         isPage ? 'h-full min-h-0 flex-1' : 'h-full'
       )}
     >
-      {isPage ? (
+      {isPage && (
+        <ChatPageTrailBreadcrumb
+          trail={chatBreadcrumbTrail}
+          isLoadingConversations={isLoadingConversations}
+          isLoadingHistory={isLoadingHistory}
+          activeConversationId={activeConversationId}
+        />
+      )}
+      {isPage && (
         <ChatClientSidebar
           showHistory={showHistory}
           conversationSearch={conversationSearch}
@@ -529,9 +982,10 @@ export function ChatClient({
             void handleSelectConversation(id);
           }}
           onNewChat={handleNewChat}
+          onRenameConversationClick={handleRenameConversationClick}
           onDeleteConversationClick={handleDeleteConversationClick}
         />
-      ) : null}
+      )}
 
       <div className="bg-background flex min-w-0 flex-1 flex-col overflow-hidden">
         <header
@@ -541,7 +995,7 @@ export function ChatClient({
           )}
         >
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            {isPage ? (
+            {isPage && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -562,13 +1016,21 @@ export function ChatClient({
                   {isHistoryOpen ? 'Hide history' : 'Show history'}
                 </TooltipContent>
               </Tooltip>
-            ) : null}
+            )}
             <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
               <Sparkles className="size-4" />
             </div>
             <div className="min-w-0">
               <h2 className="truncate text-sm font-semibold">Alice</h2>
             </div>
+            <ChatClientHeaderLeading
+              chatModels={chatModels}
+              selectedIntegrationId={selectedIntegrationId}
+              canManageChatModels={canManageChatModels}
+              isPending={isInputDisabled}
+              isMarkingDefault={isMarkingDefault}
+              onMarkSelectedAsDefault={markSelectedAsDefault}
+            />
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <ChatClientHeaderActions
@@ -601,45 +1063,101 @@ export function ChatClient({
 
         <Separator />
         <div className="bg-muted/20 shrink-0 p-3 sm:p-4">
-          <form
-            onSubmit={handleFormSubmit}
-            className="mx-auto flex max-w-3xl items-end gap-2 sm:gap-3"
-          >
-            <Textarea
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleComposerKeyDown}
+          <div className="mx-auto max-w-3xl">
+            <ChatAttachmentTiles
+              attachments={pendingAttachments}
+              onRemove={handleRemoveAttachment}
               disabled={isInputDisabled}
-              rows={1}
-              placeholder="Type your message…"
-              className="bg-background max-h-40 min-h-10 flex-1 resize-none px-3 py-2.5 sm:px-4"
             />
-            <Button
-              type="submit"
-              size="icon-lg"
-              disabled={!inputValue.trim() || isInputDisabled}
-              aria-label="Send message"
+            <form
+              onSubmit={handleFormSubmit}
+              className="flex items-end gap-2 sm:gap-3"
             >
-              <Send />
-            </Button>
-          </form>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    void handleFileSelect(e.target.files);
+                  }
+                }}
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-lg"
+                    disabled={isInputDisabled}
+                    onClick={() => fileInputRef.current?.click()}
+                    aria-label="Attach files (JSON, CSV, etc.)"
+                  >
+                    <Paperclip className="size-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  Attach files (or paste with Ctrl+V)
+                </TooltipContent>
+              </Tooltip>
+
+              <Textarea
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleComposerKeyDown}
+                onPaste={handlePaste}
+                disabled={isInputDisabled}
+                rows={1}
+                placeholder="Type your message, attach files, or paste with Ctrl+V…"
+                className="bg-background max-h-40 min-h-10 flex-1 resize-none px-3 py-2.5 sm:px-4"
+              />
+              <Button
+                type="submit"
+                size="icon-lg"
+                disabled={
+                  (!inputValue.trim() && pendingAttachments.length === 0) ||
+                  isInputDisabled ||
+                  pendingAttachments.some((a) => a.isUploading)
+                }
+                aria-label="Send message"
+              >
+                <Send />
+              </Button>
+            </form>
+          </div>
         </div>
       </div>
-      {conversationToDelete ? (
+      {conversationToDelete && (
         <RegistryConfirmDialog
           title="Permanently Delete Chat History"
           subject={conversationToDelete.title}
           detail="Warning: This action is irreversible. All messages and executed tool action logs associated with this session will be permanently destroyed."
           confirmLabel="Delete Permanently"
           pendingLabel="Deleting..."
-          isPending={isPending}
+          isPending={isDeleting}
           isSoft={false}
           onCancel={() => setConversationToDelete(null)}
           onConfirm={() => {
             void handleConfirmDelete();
           }}
         />
-      ) : null}
+      )}
+      {conversationToRename && (
+        <ChatRenameDialog
+          open
+          title={conversationToRename.title}
+          isPending={isRenaming}
+          onOpenChange={(open) => {
+            if (!open && !isRenaming) {
+              setConversationToRename(null);
+            }
+          }}
+          onConfirm={(nextTitle) => {
+            void handleConfirmRename(nextTitle);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,81 +1,52 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { appDescription, appSubtitle, appTitle } from '@/app/_shared/values';
-import { HomeAuthButtons } from '@/app/_components/home/home-auth-buttons';
-import { MarketingShell } from '@/app/_components/home/marketing-shell';
-import { Button } from '@repo/ui/components/ui/button';
+import { HomeFooter } from '@/app/_components/home/home-footer';
+import { HomeNavbar } from '@/app/_components/home/home-navbar';
+import { getMarketingSession } from '@/app/_components/home/get-marketing-session';
+import { AboutFlowStory } from '@/app/about/_components/about-flow-story';
+import { AboutIntegrationsPanel } from '@/app/about/_components/about-integrations-panel';
 
 export const metadata: Metadata = {
   title: 'About',
   description: `Learn what ${appTitle} is and how it helps teams ${appSubtitle.toLowerCase()}.`,
 };
 
-const pillars = [
-  {
-    title: 'One workspace',
-    description:
-      'Projects, backlogs, sprints, boards, and dashboards live together so context never gets lost between tools.',
-  },
-  {
-    title: 'Built for delivery',
-    description:
-      'Plan the work, move it across the board, and review progress without rebuilding your process every quarter.',
-  },
-  {
-    title: 'Free while we grow',
-    description:
-      'Alice is free today with the full feature set. We are focused on making the product useful before we invent tiers.',
-  },
-] as const;
+export default async function AboutPage() {
+  const { user, dbUser, showAppLinks } = await getMarketingSession();
 
-export default function AboutPage() {
   return (
-    <MarketingShell>
-      <div className="px-6 py-14 sm:py-20">
-        <div className="mx-auto max-w-3xl">
-          <p className="text-primary text-sm font-medium tracking-wide">
-            About {appTitle}
-          </p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight text-pretty sm:text-5xl">
-            A focused workspace for planning and delivery
-          </h1>
-          <p className="text-muted-foreground mt-5 text-base leading-relaxed text-pretty sm:text-lg">
-            {appDescription}
-          </p>
-          <p className="text-muted-foreground mt-4 text-base leading-relaxed text-pretty sm:text-lg">
-            {appSubtitle}. That is the job: help teams see the work, commit to
-            what matters, and ship without the noise of a bloated suite.
-          </p>
-        </div>
-
-        <ul className="mx-auto mt-14 grid max-w-5xl gap-8 sm:grid-cols-3 sm:gap-6">
-          {pillars.map((pillar) => (
-            <li
-              key={pillar.title}
-              className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500"
-            >
-              <h2 className="text-base font-semibold tracking-tight">
-                {pillar.title}
-              </h2>
-              <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-                {pillar.description}
-              </p>
-            </li>
-          ))}
-        </ul>
-
-        <div className="mx-auto mt-14 flex max-w-3xl flex-wrap items-center gap-3">
-          <HomeAuthButtons isSignedIn={false} showSignedOutSecondary={false} />
-          <Button
-            asChild
-            size="lg"
-            variant="outline"
-            className="cursor-pointer"
-          >
-            <Link href="/contact">Contact us</Link>
-          </Button>
-        </div>
+    <main className="bg-background h-dvh snap-y snap-proximity overflow-x-hidden overflow-y-auto">
+      <div className="flex h-dvh shrink-0 snap-start flex-col">
+        <HomeNavbar
+          email={user?.email}
+          profilePicture={dbUser?.profile_picture}
+        />
+        <section className="relative flex min-h-0 flex-1 flex-col justify-center overflow-hidden px-6 py-8 sm:py-12">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,color-mix(in_oklch,var(--primary)_14%,transparent),transparent_55%)]"
+          />
+          <div className="relative mx-auto w-full max-w-3xl">
+            <p className="text-primary text-sm font-medium tracking-wide">
+              About {appTitle}
+            </p>
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-pretty sm:text-4xl lg:text-5xl">
+              A focused workspace for planning and delivery
+            </h1>
+            <p className="text-muted-foreground mt-4 text-sm leading-relaxed text-pretty sm:text-base lg:text-lg">
+              {appDescription}
+            </p>
+            <p className="text-muted-foreground mt-3 text-sm leading-relaxed text-pretty sm:text-base lg:text-lg">
+              {appSubtitle}. Scroll through the Alice flow — project to
+              dashboard — and the integrations that keep context in one place.
+            </p>
+          </div>
+        </section>
       </div>
-    </MarketingShell>
+
+      <AboutFlowStory />
+      <AboutIntegrationsPanel />
+      <HomeFooter showAppLinks={showAppLinks} />
+    </main>
   );
 }

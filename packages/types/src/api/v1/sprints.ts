@@ -47,6 +47,13 @@ export type SprintPrismaListFilters = {
 
 const optionalUuid = z.preprocess(emptyToUndefined, z.uuid().optional());
 
+export const SprintTabEnum = {
+  Active: 'active',
+  Archived: 'archived',
+} as const;
+
+export type SprintTab = (typeof SprintTabEnum)[keyof typeof SprintTabEnum];
+
 export const listSprintsQuerySchema = z
   .object({
     page: paginatedListPageField,
@@ -55,7 +62,7 @@ export const listSprintsQuerySchema = z
     projectId: optionalUuid,
     tab: z.preprocess(
       emptyToUndefined,
-      z.enum(['active', 'archived']).optional()
+      z.enum([SprintTabEnum.Active, SprintTabEnum.Archived]).optional()
     ),
   })
   .transform((query) => {
@@ -69,3 +76,24 @@ export const listSprintsQuerySchema = z
   });
 
 export type ListSprintsQuery = z.infer<typeof listSprintsQuerySchema>;
+
+export const DeleteSprintWorkItemsActionEnum = {
+  MoveOut: 'move_out',
+  DeleteContent: 'delete_content',
+} as const;
+
+export type DeleteSprintWorkItemsAction =
+  (typeof DeleteSprintWorkItemsActionEnum)[keyof typeof DeleteSprintWorkItemsActionEnum];
+
+export const DELETE_SPRINT_WORK_ITEMS_ACTIONS = [
+  DeleteSprintWorkItemsActionEnum.MoveOut,
+  DeleteSprintWorkItemsActionEnum.DeleteContent,
+] as const;
+
+export const deleteSprintActionSchema = z.object({
+  workItemsAction: z
+    .enum(DELETE_SPRINT_WORK_ITEMS_ACTIONS)
+    .default(DeleteSprintWorkItemsActionEnum.MoveOut),
+});
+
+export type DeleteSprintAction = z.infer<typeof deleteSprintActionSchema>;

@@ -1,15 +1,17 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Label } from '@repo/ui/components/ui/label';
 import {
   GitHubLogo,
   JiraLogo,
-} from '@/app/projects/[id]/_components/integration-brand-logos';
-import { useJiraConnectionPicker } from '../_hooks/use-jira-connection-picker';
-import { GithubRepoFields } from './github-repo-fields';
-import { JiraConnectionFields } from './jira-connection-fields';
+} from '@/app/projects/_components/project-details/integration-brand-logos';
+import { useJiraConnectionPicker } from '@/app/projects/_hooks/use-jira-connection-picker';
+import { JiraConnectionFields } from '@/app/projects/_components/jira-connection-fields';
+import { useGithubConnectionPicker } from '@/app/projects/_hooks/use-github-connection-picker';
+import { deleteGithubConnection } from '@/app/projects/_services/projects.github.mutations.client';
+import { GithubConnectionFields } from '@/app/projects/_components/github-connection-fields';
 
 function IntegrationProviderOption({
   id,
@@ -152,8 +154,8 @@ export interface Step3SourceControlProps {
   setGithubOwner: (_owner: string) => void;
   githubRepoName: string;
   setGithubRepoName: (_repoName: string) => void;
-  githubToken: string;
-  setGithubToken: (_token: string) => void;
+  githubToken?: string;
+  setGithubToken?: (_token: string) => void;
 }
 /* eslint-enable no-unused-vars */
 
@@ -164,9 +166,33 @@ export function Step3SourceControl({
   setGithubOwner,
   githubRepoName,
   setGithubRepoName,
-  githubToken,
-  setGithubToken,
 }: Readonly<Step3SourceControlProps>) {
+  const {
+    connections,
+    activeConnection,
+    repositories,
+    isLoadingConnections,
+    isLoadingRepositories,
+    isConnecting,
+    loadError,
+    handleConnectGithub,
+    refreshConnections,
+  } = useGithubConnectionPicker();
+
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+
+  const handleDisconnect = async (connectionId: string) => {
+    setIsDisconnecting(true);
+    try {
+      await deleteGithubConnection(connectionId);
+      refreshConnections();
+    } catch {
+      // noop
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-left-2 space-y-4 duration-300">
       <div className="space-y-1">
@@ -176,6 +202,10 @@ export function Step3SourceControl({
           branches. More SCMs can be added over time.
         </p>
       </div>
+
+      {loadError ? (
+        <p className="text-destructive text-xs font-medium">{loadError}</p>
+      ) : null}
 
       <ul className="space-y-3">
         <li>
@@ -188,13 +218,20 @@ export function Step3SourceControl({
             description="Link pull requests, view commits, and track branches inside your tasks."
           >
             <div className="border-border/60 bg-muted/30 rounded-lg border p-4">
-              <GithubRepoFields
+              <GithubConnectionFields
+                connections={connections}
+                activeConnection={activeConnection}
+                repositories={repositories}
+                isLoadingConnections={isLoadingConnections}
+                isLoadingRepositories={isLoadingRepositories}
+                isConnecting={isConnecting}
+                onConnect={handleConnectGithub}
                 githubOwner={githubOwner}
                 setGithubOwner={setGithubOwner}
                 githubRepoName={githubRepoName}
                 setGithubRepoName={setGithubRepoName}
-                githubToken={githubToken}
-                setGithubToken={setGithubToken}
+                onDisconnect={handleDisconnect}
+                isDisconnecting={isDisconnecting}
               />
             </div>
           </IntegrationProviderOption>

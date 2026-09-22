@@ -3,6 +3,7 @@ import {
   mapSprintRowToResponse,
   SprintStatusEnum,
   UserRoleEnum,
+  type DeleteSprintAction,
   type SprintBurndownPayload,
   type SprintResponse,
   type ListSprintsQuery,
@@ -17,7 +18,9 @@ import type {
   SprintRow,
 } from './sprints.repository';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { isPrismaUniqueConflict } from '../../../lib/prisma-errors';
 import type { SprintPaginatedList } from './sprints.prisma-query';
+import { sprintNameConflictMessage } from './sprints.errors';
 
 export type {
   BurndownPoint,
@@ -32,6 +35,14 @@ async function requireManagerOrAdmin(actorId: string) {
   );
 }
 
+async function requireAdmin(actorId: string) {
+  return await requireUserWithRole(
+    actorId,
+    [UserRoleEnum.admin],
+    'Unauthorized. Only administrators can permanently delete sprints.'
+  );
+}
+
 export class SprintsService {
   constructor(private readonly sprints: SprintsRepository) {}
 
@@ -43,16 +54,31 @@ export class SprintsService {
     const goal =
       input.goal === undefined || input.goal === '' ? null : input.goal;
 
-    const row = await this.sprints.create({
-      name: input.name,
-      goal,
-      projectId: input.projectId,
-      startDate: input.startDate,
-      endDate: input.endDate,
-      createdBy: userId,
-    });
+    const duplicate = await this.sprints.findByNameInProject(
+      input.projectId,
+      input.name
+    );
+    if (duplicate) {
+      throw new Error(sprintNameConflictMessage());
+    }
 
-    return mapSprintRowToResponse(row);
+    try {
+      const row = await this.sprints.create({
+        name: input.name,
+        goal,
+        projectId: input.projectId,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        createdBy: userId,
+      });
+
+      return mapSprintRowToResponse(row);
+    } catch (error) {
+      if (isPrismaUniqueConflict(error)) {
+        throw new Error(sprintNameConflictMessage());
+      }
+      throw error;
+    }
   }
 
   async updateSprintStatus(
@@ -63,6 +89,11 @@ export class SprintsService {
   ): Promise<SprintResponse> {
     await requireManagerOrAdmin(userId);
 
+    const currentSprint = await this.sprints.findById(sprintId);
+    if (!currentSprint) {
+      throw new Error('Sprint not found');
+    }
+
     if (status === SprintStatusEnum.Active) {
       const count = await this.sprints.getWorkItemCount(sprintId);
       if (count === 0) {
@@ -72,7 +103,10 @@ export class SprintsService {
       }
     }
 
-    if (status === SprintStatusEnum.Closed) {
+    if (
+      status === SprintStatusEnum.Closed &&
+      currentSprint.status !== SprintStatusEnum.Archived
+    ) {
       const count = await this.sprints.getWorkItemCount(sprintId);
       if (count === 0) {
         throw new Error(
@@ -90,15 +124,8 @@ export class SprintsService {
     }
 
     if (status === SprintStatusEnum.Archived) {
-      const currentSprint = await this.sprints.findById(sprintId);
-      if (!currentSprint) {
-        throw new Error('Sprint not found');
-      }
-      if (
-        currentSprint.status === SprintStatusEnum.Planned ||
-        currentSprint.status === SprintStatusEnum.Active
-      ) {
-        throw new Error('Cannot archive active or planned sprints.');
+      if (currentSprint.status !== SprintStatusEnum.Closed) {
+        throw new Error('Only completed sprints can be archived.');
       }
     }
 
@@ -137,20 +164,36 @@ export class SprintsService {
       }
     }
 
-    const row = await this.sprints.update(
-      userId,
-      sprintId,
-      {
-        name: input.name,
-        goal,
-        startDate: input.startDate,
-        endDate: input.endDate,
-        projectId: input.projectId,
-      },
-      input.expectedUpdatedAt
+    const duplicate = await this.sprints.findByNameInProject(
+      input.projectId,
+      input.name,
+      sprintId
     );
+    if (duplicate) {
+      throw new Error(sprintNameConflictMessage());
+    }
 
-    return mapSprintRowToResponse(row);
+    try {
+      const row = await this.sprints.update(
+        userId,
+        sprintId,
+        {
+          name: input.name,
+          goal,
+          startDate: input.startDate,
+          endDate: input.endDate,
+          projectId: input.projectId,
+        },
+        input.expectedUpdatedAt
+      );
+
+      return mapSprintRowToResponse(row);
+    } catch (error) {
+      if (isPrismaUniqueConflict(error)) {
+        throw new Error(sprintNameConflictMessage());
+      }
+      throw error;
+    }
   }
 
   async listSprintsPaginated(
@@ -183,9 +226,28 @@ export class SprintsService {
     return await this.sprints.getDetailById(sprintId);
   }
 
+  async hardDeleteSprint(
+    actorId: string,
+    sprintId: string,
+    options: DeleteSprintAction
+  ): Promise<void> {
+    await requireAdmin(actorId);
+
+    const currentSprint = await this.sprints.findById(sprintId);
+    if (!currentSprint) {
+      throw new Error('Sprint not found');
+    }
+
+    if (currentSprint.status !== SprintStatusEnum.Archived) {
+      throw new Error('Only archived sprints can be permanently deleted.');
+    }
+
+    await this.sprints.deleteSprint(sprintId, options.workItemsAction);
+  }
+
   private resolveScopedListFilters(
     query: ListSprintsQuery,
-    accessible: 'all' | string[]
+    accessible: string[]
   ): SprintPrismaListFilters | null {
     const statuses =
       query.tab === 'archived'
@@ -199,10 +261,6 @@ export class SprintsService {
     const base = {
       status: statuses,
     };
-
-    if (accessible === 'all') {
-      return { ...base, projectId: query.projectId };
-    }
 
     if (accessible.length === 0) {
       return null;

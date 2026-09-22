@@ -10,6 +10,7 @@ import {
 import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
 import type { ActionItem } from '@/app/chat/_components/chat-client.types';
+import { boardConfigSchema } from '@repo/types/api/v1';
 
 type ActionCardTone = 'emerald' | 'blue' | 'indigo';
 
@@ -40,12 +41,14 @@ function ActionCardFrame({
   children,
   href,
   linkLabel,
+  onLinkClick,
 }: Readonly<{
   tone: ActionCardTone;
   icon: LucideIcon;
   children: ReactNode;
   href: string;
   linkLabel: string;
+  onLinkClick?: () => void;
 }>) {
   const toneClass = ACTION_CARD_TONE_CLASS[tone];
 
@@ -62,6 +65,7 @@ function ActionCardFrame({
       </div>
       <Link
         href={href}
+        onClick={onLinkClick}
         className={cn(
           'text-[11px] underline transition-colors',
           toneClass.link
@@ -73,7 +77,9 @@ function ActionCardFrame({
   );
 }
 
-function projectActionLabel(entity: ActionItem['entity']): ReactNode {
+function projectActionLabel(
+  entity: Extract<ActionItem, { type: 'create_project' }>['entity']
+): ReactNode {
   return (
     <>
       Project Created: <strong>{entity.name}</strong> ({entity.key})
@@ -81,7 +87,9 @@ function projectActionLabel(entity: ActionItem['entity']): ReactNode {
   );
 }
 
-function sprintActionLabel(entity: ActionItem['entity']): ReactNode {
+function sprintActionLabel(
+  entity: Extract<ActionItem, { type: 'create_sprint' }>['entity']
+): ReactNode {
   return (
     <>
       Sprint Created: <strong>{entity.name}</strong>
@@ -89,10 +97,32 @@ function sprintActionLabel(entity: ActionItem['entity']): ReactNode {
   );
 }
 
-function workItemActionLabel(entity: ActionItem['entity']): ReactNode {
+function workItemActionLabel(
+  entity: Extract<ActionItem, { type: 'create_work_item' }>['entity']
+): ReactNode {
   return (
     <>
       Work Item Created: <strong>{entity.key}</strong> - {entity.title}
+    </>
+  );
+}
+
+function workItemUpdatedActionLabel(
+  entity: Extract<ActionItem, { type: 'update_work_item' }>['entity']
+): ReactNode {
+  return (
+    <>
+      Work Item Updated: <strong>{entity.key}</strong> - {entity.title}
+    </>
+  );
+}
+
+function workItemDeletedActionLabel(
+  entity: Extract<ActionItem, { type: 'delete_work_item' }>['entity']
+): ReactNode {
+  return (
+    <>
+      Work Item Removed: <strong>{entity.key}</strong> - {entity.title}
     </>
   );
 }
@@ -135,6 +165,63 @@ export function ChatExecutedActionCard({
           {workItemActionLabel(action.entity)}
         </ActionCardFrame>
       );
+    case 'update_work_item':
+      return (
+        <ActionCardFrame
+          tone="blue"
+          icon={ClipboardPenIcon}
+          href={`/work-items/${action.entity.id}`}
+          linkLabel="View Details"
+        >
+          {workItemUpdatedActionLabel(action.entity)}
+        </ActionCardFrame>
+      );
+    case 'delete_work_item':
+      return (
+        <ActionCardFrame
+          tone="emerald"
+          icon={ClipboardPenIcon}
+          href="/work-items"
+          linkLabel="View Work Items"
+        >
+          {workItemDeletedActionLabel(action.entity)}
+        </ActionCardFrame>
+      );
+    case 'batch_import_work_items':
+      return (
+        <ActionCardFrame
+          tone="emerald"
+          icon={ClipboardPenIcon}
+          href="/work-items"
+          linkLabel="View Work Items"
+        >
+          Work Items Imported:{' '}
+          <strong>
+            {action.entity.title ?? action.entity.name ?? 'Batch Import'}
+          </strong>
+        </ActionCardFrame>
+      );
+    case 'configure_board': {
+      const href = `/projects/${action.entity.projectId}?tab=board`;
+      return (
+        <ActionCardFrame
+          tone="indigo"
+          icon={FolderKanban}
+          href={href}
+          linkLabel="Open in Board Designer"
+          onLinkClick={() => {
+            const parsed = boardConfigSchema.safeParse(action.entity.config);
+            if (!parsed.success) return;
+            sessionStorage.setItem(
+              `board_draft_${action.entity.projectId}`,
+              JSON.stringify(parsed.data)
+            );
+          }}
+        >
+          Board Draft Created: <strong>{action.entity.projectName}</strong>
+        </ActionCardFrame>
+      );
+    }
     default:
       return null;
   }

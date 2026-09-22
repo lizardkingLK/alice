@@ -22,6 +22,8 @@ const requiredPublicSchema = z.object({
   NEXT_PUBLIC_API_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+  NEXT_PUBLIC_PUSHER_KEY: z.string().min(1),
+  NEXT_PUBLIC_PUSHER_CLUSTER: z.string().min(1),
 });
 
 const optionalPublicSchema = z.object({
@@ -35,6 +37,8 @@ const mockPublic: PublicEnv = {
   NEXT_PUBLIC_API_URL: 'http://localhost:3001',
   NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
   NEXT_PUBLIC_SUPABASE_ANON_KEY: 'mock-anon-key',
+  NEXT_PUBLIC_PUSHER_KEY: 'mock-pusher-key',
+  NEXT_PUBLIC_PUSHER_CLUSTER: 'mt1',
 };
 
 function buildRequiredEnvInput() {
@@ -42,6 +46,8 @@ function buildRequiredEnvInput() {
     NEXT_PUBLIC_API_URL: readEnv('NEXT_PUBLIC_API_URL'),
     NEXT_PUBLIC_SUPABASE_URL: readEnv('NEXT_PUBLIC_SUPABASE_URL'),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: readEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+    NEXT_PUBLIC_PUSHER_KEY: readEnv('NEXT_PUBLIC_PUSHER_KEY'),
+    NEXT_PUBLIC_PUSHER_CLUSTER: readEnv('NEXT_PUBLIC_PUSHER_CLUSTER'),
   };
 }
 
@@ -95,6 +101,8 @@ function requiredEnvHints(): string {
     '- NEXT_PUBLIC_API_URL',
     '- NEXT_PUBLIC_SUPABASE_URL',
     '- NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    '- NEXT_PUBLIC_PUSHER_KEY',
+    '- NEXT_PUBLIC_PUSHER_CLUSTER',
     'Optional (warn only): NEXT_PUBLIC_SITE_URL, SUPABASE_SERVICE_ROLE_KEY (server secret in Vercel, not in sample.env).',
   ].join(' ');
 }

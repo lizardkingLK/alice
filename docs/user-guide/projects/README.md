@@ -16,21 +16,25 @@ but they don't open the project registry.
 
 ## In this topic
 
-| Page                                              | What you'll learn                 |
-| ------------------------------------------------- | --------------------------------- |
-| [Browse projects](./browse-projects.md)           | Find projects you can access      |
-| [Create a project](./create-project.md)           | Add a new project (admins)        |
-| [Project settings](./project-settings.md)         | Edit project metadata             |
-| [Project members](./project-members.md)           | Add or remove people on a project |
-| [Project integrations](./project-integrations.md) | GitHub and Jira connections       |
+| Page                                                              | What you'll learn                                  |
+| ----------------------------------------------------------------- | -------------------------------------------------- |
+| [Browse projects](./browse-projects.md)                           | Find projects you can access                       |
+| [Create a project](./create-project.md)                           | Add a new project (admins)                         |
+| [Project settings](./project-settings.md)                         | Edit project metadata                              |
+| [Project members](./project-members.md)                           | Add or remove people on a project                  |
+| [Project integrations](./project-integrations.md)                 | GitHub and Jira connections                        |
+| [Dynamic fields & sidebar](./dynamic-fields.md)                   | Configure custom fields and navigate workspaces    |
+| [Dynamic fields testing](./dynamic-fields-testing.md)             | End-to-end user testing instructions on the system |
+| [Work-item types & hierarchy](./work-item-types-and-hierarchy.md) | Configure project types and Jira hierarchy mapping |
+| [Work-item types testing](./work-item-types-testing.md)           | Step-by-step testing for types and Jira mapping    |
 
 ---
 
 ## Two layers of access
 
 1. **Platform role** — You need **manager** or **admin** to open `/projects`.
-2. **Project membership** — Even as a manager, you only see projects you **own**
-   or are a **member** of (admins see all projects).
+2. **Project membership** — You only see projects you **own** or are a
+   **member** of (same rule for admins and managers).
 
 If you open a project you're not a member of, you'll see a no-access message
 with a link back to the list.
@@ -39,10 +43,10 @@ with a link back to the list.
 
 ## Getting access to a project
 
-| Situation                        | What happens                                     |
-| -------------------------------- | ------------------------------------------------ |
-| An **admin creates** a project   | They become the **owner** and see it in the list |
-| Someone **adds you** as a member | The project appears in your list                 |
-| You're an **admin**              | All projects appear in the list                  |
+| Situation                      | What happens                                                         |
+| ------------------------------ | -------------------------------------------------------------------- |
+| An **admin creates** a project | They are added as a **member**; the chosen manager becomes **owner** |
+| Someone **adds you** as member | The project appears in your list                                     |
+| You are the **owner**          | The project appears in your list                                     |
 
 Ask a project owner or admin to add you under **Members** if you need access.

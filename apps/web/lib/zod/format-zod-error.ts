@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
-/** Serialize Zod validation errors for mutation client error messages. */
+/** Format Zod validation errors for mutation client error messages. */
 export function formatZodError(error: z.ZodError): string {
-  return JSON.stringify(z.treeifyError(error));
+  const messages = error.issues.map((issue) => issue.message);
+  return [...new Set(messages)].join('; ');
 }
 
 /** Parse client input with a Zod schema or throw a formatted validation error. */

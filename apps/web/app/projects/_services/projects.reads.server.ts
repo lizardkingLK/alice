@@ -13,18 +13,23 @@ import {
 } from '@/lib/db/query';
 import { getCachedProjectList } from '@/lib/cache/dropdown-cache';
 import { listAccessibleProjectIds } from '@/lib/projects/project-workspace-access';
-import { withoutGithubToken } from '@/lib/projects/sanitize-project-secrets';
-import { createProjectsService } from './projects.mutations.shared';
+import { withoutIntegrationSecrets } from '@/lib/projects/sanitize-project-secrets';
+import {
+  ProjectStatusEnum,
+  type ProjectStatusTab,
+} from '@/app/projects/_helpers/project-status';
+import { createProjectsService } from '@/app/projects/_services/projects.mutations.shared';
 import type {
   GetProjectsPaginatedResponse,
   Project,
   ProjectMemberWithUser,
   ProjectMembersByProjectId,
-} from './projects.mutations.shared';
+} from '@/app/projects/_services/projects.mutations.shared';
 
 const service = createProjectsService(apiFetch);
 
-const OWNER_SELECT = 'owner:users!projects_owner_id_fkey(id, name, email)';
+const OWNER_SELECT =
+  'owner:users!projects_owner_id_fkey(id, name, email, profile_picture)';
 const PROJECT_MEMBER_USER_SELECT = userRelationSelect(
   'user',
   'project_members_user_id_fkey',
@@ -36,7 +41,7 @@ type ProjectRowWithSecrets = Project & {
 };
 
 function sanitizeProjectRow(row: ProjectRowWithSecrets): Project {
-  return withoutGithubToken(row) as Project;
+  return withoutIntegrationSecrets(row) as Project;
 }
 
 /**
@@ -56,16 +61,14 @@ export async function getProjectList(): Promise<Project[]> {
 export async function getProjectListPaginated(
   page: number,
   limit: number,
-  status?: 'active' | 'archived',
+  status?: ProjectStatusTab,
   search?: string
 ): Promise<GetProjectsPaginatedResponse> {
   const supabase = await createClient();
   const dbUser = await getDbUser();
-  const accessibleIds = dbUser
-    ? await listAccessibleProjectIds(dbUser.id, dbUser.role)
-    : [];
+  const accessibleIds = dbUser ? await listAccessibleProjectIds(dbUser.id) : [];
 
-  if (accessibleIds !== 'all' && accessibleIds.length === 0) {
+  if (accessibleIds.length === 0) {
     return {
       projects: [],
       ...paginationMeta(0, page, limit),
@@ -76,11 +79,9 @@ export async function getProjectListPaginated(
     .from('projects')
     .select(`*, ${OWNER_SELECT}`, { count: 'exact' });
 
-  if (accessibleIds !== 'all') {
-    query = query.in('id', accessibleIds);
-  }
+  query = query.in('id', accessibleIds);
 
-  if (status === 'archived') {
+  if (status === ProjectStatusEnum.archived) {
     query = query.not('deleted_at', 'is', null);
   } else {
     query = query.is('deleted_at', null);
@@ -247,4 +248,4 @@ export type {
   UpdateProjectInput,
   ProjectMemberWithUser,
   ProjectMembersByProjectId,
-} from './projects.mutations.shared';
+} from '@/app/projects/_services/projects.mutations.shared';

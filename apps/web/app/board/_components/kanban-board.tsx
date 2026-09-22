@@ -17,16 +17,9 @@ import {
   SquareArrowOutUpRight,
   X,
 } from '@repo/ui/lib/icons';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarGroup,
-  AvatarGroupCount,
-  AvatarImage,
-} from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
-import { Card, CardContent } from '@repo/ui/components/ui/card';
+import { Card } from '@repo/ui/components/ui/card';
 import {
   Dialog,
   DialogClose,
@@ -36,28 +29,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@repo/ui/components/ui/dropdown-menu';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
-import { Separator } from '@repo/ui/components/ui/separator';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
-import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
-import { formatLabelWithSpace, getInitials } from '@/app/_shared/utility';
+import { formatLabelWithSpace } from '@/app/_shared/utility';
+import {
+  assignItemsToColumns,
+  resolveBoardMove,
+  resolveItemColumnId,
+} from '@/app/board/_helpers/board-columns';
 import {
   pickWorkspaceDefaultsDialogController,
   WorkspaceDefaultsDialogHost,
 } from '@/app/board/_components/workspace-defaults-dialog-host';
 import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
+import {
+  BoardLayoutMenu,
+  useBoardLayout,
+} from '@/app/board/_components/board-layout-menu';
+import { BoardGroupedColumnsView } from '@/app/board/_components/board-grouped-columns-view';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
@@ -73,23 +66,29 @@ import {
 } from '@/app/work-items/_components/work-item-table/work-item-table-helpers';
 import type { FilterQuery } from '@/app/work-items/_components/work-item-table/work-items-table-types';
 import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
-import { BOARD_STATUS_COLUMNS } from '@/app/work-items/_helpers/work-item-status';
+import { BOARD_STATUS_COLUMN_ACCENTS } from '@/app/work-items/_helpers/work-item-status';
+import { mergeWorkItemServerRow } from '@/app/work-items/_helpers/work-item-merge-server-row';
 import { updateWorkItemStatus } from '@/app/work-items/_services/work-items.mutations.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { SearchInput } from '@/components/search-input';
+import { AssigneeAvatarFilter } from '@/components/assignee-avatar-filter';
 import { UserAvatar } from '@/components/user-avatar';
+import { WorkItemPreviewCardBody } from '@/components/work-item-preview-card';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { useRealtime } from '@/components/realtime/realtime-provider';
 import {
   QUERY_FILTER_ALL_VALUE,
   useQueryFilter,
 } from '@/hooks/use-query-filter';
 import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
+import { ApiError } from '@/lib/api/api-fetch.helper';
+import { toast } from '@repo/ui/components/ui/sonner';
+import {
+  BOARD_MOVE_FORBIDDEN_CODE,
+  type BoardColumn,
+} from '@repo/types/api/v1';
 
-type BoardStatus = Exclude<DbWorkItem['status'], 'Draft'>;
-
-const COLUMNS = BOARD_STATUS_COLUMNS;
-
-const MAX_VISIBLE_ASSIGNEES = 3;
+type BoardStatus = BoardColumn['status'];
 
 const IDLE_FILTER_QUERY: FilterQuery = {
   value: QUERY_FILTER_ALL_VALUE,
@@ -107,6 +106,8 @@ function assigneeName(item: DbWorkItem) {
 }
 
 type KanbanBoardProps = {
+  readonly boardColumns: BoardColumn[];
+  readonly usesCustomBoardConfig: boolean;
   readonly initialWorkItems: DbWorkItem[];
   readonly projects: Project[];
   readonly sprints: Sprint[];
@@ -122,6 +123,8 @@ type KanbanBoardProps = {
 };
 
 export function KanbanBoard({
+  boardColumns,
+  usesCustomBoardConfig,
   initialWorkItems,
   projects,
   sprints,
@@ -132,10 +135,12 @@ export function KanbanBoard({
   suggestedDefaults,
   needsClientBootstrap,
 }: Readonly<KanbanBoardProps>) {
+  const { isUserOnline } = useRealtime();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { handleMutationError } = useOptimisticLock();
+  const { layout, setLayout } = useBoardLayout(userId);
   const [workItems, setWorkItems] = useState<DbWorkItem[]>(initialWorkItems);
   const [createStatus, setCreateStatus] = useState<BoardStatus | null>(null);
   const [search, setSearch] = useState('');
@@ -181,7 +186,7 @@ export function KanbanBoard({
     projectQuery.value !== projectAllValue;
 
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
-  const [activeDropCol, setActiveDropCol] = useState<BoardStatus | null>(null);
+  const [activeDropCol, setActiveDropCol] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<DbWorkItem | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
@@ -208,20 +213,14 @@ export function KanbanBoard({
     return Array.from(byId.values());
   }, [workItems]);
 
-  const visibleAssignees = uniqueAssignees.slice(0, MAX_VISIBLE_ASSIGNEES);
-  const overflowAssignees = uniqueAssignees.slice(MAX_VISIBLE_ASSIGNEES);
-  const isOverflowAssigneeSelected = overflowAssignees.some(
-    (assignee) => assignee.id === assigneeFilter
-  );
-
   const boardFilterFieldIds = useMemo(() => {
     const fields: Array<'project' | 'sprint' | 'priority'> = [];
-    if (allowAllFilters) {
+    if (allowAllFilters || projects.length > 0) {
       fields.push('project');
     }
     fields.push('sprint', 'priority');
     return fields;
-  }, [allowAllFilters]);
+  }, [allowAllFilters, projects.length]);
 
   const priorityQuery = useMemo<FilterQuery>(
     () => ({
@@ -232,12 +231,6 @@ export function KanbanBoard({
     }),
     [priorityFilter]
   );
-
-  const toggleAssignee = (assigneeId: string) => {
-    setAssigneeFilter((previous) =>
-      previous === assigneeId ? null : assigneeId
-    );
-  };
 
   const hasLocalFilters =
     search.trim() !== '' ||
@@ -257,7 +250,8 @@ export function KanbanBoard({
 
       const params = new URLSearchParams(searchParams.toString());
 
-      if (allowAllFilters) {
+      const canFilterProject = allowAllFilters || projects.length > 0;
+      if (canFilterProject) {
         applyWorkItemsProjectSprintDraftToSearchParams(params, draft, {
           allValue: projectAllValue,
           applyProject: true,
@@ -293,6 +287,7 @@ export function KanbanBoard({
       allowAllFilters,
       pathname,
       projectAllValue,
+      projects.length,
       router,
       searchParams,
       setProjectFilterValue,
@@ -342,12 +337,16 @@ export function KanbanBoard({
     });
   }, [workItems, search, priorityFilter, assigneeFilter]);
 
+  const columnItemsMap = useMemo(() => {
+    return assignItemsToColumns(filteredItems, boardColumns);
+  }, [filteredItems, boardColumns]);
+
   const handleDragStart = (event: DragEvent, id: string) => {
     event.dataTransfer.setData('text/plain', id);
     setDraggedTaskId(id);
   };
 
-  const handleDragOver = (event: DragEvent, colId: BoardStatus) => {
+  const handleDragOver = (event: DragEvent, colId: string) => {
     event.preventDefault();
     if (activeDropCol !== colId) {
       setActiveDropCol(colId);
@@ -358,23 +357,20 @@ export function KanbanBoard({
     setActiveDropCol(null);
   };
 
-  const restoreStatus = (id: string, status: DbWorkItem['status']) => {
-    setWorkItems((previous) =>
-      previous.map((item) => (item.id === id ? { ...item, status } : item))
-    );
-    setSelectedTask((previous) =>
-      previous?.id === id ? { ...previous, status } : previous
-    );
-  };
-
-  const syncWorkItem = (id: string, updated: DbWorkItem) => {
+  const restorePlacement = (
+    id: string,
+    status: DbWorkItem['status'],
+    boardColumnId: string | null
+  ) => {
     setWorkItems((previous) =>
       previous.map((item) =>
         item.id === id
           ? {
               ...item,
-              ...updated,
-              assignee: updated.assignee ?? item.assignee,
+              status,
+              board_column_id: boardColumnId,
+              // Keep lock token until the server row arrives via syncWorkItem.
+              updated_at: item.updated_at,
             }
           : item
       )
@@ -383,10 +379,22 @@ export function KanbanBoard({
       previous?.id === id
         ? {
             ...previous,
-            ...updated,
-            assignee: updated.assignee ?? previous.assignee,
+            status,
+            board_column_id: boardColumnId,
+            updated_at: previous.updated_at,
           }
         : previous
+    );
+  };
+
+  const syncWorkItem = (id: string, updated: DbWorkItem) => {
+    setWorkItems((previous) =>
+      previous.map((item) =>
+        item.id === id ? mergeWorkItemServerRow(item, updated) : item
+      )
+    );
+    setSelectedTask((previous) =>
+      previous?.id === id ? mergeWorkItemServerRow(previous, updated) : previous
     );
   };
 
@@ -411,9 +419,18 @@ export function KanbanBoard({
     setStatusError(message);
   };
 
-  const applyStatusChange = (id: string, targetStatus: BoardStatus) => {
+  const applyStatusChange = (id: string, targetColumn: BoardColumn) => {
     const currentItem = workItems.find((item) => item.id === id);
-    if (!currentItem || currentItem.status === targetStatus) {
+    if (!currentItem) {
+      return;
+    }
+
+    const move = resolveBoardMove(
+      currentItem,
+      targetColumn,
+      usesCustomBoardConfig
+    );
+    if (!move) {
       return;
     }
 
@@ -422,14 +439,24 @@ export function KanbanBoard({
     }
 
     const previousStatus = currentItem.status;
+    const previousBoardColumnId = currentItem.board_column_id;
+    const sourceColumnName =
+      boardColumns.find(
+        (column) => column.id === resolveItemColumnId(currentItem, boardColumns)
+      )?.name ?? 'the current column';
     setStatusError(null);
     setPendingStatusIds((previous) => new Set(previous).add(id));
-    restoreStatus(id, targetStatus);
+    restorePlacement(id, move.status, move.board_column_id);
 
-    updateWorkItemStatus(id, targetStatus, currentItem.updated_at)
+    updateWorkItemStatus(
+      id,
+      move.status,
+      currentItem.updated_at,
+      move.board_column_id
+    )
       .then((response) => {
         if (response.error || !response.data) {
-          restoreStatus(id, previousStatus);
+          restorePlacement(id, previousStatus, previousBoardColumnId);
           reportStatusUpdateFailure(
             typeof response.error === 'string'
               ? response.error
@@ -441,7 +468,16 @@ export function KanbanBoard({
         syncWorkItem(id, response.data);
       })
       .catch(async (error) => {
-        restoreStatus(id, previousStatus);
+        restorePlacement(id, previousStatus, previousBoardColumnId);
+        if (
+          error instanceof ApiError &&
+          error.code === BOARD_MOVE_FORBIDDEN_CODE
+        ) {
+          toast.error(
+            `Move blocked: you do not have permission to move this item from ${sourceColumnName} to ${targetColumn.name}.`
+          );
+          return;
+        }
         if (
           await tryHandleLockedMutationError({
             error,
@@ -449,7 +485,10 @@ export function KanbanBoard({
             entityType: 'work_item',
             entityId: id,
             expectedUpdatedAt: currentItem.updated_at,
-            pendingFields: { status: targetStatus },
+            pendingFields: {
+              status: move.status,
+              board_column_id: move.board_column_id,
+            },
             currentUserId: userId,
           })
         ) {
@@ -462,11 +501,11 @@ export function KanbanBoard({
       });
   };
 
-  const handleDrop = (event: DragEvent, targetStatus: BoardStatus) => {
+  const handleDrop = (event: DragEvent, targetColumn: BoardColumn) => {
     event.preventDefault();
     const id = event.dataTransfer.getData('text/plain') || draggedTaskId;
     if (id) {
-      applyStatusChange(id, targetStatus);
+      applyStatusChange(id, targetColumn);
     }
     setDraggedTaskId(null);
     setActiveDropCol(null);
@@ -512,93 +551,6 @@ export function KanbanBoard({
             className="sm:w-64"
           />
 
-          <AvatarGroup
-            className="*:data-[slot=avatar]:size-8"
-            role="group"
-            aria-label="Filter by assignee"
-          >
-            {visibleAssignees.map((assignee) => {
-              const isSelected = assigneeFilter === assignee.id;
-              return (
-                <Tooltip key={assignee.id}>
-                  <TooltipTrigger asChild>
-                    <Avatar
-                      size="default"
-                      role="button"
-                      tabIndex={0}
-                      aria-pressed={isSelected}
-                      aria-label={`Filter by ${assignee.name}`}
-                      className={cn(
-                        'focus-visible:ring-ring cursor-pointer outline-none focus-visible:ring-2',
-                        isSelected &&
-                          'ring-primary ring-offset-background z-10 ring-2 ring-offset-2',
-                        assigneeFilter && !isSelected && 'opacity-40'
-                      )}
-                      onClick={() => toggleAssignee(assignee.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          toggleAssignee(assignee.id);
-                        }
-                      }}
-                    >
-                      {assignee.profilePicture ? (
-                        <AvatarImage
-                          src={assignee.profilePicture}
-                          alt={assignee.name}
-                        />
-                      ) : null}
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                        {getInitials(assignee.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    {assignee.name}
-                    {isSelected ? ' · filtering' : ''}
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
-
-            {overflowAssignees.length > 0 ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <AvatarGroupCount
-                    role="button"
-                    tabIndex={0}
-                    aria-label="Show more assignees"
-                    className={cn(
-                      'focus-visible:ring-ring cursor-pointer text-xs font-medium outline-none focus-visible:ring-2',
-                      assigneeFilter &&
-                        !isOverflowAssigneeSelected &&
-                        'opacity-40',
-                      isOverflowAssigneeSelected &&
-                        'ring-primary ring-offset-background z-10 ring-2 ring-offset-2'
-                    )}
-                  >
-                    +{overflowAssignees.length}
-                  </AvatarGroupCount>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
-                  <DropdownMenuLabel>More assignees</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {overflowAssignees.map((assignee) => (
-                    <DropdownMenuCheckboxItem
-                      key={assignee.id}
-                      checked={assigneeFilter === assignee.id}
-                      onCheckedChange={() => toggleAssignee(assignee.id)}
-                    >
-                      {assignee.name}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : null}
-          </AvatarGroup>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <WorkItemsFilterDialog
             projects={projects}
             projectMembers={[]}
@@ -610,10 +562,25 @@ export function KanbanBoard({
             labelsQuery={IDLE_FILTER_QUERY}
             priorityQuery={priorityQuery}
             visibleFieldIds={boardFilterFieldIds}
-            isProjectLocked={!allowAllFilters}
+            isProjectLocked={!allowAllFilters && projects.length === 0}
             isAssigneeLocked
             onApplyFilters={handleApplyFilters}
             hasActiveFilters={hasDialogFilters}
+          />
+
+          {userId ? (
+            <WorkspaceDefaultsControls
+              onOpenDefaultsDialog={openDefaultsDialog}
+              savedDefaultsApplied={savedDefaultsApplied}
+            />
+          ) : null}
+
+          <AssigneeAvatarFilter
+            members={uniqueAssignees}
+            selectedId={assigneeFilter}
+            onSelectedIdChange={setAssigneeFilter}
+            visibleCount={3}
+            isUserOnline={isUserOnline}
           />
 
           {hasActiveFilters ? (
@@ -628,140 +595,129 @@ export function KanbanBoard({
               <X className="size-3.5" />
             </Button>
           ) : null}
-
-          {userId ? (
-            <WorkspaceDefaultsControls
-              onOpenDefaultsDialog={openDefaultsDialog}
-              savedDefaultsApplied={savedDefaultsApplied}
-            />
-          ) : null}
         </div>
+
+        <BoardLayoutMenu layout={layout} onLayoutChange={setLayout} />
       </div>
 
-      <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-1">
-        {COLUMNS.map((column) => {
-          const columnItems = filteredItems.filter(
-            (item) => item.status === column.id
-          );
-          const isOver = activeDropCol === column.id;
+      {layout === 'grouped' ? (
+        <BoardGroupedColumnsView
+          boardColumns={boardColumns}
+          columnItemsMap={columnItemsMap}
+          activeDropCol={activeDropCol}
+          draggedTaskId={draggedTaskId}
+          pendingStatusIds={pendingStatusIds}
+          onSelectItem={(item) => {
+            setSelectedTask(item);
+            setIsDetailOpen(true);
+          }}
+          onCreateInColumn={(column) => setCreateStatus(column.status)}
+          onItemDragStart={handleDragStart}
+          onItemDragEnd={handleDragEnd}
+          onColumnDragOver={handleDragOver}
+          onColumnDragLeave={handleDragLeave}
+          onColumnDrop={handleDrop}
+        />
+      ) : (
+        <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-1">
+          {boardColumns.map((column) => {
+            const columnItems = columnItemsMap.get(column.id) ?? [];
+            const isOver = activeDropCol === column.id;
 
-          return (
-            <section
-              key={column.id}
-              aria-label={formatLabelWithSpace(column.id)}
-              className={cn(
-                'bg-muted/25 flex h-full min-h-0 w-72 min-w-72 flex-1 flex-col rounded-xl border border-t-4 p-3 transition-colors',
-                column.accentClassName,
-                isOver && 'border-primary bg-primary/5 border-dashed'
-              )}
-              onDragOver={(event) => handleDragOver(event, column.id)}
-              onDragLeave={handleDragLeave}
-              onDrop={(event) => handleDrop(event, column.id)}
-            >
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <WorkItemStatusBadge status={column.id} />
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="secondary">{columnItems.length}</Badge>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        size="icon-sm"
-                        variant="ghost"
-                        className="cursor-pointer"
-                        aria-label={`Create work item in ${formatLabelWithSpace(column.id)}`}
-                        onClick={() => setCreateStatus(column.id)}
-                      >
-                        <Plus className="size-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Create in {formatLabelWithSpace(column.id)}
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-
-              <ScrollArea className="h-0 min-h-0 flex-1">
-                <div className="flex w-full flex-col gap-3 pb-1">
-                  {columnItems.length === 0 ? (
-                    <div className="text-muted-foreground flex min-h-40 w-full flex-col items-center justify-center rounded-lg border border-dashed px-4 py-10 text-center text-xs">
-                      <FolderDot className="text-muted-foreground/50 mb-2 size-8 stroke-1" />
-                      No work items in this stage
-                    </div>
-                  ) : (
-                    columnItems.map((item) => {
-                      const description = descriptionToPlainText(
-                        item.description ?? null
-                      );
-                      const name = assigneeName(item);
-
-                      return (
-                        <Card
-                          key={item.id}
-                          draggable
-                          onDragStart={(event) =>
-                            handleDragStart(event, item.id)
-                          }
-                          onDragEnd={handleDragEnd}
-                          onClick={() => {
-                            setSelectedTask(item);
-                            setIsDetailOpen(true);
-                          }}
-                          className={cn(
-                            'group w-full max-w-full min-w-0 cursor-grab border border-b-[3px] py-0 shadow-sm active:cursor-grabbing',
-                            (draggedTaskId === item.id ||
-                              pendingStatusIds.has(item.id)) &&
-                              'opacity-40'
-                          )}
+            return (
+              <section
+                key={column.id}
+                aria-label={column.name}
+                className={cn(
+                  'bg-muted/25 flex h-full min-h-0 w-72 min-w-72 flex-1 flex-col rounded-xl border border-t-4 p-3 transition-colors',
+                  BOARD_STATUS_COLUMN_ACCENTS[column.status],
+                  isOver && 'border-primary bg-primary/5 border-dashed'
+                )}
+                onDragOver={(event) => handleDragOver(event, column.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(event) => handleDrop(event, column)}
+              >
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <WorkItemStatusBadge
+                    status={column.status}
+                    label={column.name}
+                  />
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant="secondary">{columnItems.length}</Badge>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          className="cursor-pointer"
+                          aria-label={`Create work item in ${column.name}`}
+                          onClick={() => setCreateStatus(column.status)}
                         >
-                          <CardContent className="flex min-w-0 flex-col gap-2 p-3.5">
-                            <div className="flex items-start justify-between gap-2">
-                              <TruncatedText className="text-foreground group-hover:text-primary min-w-0 flex-1 text-sm leading-snug font-semibold transition-colors">
-                                {item.title}
-                              </TruncatedText>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="inline-flex shrink-0">
-                                    <UserAvatar
-                                      name={name}
-                                      imageUrl={item.assignee?.profile_picture}
-                                      title={name}
-                                    />
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                  {name}
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-
-                            {description ? (
-                              <p className="text-muted-foreground line-clamp-2 text-xs leading-relaxed">
-                                {description}
-                              </p>
-                            ) : null}
-
-                            <Separator className="my-1" />
-
-                            <div className="flex min-w-0 flex-wrap items-center gap-2">
-                              <WorkItemTypeBadge
-                                type={item.type}
-                                className="max-w-full truncate"
-                              />
-                              <PriorityBadge priority={item.priority} />
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })
-                  )}
+                          <Plus className="size-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Create in {column.name}</TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
-              </ScrollArea>
-            </section>
-          );
-        })}
-      </div>
+
+                <ScrollArea className="h-0 min-h-0 flex-1">
+                  <div className="flex w-full flex-col gap-3 pb-1">
+                    {columnItems.length === 0 ? (
+                      <div className="text-muted-foreground flex min-h-40 w-full flex-col items-center justify-center rounded-lg border border-dashed px-4 py-10 text-center text-xs">
+                        <FolderDot className="text-muted-foreground/50 mb-2 size-8 stroke-1" />
+                        No work items in this stage
+                      </div>
+                    ) : (
+                      columnItems.map((item) => {
+                        const description = descriptionToPlainText(
+                          item.description ?? null
+                        );
+
+                        return (
+                          <Card
+                            key={item.id}
+                            draggable
+                            onDragStart={(event) =>
+                              handleDragStart(event, item.id)
+                            }
+                            onDragEnd={handleDragEnd}
+                            onClick={() => {
+                              setSelectedTask(item);
+                              setIsDetailOpen(true);
+                            }}
+                            className={cn(
+                              'group w-full max-w-full min-w-0 cursor-grab border border-b-[3px] py-0 shadow-sm active:cursor-grabbing',
+                              (draggedTaskId === item.id ||
+                                pendingStatusIds.has(item.id)) &&
+                                'opacity-40'
+                            )}
+                          >
+                            <WorkItemPreviewCardBody
+                              title={item.title}
+                              type={item.type}
+                              priority={item.priority}
+                              descriptionPlain={description || null}
+                              assigneeName={assigneeName(item)}
+                              assigneeImageUrl={item.assignee?.profile_picture}
+                              isAssigneeOnline={Boolean(
+                                item.assignee_id &&
+                                isUserOnline(item.assignee_id)
+                              )}
+                              titleClassName="group-hover:text-primary transition-colors"
+                            />
+                          </Card>
+                        );
+                      })
+                    )}
+                  </div>
+                </ScrollArea>
+              </section>
+            );
+          })}
+        </div>
+      )}
 
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="overflow-x-hidden sm:max-w-xl">
@@ -805,6 +761,10 @@ export function KanbanBoard({
                         name={assigneeName(selectedTask)}
                         imageUrl={selectedTask.assignee?.profile_picture}
                         title={assigneeName(selectedTask)}
+                        isOnline={Boolean(
+                          selectedTask.assignee_id &&
+                          isUserOnline(selectedTask.assignee_id)
+                        )}
                         className="size-6"
                         fallbackClassName="bg-primary text-primary-foreground text-[10px] font-medium"
                       />
@@ -844,22 +804,23 @@ export function KanbanBoard({
                     Move to
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {COLUMNS.map((column) => (
+                    {boardColumns.map((column) => (
                       <Button
                         key={column.id}
                         type="button"
                         variant={
-                          selectedTask.status === column.id
+                          resolveItemColumnId(selectedTask, boardColumns) ===
+                          column.id
                             ? 'default'
                             : 'outline'
                         }
                         size="sm"
                         disabled={pendingStatusIds.has(selectedTask.id)}
                         onClick={() =>
-                          applyStatusChange(selectedTask.id, column.id)
+                          applyStatusChange(selectedTask.id, column)
                         }
                       >
-                        {formatLabelWithSpace(column.id)}
+                        {column.name}
                       </Button>
                     ))}
                   </div>

@@ -4,12 +4,19 @@ import { getWorkItems } from '@/app/work-items/_services/work-items.reads.server
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { notFound } from 'next/navigation';
 import { SprintReportView } from './sprint-report-view';
-import { AlertCircle, ArrowLeft } from '@repo/ui/lib/icons';
+import { SprintReportPlaceholder } from './sprint-report-placeholder';
 import { toShortId } from '@/app/_shared/utility';
 import { SprintStatusEnum } from '@repo/types';
+import {
+  parseSprintReportFrom,
+  sprintReportHref,
+  type SprintReportFrom,
+} from '@/app/sprints/_helpers/sprint-report-links';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 
 type ReportPageProps = Readonly<{
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string | string[] }>;
 }>;
 
 export const metadata: Metadata = {
@@ -20,76 +27,85 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function SprintReportPage({ params }: ReportPageProps) {
+function buildReportBreadcrumbs(
+  sprint: Sprint,
+  from: SprintReportFrom
+): { label: string; url: string }[] {
+  const reportUrl = sprintReportHref(sprint.id, from);
+  const sprintLabel = sprint.name?.trim() || toShortId(sprint.id);
+
+  if (from === 'sprints') {
+    return [
+      { label: 'Dashboard', url: '/dashboard' },
+      { label: 'Sprints', url: '/sprints' },
+      {
+        label: sprintLabel,
+        url: '#',
+      },
+      { label: 'Summary Report', url: reportUrl },
+    ];
+  }
+
+  return [
+    { label: 'Dashboard', url: '/dashboard' },
+    { label: 'Backlog', url: '/backlog' },
+    {
+      label: sprint.project?.name?.trim() || sprint.project?.key || 'Project',
+      url: sprint.project ? `/projects/${sprint.project.id}` : '#',
+    },
+    {
+      label: sprintLabel,
+      url: '#',
+    },
+    { label: 'Summary Report', url: reportUrl },
+  ];
+}
+
+function isLiveReportStatus(status: Sprint['status']): boolean {
+  return (
+    status === SprintStatusEnum.Closed ||
+    status === SprintStatusEnum.Active ||
+    status === SprintStatusEnum.Archived
+  );
+}
+
+export default async function SprintReportPage({
+  params,
+  searchParams,
+}: ReportPageProps) {
   const { id } = await params;
+  const resolvedSearchParams = await searchParams;
+  const from = parseSprintReportFrom(resolvedSearchParams.from);
   const sprint = await getSprint(id);
 
   if (!sprint) {
     notFound();
   }
 
-  const isValidStatus =
-    sprint.status === SprintStatusEnum.Closed ||
-    sprint.status === SprintStatusEnum.Active;
+  const showLiveReport = isLiveReportStatus(sprint.status);
 
-  if (!isValidStatus) {
-    return (
-      <div className="flex min-h-[75vh] flex-col items-center justify-center p-6 text-center">
-        <div className="bg-card border-border/80 max-w-md rounded-2xl border p-8 shadow-lg">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
-            <AlertCircle className="h-8 w-8" />
-          </div>
-          <h1 className="text-foreground text-xl font-bold tracking-tight">
-            Sprint Report Unavailable
-          </h1>
-          <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
-            The Summary Report for{' '}
-            <span className="text-foreground font-semibold">
-              &quot;{sprint.name}&quot;
-            </span>{' '}
-            is not available. Reports are only accessible for ongoing or
-            completed sprints.
-          </p>
-          <div className="mt-6">
-            <a
-              href="/backlog"
-              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-indigo-700"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Backlog
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const workItems = await getWorkItems({
-    sprintId: id,
-    projectId: sprint.project?.id,
-  });
-
-  const breadcrumbOverrides = [
-    { label: 'Dashboard', url: '/dashboard' },
-    { label: 'Backlog', url: '/backlog' },
-    {
-      label: sprint.project?.key || 'Project',
-      url: sprint.project ? `/projects/${sprint.project.id}` : '#',
-    },
-    {
-      label: toShortId(sprint.id),
-      url: '#',
-    },
-    { label: 'Summary Report', url: `/sprints/${sprint.id}/report` },
-  ];
+  const workItems = showLiveReport
+    ? await getWorkItems({
+        sprintId: id,
+        projectId: sprint.project?.id,
+      })
+    : [];
 
   return (
     <DashboardShell
-      breadcrumbOverrides={breadcrumbOverrides}
+      breadcrumbOverrides={buildReportBreadcrumbs(sprint, from)}
       breadcrumbAsTrail={true}
-      description={`Visual metrics and delivery overview for sprint ${sprint.name}.`}
+      description={
+        showLiveReport
+          ? `Visual metrics and delivery overview for sprint ${sprint.name}.`
+          : `Summary report for ${sprint.name} unlocks when the sprint is active or completed.`
+      }
     >
-      <SprintReportView sprint={sprint} workItems={workItems} />
+      {showLiveReport ? (
+        <SprintReportView sprint={sprint} workItems={workItems} />
+      ) : (
+        <SprintReportPlaceholder sprint={sprint} />
+      )}
     </DashboardShell>
   );
 }

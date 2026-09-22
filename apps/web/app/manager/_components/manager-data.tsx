@@ -5,10 +5,8 @@ import {
   type Team,
 } from '@/app/manager/_services/teams.reads.server';
 import { getUserList } from '@/app/users/_services/users.reads.server';
-import {
-  getProjectList,
-  getProjectMembersByProjectIds,
-} from '@/app/projects/_services/projects.reads.server';
+import { getProjectMembersByProjectIds } from '@/app/projects/_services/projects.reads.server';
+import { getAccessibleProjectList } from '@/lib/projects/accessible-project-list';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
@@ -36,15 +34,21 @@ export async function ManagerData({
   const { page, limit, search } = parseStandardParams(resolvedSearchParams, 10);
   const status = parseManagerTabStatus(resolvedSearchParams.tab);
 
-  const [dbUser, usersList, teamsResult, projectsList] = await Promise.all([
-    getDbUser(),
+  const dbUser = await getDbUser();
+  const [usersList, teamsResult, projectsList] = await Promise.all([
     safeServerFetch(getUserList(), [], 'fetch users for team form'),
     safeServerFetch(
       getTeamListPaginated(page, limit, status, search),
       EMPTY_TEAMS,
       'fetch teams list'
     ),
-    safeServerFetch(getProjectList(), [], 'fetch projects for team form'),
+    dbUser
+      ? safeServerFetch(
+          getAccessibleProjectList(dbUser.id),
+          [],
+          'fetch projects for team form'
+        )
+      : Promise.resolve([]),
   ]);
 
   const activeProjects = filterActiveProjects(projectsList);

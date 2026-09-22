@@ -17,6 +17,7 @@ import {
 } from '@repo/ui/components/ui/table';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { UserAvatar } from '@/components/user-avatar';
+import { useRealtime } from '@/components/realtime/realtime-provider';
 import { type FormEvent } from 'react';
 
 type WorkItemWorkLogPanelProps = {
@@ -50,6 +51,8 @@ export function WorkItemWorkLogPanel({
   onSubmit,
   readOnly = false,
 }: Readonly<WorkItemWorkLogPanelProps>) {
+  const { isUserOnline } = useRealtime();
+
   return (
     <div className="space-y-6">
       {readOnly ? null : (
@@ -134,6 +137,9 @@ export function WorkItemWorkLogPanel({
                           name={log.user?.name}
                           imageUrl={log.user?.profile_picture}
                           title={authorLabel}
+                          isOnline={Boolean(
+                            log.user?.id && isUserOnline(log.user.id)
+                          )}
                         />
                         <span className="text-sm font-medium">
                           {authorLabel}

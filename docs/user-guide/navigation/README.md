@@ -11,6 +11,7 @@ Find your way around Alice — sidebar, dashboard, shortcuts, and saved views.
 | Page                                            | What you'll learn                  |
 | ----------------------------------------------- | ---------------------------------- |
 | [Dashboard overview](./dashboard-overview.md)   | Overview widgets and layout        |
+| [Charts](./charts.md)                           | Custom chart boards and widgets    |
 | [Keyboard shortcuts](./keyboard-shortcuts.md)   | Speed up common actions            |
 | [Favorites and views](./favorites-and-views.md) | Star pages and save filtered views |
 
@@ -20,17 +21,18 @@ Find your way around Alice — sidebar, dashboard, shortcuts, and saved views.
 
 After sign-in, the left sidebar organizes the app:
 
-| Group         | Examples                                                    |
-| ------------- | ----------------------------------------------------------- |
-| **Platform**  | Overview, Backlog, Board, Work Items, My Work, Alice, Views |
-| **Favorites** | Pages you starred (appears when you have at least one)      |
-| **Projects**  | Projects list; **Sprints** (managers and admins)            |
-| **System**    | **Users** (admins only)                                     |
-| **Account**   | Profile, Settings                                           |
-| **Help**      | Help, Docs, Roadmap                                         |
+| Group         | Examples                                                                                              |
+| ------------- | ----------------------------------------------------------------------------------------------------- |
+| **Favorites** | Pages you starred (appears at the top when you have at least one)                                     |
+| **Platform**  | Overview, Backlog, Board, Work Items, My Work, Alice, Views, Charts; **Projects**; **Users** (admins) |
+| **Account**   | Profile, Settings                                                                                     |
+| **Help**      | Help, Docs, Roadmap                                                                                   |
 
-Select any item to open that area. Collapse the sidebar with the trigger at the
-top or **Ctrl/⌘+B**.
+Select any item to open that area. Collapse or expand the sidebar with the
+trigger at the top or **Ctrl/⌘+B**. When the sidebar is collapsed to icons,
+hover an icon to see its name; scroll if the list is long. Alice remembers your
+preference (cookie) and applies it on load for every dashboard page — Docs,
+Settings, and Profile no longer force the sidebar closed.
 
 ---
 

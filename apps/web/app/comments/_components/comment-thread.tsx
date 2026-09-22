@@ -13,8 +13,6 @@ import type {
   CommentWorkItemOption,
 } from '@/app/comments/_services/comments.mutations.shared';
 
-type MentionWorkItem = Pick<CommentWorkItemOption, 'id' | 'key' | 'title'>;
-
 type CommentThreadProps = {
   parent: CommentItem;
   replies: CommentItem[];
@@ -24,7 +22,7 @@ type CommentThreadProps = {
   replyingParentId: string | null;
   isSubmitting: boolean;
   users: CommentUser[];
-  workItems: MentionWorkItem[];
+  workItems: CommentWorkItemOption[];
   currentUserName?: string | null;
   currentUserImageUrl?: string | null;
   // eslint-disable-next-line no-unused-vars -- click callback

@@ -90,6 +90,17 @@ export function buildWorkItemsListSearchParams(input: {
   }
   params.set('recordStatus', filters.recordStatus ?? 'active');
 
+  if (filters.dueDate === 'null' || filters.dueDate === 'not_null') {
+    params.set('dueDate', filters.dueDate);
+  } else if (filters.dueDate && typeof filters.dueDate === 'object') {
+    params.set('dueDateFrom', filters.dueDate.from);
+    params.set('dueDateTo', filters.dueDate.to);
+  }
+
+  if (filters.excludeStatuses?.length) {
+    params.set('excludeStatuses', filters.excludeStatuses.join(','));
+  }
+
   return params;
 }
 

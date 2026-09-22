@@ -8,6 +8,10 @@ import {
 } from '@repo/types';
 import { NotificationsRepository } from './notifications.repository';
 
+export const READ_NOTIFICATION_RETENTION_DAYS = 30;
+const READ_NOTIFICATION_RETENTION_MS =
+  READ_NOTIFICATION_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+
 export class NotificationsService {
   constructor(
     private readonly notificationsRepository: NotificationsRepository
@@ -187,6 +191,19 @@ export class NotificationsService {
     return {
       checkedCount: workItems.length,
       createdCount: notificationsToInsert.length,
+    };
+  }
+
+  async pruneReadNotifications(now = new Date()) {
+    const cutoff = new Date(now.getTime() - READ_NOTIFICATION_RETENTION_MS);
+
+    const deletedCount =
+      await this.notificationsRepository.deleteReadOrArchivedOlderThan(cutoff);
+
+    return {
+      deletedCount,
+      cutoff: cutoff.toISOString(),
+      retentionDays: READ_NOTIFICATION_RETENTION_DAYS,
     };
   }
 }

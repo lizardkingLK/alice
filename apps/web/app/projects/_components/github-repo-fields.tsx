@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
-import { parseGithubRepoPath } from '@/lib/projects/github-repo-path';
+import { useGithubRepoUrl } from '../_hooks/use-github-repo-url';
 
 export type GithubRepoFieldsProps = {
   githubOwner: string;
@@ -34,33 +33,12 @@ export function GithubRepoFields({
   tokenPlaceholder = 'e.g. ghp_xxxxxxxxxxxx',
   required = true,
 }: Readonly<GithubRepoFieldsProps>) {
-  const [githubUrl, setGithubUrl] = useState(() => {
-    if (githubOwner && githubRepoName) {
-      return `https://github.com/${githubOwner}/${githubRepoName}`;
-    }
-    return '';
+  const { githubUrl, handleUrlChange } = useGithubRepoUrl({
+    githubOwner,
+    setGithubOwner,
+    githubRepoName,
+    setGithubRepoName,
   });
-
-  useEffect(() => {
-    if (githubOwner && githubRepoName) {
-      const currentParsed = parseGithubRepoPath(githubUrl);
-      if (
-        currentParsed.owner !== githubOwner ||
-        currentParsed.repoName !== githubRepoName
-      ) {
-        setGithubUrl(`https://github.com/${githubOwner}/${githubRepoName}`);
-      }
-    } else if (!githubOwner && !githubRepoName && githubUrl) {
-      setGithubUrl('');
-    }
-  }, [githubOwner, githubRepoName, githubUrl]);
-
-  const handleUrlChange = (value: string) => {
-    setGithubUrl(value);
-    const { owner, repoName } = parseGithubRepoPath(value);
-    setGithubOwner(owner);
-    setGithubRepoName(repoName);
-  };
 
   return (
     <div className="flex flex-col justify-start space-y-4">
@@ -77,7 +55,8 @@ export function GithubRepoFields({
           required={required}
         />
         <p className="text-muted-foreground text-[11px]">
-          Enter or paste a GitHub repository URL (e.g. https://github.com/owner/repository).
+          Enter or paste a GitHub repository URL (e.g.
+          https://github.com/owner/repository).
         </p>
       </div>
       <div className="space-y-2">
@@ -96,5 +75,3 @@ export function GithubRepoFields({
     </div>
   );
 }
-
-

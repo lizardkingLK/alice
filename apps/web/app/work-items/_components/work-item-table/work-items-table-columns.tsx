@@ -27,6 +27,7 @@ import { isWorkItemOverdue } from '@/app/work-items/_helpers/work-item-due-date'
 import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import { RegistryTitleCell } from '@/components/registry-title-cell';
 import { UserAvatar } from '@/components/user-avatar';
+import { useRealtime } from '@/components/realtime/realtime-provider';
 
 const TITLE_INDENT_CLASS = ['pl-0', 'pl-4', 'pl-8', 'pl-12'] as const;
 
@@ -104,7 +105,7 @@ const titleRenderer = ({
   );
 };
 
-function personRenderer({
+function PersonCell({
   person,
   currentUserId,
   personId,
@@ -114,6 +115,7 @@ function personRenderer({
   personId?: string | null;
 }>) {
   const name = person?.name ?? '—';
+  const { isUserOnline } = useRealtime();
   const isSelf = Boolean(personId && personId === currentUserId);
 
   if (!person) {
@@ -126,6 +128,7 @@ function personRenderer({
         name={person.name}
         imageUrl={person.profile_picture}
         title={name}
+        isOnline={Boolean(personId && isUserOnline(personId))}
       />
       <div className="space-y-1">
         <p className="font-medium">{name}</p>
@@ -142,22 +145,24 @@ function personRenderer({
 const assigneeRenderer = ({
   row,
   currentUserId,
-}: HierarchyRendererProps & { currentUserId?: string | null }) =>
-  personRenderer({
-    person: row.original.workItem.assignee,
-    currentUserId,
-    personId: row.original.workItem.assignee_id,
-  });
+}: HierarchyRendererProps & { currentUserId?: string | null }) => (
+  <PersonCell
+    person={row.original.workItem.assignee}
+    currentUserId={currentUserId}
+    personId={row.original.workItem.assignee_id}
+  />
+);
 
 const reporterRenderer = ({
   row,
   currentUserId,
-}: HierarchyRendererProps & { currentUserId?: string | null }) =>
-  personRenderer({
-    person: row.original.workItem.reporter,
-    currentUserId,
-    personId: row.original.workItem.reporter_id,
-  });
+}: HierarchyRendererProps & { currentUserId?: string | null }) => (
+  <PersonCell
+    person={row.original.workItem.reporter}
+    currentUserId={currentUserId}
+    personId={row.original.workItem.reporter_id}
+  />
+);
 
 const dueDateRenderer = ({ row }: HierarchyRendererProps) => {
   const { due_date: dueDate, status } = row.original.workItem;

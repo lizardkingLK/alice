@@ -4,18 +4,76 @@ import {
   EMPTY_ACTIVE_SPRINTS_PAGE,
   getSuggestedBoardDefaults,
 } from '@/app/board/_services/board.reads.defaults.server';
-import { getProjectList } from '@/app/projects/_services/projects.reads.server';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
 import { getUserList } from '@/app/users/_services/users.reads.server';
 import { getWorkItems } from '@/app/work-items/_services/work-items.reads.server';
 import { getDbUser } from '@/lib/auth';
+import { getAccessibleProjectList } from '@/lib/projects/accessible-project-list';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
+import { listAccessibleProjectIds } from '@/lib/projects/project-workspace-access';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
   parseBoardPageTab,
   parseWorkItemFilters,
   type RawSearchParams,
 } from '@/lib/search-params';
+import { createClient } from '@/lib/supabase/server';
+import { boardConfigSchema, type BoardColumn } from '@repo/types/api/v1';
+import { DEFAULT_BOARD_COLUMNS } from '@/app/work-items/_helpers/work-item-status';
+
+async function getProjectWorkflowConfig(
+  projectId: string
+): Promise<{ columns: BoardColumn[]; usesCustomBoardConfig: boolean }> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('projects')
+      .select('workflow_config')
+      .eq('id', projectId)
+      .single();
+
+    if (error) {
+      console.error(
+        `error. failed to fetch workflow_config for project ${projectId}:`,
+        error.message
+      );
+      return {
+        columns: DEFAULT_BOARD_COLUMNS,
+        usesCustomBoardConfig: false,
+      };
+    }
+
+    if (!data.workflow_config) {
+      return {
+        columns: DEFAULT_BOARD_COLUMNS,
+        usesCustomBoardConfig: false,
+      };
+    }
+
+    const parsed = boardConfigSchema.safeParse(data.workflow_config);
+    if (parsed.success) {
+      return { columns: parsed.data.columns, usesCustomBoardConfig: true };
+    }
+
+    console.warn(
+      `[BoardData] Invalid workflow_config for project ${projectId}`,
+      parsed.error
+    );
+    return {
+      columns: DEFAULT_BOARD_COLUMNS,
+      usesCustomBoardConfig: false,
+    };
+  } catch (error) {
+    console.error(
+      `error. failed to fetch workflow_config for project ${projectId}:`,
+      error
+    );
+    return {
+      columns: DEFAULT_BOARD_COLUMNS,
+      usesCustomBoardConfig: false,
+    };
+  }
+}
 
 type BoardDataProps = {
   readonly searchParams: Promise<RawSearchParams>;
@@ -26,38 +84,56 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
   const activeTab = parseBoardPageTab(resolvedSearchParams.tab);
   const { projectId, sprintId } = parseWorkItemFilters(resolvedSearchParams);
   const dbUser = await getDbUser();
-  const role = dbUser?.role ?? 'member';
-  const isAdmin = role === 'admin';
+
+  const accessibleIds = dbUser ? await listAccessibleProjectIds(dbUser.id) : [];
+
+  const scopedProjectId =
+    projectId && accessibleIds.includes(projectId) ? projectId : undefined;
 
   const [projects, sprintsResult, workItems, users] = await Promise.all([
-    safeServerFetch(getProjectList(), [], 'fetch projects for board'),
+    dbUser
+      ? safeServerFetch(
+          getAccessibleProjectList(dbUser.id),
+          [],
+          'fetch projects for board'
+        )
+      : Promise.resolve([]),
     safeServerFetch(
       getSprintsPaginatedServer('active', 1, 100),
       EMPTY_ACTIVE_SPRINTS_PAGE,
       'fetch sprints for board'
     ),
-    safeServerFetch(
-      getWorkItems(
-        {
-          projectId,
-          sprintId,
-        },
-        { includeDescription: true }
-      ),
-      [],
-      'fetch work items for board'
-    ),
+    activeTab === 'calendar' || accessibleIds.length === 0
+      ? Promise.resolve([])
+      : safeServerFetch(
+          getWorkItems(
+            {
+              projectId: scopedProjectId,
+              sprintId,
+              ...(scopedProjectId ? {} : { projectIds: accessibleIds }),
+            },
+            { includeDescription: true }
+          ),
+          [],
+          'fetch work items for board'
+        ),
     activeTab === 'calendar'
       ? safeServerFetch(getUserList(), [], 'fetch users for board calendar')
       : Promise.resolve([]),
   ]);
 
   const activeProjects = filterActiveProjects(projects);
-  const sprints = sprintsResult.sprints;
+  const sprints = sprintsResult.sprints.filter(
+    (sprint) => !sprint.project?.id || accessibleIds.includes(sprint.project.id)
+  );
 
   const suggestedDefaults = dbUser
     ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
     : null;
+
+  const boardConfig = scopedProjectId
+    ? await getProjectWorkflowConfig(scopedProjectId)
+    : { columns: DEFAULT_BOARD_COLUMNS, usesCustomBoardConfig: false };
 
   const needsClientBootstrap = needsWorkspaceProjectBootstrap(
     resolvedSearchParams.project
@@ -66,13 +142,15 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
 
   return (
     <BoardWorkspace
+      boardColumns={boardConfig.columns}
+      usesCustomBoardConfig={boardConfig.usesCustomBoardConfig}
       initialWorkItems={boardItems}
       projects={activeProjects}
       sprints={sprints}
       users={users}
-      projectFilter={projectId ?? ''}
+      projectFilter={scopedProjectId ?? ''}
       sprintFilter={sprintId ?? ''}
-      allowAllFilters={isAdmin}
+      allowAllFilters
       userId={dbUser?.id ?? null}
       suggestedDefaults={suggestedDefaults}
       needsClientBootstrap={needsClientBootstrap}

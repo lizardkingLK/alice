@@ -1,5 +1,5 @@
-/* eslint-disable no-unused-vars */
 import type { Json, Tables } from '@repo/types';
+import { commentContentToPlainText } from '@repo/types';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 import { ResponseDTO } from '@repo/types/connection';
 
@@ -17,9 +17,11 @@ export type CommentWorkItem = Pick<
 /** Row shape returned by the comments dropdown work-items query. */
 export type CommentWorkItemOptionRow = Pick<
   Tables<'work_items'>,
-  'id' | 'title' | 'type' | 'project_id' | 'jira_issue_key'
+  'id' | 'title' | 'type' | 'project_id' | 'jira_issue_key' | 'priority'
 > & {
+  description?: Json | null;
   project?: Pick<Tables<'projects'>, 'name' | 'key'> | null;
+  assignee?: Pick<Tables<'users'>, 'id' | 'name' | 'profile_picture'> | null;
 };
 
 /** Mapped work-item option passed into `CommentsFeed`. */
@@ -29,12 +31,17 @@ export type CommentWorkItemOption = Pick<
 > & {
   key: string;
   project_name?: string;
+  priority?: Tables<'work_items'>['priority'];
+  description_plain?: string;
+  assignee_name?: string | null;
+  assignee_profile_picture?: string | null;
 };
 
 export function mapCommentWorkItemOption(
   row: CommentWorkItemOptionRow
 ): CommentWorkItemOption {
   const issueKey = row.jira_issue_key?.trim();
+  const plain = commentContentToPlainText(row.description ?? null).trim();
   return {
     id: row.id,
     title: row.title,
@@ -44,6 +51,10 @@ export function mapCommentWorkItemOption(
       issueKey ||
       `${row.project?.key || 'ITEM'}-${row.id.slice(0, 4).toUpperCase()}`,
     project_name: row.project?.name || 'Project',
+    priority: row.priority,
+    description_plain: plain.length > 0 ? plain.slice(0, 160) : undefined,
+    assignee_name: row.assignee?.name ?? null,
+    assignee_profile_picture: row.assignee?.profile_picture ?? null,
   };
 }
 
@@ -71,6 +82,7 @@ export type CreateCommentInput = {
   parent_id?: string | null;
 };
 
+/* eslint-disable no-unused-vars */
 export function createCommentsService(
   apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>
 ) {

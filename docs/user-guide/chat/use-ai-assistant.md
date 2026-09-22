@@ -9,14 +9,20 @@ Chat with Alice to inspect and create workspace data.
 ## Full-page chat
 
 1. Open **Alice** in the sidebar (`/chat`).
-2. Optionally pick a **model** from the header dropdown (when your admin configured
-   multiple models).
-3. Type a message in the composer and press **Enter** to send (**Shift+Enter**
+2. Optionally pick a **model** from the header menu (when your admin configured
+   models). Open a **provider** (for example Gemini or SpaceXAI), then choose the
+   model in the submenu.
+3. Admins can use the **star** icon (left of the title area) to mark the selected
+   model as the workspace default — the star hides once that model is already
+   default. Use the **plus** icon anytime to open Settings and add or configure
+   models.
+4. Type a message in the composer and press **Enter** to send (**Shift+Enter**
    for a new line).
-4. Read Alice's reply on the left; your messages appear on the right.
+5. Read Alice's reply on the left; your messages appear on the right.
 
-Use **New Chat** to start a fresh conversation. Open the history sidebar to switch
-or delete past threads.
+Use **New Chat** to start a fresh conversation. Open the history sidebar to
+switch, **rename**, or delete past threads. When a conversation is open, the
+header breadcrumb shows **Dashboard → Chat →** that chat’s title.
 
 ---
 
@@ -35,15 +41,20 @@ On any dashboard page (except `/chat`):
 
 Examples:
 
-- List or summarize **projects**, **sprints**, and **work items**
-- **Create** entities when you describe what you need
-- Answer questions about items you can already access
+- **List accessible projects**: Ask _"show all projects"_ or _"list down all the projects"_. Alice enforces your role permissions and project memberships, responding with _"Here are all the projects that are available to you:"_ followed by a clean Markdown table (`| Project Name | Key | Description |`). Unassigned projects are strictly hidden
+- **Create** projects, sprints, and work items through guided prompts
+- **Attach and inspect documents**: Click the paperclip icon (📎) to attach JSON, CSV, TSV, Markdown tables, Indented text outlines, YAML, or image files
+- **Universal file parsing**: Ask Alice to extract work items, estimates, priorities, parent links, and custom dynamic fields from any supported document format
+- **Check duplicates**: Ask Alice to compare parsed items against existing project items to spot duplicates before creating
+- **Atomic batch import**: Bulk create work items with strict hierarchy validation (`Epic` &rarr; `Feature` &rarr; `Story` &rarr; `Task` &rarr; `Issue`). If invalid, zero items are created and Alice asks whether you want to fix the file or skip invalid items
+- **Incremental backlog synchronization**: Re-upload an updated file anytime to update existing items' fields and reorganize their parent-child hierarchy in-place without creating duplicates
+- **Interactive action cards**: View real-time cards for created, updated, or removed items with deep links to their detail pages
+- Answer questions about projects and sprints you can already access
 
-Alice confirms intent in conversation before making changes. Successful actions
-may show cards with links to the created record.
+Alice confirms intent in conversation before making changes. Attachment links auto-refresh if their signed URLs expire, so you never encounter expired download errors.
 
 Alice respects your sign-in and role — it cannot bypass project membership or
-admin-only areas.
+admin-only areas. Alice is focused exclusively on ALICE workspace management and will politely decline unrelated general requests.
 
 ---
 
@@ -60,4 +71,6 @@ admin-only areas.
 ## Related
 
 - [Alice (AI chat)](./README.md)
+- [Role-based project & chat access](../projects/project-registry-and-chat-access.md)
+- [User testing guide](./user-test-guide.md)
 - [Create a work item](../work-items/create-work-item.md)

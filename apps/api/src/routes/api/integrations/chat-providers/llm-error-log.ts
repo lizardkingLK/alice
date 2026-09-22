@@ -2,6 +2,8 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { sanitizeLog } from '../../chat/chat.utils';
 
+const CHATBOT_ERRORS_LOG = 'alice-chatbot-errors.log';
+
 export function logLlmProviderError(
   provider: string,
   errorDetails: {
@@ -28,18 +30,19 @@ export function logLlmProviderError(
   ].join(' ');
 
   console.error(
-    `${provider} Error: Request failed with status ${errorDetails.status}. See gemini-errors.log for details.`
+    `${provider} Error: Request failed with status ${errorDetails.status}. See ${CHATBOT_ERRORS_LOG} for details.`
   );
   try {
     const logFilePath = path.join(
       __dirname,
-      '../../../../../gemini-errors.log'
+      '../../../../../',
+      CHATBOT_ERRORS_LOG
     );
     fs.appendFileSync(logFilePath, logMessage);
   } catch (err) {
     const errorName = err instanceof Error ? err.name : 'UnknownError';
     console.error(
-      `Failed to write to gemini-errors.log: ${sanitizeLog(errorName)}`
+      `Failed to write to ${CHATBOT_ERRORS_LOG}: ${sanitizeLog(errorName)}`
     );
   }
 }

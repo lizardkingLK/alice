@@ -13,6 +13,21 @@ See work by status and drag cards to update progress.
 
 ---
 
+## Layout
+
+Use the **Layout** icon (grid) in the board toolbar:
+
+| Layout      | What you see                                               |
+| ----------- | ---------------------------------------------------------- |
+| **Board**   | Classic Kanban columns (default)                           |
+| **Grouped** | One collapsible table per board column (Charts-style list) |
+
+Your choice is remembered in the browser for your account. In **Grouped**
+layout, drag a row onto another column group to update status — same rules as
+dragging cards on the board.
+
+---
+
 ## Columns
 
 Cards group by status:
@@ -34,8 +49,9 @@ registry.
 
 ## Filters
 
-Use project, sprint, assignee, and search controls at the top of the page to
-narrow which cards appear. Save a filtered URL as a [view](../navigation/favorites-and-views.md).
+Use search, the **Filter** icon (**Shift+F**), **Defaults** (sliders), then the
+people avatars — in that order — for project, sprint, priority, and assignee.
+Save a filtered URL as a [view](../navigation/favorites-and-views.md).
 
 ---
 

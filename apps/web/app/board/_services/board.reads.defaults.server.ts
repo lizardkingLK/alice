@@ -55,10 +55,8 @@ export async function getSuggestedBoardDefaults(
     return null;
   }
 
-  const isAdmin = dbUser.role === 'admin';
-  const memberProjectIds = isAdmin
-    ? activeProjects.map((project) => project.id)
-    : await getActiveMemberProjectIds(dbUser.id);
+  // `projects` is expected to already be membership-scoped (“my projects”).
+  const memberProjectIds = activeProjects.map((project) => project.id);
 
   const defaultProject = resolveDefaultBoardProject(activeProjects, {
     userId: dbUser.id,

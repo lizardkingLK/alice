@@ -63,6 +63,7 @@ type WorkItemsTableProps = WorkItemWorkspaceProps;
 export default function WorkItemsTable({
   projects,
   projectMembers,
+  projectMembersByProjectId,
   sprints = [],
   initialWorkItems,
   totalCount,
@@ -431,6 +432,7 @@ export default function WorkItemsTable({
         onTabChange={handleTabChange}
         projects={projects}
         projectMembers={projectMembers}
+        projectMembersByProjectId={projectMembersByProjectId}
         sprints={sprints}
         projectQuery={projectQuery}
         sprintQuery={sprintQuery}

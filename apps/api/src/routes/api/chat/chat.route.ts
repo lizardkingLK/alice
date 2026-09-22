@@ -1,3 +1,4 @@
+import multer, { Multer } from 'multer';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 import {
@@ -9,9 +10,20 @@ import { ChatProviderError } from '../integrations/chat-providers/chat-provider.
 import { type ChatService, sanitizeLog } from './chat.service';
 import {
   chatConversationIdParamSchema,
+  createChatAttachmentUploadSessionSchema,
+  finalizeChatAttachmentUploadSchema,
   postChatMessageBodySchema,
+  renameChatConversationBodySchema,
 } from './chat.schemas';
 import type { StoredChatMessage } from './chat.route.types';
+
+const chatUpload: Multer = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    // eslint-disable-next-line sonarjs/content-length
+    fileSize: 10 * 1024 * 1024,
+  },
+});
 
 export type ChatRouterDeps = {
   chatService: ChatService;
@@ -162,6 +174,224 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
     }
   );
 
+  chatRouter.patch(
+    '/:conversationId',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const conversationId = await resolveOwnedConversationId(
+          chatService,
+          res,
+          req.userId!,
+          req.params.conversationId
+        );
+        if (!conversationId) {
+          return;
+        }
+        const parsed = renameChatConversationBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({ error: z.treeifyError(parsed.error) });
+        }
+        const renamed = await chatService.renameConversation(
+          req.userId!,
+          conversationId,
+          parsed.data.title
+        );
+        res.json(renamed);
+      } catch (error: unknown) {
+        sendChatError(
+          res,
+          error,
+          'Failed to rename conversation',
+          'error. rename conversation failed'
+        );
+      }
+    }
+  );
+
+  chatRouter.post(
+    '/attachments/upload-session',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsed = createChatAttachmentUploadSessionSchema.safeParse(
+        req.body
+      );
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      const conversationId =
+        parsed.data.conversationId ?? parsed.data.conversation_id;
+      const fileName = parsed.data.fileName ?? parsed.data.file_name!;
+      const contentType = parsed.data.contentType ?? parsed.data.content_type!;
+      const fileSize = parsed.data.fileSize ?? parsed.data.file_size!;
+
+      try {
+        const session = await chatService.chatAttachments.createUploadSession({
+          userId: req.userId!,
+          conversationId,
+          fileName,
+          contentType,
+          fileSize,
+        });
+
+        return res.json(session);
+      } catch (error: unknown) {
+        sendChatError(
+          res,
+          error,
+          'Failed to create upload session',
+          'error. chat attachment upload session failed'
+        );
+      }
+    }
+  );
+
+  chatRouter.post(
+    '/attachments/finalize',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsed = finalizeChatAttachmentUploadSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      const conversationId =
+        parsed.data.conversationId ?? parsed.data.conversation_id;
+      const storagePath = parsed.data.storagePath ?? parsed.data.storage_path!;
+      const fileName = parsed.data.fileName ?? parsed.data.file_name!;
+      const fileSize = parsed.data.fileSize ?? parsed.data.file_size!;
+      const mimeType = parsed.data.mimeType ?? parsed.data.mime_type!;
+
+      try {
+        const result = await chatService.chatAttachments.finalizeUpload({
+          userId: req.userId!,
+          conversationId,
+          storagePath,
+          fileName,
+          fileSize,
+          mimeType,
+        });
+
+        return res.json(result);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to finalize upload';
+        if (/Invalid upload target/i.test(message)) {
+          return res.status(400).json({ error: message });
+        }
+        if (/Uploaded file not found in storage/i.test(message)) {
+          return res.status(404).json({ error: message });
+        }
+        sendChatError(
+          res,
+          error,
+          'Failed to finalize upload',
+          'error. chat attachment upload finalize failed'
+        );
+      }
+    }
+  );
+
+  chatRouter.get(
+    '/attachments/:id',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const attachmentId = req.params.id;
+      if (!attachmentId) {
+        return res.status(400).json({ error: 'Attachment id is required' });
+      }
+
+      try {
+        const attachment =
+          await chatService.chatAttachments.getAttachmentById(attachmentId);
+        if (!attachment) {
+          return res.status(404).json({ error: 'Attachment not found' });
+        }
+
+        return res.json(attachment);
+      } catch (error: unknown) {
+        sendChatError(
+          res,
+          error,
+          'Failed to get attachment',
+          'error. chat get attachment failed'
+        );
+      }
+    }
+  );
+
+  chatRouter.post(
+    '/attachments',
+    requireApiAuth,
+    chatUpload.single('file'),
+    async (req: AuthenticatedRequest, res) => {
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const conversationId =
+        typeof req.body?.conversationId === 'string'
+          ? req.body.conversationId
+          : undefined;
+
+      try {
+        const attachment = await chatService.chatAttachments.uploadAttachment({
+          userId: req.userId!,
+          conversationId,
+          fileName: file.originalname,
+          fileBuffer: file.buffer,
+          mimeType: file.mimetype || 'application/octet-stream',
+          fileSize: file.size,
+        });
+
+        return res.status(201).json({
+          success: true,
+          attachment,
+        });
+      } catch (error: unknown) {
+        sendChatError(
+          res,
+          error,
+          'Failed to upload attachment',
+          'error. chat attachment upload failed'
+        );
+      }
+    }
+  );
+
+  chatRouter.delete(
+    '/attachments/:id',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const attachmentId = req.params.id;
+      if (!attachmentId) {
+        return res.status(400).json({ error: 'Attachment id is required' });
+      }
+
+      try {
+        const deleted = await chatService.chatAttachments.deleteAttachment(
+          req.userId!,
+          attachmentId
+        );
+
+        if (!deleted) {
+          return res.status(404).json({ error: 'Attachment not found' });
+        }
+
+        return res.json({ success: true });
+      } catch (error: unknown) {
+        sendChatError(
+          res,
+          error,
+          'Failed to delete attachment',
+          'error. chat attachment delete failed'
+        );
+      }
+    }
+  );
+
   chatRouter.post(
     '/',
     requireApiAuth,
@@ -178,6 +408,7 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
         conversationId: reqConversationId,
         modelId,
         integrationId,
+        attachments: requestAttachments,
       } = validation.data;
 
       let chatModelConfig;
@@ -194,12 +425,22 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
 
       try {
         const sanitizedInputMessages: StoredChatMessage[] = messages.map(
-          (msg, index) => ({
-            id: msg.id || `msg-${Date.now()}-${index}`,
-            role: parseChatRole(msg.role),
-            content: msg.content || msg.text || '',
-            actions: msg.actions || [],
-          })
+          (msg, index) => {
+            const isLastMessage = index === messages.length - 1;
+            const effectiveAttachments =
+              msg.attachments ||
+              (isLastMessage && requestAttachments?.length
+                ? requestAttachments
+                : undefined);
+
+            return {
+              id: msg.id || `msg-${Date.now()}-${index}`,
+              role: parseChatRole(msg.role),
+              content: msg.content || msg.text || '',
+              actions: msg.actions || [],
+              attachments: effectiveAttachments,
+            };
+          }
         );
 
         let conversationId = reqConversationId;
@@ -301,6 +542,31 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
           error,
           'Failed to process message',
           'error. chatbot processing failed'
+        );
+      }
+    }
+  );
+
+  chatRouter.post(
+    '/generate-fields-schema',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { prompt, currentSchema } = req.body || {};
+        if (!prompt || typeof prompt !== 'string') {
+          return res.status(400).json({ error: 'Prompt is required' });
+        }
+        const schema = await chatService.generateProjectFieldsSchema(
+          prompt,
+          currentSchema
+        );
+        return res.json({ schema });
+      } catch (error: unknown) {
+        sendChatError(
+          res,
+          error,
+          'Failed to generate fields schema',
+          'error. generate-fields-schema failed'
         );
       }
     }

@@ -10,6 +10,10 @@ import {
   resolveDashboardBreadcrumbTrail,
   type DashboardBreadcrumbOverride,
 } from './dashboard-breadcrumb';
+import {
+  applyRuntimeBreadcrumbLabels,
+  useDashboardBreadcrumbRuntime,
+} from './dashboard-breadcrumb-runtime';
 
 type DashboardPageMetaProps = {
   description?: string;
@@ -33,32 +37,55 @@ export function DashboardPageMeta({
   projectId = null,
 }: Readonly<DashboardPageMetaProps>) {
   const pathname = usePathname();
-  const breadcrumbLabel = useMemo(() => {
-    const items = breadcrumbAsTrail
+  const runtime = useDashboardBreadcrumbRuntime();
+
+  const resolvedOverrides = useMemo(() => {
+    if (runtime?.trailOverride && runtime.trailOverride.length > 0) {
+      return applyRuntimeBreadcrumbLabels(
+        runtime.trailOverride,
+        runtime.segmentLabelsByUrl
+      );
+    }
+    const base = breadcrumbAsTrail
       ? resolveDashboardBreadcrumbTrail(breadcrumbOverrides)
       : resolveDashboardBreadcrumbItems(pathname, breadcrumbOverrides);
-    return items.at(-1)?.label ?? pathname;
-  }, [breadcrumbAsTrail, breadcrumbOverrides, pathname]);
+    return applyRuntimeBreadcrumbLabels(base, runtime?.segmentLabelsByUrl);
+  }, [
+    breadcrumbAsTrail,
+    breadcrumbOverrides,
+    pathname,
+    runtime?.segmentLabelsByUrl,
+    runtime?.trailOverride,
+  ]);
+
+  const breadcrumbLabel = resolvedOverrides.at(-1)?.label ?? pathname;
+  const resolvedFavoriteLabel = runtime?.favoriteLabel?.trim() || favoriteLabel;
 
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
-      <DashboardBreadcrumb
-        overrides={breadcrumbOverrides}
-        asTrail={breadcrumbAsTrail}
-      />
+      <div className="min-w-0 overflow-hidden">
+        <DashboardBreadcrumb overrides={resolvedOverrides} asTrail />
+      </div>
 
-      <DashboardPageActions
-        userId={userId}
-        favoriteLabel={favoriteLabel}
-        projectId={projectId}
-        breadcrumbLabel={breadcrumbLabel}
-      />
+      <div className="flex shrink-0 items-center gap-2">
+        <DashboardPageActions
+          userId={userId}
+          favoriteLabel={resolvedFavoriteLabel}
+          projectId={projectId}
+          favoritesReady={runtime?.favoritesReady ?? true}
+          breadcrumbLabel={breadcrumbLabel}
+        />
 
-      {description ? (
-        <InfoTooltip ariaLabel="Page description" side="bottom" size="icon-sm">
-          {description}
-        </InfoTooltip>
-      ) : null}
+        {description ? (
+          <InfoTooltip
+            ariaLabel="Page description"
+            side="bottom"
+            size="icon-sm"
+          >
+            {description}
+          </InfoTooltip>
+        ) : null}
+      </div>
     </div>
   );
 }

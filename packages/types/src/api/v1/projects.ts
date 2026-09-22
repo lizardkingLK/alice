@@ -2,13 +2,40 @@ import { z } from 'zod';
 import type { projectsGetPayload } from '../../generated/prisma/models/projects.js';
 import type { project_membersGetPayload } from '../../generated/prisma/models/project_members.js';
 import { Constants } from '../../generated/supabase/database.types.js';
-import { ProjectStatus as ProjectStatusEnum } from '../../generated/prisma/enums.js';
+import {
+  ProjectStatus as ProjectStatusEnum,
+  type ProjectStatus,
+} from '../../generated/prisma/enums.js';
+import { UserRoleEnum, type UserRole } from '../../users.js';
+import { projectWorkflowConfigSchema } from './board-config.js';
 import {
   emptyToUndefined,
   paginatedListLimitField,
   paginatedListPageField,
 } from './query-preprocess.js';
+import { ProjectFieldsConfigSchema } from './dynamic-fields.js';
 
+export * from './jira-import-types.js';
+export { projectWorkflowConfigSchema };
+export type { ProjectWorkflowConfig } from './board-config.js';
+
+export {
+  DynamicFieldTypeEnum,
+  TemplateFieldCategoryEnum,
+  TemplateFieldKeyEnum,
+  DynamicFieldConfirmationModeEnum,
+  DynamicFieldFormatEnum,
+  DynamicFieldInputTypeEnum,
+  DynamicFieldDocTypeEnum,
+  DynamicFieldConstantsEnum,
+  TypeofEnum,
+  SchemaValidationStatusEnum,
+  DYNAMIC_FIELD_TYPES,
+  DynamicFieldPropertySchema,
+  ProjectFieldsConfigSchema,
+  type DynamicFieldProperty,
+  type ProjectFieldsConfig,
+} from './dynamic-fields.js';
 export { ProjectStatusEnum };
 
 /** Shared Supabase project column list for embeds / selects. */
@@ -48,6 +75,8 @@ const baseCreateProjectSchema = z.object({
   jira_connection_id: z.uuid().nullable().optional(),
   github_repo: z.string().nullable().optional(),
   github_token: z.string().nullable().optional(),
+  attributes_config: ProjectFieldsConfigSchema.nullable().optional(),
+  workflow_config: projectWorkflowConfigSchema.nullable().optional(),
 });
 
 export const createProjectSchema = baseCreateProjectSchema
@@ -94,20 +123,25 @@ export const createProjectSchema = baseCreateProjectSchema
     }
   );
 
-export const updateProjectSchema = baseCreateProjectSchema.partial().refine(
-  (data) => {
-    if (data.start_date && data.end_date) {
-      const start = data.start_date.split('T')[0] ?? '';
-      const end = data.end_date.split('T')[0] ?? '';
-      return end >= start;
+export const updateProjectSchema = baseCreateProjectSchema
+  .partial()
+  .extend({
+    workflow_config: projectWorkflowConfigSchema.nullable().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.start_date && data.end_date) {
+        const start = data.start_date.split('T')[0] ?? '';
+        const end = data.end_date.split('T')[0] ?? '';
+        return end >= start;
+      }
+      return true;
+    },
+    {
+      message: 'End date must be on or after the start date.',
+      path: ['end_date'],
     }
-    return true;
-  },
-  {
-    message: 'End date must be on or after the start date.',
-    path: ['end_date'],
-  }
-);
+  );
 
 /**
  * Strip integration secrets before project rows reach clients.
@@ -151,6 +185,8 @@ export const projectListSelect = {
 
 export const projectDetailSelect = {
   ...projectListSelect,
+  attributes_config: true,
+  workflow_config: true,
   jira_project_key: true,
   jira_connection_id: true,
   github_repo: true,
@@ -206,3 +242,38 @@ export const listProjectsQuerySchema = z.object({
 });
 
 export type ListProjectsQuery = z.infer<typeof listProjectsQuerySchema>;
+
+export type ProjectRegistryPermissions = {
+  role: UserRole;
+  canCreate: boolean;
+  canManage: boolean;
+  canPurge: boolean;
+};
+
+export function getProjectRegistryPermissions(
+  role: UserRole
+): ProjectRegistryPermissions {
+  const isAdmin = role === UserRoleEnum.admin;
+  const isManager = role === UserRoleEnum.manager;
+  return {
+    role,
+    canCreate: isAdmin,
+    canManage: isAdmin || isManager,
+    canPurge: isAdmin,
+  };
+}
+
+export type ActorProjectsSummary = {
+  id: string;
+  name: string;
+  key: string;
+  description: string | null;
+  status: ProjectStatus;
+};
+
+export type ListProjectsForActorResponse = {
+  projects: ActorProjectsSummary[];
+  totalCount: number;
+  userRole: UserRole;
+  permissions: ProjectRegistryPermissions;
+};

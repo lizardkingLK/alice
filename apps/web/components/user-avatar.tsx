@@ -3,6 +3,7 @@
 import { getInitials } from '@/app/_shared/utility';
 import {
   Avatar,
+  AvatarBadge,
   AvatarFallback,
   AvatarImage,
 } from '@repo/ui/components/ui/avatar';
@@ -14,6 +15,7 @@ type UserAvatarProps = {
   readonly className?: string;
   readonly fallbackClassName?: string;
   readonly title?: string;
+  readonly isOnline?: boolean;
 };
 
 /** Compact user avatar with optional photo and initials fallback. */
@@ -23,6 +25,7 @@ export function UserAvatar({
   className,
   fallbackClassName,
   title,
+  isOnline = false,
 }: UserAvatarProps) {
   const displayName = name?.trim() || 'Unassigned';
 
@@ -41,6 +44,12 @@ export function UserAvatar({
       >
         {getInitials(name)}
       </AvatarFallback>
+      {isOnline ? (
+        <AvatarBadge
+          aria-label="Online"
+          className="top-0 right-0 bottom-auto size-2 bg-emerald-500"
+        />
+      ) : null}
     </Avatar>
   );
 }

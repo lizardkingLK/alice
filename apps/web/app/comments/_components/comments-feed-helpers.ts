@@ -101,6 +101,21 @@ export function toMentionWorkItems(
   }));
 }
 
+/** Restrict # mention suggestions to the selected work item's project. */
+export function scopeMentionWorkItems(
+  workItems: readonly CommentWorkItemOption[],
+  targetWorkItemId: string | undefined
+): CommentWorkItemOption[] {
+  if (!targetWorkItemId) {
+    return [];
+  }
+  const target = workItems.find((item) => item.id === targetWorkItemId);
+  if (!target?.project_id) {
+    return workItems.filter((item) => item.id === targetWorkItemId);
+  }
+  return workItems.filter((item) => item.project_id === target.project_id);
+}
+
 type BuildMockCommentInput = {
   content: Json;
   targetWorkItemId: string;

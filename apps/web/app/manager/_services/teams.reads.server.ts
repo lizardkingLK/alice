@@ -1,6 +1,10 @@
 import { apiFetch } from '@/lib/api/api-fetch.reads.use.server';
 import { createClient } from '@/lib/supabase/server';
-import { applyListSearch, runPaginatedSelect } from '@/lib/db/query';
+import {
+  applyListSearch,
+  runPaginatedSelect,
+  throwIfError,
+} from '@/lib/db/query';
 import { createTeamsService } from './teams.mutations.shared';
 import type { GetTeamsPaginatedResponse, Team } from './teams.mutations.shared';
 
@@ -51,6 +55,27 @@ export async function getTeamListPaginated(
   );
 
   return { teams, ...meta };
+}
+
+/** Unpaginated active project teams for policy selectors. */
+export async function getActiveProjectTeams(
+  projectId: string
+): Promise<Team[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('teams')
+    .select(TEAM_LIST_SELECT)
+    .eq('project_id', projectId)
+    .eq('status', 'active')
+    .order('name', { ascending: true });
+
+  throwIfError(
+    error,
+    'failed to list active project teams',
+    'Failed to retrieve active project teams'
+  );
+
+  return (data ?? []) as unknown as Team[];
 }
 
 export const createTeam = service.createTeam;

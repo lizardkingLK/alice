@@ -46,6 +46,7 @@ export INTERNAL_API_URL="http://api:5000"
 INTERNAL_API_URL=$INTERNAL_API_URL docker compose up --build
 
 echo "info. cleaning up old dangling docker images and build caches..."
+docker compose down
 docker image prune -f
 docker builder prune -f --filter type=exec
 

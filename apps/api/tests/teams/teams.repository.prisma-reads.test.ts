@@ -107,6 +107,20 @@ describe('TeamsRepository Prisma reads', () => {
     expect(result).toEqual(mockTeamRow);
   });
 
+  it('lists only active teams belonging to the requested board project', async () => {
+    const teams = [{ id: 'team-1', name: 'QA Team' }];
+    findManyMock.mockResolvedValue(teams);
+
+    await expect(repository.listActiveByProject('project-1')).resolves.toEqual(
+      teams
+    );
+    expect(findManyMock).toHaveBeenCalledWith({
+      where: { project_id: 'project-1', status: 'active' },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+  });
+
   it('finds team by name and project using prisma.teams.findFirst', async () => {
     findFirstMock.mockResolvedValue({
       id: 'team-1',

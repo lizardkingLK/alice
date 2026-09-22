@@ -76,10 +76,25 @@ export function WorkItemFormDialog({
         className={cn(
           contentClassName,
           useModernLayout ? 'sm:max-w-4xl' : 'sm:max-w-xl',
-          'flex max-h-[85vh] sm:max-h-[90vh] flex-col overflow-hidden'
+          'flex max-h-[85vh] flex-col overflow-hidden sm:max-h-[90vh]'
         )}
         onPointerDownOutside={(event) => event.preventDefault()}
         onInteractOutside={(event) => event.preventDefault()}
+        onOpenAutoFocus={(event) => {
+          if (!useModernLayout) {
+            return;
+          }
+          event.preventDefault();
+          const titleInput = document.getElementById(
+            'title'
+          ) as HTMLInputElement | null;
+          if (!titleInput) {
+            return;
+          }
+          titleInput.focus();
+          const end = titleInput.value.length;
+          titleInput.setSelectionRange(end, end);
+        }}
       >
         <DialogHeader className={useModernLayout ? 'sr-only' : undefined}>
           <DialogTitle className={titleClassName}>{title}</DialogTitle>

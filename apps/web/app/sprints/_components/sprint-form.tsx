@@ -43,6 +43,10 @@ type SprintFormProps = {
   onClose?: () => void;
   onSuccess?: () => void;
   currentUserId?: string | null;
+  /** Prefills project; user can still change it. */
+  defaultProjectId?: string;
+  /** Locks project to this id (e.g. project details sprints tab). */
+  lockedProjectId?: string;
 };
 
 function validateSprintForm(
@@ -78,8 +82,12 @@ export function SprintForm({
   onClose,
   onSuccess,
   currentUserId,
+  defaultProjectId,
+  lockedProjectId,
 }: Readonly<SprintFormProps>) {
   const isEditMode = !!sprintToEdit;
+  const isProjectLocked = Boolean(lockedProjectId);
+  const preferredProjectId = lockedProjectId ?? defaultProjectId;
   const { handleMutationError } = useOptimisticLock();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -92,7 +100,7 @@ export function SprintForm({
   }, [projects]);
 
   useEffect(() => {
-    if (isEditMode) {
+    if (isEditMode || isProjectLocked) {
       return;
     }
 
@@ -113,7 +121,7 @@ export function SprintForm({
     return () => {
       cancelled = true;
     };
-  }, [isEditMode]);
+  }, [isEditMode, isProjectLocked]);
 
   const activeProjects = useMemo(
     () => filterActiveProjects(projectList),
@@ -121,7 +129,7 @@ export function SprintForm({
   );
 
   const [selectedProjectId, setSelectedProjectId] = useState<string>(
-    sprintToEdit?.project?.id ?? ''
+    sprintToEdit?.project?.id ?? preferredProjectId ?? ''
   );
   const [name, setName] = useState(sprintToEdit?.name ?? '');
   const [goal, setGoal] = useState(sprintToEdit?.goal ?? '');
@@ -163,6 +171,11 @@ export function SprintForm({
       return;
     }
 
+    if (preferredProjectId) {
+      setSelectedProjectId(preferredProjectId);
+      return;
+    }
+
     // Prefer an owned project as the default, but the list includes every
     // active project — admins/managers may create sprints on any of them.
     const preferred =
@@ -172,7 +185,7 @@ export function SprintForm({
     if (preferred) {
       setSelectedProjectId(preferred.id);
     }
-  }, [sprintToEdit, activeProjects, currentUserId]);
+  }, [sprintToEdit, activeProjects, currentUserId, preferredProjectId]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -305,12 +318,12 @@ export function SprintForm({
               id="sprint-project"
               value={selectedProjectId}
               onValueChange={setSelectedProjectId}
-              disabled={isEditMode && hasWorkItems}
+              disabled={isProjectLocked || (isEditMode && hasWorkItems)}
               placeholder="Search projects…"
               options={projectSelectOptions(displayedProjects)}
               emptyText="No matching projects."
             />
-            {isEditMode && hasWorkItems && (
+            {isEditMode && hasWorkItems && !isProjectLocked && (
               <p className="text-muted-foreground text-xs">
                 Project cannot be changed because this sprint has work items
                 assigned to it.

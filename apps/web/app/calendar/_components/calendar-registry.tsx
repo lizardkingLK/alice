@@ -2,55 +2,59 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight, ListTodo } from '@repo/ui/lib/icons';
+import { ChevronLeft, ChevronRight, ListTodo, X } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   pickWorkspaceDefaultsDialogController,
   WorkspaceDefaultsDialogHost,
 } from '@/app/board/_components/workspace-defaults-dialog-host';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
-import {
-  applyProjectFilterToSearchParams,
-  buildSprintFilterOptionsForQuery,
-} from '@/app/board/_services/board.defaults.shared';
+import { applyProjectFilterToSearchParams } from '@/app/board/_services/board.defaults.shared';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import type { User } from '@/app/users/_services/users.mutations.client';
-import { toNameCase, WORK_ITEM_TYPES } from '@repo/types';
+import { toNameCase } from '@repo/types';
 import { ALL_OPTION } from '@/app/_shared/values';
 import { type CalendarActionItem } from './calendar-client.types';
+import { applyCalendarFilterChange } from './calendar-filter-controls';
 import {
-  applyCalendarFilterChange,
-  CalendarFilterSelect,
-} from './calendar-filter-controls';
+  CalendarFilterDialog,
+  type CalendarFilterDraft,
+} from './calendar-filter-dialog';
 import { MONTHS } from './calendar-constants';
 import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form/work-item-form-dialog';
 import {
   QUERY_FILTER_ALL_VALUE,
   useQueryFilter,
 } from '@/hooks/use-query-filter';
+import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import { CalendarDaySheet } from '@/app/calendar/_components/calendar-day-sheet';
 import { CalendarDueDateWarningDialog } from '@/app/calendar/_components/calendar-due-date-warning-dialog';
 import { CalendarMonthGrid } from '@/app/calendar/_components/calendar-month-grid';
-import { CalendarUnscheduledPanel } from '@/app/calendar/_components/calendar-unscheduled-panel';
+import {
+  CalendarUnscheduledPanel,
+  type CalendarUnscheduledPanelHandle,
+} from '@/app/calendar/_components/calendar-unscheduled-panel';
 import { useCalendarDueDateDrag } from '@/app/calendar/_components/use-calendar-due-date-drag';
 import {
   readCalendarUnscheduledPanelOpen,
   writeCalendarUnscheduledPanelOpen,
 } from '@/app/calendar/_helpers/calendar-unscheduled-panel-storage';
+import { fetchCalendarScheduledWorkItems } from '@/app/calendar/_services/calendar.reads.actions';
 import {
   buildCalendarDays,
   filterCalendarWorkItems,
-  filterUnscheduledWorkItems,
   groupWorkItemsByDueDate,
   toLocalYYYYMMDD,
+  visibleCalendarDateRange,
 } from '@/app/calendar/_components/calendar-utils';
 
 interface CalendarRegistryProps {
   readonly projects: Project[];
   readonly sprints: Sprint[];
-  readonly workItems: DbWorkItem[];
+  /** Unused on calendar — scheduled items load by visible month range. */
+  readonly workItems?: DbWorkItem[];
   readonly users: User[];
   readonly projectFilter: string;
   readonly sprintFilter: string;
@@ -68,7 +72,6 @@ let actionCounter = 0;
 export function CalendarRegistry({
   projects,
   sprints,
-  workItems,
   users,
   projectFilter,
   sprintFilter,
@@ -81,7 +84,8 @@ export function CalendarRegistry({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [localWorkItems, setLocalWorkItems] = useState(workItems);
+  const [localWorkItems, setLocalWorkItems] = useState<DbWorkItem[]>([]);
+  const [scheduledLoading, setScheduledLoading] = useState(true);
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [itemToEdit, setItemToEdit] = useState<DbWorkItem | null>(null);
   const [currentDate, setCurrentDate] = useState(() => new Date());
@@ -90,7 +94,11 @@ export function CalendarRegistry({
     useState<string>(ALL_OPTION);
   const [selectedType, setSelectedType] = useState<string>(ALL_OPTION);
   const [showUnscheduledPanel, setShowUnscheduledPanel] = useState(false);
+  const [guardDaySheetClose, setGuardDaySheetClose] = useState(false);
   const suppressDaySheetCloseRef = useRef(false);
+  const unscheduledPanelRef = useRef<CalendarUnscheduledPanelHandle | null>(
+    null
+  );
 
   const projectQuery = useQueryFilter('project', projectFilter);
   const sprintQuery = useQueryFilter('sprint', sprintFilter);
@@ -105,16 +113,45 @@ export function CalendarRegistry({
     suggestedDefaults,
   });
 
+  const accessibleProjectIds = useMemo(
+    () => projects.map((project) => project.id),
+    [projects]
+  );
+
+  const calendarListFilters = useMemo(
+    () => ({
+      projectId: projectQuery.value || undefined,
+      sprintId: sprintQuery.value || undefined,
+      assigneeId: selectedAssigneeId,
+      type: selectedType,
+      accessibleProjectIds,
+    }),
+    [
+      accessibleProjectIds,
+      projectQuery.value,
+      selectedAssigneeId,
+      selectedType,
+      sprintQuery.value,
+    ]
+  );
+
+  const resolveWorkItem = useCallback(
+    (itemId: string) => unscheduledPanelRef.current?.resolveItem(itemId),
+    []
+  );
+
+  const onItemScheduled = useCallback((itemId: string) => {
+    unscheduledPanelRef.current?.removeItem(itemId);
+  }, []);
+
   const dueDateDrag = useCalendarDueDateDrag({
     localWorkItems,
     setLocalWorkItems,
     setItemToEdit,
     userId,
+    resolveWorkItem,
+    onItemScheduled,
   });
-
-  useEffect(() => {
-    setLocalWorkItems(workItems);
-  }, [workItems]);
 
   useEffect(() => {
     setTodayDateString(toLocalYYYYMMDD(new Date()));
@@ -134,6 +171,37 @@ export function CalendarRegistry({
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
+
+  useEffect(() => {
+    let cancelled = false;
+    const range = visibleCalendarDateRange(year, month);
+    setScheduledLoading(true);
+
+    fetchCalendarScheduledWorkItems({
+      from: range.from,
+      to: range.to,
+      filters: calendarListFilters,
+    })
+      .then((items) => {
+        if (!cancelled) {
+          setLocalWorkItems(items);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLocalWorkItems([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setScheduledLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [calendarListFilters, month, year]);
 
   const logAction = (action: CalendarActionItem) => {
     const id =
@@ -201,6 +269,72 @@ export function CalendarRegistry({
     });
   };
 
+  const handleApplyCalendarFilters = (draft: CalendarFilterDraft) => {
+    const currentProject = projectQuery.value || QUERY_FILTER_ALL_VALUE;
+    const currentSprint = sprintQuery.value || QUERY_FILTER_ALL_VALUE;
+
+    if (draft.project !== currentProject || draft.sprint !== currentSprint) {
+      const params = new URLSearchParams(searchParams.toString());
+      applyProjectFilterToSearchParams(params, {
+        nextProject: draft.project,
+        sprints,
+        pageMode: 'delete',
+      });
+      if (
+        draft.sprint &&
+        draft.sprint !== QUERY_FILTER_ALL_VALUE &&
+        draft.sprint !== ALL_OPTION
+      ) {
+        params.set('sprint', draft.sprint);
+      } else {
+        params.delete('sprint');
+      }
+      const query = params.toString();
+      router.push(query ? `${pathname}?${query}` : pathname);
+      logAction({
+        type: 'filter_project',
+        entity: {
+          id: draft.project,
+          value: draft.project,
+          label:
+            projects.find((p) => p.id === draft.project)?.name ??
+            'All Projects',
+        },
+      });
+    }
+
+    if (draft.assignee !== selectedAssigneeId) {
+      handleAssigneeChange(draft.assignee);
+    }
+    if (draft.type !== selectedType) {
+      handleTypeChange(draft.type);
+    }
+  };
+
+  const hasActiveCalendarFilters = Boolean(
+    (allowAllFilters &&
+      projectQuery.value &&
+      projectQuery.value !== QUERY_FILTER_ALL_VALUE) ||
+    (allowAllFilters &&
+      sprintQuery.value &&
+      sprintQuery.value !== QUERY_FILTER_ALL_VALUE) ||
+    selectedAssigneeId !== ALL_OPTION ||
+    selectedType !== ALL_OPTION
+  );
+
+  const handleClearCalendarFilters = () => {
+    if (allowAllFilters) {
+      handleProjectChange(QUERY_FILTER_ALL_VALUE);
+    } else if (
+      sprintQuery.value &&
+      sprintQuery.value !== QUERY_FILTER_ALL_VALUE
+    ) {
+      handleSprintChange(QUERY_FILTER_ALL_VALUE);
+    }
+    handleAssigneeChange(ALL_OPTION);
+    handleTypeChange(ALL_OPTION);
+  };
+
   const openEditDialog = (item: DbWorkItem) => {
     if (dueDateDrag.shouldSuppressItemClick()) {
       return;
@@ -223,19 +357,31 @@ export function CalendarRegistry({
     });
   };
 
-  const handleDaySheetOpenChange = useCallback((open: boolean) => {
-    if (open || suppressDaySheetCloseRef.current) {
-      return;
-    }
-    setSelectedDateStr(null);
-  }, []);
+  const handleDaySheetOpenChange = useCallback(
+    (open: boolean) => {
+      if (
+        open ||
+        itemToEdit !== null ||
+        guardDaySheetClose ||
+        suppressDaySheetCloseRef.current
+      ) {
+        return;
+      }
+      setSelectedDateStr(null);
+    },
+    [guardDaySheetClose, itemToEdit]
+  );
 
   const closeEditDialog = useCallback(() => {
     suppressDaySheetCloseRef.current = true;
+    setGuardDaySheetClose(true);
     setItemToEdit(null);
-    queueMicrotask(() => {
+    // Dialog teardown can emit a delayed sheet dismiss; keep suppress longer
+    // than a microtask so the day drawer stays open.
+    window.setTimeout(() => {
       suppressDaySheetCloseRef.current = false;
-    });
+      setGuardDaySheetClose(false);
+    }, 300);
   }, []);
 
   const handleEditDialogOpenChange = useCallback(
@@ -275,21 +421,6 @@ export function CalendarRegistry({
     });
   };
 
-  const sprintOptions = useMemo(
-    () =>
-      buildSprintFilterOptionsForQuery(
-        sprints,
-        projectQuery.value,
-        QUERY_FILTER_ALL_VALUE
-      ),
-    [projectQuery.value, sprints]
-  );
-
-  const projectSelectOptions = useMemo(
-    () => projects.map((p) => ({ id: p.id, label: p.name })),
-    [projects]
-  );
-
   const calendarDays = useMemo(
     () => buildCalendarDays(year, month, todayDateString),
     [year, month, todayDateString]
@@ -315,15 +446,57 @@ export function CalendarRegistry({
     [filteredWorkItems]
   );
 
-  const unscheduledWorkItems = useMemo(
-    () => filterUnscheduledWorkItems(localWorkItems, calendarFilterOptions),
-    [localWorkItems, calendarFilterOptions]
+  const unscheduledRefreshKey = useMemo(
+    () =>
+      [
+        calendarListFilters.projectId ?? '',
+        calendarListFilters.sprintId ?? '',
+        calendarListFilters.assigneeId ?? '',
+        calendarListFilters.type ?? '',
+      ].join('|'),
+    [calendarListFilters]
   );
 
   return (
     <div className="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
       <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <CalendarFilterDialog
+            projects={projects}
+            sprints={sprints}
+            users={users}
+            projectValue={projectQuery.value || QUERY_FILTER_ALL_VALUE}
+            sprintValue={sprintQuery.value || QUERY_FILTER_ALL_VALUE}
+            assigneeValue={selectedAssigneeId}
+            typeValue={selectedType}
+            allowAllFilters={allowAllFilters}
+            hasActiveFilters={hasActiveCalendarFilters}
+            onApplyFilters={handleApplyCalendarFilters}
+          />
+
+          {hasActiveCalendarFilters ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleClearCalendarFilters}
+              className="text-muted-foreground hover:text-foreground h-8 px-2.5 text-xs"
+            >
+              Clear filters
+              <X className="size-3.5" />
+            </Button>
+          ) : null}
+
+          {userId ? (
+            <WorkspaceDefaultsControls
+              onOpenDefaultsDialog={boardDefaults.openDefaultsDialog}
+              savedDefaultsApplied={boardDefaults.savedDefaultsApplied}
+              buttonClassName="size-8 shrink-0"
+            />
+          ) : null}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="icon-sm"
@@ -355,83 +528,46 @@ export function CalendarRegistry({
           </Button>
           <Button
             variant={showUnscheduledPanel ? 'secondary' : 'outline'}
-            size="sm"
+            size="icon-sm"
             aria-pressed={showUnscheduledPanel}
+            aria-label="Unscheduled work items"
+            title="Unscheduled"
             onClick={() => setUnscheduledPanelOpen(!showUnscheduledPanel)}
-            className="h-8 gap-1.5 px-2.5 text-xs"
+            className="size-8"
           >
-            <ListTodo className="size-4 shrink-0" />
-            <span className="hidden sm:inline">Unscheduled</span>
-            {unscheduledWorkItems.length > 0 ? (
-              <span className="bg-muted text-muted-foreground rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums">
-                {unscheduledWorkItems.length}
-              </span>
-            ) : null}
+            <ListTodo className="size-4" />
           </Button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <CalendarFilterSelect
-            value={projectQuery.value || QUERY_FILTER_ALL_VALUE}
-            onValueChange={handleProjectChange}
-            placeholder="Filter Project"
-            allLabel="All Projects"
-            options={projectSelectOptions}
-            includeAll={allowAllFilters}
-          />
-          <CalendarFilterSelect
-            value={sprintQuery.value || QUERY_FILTER_ALL_VALUE}
-            onValueChange={handleSprintChange}
-            placeholder="Filter Sprint"
-            allLabel="All Sprints"
-            options={sprintOptions.map((option) => ({
-              id: option.value,
-              label: option.label,
-            }))}
-            includeAll={allowAllFilters}
-          />
-          <CalendarFilterSelect
-            value={selectedAssigneeId}
-            onValueChange={handleAssigneeChange}
-            placeholder="Filter Assignee"
-            allLabel="All Assignees"
-            options={users.map((u) => ({ id: u.id, label: u.name }))}
-          />
-          <CalendarFilterSelect
-            value={selectedType}
-            onValueChange={handleTypeChange}
-            placeholder="Filter Type"
-            allLabel="All Types"
-            triggerClassName="h-8 w-28 text-xs sm:w-32"
-            options={WORK_ITEM_TYPES.map((workItemType) => ({
-              id: workItemType,
-              label: workItemType,
-            }))}
-          />
         </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
-        <CalendarMonthGrid
-          className="min-h-0 flex-1"
-          calendarDays={calendarDays}
-          itemsByDate={itemsByDate}
-          projects={projects}
-          activeDropDate={dueDateDrag.activeDropDate}
-          draggedItemId={dueDateDrag.draggedItemId}
-          pendingDueDateIds={dueDateDrag.pendingDueDateIds}
-          onOpenDay={openDaySheet}
-          onItemDragStart={dueDateDrag.handleItemDragStart}
-          onItemDragEnd={dueDateDrag.handleItemDragEnd}
-          onDayDragOver={dueDateDrag.handleDayDragOver}
-          onDayDragLeave={dueDateDrag.handleDayDragLeave}
-          onDayDrop={dueDateDrag.handleDayDrop}
-          onOpenItem={openEditDialog}
-        />
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+          {scheduledLoading ? (
+            <p className="text-muted-foreground absolute top-2 right-2 z-10 text-xs">
+              Loading…
+            </p>
+          ) : null}
+          <CalendarMonthGrid
+            className="min-h-0 flex-1"
+            calendarDays={calendarDays}
+            itemsByDate={itemsByDate}
+            projects={projects}
+            activeDropDate={dueDateDrag.activeDropDate}
+            draggedItemId={dueDateDrag.draggedItemId}
+            pendingDueDateIds={dueDateDrag.pendingDueDateIds}
+            onOpenDay={openDaySheet}
+            onItemDragStart={dueDateDrag.handleItemDragStart}
+            onItemDragEnd={dueDateDrag.handleItemDragEnd}
+            onDayDragOver={dueDateDrag.handleDayDragOver}
+            onDayDragLeave={dueDateDrag.handleDayDragLeave}
+            onDayDrop={dueDateDrag.handleDayDrop}
+            onOpenItem={openEditDialog}
+          />
+        </div>
         {showUnscheduledPanel ? (
           <CalendarUnscheduledPanel
             className="min-h-48 w-full shrink-0 lg:min-h-0 lg:w-[28rem] xl:w-[32rem]"
-            items={unscheduledWorkItems}
+            filters={calendarListFilters}
             projects={projects}
             draggedItemId={dueDateDrag.draggedItemId}
             pendingDueDateIds={dueDateDrag.pendingDueDateIds}
@@ -439,6 +575,8 @@ export function CalendarRegistry({
             onDragStart={dueDateDrag.handleItemDragStart}
             onDragEnd={dueDateDrag.handleItemDragEnd}
             onOpenItem={openEditDialog}
+            refreshKey={unscheduledRefreshKey}
+            panelRef={unscheduledPanelRef}
           />
         ) : null}
       </div>
@@ -446,7 +584,7 @@ export function CalendarRegistry({
       <CalendarDaySheet
         key={selectedDateStr ?? 'closed'}
         selectedDateStr={selectedDateStr}
-        blockOutsideClose={itemToEdit !== null}
+        blockOutsideClose={itemToEdit !== null || guardDaySheetClose}
         onOpenChange={handleDaySheetOpenChange}
         itemsByDate={itemsByDate}
         projects={projects}
@@ -473,7 +611,6 @@ export function CalendarRegistry({
             prev.map((item) => (item.id === updated.id ? updated : item))
           );
           closeEditDialog();
-          router.refresh();
         }}
       />
 

@@ -1,3 +1,5 @@
+import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
+
 export type ProjectRow = {
   id: string;
   name: string;
@@ -7,6 +9,7 @@ export type ProjectRow = {
   start_date: string | null;
   end_date: string | null;
   owner_id: string;
+  created_by?: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -14,6 +17,8 @@ export type ProjectRow = {
   jira_connection_id: string | null;
   github_repo: string | null;
   github_token: string | null;
+  attributes_config?: unknown;
+  workflow_config?: ProjectWorkflowConfig | null;
   logo_url: string | null;
   cover_picture: string | null;
 };
@@ -51,11 +56,15 @@ export type CreateProjectInput = Omit<
   | 'created_at'
   | 'updated_at'
   | 'deleted_at'
+  | 'created_by'
   | 'logo_url'
   | 'cover_picture'
 > & {
   logo_url?: string | null;
   cover_picture?: string | null;
+  workflow_config?: ProjectWorkflowConfig | null;
 };
 
-export type UpdateProjectInput = Partial<CreateProjectInput>;
+export type UpdateProjectInput = Partial<CreateProjectInput> & {
+  workflow_config?: ProjectWorkflowConfig | null;
+};

@@ -2,14 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import ReactGridLayout, {
-  useContainerWidth,
   type Layout,
   type LayoutItem,
 } from 'react-grid-layout';
 import { Button } from '@repo/ui/components/ui/button';
 import { RotateCcw } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { useSidebarLayoutSettling } from '@/hooks/use-sidebar-layout-settling';
+import {
+  DASHBOARD_DRAG_CONFIG,
+  DASHBOARD_GRID_CONFIG,
+  DASHBOARD_RESIZE_CONFIG,
+  useStableDashboardGridWidth,
+} from '@/lib/dashboard-grid';
 import {
   getLocalStorageJson,
   removeLocalStorageItem,
@@ -63,11 +67,8 @@ type DashboardOverviewProps = {
 export function DashboardOverview({
   burndownBootstrap,
 }: DashboardOverviewProps) {
-  const { width, containerRef, mounted } = useContainerWidth({
-    initialWidth: 1200,
-  });
-  const isSidebarSettling = useSidebarLayoutSettling();
-  const [stableWidth, setStableWidth] = useState(width);
+  const { stableWidth, containerRef, mounted, isSidebarSettling } =
+    useStableDashboardGridWidth();
   const [layout, setLayout] = useState<LayoutItem[]>(() => [...DEFAULT_LAYOUT]);
   const [hydrated, setHydrated] = useState(false);
 
@@ -75,13 +76,6 @@ export function DashboardOverview({
     setLayout(readStoredLayout());
     setHydrated(true);
   }, []);
-
-  // Freeze grid width while the sidebar CSS width transition runs, then snap once.
-  useEffect(() => {
-    if (!isSidebarSettling) {
-      setStableWidth(width);
-    }
-  }, [width, isSidebarSettling]);
 
   const handleLayoutChange = (next: Layout) => {
     const nextLayout = [...next];
@@ -133,20 +127,9 @@ export function DashboardOverview({
             className="layout"
             width={stableWidth}
             layout={layout}
-            gridConfig={{
-              cols: 12,
-              rowHeight: 48,
-              margin: [16, 16],
-              containerPadding: [0, 0],
-            }}
-            dragConfig={{
-              enabled: true,
-              handle: '.widget-drag-handle',
-            }}
-            resizeConfig={{
-              enabled: true,
-              handles: ['se'],
-            }}
+            gridConfig={DASHBOARD_GRID_CONFIG}
+            dragConfig={DASHBOARD_DRAG_CONFIG}
+            resizeConfig={DASHBOARD_RESIZE_CONFIG}
             onLayoutChange={handleLayoutChange}
           >
             {layout.map((item) => (

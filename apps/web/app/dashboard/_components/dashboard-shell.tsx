@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { cookies } from 'next/headers';
 import { SidebarInset, SidebarProvider } from '@repo/ui/components/ui/sidebar';
 import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
 import { cn } from '@repo/ui/lib/utils';
@@ -7,6 +8,9 @@ import { DashboardHeader } from './dashboard-header';
 import { DashboardSidebar } from './dashboard-sidebar';
 import type { DashboardBreadcrumbOverride } from './dashboard-breadcrumb';
 import { ChatLauncherProvider } from '@/app/chat/_components/chat-launcher';
+import { DashboardRuntimeProviders } from './dashboard-runtime-providers';
+
+const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 
 type DashboardShellProps = {
   description?: string;
@@ -18,8 +22,6 @@ type DashboardShellProps = {
   /** Optional project scope for Save View share modes. */
   projectId?: string | null;
   children: ReactNode;
-  /** When false, sidebar starts collapsed (icon rail). */
-  sidebarDefaultOpen?: boolean;
   /**
    * When true, the top navbar stays pinned while page content scrolls.
    * Default false: header scrolls away with the page.
@@ -33,6 +35,15 @@ type DashboardShellProps = {
   contentClassName?: string;
 };
 
+async function readSidebarDefaultOpen(): Promise<boolean> {
+  const store = await cookies();
+  const value = store.get(SIDEBAR_COOKIE_NAME)?.value;
+  if (value === undefined) {
+    return true;
+  }
+  return value === 'true';
+}
+
 export async function DashboardShell({
   description,
   breadcrumbOverrides,
@@ -40,12 +51,14 @@ export async function DashboardShell({
   favoriteLabel,
   projectId,
   children,
-  sidebarDefaultOpen = true,
   stickyHeader = false,
   contentScrollable = true,
   contentClassName,
 }: Readonly<DashboardShellProps>) {
-  const dbUser = await getDbUser();
+  const [dbUser, sidebarDefaultOpen] = await Promise.all([
+    getDbUser(),
+    readSidebarDefaultOpen(),
+  ]);
 
   const header = (
     <DashboardHeader
@@ -82,18 +95,21 @@ export async function DashboardShell({
           <ChatLauncherProvider
             currentUserName={dbUser?.name}
             currentUserImageUrl={dbUser?.profile_picture}
+            currentUserRole={dbUser?.role}
           >
-            {stickyHeader ? (
-              <>
-                {header}
-                <div className={scrollRegionClass}>{body}</div>
-              </>
-            ) : (
-              <div className={scrollRegionClass}>
-                {header}
-                {body}
-              </div>
-            )}
+            <DashboardRuntimeProviders>
+              {stickyHeader ? (
+                <>
+                  {header}
+                  <div className={scrollRegionClass}>{body}</div>
+                </>
+              ) : (
+                <div className={scrollRegionClass}>
+                  {header}
+                  {body}
+                </div>
+              )}
+            </DashboardRuntimeProviders>
           </ChatLauncherProvider>
         </SidebarInset>
       </SidebarProvider>

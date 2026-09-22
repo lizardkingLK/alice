@@ -129,12 +129,26 @@ const mockJiraConnection = {
   updated_at: '2026-07-09T10:00:00Z',
 };
 
+const mockGithubConnection = {
+  id: 'conn-gh-1',
+  name: 'GitHub (octocat)',
+  status: 'active' as const,
+  account_login: 'octocat',
+  account_avatar_url: 'https://github.com/images/error/octocat_happy.gif',
+  created_at: '2026-07-09T10:00:00Z',
+  updated_at: '2026-07-09T10:00:00Z',
+};
+
 function mockJiraApiFetch(options?: {
   connections?: (typeof mockJiraConnection)[];
   importedCount?: number;
+  githubConnections?: (typeof mockGithubConnection)[];
+  githubRepos?: unknown[];
 }) {
   const connections = options?.connections ?? [mockJiraConnection];
   const importedCount = options?.importedCount ?? 2;
+  const githubConnections = options?.githubConnections ?? [];
+  const githubRepos = options?.githubRepos ?? [];
 
   vi.mocked(apiFetch).mockImplementation(async (path: string) => {
     if (path === '/api/jira/connections') {
@@ -150,6 +164,15 @@ function mockJiraApiFetch(options?: {
     }
     if (path === '/api/jira/oauth/start') {
       return { url: 'https://auth.atlassian.com/authorize' };
+    }
+    if (path === '/api/github/connections') {
+      return { connections: githubConnections };
+    }
+    if (path.startsWith('/api/github/repositories')) {
+      return { repositories: githubRepos };
+    }
+    if (path === '/api/github/oauth/start') {
+      return { url: 'https://github.com/login/oauth/authorize' };
     }
     throw new Error(`Unexpected apiFetch path: ${path}`);
   });
@@ -220,15 +243,25 @@ describe('ProjectForm Component', () => {
       target: { value: 'Project description details' },
     });
     await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
+    const startDate = new Date();
+    startDate.setFullYear(startDate.getFullYear() + 1);
+    const startDateStr = startDate.toISOString().split('T')[0];
+
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 1);
+    const endDateStr = endDate.toISOString().split('T')[0];
+
     fireEvent.change(screen.getByLabelText(/Start Date/i), {
-      target: { value: '2026-09-10' },
+      target: { value: startDateStr },
     });
     fireEvent.change(screen.getByLabelText(/End Date/i), {
-      target: { value: '2026-10-10' },
+      target: { value: endDateStr },
     });
 
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await screen.findByText('Import sources');
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await screen.findByText('Source control');
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -237,11 +270,13 @@ describe('ProjectForm Component', () => {
         key: 'ALICE',
         description: 'Project description details',
         owner_id: 'user-mgr-1',
-        start_date: '2026-09-10',
-        end_date: '2026-10-10',
+        start_date: startDateStr,
+        end_date: endDateStr,
         status: 'active',
         attributes_config: null,
-        workflow_config: null,
+        workflow_config: {
+          work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+        },
         jira_connection_id: null,
         jira_project_key: null,
         github_repo: null,
@@ -305,7 +340,9 @@ describe('ProjectForm Component', () => {
           end_date: '2026-08-10',
           status: 'active',
           attributes_config: null,
-          workflow_config: null,
+          workflow_config: {
+            work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+          },
           jira_connection_id: null,
           jira_project_key: null,
           github_repo: null,
@@ -430,7 +467,12 @@ describe('ProjectForm Component', () => {
       );
       expect(apiFetch).toHaveBeenCalledWith(
         '/api/projects/proj-123/jira/import',
-        { method: 'POST', timeoutMs: 90_000 }
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+          timeoutMs: 90_000,
+        }
       );
     });
 
@@ -453,12 +495,6 @@ describe('ProjectForm Component', () => {
     fireEvent.change(screen.getByLabelText(/GitHub Repository URL/i), {
       target: { value: 'https://github.com/facebook/react' },
     });
-    fireEvent.change(
-      screen.getByLabelText(/Personal Access Token \(optional\)/i),
-      {
-        target: { value: 'ghp_secret_token_123' },
-      }
-    );
 
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
@@ -466,10 +502,54 @@ describe('ProjectForm Component', () => {
       expect(createProject).toHaveBeenCalledWith(
         expect.objectContaining({
           github_repo: 'facebook/react',
-          github_token: 'ghp_secret_token_123',
+          github_token: null,
         })
       );
     });
+  });
+
+  it('renders Connect GitHub button and not connected status when no OAuth connection exists', async () => {
+    render(<ProjectForm users={mockUsers} />);
+
+    await fillStep1Basics();
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
+
+    expect(
+      await screen.findByText(/Status: Not connected/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Connect GitHub/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/Personal Access Token/i)
+    ).not.toBeInTheDocument();
+  });
+
+  it('displays authenticated GitHub account identity and status when OAuth is connected', async () => {
+    mockJiraApiFetch({
+      connections: [],
+      githubConnections: [mockGithubConnection],
+    });
+
+    render(<ProjectForm users={mockUsers} />);
+
+    await fillStep1Basics();
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
+
+    expect(await screen.findByText('@octocat')).toBeInTheDocument();
+    expect(screen.getByText('Connected')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Switch Account/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Disconnect/i })
+    ).toBeInTheDocument();
   });
 
   it('automatically splits GitHub Repository URL into owner and repository name', async () => {
@@ -497,8 +577,6 @@ describe('ProjectForm Component', () => {
       );
     });
   });
-
-
 
   it('omits blank github_token on edit so existing PAT is unchanged', async () => {
     const onProjectUpdated = vi.fn();

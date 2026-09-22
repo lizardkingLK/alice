@@ -3,8 +3,14 @@
 import type React from 'react';
 import { Card } from '@repo/ui/components/ui/card';
 import { Button } from '@repo/ui/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@repo/ui/components/ui/tooltip';
 import { ChevronDown, ChevronRight, Plus } from '@repo/ui/lib/icons';
 import { BacklogDropZone } from '@/app/backlog/_components/backlog-drop-zone';
+import { BacklogItemCount } from '@/app/backlog/_components/backlog-item-count';
 import type { BacklogAssignee } from '@/app/backlog/_helpers/backlog-item-utils';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
@@ -44,8 +50,8 @@ export function BacklogPanel({
   onDrop,
 }: Readonly<BacklogPanelProps>) {
   return (
-    <Card className="border-border/70 overflow-hidden shadow-sm">
-      <div className="bg-muted/20 hover:bg-muted/40 border-border/50 flex flex-col justify-between gap-3 border-b px-4 py-3 transition-colors sm:flex-row sm:items-center">
+    <Card className="border-border/70 gap-0 overflow-visible py-0 shadow-sm">
+      <div className="bg-muted/20 hover:bg-muted/40 border-border/50 flex flex-col justify-between gap-3 rounded-t-xl border-b px-4 py-3 transition-colors sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -70,18 +76,22 @@ export function BacklogPanel({
         </div>
 
         <div className="flex items-center justify-end gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 cursor-pointer"
-            onClick={onCreateIssue}
-          >
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            New Item
-          </Button>
-          <span className="text-muted-foreground bg-muted/65 rounded-full px-2.5 py-0.5 text-xs font-semibold">
-            {items.length} item{items.length === 1 ? '' : 's'}
-          </span>
+          <BacklogItemCount count={items.length} />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-sm"
+                className="size-8 cursor-pointer"
+                aria-label="New work item in backlog"
+                onClick={onCreateIssue}
+              >
+                <Plus className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">New work item</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 

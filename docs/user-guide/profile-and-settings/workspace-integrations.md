@@ -28,6 +28,10 @@ The integrations catalog includes workspace-level tools, notably:
 Each card lets admins save API keys and model settings. Secrets are stored
 encrypted — they are not shown again in plain text after save.
 
+Turning the card **switch off** asks for confirmation first (destructive-style
+warning). Confirming disconnects the integration for the whole workspace and
+removes its active configurations. Cancel leaves it connected.
+
 ---
 
 ## Alice chat model pool
