@@ -56,6 +56,18 @@ const EMPTY: ChartWidgetAnalyticsState = {
 const seriesCache = new Map<string, ChartSeriesResponse>();
 const drilldownCache = new Map<string, ChartDrilldownResponse>();
 
+/** Fired after {@link invalidateChartAnalyticsCaches} so open hooks refetch. */
+export const CHART_ANALYTICS_INVALIDATE_EVENT =
+  'alice:chart-analytics-invalidate';
+
+export function invalidateChartAnalyticsCaches(): void {
+  seriesCache.clear();
+  drilldownCache.clear();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(CHART_ANALYTICS_INVALIDATE_EVENT));
+  }
+}
+
 function dimensionCacheKey(
   filters: ChartAnalyticsDimensionFilters | undefined
 ): string {
@@ -142,9 +154,14 @@ function toDrilldownQuery(params: {
  * Client fetch for Chart widget pie series + optional slice drilldown.
  * `projectId === null` means All projects (omit query param).
  * Responses are cached in-memory for the session (slice re-clicks reuse cache).
+ * Call {@link invalidateChartAnalyticsCaches} after mutating work items so open
+ * widgets refetch (event + cleared maps).
  */
 export function useChartWidgetAnalytics(
-  params: UseChartWidgetAnalyticsParams
+  params: UseChartWidgetAnalyticsParams & {
+    /** Increment after cache invalidation to force refetch. */
+    readonly cacheEpoch?: number;
+  }
 ): ChartWidgetAnalyticsState {
   const {
     projectId,
@@ -155,11 +172,27 @@ export function useChartWidgetAnalytics(
     loadDrilldown = false,
     drilldownPage = 1,
     drilldownLimit = 50,
+    cacheEpoch = 0,
   } = params;
 
   const [state, setState] = useState<ChartWidgetAnalyticsState>(EMPTY);
+  const [invalidateEpoch, setInvalidateEpoch] = useState(0);
   const enabled = projectId !== undefined && Boolean(labelField);
   const dimKey = dimensionCacheKey(dimensionFilters);
+  const epoch = cacheEpoch + invalidateEpoch;
+
+  useEffect(() => {
+    const onInvalidate = () => {
+      setInvalidateEpoch((value) => value + 1);
+    };
+    window.addEventListener(CHART_ANALYTICS_INVALIDATE_EVENT, onInvalidate);
+    return () => {
+      window.removeEventListener(
+        CHART_ANALYTICS_INVALIDATE_EVENT,
+        onInvalidate
+      );
+    };
+  }, []);
 
   useEffect(() => {
     if (!enabled || !labelField || projectId === undefined) {
@@ -238,7 +271,15 @@ export function useChartWidgetAnalytics(
     return () => {
       cancelled = true;
     };
-  }, [dimKey, dimensionFilters, enabled, labelField, projectId, sprintId]);
+  }, [
+    epoch,
+    dimKey,
+    dimensionFilters,
+    enabled,
+    labelField,
+    projectId,
+    sprintId,
+  ]);
 
   useEffect(() => {
     if (!enabled || !labelField || projectId === undefined || !loadDrilldown) {
@@ -330,6 +371,7 @@ export function useChartWidgetAnalytics(
       cancelled = true;
     };
   }, [
+    epoch,
     dimKey,
     dimensionFilters,
     drilldownLimit,

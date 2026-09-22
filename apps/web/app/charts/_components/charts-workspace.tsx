@@ -37,7 +37,6 @@ import {
   updateChartWidgetDisplaySettings,
 } from '@/app/charts/_components/charts-board-canvas';
 import { ChartsSaveWorkspaceDialog } from '@/app/charts/_components/charts-save-workspace-dialog';
-import { ChartsShareWorkspaceDialog } from '@/app/charts/_components/charts-share-workspace-dialog';
 import { ChartsWorkspaceActionsMenu } from '@/app/charts/_components/charts-workspace-actions-menu';
 import { isChartWidgetAvailable } from '@/app/charts/_components/charts-widget-catalog';
 import type {
@@ -56,22 +55,21 @@ import type {
 import { DismissibleError } from '@/components/dismissible-error';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import { isSessionExpiredError } from '@/lib/errors/session-expired';
-import {
-  createChartWorkspace,
-  getChartWorkspace,
-  readChartWorkspacesStore,
-  removeChartWorkspace,
-  renameChartWorkspaceMeta,
-  saveChartWorkspaceBoard,
-  setLastOpenedChartWorkspace,
-  suggestChartWorkspaceTitle,
-} from '@/app/charts/_helpers/charts-workspace-storage';
-import { hydrateChartWorkspacesFromApi } from '@/app/charts/_helpers/charts-workspace-hydrate';
+import { writeChartsLastOpenedId } from '@/app/charts/_helpers/charts-last-opened';
 import { chartsWorkspaceHref } from '@/app/charts/_helpers/charts-links';
 import { createChartWidgetFiltersFromDefaults } from '@/app/charts/_helpers/charts-widget-defaults';
+import {
+  clearLegacyChartsLocalStorage,
+  suggestChartWorkspaceTitle,
+} from '@/app/charts/_helpers/charts-workspace-utils';
+import {
+  chartOwnershipForViewer,
+  chartWorkspaceFromApiRow,
+} from '@/app/charts/_helpers/charts-workspace-map';
 import { useChartsWorkspaceDefaults } from '@/app/charts/_hooks/use-charts-workspace-defaults';
 import {
   archiveChartWorkspace,
+  createChartWorkspaceOnApi,
   deleteChartWorkspace,
   leaveSharedChartWorkspace,
   restoreChartWorkspace,
@@ -83,6 +81,7 @@ type ChartsWorkspaceProps = {
   readonly workspaceId: string;
   readonly currentUserId: string;
   readonly focusWidgetId?: string;
+  readonly initialWorkspace: ChartWorkspaceRecord;
   readonly shareProjects: ReadonlyArray<{
     readonly id: string;
     readonly name: string;
@@ -97,6 +96,7 @@ export function ChartsWorkspace({
   workspaceId,
   currentUserId,
   focusWidgetId,
+  initialWorkspace,
   shareProjects,
   assigneeMembers,
   projects,
@@ -106,13 +106,21 @@ export function ChartsWorkspace({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [workspace, setWorkspace] = useState<ChartWorkspaceRecord | null>(null);
-  const [instances, setInstances] = useState<ChartBoardWidgetInstance[]>([]);
-  const [layout, setLayout] = useState<LayoutItem[]>([]);
-  const [hydrated, setHydrated] = useState(false);
+  const [workspace, setWorkspace] = useState<ChartWorkspaceRecord | null>(
+    initialWorkspace
+  );
+  const [instances, setInstances] = useState<ChartBoardWidgetInstance[]>(
+    () => initialWorkspace.instances
+  );
+  const [layout, setLayout] = useState<LayoutItem[]>(() =>
+    reconcileChartBoardLayout(
+      initialWorkspace.instances,
+      initialWorkspace.layout
+    )
+  );
+  const [hydrated] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [deleteKind, setDeleteKind] = useState<'owned' | 'share' | null>(null);
   const [deletePending, setDeletePending] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -126,72 +134,52 @@ export function ChartsWorkspace({
   });
 
   useEffect(() => {
-    let cancelled = false;
+    clearLegacyChartsLocalStorage(currentUserId);
+  }, [currentUserId]);
 
-    async function hydrate() {
-      try {
-        await hydrateChartWorkspacesFromApi(currentUserId);
-      } catch {
-        // Fall through — local cache may still have the workspace.
-      }
-      if (cancelled) {
-        return;
-      }
+  useEffect(() => {
+    writeChartsLastOpenedId(initialWorkspace.id);
 
-      const record = getChartWorkspace(currentUserId, workspaceId);
-      if (!record) {
-        const store = readChartWorkspacesStore(currentUserId);
-        const fallback =
-          store.workspaces.find((item) => item.status === 'active') ??
-          store.workspaces[0];
-        router.replace(fallback ? `/charts/${fallback.id}` : '/charts');
-        return;
-      }
+    const reconciledLayout = reconcileChartBoardLayout(
+      initialWorkspace.instances,
+      initialWorkspace.layout
+    );
+    setWorkspace(initialWorkspace);
+    setInstances(initialWorkspace.instances);
+    setLayout(reconciledLayout);
 
-      setLastOpenedChartWorkspace(currentUserId, record.id);
-      setWorkspace(record);
-      const reconciledLayout = reconcileChartBoardLayout(
-        record.instances,
-        record.layout
-      );
-      setInstances(record.instances);
-      setLayout(reconciledLayout);
-      setHydrated(true);
-      if (
-        reconciledLayout.length !== record.layout.length ||
-        !reconciledLayout.every(
-          (item, index) => item.i === record.layout[index]?.i
-        )
-      ) {
-        syncChartWorkspaceToApi({
-          ...record,
-          layout: reconciledLayout,
-        }).catch(() => {});
-        saveChartWorkspaceBoard(currentUserId, record.id, {
-          instances: record.instances,
-          layout: reconciledLayout,
-        });
-      }
+    if (
+      reconciledLayout.length !== initialWorkspace.layout.length ||
+      !reconciledLayout.every(
+        (item, index) => item.i === initialWorkspace.layout[index]?.i
+      )
+    ) {
+      const repaired = {
+        ...initialWorkspace,
+        layout: reconciledLayout,
+      };
+      setWorkspace(repaired);
+      syncChartWorkspaceToApi(repaired).catch(() => {});
     }
-
-    hydrate().catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [currentUserId, router, workspaceId]);
+  }, [initialWorkspace]);
 
   const persistBoard = useCallback(
     (nextInstances: ChartBoardWidgetInstance[], nextLayout: LayoutItem[]) => {
-      const updated = saveChartWorkspaceBoard(currentUserId, workspaceId, {
-        instances: nextInstances,
-        layout: nextLayout,
-      });
-      if (updated) {
-        setWorkspace(updated);
+      setWorkspace((previous) => {
+        if (!previous) {
+          return previous;
+        }
+        const updated: ChartWorkspaceRecord = {
+          ...previous,
+          instances: nextInstances,
+          layout: nextLayout,
+          updatedAt: new Date().toISOString(),
+        };
         syncChartWorkspaceToApi(updated).catch(() => {});
-      }
+        return updated;
+      });
     },
-    [currentUserId, workspaceId]
+    []
   );
 
   const commitBoard = useCallback(
@@ -245,47 +233,56 @@ export function ChartsWorkspace({
 
   const handleCreateWorkspace = useCallback(
     async (payload: { title: string; isOverview: boolean }) => {
-      const created = createChartWorkspace(currentUserId, {
-        title: payload.title,
-        isOverview: payload.isOverview,
-      });
+      setActionError(null);
       try {
-        await syncChartWorkspaceToApi(created);
+        const created = await createChartWorkspaceOnApi({
+          title: payload.title,
+          isOverview: payload.isOverview,
+          viewerId: currentUserId,
+        });
+        router.push(`/charts/${created.id}`);
       } catch (err) {
         if (isSessionExpiredError(err)) {
           return;
         }
+        const message =
+          err instanceof Error ? err.message : 'Failed to create workspace';
+        setActionError(message);
+        throw err instanceof Error ? err : new Error(message);
       }
-      router.push(`/charts/${created.id}`);
     },
     [currentUserId, router]
   );
 
   const handleSaveWorkspace = useCallback(
     (payload: { title: string; isOverview: boolean }) => {
-      const updated = renameChartWorkspaceMeta(currentUserId, workspaceId, {
-        title: payload.title,
-        isOverview: payload.isOverview,
-      });
-      if (updated) {
-        setWorkspace(updated);
+      setWorkspace((previous) => {
+        if (!previous) {
+          return previous;
+        }
+        const updated: ChartWorkspaceRecord = {
+          ...previous,
+          title: payload.title.trim() || previous.title,
+          isOverview: payload.isOverview,
+          updatedAt: new Date().toISOString(),
+        };
         syncChartWorkspaceToApi(updated).catch(() => {});
-      }
+        return updated;
+      });
     },
-    [currentUserId, workspaceId]
+    []
   );
 
   const handleArchiveWorkspace = useCallback(async () => {
     setActionError(null);
     try {
-      await archiveChartWorkspace(workspaceId);
-      const updated = renameChartWorkspaceMeta(currentUserId, workspaceId, {
-        status: 'archived',
-        isOverview: false,
-      });
-      if (updated) {
-        setWorkspace(updated);
-      }
+      const row = await archiveChartWorkspace(workspaceId);
+      setWorkspace(
+        chartWorkspaceFromApiRow(
+          row,
+          chartOwnershipForViewer(row, currentUserId)
+        )
+      );
     } catch (err) {
       if (isSessionExpiredError(err)) {
         return;
@@ -299,13 +296,13 @@ export function ChartsWorkspace({
   const handleRestoreWorkspace = useCallback(async () => {
     setActionError(null);
     try {
-      await restoreChartWorkspace(workspaceId);
-      const updated = renameChartWorkspaceMeta(currentUserId, workspaceId, {
-        status: 'active',
-      });
-      if (updated) {
-        setWorkspace(updated);
-      }
+      const row = await restoreChartWorkspace(workspaceId);
+      setWorkspace(
+        chartWorkspaceFromApiRow(
+          row,
+          chartOwnershipForViewer(row, currentUserId)
+        )
+      );
     } catch (err) {
       if (isSessionExpiredError(err)) {
         return;
@@ -325,8 +322,6 @@ export function ChartsWorkspace({
     setDeletePending(true);
     setActionError(null);
     setDeleteKind(null);
-    // Leave the board immediately; API runs in the background.
-    removeChartWorkspace(currentUserId, workspaceId);
     router.replace('/charts');
 
     try {
@@ -342,14 +337,12 @@ export function ChartsWorkspace({
       } else if (kind === 'share') {
         message = 'Failed to leave shared workspace';
       }
-      // Surface on registry after navigation via query is heavier; console is enough
-      // for board-level leave/delete failures once we already navigated away.
       console.error(message, err);
     } finally {
       setDeletePending(false);
       deleteInFlightRef.current = false;
     }
-  }, [currentUserId, deleteKind, router, workspaceId]);
+  }, [deleteKind, router, workspaceId]);
 
   const handleLayoutChange = useCallback(
     (nextLayout: LayoutItem[]) => {
@@ -454,8 +447,8 @@ export function ChartsWorkspace({
   }, [focusWidgetId, router, searchParams, workspaceId]);
 
   const createDefaultTitle = useMemo(
-    () => suggestChartWorkspaceTitle(currentUserId),
-    [currentUserId]
+    () => suggestChartWorkspaceTitle(workspace?.title ? [workspace.title] : []),
+    [workspace?.title]
   );
 
   const saveDefaultTitle = useMemo(
@@ -509,15 +502,14 @@ export function ChartsWorkspace({
                 </TruncatedText>
               </CardTitle>
               <CardDescription>
-                Customize your board by arranging widgets. Workspaces sync to
-                your account and are cached on this device.
+                Customize your board by arranging widgets. Changes sync to your
+                account.
               </CardDescription>
             </div>
             {workspace ? (
               <ChartsWorkspaceActionsMenu
                 ownership={workspace.ownership ?? 'mine'}
                 status={workspace.status}
-                onShare={() => setShareDialogOpen(true)}
                 onRename={() => setSaveDialogOpen(true)}
                 onArchive={() => void handleArchiveWorkspace()}
                 onRestore={() => void handleRestoreWorkspace()}
@@ -581,13 +573,6 @@ export function ChartsWorkspace({
         initialIsOverview={workspace?.isOverview ?? false}
         onSave={handleSaveWorkspace}
       />
-      <ChartsShareWorkspaceDialog
-        open={shareDialogOpen}
-        onOpenChange={setShareDialogOpen}
-        workspace={workspace}
-        projects={shareProjects}
-        currentUserId={currentUserId}
-      />
       {deleteKind ? (
         <RegistryConfirmDialog
           title={
@@ -598,8 +583,8 @@ export function ChartsWorkspace({
           subject={workspace?.title ?? 'this workspace'}
           detail={
             deleteKind === 'share'
-              ? 'This removes the workspace from Shared with me only. The owner’s copy is unchanged, and they can share it with you again later.'
-              : 'This action is irreversible. The chart workspace, its board layout, and any share records linked to it will be permanently removed. The matching Views bookmark is removed as well.'
+              ? 'This removes your access to this board only. The owner’s copy is unchanged. If you still have a Views entry for this board, leave or delete that share from Views as well.'
+              : 'This action is irreversible. The chart workspace, its board layout, and any share records linked to it will be permanently removed.'
           }
           confirmLabel={deleteKind === 'share' ? 'Leave' : 'Delete'}
           pendingLabel={deleteKind === 'share' ? 'Leaving...' : 'Deleting...'}

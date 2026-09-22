@@ -1,55 +1,16 @@
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
-import type {
-  ChartBoardWidgetInstance,
-  ChartWorkspaceRecord,
-} from '@/app/charts/_components/charts.types';
-import type { LayoutItem } from 'react-grid-layout';
+import type { ChartWorkspaceRecord } from '@/app/charts/_components/charts.types';
+import {
+  chartOwnershipForViewer,
+  chartWorkspaceFromApiRow,
+  type ChartApiRow,
+} from '@/app/charts/_helpers/charts-workspace-map';
 
-export type ChartApiRow = {
-  readonly id: string;
-  readonly title: string;
-  readonly description: string | null;
-  readonly board_json: unknown;
-  readonly is_overview: boolean;
-  readonly status: string;
-  readonly updated_at: string;
-};
-
-function parseBoardJson(value: unknown): {
-  instances: ChartBoardWidgetInstance[];
-  layout: LayoutItem[];
-} {
-  if (!value || typeof value !== 'object') {
-    return { instances: [], layout: [] };
-  }
-  const record = value as Record<string, unknown>;
-  const instances = Array.isArray(record.instances)
-    ? (record.instances as ChartBoardWidgetInstance[])
-    : [];
-  const layout = Array.isArray(record.layout)
-    ? (record.layout as LayoutItem[])
-    : [];
-  return { instances, layout };
-}
-
-export function chartWorkspaceFromApiRow(
-  row: ChartApiRow,
-  ownership: 'mine' | 'shared'
-): ChartWorkspaceRecord {
-  const board = parseBoardJson(row.board_json);
-  const status = row.status === 'archived' ? 'archived' : 'active';
-  return {
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    status,
-    isOverview: row.is_overview,
-    updatedAt: row.updated_at,
-    ownership,
-    instances: board.instances,
-    layout: board.layout,
-  };
-}
+export type { ChartApiRow } from '@/app/charts/_helpers/charts-workspace-map';
+export {
+  chartOwnershipForViewer,
+  chartWorkspaceFromApiRow,
+} from '@/app/charts/_helpers/charts-workspace-map';
 
 export async function listChartsFromApi(params?: {
   readonly scope?: 'owned' | 'shared';
@@ -82,4 +43,15 @@ export async function getChartFromApi(
   } catch {
     return null;
   }
+}
+
+export async function getChartWorkspaceFromApi(
+  chartId: string,
+  viewerId: string
+): Promise<ChartWorkspaceRecord | null> {
+  const row = await getChartFromApi(chartId);
+  if (!row) {
+    return null;
+  }
+  return chartWorkspaceFromApiRow(row, chartOwnershipForViewer(row, viewerId));
 }

@@ -1,7 +1,11 @@
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import { isSessionExpiredError } from '@/lib/errors/session-expired';
 import type { ChartWorkspaceRecord } from '@/app/charts/_components/charts.types';
-import type { ChartApiRow } from '@/app/charts/_services/charts.workspaces.client';
+import {
+  chartOwnershipForViewer,
+  chartWorkspaceFromApiRow,
+  type ChartApiRow,
+} from '@/app/charts/_helpers/charts-workspace-map';
 
 export {
   chartWorkspaceFromApiRow,
@@ -18,10 +22,8 @@ function boardJsonFromWorkspace(workspace: ChartWorkspaceRecord) {
 type ChartMutationSuccess = { readonly success: true };
 
 /**
- * Upsert local workspace into API `charts` (best-effort).
- * Always POSTs — the API updates when `id` already belongs to the caller.
- * Re-throws session expiry (dialog already emitted by `apiFetch`); other
- * failures return `null`. Fire-and-forget callers must `.catch(() => {})`.
+ * Persist board / meta to API `charts` (best-effort upsert via POST).
+ * Re-throws session expiry; other failures return `null`.
  */
 export async function syncChartWorkspaceToApi(
   workspace: ChartWorkspaceRecord
@@ -50,29 +52,24 @@ export async function syncChartWorkspaceToApi(
   }
 }
 
-/** Share a chart workspace; optionally bookmark `/charts/[id]` as a saved view. */
-export async function shareChartWorkspace(params: {
-  readonly chartId: string;
-  readonly userIds: readonly string[];
-  readonly createSavedViewBookmark?: boolean;
-}): Promise<{ sharedCount: number } | null> {
-  try {
-    const result = await apiFetch<{
-      data: { sharedCount: number };
-    }>(`/api/charts/${params.chartId}/share`, {
-      method: 'POST',
-      body: JSON.stringify({
-        userIds: params.userIds,
-        createSavedViewBookmark: params.createSavedViewBookmark ?? true,
-      }),
-    });
-    return { sharedCount: result.data.sharedCount };
-  } catch (error) {
-    if (isSessionExpiredError(error)) {
-      throw error;
-    }
-    return null;
-  }
+/** Create a new owned chart workspace on the server. */
+export async function createChartWorkspaceOnApi(params: {
+  readonly title: string;
+  readonly isOverview?: boolean;
+  readonly viewerId: string;
+}): Promise<ChartWorkspaceRecord> {
+  const result = await apiFetch<{ data: ChartApiRow }>('/api/charts', {
+    method: 'POST',
+    body: JSON.stringify({
+      title: params.title,
+      is_overview: params.isOverview ?? false,
+      board_json: { instances: [], layout: [] },
+    }),
+  });
+  return chartWorkspaceFromApiRow(
+    result.data,
+    chartOwnershipForViewer(result.data, params.viewerId)
+  );
 }
 
 export async function archiveChartWorkspace(

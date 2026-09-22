@@ -156,6 +156,15 @@ export function parseViewsListTab(tab?: string | null): ViewsListTab {
   return 'mine';
 }
 
+/** Charts registry tabs (Active / Archived). URL uses `mine` for Active. */
+export type ChartsRegistryListTab = 'mine' | 'archived';
+
+export function parseChartsRegistryTab(
+  tab?: string | null
+): ChartsRegistryListTab {
+  return parseViewsListTab(tab) === 'archived' ? 'archived' : 'mine';
+}
+
 export type ProjectDetailsTab =
   | 'details'
   | 'members'

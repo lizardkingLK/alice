@@ -105,6 +105,14 @@ Tier 2 may add `reader` / `worker` without renaming `web` / `api`. Rename
 
 No HTTP or queues inside the trigger.
 
+**Project hard-delete:** `projects` → `work_items` and `work_item_chart_rollups`
+both use `ON DELETE CASCADE`. Cascade-deleting work items still fires the
+`AFTER DELETE` rollup trigger. Negative deltas must **only UPDATE/DELETE**
+existing rollup rows — never `INSERT…ON CONFLICT` — or Postgres recreates a
+rollup row for the dying `project_id` and raises
+`work_item_chart_rollups_project_id_fkey`. Fix migration:
+`fix_chart_rollup_delta_on_project_cascade`.
+
 ### Indexes on `work_items`
 
 - `(assignee_id)`
@@ -208,15 +216,16 @@ lists index chart entries without scanning pathnames.
    `resource_id` (chart uuid when kind=`chart`)
 2. Indexes: `(owner_id, status, resource_kind)`; partial unique one active chart
    bookmark per owner per `resource_id`
-3. On chart create / rename / archive: upsert matching `saved_views` row
-   (`pathname=/charts/{id}`, `search=''`, title synced)
-4. Web: hydrate workspace list/board from charts API; migrate localStorage →
-   cloud; last-opened from local preference (synced board list)
-5. Keep board JSON on `charts.board_json` only; `chart_shares` for board ACL;
-   optional `saved_view_shares` for the Views bookmark entry
-6. Web lifecycle: Charts **registry** at `/charts` (Mine / Shared / Archived);
+3. Views indexing is **opt-in**: header **Save view** on `/charts/{id}` stamps
+   `resource_kind=chart` + `resource_id` (chart CRUD does not auto-upsert)
+4. Web: prefetch owned list / board from charts API in RSC; client holds
+   in-memory state only (no board JSON in localStorage); last-opened cookie
+5. Keep board JSON on `charts.board_json` only; `chart_shares` for board ACL
+   (granted when sharing a chart-backed view from Views); `saved_view_shares`
+   for the Views bookmark entry
+6. Web lifecycle: Charts **registry** at `/charts` (Active / Archived only);
    Archive / Restore / Delete / Leave via row or board **⋯**; empty Mine tab
-   shows create CTA (no auto-default workspace)
+   shows create CTA (no auto-default workspace); share via Save view → Views
 
 **Docs:** [CHARTS.md](./CHARTS.md#persistence), [FAVORITES_AND_VIEWS.md](../views/FAVORITES_AND_VIEWS.md#chart-workspaces).
 

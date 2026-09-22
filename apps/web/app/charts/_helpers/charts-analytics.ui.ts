@@ -100,9 +100,9 @@ export function resolveChartAnalyticsDimensionFilters(
   }
 
   const out: {
-    status?: ChartAnalyticsDimensionFilters['status'];
-    type?: ChartAnalyticsDimensionFilters['type'];
-    priority?: ChartAnalyticsDimensionFilters['priority'];
+    status?: NonNullable<ChartAnalyticsDimensionFilters['status']>;
+    type?: NonNullable<ChartAnalyticsDimensionFilters['type']>;
+    priority?: NonNullable<ChartAnalyticsDimensionFilters['priority']>;
     assigneeId?: string;
   } = {};
 
@@ -326,6 +326,8 @@ export type ChartDrilldownTableItem = {
   readonly projectName: string | null;
   readonly sprintId: string | null;
   readonly sprintName: string | null;
+  /** Present for live drilldown rows; used by Open / Edit actions. */
+  readonly workItem?: WorkItemListRow;
 };
 
 export function workItemListRowToChartTableItem(
@@ -347,6 +349,7 @@ export function workItemListRowToChartTableItem(
     projectName: row.project?.name ?? null,
     sprintId: row.sprint_id,
     sprintName: row.sprint?.name ?? null,
+    workItem: row,
   };
 }
 

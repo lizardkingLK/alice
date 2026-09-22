@@ -23,8 +23,6 @@ export const updateChartSchema = z.object({
 
 export const shareChartSchema = z.object({
   userIds: z.array(z.uuid()).min(1).max(50),
-  /** When true, also upsert a saved_views bookmark at /charts/{id}. */
-  createSavedViewBookmark: z.boolean().optional(),
 });
 
 export type CreateChartBody = z.infer<typeof createChartSchema>;

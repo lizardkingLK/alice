@@ -6,11 +6,25 @@ import {
   type ShareSavedViewBody,
   type UpdateSavedViewBody,
 } from '@repo/types';
+import type { ChartsRepository } from '../charts/charts.repository';
 import type { NotificationsRepository } from '../notifications/notifications.repository';
+import { parseChartWorkspaceIdFromPathname } from './savedViews.chart-path';
 import {
   type SavedViewRow,
   type SavedViewsRepository,
 } from './savedViews.repository';
+
+export { parseChartWorkspaceIdFromPathname } from './savedViews.chart-path';
+
+/** Resolve chart workspace id from a typed bookmark or /charts/[id] pathname. */
+export function resolveChartIdFromSavedView(
+  view: Pick<SavedViewRow, 'resource_kind' | 'resource_id' | 'pathname'>
+): string | null {
+  if (view.resource_kind === 'chart' && view.resource_id) {
+    return view.resource_id;
+  }
+  return parseChartWorkspaceIdFromPathname(view.pathname);
+}
 
 export class SavedViewsService {
   constructor(
@@ -18,6 +32,10 @@ export class SavedViewsService {
     private readonly notificationsRepository: Pick<
       NotificationsRepository,
       'getUserName' | 'insertMany'
+    >,
+    private readonly chartsRepository: Pick<
+      ChartsRepository,
+      'upsertShares' | 'deleteShare'
     >
   ) {}
 
@@ -62,10 +80,18 @@ export class SavedViewsService {
 
   /** Recipient removes a shared view from their Shared-with-me list. */
   async deleteShare(actorId: string, viewId: string): Promise<void> {
+    const view = await this.savedViewsRepository.getById(viewId);
     await this.savedViewsRepository.deleteShare({
       viewId,
       userId: actorId,
     });
+    const chartId = view ? resolveChartIdFromSavedView(view) : null;
+    if (chartId) {
+      await this.chartsRepository.deleteShare({
+        chartId,
+        userId: actorId,
+      });
+    }
   }
 
   async share(
@@ -99,6 +125,15 @@ export class SavedViewsService {
       actorId,
       userIds: recipients,
     });
+
+    const chartId = resolveChartIdFromSavedView(view);
+    if (chartId) {
+      await this.chartsRepository.upsertShares({
+        chartId,
+        actorId,
+        userIds: recipients,
+      });
+    }
 
     await this.notifyRecipients({
       actorId,

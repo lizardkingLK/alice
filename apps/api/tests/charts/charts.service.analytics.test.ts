@@ -3,7 +3,6 @@ import type { ChartSeriesQuery } from '@repo/types';
 import { ChartsService } from '../../src/routes/api/charts/charts.service';
 import type { ChartsRepository } from '../../src/routes/api/charts/charts.repository';
 import type { NotificationsRepository } from '../../src/routes/api/notifications/notifications.repository';
-import type { SavedViewsRepository } from '../../src/routes/api/savedViews/savedViews.repository';
 import { createWorkItemListRow } from '../factories/work-item.factory';
 
 const { listAccessibleProjectIdsMock, sumSeriesMock, listDrilldownMock } =
@@ -21,8 +20,7 @@ const chartsRepository = {
 
 const service = new ChartsService(
   chartsRepository,
-  {} as NotificationsRepository,
-  {} as SavedViewsRepository
+  {} as NotificationsRepository
 );
 
 const PROJECT_ID = '33333333-3333-4333-8333-333333333333';

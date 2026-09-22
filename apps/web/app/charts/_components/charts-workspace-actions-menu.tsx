@@ -13,7 +13,6 @@ import {
   MoreHorizontal,
   Pencil,
   RefreshCw,
-  Share2,
   Trash2,
 } from '@repo/ui/lib/icons';
 import { afterDialogClose } from '@/lib/dialog-close';
@@ -21,18 +20,16 @@ import { afterDialogClose } from '@/lib/dialog-close';
 type ChartsWorkspaceActionsMenuProps = {
   readonly ownership: 'mine' | 'shared';
   readonly status: 'active' | 'archived';
-  readonly onShare: () => void;
   readonly onRename: () => void;
   readonly onArchive: () => void;
   readonly onRestore: () => void;
   readonly onRequestDelete: () => void;
 };
 
-/** Workspace-level ⋯ menu (share, rename, archive / restore, always delete/leave). */
+/** Workspace-level ⋯ menu (rename, archive / restore, delete). Share via Views. */
 export function ChartsWorkspaceActionsMenu({
   ownership,
   status,
-  onShare,
   onRename,
   onArchive,
   onRestore,
@@ -57,17 +54,6 @@ export function ChartsWorkspaceActionsMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
-        {isMine && isActive ? (
-          <DropdownMenuItem
-            className="cursor-pointer gap-2"
-            onSelect={() => {
-              afterDialogClose(onShare);
-            }}
-          >
-            <Share2 className="size-4" />
-            Share
-          </DropdownMenuItem>
-        ) : null}
         {isMine ? (
           <DropdownMenuItem
             className="cursor-pointer gap-2"

@@ -6,7 +6,6 @@ import type {
   ChartSeriesResponse,
 } from '@repo/types';
 import type { NotificationsRepository } from '../notifications/notifications.repository';
-import type { SavedViewsRepository } from '../savedViews/savedViews.repository';
 import { ChartsRepository, type ChartRow } from './charts.repository';
 import type {
   CreateChartBody,
@@ -17,8 +16,7 @@ import type {
 export class ChartsService {
   constructor(
     private readonly chartsRepository: ChartsRepository,
-    private readonly notificationsRepository: NotificationsRepository,
-    private readonly savedViewsRepository: SavedViewsRepository
+    private readonly notificationsRepository: NotificationsRepository
   ) {}
 
   async getSeries(
@@ -84,24 +82,16 @@ export class ChartsService {
         if (existing.owner_id !== ownerId) {
           throw new Error('Forbidden');
         }
-        const updated = await this.chartsRepository.update(
-          existing.id,
-          ownerId,
-          {
-            title: input.title,
-            description: input.description ?? null,
-            board_json: input.board_json,
-            is_overview: input.is_overview,
-          }
-        );
-        await this.safeUpsertChartBookmark(ownerId, updated);
-        return updated;
+        return this.chartsRepository.update(existing.id, ownerId, {
+          title: input.title,
+          description: input.description ?? null,
+          board_json: input.board_json,
+          is_overview: input.is_overview,
+        });
       }
     }
 
-    const chart = await this.chartsRepository.create(ownerId, input);
-    await this.safeUpsertChartBookmark(ownerId, chart);
-    return chart;
+    return this.chartsRepository.create(ownerId, input);
   }
 
   listOwned(ownerId: string, status?: 'active' | 'archived') {
@@ -130,35 +120,17 @@ export class ChartsService {
 
   async update(actorId: string, chartId: string, input: UpdateChartBody) {
     const chart = await this.requireOwned(actorId, chartId);
-    const updated = await this.chartsRepository.update(
-      chart.id,
-      actorId,
-      input
-    );
-    await this.safeUpsertChartBookmark(actorId, updated);
-    return updated;
+    return this.chartsRepository.update(chart.id, actorId, input);
   }
 
   async archive(actorId: string, chartId: string) {
     await this.requireOwned(actorId, chartId);
-    const archived = await this.chartsRepository.setStatus(
-      chartId,
-      actorId,
-      'archived'
-    );
-    await this.safeUpsertChartBookmark(actorId, archived);
-    return archived;
+    return this.chartsRepository.setStatus(chartId, actorId, 'archived');
   }
 
   async restore(actorId: string, chartId: string) {
     await this.requireOwned(actorId, chartId);
-    const restored = await this.chartsRepository.setStatus(
-      chartId,
-      actorId,
-      'active'
-    );
-    await this.safeUpsertChartBookmark(actorId, restored);
-    return restored;
+    return this.chartsRepository.setStatus(chartId, actorId, 'active');
   }
 
   async hardDelete(actorId: string, chartId: string) {
@@ -166,6 +138,10 @@ export class ChartsService {
     await this.chartsRepository.hardDelete(chartId);
   }
 
+  /**
+   * Low-level chart ACL used when a Views share targets a chart board.
+   * Charts UI no longer exposes Share — prefer Views Save view → share.
+   */
   async share(actorId: string, chartId: string, input: ShareChartBody) {
     const chart = await this.requireOwned(actorId, chartId);
     if (chart.status !== 'active') {
@@ -190,10 +166,6 @@ export class ChartsService {
         chart,
         recipientIds: nextIds,
       });
-    }
-
-    if (input.createSavedViewBookmark) {
-      await this.safeUpsertChartBookmark(actorId, chart);
     }
 
     return {
@@ -241,19 +213,6 @@ export class ChartsService {
     }
 
     return { responseProjectId: null, projectIds: accessible };
-  }
-
-  private async safeUpsertChartBookmark(
-    ownerId: string,
-    chart: ChartRow
-  ): Promise<void> {
-    try {
-      await this.savedViewsRepository.upsertChartBookmark(ownerId, chart);
-    } catch (error) {
-      // Chart row is the source of truth; Views bookmark is best-effort
-      // (e.g. migration not applied yet should not block create/update).
-      console.error('Failed to upsert chart saved-view bookmark', error);
-    }
   }
 
   private async requireOwned(actorId: string, chartId: string) {

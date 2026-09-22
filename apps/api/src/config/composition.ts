@@ -315,12 +315,14 @@ function createProfileConfig() {
 }
 
 function createSavedViewsConfig(
-  notificationsRepository: NotificationsRepository
+  notificationsRepository: NotificationsRepository,
+  chartsRepository: ChartsRepository
 ) {
   const savedViewsRepository = new SavedViewsRepository(supabase);
   const savedViewsService = new SavedViewsService(
     savedViewsRepository,
-    notificationsRepository
+    notificationsRepository,
+    chartsRepository
   );
   const router = createSavedViewsRouter({ savedViewsService });
 
@@ -434,28 +436,24 @@ export const projects = createProjectsConfig(
 export const users = createUsersConfig();
 export const teams = createTeamsConfig();
 export const profile = createProfileConfig();
-export const savedViews = createSavedViewsConfig(
-  notifications.notificationsRepository
-);
 
-function createChartsConfig(
-  notificationsRepository: NotificationsRepository,
-  savedViewsRepository: SavedViewsRepository
-) {
+function createChartsConfig(notificationsRepository: NotificationsRepository) {
   const chartsRepository = new ChartsRepository(supabase);
   const chartsService = new ChartsService(
     chartsRepository,
-    notificationsRepository,
-    savedViewsRepository
+    notificationsRepository
   );
   const router = createChartsRouter({ chartsService });
   return { chartsRepository, chartsService, router };
 }
 
-export const charts = createChartsConfig(
+export const charts = createChartsConfig(notifications.notificationsRepository);
+
+export const savedViews = createSavedViewsConfig(
   notifications.notificationsRepository,
-  savedViews.savedViewsRepository
+  charts.chartsRepository
 );
+
 export const integrations = createIntegrationsConfig();
 export const pusher = createPusherConfig(users.usersRepository);
 export const chat = createChatConfig(

@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import type { RawSearchParams } from '@/lib/search-params';
 import { getDbUser } from '@/lib/auth';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
@@ -8,6 +9,7 @@ import {
   getSuggestedBoardDefaults,
 } from '@/app/board/_services/board.reads.defaults.server';
 import { ChartsWorkspace } from '@/app/charts/_components/charts-workspace';
+import { getAccessibleChartWorkspace } from '@/app/charts/_services/charts.reads.server';
 import { getProjectMembersByProjectIds } from '@/app/projects/_services/projects.reads.server';
 import { unionProjectMembers } from '@/app/work-items/_helpers/work-item-assignee-filter-members';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
@@ -28,12 +30,21 @@ export async function ChartsData({
   // Keep awaiting searchParams so Next can associate the request with the URL.
   await searchParams;
 
+  const initialWorkspace = await safeServerFetch(
+    getAccessibleChartWorkspace(workspaceId, currentUserId),
+    null,
+    'fetch chart workspace'
+  );
+  if (!initialWorkspace) {
+    redirect('/charts');
+  }
+
   const dbUser = await getDbUser();
   const projects = dbUser
     ? await safeServerFetch(
         getAccessibleProjectList(dbUser.id),
         [],
-        'fetch projects for chart share dialog'
+        'fetch projects for chart workspace defaults'
       )
     : [];
   const activeProjects = filterActiveProjects(projects);
@@ -59,7 +70,7 @@ export async function ChartsData({
     ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
     : null;
 
-  const shareProjects = activeProjects.map((project) => ({
+  const accessibleProjects = activeProjects.map((project) => ({
     id: project.id,
     name: project.name,
   }));
@@ -77,7 +88,8 @@ export async function ChartsData({
       workspaceId={workspaceId}
       currentUserId={currentUserId}
       focusWidgetId={focusWidgetId}
-      shareProjects={shareProjects}
+      initialWorkspace={initialWorkspace}
+      shareProjects={accessibleProjects}
       assigneeMembers={assigneeMembers}
       projects={activeProjects}
       sprints={sprints}

@@ -133,13 +133,14 @@ export const CHARTS_TABLE_COLUMN_IDS = [
   'priority',
   'project',
   'sprint',
+  'actions',
 ] as const;
 
 export type ChartsTableColumnId = (typeof CHARTS_TABLE_COLUMN_IDS)[number];
 
 /** Columns checked by default in widget settings (and when unset on a widget). */
 export const DEFAULT_CHARTS_VISIBLE_TABLE_COLUMNS: readonly ChartsTableColumnId[] =
-  ['task', 'owner', 'status', 'type', 'priority'];
+  ['task', 'owner', 'status', 'type', 'priority', 'actions'];
 
 export const CHARTS_TABLE_COLUMN_LABELS: Record<ChartsTableColumnId, string> = {
   task: 'Task',
@@ -149,6 +150,7 @@ export const CHARTS_TABLE_COLUMN_LABELS: Record<ChartsTableColumnId, string> = {
   priority: 'Priority',
   project: 'Project',
   sprint: 'Sprint',
+  actions: 'Actions',
 };
 
 export type ChartWidgetDisplaySettingsPatch = {
@@ -160,7 +162,7 @@ export type ChartWidgetDisplaySettingsPatch = {
   readonly sliceColors?: Readonly<Record<string, ChartsSliceColorToken>> | null;
 };
 
-/** Persisted chart workspace (`charts` row + local cache). */
+/** Persisted chart workspace (`charts` row; client holds in-memory only). */
 export type ChartWorkspaceRecord = {
   readonly id: string;
   readonly title: string;
@@ -168,13 +170,8 @@ export type ChartWorkspaceRecord = {
   readonly status: 'active' | 'archived';
   readonly isOverview: boolean;
   readonly updatedAt: string;
-  /** Owner vs shared-with-me; defaults to mine for legacy local rows. */
+  /** Owner vs shared ACL; defaults to mine. */
   readonly ownership?: 'mine' | 'shared';
   readonly instances: ChartBoardWidgetInstance[];
   readonly layout: LayoutItem[];
-};
-
-export type ChartWorkspacesStore = {
-  readonly workspaces: ChartWorkspaceRecord[];
-  readonly lastOpenedId: string | null;
 };
