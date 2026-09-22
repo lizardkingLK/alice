@@ -2,8 +2,10 @@
 
 Per-user **chart workspaces** (boards of widgets). `/charts` is a **registry**
 (list + tabs); `/charts/[id]` is the board canvas. Layout persists in
-**`charts.board_json`** (source of truth) with a localStorage cache after
-hydrate. **Tier 1 product** workspace cloud + Views indexing + Widget settings
+**`charts.board_json`** (source of truth). The registry and board are
+**API-first** (RSC prefetch + in-memory client state). A cookie stores
+last-opened workspace id only — no board JSON in localStorage.
+**Tier 1 product** workspace cloud + optional Views indexing + Widget settings
 are wired — see [Persistence](#persistence) and
 [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md#tier-1-product-remaining).
 
@@ -11,30 +13,32 @@ are wired — see [Persistence](#persistence) and
 
 | Path                             | Behavior                                                           |
 | -------------------------------- | ------------------------------------------------------------------ |
-| `/charts`                        | Workspace registry (Mine / Shared / Archived + search + create)    |
+| `/charts`                        | Workspace registry (Active / Archived + search + create)           |
 | `/charts/[id]`                   | Workspace canvas (widgets + layout); **All workspaces** → registry |
 | `/charts/[id]/widget/[widgetId]` | Same workspace; auto-opens that widget’s config dialog             |
 
-Loading UI is route-scoped: `(registry)/loading.tsx` → registry table skeleton;
-`[id]/loading.tsx` → board pie-grid skeleton (parent `charts/loading.tsx` removed
-so board navigations no longer flash the registry skeleton and vice versa).
+Loading UI: `/charts` uses `RegistrySuspensePage` (no segment `loading.tsx`).
+Tab / page / limit / search come from the page `searchParams` promise (same as
+Views / Work items) and update with `router.push` / `replace`.
+`[id]/loading.tsx` → board pie-grid skeleton.
 
-- Sidebar **Charts** stays `path: '/charts'` in `nav-registry.ts` (registry home).
-- Use UUID ids (same as sprints/projects).
-- Nested widget route keeps Monday-style modal/sidebar config — it does not invent a second product shell.
+Registry list and board data are prefetched in RSC (`listOwnedChartWorkspaces` /
+`getAccessibleChartWorkspace`). Client mutations update the API, then patch
+in-memory state. TanStack Table `data` must stay referentially stable across
+unrelated re-renders (memoize slices). Legacy `alice.charts.workspaces.v1:*` /
+single-board keys are cleared on visit.
 
-Shell: registry uses `RegistrySuspensePage`; board uses `DashboardShell` with
-`contentScrollable={false}`.
+Shell: registry uses `DashboardShell` + `Suspense`; board uses `DashboardShell`
+with `contentScrollable={false}`.
 
 ## Last-opened vs overview
 
-| Concern       | Storage                                                | Used by                         |
-| ------------- | ------------------------------------------------------ | ------------------------------- |
-| Last opened   | `alice.charts.workspaces.v1:{userId}` → `lastOpenedId` | Prefer when opening a board URL |
-| Overview mark | `isOverview` on one workspace per user                 | Overview page (later bind)      |
+| Concern       | Storage                                           | Used by                         |
+| ------------- | ------------------------------------------------- | ------------------------------- |
+| Last opened   | Cookie `alice_charts_last_opened_v1` (chart uuid) | Preference when opening a board |
+| Overview mark | `isOverview` on one workspace per user            | Overview page (later bind)      |
 
-Do not conflate these flags. After cloud wiring, last-opened should sync from
-the server (or a synced preference), not only localStorage.
+Do not conflate these flags.
 
 ## Client auth
 
@@ -45,13 +49,16 @@ board) instead of calling Next `redirect()` from the browser.
 
 ## Current UI
 
-| Control      | Behavior                                                                                 |
-| ------------ | ---------------------------------------------------------------------------------------- |
-| Search       | Debounced `?search=` on the workspace list / title filter                                |
-| Filter       | Workspace picker: ownership + status filters, list/load workspaces, save / mark overview |
-| **+** menu   | **Add workspace** (opens name dialog, then creates) · **Add widget** (catalog)           |
-| Workspace ⋯  | **Share** (project members + `chart_shares`) · **Rename / Save**                         |
-| Board canvas | Grip drag, resize, filter / ⋯ on widgets. Dock disabled                                  |
+| Control      | Behavior                                                                         |
+| ------------ | -------------------------------------------------------------------------------- |
+| Search       | Debounced `?search=` via `router.push` (same as Views)                           |
+| Tabs         | **Active** / **Archived** (no Shared tab)                                        |
+| **+** menu   | **Add workspace** (opens name dialog, then creates) · **Add widget** (catalog)   |
+| Workspace ⋯  | **Rename / Save** · Archive / Restore · Delete (Leave when opened via chart ACL) |
+| Board canvas | Grip drag, resize, filter / ⋯ on widgets. Dock disabled                          |
+
+**Share path:** header **Save view** → `/views` **Share**. Charts UI has no
+native Share dialog. Sharing a chart-backed view grants **`chart_shares`**.
 
 **Availability:** Only the **Chart** catalog template can be added. Other quick
 picks / Browse cards are **Coming soon**.
@@ -85,16 +92,13 @@ the table (`focusedSliceKey`). Changing Labels clears the slice focus.
 
 ## Persistence
 
-### Client (cache)
+### Client
 
-Multi-workspace JSON in localStorage (migrates legacy single-board keys):
+- In-memory React state after RSC prefetch (registry list + board).
+- Cookie `alice_charts_last_opened_v1` for last-opened chart id only.
+- On visit, clear legacy keys: `alice.charts.workspaces.v1:*`,
+  `alice.charts.board.layout.v1`, `alice.charts.board.instances.v1`.
 
-- Workspaces: `{ id, title, description?, status, isOverview, ownership?, updatedAt, instances, layout }`
-- `lastOpenedId`
-- Legacy `alice.charts.board.layout.v1` / `instances.v1` imported once into a default workspace
-
-On load, `hydrateChartWorkspacesFromApi` lists owned + shared charts, migrates
-any local-only boards via POST, then rewrites the local cache from the API.
 Empty accounts stay empty — `/charts` registry shows a create CTA (no
 auto-default workspace). Deleting the last workspace returns to that empty
 registry state.
@@ -111,20 +115,20 @@ Table **`charts`**:
 Sharing:
 
 - **`chart_shares`** — recipient ACL on the chart row (board access).
-- **Views bookmark** — upsert `saved_views` with typed `resource_kind=chart` +
-  `resource_id=charts.id` so `/views` can index charts without pathname scans.
-  See [FAVORITES_AND_VIEWS.md](../views/FAVORITES_AND_VIEWS.md#chart-workspaces).
+- **Views** — users opt in with header **Save view**. Saving `/charts/[id]`
+  stamps `resource_kind=chart` + `resource_id`. Sharing that view from
+  `/views` upserts `saved_view_shares` **and** `chart_shares`. Leaving the
+  view share also deletes the matching chart share.
+- Chart CRUD does **not** auto-upsert Views bookmarks.
 - Do **not** store board JSON inside `saved_views.search`.
 
-Notification type: `chart_shared` (inbox deep-link to `/charts/[id]`).
-
-Create / update / archive / restore upsert the Views bookmark automatically.
-Hard delete of an owned chart (active or archived) cascades the bookmark (and
-`chart_shares`) via `ON DELETE CASCADE` on `resource_id`.
+Notification type: `view_shared` for Views shares (inbox). Low-level
+`chart_shared` remains available if the charts share API is called directly.
 
 **Workspace lifecycle (web):** Archive (active) / Restore (archived) from the
 workspace **⋯** menu; **Delete** always available for owned charts (confirm
-dialog); **Leave** for shared recipients. Empty store → `/charts` create CTA.
+dialog); **Leave** when the board was opened with shared ACL. Empty store →
+`/charts` create CTA.
 
 ## Data strategy (widget payloads)
 
@@ -144,6 +148,12 @@ workspace defaults. Labels → Columns: Project, Owner, Status, Type, Priority
 Saving defaults seeds **project** (and **sprint** when set) onto newly inserted
 Chart widgets.
 
+**Drilldown table:** Widget settings → **Choose which columns to show** includes
+an **Actions** column (on by default). Row **⋯** offers **Open** (`/work-items/[id]`)
+and **Edit** (preferred `WorkItemFormDialog`). After a successful edit, the client
+clears the in-memory series/drilldown caches (`invalidateChartAnalyticsCaches`)
+and calls `router.refresh()` so pie + table refetch without a full page reload.
+
 **Tier 1 product (incomplete):** workspace cloud + Views index + settings —
 [checklist](./CHARTS_AGGREGATION.md#tier-1-product-remaining).
 
@@ -155,6 +165,7 @@ Tier 2/3 (Neon read model, apps rename): [CHARTS_AGGREGATION.md](./CHARTS_AGGREG
 - Putting layout into `saved_views.search`
 - Nested widget route as the only configuration UI
 - Sharing Favorites
+- Native Charts Share dialog / Shared-with-me registry tab
 - Neon / Render / Upstash wiring (Tier 2+)
 
 ## Related

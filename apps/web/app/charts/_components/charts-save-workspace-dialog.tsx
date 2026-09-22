@@ -25,7 +25,7 @@ type ChartsSaveWorkspaceDialogProps = {
   readonly onSave: (
     // eslint-disable-next-line no-unused-vars
     payload: { title: string; isOverview: boolean }
-  ) => void;
+  ) => void | Promise<void>;
 };
 
 export function ChartsSaveWorkspaceDialog({
@@ -38,7 +38,14 @@ export function ChartsSaveWorkspaceDialog({
 }: Readonly<ChartsSaveWorkspaceDialogProps>) {
   const [title, setTitle] = useState(defaultTitle);
   const [isOverview, setIsOverview] = useState(initialIsOverview);
+  const [pending, setPending] = useState(false);
   const isCreate = mode === 'create';
+  const confirmLabel = (() => {
+    if (pending) {
+      return isCreate ? 'Creating…' : 'Saving…';
+    }
+    return isCreate ? 'Create' : 'Save';
+  })();
 
   useEffect(() => {
     if (!open) {
@@ -46,10 +53,19 @@ export function ChartsSaveWorkspaceDialog({
     }
     setTitle(defaultTitle);
     setIsOverview(initialIsOverview);
+    setPending(false);
   }, [open, defaultTitle, initialIsOverview]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (pending) {
+          return;
+        }
+        onOpenChange(next);
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
@@ -70,11 +86,13 @@ export function ChartsSaveWorkspaceDialog({
               onChange={(event) => setTitle(event.target.value)}
               placeholder="Charts"
               autoFocus
+              disabled={pending}
             />
           </div>
           <label className="flex items-center gap-2 text-sm">
             <Checkbox
               checked={isOverview}
+              disabled={pending}
               onCheckedChange={(checked) => setIsOverview(checked === true)}
             />
             Mark as overview
@@ -85,6 +103,7 @@ export function ChartsSaveWorkspaceDialog({
             type="button"
             variant="outline"
             className="cursor-pointer"
+            disabled={pending}
             onClick={() => onOpenChange(false)}
           >
             Cancel
@@ -92,13 +111,20 @@ export function ChartsSaveWorkspaceDialog({
           <Button
             type="button"
             className="cursor-pointer"
-            disabled={!title.trim()}
+            disabled={!title.trim() || pending}
             onClick={() => {
-              onSave({ title: title.trim(), isOverview });
-              onOpenChange(false);
+              void (async () => {
+                setPending(true);
+                try {
+                  await onSave({ title: title.trim(), isOverview });
+                  onOpenChange(false);
+                } catch {
+                  setPending(false);
+                }
+              })();
             }}
           >
-            {isCreate ? 'Create' : 'Save'}
+            {confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

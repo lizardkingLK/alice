@@ -818,7 +818,7 @@ function ColumnsSection({
               onVisibleTableColumnsChange?.(CHARTS_TABLE_COLUMN_IDS);
               return;
             }
-            onVisibleTableColumnsChange?.(['task']);
+            onVisibleTableColumnsChange?.(['task', 'actions']);
           }}
         />
       </label>

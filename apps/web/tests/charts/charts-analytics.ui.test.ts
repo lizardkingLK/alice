@@ -170,6 +170,7 @@ describe('charts analytics UI helpers', () => {
       projectName: 'Alpha',
       sprintId: 's-1',
       sprintName: 'Sprint 1',
+      workItem: row,
     });
   });
 

@@ -1,10 +1,23 @@
 'use client';
 
 import { useMemo } from 'react';
+import Link from 'next/link';
 import type { ColumnDef } from '@tanstack/react-table';
 import { BOARD_WORK_ITEM_STATUSES, type WorkItemStatus } from '@repo/types';
+import { Button } from '@repo/ui/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@repo/ui/components/ui/dropdown-menu';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
-import { Loader2 } from '@repo/ui/lib/icons';
+import {
+  ExternalLink,
+  Loader2,
+  MoreHorizontal,
+  Pencil,
+} from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import type { ChartsTableColumnId } from '@/app/charts/_components/charts.types';
 import {
@@ -30,6 +43,8 @@ type ChartsStatusGroupedTableProps = {
   readonly emptyMessage?: string;
   readonly className?: string;
   readonly visibleColumns?: readonly ChartsTableColumnId[];
+  // eslint-disable-next-line no-unused-vars -- edit opener
+  readonly onEditWorkItem?: (item: ChartDrilldownTableItem) => void;
 };
 
 /**
@@ -56,7 +71,9 @@ export function buildChartStatusGroups(
 }
 
 function buildColumns(
-  visibleColumns: readonly ChartsTableColumnId[]
+  visibleColumns: readonly ChartsTableColumnId[],
+  // eslint-disable-next-line no-unused-vars
+  onEditWorkItem?: (item: ChartDrilldownTableItem) => void
 ): ColumnDef<ChartDrilldownTableItem>[] {
   const allowed = new Set(
     visibleColumns.length > 0
@@ -145,6 +162,46 @@ function buildColumns(
       ),
     });
   }
+  if (allowed.has('actions')) {
+    columns.push({
+      id: 'actions',
+      header: CHARTS_TABLE_COLUMN_LABELS.actions,
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="cursor-pointer"
+                aria-label={`Actions for ${row.original.title}`}
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild className="cursor-pointer gap-2">
+                <Link href={`/work-items/${row.original.id}`}>
+                  <ExternalLink className="size-3.5" />
+                  Open
+                </Link>
+              </DropdownMenuItem>
+              {onEditWorkItem && row.original.workItem ? (
+                <DropdownMenuItem
+                  className="cursor-pointer gap-2"
+                  onClick={() => onEditWorkItem(row.original)}
+                >
+                  <Pencil className="size-3.5" />
+                  Edit
+                </DropdownMenuItem>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    });
+  }
   return columns;
 }
 
@@ -155,13 +212,17 @@ export function ChartsStatusGroupedTable({
   emptyMessage = 'No work items match the current filters.',
   className,
   visibleColumns = DEFAULT_CHARTS_VISIBLE_TABLE_COLUMNS,
+  onEditWorkItem,
 }: Readonly<ChartsStatusGroupedTableProps>) {
   const groups = useMemo(
     () => buildChartStatusGroups(workItems, focusedStatus),
     [focusedStatus, workItems]
   );
 
-  const columns = useMemo(() => buildColumns(visibleColumns), [visibleColumns]);
+  const columns = useMemo(
+    () => buildColumns(visibleColumns, onEditWorkItem),
+    [onEditWorkItem, visibleColumns]
+  );
 
   if (loading) {
     return (

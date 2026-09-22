@@ -1,13 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChartsService } from '../../src/routes/api/charts/charts.service';
 
-const { createMock, updateMock, getByIdMock, upsertChartBookmarkMock } =
-  vi.hoisted(() => ({
-    createMock: vi.fn(),
-    updateMock: vi.fn(),
-    getByIdMock: vi.fn(),
-    upsertChartBookmarkMock: vi.fn(),
-  }));
+const { createMock, updateMock, getByIdMock } = vi.hoisted(() => ({
+  createMock: vi.fn(),
+  updateMock: vi.fn(),
+  getByIdMock: vi.fn(),
+}));
 
 const chartsRepository = {
   create: createMock,
@@ -15,15 +13,7 @@ const chartsRepository = {
   getById: getByIdMock,
 } as never;
 
-const savedViewsRepository = {
-  upsertChartBookmark: upsertChartBookmarkMock,
-} as never;
-
-const service = new ChartsService(
-  chartsRepository,
-  {} as never,
-  savedViewsRepository
-);
+const service = new ChartsService(chartsRepository, {} as never);
 
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
 const CHART_ID = '22222222-2222-4222-8222-222222222222';
@@ -31,7 +21,6 @@ const CHART_ID = '22222222-2222-4222-8222-222222222222';
 describe('ChartsService create upsert', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    upsertChartBookmarkMock.mockResolvedValue({});
   });
 
   it('creates when id is new', async () => {

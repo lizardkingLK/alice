@@ -1,11 +1,10 @@
 import { ChartsRegistry } from '@/app/charts/_components/charts-registry';
+import { listOwnedChartWorkspaces } from '@/app/charts/_services/charts.reads.server';
 import { getDbUser } from '@/lib/auth';
-import { getAccessibleProjectList } from '@/lib/projects/accessible-project-list';
-import { filterActiveProjects } from '@/lib/projects/active-projects';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
+  parseChartsRegistryTab,
   parseStandardParams,
-  parseViewsListTab,
   type RawSearchParams,
 } from '@/lib/search-params';
 import { redirect } from 'next/navigation';
@@ -14,6 +13,10 @@ type ChartsRegistryDataProps = {
   readonly searchParams: Promise<RawSearchParams>;
 };
 
+/**
+ * Server shell for the charts registry. Prefetches owned workspaces and
+ * resolves list filters from the URL (same pattern as Views).
+ */
 export async function ChartsRegistryData({
   searchParams,
 }: Readonly<ChartsRegistryDataProps>) {
@@ -24,26 +27,22 @@ export async function ChartsRegistryData({
 
   const resolved = await searchParams;
   const { page, limit, search } = parseStandardParams(resolved, 10);
-  const tab = parseViewsListTab(resolved.tab);
+  const tab = parseChartsRegistryTab(resolved.tab);
 
-  const projects = await safeServerFetch(
-    getAccessibleProjectList(dbUser.id),
+  const initialWorkspaces = await safeServerFetch(
+    listOwnedChartWorkspaces(dbUser.id),
     [],
-    'fetch projects for chart share dialog'
+    'fetch owned chart workspaces'
   );
-  const shareProjects = filterActiveProjects(projects).map((project) => ({
-    id: project.id,
-    name: project.name,
-  }));
 
   return (
     <ChartsRegistry
       currentUserId={dbUser.id}
+      initialWorkspaces={initialWorkspaces}
       tab={tab}
-      search={search}
       page={page}
       limit={limit}
-      shareProjects={shareProjects}
+      search={search}
     />
   );
 }

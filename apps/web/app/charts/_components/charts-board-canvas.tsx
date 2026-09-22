@@ -17,11 +17,6 @@ import {
   useStableDashboardGridWidth,
 } from '@/lib/dashboard-grid';
 import {
-  getLocalStorageJson,
-  removeLocalStorageItem,
-  setLocalStorageJson,
-} from '@/lib/local-storage';
-import {
   chartWidgetById,
   type ChartWidgetDefinition,
 } from '@/app/charts/_components/charts-widget-catalog';
@@ -50,9 +45,6 @@ function resolveFocusedSliceKey(source: {
 }): string | undefined {
   return source.focusedSliceKey ?? source.focusedStatus;
 }
-
-const LAYOUT_STORAGE_KEY = 'alice.charts.board.layout.v1';
-const INSTANCES_STORAGE_KEY = 'alice.charts.board.instances.v1';
 
 const DEFAULT_SIZE = {
   w: 4,
@@ -216,81 +208,6 @@ function chartLayoutsEqual(
     }
   }
   return true;
-}
-
-export function readStoredChartBoard(): {
-  instances: ChartBoardWidgetInstance[];
-  layout: LayoutItem[];
-} {
-  const instances =
-    getLocalStorageJson<ChartBoardWidgetInstance[]>(INSTANCES_STORAGE_KEY) ??
-    [];
-  const layout = getLocalStorageJson<LayoutItem[]>(LAYOUT_STORAGE_KEY) ?? [];
-  if (!Array.isArray(instances) || !Array.isArray(layout)) {
-    return { instances: [], layout: [] };
-  }
-
-  const instanceIds = new Set(instances.map((item) => item.instanceId));
-  const layoutById = new Map(
-    layout
-      .filter((item) => typeof item.i === 'string' && instanceIds.has(item.i))
-      .map((item) => [item.i, item])
-  );
-
-  const syncedLayout = instances.map((instance, index) => {
-    const size = layoutSizeForWidgetType(instance.typeId);
-    const stored = layoutById.get(instance.instanceId);
-    if (stored) {
-      return {
-        ...stored,
-        minW: size.minW,
-        minH: size.minH,
-      };
-    }
-    return nextChartLayoutItem(
-      instance.instanceId,
-      syncedLayoutSlice(instances, layoutById, index),
-      instance.typeId
-    );
-  });
-
-  return { instances, layout: syncedLayout };
-}
-
-function syncedLayoutSlice(
-  instances: ChartBoardWidgetInstance[],
-  layoutById: Map<string, LayoutItem>,
-  untilIndex: number
-): LayoutItem[] {
-  const items: LayoutItem[] = [];
-  for (let i = 0; i < untilIndex; i += 1) {
-    const instance = instances[i];
-    if (!instance) {
-      continue;
-    }
-    const stored = layoutById.get(instance.instanceId);
-    if (stored) {
-      items.push(stored);
-    } else {
-      items.push(
-        nextChartLayoutItem(instance.instanceId, items, instance.typeId)
-      );
-    }
-  }
-  return items;
-}
-
-export function persistChartBoard(
-  instances: ChartBoardWidgetInstance[],
-  layout: LayoutItem[]
-): void {
-  setLocalStorageJson(INSTANCES_STORAGE_KEY, instances);
-  setLocalStorageJson(LAYOUT_STORAGE_KEY, layout);
-}
-
-export function clearPersistedChartBoard(): void {
-  removeLocalStorageItem(LAYOUT_STORAGE_KEY);
-  removeLocalStorageItem(INSTANCES_STORAGE_KEY);
 }
 
 type ChartsBoardCanvasProps = {

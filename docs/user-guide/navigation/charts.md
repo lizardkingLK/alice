@@ -3,7 +3,8 @@
 Build personal **chart workspaces** — drag-and-drop widget boards. The sidebar
 opens the Charts registry. You can save multiple workspaces, mark one for
 Overview, and deep-link into a widget’s configuration. Workspaces sync to your
-account and are cached on this device.
+account. Boards are stored on the server — this device does not keep a local
+copy of workspace layout.
 
 **Audience:** All users
 
@@ -23,16 +24,19 @@ centered prompt: _To customize charts, create a new workspace._ with
 
 ## Workspaces registry
 
-The registry lists workspaces with search and tabs (same idea as **Views**).
+The registry lists **your** workspaces with search on the left and tabs on the
+right (same bordered tab pattern as **Views**, but Charts has no Shared tab).
 
 ### Switch or filter workspaces
 
 1. On `/charts`, use the tabs:
-   - **My workspaces** — your active boards
-   - **Shared with me** — boards others shared with you
+   - **Active** — your active boards
    - **Archived** — your soft-hidden boards
 2. Optionally search by title.
 3. Select a workspace title to open its board (updates last-opened).
+
+Tab / search / page changes stay on this page (they do not reload the whole
+shell).
 
 ### Create a workspace
 
@@ -51,26 +55,30 @@ The registry lists workspaces with search and tabs (same idea as **Views**).
 
 ### Share a workspace
 
-1. From the registry row **⋯** menu or the board **⋯** menu, choose **Share**.
-2. Pick a project (to load members), optionally a team, then select recipients.
-3. Share notifies recipients and can bookmark `/charts/[id]` in Views.
+Charts does **not** have a native Share action. To share a board:
+
+1. Open the workspace board.
+2. In the dashboard header, choose **Save view** and name the bookmark.
+3. Open **Views**, find that view, and use **Share** there.
+
+Recipients open the board from **Views → Shared with me** (or the inbox link).
+Alice grants board access (`chart_shares`) when you share a chart-backed view.
 
 ### Archive, restore, or delete a workspace
 
 Owned workspaces follow the same lifecycle as **Views**:
 
 1. Open the registry row **⋯** menu or the board **⋯** menu.
-2. On an **active** owned workspace, choose **Archive** to soft-hide it (share
-   access pauses until you restore). Find it again under the **Archived** tab.
+2. On an **active** owned workspace, choose **Archive** to soft-hide it. Find
+   it again under the **Archived** tab.
 3. On an **archived** owned workspace, choose **Restore** to bring it back.
 4. Choose **Delete** at any time (active or archived) to remove it permanently
-   after confirming. Permanent delete also removes share records and the
-   matching Views bookmark.
-5. On a workspace **shared with you**, choose **Leave** to remove it from your
-   list only (the owner’s copy is unchanged).
+   after confirming. Permanent delete also removes share records for that board.
+5. If someone shared a board with you (via Views) and you still have access,
+   **Leave** on the board removes only your chart access.
 
 After delete or leave from a board, Alice returns to the registry. Empty
-**My workspaces** shows the create prompt again.
+**Active** shows the create prompt again.
 
 ---
 
@@ -148,9 +156,11 @@ Pick another layout to clear the slice focus.
    changing **Labels → Columns** resets colors to the defaults. Use
    **Reset colors** to clear custom swatches without changing Labels.
 6. Under **Choose which columns to show**, pick which drilldown table columns
-   appear. **Task**, **Owner**, **Status**, **Type**, and **Priority** are on by
-   default; **Project** and **Sprint** are available but off until you enable
-   them.
+   appear. **Task**, **Owner**, **Status**, **Type**, **Priority**, and
+   **Actions** are on by default; **Project** and **Sprint** are available but
+   off until you enable them. **Actions** → **Open** goes to the work item
+   page; **Edit** opens the same edit dialog used elsewhere. Saving an edit
+   refreshes the chart and table from live data.
 7. **Groups** is **Coming soon** (empty status groups are already hidden in the
    table).
 
@@ -190,9 +200,15 @@ keep their own filters until you change them.
 
 ## Sharing
 
-Workspaces can be shared using the same model as **Views**: recipients get
-access to the chart board, and you can bookmark `/charts/[id]` as a saved view.
-Board layout is **not** stored inside Views.
+Share boards through **Views**, not the Charts registry:
+
+1. **Save view** on `/charts/[id]` (header) creates a Views bookmark (typed as
+   a chart resource when the path is a workspace board).
+2. **Share** that view from `/views` — Alice also grants `chart_shares` so the
+   recipient can open the board.
+3. Recipients use **Views → Shared with me** (Charts has no Shared tab).
+
+Board layout stays in **`charts.board_json`**, not inside Views.
 
 ---
 

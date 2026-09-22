@@ -185,8 +185,8 @@ views fall back to `/views?tab=shared`.
 Chart boards live in the **`charts`** table (`board_json`), not in
 `saved_views.search`. See [CHARTS.md](../dashboard/CHARTS.md#persistence).
 
-**Shipped:** `saved_views` indexes chart workspaces for `/views` and related
-pickers:
+**Shipped:** users index a chart board in Views with header **Save view** on
+`/charts/[id]` (not auto-created on every chart CRUD):
 
 | Column          | Role                                                    |
 | --------------- | ------------------------------------------------------- |
@@ -195,10 +195,13 @@ pickers:
 
 - Index `(owner_id, status, resource_kind)`
 - Partial unique: one active chart bookmark per owner per `resource_id`
-- On chart create / rename / archive: upsert the matching view
-  (`pathname=/charts/{id}`, `search=''`, title synced)
-- Board ACL stays on **`chart_shares`**; optional **`saved_view_shares`** only
-  for the Views entry — do not duplicate board JSON on the view row
+- Save view on `/charts/{uuid}` stamps `resource_kind=chart` + `resource_id`
+- Sharing that view grants **`chart_shares`** (and leaving the view share
+  revokes the matching chart share). Board ACL stays on **`chart_shares`**;
+  **`saved_view_shares`** covers the Views entry — do not duplicate board JSON
+  on the view row
+- Charts registry has **Active / Archived** only; recipients open shared boards
+  from **Views → Shared with me**
 
 Related: [CHARTS_AGGREGATION.md](../dashboard/CHARTS_AGGREGATION.md#tier-1-product-remaining).
 
