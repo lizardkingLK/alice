@@ -232,7 +232,7 @@ describe('TeamRegistry Component', () => {
     const archiveBtn = screen.getByRole('button', { name: 'Archive' });
     fireEvent.click(archiveBtn);
 
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(screen.getByText(/Are you sure you want to/i)).toBeInTheDocument();
 
     const confirmBtn = screen.getByRole('button', { name: 'Archive Team' });
@@ -270,7 +270,7 @@ describe('TeamRegistry Component', () => {
     const purgeBtn = screen.getByRole('button', { name: 'Purge' });
     fireEvent.click(purgeBtn);
 
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(
       screen.getByText(/Warning: This action is irreversible/i)
     ).toBeInTheDocument();

@@ -659,7 +659,7 @@ describe('SprintList Component', () => {
     fireEvent.click(archiveBtn);
 
     // Modal should be open
-    const dialog = screen.getByRole('dialog');
+    const dialog = screen.getByRole('alertdialog');
     expect(dialog).toBeInTheDocument();
     expect(
       within(dialog).getByText(/Are you sure you want to archive/i)
@@ -720,7 +720,7 @@ describe('SprintList Component', () => {
     const deleteBtn = screen.getByRole('button', { name: 'Delete Sprint' });
     fireEvent.click(deleteBtn);
 
-    // Delete confirmation dialog should open
+    // Delete confirmation dialog should open (native <dialog> → role=dialog)
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(
       screen.getByText(/Are you sure you want to permanently delete/i)
