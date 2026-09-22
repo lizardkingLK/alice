@@ -632,11 +632,10 @@ function CustomizeSection({
   );
 
   const setSliceToken = (sliceKey: string, token: ChartsSliceColorToken) => {
-    const next: Record<string, ChartsSliceColorToken> = {
-      ...(sliceColors ?? {}),
+    onSliceColorsChange?.({
+      ...sliceColors,
       [sliceKey]: token,
-    };
-    onSliceColorsChange?.(next);
+    });
   };
 
   return (

@@ -38,10 +38,7 @@ export function SessionExpiredDialogHost() {
   }
 
   return createPortal(
-    <div
-      role="presentation"
-      className="animate-in fade-in fixed inset-0 z-[300] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200"
-    >
+    <div className="animate-in fade-in fixed inset-0 z-[300] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
       <div
         role="alertdialog"
         aria-modal="true"

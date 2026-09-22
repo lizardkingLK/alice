@@ -250,11 +250,10 @@ function ChartsWidgetCardChartBody({
     );
   }
 
+  // Drag only starts from `.widget-drag-handle` (DASHBOARD_DRAG_CONFIG); no
+  // stopPropagation wrapper needed on the chart body (keeps a11y clean).
   return (
-    <div
-      className="flex min-h-0 min-w-0 flex-1 flex-col"
-      onMouseDown={(event) => event.stopPropagation()}
-    >
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <ChartsStatusPiePreview
         size="card"
         slices={analytics.series?.slices ?? null}

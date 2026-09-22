@@ -90,21 +90,23 @@ export function RegistryConfirmDialog({
   }
 
   return createPortal(
-    <div
-      role="presentation"
-      className="animate-in fade-in fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200"
-      onClick={() => {
-        if (!isPending) {
-          onCancelRef.current();
-        }
-      }}
-    >
+    <div className="animate-in fade-in fixed inset-0 z-[200] flex items-center justify-center p-4 duration-200">
+      <button
+        type="button"
+        aria-label="Dismiss"
+        disabled={isPending}
+        className="absolute inset-0 cursor-default bg-black/60 backdrop-blur-sm disabled:cursor-not-allowed"
+        onClick={() => {
+          if (!isPending) {
+            onCancelRef.current();
+          }
+        }}
+      />
       <div
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="registry-confirm-title"
-        className="bg-card border-border animate-in fade-in zoom-in-95 relative block w-full max-w-md overflow-hidden rounded-xl border shadow-2xl duration-200"
-        onClick={(event) => event.stopPropagation()}
+        className="bg-card border-border animate-in fade-in zoom-in-95 relative z-10 block w-full max-w-md overflow-hidden rounded-xl border shadow-2xl duration-200"
       >
         <div className="p-6">
           <div className="mb-3 flex items-center gap-3 text-rose-500">
