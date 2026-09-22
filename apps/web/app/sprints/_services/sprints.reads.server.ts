@@ -44,7 +44,7 @@ export async function getSprintsPaginatedServer(
   const projectIds = options?.projectIds;
   const projectId = options?.projectId;
 
-  if (projectIds && projectIds.length === 0) {
+  if (projectIds?.length === 0) {
     return { sprints: [], pagination: EMPTY_PAGINATION(page, limit) };
   }
 

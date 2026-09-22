@@ -275,7 +275,7 @@ export function SettingsIntegrationsView({
                   )}
                   isUpdating={updatingCatalogId === integration.id}
                   onConnectedChange={(connected) =>
-                    void handleConnectedChange(integration, connected)
+                    handleConnectedChange(integration, connected)
                   }
                   onView={() => openDetail(integration)}
                 />
@@ -317,7 +317,7 @@ export function SettingsIntegrationsView({
             setIntegrationToDisconnect(null);
           }}
           onConfirm={() => {
-            void handleConfirmDisconnect();
+            handleConfirmDisconnect().catch(() => undefined);
           }}
         />
       ) : null}

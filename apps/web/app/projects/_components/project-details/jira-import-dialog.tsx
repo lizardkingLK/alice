@@ -296,7 +296,7 @@ export function JiraImportDialog({
                 <span className="font-semibold">
                   {project.jira_project_key}
                 </span>
-                ...
+                {'...'}
               </p>
             </div>
           )}

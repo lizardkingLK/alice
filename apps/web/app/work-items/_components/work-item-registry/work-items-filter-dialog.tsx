@@ -155,28 +155,16 @@ function buildVisibleFields(
     return visibleFieldIds.map((id) => FILTER_FIELD_CONFIG[id]);
   }
 
-  const fields: FilterFieldConfig[] = [];
-
-  if (!isProjectLocked) {
-    fields.push(FILTER_FIELD_CONFIG.project);
-  }
-
   // Sprint stays available when the project is locked (project Work Items tab).
-  fields.push(FILTER_FIELD_CONFIG.sprint);
-
-  fields.push(FILTER_FIELD_CONFIG.parent);
-
-  if (!isAssigneeLocked) {
-    fields.push(FILTER_FIELD_CONFIG.assignee);
-  }
-
-  fields.push(
+  return [
+    ...(!isProjectLocked ? [FILTER_FIELD_CONFIG.project] : []),
+    FILTER_FIELD_CONFIG.sprint,
+    FILTER_FIELD_CONFIG.parent,
+    ...(!isAssigneeLocked ? [FILTER_FIELD_CONFIG.assignee] : []),
     FILTER_FIELD_CONFIG.status,
     FILTER_FIELD_CONFIG.type,
-    FILTER_FIELD_CONFIG.labels
-  );
-
-  return fields;
+    FILTER_FIELD_CONFIG.labels,
+  ];
 }
 
 function optionsForField(
