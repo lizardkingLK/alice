@@ -93,6 +93,9 @@ export default function WorkItemsTable({
   const searchParams = useSearchParams();
   const isActiveView = tab === 'active';
   const isAdmin = currentUserRole === 'admin';
+  const isAssigneeLocked = Boolean(lockedAssigneeId);
+  const isProjectLocked = Boolean(lockedProjectId);
+  const hideLifecycleTabs = currentUserRole === 'member' && !isAssigneeLocked;
   const { searchQuery, setSearchQuery } = useDebouncedSearch(search);
   const projectQuery = useQueryFilter('project', projectFilter);
   const sprintQuery = useQueryFilter('sprint', sprintFilter);
@@ -105,8 +108,6 @@ export default function WorkItemsTable({
   const { setValue: setProjectFilterValue, allValue: projectAllValue } =
     projectQuery;
   const { setValue: setSprintFilterValue } = sprintQuery;
-  const isProjectLocked = Boolean(lockedProjectId);
-  const isAssigneeLocked = Boolean(lockedAssigneeId);
   const isHierarchy = listView === 'hierarchy';
   // Prefer server cookie bootstrap so the first paint matches saved prefs.
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
@@ -451,6 +452,7 @@ export default function WorkItemsTable({
         onClearFilters={handleClearFilters}
         onCreate={openCreateDialog}
         hideCreate={!isActiveView}
+        hideLifecycleTabs={hideLifecycleTabs}
       />
 
       <WorkItemsSearchResultsPanel search={search} items={initialWorkItems} />

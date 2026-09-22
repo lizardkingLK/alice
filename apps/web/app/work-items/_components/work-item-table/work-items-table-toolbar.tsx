@@ -94,6 +94,7 @@ export function WorkItemsTableToolbar({
   onClearFilters,
   onCreate,
   hideCreate = false,
+  hideLifecycleTabs = false,
 }: Readonly<{
   searchQuery: string;
   // eslint-disable-next-line no-unused-vars -- search change callback
@@ -131,6 +132,8 @@ export function WorkItemsTableToolbar({
   onClearFilters: () => void;
   onCreate: () => void;
   hideCreate?: boolean;
+  /** Members hide Active/Archived except on My Work. */
+  hideLifecycleTabs?: boolean;
 }>) {
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -192,15 +195,17 @@ export function WorkItemsTableToolbar({
           onListViewChange={onListViewChange}
         />
 
-        <RegistryTabSwitcher
-          tabs={WORK_ITEM_TABS}
-          value={tab}
-          onChange={onTabChange}
-          aria-label="Work item status"
-        />
+        {hideLifecycleTabs ? null : (
+          <RegistryTabSwitcher
+            tabs={WORK_ITEM_TABS}
+            value={tab}
+            onChange={onTabChange}
+            aria-label="Work item status"
+          />
+        )}
 
         {hideCreate ? null : (
-          <Button onClick={onCreate} className="shrink-0">
+          <Button onClick={onCreate} className="shrink-0" title="Add work item">
             <Plus />
             Add Work-Item
           </Button>

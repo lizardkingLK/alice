@@ -22,12 +22,6 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-vi.mock('@repo/ui/components/ui/select', () =>
-  import('../mocks/select').then((module) =>
-    module.createSelectMock('status-select')
-  )
-);
-
 vi.mock(
   '@repo/ui/components/ui/dropdown-menu',
   () => import('../mocks/dropdown-menu')
@@ -203,8 +197,7 @@ describe('TeamRegistry Component', () => {
       />
     );
 
-    const select = screen.getAllByTestId('status-select')[0]!;
-    fireEvent.change(select, { target: { value: 'archived' } });
+    fireEvent.click(screen.getByRole('button', { name: /^archived$/i }));
 
     expect(mockPush).toHaveBeenCalledWith('/manager?tab=archived&page=1');
   });
