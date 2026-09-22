@@ -2,8 +2,14 @@ import { mapToWorkItemType, UserRoleEnum, utcNow } from '@repo/types';
 import { JiraConnectionStatus } from '@repo/types/prisma';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { env } from '../../../config/env';
-import { decryptSecret, encryptSecret } from '../../../lib/secrets/token-crypto';
-import { createOAuthState, verifyOAuthState } from '../../../lib/secrets/oauth-state';
+import {
+  decryptSecret,
+  encryptSecret,
+} from '../../../lib/secrets/token-crypto';
+import {
+  createOAuthState,
+  verifyOAuthState,
+} from '../../../lib/secrets/oauth-state';
 import type { JiraRepository } from './jira.repository';
 import type {
   AtlassianAccessibleResource,

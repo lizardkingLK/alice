@@ -39,11 +39,12 @@ export function useOAuthPopupManager({
   setLoadError: externalSetLoadError,
 }: Readonly<UseOAuthPopupManagerOptions>): UseOAuthPopupManagerResult {
   const [isConnecting, setIsConnecting] = useState(false);
-  const [internalLoadError, setInternalLoadError] = useState<string | null>(null);
+  const [internalLoadError, setInternalLoadError] = useState<string | null>(
+    null
+  );
   const oauthWindowRef = useRef<Window | null>(null);
 
-  const loadError =
-    externalLoadError !== undefined ? externalLoadError : internalLoadError;
+  const loadError = externalLoadError ?? internalLoadError;
   const setLoadError = externalSetLoadError ?? setInternalLoadError;
 
   // Direct notification from the OAuth completion window/tab

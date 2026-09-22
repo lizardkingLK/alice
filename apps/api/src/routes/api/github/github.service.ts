@@ -1,6 +1,12 @@
 import { env } from '../../../config/env';
-import { decryptSecret, encryptSecret } from '../../../lib/secrets/token-crypto';
-import { createOAuthState, verifyOAuthState } from '../../../lib/secrets/oauth-state';
+import {
+  decryptSecret,
+  encryptSecret,
+} from '../../../lib/secrets/token-crypto';
+import {
+  createOAuthState,
+  verifyOAuthState,
+} from '../../../lib/secrets/oauth-state';
 import {
   IntegrationStatus,
   Prisma,
@@ -67,7 +73,10 @@ export class GithubService {
     code: string,
     state: string
   ): Promise<GithubConnectionDto> {
-    const { userId } = verifyOAuthState(state, 'sign GitHub OAuth state (HMAC)');
+    const { userId } = verifyOAuthState(
+      state,
+      'sign GitHub OAuth state (HMAC)'
+    );
 
     const tokens = await this.exchangeAuthorizationCode(code);
     const userInfo = await this.fetchUserProfile(tokens.access_token);
