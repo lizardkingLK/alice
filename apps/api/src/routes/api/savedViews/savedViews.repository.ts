@@ -14,6 +14,7 @@ import {
   prismaAuditCreateWithoutStatus,
   prismaAuditUpdate,
 } from '../../../lib/prisma-audit';
+import { parseChartWorkspaceIdFromPathname } from './savedViews.chart-path';
 
 export type SavedViewRow = Tables<'saved_views'>;
 export type SavedViewShareRow = Tables<'saved_view_shares'>;
@@ -115,6 +116,7 @@ export class SavedViewsRepository {
     search: string,
     options: { readonly restore?: boolean } = {}
   ): Promise<SavedViewRow> {
+    const chartId = parseChartWorkspaceIdFromPathname(input.pathname);
     const updated = await prisma.saved_views.update({
       where: { id },
       data: {
@@ -123,6 +125,9 @@ export class SavedViewsRepository {
         description: input.description ?? null,
         search,
         project_id: input.projectId ?? null,
+        ...(chartId
+          ? { resource_kind: 'chart' as const, resource_id: chartId }
+          : {}),
         ...prismaAuditUpdate(ownerId),
       },
     });
@@ -135,6 +140,7 @@ export class SavedViewsRepository {
     input: CreateSavedViewBody,
     search: string
   ): Promise<SavedViewRow> {
+    const chartId = parseChartWorkspaceIdFromPathname(input.pathname);
     const created = await prisma.saved_views.create({
       data: {
         owner_id: ownerId,
@@ -143,8 +149,8 @@ export class SavedViewsRepository {
         pathname: input.pathname,
         search,
         project_id: input.projectId ?? null,
-        resource_kind: 'page',
-        resource_id: null,
+        resource_kind: chartId ? 'chart' : 'page',
+        resource_id: chartId,
         ...prismaAuditCreate(ownerId),
       },
     });

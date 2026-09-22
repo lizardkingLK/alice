@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   type ColumnDef,
   getCoreRowModel,
@@ -30,10 +30,8 @@ import {
   MoreHorizontal,
   Plus,
   RefreshCw,
-  Share2,
   Trash2,
   UserRound,
-  Users,
   X,
 } from '@repo/ui/lib/icons';
 import { DataTable } from '@/components/data-table';
@@ -44,66 +42,60 @@ import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
 import { RegistryTitleCell } from '@/components/registry-title-cell';
 import { SearchInput } from '@/components/search-input';
 import { formatDate, formatDateTime } from '@/app/_shared/utility';
-import { useDebouncedSearch } from '@/hooks/use-debounced-search';
-import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { afterDialogClose } from '@/lib/dialog-close';
 import { isSessionExpiredError } from '@/lib/errors/session-expired';
-import type { ViewsListTab } from '@/lib/search-params';
 import { ChartsSaveWorkspaceDialog } from '@/app/charts/_components/charts-save-workspace-dialog';
-import { ChartsShareWorkspaceDialog } from '@/app/charts/_components/charts-share-workspace-dialog';
 import { ChartsWorkspaceEmptyPanel } from '@/app/charts/_components/charts-workspace-empty-panel';
-import { ChartsRegistrySkeleton } from '@/app/charts/_components/charts-workspace-skeleton';
 import type { ChartWorkspaceRecord } from '@/app/charts/_components/charts.types';
 import { chartsWorkspaceHref } from '@/app/charts/_helpers/charts-links';
-import { hydrateChartWorkspacesFromApi } from '@/app/charts/_helpers/charts-workspace-hydrate';
 import {
-  createChartWorkspace,
-  listChartWorkspaces,
-  removeChartWorkspace,
-  renameChartWorkspaceMeta,
+  clearLegacyChartsLocalStorage,
   suggestChartWorkspaceTitle,
-  upsertChartWorkspace,
-} from '@/app/charts/_helpers/charts-workspace-storage';
+} from '@/app/charts/_helpers/charts-workspace-utils';
+import { useChartsRegistryUrlActions } from '@/app/charts/_hooks/use-charts-registry-shallow-params';
+import type { ChartsRegistryListTab } from '@/lib/search-params';
+import { useDebouncedSearch } from '@/hooks/use-debounced-search';
+import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import {
   archiveChartWorkspace,
+  createChartWorkspaceOnApi,
   deleteChartWorkspace,
-  leaveSharedChartWorkspace,
   restoreChartWorkspace,
-  syncChartWorkspaceToApi,
 } from '@/app/charts/_services/charts.mutations.client';
+import {
+  chartOwnershipForViewer,
+  chartWorkspaceFromApiRow,
+} from '@/app/charts/_helpers/charts-workspace-map';
 
 const TABS: ReadonlyArray<{
-  id: ViewsListTab;
+  id: ChartsRegistryListTab;
   label: string;
   icon: typeof UserRound;
 }> = [
-  { id: 'mine', label: 'My workspaces', icon: UserRound },
-  { id: 'shared', label: 'Shared with me', icon: Users },
+  { id: 'mine', label: 'Active', icon: UserRound },
   { id: 'archived', label: 'Archived', icon: Archive },
 ];
 
 const DEFAULT_LIMIT = 10;
 
-type DeleteTarget =
-  | { readonly kind: 'owned'; readonly workspace: ChartWorkspaceRecord }
-  | { readonly kind: 'share'; readonly workspace: ChartWorkspaceRecord };
+/** Stable empty rows for TanStack Table (inline `[]` re-renders forever). */
+const EMPTY_CHART_ROWS: ChartWorkspaceRecord[] = [];
+
+type DeleteTarget = {
+  readonly kind: 'owned';
+  readonly workspace: ChartWorkspaceRecord;
+};
 
 type ChartsRegistryProps = {
   readonly currentUserId: string;
-  readonly tab: ViewsListTab;
-  readonly search: string;
+  readonly initialWorkspaces: readonly ChartWorkspaceRecord[];
+  readonly tab: ChartsRegistryListTab;
   readonly page: number;
   readonly limit: number;
-  readonly shareProjects: ReadonlyArray<{
-    readonly id: string;
-    readonly name: string;
-  }>;
+  readonly search: string;
 };
 
-function emptyChartsMessage(tab: ViewsListTab): string {
-  if (tab === 'shared') {
-    return 'No chart workspaces have been shared with you yet.';
-  }
+function emptyChartsMessage(tab: ChartsRegistryListTab): string {
   if (tab === 'archived') {
     return 'No archived workspaces.';
   }
@@ -112,21 +104,19 @@ function emptyChartsMessage(tab: ViewsListTab): string {
 
 function filterWorkspacesForTab(
   workspaces: readonly ChartWorkspaceRecord[],
-  tab: ViewsListTab,
+  tab: ChartsRegistryListTab,
   search: string
 ): ChartWorkspaceRecord[] {
   const query = search.trim().toLowerCase();
   return workspaces.filter((workspace) => {
     const ownership = workspace.ownership ?? 'mine';
-    if (tab === 'mine') {
-      if (ownership !== 'mine' || workspace.status !== 'active') {
-        return false;
-      }
-    } else if (tab === 'shared') {
-      if (ownership !== 'shared' || workspace.status !== 'active') {
-        return false;
-      }
-    } else if (ownership !== 'mine' || workspace.status !== 'archived') {
+    if (ownership !== 'mine') {
+      return false;
+    }
+    if (tab === 'mine' && workspace.status !== 'active') {
+      return false;
+    }
+    if (tab === 'archived' && workspace.status !== 'archived') {
       return false;
     }
     return !query || workspace.title.toLowerCase().includes(query);
@@ -166,10 +156,8 @@ function ChartsUpdatedAtCell({
 
 type ChartsActionsCellProps = {
   readonly workspace: ChartWorkspaceRecord;
-  readonly tab: ViewsListTab;
+  readonly tab: ChartsRegistryListTab;
   readonly pendingId: string | null;
-  // eslint-disable-next-line no-unused-vars -- share open callback
-  readonly onShare: (workspace: ChartWorkspaceRecord) => void;
   // eslint-disable-next-line no-unused-vars -- archive callback
   readonly onArchive: (workspace: ChartWorkspaceRecord) => void;
   // eslint-disable-next-line no-unused-vars -- restore callback
@@ -182,7 +170,6 @@ function ChartsActionsCell({
   workspace,
   tab,
   pendingId,
-  onShare,
   onArchive,
   onRestore,
   onRequestDelete,
@@ -203,16 +190,6 @@ function ChartsActionsCell({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {tab === 'mine' ? (
-          <DropdownMenuItem
-            onSelect={() => {
-              afterDialogClose(() => onShare(workspace));
-            }}
-          >
-            <Share2 className="size-4" />
-            Share
-          </DropdownMenuItem>
-        ) : null}
-        {tab === 'mine' ? (
           <DropdownMenuItem onSelect={() => onArchive(workspace)}>
             <Archive className="size-4" />
             Archive
@@ -228,18 +205,13 @@ function ChartsActionsCell({
         <DropdownMenuItem
           className="text-rose-600 focus:text-rose-600"
           onSelect={() => {
-            // Wait for Radix menu scroll-lock / pointer-events to clear,
-            // otherwise the confirm overlay can trap an inert page.
             afterDialogClose(() =>
-              onRequestDelete({
-                kind: tab === 'shared' ? 'share' : 'owned',
-                workspace,
-              })
+              onRequestDelete({ kind: 'owned', workspace })
             );
           }}
         >
           <Trash2 className="size-4" />
-          {tab === 'shared' ? 'Leave' : 'Delete'}
+          Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -308,15 +280,13 @@ function createChartsTableColumns(
 
 function useChartsRegistryMutations(params: {
   readonly currentUserId: string;
-  readonly refreshList: () => void;
   // eslint-disable-next-line no-unused-vars -- setter
   readonly setError: (message: string | null) => void;
   // eslint-disable-next-line no-unused-vars -- setter
   readonly setPendingId: (id: string | null) => void;
   readonly setWorkspaces: Dispatch<SetStateAction<ChartWorkspaceRecord[]>>;
 }) {
-  const { currentUserId, refreshList, setError, setPendingId, setWorkspaces } =
-    params;
+  const { currentUserId, setError, setPendingId, setWorkspaces } = params;
   const deleteInFlightRef = useRef(false);
 
   const runStatusAction = useCallback(
@@ -324,19 +294,17 @@ function useChartsRegistryMutations(params: {
       setPendingId(workspace.id);
       setError(null);
       try {
-        if (action === 'archive') {
-          await archiveChartWorkspace(workspace.id);
-          renameChartWorkspaceMeta(currentUserId, workspace.id, {
-            status: 'archived',
-            isOverview: false,
-          });
-        } else {
-          await restoreChartWorkspace(workspace.id);
-          renameChartWorkspaceMeta(currentUserId, workspace.id, {
-            status: 'active',
-          });
-        }
-        refreshList();
+        const row =
+          action === 'archive'
+            ? await archiveChartWorkspace(workspace.id)
+            : await restoreChartWorkspace(workspace.id);
+        const next = chartWorkspaceFromApiRow(
+          row,
+          chartOwnershipForViewer(row, currentUserId)
+        );
+        setWorkspaces((previous) =>
+          previous.map((item) => (item.id === next.id ? next : item))
+        );
       } catch (err) {
         if (isSessionExpiredError(err)) {
           return;
@@ -346,7 +314,7 @@ function useChartsRegistryMutations(params: {
         setPendingId(null);
       }
     },
-    [currentUserId, refreshList, setError, setPendingId]
+    [currentUserId, setError, setPendingId, setWorkspaces]
   );
 
   const handleConfirmDelete = useCallback(
@@ -362,115 +330,56 @@ function useChartsRegistryMutations(params: {
       );
 
       try {
-        if (target.kind === 'share') {
-          await leaveSharedChartWorkspace(target.workspace.id);
-        } else {
-          await deleteChartWorkspace(target.workspace.id);
-        }
-        removeChartWorkspace(currentUserId, target.workspace.id);
+        await deleteChartWorkspace(target.workspace.id);
       } catch (err) {
         if (isSessionExpiredError(err)) {
           return;
         }
-        upsertChartWorkspace(currentUserId, target.workspace);
-        refreshList();
-        let message = 'Failed to delete workspace';
-        if (err instanceof Error) {
-          message = err.message;
-        } else if (target.kind === 'share') {
-          message = 'Failed to leave shared workspace';
-        }
-        setError(message);
+        setWorkspaces((previous) => [...previous, target.workspace]);
+        setError(
+          err instanceof Error ? err.message : 'Failed to delete workspace'
+        );
       } finally {
         deleteInFlightRef.current = false;
       }
     },
-    [currentUserId, refreshList, setError, setWorkspaces]
+    [setError, setWorkspaces]
   );
 
   return { runStatusAction, handleConfirmDelete };
 }
 
-function useChartsRegistryHydrate(
-  currentUserId: string,
-  refreshList: () => void
-): boolean {
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function hydrate() {
-      try {
-        await hydrateChartWorkspacesFromApi(currentUserId);
-      } catch {
-        // Local cache may still render.
-      }
-      if (cancelled) {
-        return;
-      }
-      refreshList();
-      setHydrated(true);
-    }
-
-    hydrate().catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [currentUserId, refreshList]);
-
-  return hydrated;
-}
-
-function applyRegistryTabParam(
-  params: URLSearchParams,
-  nextTab: ViewsListTab
-): void {
-  if (nextTab === 'mine') {
-    params.delete('tab');
-    return;
-  }
-  params.set('tab', nextTab);
-}
-
 export function ChartsRegistry({
   currentUserId,
+  initialWorkspaces,
   tab,
-  search,
   page,
   limit,
-  shareProjects,
+  search,
 }: Readonly<ChartsRegistryProps>) {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [workspaces, setWorkspaces] = useState<ChartWorkspaceRecord[]>([]);
+  const { setTab } = useChartsRegistryUrlActions(DEFAULT_LIMIT);
+
+  const [workspaces, setWorkspaces] = useState<ChartWorkspaceRecord[]>(() => [
+    ...initialWorkspaces,
+  ]);
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [shareWorkspace, setShareWorkspace] =
-    useState<ChartWorkspaceRecord | null>(null);
-  const [shareOpen, setShareOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deletePending, setDeletePending] = useState(false);
 
-  const { searchQuery, setSearchQuery } = useDebouncedSearch(search);
   const resolvedLimit = limit > 0 ? limit : DEFAULT_LIMIT;
 
-  const refreshList = useCallback(() => {
-    setWorkspaces(listChartWorkspaces(currentUserId));
+  useEffect(() => {
+    clearLegacyChartsLocalStorage(currentUserId);
   }, [currentUserId]);
 
-  const hydrated = useChartsRegistryHydrate(currentUserId, refreshList);
+  useEffect(() => {
+    setWorkspaces([...initialWorkspaces]);
+  }, [initialWorkspaces]);
 
-  const { runStatusAction, handleConfirmDelete } = useChartsRegistryMutations({
-    currentUserId,
-    refreshList,
-    setError,
-    setPendingId,
-    setWorkspaces,
-  });
-
+  const { searchQuery, setSearchQuery } = useDebouncedSearch(search);
   const filtered = useMemo(
     () => filterWorkspacesForTab(workspaces, tab, searchQuery),
     [searchQuery, tab, workspaces]
@@ -478,51 +387,60 @@ export function ChartsRegistry({
 
   const totalCount = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / resolvedLimit) || 1);
-  const safePage = Math.min(Math.max(page, 1), totalPages);
-  const pageItems = filtered.slice(
-    (safePage - 1) * resolvedLimit,
-    safePage * resolvedLimit
-  );
-
   const { handlePageChange, handleLimitChange } = usePaginationNavigation(
     totalPages,
     resolvedLimit
   );
+  const safePage = Math.min(Math.max(page, 1), totalPages);
+  const pageItems = useMemo(() => {
+    if (filtered.length === 0) {
+      return EMPTY_CHART_ROWS;
+    }
+    return filtered.slice(
+      (safePage - 1) * resolvedLimit,
+      safePage * resolvedLimit
+    );
+  }, [filtered, resolvedLimit, safePage]);
 
-  const handleTabChange = useCallback(
-    (nextTab: ViewsListTab) => {
-      const params = new URLSearchParams(searchParams.toString());
-      applyRegistryTabParam(params, nextTab);
-      params.set('page', '1');
-      const query = params.toString();
-      router.push(query ? `${pathname}?${query}` : pathname);
-    },
-    [pathname, router, searchParams]
-  );
+  const { runStatusAction, handleConfirmDelete } = useChartsRegistryMutations({
+    currentUserId,
+    setError,
+    setPendingId,
+    setWorkspaces,
+  });
 
   const handleClearSearch = useCallback(() => {
     setSearchQuery('');
   }, [setSearchQuery]);
 
   const createDefaultTitle = useMemo(
-    () => suggestChartWorkspaceTitle(currentUserId),
-    [currentUserId]
+    () =>
+      suggestChartWorkspaceTitle(
+        workspaces.map((workspace) => workspace.title)
+      ),
+    [workspaces]
   );
 
   const handleCreate = useCallback(
     async (payload: { title: string; isOverview: boolean }) => {
-      const created = createChartWorkspace(currentUserId, {
-        title: payload.title,
-        isOverview: payload.isOverview,
-      });
+      setError(null);
       try {
-        await syncChartWorkspaceToApi(created);
+        const created = await createChartWorkspaceOnApi({
+          title: payload.title,
+          isOverview: payload.isOverview,
+          viewerId: currentUserId,
+        });
+        setWorkspaces((previous) => [created, ...previous]);
+        router.push(chartsWorkspaceHref(created.id));
       } catch (err) {
         if (isSessionExpiredError(err)) {
           return;
         }
+        const message =
+          err instanceof Error ? err.message : 'Failed to create workspace';
+        setError(message);
+        throw err instanceof Error ? err : new Error(message);
       }
-      router.push(chartsWorkspaceHref(created.id));
     },
     [currentUserId, router]
   );
@@ -532,10 +450,6 @@ export function ChartsRegistry({
       createChartsTableColumns({
         tab,
         pendingId,
-        onShare: (workspace) => {
-          setShareWorkspace(workspace);
-          setShareOpen(true);
-        },
         onArchive: (workspace) => {
           runStatusAction(workspace, 'archive').catch(() => {});
         },
@@ -547,18 +461,21 @@ export function ChartsRegistry({
     [pendingId, runStatusAction, tab]
   );
 
+  // Stable row-model + memoized `data` — TanStack Table auto-resets page index
+  // when `data` identity changes; a fresh `.slice()` each render freezes the tab.
+  const [coreRowModel] = useState(() => getCoreRowModel());
+
   const table = useReactTable({
     data: pageItems,
     columns,
-    getCoreRowModel: getCoreRowModel(),
+    getCoreRowModel: coreRowModel,
+    autoResetPageIndex: false,
+    manualPagination: true,
   });
 
-  const showEmptyCreate = tab === 'mine' && hydrated && totalCount === 0;
-  const hasActiveSearch = Boolean(search.trim());
-
-  if (!hydrated) {
-    return <ChartsRegistrySkeleton />;
-  }
+  const showEmptyCreate =
+    tab === 'mine' && totalCount === 0 && !searchQuery.trim();
+  const hasActiveSearch = Boolean(searchQuery.trim());
 
   return (
     <ChartsRegistryLoadedView
@@ -568,7 +485,7 @@ export function ChartsRegistry({
       onSearchQueryChange={setSearchQuery}
       onClearSearch={handleClearSearch}
       tab={tab}
-      onTabChange={handleTabChange}
+      onTabChange={setTab}
       hasActiveSearch={hasActiveSearch}
       onOpenCreate={() => setCreateOpen(true)}
       showEmptyCreate={showEmptyCreate}
@@ -584,18 +501,6 @@ export function ChartsRegistry({
       onCreateOpenChange={setCreateOpen}
       createDefaultTitle={createDefaultTitle}
       onCreate={handleCreate}
-      shareOpen={shareOpen}
-      onShareOpenChange={(open) => {
-        setShareOpen(open);
-        if (!open) {
-          afterDialogClose(() => {
-            setShareWorkspace(null);
-          });
-        }
-      }}
-      shareWorkspace={shareWorkspace}
-      shareProjects={shareProjects}
-      currentUserId={currentUserId}
       deleteTarget={deleteTarget}
       deletePending={deletePending}
       onCancelDelete={() => setDeleteTarget(null)}
@@ -616,9 +521,9 @@ function ChartsRegistryLoadedView(props: {
   // eslint-disable-next-line no-unused-vars -- search change
   readonly onSearchQueryChange: (value: string) => void;
   readonly onClearSearch: () => void;
-  readonly tab: ViewsListTab;
+  readonly tab: ChartsRegistryListTab;
   // eslint-disable-next-line no-unused-vars -- tab change
-  readonly onTabChange: (tab: ViewsListTab) => void;
+  readonly onTabChange: (tab: ChartsRegistryListTab) => void;
   readonly hasActiveSearch: boolean;
   readonly onOpenCreate: () => void;
   readonly showEmptyCreate: boolean;
@@ -640,12 +545,6 @@ function ChartsRegistryLoadedView(props: {
     // eslint-disable-next-line no-unused-vars -- create payload
     payload: { title: string; isOverview: boolean }
   ) => Promise<void>;
-  readonly shareOpen: boolean;
-  // eslint-disable-next-line no-unused-vars -- share dialog
-  readonly onShareOpenChange: (open: boolean) => void;
-  readonly shareWorkspace: ChartWorkspaceRecord | null;
-  readonly shareProjects: ChartsRegistryProps['shareProjects'];
-  readonly currentUserId: string;
   readonly deleteTarget: DeleteTarget | null;
   readonly deletePending: boolean;
   readonly onCancelDelete: () => void;
@@ -668,12 +567,6 @@ function ChartsRegistryLoadedView(props: {
             onClear={props.onClearSearch}
             placeholder="Search workspaces…"
           />
-          <RegistryTabSwitcher
-            tabs={TABS}
-            value={props.tab}
-            onChange={props.onTabChange}
-            aria-label="Workspace list filter"
-          />
           {props.hasActiveSearch ? (
             <Button
               type="button"
@@ -687,14 +580,22 @@ function ChartsRegistryLoadedView(props: {
             </Button>
           ) : null}
         </div>
-        <Button
-          type="button"
-          className="cursor-pointer gap-2 self-start"
-          onClick={props.onOpenCreate}
-        >
-          <Plus className="size-4" data-icon="inline-start" />
-          Create Workspace
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 self-start">
+          <RegistryTabSwitcher
+            tabs={TABS}
+            value={props.tab}
+            onChange={props.onTabChange}
+            aria-label="Workspace list filter"
+          />
+          <Button
+            type="button"
+            className="cursor-pointer gap-2"
+            onClick={props.onOpenCreate}
+          >
+            <Plus className="size-4" data-icon="inline-start" />
+            Create Workspace
+          </Button>
+        </div>
       </div>
 
       <Card className="border-border bg-card/50 flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden backdrop-blur-md">
@@ -704,8 +605,8 @@ function ChartsRegistryLoadedView(props: {
             Charts
           </CardTitle>
           <CardDescription>
-            Manage chart workspaces, share them with teammates, and open a board
-            to arrange widgets.
+            Manage your chart workspaces and open a board to arrange widgets.
+            Share boards via Save view in the header, then share from Views.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4 overflow-y-auto pt-2 pb-4">
@@ -744,55 +645,19 @@ function ChartsRegistryLoadedView(props: {
         initialIsOverview={false}
         onSave={props.onCreate}
       />
-      <ChartsShareWorkspaceDialog
-        open={props.shareOpen}
-        onOpenChange={props.onShareOpenChange}
-        workspace={props.shareWorkspace}
-        projects={props.shareProjects}
-        currentUserId={props.currentUserId}
-      />
       {props.deleteTarget ? (
-        <ChartsRegistryDeleteDialog
-          target={props.deleteTarget}
+        <RegistryConfirmDialog
+          title="Permanently delete workspace"
+          subject={props.deleteTarget.workspace.title}
+          detail="This action is irreversible. The chart workspace and its board layout will be permanently removed."
+          confirmLabel="Delete"
+          pendingLabel="Deleting..."
           isPending={props.deletePending}
+          isSoft={false}
           onCancel={props.onCancelDelete}
           onConfirm={props.onConfirmDelete}
         />
       ) : null}
     </div>
-  );
-}
-
-function ChartsRegistryDeleteDialog({
-  target,
-  isPending,
-  onCancel,
-  onConfirm,
-}: Readonly<{
-  target: DeleteTarget;
-  isPending: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-}>) {
-  const isShare = target.kind === 'share';
-  return (
-    <RegistryConfirmDialog
-      title={
-        isShare ? 'Leave shared workspace' : 'Permanently delete workspace'
-      }
-      subject={target.workspace.title}
-      detail={
-        isShare
-          ? 'This removes the workspace from Shared with me only. The owner’s copy is unchanged, and they can share it with you again later.'
-          : 'This action is irreversible. The chart workspace, its board layout, and any share records linked to it will be permanently removed. The matching Views bookmark is removed as well.'
-      }
-      confirmLabel={isShare ? 'Leave' : 'Delete'}
-      pendingLabel={isShare ? 'Leaving...' : 'Deleting...'}
-      isPending={isPending}
-      isSoft={false}
-      actionVerb={isShare ? 'leave' : undefined}
-      onCancel={onCancel}
-      onConfirm={onConfirm}
-    />
   );
 }

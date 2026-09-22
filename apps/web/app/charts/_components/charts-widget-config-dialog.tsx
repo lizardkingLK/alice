@@ -1,13 +1,17 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import type { WorkItemStatus } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { DropdownMenuItem } from '@repo/ui/components/ui/dropdown-menu';
 import { Filter, LogOut, MoreHorizontal, Settings } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { SearchInput } from '@/components/search-input';
-import { DIALOG_CLOSE_ANIMATION_MS } from '@/lib/dialog-close';
+import {
+  afterDialogClose,
+  DIALOG_CLOSE_ANIMATION_MS,
+} from '@/lib/dialog-close';
 import { preventDismissForFloatingPortal } from '@/lib/dialog-outside-events';
 import type {
   ChartPieVariant,
@@ -43,8 +47,15 @@ import {
   resolveChartAnalyticsProjectId,
   resolveChartAnalyticsSprintId,
   workItemListRowToChartTableItem,
+  type ChartDrilldownTableItem,
 } from '@/app/charts/_helpers/charts-analytics.ui';
-import { useChartWidgetAnalytics } from '@/app/charts/_hooks/use-chart-widget-analytics';
+import {
+  invalidateChartAnalyticsCaches,
+  useChartWidgetAnalytics,
+} from '@/app/charts/_hooks/use-chart-widget-analytics';
+import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form/work-item-form-dialog';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import type { Project as DbProject } from '@/app/projects/_types/projects.types';
 
 const SCOPE_EMPTY_MESSAGE = 'No work items in the selected scope.';
 const UNSUPPORTED_LABEL_MESSAGE =
@@ -327,9 +338,12 @@ export function ChartsWidgetConfigDialog({
   onDelete,
   onExport,
 }: Readonly<ChartsWidgetConfigDialogProps>) {
+  const router = useRouter();
   const [filtersOpen, setFiltersOpen] = useState(initialFiltersOpen);
   const [settingsOpen, setSettingsOpen] = useState(initialSettingsOpen);
   const [searchQuery, setSearchQuery] = useState('');
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<DbWorkItem | null>(null);
 
   const projectId = resolveChartAnalyticsProjectId(filters);
   const sprintId = resolveChartAnalyticsSprintId(filters);
@@ -356,6 +370,28 @@ export function ChartsWidgetConfigDialog({
     loadDrilldown,
     drilldownLimit: showAllStatusGroups ? 100 : 50,
   });
+
+  const formProjects = useMemo(
+    () =>
+      accessibleProjects.map(
+        (project) =>
+          ({
+            id: project.id,
+            name: project.name,
+          }) as DbProject
+      ),
+    [accessibleProjects]
+  );
+
+  const formMembers = useMemo(
+    () =>
+      assigneeMembers.map((member) => ({
+        id: member.id,
+        name: member.name,
+        email: member.email,
+      })),
+    [assigneeMembers]
+  );
 
   useConfigDialogBootstrap({
     open,
@@ -394,6 +430,32 @@ export function ChartsWidgetConfigDialog({
       return;
     }
     onViewModeChange?.('split', sliceKey);
+  };
+
+  const openEditWorkItem = (item: ChartDrilldownTableItem) => {
+    if (!item.workItem) {
+      return;
+    }
+    setItemToEdit(item.workItem as unknown as DbWorkItem);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditDialogChange = (nextOpen: boolean) => {
+    setEditDialogOpen(nextOpen);
+    if (!nextOpen) {
+      afterDialogClose(() => {
+        setItemToEdit(null);
+      });
+    }
+  };
+
+  const handleEditSuccess = () => {
+    setEditDialogOpen(false);
+    afterDialogClose(() => {
+      setItemToEdit(null);
+    });
+    invalidateChartAnalyticsCaches();
+    router.refresh();
   };
 
   const tableItems = useMemo(() => {
@@ -439,94 +501,110 @@ export function ChartsWidgetConfigDialog({
       )}
       emptyMessage={open ? (analytics.drilldownError ?? NO_MATCH_MESSAGE) : ''}
       visibleColumns={visibleTableColumns}
+      onEditWorkItem={openEditWorkItem}
     />
   );
 
   return (
-    <ChartsFullscreenDialogShell
-      open={open}
-      onOpenChange={onOpenChange}
-      title={title}
-      description={`Configure filters and preview for the ${title} chart widget.`}
-      sizeClassName="h-[min(92vh,860px)] w-[min(96vw,1280px)]"
-      contentProps={{
-        dismissOnOutsideClick: false,
-        onPointerDownOutside: preventDismissForFloatingPortal,
-        onInteractOutside: preventDismissForFloatingPortal,
-        onFocusOutside: (event) => event.preventDefault(),
-      }}
-    >
-      <ChartsWidgetConfigToolbar
-        searchQuery={searchQuery}
-        onSearchQueryChange={setSearchQuery}
-        filtersOpen={filtersOpen}
-        onFiltersOpenChange={setFiltersOpen}
-        filters={filters}
-        accessibleProjects={accessibleProjects}
-        accessibleSprints={accessibleSprints}
-        onFiltersChange={onFiltersChange}
-        members={assigneeMembers}
-        viewMode={viewMode}
-        onLayoutChange={(mode) => {
-          if (mode === 'chart') {
-            onViewModeChange?.(mode, null);
-            return;
-          }
-          onViewModeChange?.(mode, focusedSliceKey ?? null);
+    <>
+      <ChartsFullscreenDialogShell
+        open={open}
+        onOpenChange={onOpenChange}
+        title={title}
+        description={`Configure filters and preview for the ${title} chart widget.`}
+        sizeClassName="h-[min(92vh,860px)] w-[min(96vw,1280px)]"
+        contentProps={{
+          dismissOnOutsideClick: false,
+          onPointerDownOutside: preventDismissForFloatingPortal,
+          onInteractOutside: preventDismissForFloatingPortal,
+          onFocusOutside: (event) => event.preventDefault(),
         }}
-        settingsOpen={settingsOpen}
-        onToggleSettings={() => setSettingsOpen((prev) => !prev)}
-        onExport={onExport}
-        onRename={onRename}
-        onDuplicate={onDuplicate}
-        onDelete={onDelete}
-        onExit={() => onOpenChange(false)}
-      />
+      >
+        <ChartsWidgetConfigToolbar
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          filtersOpen={filtersOpen}
+          onFiltersOpenChange={setFiltersOpen}
+          filters={filters}
+          accessibleProjects={accessibleProjects}
+          accessibleSprints={accessibleSprints}
+          onFiltersChange={onFiltersChange}
+          members={assigneeMembers}
+          viewMode={viewMode}
+          onLayoutChange={(mode) => {
+            if (mode === 'chart') {
+              onViewModeChange?.(mode, null);
+              return;
+            }
+            onViewModeChange?.(mode, focusedSliceKey ?? null);
+          }}
+          settingsOpen={settingsOpen}
+          onToggleSettings={() => setSettingsOpen((prev) => !prev)}
+          onExport={onExport}
+          onRename={onRename}
+          onDuplicate={onDuplicate}
+          onDelete={onDelete}
+          onExit={() => onOpenChange(false)}
+        />
 
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        <div className="bg-background flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-4 sm:p-6">
-          <ChartsWidgetConfigPreview
-            viewMode={viewMode}
-            piePreview={piePreview}
-            tablePreview={tablePreview}
-          />
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          <div className="bg-background flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-4 sm:p-6">
+            <ChartsWidgetConfigPreview
+              viewMode={viewMode}
+              piePreview={piePreview}
+              tablePreview={tablePreview}
+            />
+          </div>
+
+          {settingsOpen && onPieVariantChange ? (
+            <ChartsWidgetSettingsSidebar
+              pieVariant={pieVariant}
+              labelField={labelField}
+              onPieVariantChange={onPieVariantChange}
+              onLabelFieldChange={onLabelFieldChange}
+              showValueAs={showValueAs}
+              sortSlicesBy={sortSlicesBy}
+              showEmptySlices={showEmptySlices}
+              visibleTableColumns={visibleTableColumns}
+              sliceColors={sliceColors}
+              sliceOptions={
+                analytics.series?.slices.map((slice) => ({
+                  key: slice.key,
+                  label: slice.label,
+                })) ?? []
+              }
+              onShowValueAsChange={(value) =>
+                onDisplaySettingsChange?.({ showValueAs: value })
+              }
+              onSortSlicesByChange={(value) =>
+                onDisplaySettingsChange?.({ sortSlicesBy: value })
+              }
+              onShowEmptySlicesChange={(value) =>
+                onDisplaySettingsChange?.({ showEmptySlices: value })
+              }
+              onVisibleTableColumnsChange={(columns) =>
+                onDisplaySettingsChange?.({ visibleTableColumns: columns })
+              }
+              onSliceColorsChange={(next) =>
+                onDisplaySettingsChange?.({ sliceColors: next })
+              }
+            />
+          ) : null}
         </div>
+      </ChartsFullscreenDialogShell>
 
-        {settingsOpen && onPieVariantChange ? (
-          <ChartsWidgetSettingsSidebar
-            pieVariant={pieVariant}
-            labelField={labelField}
-            onPieVariantChange={onPieVariantChange}
-            onLabelFieldChange={onLabelFieldChange}
-            showValueAs={showValueAs}
-            sortSlicesBy={sortSlicesBy}
-            showEmptySlices={showEmptySlices}
-            visibleTableColumns={visibleTableColumns}
-            sliceColors={sliceColors}
-            sliceOptions={
-              analytics.series?.slices.map((slice) => ({
-                key: slice.key,
-                label: slice.label,
-              })) ?? []
-            }
-            onShowValueAsChange={(value) =>
-              onDisplaySettingsChange?.({ showValueAs: value })
-            }
-            onSortSlicesByChange={(value) =>
-              onDisplaySettingsChange?.({ sortSlicesBy: value })
-            }
-            onShowEmptySlicesChange={(value) =>
-              onDisplaySettingsChange?.({ showEmptySlices: value })
-            }
-            onVisibleTableColumnsChange={(columns) =>
-              onDisplaySettingsChange?.({ visibleTableColumns: columns })
-            }
-            onSliceColorsChange={(next) =>
-              onDisplaySettingsChange?.({ sliceColors: next })
-            }
-          />
-        ) : null}
-      </div>
-    </ChartsFullscreenDialogShell>
+      <WorkItemFormDialog
+        open={editDialogOpen}
+        onOpenChange={handleEditDialogChange}
+        title="Edit Work Item"
+        description="Update the details for this work item."
+        projects={formProjects}
+        itemToEdit={itemToEdit}
+        projectMembers={formMembers}
+        preferProvidedMembers
+        onClose={() => handleEditDialogChange(false)}
+        onSuccess={() => handleEditSuccess()}
+      />
+    </>
   );
 }
