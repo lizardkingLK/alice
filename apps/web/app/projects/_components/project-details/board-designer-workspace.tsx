@@ -154,7 +154,7 @@ export function BoardDesignerWorkspace({
   const urlBoardSection = parseBoardDesignerSection(
     searchParams.get('boardSection')
   );
-  const [boardSection, setBoardSectionState] =
+  const [boardSection, setBoardSection] =
     useState<BoardDesignerSection>(urlBoardSection);
   const { handleMutationError } = useOptimisticLock();
   const initial = useMemo(() => {
@@ -235,7 +235,7 @@ export function BoardDesignerWorkspace({
     draft.version === '2' ? (draft.statusTransitions ?? []) : [];
 
   useEffect(() => {
-    setBoardSectionState(urlBoardSection);
+    setBoardSection(urlBoardSection);
   }, [urlBoardSection]);
 
   useEffect(() => {
@@ -277,8 +277,8 @@ export function BoardDesignerWorkspace({
     setMessage(null);
   };
 
-  const setBoardSection = (next: BoardDesignerSection) => {
-    setBoardSectionState(next);
+  const navigateBoardSection = (next: BoardDesignerSection) => {
+    setBoardSection(next);
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', 'board');
     if (next === 'columns') {
@@ -305,11 +305,11 @@ export function BoardDesignerWorkspace({
     }));
     setPendingNewColumnIds((current) => new Set(current).add(id));
     setMessage(null);
-    setBoardSection('columns');
+    navigateBoardSection('columns');
   };
 
   const openAddStatusRule = () => {
-    setBoardSection('rules');
+    navigateBoardSection('rules');
     openStatusRuleDialog(null);
   };
 
@@ -588,7 +588,7 @@ export function BoardDesignerWorkspace({
         <RegistryTabSwitcher
           tabs={BOARD_SECTION_TABS}
           value={boardSection}
-          onChange={setBoardSection}
+          onChange={navigateBoardSection}
           aria-label="Board configuration section"
         />
         {canEdit ? (
