@@ -19,6 +19,7 @@ const SETTINGS_NAV: ReadonlyArray<{
   readonly href: string;
   readonly Icon: typeof UserRound;
   readonly adminOnly?: boolean;
+  readonly managerOrAdminOnly?: boolean;
 }> = [
   {
     id: 'general',

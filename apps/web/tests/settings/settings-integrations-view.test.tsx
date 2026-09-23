@@ -57,13 +57,11 @@ describe('SettingsIntegrationsView', () => {
   });
 
   it('automatically opens GitHub dialog from window.location.search params', () => {
-    const originalLocation = window.location;
-    // @ts-expect-error mocking location
-    delete window.location;
-    window.location = {
-      ...originalLocation,
-      search: '?tab=integrations&showPopup=1&integration=github',
-    } as Location;
+    window.history.pushState(
+      {},
+      '',
+      '/settings?tab=integrations&showPopup=1&integration=github'
+    );
 
     render(<SettingsIntegrationsView initialIntegrations={[]} />);
 
@@ -71,7 +69,7 @@ describe('SettingsIntegrationsView', () => {
     expect(dialog).toBeInTheDocument();
     expect(screen.getByText('@octocat')).toBeInTheDocument();
 
-    window.location = originalLocation;
+    window.history.pushState({}, '', '/');
   });
 });
 
