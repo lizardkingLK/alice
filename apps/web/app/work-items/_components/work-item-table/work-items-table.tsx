@@ -38,6 +38,21 @@ import {
   WorkspaceDefaultsDialogHost,
 } from '@/app/board/_components/workspace-defaults-dialog-host';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
+import { resolveWorkspaceDefaultsAppliedSummary } from '@/app/board/_helpers/workspace-defaults-shared';
+import { formatLabelWithSpace } from '@/app/_shared/utility';
+import {
+  buildAppliedFilterBadgeItems,
+  planAppliedFilterRemovals,
+  resolveProjectFilterBadge,
+} from '@/components/applied-filter-badges.model';
+import {
+  applyQueryFilterParam,
+  useQueryFilter,
+} from '@/hooks/use-query-filter';
+import {
+  parseWorkItemLabelsFilterParam,
+  serializeWorkItemLabelsFilter,
+} from '@repo/types';
 import {
   DEFAULT_WORK_ITEM_TABLE_COLUMN_VISIBILITY,
   normalizeWorkItemTableColumnVisibility,
@@ -50,10 +65,9 @@ import { DismissibleError } from '@/components/dismissible-error';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
-import { useQueryFilter } from '@/hooks/use-query-filter';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { serializeWorkItemLabelsFilter } from '@repo/types';
 import type { WorkItemListView } from '@/lib/search-params';
+import { isAppRole, isManagerOrAdmin } from '@/lib/rbac';
 
 /** Match DialogContent `duration-200` so edit UI doesn't flash to create while closing. */
 const DIALOG_CLOSE_MS = 200;
@@ -93,6 +107,8 @@ export default function WorkItemsTable({
   const searchParams = useSearchParams();
   const isActiveView = tab === 'active';
   const isAdmin = currentUserRole === 'admin';
+  const canLinkSprintReport =
+    isAppRole(currentUserRole) && isManagerOrAdmin(currentUserRole);
   const isAssigneeLocked = Boolean(lockedAssigneeId);
   const isProjectLocked = Boolean(lockedProjectId);
   const hideLifecycleTabs = currentUserRole === 'member' && !isAssigneeLocked;
@@ -172,11 +188,23 @@ export default function WorkItemsTable({
     suggestedDefaults,
   });
   const {
+    savedPreference,
     savedDefaultsApplied,
     urlFiltersActive,
     openDefaultsDialog,
     resetUrlFilters,
   } = boardDefaults;
+
+  const appliedDefaultsSummary = useMemo(() => {
+    if (!savedDefaultsApplied || !savedPreference) {
+      return null;
+    }
+    return resolveWorkspaceDefaultsAppliedSummary(
+      savedPreference,
+      projects,
+      sprints
+    );
+  }, [projects, savedDefaultsApplied, savedPreference, sprints]);
 
   const listDescription = resolveWorkItemsListDescription({
     isAssigneeLocked,
@@ -239,6 +267,203 @@ export default function WorkItemsTable({
     urlFiltersActive,
   });
 
+  const activeLabels = useMemo(
+    () => parseWorkItemLabelsFilterParam(labelsQuery.value) ?? [],
+    [labelsQuery.value]
+  );
+
+  const appliedFilterItems = useMemo(() => {
+    const projectActive =
+      !isProjectLocked &&
+      (showWorkspaceDefaults
+        ? urlFiltersActive
+        : Boolean(
+            projectQuery.value && projectQuery.value !== projectAllValue
+          ));
+    const sprintActive = showWorkspaceDefaults
+      ? urlFiltersActive &&
+        Boolean(sprintQuery.value && sprintQuery.value !== sprintQuery.allValue)
+      : Boolean(
+          sprintQuery.value && sprintQuery.value !== sprintQuery.allValue
+        );
+
+    return buildAppliedFilterBadgeItems({
+      search: searchParams.get('search')?.trim() || null,
+      project: resolveProjectFilterBadge({
+        showBadge: projectActive,
+        projectId: projectQuery.value,
+        allValue: projectAllValue,
+        resolveName: (projectId) =>
+          projects.find((project) => project.id === projectId)?.name ??
+          projectId,
+      }),
+      sprint: sprintActive
+        ? {
+            id: sprintQuery.value,
+            name:
+              sprints.find((sprint) => sprint.id === sprintQuery.value)?.name ??
+              sprintQuery.value,
+          }
+        : null,
+      type:
+        typeQuery.value && typeQuery.value !== typeQuery.allValue
+          ? {
+              id: typeQuery.value,
+              name: formatLabelWithSpace(typeQuery.value),
+            }
+          : null,
+      assignee:
+        !isAssigneeLocked &&
+        assigneeQuery.value &&
+        assigneeQuery.value !== assigneeQuery.allValue
+          ? {
+              id: assigneeQuery.value,
+              name:
+                projectMembers.find(
+                  (member) => member.id === assigneeQuery.value
+                )?.name ?? assigneeQuery.value,
+            }
+          : null,
+      labels: activeLabels,
+    });
+  }, [
+    activeLabels,
+    assigneeQuery.allValue,
+    assigneeQuery.value,
+    isAssigneeLocked,
+    isProjectLocked,
+    projectAllValue,
+    projectMembers,
+    projectQuery.value,
+    projects,
+    searchParams,
+    showWorkspaceDefaults,
+    sprintQuery.allValue,
+    sprintQuery.value,
+    sprints,
+    typeQuery.allValue,
+    typeQuery.value,
+    urlFiltersActive,
+  ]);
+
+  const pushWorkItemParams = useCallback(
+    (params: URLSearchParams) => {
+      params.set('page', '1');
+      const query = params.toString();
+      router.push(query ? `${pathname}?${query}` : pathname);
+    },
+    [pathname, router]
+  );
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    const params = new URLSearchParams(searchParams.toString());
+    if (!params.has('search')) {
+      return;
+    }
+    params.delete('search');
+    pushWorkItemParams(params);
+  }, [pushWorkItemParams, searchParams, setSearchQuery]);
+
+  const handleRemoveAppliedFilter = useCallback(
+    (chipIds: readonly string[]) => {
+      if (chipIds.length === 0) {
+        return;
+      }
+
+      const plan = planAppliedFilterRemovals(chipIds, {
+        canClearAssignee: !isAssigneeLocked,
+        canClearProject: !isProjectLocked,
+      });
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (plan.labelsToDrop.size > 0) {
+        const nextLabels = activeLabels.filter(
+          (label) => !plan.labelsToDrop.has(label)
+        );
+        const encoded = serializeWorkItemLabelsFilter(nextLabels);
+        labelsQuery.setValue(encoded || labelsQuery.allValue);
+        applyQueryFilterParam(
+          params,
+          'labels',
+          encoded || labelsQuery.allValue,
+          labelsQuery.allValue
+        );
+      }
+
+      if (plan.clearSearch) {
+        setSearchQuery('');
+        params.delete('search');
+      }
+
+      if (plan.clearType) {
+        typeQuery.setValue(typeQuery.allValue);
+        applyQueryFilterParam(
+          params,
+          'type',
+          typeQuery.allValue,
+          typeQuery.allValue
+        );
+      }
+
+      if (plan.clearAssignee) {
+        assigneeQuery.setValue(assigneeQuery.allValue);
+        applyQueryFilterParam(
+          params,
+          'assignee',
+          assigneeQuery.allValue,
+          assigneeQuery.allValue
+        );
+      }
+
+      if (plan.clearProject) {
+        if (showWorkspaceDefaults) {
+          setProjectFilterValue(projectAllValue);
+          setSprintFilterValue(sprintQuery.allValue);
+          resetUrlFilters();
+          return;
+        }
+        projectQuery.setValue(projectAllValue);
+        applyQueryFilterParam(
+          params,
+          'project',
+          projectAllValue,
+          projectAllValue
+        );
+      }
+
+      if (plan.clearSprint) {
+        sprintQuery.setValue(sprintQuery.allValue);
+        applyQueryFilterParam(
+          params,
+          'sprint',
+          sprintQuery.allValue,
+          sprintQuery.allValue
+        );
+      }
+
+      pushWorkItemParams(params);
+    },
+    [
+      activeLabels,
+      assigneeQuery,
+      isAssigneeLocked,
+      isProjectLocked,
+      labelsQuery,
+      projectAllValue,
+      projectQuery,
+      pushWorkItemParams,
+      resetUrlFilters,
+      searchParams,
+      setProjectFilterValue,
+      setSearchQuery,
+      setSprintFilterValue,
+      showWorkspaceDefaults,
+      sprintQuery,
+      typeQuery,
+    ]
+  );
+
   const handleClearFilters = () => {
     setSearchQuery('');
     setProjectFilterValue(projectAllValue);
@@ -259,18 +484,6 @@ export default function WorkItemsTable({
     const query = next.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
   };
-
-  const handleClearSearch = useCallback(() => {
-    setSearchQuery('');
-    const params = new URLSearchParams(searchParams.toString());
-    if (!params.has('search')) {
-      return;
-    }
-    params.delete('search');
-    params.set('page', '1');
-    const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname);
-  }, [pathname, router, searchParams, setSearchQuery]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<DbWorkItem | null>(null);
@@ -381,6 +594,7 @@ export default function WorkItemsTable({
         isHierarchy,
         currentUserId,
         isAdmin,
+        canLinkSprintReport,
         isActiveView,
         isPending: isBusy,
         projects,
@@ -392,6 +606,7 @@ export default function WorkItemsTable({
         onPurge: lifecycle.handlePurgeRequest,
       }),
     [
+      canLinkSprintReport,
       currentUserId,
       lifecycle.handleArchiveRequest,
       lifecycle.handlePurgeRequest,
@@ -448,7 +663,10 @@ export default function WorkItemsTable({
         showWorkspaceDefaults={showWorkspaceDefaults}
         onOpenDefaultsDialog={openDefaultsDialog}
         savedDefaultsApplied={savedDefaultsApplied}
+        appliedDefaultsSummary={appliedDefaultsSummary}
         hasActiveFilters={hasActiveFilters}
+        appliedFilterItems={appliedFilterItems}
+        onRemoveAppliedFilter={handleRemoveAppliedFilter}
         onClearFilters={handleClearFilters}
         onCreate={openCreateDialog}
         hideCreate={!isActiveView}

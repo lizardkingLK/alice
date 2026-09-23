@@ -1,13 +1,22 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
+import Link from 'next/link';
 import { parseWorkItemLabels } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { Badge } from '@repo/ui/components/ui/badge';
-import { ChevronDown, ChevronRight, Loader2 } from '@repo/ui/lib/icons';
+import {
+  Calendar,
+  ChevronDown,
+  ChevronRight,
+  FolderDot,
+  Loader2,
+} from '@repo/ui/lib/icons';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { formatDate } from '@/app/_shared/utility';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import { sprintReportHref } from '@/app/sprints/_helpers/sprint-report-links';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import { WorkItemOverdueBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-overdue';
@@ -190,6 +199,92 @@ function nameFromMap(
   return namesById.get(id) ?? '—';
 }
 
+/** Badge for project / sprint cells. When `href` is set, opens in a new tab. */
+function RelationBadge({
+  href,
+  label,
+  icon,
+}: Readonly<{
+  href?: string;
+  label: string;
+  icon: ReactNode;
+}>) {
+  const content = (
+    <>
+      {icon}
+      <TruncatedText className="max-w-36 text-xs">{label}</TruncatedText>
+    </>
+  );
+
+  if (!href) {
+    return (
+      <Badge
+        variant="secondary"
+        className="inline-flex max-w-44 min-w-0 items-center gap-1"
+      >
+        {content}
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge asChild variant="secondary" className="max-w-44">
+      <Link
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex min-w-0 items-center gap-1"
+        aria-label={`Open ${label} in a new tab`}
+      >
+        {content}
+      </Link>
+    </Badge>
+  );
+}
+
+function ProjectCell({
+  projectId,
+  projectNamesById,
+}: Readonly<{
+  projectId: string | null | undefined;
+  projectNamesById: ReadonlyMap<string, string>;
+}>) {
+  const name = nameFromMap(projectNamesById, projectId);
+  if (!projectId || name === '—') {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  return (
+    <RelationBadge
+      href={`/projects/${projectId}`}
+      label={name}
+      icon={<FolderDot data-icon="inline-start" />}
+    />
+  );
+}
+
+function SprintCell({
+  sprintId,
+  sprintNamesById,
+  linkToReport,
+}: Readonly<{
+  sprintId: string | null | undefined;
+  sprintNamesById: ReadonlyMap<string, string>;
+  /** Managers/admins can open sprint summary; members see a plain badge. */
+  linkToReport: boolean;
+}>) {
+  const name = nameFromMap(sprintNamesById, sprintId);
+  if (!sprintId || name === '—') {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  return (
+    <RelationBadge
+      href={linkToReport ? sprintReportHref(sprintId, 'work-items') : undefined}
+      label={name}
+      icon={<Calendar data-icon="inline-start" />}
+    />
+  );
+}
+
 const actionsRenderer = ({
   row,
   isPending,
@@ -235,6 +330,8 @@ export function buildWorkItemColumns(options: {
   readonly isHierarchy: boolean;
   readonly currentUserId?: string | null;
   readonly isAdmin: boolean;
+  /** When true, Sprint cells link to the summary report (manager+). */
+  readonly canLinkSprintReport: boolean;
   readonly isActiveView: boolean;
   readonly isPending: boolean;
   readonly projects: WorkItemWorkspaceProps['projects'];
@@ -256,6 +353,7 @@ export function buildWorkItemColumns(options: {
     isHierarchy,
     currentUserId,
     isAdmin,
+    canLinkSprintReport,
     isActiveView,
     isPending,
     projects,
@@ -320,17 +418,12 @@ export function buildWorkItemColumns(options: {
     columns.push({
       id: 'project',
       header: 'Project',
-      cell: ({ row }) => {
-        const name = nameFromMap(
-          projectNamesById,
-          row.original.workItem.project_id
-        );
-        return (
-          <TruncatedText className="text-muted-foreground max-w-40 text-sm">
-            {name}
-          </TruncatedText>
-        );
-      },
+      cell: ({ row }) => (
+        <ProjectCell
+          projectId={row.original.workItem.project_id}
+          projectNamesById={projectNamesById}
+        />
+      ),
     });
   }
 
@@ -338,17 +431,13 @@ export function buildWorkItemColumns(options: {
     {
       id: 'sprint',
       header: 'Sprint',
-      cell: ({ row }) => {
-        const name = nameFromMap(
-          sprintNamesById,
-          row.original.workItem.sprint_id
-        );
-        return (
-          <TruncatedText className="text-muted-foreground max-w-40 text-sm">
-            {name}
-          </TruncatedText>
-        );
-      },
+      cell: ({ row }) => (
+        <SprintCell
+          sprintId={row.original.workItem.sprint_id}
+          sprintNamesById={sprintNamesById}
+          linkToReport={canLinkSprintReport}
+        />
+      ),
     },
     {
       id: 'reporter',

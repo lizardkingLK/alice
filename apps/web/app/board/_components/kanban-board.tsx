@@ -15,7 +15,6 @@ import {
   FolderDot,
   Plus,
   SquareArrowOutUpRight,
-  X,
 } from '@repo/ui/lib/icons';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
@@ -35,6 +34,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
+import {
+  parseWorkItemLabels,
+  parseWorkItemLabelsFilterParam,
+  serializeWorkItemLabelsFilter,
+} from '@repo/types';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
 import {
   assignItemsToColumns,
@@ -52,6 +56,7 @@ import {
 } from '@/app/board/_components/board-layout-menu';
 import { BoardGroupedColumnsView } from '@/app/board/_components/board-grouped-columns-view';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
+import { resolveWorkspaceDefaultsAppliedSummary } from '@/app/board/_helpers/workspace-defaults-shared';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
@@ -59,17 +64,30 @@ import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badg
 import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
 import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form/work-item-form-dialog';
 import { DescriptionView } from '@/app/work-items/_components/work-item-description/work-item-description-view';
-import { WorkItemsFilterDialog } from '@/app/work-items/_components/work-item-registry/work-items-filter-dialog';
+import {
+  WorkItemsFilterDialog,
+  type WorkItemsFilterFieldId,
+} from '@/app/work-items/_components/work-item-registry/work-items-filter-dialog';
 import {
   applyWorkItemsProjectSprintDraftToSearchParams,
   type WorkItemsFilterDraft,
 } from '@/app/work-items/_components/work-item-table/work-item-table-helpers';
 import type { FilterQuery } from '@/app/work-items/_components/work-item-table/work-items-table-types';
 import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
+import {
+  PRIORITY_LABELS,
+  type WorkItemPriority,
+} from '@/app/work-items/_helpers/work-item-priority-ui';
 import { BOARD_STATUS_COLUMN_ACCENTS } from '@/app/work-items/_helpers/work-item-status';
 import { mergeWorkItemServerRow } from '@/app/work-items/_helpers/work-item-merge-server-row';
 import { updateWorkItemStatus } from '@/app/work-items/_services/work-items.mutations.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import { AppliedFilterBadges } from '@/components/applied-filter-badges';
+import {
+  buildAppliedFilterBadgeItems,
+  planAppliedFilterRemovals,
+  resolveProjectFilterBadge,
+} from '@/components/applied-filter-badges.model';
 import { SearchInput } from '@/components/search-input';
 import { AssigneeAvatarFilter } from '@/components/assignee-avatar-filter';
 import { UserAvatar } from '@/components/user-avatar';
@@ -77,6 +95,7 @@ import { WorkItemPreviewCardBody } from '@/components/work-item-preview-card';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { useRealtime } from '@/components/realtime/realtime-provider';
 import {
+  applyQueryFilterParam,
   QUERY_FILTER_ALL_VALUE,
   useQueryFilter,
 } from '@/hooks/use-query-filter';
@@ -161,6 +180,7 @@ export function KanbanBoard({
     suggestedDefaults,
   });
   const {
+    savedPreference,
     savedDefaultsApplied,
     urlFiltersActive,
     openDefaultsDialog,
@@ -169,9 +189,18 @@ export function KanbanBoard({
 
   const projectQuery = useQueryFilter('project', projectFilter);
   const sprintQuery = useQueryFilter('sprint', sprintFilter);
+  const labelsQuery = useQueryFilter(
+    'labels',
+    searchParams.get('labels')?.trim() || ''
+  );
   const { setValue: setProjectFilterValue, allValue: projectAllValue } =
     projectQuery;
   const { setValue: setSprintFilterValue } = sprintQuery;
+  const { setValue: setLabelsFilterValue } = labelsQuery;
+  const activeLabels = useMemo(
+    () => parseWorkItemLabelsFilterParam(labelsQuery.value) ?? [],
+    [labelsQuery.value]
+  );
 
   const createProjects = useMemo(() => {
     if (!projectQuery.value || projectQuery.value === projectAllValue) {
@@ -213,12 +242,23 @@ export function KanbanBoard({
     return Array.from(byId.values());
   }, [workItems]);
 
+  const appliedDefaultsSummary = useMemo(() => {
+    if (!savedDefaultsApplied || !savedPreference) {
+      return null;
+    }
+    return resolveWorkspaceDefaultsAppliedSummary(
+      savedPreference,
+      projects,
+      sprints
+    );
+  }, [projects, savedDefaultsApplied, savedPreference, sprints]);
+
   const boardFilterFieldIds = useMemo(() => {
-    const fields: Array<'project' | 'sprint' | 'priority'> = [];
+    const fields: WorkItemsFilterFieldId[] = [];
     if (allowAllFilters || projects.length > 0) {
       fields.push('project');
     }
-    fields.push('sprint', 'priority');
+    fields.push('sprint', 'priority', 'labels');
     return fields;
   }, [allowAllFilters, projects.length]);
 
@@ -232,13 +272,26 @@ export function KanbanBoard({
     [priorityFilter]
   );
 
+  const hasLabelsFilter = activeLabels.length > 0;
   const hasLocalFilters =
     search.trim() !== '' ||
     priorityFilter !== QUERY_FILTER_ALL_VALUE ||
-    assigneeFilter !== null;
+    assigneeFilter !== null ||
+    hasLabelsFilter;
   const hasActiveFilters = hasLocalFilters || urlFiltersActive;
   const hasDialogFilters =
-    urlFiltersActive || priorityFilter !== QUERY_FILTER_ALL_VALUE;
+    urlFiltersActive ||
+    priorityFilter !== QUERY_FILTER_ALL_VALUE ||
+    hasLabelsFilter;
+
+  const pushBoardParams = useCallback(
+    (params: URLSearchParams) => {
+      params.delete('page');
+      const query = params.toString();
+      router.push(query ? `${pathname}?${query}` : pathname);
+    },
+    [pathname, router]
+  );
 
   const handleApplyFilters = useCallback(
     (draft: WorkItemsFilterDraft) => {
@@ -279,33 +332,202 @@ export function KanbanBoard({
         );
       }
 
-      params.delete('page');
-      const query = params.toString();
-      router.push(query ? `${pathname}?${query}` : pathname);
+      const labelsEncoded = serializeWorkItemLabelsFilter([...draft.labels]);
+      applyQueryFilterParam(
+        params,
+        'labels',
+        labelsEncoded || QUERY_FILTER_ALL_VALUE,
+        QUERY_FILTER_ALL_VALUE
+      );
+      setLabelsFilterValue(labelsEncoded || QUERY_FILTER_ALL_VALUE);
+
+      pushBoardParams(params);
     },
     [
       allowAllFilters,
-      pathname,
       projectAllValue,
       projects.length,
-      router,
+      pushBoardParams,
       searchParams,
+      setLabelsFilterValue,
       setProjectFilterValue,
       setSprintFilterValue,
       sprintQuery.allValue,
     ]
   );
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     setSearch('');
     setPriorityFilter(QUERY_FILTER_ALL_VALUE);
     setAssigneeFilter(null);
+    setLabelsFilterValue(QUERY_FILTER_ALL_VALUE);
+
     if (urlFiltersActive) {
       setProjectFilterValue(projectAllValue);
       setSprintFilterValue(sprintQuery.allValue);
       resetUrlFilters();
+      return;
     }
-  };
+
+    if (hasLabelsFilter) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('labels');
+      pushBoardParams(params);
+    }
+  }, [
+    hasLabelsFilter,
+    projectAllValue,
+    pushBoardParams,
+    resetUrlFilters,
+    searchParams,
+    setLabelsFilterValue,
+    setProjectFilterValue,
+    setSprintFilterValue,
+    sprintQuery.allValue,
+    urlFiltersActive,
+  ]);
+
+  const appliedFilterItems = useMemo(
+    () =>
+      buildAppliedFilterBadgeItems({
+        search,
+        project: resolveProjectFilterBadge({
+          showBadge: urlFiltersActive,
+          projectId: projectQuery.value,
+          allValue: projectAllValue,
+          resolveName: (projectId) =>
+            projects.find((project) => project.id === projectId)?.name ??
+            projectId,
+        }),
+        sprint:
+          urlFiltersActive &&
+          sprintQuery.value &&
+          sprintQuery.value !== sprintQuery.allValue
+            ? {
+                id: sprintQuery.value,
+                name:
+                  sprints.find((sprint) => sprint.id === sprintQuery.value)
+                    ?.name ?? sprintQuery.value,
+              }
+            : null,
+        priority:
+          priorityFilter !== QUERY_FILTER_ALL_VALUE
+            ? {
+                id: priorityFilter,
+                name:
+                  PRIORITY_LABELS[priorityFilter as WorkItemPriority] ??
+                  formatLabelWithSpace(priorityFilter),
+              }
+            : null,
+        assignee: assigneeFilter
+          ? {
+              id: assigneeFilter,
+              name:
+                uniqueAssignees.find(
+                  (assignee) => assignee.id === assigneeFilter
+                )?.name ?? 'Assignee',
+            }
+          : null,
+        labels: activeLabels,
+      }),
+    [
+      activeLabels,
+      assigneeFilter,
+      priorityFilter,
+      projectAllValue,
+      projectQuery.value,
+      projects,
+      search,
+      sprintQuery.allValue,
+      sprintQuery.value,
+      sprints,
+      uniqueAssignees,
+      urlFiltersActive,
+    ]
+  );
+
+  const handleRemoveAppliedFilter = useCallback(
+    (chipIds: readonly string[]) => {
+      if (chipIds.length === 0) {
+        return;
+      }
+
+      const plan = planAppliedFilterRemovals(chipIds);
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (plan.labelsToDrop.size > 0) {
+        const nextLabels = activeLabels.filter(
+          (label) => !plan.labelsToDrop.has(label)
+        );
+        const encoded = serializeWorkItemLabelsFilter(nextLabels);
+        setLabelsFilterValue(encoded || QUERY_FILTER_ALL_VALUE);
+        applyQueryFilterParam(
+          params,
+          'labels',
+          encoded || QUERY_FILTER_ALL_VALUE,
+          QUERY_FILTER_ALL_VALUE
+        );
+      }
+
+      if (plan.clearSearch) {
+        setSearch('');
+        params.delete('search');
+      }
+
+      if (plan.clearPriority) {
+        setPriorityFilter(QUERY_FILTER_ALL_VALUE);
+        applyQueryFilterParam(
+          params,
+          'priority',
+          QUERY_FILTER_ALL_VALUE,
+          QUERY_FILTER_ALL_VALUE
+        );
+      }
+
+      if (plan.clearAssignee) {
+        setAssigneeFilter(null);
+        applyQueryFilterParam(
+          params,
+          'assignee',
+          QUERY_FILTER_ALL_VALUE,
+          QUERY_FILTER_ALL_VALUE
+        );
+      }
+
+      if (plan.clearProject) {
+        setProjectFilterValue(projectAllValue);
+        setSprintFilterValue(sprintQuery.allValue);
+        resetUrlFilters();
+        return;
+      }
+
+      if (plan.clearSprint) {
+        setSprintFilterValue(sprintQuery.allValue);
+        applyQueryFilterParam(
+          params,
+          'sprint',
+          QUERY_FILTER_ALL_VALUE,
+          QUERY_FILTER_ALL_VALUE
+        );
+      }
+
+      pushBoardParams(params);
+    },
+    [
+      activeLabels,
+      projectAllValue,
+      pushBoardParams,
+      resetUrlFilters,
+      searchParams,
+      setAssigneeFilter,
+      setLabelsFilterValue,
+      setPriorityFilter,
+      setProjectFilterValue,
+      setSearch,
+      setSprintFilterValue,
+      sprintQuery.allValue,
+    ]
+  );
 
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -333,9 +555,16 @@ export function KanbanBoard({
       const matchesAssignee =
         !assigneeFilter || item.assignee_id === assigneeFilter;
 
-      return matchesSearch && matchesPriority && matchesAssignee;
+      const itemLabels = parseWorkItemLabels(item.labels);
+      const matchesLabels =
+        activeLabels.length === 0 ||
+        activeLabels.some((label) => itemLabels.includes(label));
+
+      return (
+        matchesSearch && matchesPriority && matchesAssignee && matchesLabels
+      );
     });
-  }, [workItems, search, priorityFilter, assigneeFilter]);
+  }, [workItems, search, priorityFilter, assigneeFilter, activeLabels]);
 
   const columnItemsMap = useMemo(() => {
     return assignItemsToColumns(filteredItems, boardColumns);
@@ -543,12 +772,12 @@ export function KanbanBoard({
       ) : null}
 
       <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 flex-wrap items-center gap-3">
+        <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-3">
           <SearchInput
             value={search}
             onValueChange={setSearch}
             placeholder="Search work items..."
-            className="sm:w-64"
+            className="shrink-0 sm:w-64"
           />
 
           <WorkItemsFilterDialog
@@ -559,7 +788,7 @@ export function KanbanBoard({
             sprintQuery={sprintQuery}
             typeQuery={IDLE_FILTER_QUERY}
             assigneeQuery={IDLE_FILTER_QUERY}
-            labelsQuery={IDLE_FILTER_QUERY}
+            labelsQuery={labelsQuery}
             priorityQuery={priorityQuery}
             visibleFieldIds={boardFilterFieldIds}
             isProjectLocked={!allowAllFilters && projects.length === 0}
@@ -572,6 +801,7 @@ export function KanbanBoard({
             <WorkspaceDefaultsControls
               onOpenDefaultsDialog={openDefaultsDialog}
               savedDefaultsApplied={savedDefaultsApplied}
+              appliedDefaultsSummary={appliedDefaultsSummary}
             />
           ) : null}
 
@@ -584,16 +814,11 @@ export function KanbanBoard({
           />
 
           {hasActiveFilters ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleClearFilters}
-              className="text-muted-foreground hover:text-foreground h-9 px-3 text-xs"
-            >
-              Clear filters
-              <X className="size-3.5" />
-            </Button>
+            <AppliedFilterBadges
+              items={appliedFilterItems}
+              onRemove={handleRemoveAppliedFilter}
+              onClearAll={handleClearFilters}
+            />
           ) : null}
         </div>
 

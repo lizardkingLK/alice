@@ -1,16 +1,14 @@
 'use client';
 
 import { Button } from '@repo/ui/components/ui/button';
-import {
-  Archive,
-  CircleDot,
-  List,
-  ListTree,
-  Plus,
-  X,
-} from '@repo/ui/lib/icons';
+import { Archive, CircleDot, List, ListTree, Plus } from '@repo/ui/lib/icons';
 import type { VisibilityState } from '@tanstack/react-table';
 import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
+import type { WorkspaceDefaultsAppliedSummary } from '@/app/board/_components/workspace-defaults-controls';
+import {
+  AppliedFilterBadges,
+  type AppliedFilterBadgeItem,
+} from '@/components/applied-filter-badges';
 import type { WorkItemsFilterDraft } from '@/app/work-items/_components/work-item-table/work-item-table-helpers';
 import type { FilterQuery } from '@/app/work-items/_components/work-item-table/work-items-table-types';
 import { WorkItemsColumnsDialog } from '@/app/work-items/_components/work-item-registry/work-items-columns-dialog';
@@ -90,7 +88,10 @@ export function WorkItemsTableToolbar({
   showWorkspaceDefaults,
   onOpenDefaultsDialog,
   savedDefaultsApplied,
+  appliedDefaultsSummary = null,
   hasActiveFilters,
+  appliedFilterItems,
+  onRemoveAppliedFilter,
   onClearFilters,
   onCreate,
   hideCreate = false,
@@ -128,7 +129,11 @@ export function WorkItemsTableToolbar({
   showWorkspaceDefaults: boolean;
   onOpenDefaultsDialog: () => void;
   savedDefaultsApplied: boolean;
+  appliedDefaultsSummary?: WorkspaceDefaultsAppliedSummary | null;
   hasActiveFilters: boolean;
+  appliedFilterItems: readonly AppliedFilterBadgeItem[];
+  // eslint-disable-next-line no-unused-vars -- chip dismiss batch
+  onRemoveAppliedFilter: (ids: readonly string[]) => void;
   onClearFilters: () => void;
   onCreate: () => void;
   hideCreate?: boolean;
@@ -136,13 +141,14 @@ export function WorkItemsTableToolbar({
   hideLifecycleTabs?: boolean;
 }>) {
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+    <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:flex-nowrap sm:items-center">
         <SearchInput
           value={searchQuery}
           onValueChange={onSearchChange}
           onClear={onClearSearch}
           placeholder="Search work items..."
+          className="shrink-0"
         />
 
         <WorkItemsFilterDialog
@@ -172,24 +178,20 @@ export function WorkItemsTableToolbar({
           <WorkspaceDefaultsControls
             onOpenDefaultsDialog={onOpenDefaultsDialog}
             savedDefaultsApplied={savedDefaultsApplied}
+            appliedDefaultsSummary={appliedDefaultsSummary}
           />
         ) : null}
 
         {hasActiveFilters ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onClearFilters}
-            className="text-muted-foreground hover:text-foreground h-9 cursor-pointer px-3 text-xs"
-          >
-            Clear filters
-            <X className="size-3.5" />
-          </Button>
+          <AppliedFilterBadges
+            items={appliedFilterItems}
+            onRemove={onRemoveAppliedFilter}
+            onClearAll={onClearFilters}
+          />
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 self-start">
+      <div className="flex shrink-0 flex-wrap items-center gap-3 self-start">
         <WorkItemListViewToggle
           listView={isHierarchy ? 'hierarchy' : 'flat'}
           onListViewChange={onListViewChange}

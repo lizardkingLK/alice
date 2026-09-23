@@ -5,7 +5,7 @@
 
 export const SPRINT_REPORT_FROM_QUERY = 'from';
 
-export type SprintReportFrom = 'sprints' | 'backlog';
+export type SprintReportFrom = 'sprints' | 'backlog' | 'board' | 'work-items';
 
 export function sprintReportHref(
   sprintId: string,
@@ -18,7 +18,10 @@ export function parseSprintReportFrom(
   raw: string | string[] | undefined | null
 ): SprintReportFrom {
   const value = Array.isArray(raw) ? raw[0] : raw;
-  return value === 'sprints' ? 'sprints' : 'backlog';
+  if (value === 'sprints' || value === 'board' || value === 'work-items') {
+    return value;
+  }
+  return 'backlog';
 }
 
 export function sprintReportBackNav(from: SprintReportFrom): {
@@ -27,6 +30,12 @@ export function sprintReportBackNav(from: SprintReportFrom): {
 } {
   if (from === 'sprints') {
     return { href: '/sprints', label: 'Back to Sprints' };
+  }
+  if (from === 'board') {
+    return { href: '/board', label: 'Back to Board' };
+  }
+  if (from === 'work-items') {
+    return { href: '/work-items', label: 'Back to Work Items' };
   }
   return { href: '/backlog', label: 'Back to Backlog' };
 }

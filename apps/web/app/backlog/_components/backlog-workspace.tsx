@@ -12,6 +12,11 @@ import {
   WorkspaceDefaultsDialogHost,
 } from '@/app/board/_components/workspace-defaults-dialog-host';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
+import { resolveWorkspaceDefaultsAppliedSummary } from '@/app/board/_helpers/workspace-defaults-shared';
+import { buildAppliedFilterBadgeItems } from '@/components/applied-filter-badges.model';
+import { PRIORITY_LABELS } from '@/app/work-items/_helpers/work-item-priority-ui';
+import type { WorkItemPriority } from '@/app/work-items/_helpers/work-item-priority-ui';
+import { formatLabelWithSpace } from '@/app/_shared/utility';
 import { BacklogSprintCard } from '@/app/backlog/_components/backlog-sprint-card';
 import { BacklogPanel } from '@/app/backlog/_components/backlog-panel';
 import { BacklogItemDetailsSheet } from '@/app/backlog/_components/backlog-item-details-sheet';
@@ -118,12 +123,24 @@ export function BacklogWorkspace({
     setProjectFilter,
     sprintFilter,
     setSprintFilter,
+    savedPreference,
     savedDefaultsApplied,
     baselineProjectId,
     baselineSprintId,
     openDefaultsDialog,
     resetProjectFilterToBaseline,
   } = backlogDefaults;
+
+  const appliedDefaultsSummary = useMemo(() => {
+    if (!savedDefaultsApplied || !savedPreference) {
+      return null;
+    }
+    return resolveWorkspaceDefaultsAppliedSummary(
+      savedPreference,
+      projects,
+      sprintList
+    );
+  }, [projects, savedDefaultsApplied, savedPreference, sprintList]);
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState('');
@@ -690,6 +707,85 @@ export function BacklogWorkspace({
     (sprintFilter || '') !== (baselineSprintId || '')
   );
 
+  const appliedFilterItems = useMemo(
+    () =>
+      buildAppliedFilterBadgeItems({
+        search: searchQuery,
+        project:
+          projectFilter !== 'all' && projectFilter !== baselineProjectId
+            ? {
+                id: projectFilter,
+                name:
+                  projects.find((project) => project.id === projectFilter)
+                    ?.name ?? projectFilter,
+              }
+            : null,
+        sprint:
+          (sprintFilter || '') !== (baselineSprintId || '') && sprintFilter
+            ? {
+                id: sprintFilter,
+                name:
+                  sprintList.find((sprint) => sprint.id === sprintFilter)
+                    ?.name ?? sprintFilter,
+              }
+            : null,
+        assignee:
+          assigneeFilter !== 'all'
+            ? {
+                id: assigneeFilter,
+                name:
+                  projectMembers.find((member) => member.id === assigneeFilter)
+                    ?.name ?? assigneeFilter,
+              }
+            : null,
+        priority:
+          priorityFilter !== 'all'
+            ? {
+                id: priorityFilter,
+                name:
+                  PRIORITY_LABELS[priorityFilter as WorkItemPriority] ??
+                  formatLabelWithSpace(priorityFilter),
+              }
+            : null,
+      }),
+    [
+      assigneeFilter,
+      baselineProjectId,
+      baselineSprintId,
+      priorityFilter,
+      projectFilter,
+      projectMembers,
+      projects,
+      searchQuery,
+      sprintFilter,
+      sprintList,
+    ]
+  );
+
+  const handleRemoveAppliedFilter = (chipIds: readonly string[]) => {
+    for (const chipId of chipIds) {
+      if (chipId === 'search') {
+        setSearchQuery('');
+        continue;
+      }
+      if (chipId === 'assignee') {
+        setAssigneeFilter('all');
+        continue;
+      }
+      if (chipId === 'priority') {
+        setPriorityFilter('all');
+        continue;
+      }
+      if (chipId === 'project') {
+        resetProjectFilterToBaseline();
+        continue;
+      }
+      if (chipId === 'sprint') {
+        setSprintFilter(baselineSprintId || '');
+      }
+    }
+  };
+
   // Derived counts for the sprint confirmation dialogs
   const startSprintItems = sprintToStart
     ? workItems.filter((item) => item.sprint_id === sprintToStart.id)
@@ -740,9 +836,12 @@ export function BacklogWorkspace({
           priorityFilter={priorityFilter}
           onPriorityFilterChange={setPriorityFilter}
           isFiltersActive={isFiltersActive}
+          appliedFilterItems={appliedFilterItems}
+          onRemoveAppliedFilter={handleRemoveAppliedFilter}
           onClearFilters={handleClearFilters}
           showDefaultsControls={Boolean(currentUserId)}
           savedDefaultsApplied={savedDefaultsApplied}
+          appliedDefaultsSummary={appliedDefaultsSummary}
           onOpenDefaultsDialog={openDefaultsDialog}
         />
 

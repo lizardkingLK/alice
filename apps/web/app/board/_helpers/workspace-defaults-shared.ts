@@ -70,6 +70,28 @@ export function isAllProjectsPreference(
   return preference.projectId === ALL_PROJECTS_ID;
 }
 
+/** Resolve saved defaults to display labels for the Defaults hover card. */
+export function resolveWorkspaceDefaultsAppliedSummary(
+  preference: BoardDefaultsPreference,
+  projects: readonly { readonly id: string; readonly name: string }[],
+  sprints: readonly {
+    readonly id: string;
+    readonly name: string;
+  }[]
+): { readonly projectName: string; readonly sprintName: string | null } {
+  if (isAllProjectsPreference(preference)) {
+    return { projectName: 'All projects', sprintName: null };
+  }
+  const projectName =
+    projects.find((project) => project.id === preference.projectId)?.name ??
+    preference.projectId;
+  const sprintName = preference.sprintId
+    ? (sprints.find((sprint) => sprint.id === preference.sprintId)?.name ??
+      preference.sprintId)
+    : null;
+  return { projectName, sprintName };
+}
+
 /**
  * True when the URL has no `project` query yet (client should seed defaults).
  * `project=all` is an intentional All-projects filter, not bootstrap.

@@ -502,7 +502,7 @@ export function ChartsWidgetCard({
             aria-label="Widget name"
             autoFocus
           />
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2">
             <Button
               type="button"
               variant="outline"

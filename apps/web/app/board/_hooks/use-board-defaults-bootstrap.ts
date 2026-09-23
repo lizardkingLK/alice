@@ -163,6 +163,7 @@ export function useBoardDefaultsBootstrap({
     setDefaultsDialogOpen,
     allowSkipInDialog,
     dialogInitialPreference,
+    savedPreference,
     savedDefaultsApplied,
     canClearDefaults,
     urlFiltersActive,

@@ -6,6 +6,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import type { VisibilityState } from '@tanstack/react-table';
 import WorkItemsTable from '@/app/work-items/_components/work-item-table/work-items-table';
 import { loadWorkItemChildrenAction } from '@/app/work-items/_components/work-item-registry/actions';
 import {
@@ -25,8 +26,10 @@ import {
 import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
+import { sprintFactory } from '../factories/sprint.factory';
 import { assertDebouncedSearchRedirect } from '../helpers/assert-debounced-search';
 import { paginationFactory } from '../factories/pagination.factory';
+import { DEFAULT_WORK_ITEM_TABLE_COLUMN_VISIBILITY } from '@/app/work-items/_helpers/work-item-table-columns-storage';
 
 vi.mock('@/components/realtime/realtime-provider', () => ({
   useRealtime: () => ({ isUserOnline: () => false }),
@@ -125,6 +128,9 @@ async function renderTable(
     listView: 'flat' | 'hierarchy';
     lockedProjectId: string;
     lockedAssigneeId: string;
+    sprints: ReturnType<typeof sprintFactory.build>[];
+    initialColumnVisibility: VisibilityState;
+    columnVisibilityHasCookie: boolean;
   }> = {}
 ) {
   const projects = projectFactory.buildList(1);
@@ -144,7 +150,7 @@ async function renderTable(
     <WorkItemsTable
       projects={projects}
       projectMembers={projectMembers}
-      sprints={[]}
+      sprints={overrides.sprints ?? []}
       initialWorkItems={
         overrides.initialWorkItems ?? workItemFactory.buildList(2)
       }
@@ -163,6 +169,8 @@ async function renderTable(
       currentUserId={overrides.currentUserId}
       currentUserRole={overrides.currentUserRole}
       tab={overrides.tab}
+      initialColumnVisibility={overrides.initialColumnVisibility}
+      columnVisibilityHasCookie={overrides.columnVisibilityHasCookie}
     />
   );
   await waitForColumnsHydrated();
@@ -912,6 +920,63 @@ describe('WorkItemsTable', () => {
 
     await waitFor(() => {
       expect(purgeWorkItem).toHaveBeenCalledWith('wi-purge-child');
+    });
+  });
+
+  describe('Project and Sprint relation badges', () => {
+    const sprint = sprintFactory.build({
+      id: 'sprint-alpha',
+      name: 'Sprint Alpha',
+    });
+    const itemWithSprint = workItemFactory.build({
+      id: 'wi-sprint-link',
+      title: 'Item with sprint',
+      sprint_id: sprint.id,
+      project_id: 'proj-1',
+    });
+    const columnsWithRelations: VisibilityState = {
+      ...DEFAULT_WORK_ITEM_TABLE_COLUMN_VISIBILITY,
+      project: true,
+      sprint: true,
+    };
+
+    it('links Sprint badge to summary report for managers', async () => {
+      await renderTable({
+        initialWorkItems: [itemWithSprint],
+        sprints: [sprint],
+        currentUserRole: 'manager',
+        initialColumnVisibility: columnsWithRelations,
+        columnVisibilityHasCookie: true,
+        totalCount: 1,
+        totalPages: 1,
+      });
+
+      const sprintLink = screen.getByRole('link', {
+        name: /Open Sprint Alpha in a new tab/i,
+      });
+      expect(sprintLink).toHaveAttribute(
+        'href',
+        '/sprints/sprint-alpha/report?from=work-items'
+      );
+    });
+
+    it('does not link Sprint badge for members', async () => {
+      await renderTable({
+        initialWorkItems: [itemWithSprint],
+        sprints: [sprint],
+        currentUserRole: 'member',
+        initialColumnVisibility: columnsWithRelations,
+        columnVisibilityHasCookie: true,
+        totalCount: 1,
+        totalPages: 1,
+      });
+
+      expect(screen.getByText('Sprint Alpha')).toBeInTheDocument();
+      expect(
+        screen.queryByRole('link', {
+          name: /Open Sprint Alpha in a new tab/i,
+        })
+      ).not.toBeInTheDocument();
     });
   });
 });
