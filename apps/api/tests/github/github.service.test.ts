@@ -9,9 +9,14 @@ import {
 } from '../../src/routes/api/github/github.types';
 import { IntegrationCategory, IntegrationStatus } from '@repo/types/prisma';
 
-vi.hoisted(() => {
+const { requireUserWithRoleMock } = vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
+  return { requireUserWithRoleMock: vi.fn() };
 });
+
+vi.mock('../../src/lib/auth-helpers', () => ({
+  requireUserWithRole: requireUserWithRoleMock,
+}));
 
 vi.mock('../../src/lib/prisma', () => ({
   prisma: {},
@@ -53,6 +58,7 @@ describe('GithubService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    requireUserWithRoleMock.mockResolvedValue({ id: 'user-1', role: 'admin' });
   });
 
   afterEach(() => {
@@ -316,4 +322,35 @@ describe('GithubService', () => {
       Authorization: 'Bearer gho_valid_token',
     });
   });
+
+  describe('role-based authorization', () => {
+    it('allows manager to manage GitHub connections', async () => {
+      requireUserWithRoleMock.mockResolvedValue({ id: 'user-manager', role: 'manager' });
+      listByUserIdMock.mockResolvedValue([]);
+      listAllActiveMock.mockResolvedValue([]);
+
+      const result = await service.listConnections('user-manager');
+      expect(result).toEqual([]);
+    });
+
+    it('rejects member from managing GitHub connections', async () => {
+      requireUserWithRoleMock.mockRejectedValue(
+        new Error('Unauthorized. Only admins and managers can manage GitHub connections.')
+      );
+
+      await expect(service.startOAuth('user-member')).rejects.toThrow(
+        'Unauthorized. Only admins and managers can manage GitHub connections.'
+      );
+      await expect(service.listConnections('user-member')).rejects.toThrow(
+        'Unauthorized. Only admins and managers can manage GitHub connections.'
+      );
+      await expect(service.deleteConnection('user-member', 'conn-1')).rejects.toThrow(
+        'Unauthorized. Only admins and managers can manage GitHub connections.'
+      );
+      await expect(service.listRepositories('user-member')).rejects.toThrow(
+        'Unauthorized. Only admins and managers can manage GitHub connections.'
+      );
+    });
+  });
 });
+

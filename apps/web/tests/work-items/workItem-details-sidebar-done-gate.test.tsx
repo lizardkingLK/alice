@@ -3,8 +3,20 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import WorkItemSidebar from '@/app/work-items/_components/work-item-details/work-item-details-sidebar';
 import { workItemFactory } from '../factories/workItem.factory';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
-import type { WorkItemStatus } from '@repo/types';
+import {
+  type WorkItemStatus,
+  WorkItemGithubConfigStatusEnum,
+  WORK_ITEM_GITHUB_STATUS_MESSAGES,
+  UserRoleEnum,
+} from '@repo/types';
 import { linkPR } from '@/app/work-items/_services/work-items.mutations.client';
+import { getLinkedPRs } from '@/app/work-items/_services/work-items.reads.client';
+import {
+  mockPush,
+  resetNextNavigationMock,
+} from '../mocks/next-navigation';
+
+vi.mock('next/navigation', () => import('../mocks/next-navigation'));
 
 vi.mock(
   '@repo/ui/components/ui/dropdown-menu',
@@ -81,6 +93,8 @@ type RenderSidebarOptions = {
   readonly moreFieldsOpen?: boolean;
   // eslint-disable-next-line no-unused-vars -- open-change callback signature
   readonly setMoreFieldsOpen?: (open: boolean) => void;
+  readonly currentUserRole?: string | null;
+  readonly readOnly?: boolean;
 };
 
 function renderSidebar({
@@ -88,6 +102,8 @@ function renderSidebar({
   childStatuses = [],
   moreFieldsOpen = false,
   setMoreFieldsOpen = vi.fn(),
+  currentUserRole = UserRoleEnum.admin,
+  readOnly = false,
 }: RenderSidebarOptions = {}) {
   return render(
     <WorkItemSidebar
@@ -98,6 +114,8 @@ function renderSidebar({
       moreFieldsOpen={moreFieldsOpen}
       setMoreFieldsOpen={setMoreFieldsOpen}
       onWorkItemPatched={vi.fn()}
+      currentUserRole={currentUserRole}
+      readOnly={readOnly}
     />
   );
 }
@@ -105,6 +123,7 @@ function renderSidebar({
 describe('WorkItemSidebar Done gate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetNextNavigationMock();
   });
 
   it('shows acknowledgment when selecting Done with incomplete subtasks', () => {
@@ -309,3 +328,125 @@ describe('WorkItemSidebar Link PR', () => {
     );
   });
 });
+
+describe('WorkItemSidebar GitHub Integration & Role Restrictions', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetNextNavigationMock();
+  });
+
+  it('displays missing configuration message and enables Update Connection for manager', async () => {
+    vi.mocked(getLinkedPRs).mockResolvedValueOnce({
+      prs: [],
+      githubRepo: null,
+      status: WorkItemGithubConfigStatusEnum.missing,
+      message: WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.missing],
+    });
+
+    renderSidebar({ currentUserRole: UserRoleEnum.manager });
+
+    expect(
+      await screen.findByText(
+        WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.missing]
+      )
+    ).toBeInTheDocument();
+
+    const updateBtn = screen.getByRole('button', { name: /update connection/i });
+    expect(updateBtn).not.toBeDisabled();
+
+    fireEvent.click(updateBtn);
+    expect(mockPush).toHaveBeenCalledWith(
+      '/settings?tab=integrations&showPopup=1&integration=github'
+    );
+  });
+
+  it('displays stale configuration message and navigates on click for admin', async () => {
+    vi.mocked(getLinkedPRs).mockResolvedValueOnce({
+      prs: [],
+      githubRepo: 'owner/repo',
+      status: WorkItemGithubConfigStatusEnum.stale,
+      message: WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.stale],
+    });
+
+    renderSidebar({ currentUserRole: UserRoleEnum.admin });
+
+    expect(
+      await screen.findByText(
+        WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.stale]
+      )
+    ).toBeInTheDocument();
+
+    const updateBtn = screen.getByRole('button', { name: /update connection/i });
+    expect(updateBtn).not.toBeDisabled();
+
+    fireEvent.click(updateBtn);
+    expect(mockPush).toHaveBeenCalledWith(
+      '/settings?tab=integrations&showPopup=1&integration=github'
+    );
+  });
+
+  it('displays invalid configuration message', async () => {
+    vi.mocked(getLinkedPRs).mockResolvedValueOnce({
+      prs: [],
+      githubRepo: 'owner/repo',
+      status: WorkItemGithubConfigStatusEnum.invalid,
+      message: WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.invalid],
+    });
+
+    renderSidebar({ currentUserRole: UserRoleEnum.admin });
+
+    expect(
+      await screen.findByText(
+        WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.invalid]
+      )
+    ).toBeInTheDocument();
+
+    const updateBtn = screen.getByRole('button', { name: /update connection/i });
+    expect(updateBtn).toBeInTheDocument();
+  });
+
+  it('restricts Member role from updating GitHub connection', async () => {
+    vi.mocked(getLinkedPRs).mockResolvedValueOnce({
+      prs: [],
+      githubRepo: null,
+      status: WorkItemGithubConfigStatusEnum.missing,
+      message: WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.missing],
+    });
+
+    renderSidebar({ currentUserRole: UserRoleEnum.member });
+
+    expect(
+      await screen.findByText(
+        WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.missing]
+      )
+    ).toBeInTheDocument();
+
+    const updateBtn = screen.getByRole('button', { name: /update connection/i });
+    expect(updateBtn).toBeDisabled();
+
+    fireEvent.click(updateBtn);
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('does not render Update Connection button when readOnly is true', async () => {
+    vi.mocked(getLinkedPRs).mockResolvedValueOnce({
+      prs: [],
+      githubRepo: null,
+      status: WorkItemGithubConfigStatusEnum.missing,
+      message: WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.missing],
+    });
+
+    renderSidebar({ currentUserRole: UserRoleEnum.admin, readOnly: true });
+
+    expect(
+      await screen.findByText(
+        WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.missing]
+      )
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole('button', { name: /update connection/i })
+    ).not.toBeInTheDocument();
+  });
+});
+

@@ -127,6 +127,7 @@ export async function WorkItemDetailsData({
     }));
 
   const currentUserId = dbUser?.id ?? 'user-admin-1';
+  const currentUserRole = dbUser?.role;
 
   return (
     <WorkItemDetails
@@ -140,6 +141,7 @@ export async function WorkItemDetailsData({
       initialAttachments={initialAttachments}
       initialWorkLogs={initialWorkLogs}
       currentUserId={currentUserId}
+      currentUserRole={currentUserRole}
       projectMembers={memberOptions}
       discussionWorkItems={discussionWorkItems}
     />

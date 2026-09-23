@@ -70,3 +70,39 @@ export const githubOAuthStartResponseSchema = z.object({
 export type GithubOAuthStartResponse = z.infer<
   typeof githubOAuthStartResponseSchema
 >;
+
+export enum WorkItemGithubConfigStatusEnum {
+  connected = 'connected',
+  missing = 'missing',
+  invalid = 'invalid',
+  stale = 'stale',
+}
+
+export const WORK_ITEM_GITHUB_CONFIG_STATUSES = [
+  WorkItemGithubConfigStatusEnum.connected,
+  WorkItemGithubConfigStatusEnum.missing,
+  WorkItemGithubConfigStatusEnum.invalid,
+  WorkItemGithubConfigStatusEnum.stale,
+] as const;
+
+export const workItemGithubConfigStatusSchema = z.enum(
+  WORK_ITEM_GITHUB_CONFIG_STATUSES
+);
+
+export type WorkItemGithubConfigStatus = z.infer<
+  typeof workItemGithubConfigStatusSchema
+>;
+
+export const WORK_ITEM_GITHUB_STATUS_MESSAGES: Record<
+  WorkItemGithubConfigStatusEnum,
+  string
+> = {
+  [WorkItemGithubConfigStatusEnum.connected]: 'GitHub Integration is connected.',
+  [WorkItemGithubConfigStatusEnum.missing]:
+    'GitHub configuration is missing for this project.',
+  [WorkItemGithubConfigStatusEnum.invalid]:
+    'GitHub configuration is invalid. Please update the connection.',
+  [WorkItemGithubConfigStatusEnum.stale]:
+    'GitHub connection is stale or expired. Please re-authenticate.',
+};
+

@@ -18,6 +18,9 @@ import {
   type WorkItemListRowWithDescription,
   UserRoleEnum,
   RecordStatusEnum,
+  WorkItemGithubConfigStatusEnum,
+  WORK_ITEM_GITHUB_STATUS_MESSAGES,
+  type WorkItemGithubConfigStatus,
 } from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { env } from '../../../config/env';
@@ -41,6 +44,10 @@ import {
   WorkItemValidationError,
 } from './workItems.errors';
 import type { GithubService } from '../github/github.service';
+import {
+  GithubInsufficientScopeError,
+  GithubReauthorizationRequiredError,
+} from '../github/github.types';
 import { prisma } from '../../../lib/prisma';
 import { decryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
 
@@ -964,13 +971,45 @@ export class WorkItemService {
       commits: { sha: string; message: string; author: string; date: string }[];
     })[];
     githubRepo: string | null;
+    status: WorkItemGithubConfigStatus;
+    message?: string;
   }> {
     await this.workItems.requireProjectMember(workItemId, actorId);
     const prs = await this.workItems.listLinkedPRs(workItemId);
     const settings =
       await this.workItems.getProjectGithubSettingsByWorkItem(workItemId);
 
-    const headers = await this.resolveGithubHeaders(settings?.github_token);
+    if (!settings?.github_repo) {
+      return {
+        prs: [],
+        githubRepo: null,
+        status: WorkItemGithubConfigStatusEnum.missing,
+        message:
+          WORK_ITEM_GITHUB_STATUS_MESSAGES[
+            WorkItemGithubConfigStatusEnum.missing
+          ],
+      };
+    }
+
+    let headers: Record<string, string>;
+    try {
+      headers = await this.resolveGithubHeaders(settings.github_token);
+    } catch (error) {
+      const isStale =
+        error instanceof GithubReauthorizationRequiredError ||
+        error instanceof GithubInsufficientScopeError ||
+        (error instanceof Error &&
+          /reconnect|expired|reauthoriz|stale/i.test(error.message));
+      const status = isStale
+        ? WorkItemGithubConfigStatusEnum.stale
+        : WorkItemGithubConfigStatusEnum.invalid;
+      return {
+        prs: [],
+        githubRepo: settings.github_repo,
+        status,
+        message: WORK_ITEM_GITHUB_STATUS_MESSAGES[status],
+      };
+    }
 
     const result = [];
     for (const pr of prs) {
@@ -1020,7 +1059,12 @@ export class WorkItemService {
 
     return {
       prs: result,
-      githubRepo: settings?.github_repo || null,
+      githubRepo: settings.github_repo,
+      status: WorkItemGithubConfigStatusEnum.connected,
+      message:
+        WORK_ITEM_GITHUB_STATUS_MESSAGES[
+          WorkItemGithubConfigStatusEnum.connected
+        ],
     };
   }
 

@@ -10,6 +10,8 @@ import { workItemFactory } from '../factories/workItem.factory';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 
+vi.mock('next/navigation', () => import('../mocks/next-navigation'));
+
 vi.mock(
   '@repo/ui/components/ui/dropdown-menu',
   () => import('../mocks/dropdown-menu')

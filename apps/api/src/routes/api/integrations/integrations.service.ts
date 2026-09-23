@@ -24,11 +24,11 @@ import { IntegrationStatus, Prisma } from '@repo/types/prisma';
 import type { ResolvedChatModelConfig } from './chat-providers/chat-provider.types';
 import type { IntegrationsRepository } from './integrations.repository';
 
-async function requireAdmin(actorId: string) {
+async function requireIntegrationManager(actorId: string) {
   return await requireUserWithRole(
     actorId,
-    [UserRoleEnum.admin],
-    'Unauthorized. Only administrators can manage integrations.'
+    [UserRoleEnum.admin, UserRoleEnum.manager],
+    'Unauthorized. Only admins and managers can manage integrations.'
   );
 }
 
@@ -217,7 +217,7 @@ export class IntegrationsService {
     actorId: string,
     query: ListIntegrationsQuery
   ): Promise<IntegrationWire[]> {
-    await requireAdmin(actorId);
+    await requireIntegrationManager(actorId);
     const rows = await this.integrationsRepository.list(query);
     return rows.map(stripIntegrationSecrets);
   }
@@ -226,7 +226,7 @@ export class IntegrationsService {
     actorId: string,
     id: string
   ): Promise<IntegrationDetailWire | null> {
-    await requireAdmin(actorId);
+    await requireIntegrationManager(actorId);
     const row = await this.integrationsRepository.findById(id);
     if (!row) {
       return null;
@@ -251,7 +251,7 @@ export class IntegrationsService {
     actorId: string,
     input: CreateIntegrationBody
   ): Promise<IntegrationDetailWire> {
-    await requireAdmin(actorId);
+    await requireIntegrationManager(actorId);
 
     const row = await this.integrationsRepository.create({
       actorId,
@@ -273,7 +273,7 @@ export class IntegrationsService {
     id: string,
     input: PatchIntegrationBody
   ): Promise<IntegrationDetailWire> {
-    await requireAdmin(actorId);
+    await requireIntegrationManager(actorId);
 
     const existing = await this.integrationsRepository.findById(id);
     if (!existing) {
@@ -307,7 +307,7 @@ export class IntegrationsService {
   }
 
   async deleteIntegration(actorId: string, id: string): Promise<void> {
-    await requireAdmin(actorId);
+    await requireIntegrationManager(actorId);
     await this.integrationsRepository.disable(id, actorId);
   }
 

@@ -12,7 +12,8 @@ import {
   Prisma,
   type integrations,
 } from '@repo/types/prisma';
-import { utcNow } from '@repo/types';
+import { UserRoleEnum, utcNow } from '@repo/types';
+import { requireUserWithRole } from '../../../lib/auth-helpers';
 import type { GithubRepository } from './github.repository';
 import {
   GithubConnectionStatusEnum,
@@ -30,6 +31,14 @@ const OAUTH_SCOPES = 'repo read:user';
 const ACCESS_TOKEN_SKEW_MS = 60 * 1000;
 const GITHUB_API_URL = 'https://api.github.com';
 const GITHUB_OAUTH_URL = 'https://github.com/login/oauth';
+
+async function requireGithubManager(actorId: string) {
+  return await requireUserWithRole(
+    actorId,
+    [UserRoleEnum.admin, UserRoleEnum.manager],
+    'Unauthorized. Only admins and managers can manage GitHub connections.'
+  );
+}
 
 function requireGithubConfig(): {
   clientId: string;
@@ -50,6 +59,7 @@ function requireGithubConfig(): {
 export class GithubService {
   constructor(private readonly githubRepository: GithubRepository) {}
 
+
   buildAuthorizeUrl(userId: string): string {
     const { clientId, redirectUri } = requireGithubConfig();
     const state = createOAuthState(userId, 'sign GitHub OAuth state (HMAC)');
@@ -66,6 +76,7 @@ export class GithubService {
   }
 
   async startOAuth(actorId: string): Promise<{ url: string }> {
+    await requireGithubManager(actorId);
     return { url: this.buildAuthorizeUrl(actorId) };
   }
 
@@ -77,6 +88,7 @@ export class GithubService {
       state,
       'sign GitHub OAuth state (HMAC)'
     );
+    await requireGithubManager(userId);
 
     const tokens = await this.exchangeAuthorizationCode(code);
     const userInfo = await this.fetchUserProfile(tokens.access_token);
@@ -110,6 +122,7 @@ export class GithubService {
   }
 
   async listConnections(actorId: string): Promise<GithubConnectionDto[]> {
+    await requireGithubManager(actorId);
     const rows = await this.githubRepository.listByUserId(actorId);
     if (rows.length > 0) {
       return rows.map((r) => this.toConnectionDto(r));
@@ -120,6 +133,7 @@ export class GithubService {
   }
 
   async deleteConnection(actorId: string, id: string): Promise<void> {
+    await requireGithubManager(actorId);
     const deleted = await this.githubRepository.deleteById(id, actorId);
     if (!deleted) {
       throw new Error('GitHub connection not found.');
@@ -184,6 +198,7 @@ export class GithubService {
     actorId: string,
     connectionId?: string
   ): Promise<GithubRepoOption[]> {
+    await requireGithubManager(actorId);
     const accessToken = await this.getValidAccessToken(connectionId);
 
     const response = await fetch(

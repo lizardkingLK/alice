@@ -27,6 +27,10 @@ export interface RawSearchParams {
   ownership?: string;
   /** Charts registry no longer uses these; kept for older bookmarked URLs. */
   status?: string;
+  /** Query parameter to automatically open integration popup (e.g. `1` or `true`). */
+  showPopup?: string;
+  /** Integration identifier to open in settings integrations view (e.g. `github`). */
+  integration?: string | string[];
 }
 
 export interface ParsedStandardParams {
@@ -250,12 +254,12 @@ export function parseSettingsTab(tab?: string | null): SettingsTab {
   return 'general';
 }
 
-/** Coerce admin-only tabs when the signed-in user is not an administrator. */
+/** Coerce privileged tabs when the signed-in user is not authorized to manage integrations (Admin/Manager). */
 export function resolveSettingsTabForUser(
   tab: SettingsTab,
-  userIsAdmin: boolean
+  canManageIntegrations: boolean
 ): SettingsTab {
-  if (tab === 'integrations' && !userIsAdmin) {
+  if (tab === 'integrations' && !canManageIntegrations) {
     return 'general';
   }
   return tab;
