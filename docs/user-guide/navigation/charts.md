@@ -108,8 +108,8 @@ On `/charts/[id]`:
 - Open the **⋯** menu for **Full screen**, **Rename**, **Duplicate**, or
   **Delete** (**Dock this widget** is disabled for now)
 
-Chart widgets show a pie or donut. Layout modes (Chart / Table / Split) apply
-only inside the fullscreen configuration window.
+Chart widgets show a pie, donut, or bar chart. Layout modes (Chart / Table /
+Split) apply only inside the fullscreen configuration window.
 
 ---
 
@@ -128,7 +128,7 @@ Use the **split view** button in the toolbar to choose:
 
 | Layout     | What you see                                           |
 | ---------- | ------------------------------------------------------ |
-| Chart      | Full pie or donut chart (default)                      |
+| Chart      | Full pie, donut, or bar chart (default donut)          |
 | Table      | Collapsible groups of work items by status (paginated) |
 | Split mode | Chart on top and the status table underneath           |
 
@@ -144,10 +144,10 @@ Pick another layout to clear the slice focus.
 ### Widget settings
 
 1. Select the **settings** (gear) button in the fullscreen toolbar.
-2. Under **Chart type**, choose **Pie** or **Donut**. Other chart types show
-   **Coming soon**.
+2. Under **Chart type**, choose **Pie**, **Donut**, or **Bar**. Other chart
+   types show **Coming soon**.
 3. Under **Labels** → **Columns**, choose how to group the chart: **Project**,
-   **Owner**, **Status**, **Type**, or **Priority**. The pie and legend update
+   **Owner**, **Status**, **Type**, or **Priority**. The chart and legend update
    from live work-item counts.
 4. Under **Values**, charts use **Count items** only (other calculations are
    coming later).

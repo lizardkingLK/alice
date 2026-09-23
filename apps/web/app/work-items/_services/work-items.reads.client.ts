@@ -92,5 +92,3 @@ export async function getWorkItemById(workItemId: string): Promise<DbWorkItem> {
 
   return result.data;
 }
-
-

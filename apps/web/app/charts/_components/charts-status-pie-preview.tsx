@@ -3,6 +3,18 @@
 import { useMemo, useState } from 'react';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ChartTooltip,
+  ChartTooltipContent,
+  Rectangle,
+  type BarShapeProps,
+  type ChartConfig,
+  XAxis,
+  YAxis,
+} from '@repo/ui/components/ui/chart';
 import { ChartPie, Loader2 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import type { ChartSeriesLabelField, ChartSeriesSlice } from '@repo/types';
@@ -10,6 +22,7 @@ import { buildChartsPieFromSeries } from '@/app/charts/_helpers/charts-analytics
 import type { ChartPieVariant } from '@/app/charts/_components/charts.types';
 import type { ChartsStatusPieSlice } from '@/app/charts/_components/charts-sample.data';
 import { ChartsEmptyState } from '@/app/charts/_components/charts-empty-state';
+import { ChartViewport } from '@/components/chart-viewport';
 import {
   StatusDistributionWheel,
   type StatusDistributionSlice,
@@ -24,7 +37,7 @@ type ChartsStatusPiePreviewProps = {
   readonly loading?: boolean;
   readonly emptyMessage?: string;
   readonly totalLabel?: string;
-  /** Pie (solid) vs donut; defaults to donut. */
+  /** Pie (solid), donut, or horizontal bar; defaults to donut. */
   readonly pieVariant?: ChartPieVariant;
   /** Currently selected slice key (legend / pie toggle). */
   readonly selectedSliceKey?: string | null;
@@ -326,6 +339,131 @@ function ChartsPieWheelPane({
   );
 }
 
+function chartKeyFromBarEvent(item: unknown): string | null {
+  if (!item || typeof item !== 'object') {
+    return null;
+  }
+  const record = item as Record<string, unknown>;
+  if (typeof record.status === 'string') {
+    return record.status;
+  }
+  const payload = record.payload;
+  if (payload && typeof payload === 'object') {
+    const status = (payload as Record<string, unknown>).status;
+    if (typeof status === 'string') {
+      return status;
+    }
+  }
+  return null;
+}
+
+/** Recharts clones this element and injects bar geometry props per datum. */
+function ChartsStatusBarShape({
+  selectedSliceKey,
+  ...shapeProps
+}: Partial<BarShapeProps> & {
+  readonly selectedSliceKey: string | null;
+}) {
+  const payload = shapeProps.payload as ChartsStatusPieSlice | undefined;
+  const dimmed =
+    selectedSliceKey != null &&
+    payload != null &&
+    payload.key !== selectedSliceKey;
+
+  return (
+    <Rectangle
+      {...shapeProps}
+      fill={payload?.fill ?? shapeProps.fill}
+      fillOpacity={dimmed ? 0.4 : 1}
+    />
+  );
+}
+
+function ChartsStatusBarPane({
+  data,
+  config,
+  isRoomy,
+  selectedSliceKey,
+  sliceInteractive,
+  onHoverStatus,
+  onSliceChartKey,
+}: Readonly<{
+  data: readonly ChartsStatusPieSlice[];
+  config: ChartConfig;
+  isRoomy: boolean;
+  selectedSliceKey: string | null;
+  sliceInteractive: boolean;
+  // eslint-disable-next-line no-unused-vars
+  onHoverStatus: (status: string | null) => void;
+  // eslint-disable-next-line no-unused-vars
+  onSliceChartKey: (chartKey: string) => void;
+}>) {
+  return (
+    <div className="relative h-full min-h-0 w-full max-w-full min-w-0 flex-1 self-stretch">
+      <ChartViewport
+        config={config}
+        className="h-full min-h-0 w-full"
+        chartClassName="aspect-auto! h-full w-full"
+      >
+        <BarChart
+          layout="vertical"
+          data={[...data]}
+          margin={{
+            left: 4,
+            right: 12,
+            top: 8,
+            bottom: 4,
+          }}
+          onMouseLeave={() => {
+            onHoverStatus(null);
+          }}
+        >
+          <CartesianGrid horizontal={false} />
+          <XAxis
+            type="number"
+            tickLine={false}
+            axisLine={false}
+            allowDecimals={false}
+            tickMargin={6}
+          />
+          <YAxis
+            type="category"
+            dataKey="label"
+            width={isRoomy ? 104 : 80}
+            tickLine={false}
+            axisLine={false}
+            tickMargin={4}
+          />
+          <ChartTooltip
+            cursor={{ fill: 'var(--muted)', opacity: 0.35 }}
+            content={<ChartTooltipContent hideLabel nameKey="status" />}
+          />
+          <Bar
+            dataKey="count"
+            name="count"
+            radius={[0, 6, 6, 0]}
+            maxBarSize={isRoomy ? 28 : 20}
+            cursor={sliceInteractive ? 'pointer' : undefined}
+            shape={<ChartsStatusBarShape selectedSliceKey={selectedSliceKey} />}
+            onMouseEnter={(item) => {
+              onHoverStatus(chartKeyFromBarEvent(item));
+            }}
+            onClick={(item) => {
+              if (!sliceInteractive) {
+                return;
+              }
+              const status = chartKeyFromBarEvent(item);
+              if (status) {
+                onSliceChartKey(status);
+              }
+            }}
+          />
+        </BarChart>
+      </ChartViewport>
+    </div>
+  );
+}
+
 export function ChartsStatusPiePreview({
   className,
   size = 'card',
@@ -358,7 +496,8 @@ export function ChartsStatusPiePreview({
   );
 
   const sliceInteractive = Boolean(onSliceClick);
-  const isDonut = pieVariant !== 'pie';
+  const isBar = pieVariant === 'bar';
+  const isDonut = pieVariant === 'donut';
   const selectedEntry = findEntryByKey(data, selectedSliceKey);
   const hoveredEntry = findEntryByChartStatus(data, hoveredChartStatus);
   const focusEntry = hoveredEntry ?? selectedEntry ?? null;
@@ -377,6 +516,12 @@ export function ChartsStatusPiePreview({
     );
   }
 
+  const onSliceChartKey = (chartKey: string) => {
+    const sliceKey =
+      data.find((entry) => entry.status === chartKey)?.key ?? chartKey;
+    onSliceClick?.(sliceKey);
+  };
+
   return (
     <div
       className={cn(
@@ -385,22 +530,30 @@ export function ChartsStatusPiePreview({
         className
       )}
     >
-      <ChartsPieWheelPane
-        wheelData={data as StatusDistributionSlice[]}
-        config={config}
-        innerRadius={isDonut ? '48%' : 0}
-        activeChartStatus={focusEntry?.status ?? null}
-        isDonut={isDonut}
-        sliceInteractive={sliceInteractive}
-        focusEntry={focusEntry}
-        showValueAs={showValueAs}
-        onHoverStatus={setHoveredChartStatus}
-        onSliceChartKey={(chartKey) => {
-          const sliceKey =
-            data.find((entry) => entry.status === chartKey)?.key ?? chartKey;
-          onSliceClick?.(sliceKey);
-        }}
-      />
+      {isBar ? (
+        <ChartsStatusBarPane
+          data={data}
+          config={config}
+          isRoomy={isRoomy}
+          selectedSliceKey={selectedSliceKey}
+          sliceInteractive={sliceInteractive}
+          onHoverStatus={setHoveredChartStatus}
+          onSliceChartKey={onSliceChartKey}
+        />
+      ) : (
+        <ChartsPieWheelPane
+          wheelData={data as StatusDistributionSlice[]}
+          config={config}
+          innerRadius={isDonut ? '48%' : 0}
+          activeChartStatus={focusEntry?.status ?? null}
+          isDonut={isDonut}
+          sliceInteractive={sliceInteractive}
+          focusEntry={focusEntry}
+          showValueAs={showValueAs}
+          onHoverStatus={setHoveredChartStatus}
+          onSliceChartKey={onSliceChartKey}
+        />
+      )}
       <ChartsPieLegend
         data={data}
         isRoomy={isRoomy}
