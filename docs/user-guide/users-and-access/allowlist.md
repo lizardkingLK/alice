@@ -26,6 +26,18 @@ You'll see all domain and email entries with their status.
 Each entry can be **active** or **inactive**. Inactive entries do not grant
 admission.
 
+The Allowlist table status badge is display-only:
+
+| Stored status                     | Expiry (`expires_at`, UTC) | Badge shown |
+| --------------------------------- | -------------------------- | ----------- |
+| **inactive** / archived / deleted | any                        | that status |
+| **active**                        | empty / future             | **active**  |
+| **active**                        | past (or invalid)          | **expired** |
+
+**Expired** means the row is still `active` in the database but no longer
+admits sign-in until you clear or extend the expiry (or deactivate it).
+Edit the entry to fix the date — the badge updates on refresh.
+
 ---
 
 ## Add an entry

@@ -6,6 +6,7 @@ import {
   normalizeEmail,
 } from '@/lib/access-allowlist';
 import {
+  getAccessAllowlistDisplayStatus,
   isActorOwnAllowlistDomain,
   isOwnAllowlistDomainLockout,
 } from '@repo/types';
@@ -155,5 +156,39 @@ describe('isAllowlistExpired', () => {
 
   it('treats an invalid date string as expired', () => {
     expect(isAllowlistExpired('not-a-date', now)).toBe(true);
+  });
+});
+
+describe('getAccessAllowlistDisplayStatus', () => {
+  const now = new Date('2026-07-15T12:00:00.000Z');
+
+  it('keeps inactive and archived statuses even when expiry has passed', () => {
+    expect(
+      getAccessAllowlistDisplayStatus(
+        'inactive',
+        '2020-01-01T00:00:00.000Z',
+        now
+      )
+    ).toBe('inactive');
+    expect(
+      getAccessAllowlistDisplayStatus(
+        'archived',
+        '2020-01-01T00:00:00.000Z',
+        now
+      )
+    ).toBe('archived');
+  });
+
+  it('shows expired when active and expires_at is past UTC now', () => {
+    expect(
+      getAccessAllowlistDisplayStatus('active', '2026-07-01T00:00:00.000Z', now)
+    ).toBe('expired');
+  });
+
+  it('keeps active when expiry is null or still in the future', () => {
+    expect(getAccessAllowlistDisplayStatus('active', null, now)).toBe('active');
+    expect(
+      getAccessAllowlistDisplayStatus('active', '2026-08-01T00:00:00.000Z', now)
+    ).toBe('active');
   });
 });
