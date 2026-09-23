@@ -15,8 +15,8 @@ Plan and reschedule work by due date on a month grid.
 
 ## Toolbar
 
-**Left:** **Filter** (**Shift+F**), Clear filters (when active), and **Defaults**
-(sliders).
+**Left:** **Filter** (**Shift+F**), applied-filter badges (when active), and
+**Defaults** (sliders).
 
 **Right:** Month navigation, **Today**, and **Unscheduled** (list icon — opens
 the unscheduled panel; no count badge).

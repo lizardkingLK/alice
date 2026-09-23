@@ -26,6 +26,7 @@ vi.mock('@/components/optimistic-lock/optimistic-lock-provider', () => ({
 }));
 vi.mock('@/app/board/_hooks/use-board-defaults-bootstrap', () => ({
   useBoardDefaultsBootstrap: () => ({
+    savedPreference: null,
     savedDefaultsApplied: false,
     urlFiltersActive: false,
     openDefaultsDialog: vi.fn(),

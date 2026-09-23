@@ -32,12 +32,18 @@ shows the same table filtered to items assigned to you.
 
 Left side (filters and columns):
 
-| Control               | Purpose                                                 |
-| --------------------- | ------------------------------------------------------- |
-| Search (**Ctrl/⌘+K**) | Filter by text                                          |
-| Filters (**Shift+F**) | Filter icon → project, sprint, type, assignee, and more |
-| Columns               | Columns icon → show or hide table columns               |
-| Defaults (sliders)    | Save or apply workspace project/sprint defaults         |
+| Control               | Purpose                                                                                                                                                                                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Search (**Ctrl/⌘+K**) | Filter by text                                                                                                                                                                                                                              |
+| Filters (**Shift+F**) | Filter icon → project, sprint, type, assignee, and more                                                                                                                                                                                     |
+| Columns               | Columns icon → show or hide table columns                                                                                                                                                                                                   |
+| Defaults (sliders)    | Save or apply workspace project/sprint defaults                                                                                                                                                                                             |
+| Applied filters       | Badges inline with toolbar controls (dismiss one or clear all). Overflowing chips scroll horizontally; scrollbar is hidden. Rapid chip dismissals are batched into one update after a short pause — use the filter dialog for bulk changes. |
+
+In the table, **Project** cells are badges that open project details in a new
+tab. **Sprint** cells are the same style of badge; for managers and admins they
+link to the sprint summary report in a new tab. Members see the sprint name as
+a plain badge (sprint reports require manager access).
 
 Right side (views and actions):
 

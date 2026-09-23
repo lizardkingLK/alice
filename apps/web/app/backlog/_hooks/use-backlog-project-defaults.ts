@@ -143,6 +143,7 @@ export function useBacklogProjectDefaults({
     setProjectFilter: updateProjectFilter,
     sprintFilter,
     setSprintFilter: updateSprintFilter,
+    savedPreference,
     savedDefaultsApplied,
     canClearDefaults,
     baselineProjectId,

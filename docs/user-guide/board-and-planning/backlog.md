@@ -19,9 +19,10 @@ Typical layout:
 - **Backlog pane** — items not in a sprint (or unscheduled work)
 - **Sprint cards** — active sprints with room for planned items
 
-The toolbar matches other registries: **Search**, **Filter** (**Shift+F**), and
-**Defaults** on the left; **Layout** (icon), **Active** / **Completed** tabs, and
-a **+** menu (**Create Sprint** / **Create Work-Item**) on the right.
+The toolbar matches other registries: **Search**, **Filter** (**Shift+F**),
+**Defaults**, and applied-filter badges (when active) on the left; **Layout**
+(icon), **Active** / **Completed** tabs, and a **+** menu (**Create Sprint** /
+**Create Work-Item**) on the right.
 
 **Workspace defaults** on backlog apply **project and sprint**. When a sprint is
 saved in defaults (or chosen as **All Sprints**), the sprint cards pane shows
