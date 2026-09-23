@@ -22,7 +22,17 @@ On the detail page:
 - **Status**, **priority**, **assignee**, **reporter**, **labels**, **due date**,
   **sprint**, and other fields in the sidebar
 
-Changes save when you submit the relevant control or form section.
+## Edit from a dialog
+
+Create/edit dialogs (work-item list, board, calendar, charts table, and similar)
+use the shared **Work Item** form:
+
+- Opening **Edit** loads the full work item (including description) before the
+  form binds — list and chart table rows intentionally omit TipTap JSON.
+- **Description** uses the same compact rich-text editor as comments (select
+  text for formatting).
+- Validation and save messages stay **above Cancel / Save** so you do not need
+  to scroll the form to see them.
 
 ---
 

@@ -9,6 +9,7 @@ Related:
 - [`../features/work-items/`](../features/work-items/) — feature index
 - `apps/web/app/work-items/_components/workItem-description-editor.tsx` — editor UI
 - `apps/web/app/work-items/_helpers/work-item-description.ts` — plain-text helpers for read mode
+- `apps/web/app/work-items/_components/work-item-form/work-item-form-modern-description.tsx` — compact TipTap for create/edit dialogs (classic + modern layouts; same `compact` mode as comments)
 
 ---
 

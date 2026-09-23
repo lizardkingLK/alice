@@ -45,8 +45,8 @@ export type ChartWidgetCatalogItem = {
 /** How a Chart widget body is composed (persisted on the instance). */
 export type ChartWidgetViewMode = 'chart' | 'table' | 'split';
 
-/** Pie family subtype for Chart widgets (default donut matches today’s wheel). */
-export type ChartPieVariant = 'pie' | 'donut';
+/** Chart family subtype for Chart widgets (default donut matches today’s wheel). */
+export type ChartPieVariant = 'pie' | 'donut' | 'bar';
 
 /** Shared persist callbacks used by widget card + config dialog. */
 export type ChartsWidgetFiltersChangeHandler = (
@@ -92,7 +92,7 @@ export type ChartBoardWidgetInstance = {
    * by status. Cleared when the user picks a layout without a slice focus.
    */
   readonly focusedSliceKey?: string;
-  /** Pie vs donut for Chart widgets; defaults to donut when unset. */
+  /** Pie / donut / bar for Chart widgets; defaults to donut when unset. */
   readonly pieVariant?: ChartPieVariant;
   /**
    * Labels → Columns group-by field for Chart widgets.

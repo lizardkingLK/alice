@@ -8,6 +8,8 @@ type FormStatusAlertsProps = {
 /**
  * Shared in-dialog / in-form status alerts for work-item mutations.
  * Prefer these over toasts when the save UX lives inside a dialog or form.
+ * `WorkItemForm` mounts this in a fixed tray above the action footer so
+ * scrollable fields never hide success/error messages.
  */
 export function FormStatusAlerts({
   error,
