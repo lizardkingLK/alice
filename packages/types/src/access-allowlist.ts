@@ -83,6 +83,44 @@ export function isValidAccessAllowlistDomain(domain: string): boolean {
   return accessAllowlistDomainValueSchema.safeParse(domain).success;
 }
 
+/** True when `expires_at` is set and not after `now` (UTC instant comparison). */
+export function isAllowlistExpired(
+  expiresAt: string | null | undefined,
+  now: Date = new Date()
+): boolean {
+  if (expiresAt == null || expiresAt === '') {
+    return false;
+  }
+
+  const expires = new Date(expiresAt);
+  if (Number.isNaN(expires.getTime())) {
+    return true;
+  }
+
+  return expires.getTime() <= now.getTime();
+}
+
+/**
+ * Status label for allowlist UI.
+ * Non-active rows keep their stored status; active rows past `expires_at`
+ * display as `expired` without mutating the row.
+ */
+export function getAccessAllowlistDisplayStatus(
+  status: string,
+  expiresAt: string | null | undefined,
+  now: Date = new Date()
+): string {
+  if (status !== 'active') {
+    return status;
+  }
+
+  if (isAllowlistExpired(expiresAt, now)) {
+    return 'expired';
+  }
+
+  return status;
+}
+
 export const OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE =
   'You cannot delete or deactivate the domain that matches your email.';
 

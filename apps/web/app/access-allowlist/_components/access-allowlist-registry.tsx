@@ -60,7 +60,9 @@ import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
+  getAccessAllowlistDisplayStatus,
   isActorOwnAllowlistDomain,
+  isAllowlistExpired,
   OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE,
 } from '@repo/types';
 import {
@@ -96,6 +98,7 @@ const STATUS_BADGE_STYLES: Record<string, string> = {
     'border-slate-500/20 bg-slate-500/10 text-slate-600 dark:text-slate-400',
   archived:
     'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  expired: 'border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-400',
   deleted: 'border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-400',
 };
 
@@ -115,16 +118,20 @@ function KindBadge({ kind }: Readonly<{ kind: string }>) {
   );
 }
 
-function StatusBadge({ status }: Readonly<{ status: string }>) {
+function StatusBadge({
+  status,
+  expiresAt,
+}: Readonly<{ status: string; expiresAt: string | null }>) {
+  const displayStatus = getAccessAllowlistDisplayStatus(status, expiresAt);
   return (
     <Badge
       variant="outline"
       className={cn(
         'capitalize',
-        STATUS_BADGE_STYLES[status] ?? STATUS_BADGE_STYLES.inactive
+        STATUS_BADGE_STYLES[displayStatus] ?? STATUS_BADGE_STYLES.inactive
       )}
     >
-      {status}
+      {displayStatus}
     </Badge>
   );
 }
@@ -147,8 +154,14 @@ function ValueCell({ row }: Readonly<{ row: AllowlistRow }>) {
 
 function ExpiresCell({ row }: Readonly<{ row: AllowlistRow }>) {
   const expiresAt = row.original.expires_at;
+  const expired = isAllowlistExpired(expiresAt);
   return (
-    <div className="text-muted-foreground flex items-center gap-1 text-xs">
+    <div
+      className={cn(
+        'flex items-center gap-1 text-xs',
+        expired ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground'
+      )}
+    >
       <Calendar className="size-3 shrink-0" />
       {expiresAt ? formatDate(expiresAt) : 'Never'}
     </div>
@@ -235,7 +248,12 @@ function getAllowlistTableMeta(
 const CELL_RENDERERS: Record<string, AllowlistCellRenderer> = {
   kind: ({ row }) => <KindBadge kind={row.original.kind} />,
   value: ({ row }) => <ValueCell row={row} />,
-  status: ({ row }) => <StatusBadge status={row.original.status} />,
+  status: ({ row }) => (
+    <StatusBadge
+      status={row.original.status}
+      expiresAt={row.original.expires_at}
+    />
+  ),
   expires: ({ row }) => <ExpiresCell row={row} />,
   actions: ({ row, table }) => {
     const meta = getAllowlistTableMeta(table);

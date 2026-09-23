@@ -99,6 +99,38 @@ describe('AccessAllowlistRegistry', () => {
     expect(screen.getByText(/Showing/i)).toBeInTheDocument();
   });
 
+  it('shows Expired for active rows past expires_at and keeps inactive as inactive', () => {
+    const mixedEntries = [
+      accessAllowlistFactory.build({
+        id: 'allow-expired',
+        value: 'expired.com',
+        status: 'active',
+        expires_at: '2020-01-01T00:00:00.000Z',
+      }),
+      accessAllowlistFactory.build({
+        id: 'allow-inactive',
+        value: 'inactive.com',
+        status: 'inactive',
+        expires_at: '2020-01-01T00:00:00.000Z',
+      }),
+    ];
+
+    render(
+      <AccessAllowlistRegistry
+        entries={mixedEntries}
+        totalCount={2}
+        page={1}
+        limit={10}
+        totalPages={1}
+        search=""
+      />
+    );
+
+    expect(screen.getByText('expired')).toBeInTheDocument();
+    expect(screen.getByText('inactive')).toBeInTheDocument();
+    expect(screen.queryByText('active')).not.toBeInTheDocument();
+  });
+
   it('debounces search input into the URL', async () => {
     // Arrange
     render(

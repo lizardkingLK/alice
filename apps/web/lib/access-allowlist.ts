@@ -2,10 +2,13 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import {
   emailDomainFromAddress,
   allowlistProjectKeysAreResolvable,
+  isAllowlistExpired,
   RecordStatusEnum,
   type AccessDenialReason,
   type EmailAdmissionResult,
 } from '@repo/types';
+
+export { isAllowlistExpired };
 
 /**
  * Paths that do not require an allowlisted identity.
@@ -60,23 +63,6 @@ export function normalizeEmail(email: string): string | null {
  */
 export function extractEmailDomain(email: string): string | null {
   return emailDomainFromAddress(email);
-}
-
-/** True when `expires_at` is set and not after `now`. */
-export function isAllowlistExpired(
-  expiresAt: string | null | undefined,
-  now: Date = new Date()
-): boolean {
-  if (expiresAt == null || expiresAt === '') {
-    return false;
-  }
-
-  const expires = new Date(expiresAt);
-  if (Number.isNaN(expires.getTime())) {
-    return true;
-  }
-
-  return expires.getTime() <= now.getTime();
 }
 
 type AllowlistRowHit = {
