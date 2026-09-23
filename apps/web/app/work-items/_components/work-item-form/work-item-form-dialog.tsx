@@ -62,6 +62,11 @@ function useEditItemWithDescription(
 
   useEffect(() => {
     if (!open) {
+      // Reset so the next open (create or edit) is not stuck on "Loading…".
+      setDetailReady(stableItemToEdit == null);
+      if (!stableItemToEdit) {
+        setResolvedItem(null);
+      }
       return;
     }
 

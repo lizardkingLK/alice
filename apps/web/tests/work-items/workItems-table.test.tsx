@@ -79,6 +79,10 @@ vi.mock('@/app/work-items/_services/work-items.reads.client', () => ({
   listParentCandidateWorkItems: vi.fn().mockResolvedValue([]),
 }));
 
+vi.mock('@/app/work-items/_hooks/use-work-item-create-form-mode', () => ({
+  useWorkItemCreateFormMode: () => 'classic' as const,
+}));
+
 vi.mock('@/app/work-items/_components/work-item-form/work-item-form', () => ({
   WorkItemForm: ({
     onClose,
@@ -209,6 +213,8 @@ describe('WorkItemsTable', () => {
     vi.mocked(archiveWorkItem).mockReset();
     vi.mocked(restoreWorkItem).mockReset();
     vi.mocked(purgeWorkItem).mockReset();
+    vi.mocked(getWorkItemById).mockReset();
+    vi.mocked(getWorkItemById).mockResolvedValue(workItemFactory.build());
   });
 
   it('renders work item rows with core columns', async () => {
@@ -539,14 +545,19 @@ describe('WorkItemsTable', () => {
     // Act — create
     fireEvent.click(screen.getByRole('button', { name: /Add Work-Item/i }));
 
-    // Assert — create
-    expect(screen.getByText(/Create Work Item/i)).toBeInTheDocument();
-    expect(screen.getByTestId('mock-work-item-form')).toHaveTextContent(
+    // Assert — create (dialog portal + detail-ready can be async)
+    expect(await screen.findByText(/Create Work Item/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('mock-work-item-form')).toHaveTextContent(
       'Create'
     );
 
     // Act — close then edit
     fireEvent.click(screen.getByRole('button', { name: /Close Form/i }));
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('mock-work-item-form')
+      ).not.toBeInTheDocument();
+    });
     fireEvent.click(screen.getByRole('button', { name: /Open menu/i }));
     fireEvent.click(screen.getByRole('button', { name: /Edit/i }));
 
@@ -554,8 +565,8 @@ describe('WorkItemsTable', () => {
     await waitFor(() => {
       expect(getWorkItemById).toHaveBeenCalledWith(item.id);
     });
-    expect(screen.getByText(/Edit Work Item/i)).toBeInTheDocument();
-    expect(screen.getByTestId('mock-work-item-form')).toHaveTextContent(
+    expect(await screen.findByText(/Edit Work Item/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('mock-work-item-form')).toHaveTextContent(
       'Editable item'
     );
 
@@ -564,7 +575,11 @@ describe('WorkItemsTable', () => {
 
     // Assert
     expect(mockRefresh).toHaveBeenCalled();
-    expect(screen.queryByTestId('mock-work-item-form')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('mock-work-item-form')
+      ).not.toBeInTheDocument();
+    });
   });
 
   it('shows clear filters when URL has filters and clears them', async () => {
