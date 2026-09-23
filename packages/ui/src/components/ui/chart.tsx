@@ -458,6 +458,9 @@ export {
   LineChart,
   Pie,
   PieChart,
+  Rectangle,
   XAxis,
   YAxis,
 } from 'recharts';
+
+export type { BarShapeProps } from 'recharts';

@@ -1,4 +1,5 @@
 import { apiFetch } from '@/lib/api/api-fetch.reads.use.client';
+import type { DbWorkItem } from '@/app/work-items/_types/work-items.reads.types';
 
 const workItemsPath = '/api/workItems';
 
@@ -61,4 +62,21 @@ export async function getLinkedPRs(
     githubRepo: string | null;
   }>(`${workItemsPath}/${workItemId}/github`);
   return { prs: res.prs || [], githubRepo: res.githubRepo || null };
+}
+
+/**
+ * Full work-item detail for edit dialogs. List/drilldown rows omit TipTap
+ * `description`; always prefer this before binding `itemToEdit` to the form.
+ */
+export async function getWorkItemById(workItemId: string): Promise<DbWorkItem> {
+  const result = await apiFetch<{
+    data: DbWorkItem | null;
+    error: string | null;
+  }>(`${workItemsPath}/${workItemId}`);
+
+  if (!result.data) {
+    throw new Error(result.error ?? 'Work item not found');
+  }
+
+  return result.data;
 }

@@ -42,8 +42,20 @@ export function parsePatchWorkItemFormData(
   formData: FormData,
   expectedUpdatedAt: string
 ): PatchWorkItemBody {
-  return parsePatchWorkItemBody({
-    ...formDataToRecord(formData),
+  const preprocessed = preprocessWorkItemMutationBody(
+    formDataToRecord(formData),
+    {
+      // Classic forms historically sent plain text; TipTap now sends JSON, but
+      // keep lenient so leftover plain strings still patch instead of hard-fail.
+      descriptionParseMode: 'lenient',
+    }
+  );
+  if (!preprocessed) {
+    throw new Error('Invalid JSON format provided for description field');
+  }
+
+  return parseWithZod(patchWorkItemBodySchema, {
+    ...preprocessed,
     expectedUpdatedAt,
   });
 }

@@ -13,6 +13,7 @@ import {
   purgeWorkItem,
   restoreWorkItem,
 } from '@/app/work-items/_services/work-items.mutations.client';
+import { getWorkItemById } from '@/app/work-items/_services/work-items.reads.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { formatDate } from '@/app/_shared/utility';
 import {
@@ -71,6 +72,8 @@ vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
 
 vi.mock('@/app/work-items/_services/work-items.reads.client', () => ({
   countWorkItemDescendants: vi.fn().mockResolvedValue(0),
+  getWorkItemById: vi.fn(),
+  listParentCandidateWorkItems: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('@/app/work-items/_components/work-item-form/work-item-form', () => ({
@@ -518,6 +521,7 @@ describe('WorkItemsTable', () => {
   it('opens create and edit dialogs with the mocked form', async () => {
     // Arrange
     const item = workItemFactory.build({ title: 'Editable item' });
+    vi.mocked(getWorkItemById).mockResolvedValue(item);
     await renderTable({
       initialWorkItems: [item],
       totalCount: 1,
@@ -538,7 +542,10 @@ describe('WorkItemsTable', () => {
     fireEvent.click(screen.getByRole('button', { name: /Open menu/i }));
     fireEvent.click(screen.getByRole('button', { name: /Edit/i }));
 
-    // Assert — edit
+    // Assert — edit (dialog fetches full detail including description)
+    await waitFor(() => {
+      expect(getWorkItemById).toHaveBeenCalledWith(item.id);
+    });
     expect(screen.getByText(/Edit Work Item/i)).toBeInTheDocument();
     expect(screen.getByTestId('mock-work-item-form')).toHaveTextContent(
       'Editable item'

@@ -127,7 +127,13 @@ const MOST_POPULAR_OPTIONS: readonly ChartTypeOption[] = [
     enabled: true,
     variant: 'donut',
   },
-  { id: 'popular-bar', label: 'Bar', Icon: ChartBar },
+  {
+    id: 'popular-bar',
+    label: 'Bar',
+    Icon: ChartBar,
+    enabled: true,
+    variant: 'bar',
+  },
   { id: 'popular-line', label: 'Line', Icon: ChartLine },
   { id: 'popular-column', label: 'Column', Icon: ChartColumn },
   { id: 'popular-bubble', label: 'Bubble', Icon: ChartScatter },
@@ -150,6 +156,16 @@ const PIE_OPTIONS: readonly ChartTypeOption[] = [
   },
 ];
 
+const BAR_OPTIONS: readonly ChartTypeOption[] = [
+  {
+    id: 'bar-1',
+    label: 'Bar',
+    Icon: ChartBar,
+    enabled: true,
+    variant: 'bar',
+  },
+];
+
 const DISABLED_CHART_GROUPS: readonly {
   readonly label: string;
   readonly options: readonly ChartTypeOption[];
@@ -166,7 +182,6 @@ const DISABLED_CHART_GROUPS: readonly {
   {
     label: 'Bar',
     options: [
-      { id: 'bar-1', label: 'Bar', Icon: ChartBar },
       { id: 'bar-2', label: 'Stacked bar', Icon: ChartBar },
       { id: 'bar-3', label: 'Grouped bar', Icon: ChartBar },
     ],
@@ -426,6 +441,14 @@ function ChartTypeSection({
         <p className="text-muted-foreground text-xs font-medium">Pie</p>
         <ChartTypeIconRow
           options={PIE_OPTIONS}
+          pieVariant={pieVariant}
+          onPieVariantChange={onPieVariantChange}
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <p className="text-muted-foreground text-xs font-medium">Bar</p>
+        <ChartTypeIconRow
+          options={BAR_OPTIONS}
           pieVariant={pieVariant}
           onPieVariantChange={onPieVariantChange}
         />
@@ -887,7 +910,7 @@ export function ChartsWidgetSettingsSidebar({
           </h2>
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
-          <SettingsSection title="Chart type" defaultOpen>
+          <SettingsSection title="Chart type">
             <ChartTypeSection
               pieVariant={pieVariant}
               onPieVariantChange={onPieVariantChange}

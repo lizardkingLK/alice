@@ -501,7 +501,8 @@ describe('WorkItemForm', () => {
       'flex-1',
       'space-y-4',
       'overflow-y-auto',
-      'pr-1'
+      'px-1',
+      'py-0.5'
     );
   });
 });

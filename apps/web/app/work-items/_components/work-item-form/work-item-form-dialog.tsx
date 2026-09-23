@@ -8,11 +8,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
+import { Loader2 } from '@repo/ui/lib/icons';
 import {
   WorkItemForm,
   type WorkItemFormProps,
 } from '@/app/work-items/_components/work-item-form/work-item-form';
 import { useWorkItemCreateFormMode } from '@/app/work-items/_hooks/use-work-item-create-form-mode';
+import { getWorkItemById } from '@/app/work-items/_services/work-items.reads.client';
+import type { DbWorkItem } from '@/app/work-items/_types/work-items.reads.types';
 import { cn } from '@repo/ui/lib/utils';
 
 type WorkItemFormDialogProps = WorkItemFormProps & {
@@ -41,6 +44,64 @@ function useStableItemToEdit(
   return itemRef.current;
 }
 
+/**
+ * List/board/chart rows omit TipTap `description`. Load full detail when
+ * editing so classic + modern forms hydrate the description editor.
+ */
+function useEditItemWithDescription(
+  open: boolean,
+  stableItemToEdit: DbWorkItem | null
+): {
+  readonly itemToEdit: DbWorkItem | null;
+  readonly detailReady: boolean;
+} {
+  const [resolvedItem, setResolvedItem] = useState<DbWorkItem | null>(
+    stableItemToEdit
+  );
+  const [detailReady, setDetailReady] = useState(stableItemToEdit == null);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    if (!stableItemToEdit) {
+      setResolvedItem(null);
+      setDetailReady(true);
+      return;
+    }
+
+    const fallbackItem = stableItemToEdit;
+    const itemId = fallbackItem.id;
+    let cancelled = false;
+    setDetailReady(false);
+    setResolvedItem(fallbackItem);
+
+    getWorkItemById(itemId)
+      .then((full) => {
+        if (!cancelled) {
+          setResolvedItem(full);
+          setDetailReady(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          // Fall back to the compact row so the dialog still opens.
+          setResolvedItem(fallbackItem);
+          setDetailReady(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // Intentionally key off id: parents may pass a new list-row object each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- stableItemToEdit by id
+  }, [open, stableItemToEdit?.id]);
+
+  return { itemToEdit: resolvedItem, detailReady };
+}
+
 export function WorkItemFormDialog({
   open,
   onOpenChange,
@@ -59,6 +120,8 @@ export function WorkItemFormDialog({
   );
   const wasOpenRef = useRef(open);
   const stableItemToEdit = useStableItemToEdit(open, itemToEdit);
+  const { itemToEdit: resolvedItemToEdit, detailReady } =
+    useEditItemWithDescription(open, stableItemToEdit);
 
   useEffect(() => {
     if (open && !wasOpenRef.current) {
@@ -69,6 +132,9 @@ export function WorkItemFormDialog({
 
   const createFormMode = createFormModeProp ?? sessionMode;
   const useModernLayout = createFormMode === 'modern';
+  const formKey = resolvedItemToEdit
+    ? `${resolvedItemToEdit.id}:${resolvedItemToEdit.updated_at}`
+    : 'create';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -81,7 +147,7 @@ export function WorkItemFormDialog({
         onPointerDownOutside={(event) => event.preventDefault()}
         onInteractOutside={(event) => event.preventDefault()}
         onOpenAutoFocus={(event) => {
-          if (!useModernLayout) {
+          if (!useModernLayout || !detailReady) {
             return;
           }
           event.preventDefault();
@@ -102,11 +168,19 @@ export function WorkItemFormDialog({
             {description}
           </DialogDescription>
         </DialogHeader>
-        <WorkItemForm
-          {...formProps}
-          itemToEdit={stableItemToEdit}
-          createFormMode={createFormMode}
-        />
+        {detailReady ? (
+          <WorkItemForm
+            key={formKey}
+            {...formProps}
+            itemToEdit={resolvedItemToEdit}
+            createFormMode={createFormMode}
+          />
+        ) : (
+          <div className="text-muted-foreground flex min-h-48 flex-1 items-center justify-center gap-2 py-12 text-sm">
+            <Loader2 className="size-4 animate-spin" />
+            Loading work item…
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
