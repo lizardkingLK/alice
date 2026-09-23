@@ -167,6 +167,19 @@
     "filterTab": "productivity"
   },
   {
+    "id": "github",
+    "name": "GitHub",
+    "websiteUrl": "github.com",
+    "description": "Connect GitHub to link pull requests, commits, and branches to Alice work items.",
+    "filterTab": "productivity",
+    "status": "active",
+    "highlights": [
+      "Link pull requests and commits directly to work items",
+      "Automatic PR status updates (open, merged, closed)",
+      "Secure OAuth connection to your GitHub account"
+    ]
+  },
+  {
     "id": "github-copilot",
     "name": "GitHub Copilot",
     "websiteUrl": "github.com/features/copilot",

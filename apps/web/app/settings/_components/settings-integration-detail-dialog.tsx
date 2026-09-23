@@ -10,7 +10,15 @@ import {
   DialogFooter,
   DialogHeader,
 } from '@repo/ui/components/ui/dialog';
-import { ExternalLink } from '@repo/ui/lib/icons';
+import { ExternalLink, CheckCircle2, Loader2, Plug, Unplug } from '@repo/ui/lib/icons';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@repo/ui/components/ui/avatar';
+import { Badge } from '@repo/ui/components/ui/badge';
+import { useGithubConnectionPicker } from '@/app/projects/_hooks/use-github-connection-picker';
+import { deleteGithubConnection } from '@/app/projects/_services/projects.github.mutations.client';
 import {
   CONFIGURABLE_CATALOG_PROVIDERS,
   integrationExternalHref,
@@ -43,6 +51,174 @@ type IntegrationDetailDialogProps = {
   readonly onSaved: () => void;
   /* eslint-enable no-unused-vars */
 };
+
+function GithubIntegrationDetailSection({
+  onSaved,
+}: Readonly<{
+  onSaved: () => void;
+}>) {
+  const {
+    activeConnection,
+    isLoadingConnections,
+    isConnecting,
+    loadError,
+    setLoadError,
+    refreshConnections,
+    handleConnectGithub,
+  } = useGithubConnectionPicker();
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+
+  const handleDisconnect = async (connectionId: string) => {
+    setIsDisconnecting(true);
+    setLoadError(null);
+    try {
+      await deleteGithubConnection(connectionId);
+      refreshConnections();
+      onSaved();
+    } catch (err) {
+      setLoadError(
+        err instanceof Error ? err.message : 'Failed to disconnect GitHub'
+      );
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
+
+  if (isLoadingConnections) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="text-muted-foreground size-5 animate-spin" />
+      </div>
+    );
+  }
+
+  const fallbackLetters = (
+    activeConnection?.account_login ||
+    activeConnection?.name ||
+    'GH'
+  )
+    .slice(0, 2)
+    .toUpperCase();
+
+  return (
+    <div className="space-y-4 py-2">
+      {loadError ? (
+        <div className="bg-destructive/10 text-destructive rounded-md p-3 text-xs">
+          {loadError}
+        </div>
+      ) : null}
+
+      {activeConnection ? (
+        <div className="border-border/60 bg-muted/20 space-y-4 rounded-lg border p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <Avatar size="sm" className="h-9 w-9 border">
+                {activeConnection.account_avatar_url ? (
+                  <AvatarImage
+                    src={activeConnection.account_avatar_url}
+                    alt={
+                      activeConnection.account_login || activeConnection.name
+                    }
+                  />
+                ) : null}
+                <AvatarFallback>{fallbackLetters}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 leading-tight">
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-sm font-semibold">
+                    {activeConnection.account_login
+                      ? `@${activeConnection.account_login}`
+                      : activeConnection.name}
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className="h-4 border-emerald-500/30 bg-emerald-500/10 px-1.5 text-[10px] font-medium text-emerald-600"
+                  >
+                    <CheckCircle2 className="mr-1 h-2.5 w-2.5" />
+                    Connected
+                  </Badge>
+                </div>
+                <p className="text-muted-foreground truncate text-xs">
+                  {activeConnection.name}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleConnectGithub}
+                disabled={isConnecting || isDisconnecting}
+                className="h-8 text-xs"
+              >
+                {isConnecting ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  'Update Connection'
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDisconnect(activeConnection.id)}
+                disabled={isConnecting || isDisconnecting}
+                className="text-destructive hover:text-destructive h-8 px-2 text-xs"
+              >
+                {isDisconnecting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Unplug className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            </div>
+          </div>
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            Connected GitHub account is active for the workspace. Work items can link pull requests and commits from repositories you have access to.
+          </p>
+        </div>
+      ) : (
+        <div className="border-border/60 bg-muted/20 space-y-3 rounded-lg border p-4 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-amber-500" />
+            <span className="text-muted-foreground text-xs font-medium">
+              Status: Not connected
+            </span>
+          </div>
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            Connect your GitHub account to enable linking pull requests, commits, and branches to Alice work items.
+          </p>
+          <div className="pt-2">
+            <Button
+              type="button"
+              onClick={handleConnectGithub}
+              disabled={isConnecting}
+              size="sm"
+              className="h-8 text-xs"
+            >
+              {isConnecting ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <Plug className="mr-1.5 h-3.5 w-3.5" />
+                  Connect GitHub
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function IntegrationVisitWebsiteButton({ href }: Readonly<{ href: string }>) {
   return (
@@ -122,6 +298,7 @@ export function IntegrationDetailDialog({
 
   const externalHref = integrationExternalHref(integration.websiteUrl);
   const canConfigure = isConfigurableCatalog(integration.id);
+  const isGithub = integration.id === 'github';
   const dialogStatusLabel = integrationDialogStatusLabel(
     integration,
     activeRows
@@ -186,6 +363,55 @@ export function IntegrationDetailDialog({
     }
   };
 
+  let detailSection: React.ReactNode = null;
+  if (isGithub) {
+    detailSection = <GithubIntegrationDetailSection onSaved={onSaved} />;
+  } else if (canConfigure) {
+    detailSection = (
+      <IntegrationConfigForm
+        provider={provider}
+        activeRows={activeRows}
+        selectedRowId={selectedRowId}
+        selectedRow={selectedRow}
+        displayLabel={displayLabel}
+        modelId={modelId}
+        apiKey={apiKey}
+        isDefault={isDefault}
+        feedback={feedback}
+        onSelectRow={handleSelectRow}
+        onAddModel={handleAddModel}
+        onDisplayLabelChange={setDisplayLabel}
+        onModelIdChange={setModelId}
+        onApiKeyChange={setApiKey}
+        onIsDefaultChange={setIsDefault}
+        onApplySuggestedModel={handleApplySuggestedModel}
+      />
+    );
+  }
+
+  let actionButtons: React.ReactNode;
+  if (isGithub) {
+    actionButtons = (
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => onOpenChange(false)}
+      >
+        Done
+      </Button>
+    );
+  } else if (canConfigure) {
+    actionButtons = (
+      <IntegrationSaveButton
+        isSaving={isSaving}
+        isEditingExistingRow={Boolean(selectedRow)}
+        onSave={() => void handleSave()}
+      />
+    );
+  } else {
+    actionButtons = <IntegrationPlannedActions />;
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
@@ -205,39 +431,12 @@ export function IntegrationDetailDialog({
           <IntegrationHighlightsList highlights={integration.highlights} />
         ) : null}
 
-        {canConfigure ? (
-          <IntegrationConfigForm
-            provider={provider}
-            activeRows={activeRows}
-            selectedRowId={selectedRowId}
-            selectedRow={selectedRow}
-            displayLabel={displayLabel}
-            modelId={modelId}
-            apiKey={apiKey}
-            isDefault={isDefault}
-            feedback={feedback}
-            onSelectRow={handleSelectRow}
-            onAddModel={handleAddModel}
-            onDisplayLabelChange={setDisplayLabel}
-            onModelIdChange={setModelId}
-            onApiKeyChange={setApiKey}
-            onIsDefaultChange={setIsDefault}
-            onApplySuggestedModel={handleApplySuggestedModel}
-          />
-        ) : null}
+        {detailSection}
 
         <DialogFooter className="gap-2 sm:justify-between">
           <IntegrationVisitWebsiteButton href={externalHref} />
           <div className="flex flex-wrap gap-2">
-            {canConfigure ? (
-              <IntegrationSaveButton
-                isSaving={isSaving}
-                isEditingExistingRow={Boolean(selectedRow)}
-                onSave={() => void handleSave()}
-              />
-            ) : (
-              <IntegrationPlannedActions />
-            )}
+            {actionButtons}
           </div>
         </DialogFooter>
       </DialogContent>

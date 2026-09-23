@@ -1,4 +1,5 @@
 import { apiFetch } from '@/lib/api/api-fetch.reads.use.client';
+import type { WorkItemGithubConfigStatus } from '@repo/types';
 
 const workItemsPath = '/api/workItems';
 
@@ -53,12 +54,24 @@ export interface LinkedGithubPR {
   commits: GithubCommit[];
 }
 
+export interface WorkItemGithubData {
+  prs: LinkedGithubPR[];
+  githubRepo: string | null;
+  status?: WorkItemGithubConfigStatus;
+  message?: string;
+}
+
 export async function getLinkedPRs(
   workItemId: string
-): Promise<{ prs: LinkedGithubPR[]; githubRepo: string | null }> {
-  const res = await apiFetch<{
-    prs: LinkedGithubPR[];
-    githubRepo: string | null;
-  }>(`${workItemsPath}/${workItemId}/github`);
-  return { prs: res.prs || [], githubRepo: res.githubRepo || null };
+): Promise<WorkItemGithubData> {
+  const res = await apiFetch<WorkItemGithubData>(
+    `${workItemsPath}/${workItemId}/github`
+  );
+  return {
+    prs: res.prs || [],
+    githubRepo: res.githubRepo || null,
+    status: res.status,
+    message: res.message,
+  };
 }
+

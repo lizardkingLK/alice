@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { IntegrationWire } from '@repo/types';
 import { Badge } from '@repo/ui/components/ui/badge';
@@ -94,14 +94,18 @@ function IntegrationMarketplaceCard({
 type SettingsIntegrationsViewProps = {
   readonly initialIntegrations: IntegrationWire[];
   readonly initialCategoryFilter?: IntegrationFilterTab;
+  readonly autoOpenPopup?: boolean;
+  readonly autoOpenIntegration?: string;
 };
 
 /**
- * Admin-only workspace integrations marketplace.
+ * Workspace integrations marketplace for Administrators and Managers.
  */
 export function SettingsIntegrationsView({
   initialIntegrations,
   initialCategoryFilter,
+  autoOpenPopup,
+  autoOpenIntegration,
 }: Readonly<SettingsIntegrationsViewProps>) {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<IntegrationFilterTab>(
@@ -117,6 +121,30 @@ export function SettingsIntegrationsView({
   const [listError, setListError] = useState<string | null>(null);
   const [integrationToDisconnect, setIntegrationToDisconnect] =
     useState<WorkspaceIntegration | null>(null);
+
+  useEffect(() => {
+    let shouldOpen = Boolean(autoOpenPopup);
+    let target = autoOpenIntegration;
+
+    if (!shouldOpen && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('showPopup') === '1' || params.get('showPopup') === 'true') {
+        shouldOpen = true;
+        target = params.get('integration') || 'github';
+      }
+    }
+
+    if (shouldOpen) {
+      const catalogId = (target || 'github').toLowerCase();
+      const match = WORKSPACE_INTEGRATIONS.find(
+        (item) => item.id.toLowerCase() === catalogId
+      );
+      if (match) {
+        setDetailIntegration(match);
+        setDetailOpen(true);
+      }
+    }
+  }, [autoOpenPopup, autoOpenIntegration]);
 
   const filteredIntegrations = useMemo(
     () =>

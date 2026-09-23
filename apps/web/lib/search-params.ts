@@ -250,12 +250,12 @@ export function parseSettingsTab(tab?: string | null): SettingsTab {
   return 'general';
 }
 
-/** Coerce admin-only tabs when the signed-in user is not an administrator. */
+/** Coerce privileged tabs when the signed-in user is not authorized to manage integrations (Admin/Manager). */
 export function resolveSettingsTabForUser(
   tab: SettingsTab,
-  userIsAdmin: boolean
+  canManageIntegrations: boolean
 ): SettingsTab {
-  if (tab === 'integrations' && !userIsAdmin) {
+  if (tab === 'integrations' && !canManageIntegrations) {
     return 'general';
   }
   return tab;
