@@ -235,6 +235,16 @@ export function parseBoardPageTab(tab?: string | null): BoardPageTab {
   return tab === 'calendar' ? 'calendar' : 'board';
 }
 
+/** Alice chat page tabs (`/chat?tab=`). Default `conversation` omits the query param. */
+export type ChatPageTab = 'conversation' | 'agents';
+
+export function parseChatPageTab(tab?: string | null): ChatPageTab {
+  return tab === 'agents' ? 'agents' : 'conversation';
+}
+
+/** Agents gallery sub-tabs — same values as Views (`mine` / `shared` / `archived`). */
+export const parseChatAgentsGalleryTab = parseViewsListTab;
+
 /** Account settings page tabs (`/settings?tab=`). */
 export type SettingsTab =
   'general' | 'security' | 'notifications' | 'preferences' | 'integrations';

@@ -14,11 +14,16 @@ import {
 const closeButtonClasses = [
   'order-3! static! inset-auto! top-auto! right-auto! left-auto! transform-none!',
   'ml-auto! size-8 shrink-0 rounded-md! border-0! bg-transparent! shadow-none!',
-  'text-foreground/60! opacity-100!',
+  'text-foreground/50! opacity-100!',
   'hover:bg-transparent! hover:text-foreground! hover:opacity-100!',
   'focus-visible:ring-0 focus-visible:outline-none',
 ].join(' ');
 
+/**
+ * Sonner toaster styled like shadcn Toast:
+ * title + muted description, card surface, close on the right.
+ * @see https://ui.shadcn.com/docs/components/base/toast
+ */
 function Toaster({ ...props }: Readonly<ToasterProps>) {
   const { theme = 'system' } = useTheme();
 
@@ -40,16 +45,12 @@ function Toaster({ ...props }: Readonly<ToasterProps>) {
       }}
       style={
         {
-          '--normal-bg': 'color-mix(in oklch, var(--card) 78%, transparent)',
+          '--normal-bg': 'var(--card)',
           '--normal-text': 'var(--foreground)',
-          '--normal-border':
-            'color-mix(in oklch, var(--primary) 18%, var(--border))',
-          '--success-bg':
-            'color-mix(in oklch, var(--card) 68%, oklch(0.78 0.12 155))',
-          '--error-bg':
-            'color-mix(in oklch, var(--card) 72%, var(--destructive))',
-          '--warning-bg':
-            'color-mix(in oklch, var(--card) 70%, oklch(0.84 0.14 85))',
+          '--normal-border': 'var(--border)',
+          '--success-bg': 'var(--card)',
+          '--error-bg': 'var(--card)',
+          '--warning-bg': 'var(--card)',
           '--border-radius': 'var(--radius)',
           '--toast-close-button-start': 'auto',
           '--toast-close-button-end': 'auto',
@@ -59,31 +60,27 @@ function Toaster({ ...props }: Readonly<ToasterProps>) {
       toastOptions={{
         classNames: {
           toast:
-            'cn-toast flex! min-h-12 w-auto min-w-[16rem] items-center gap-2 border py-2.5 pr-3.5 pl-3.5 shadow-lg backdrop-blur-xl backdrop-saturate-150',
-          title: 'text-sm leading-snug font-medium',
-          content: 'flex! w-auto! flex-none! items-center',
-          icon: 'm-0! mr-0!',
-          success: [
-            'text-emerald-700! border-emerald-500/35!',
-            'dark:text-emerald-300! [&_[data-icon]]:text-emerald-600! dark:[&_[data-icon]]:text-emerald-400!',
-            '[&_[data-close-button]]:text-emerald-700/70! dark:[&_[data-close-button]]:text-emerald-300/70!',
-            '[&_[data-close-button]:hover]:text-emerald-800! dark:[&_[data-close-button]:hover]:text-emerald-200!',
-          ].join(' '),
+            'cn-toast flex! w-auto min-w-[18rem] max-w-[26rem] items-start gap-3 rounded-xl! border bg-card py-3.5 pr-3.5 pl-4 shadow-lg',
+          title: 'text-foreground text-sm leading-snug font-semibold',
+          description: 'text-muted-foreground text-sm leading-snug opacity-100!',
+          content: 'flex! min-w-0 flex-1 flex-col gap-0.5',
+          icon: 'm-0! mt-0.5! mr-0!',
+          success:
+            'bg-card! text-foreground! [&_[data-icon]]:text-emerald-600! dark:[&_[data-icon]]:text-emerald-400!',
           error: [
-            'text-destructive! border-destructive/30!',
+            'bg-card! text-foreground! border-destructive/25!',
             '[&_[data-icon]]:text-destructive!',
             '[&_[data-close-button]]:text-destructive/70!',
             '[&_[data-close-button]:hover]:text-destructive!',
           ].join(' '),
-          warning: [
-            'text-amber-800! border-amber-500/35!',
-            'dark:text-amber-300! [&_[data-icon]]:text-amber-600! dark:[&_[data-icon]]:text-amber-400!',
-            '[&_[data-close-button]]:text-amber-800/70! dark:[&_[data-close-button]:hover]:text-amber-300/70!',
-            '[&_[data-close-button]:hover]:text-amber-900! dark:[&_[data-close-button]:hover]:text-amber-200!',
-          ].join(' '),
-          info: '[&_[data-icon]]:text-primary!',
-          description: 'hidden',
+          warning:
+            'bg-card! text-foreground! [&_[data-icon]]:text-amber-600! dark:[&_[data-icon]]:text-amber-400!',
+          info: 'bg-card! text-foreground! [&_[data-icon]]:text-primary!',
           closeButton: closeButtonClasses,
+          actionButton:
+            'bg-background border-border text-foreground hover:bg-muted h-8 shrink-0 rounded-md border px-2.5 text-xs font-medium shadow-none',
+          cancelButton:
+            'bg-transparent text-muted-foreground hover:text-foreground h-8 shrink-0 px-2 text-xs',
         },
       }}
       {...props}
