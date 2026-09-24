@@ -53,7 +53,9 @@ describe('SettingsIntegrationsView', () => {
     const dialog = screen.getByRole('dialog');
     expect(dialog).toBeInTheDocument();
     expect(screen.getByText('@octocat')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /update connection/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /update connection/i })
+    ).toBeInTheDocument();
   });
 
   it('automatically opens GitHub dialog from window.location.search params', () => {
@@ -72,4 +74,3 @@ describe('SettingsIntegrationsView', () => {
     window.history.pushState({}, '', '/');
   });
 });
-

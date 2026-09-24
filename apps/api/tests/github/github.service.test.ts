@@ -325,7 +325,10 @@ describe('GithubService', () => {
 
   describe('role-based authorization', () => {
     it('allows manager to manage GitHub connections', async () => {
-      requireUserWithRoleMock.mockResolvedValue({ id: 'user-manager', role: 'manager' });
+      requireUserWithRoleMock.mockResolvedValue({
+        id: 'user-manager',
+        role: 'manager',
+      });
       listByUserIdMock.mockResolvedValue([]);
       listAllActiveMock.mockResolvedValue([]);
 
@@ -335,7 +338,9 @@ describe('GithubService', () => {
 
     it('rejects member from managing GitHub connections', async () => {
       requireUserWithRoleMock.mockRejectedValue(
-        new Error('Unauthorized. Only admins and managers can manage GitHub connections.')
+        new Error(
+          'Unauthorized. Only admins and managers can manage GitHub connections.'
+        )
       );
 
       await expect(service.startOAuth('user-member')).rejects.toThrow(
@@ -344,7 +349,9 @@ describe('GithubService', () => {
       await expect(service.listConnections('user-member')).rejects.toThrow(
         'Unauthorized. Only admins and managers can manage GitHub connections.'
       );
-      await expect(service.deleteConnection('user-member', 'conn-1')).rejects.toThrow(
+      await expect(
+        service.deleteConnection('user-member', 'conn-1')
+      ).rejects.toThrow(
         'Unauthorized. Only admins and managers can manage GitHub connections.'
       );
       await expect(service.listRepositories('user-member')).rejects.toThrow(
@@ -353,4 +360,3 @@ describe('GithubService', () => {
     });
   });
 });
-

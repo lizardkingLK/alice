@@ -4,12 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft, ChevronRight, ListTodo } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
-import {
-  pickWorkspaceDefaultsDialogController,
-  WorkspaceDefaultsDialogHost,
-} from '@/app/board/_components/workspace-defaults-dialog-host';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
-import { resolveWorkspaceDefaultsAppliedSummary } from '@/app/board/_helpers/workspace-defaults-shared';
 import { applyProjectFilterToSearchParams } from '@/app/board/_services/board.defaults.shared';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
@@ -31,7 +26,6 @@ import {
   QUERY_FILTER_ALL_VALUE,
   useQueryFilter,
 } from '@/hooks/use-query-filter';
-import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import { CalendarDaySheet } from '@/app/calendar/_components/calendar-day-sheet';
 import { CalendarDueDateWarningDialog } from '@/app/calendar/_components/calendar-due-date-warning-dialog';
 import { CalendarMonthGrid } from '@/app/calendar/_components/calendar-month-grid';
@@ -63,10 +57,6 @@ interface CalendarRegistryProps {
   readonly sprintFilter: string;
   readonly allowAllFilters: boolean;
   readonly userId: string | null;
-  readonly suggestedDefaults: {
-    readonly projectId: string;
-    readonly sprintId: string | null;
-  } | null;
   readonly needsClientBootstrap: boolean;
 }
 
@@ -80,7 +70,6 @@ export function CalendarRegistry({
   sprintFilter,
   allowAllFilters,
   userId,
-  suggestedDefaults,
   needsClientBootstrap,
 }: Readonly<CalendarRegistryProps>) {
   const router = useRouter();
@@ -113,8 +102,8 @@ export function CalendarRegistry({
     sprintFilter,
     projects,
     sprints,
-    suggestedDefaults,
   });
+  const { saveDefaults } = boardDefaults;
 
   const accessibleProjectIds = useMemo(
     () => projects.map((project) => project.id),
@@ -549,6 +538,7 @@ export function CalendarRegistry({
             allowAllFilters={allowAllFilters}
             hasActiveFilters={hasActiveCalendarFilters}
             onApplyFilters={handleApplyCalendarFilters}
+            onSaveWorkspaceDefaults={userId ? saveDefaults : undefined}
           />
 
           {hasActiveCalendarFilters ? (
@@ -556,24 +546,6 @@ export function CalendarRegistry({
               items={appliedFilterItems}
               onRemove={handleRemoveAppliedFilter}
               onClearAll={handleClearCalendarFilters}
-            />
-          ) : null}
-
-          {userId ? (
-            <WorkspaceDefaultsControls
-              onOpenDefaultsDialog={boardDefaults.openDefaultsDialog}
-              savedDefaultsApplied={boardDefaults.savedDefaultsApplied}
-              buttonClassName="size-8 shrink-0"
-              appliedDefaultsSummary={
-                boardDefaults.savedDefaultsApplied &&
-                boardDefaults.savedPreference
-                  ? resolveWorkspaceDefaultsAppliedSummary(
-                      boardDefaults.savedPreference,
-                      projects,
-                      sprints
-                    )
-                  : null
-              }
             />
           ) : null}
         </div>
@@ -694,13 +666,6 @@ export function CalendarRegistry({
           );
           closeEditDialog();
         }}
-      />
-
-      <WorkspaceDefaultsDialogHost
-        enabled={Boolean(userId)}
-        projects={projects}
-        sprints={sprints}
-        defaults={pickWorkspaceDefaultsDialogController(boardDefaults)}
       />
 
       <CalendarDueDateWarningDialog

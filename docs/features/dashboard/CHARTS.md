@@ -144,7 +144,8 @@ supports **All projects** or a single project. Optional **sprint** from
 workspace defaults. Labels → Columns: Project, Owner, Status, Type, Priority
 (Group / Name / Due date not on the rollup yet).
 
-**Defaults:** Same workspace defaults dialog as Board / Work items / Backlog.
+**Defaults:** Filter dialog (**Shift+F**) with **Set as default** on Project /
+Sprint — same storage as Board / Work items / Backlog. Seeds new Chart widgets.
 Saving defaults seeds **project** (and **sprint** when set) onto newly inserted
 Chart widgets.
 

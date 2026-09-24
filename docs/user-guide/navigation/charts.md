@@ -87,7 +87,8 @@ After delete or leave from a board, Alice returns to the registry. Empty
 On `/charts/[id]`:
 
 - **All workspaces** returns to the registry
-- **Defaults** (same as Board / Work items) seeds filters for new Chart widgets
+- **Filter** (**Shift+F**) sets project / sprint defaults that seed filters for
+  new Chart widgets (check **Set as default** on Project or Sprint, then Okay)
 - **+** adds a widget or creates another workspace
 
 ---
@@ -175,10 +176,10 @@ slice opens the table scoped to that group.
 
 ## Workspace defaults
 
-Charts uses the same **Defaults** control as Board and Work items (on the board
-toolbar). Save a default **project** (including **All projects**) and optional
-**sprint**. New Chart widgets you insert inherit those filters. Existing widgets
-keep their own filters until you change them.
+Charts uses the same Filter dialog **Set as default** flow as Board and Work
+items. Save a default **project** (including **All projects**, which clears
+saved defaults) and optional **sprint**. New Chart widgets you insert inherit
+those filters. Existing widgets keep their own filters until you change them.
 
 ---
 

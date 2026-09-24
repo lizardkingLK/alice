@@ -80,8 +80,6 @@ describe('hasActiveWorkItemFilters', () => {
         searchParams,
         isProjectLocked: true,
         isAssigneeLocked: false,
-        showWorkspaceDefaults: false,
-        urlFiltersActive: false,
       })
     ).toBe(true);
   });
@@ -94,8 +92,6 @@ describe('hasActiveWorkItemFilters', () => {
         searchParams,
         isProjectLocked: true,
         isAssigneeLocked: false,
-        showWorkspaceDefaults: false,
-        urlFiltersActive: false,
       })
     ).toBe(false);
   });

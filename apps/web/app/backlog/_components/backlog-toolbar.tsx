@@ -5,8 +5,6 @@ import {
   AppliedFilterBadges,
   type AppliedFilterBadgeItem,
 } from '@/components/applied-filter-badges';
-import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
-import type { WorkspaceDefaultsAppliedSummary } from '@/app/board/_components/workspace-defaults-controls';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   DropdownMenu,
@@ -20,6 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
+import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import {
   BacklogFilterDialog,
   type BacklogFilterDraft,
@@ -60,10 +59,9 @@ type BacklogToolbarProps = {
   readonly appliedFilterItems: readonly AppliedFilterBadgeItem[];
   readonly onRemoveAppliedFilter: (ids: readonly string[]) => void;
   readonly onClearFilters: () => void;
-  readonly showDefaultsControls: boolean;
-  readonly savedDefaultsApplied: boolean;
-  readonly appliedDefaultsSummary?: WorkspaceDefaultsAppliedSummary | null;
-  readonly onOpenDefaultsDialog: () => void;
+  readonly onSaveWorkspaceDefaults?: (
+    preference: BoardDefaultsPreference | null
+  ) => void;
 };
 /* eslint-enable no-unused-vars */
 
@@ -97,10 +95,7 @@ export function BacklogToolbar({
   appliedFilterItems,
   onRemoveAppliedFilter,
   onClearFilters,
-  showDefaultsControls,
-  savedDefaultsApplied,
-  appliedDefaultsSummary = null,
-  onOpenDefaultsDialog,
+  onSaveWorkspaceDefaults,
 }: Readonly<BacklogToolbarProps>) {
   const handleApplyFilters = (draft: BacklogFilterDraft) => {
     const nextSprint =
@@ -132,15 +127,8 @@ export function BacklogToolbar({
           activeTab={activeTab}
           hasActiveFilters={isFiltersActive}
           onApplyFilters={handleApplyFilters}
+          onSaveWorkspaceDefaults={onSaveWorkspaceDefaults}
         />
-
-        {showDefaultsControls ? (
-          <WorkspaceDefaultsControls
-            onOpenDefaultsDialog={onOpenDefaultsDialog}
-            savedDefaultsApplied={savedDefaultsApplied}
-            appliedDefaultsSummary={appliedDefaultsSummary}
-          />
-        ) : null}
 
         {isFiltersActive ? (
           <AppliedFilterBadges

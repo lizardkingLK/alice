@@ -1,7 +1,6 @@
 import type { VisibilityState } from '@tanstack/react-table';
 import { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import type { ProjectMembersByProjectId } from '@/app/projects/_services/projects.mutations.client';
-import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import WorkItemsTable from '@/app/work-items/_components/work-item-table/work-items-table';
 import type { WorkItemMemberLike } from '@/app/work-items/_helpers/work-item-member';
@@ -36,7 +35,6 @@ export interface WorkItemWorkspaceProps {
   currentUserRole?: string;
   /** Active vs archived lifecycle tab. */
   tab?: 'active' | 'archived';
-  suggestedDefaults?: BoardDefaultsPreference | null;
   needsClientBootstrap?: boolean;
   /**
    * SSR column prefs from the mirrored cookie so the table can paint once in

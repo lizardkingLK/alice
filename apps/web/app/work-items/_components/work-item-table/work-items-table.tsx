@@ -33,17 +33,11 @@ import {
 import { WorkItemsTableToolbar } from '@/app/work-items/_components/work-item-table/work-items-table-toolbar';
 import { WorkItemsSearchResultsPanel } from '@/app/work-items/_components/work-item-registry/work-items-search-results-panel';
 import type { DisplayRow } from '@/app/work-items/_components/work-item-table/work-items-table-types';
-import {
-  pickWorkspaceDefaultsDialogController,
-  WorkspaceDefaultsDialogHost,
-} from '@/app/board/_components/workspace-defaults-dialog-host';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
-import { resolveWorkspaceDefaultsAppliedSummary } from '@/app/board/_helpers/workspace-defaults-shared';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
 import {
   buildAppliedFilterBadgeItems,
   planAppliedFilterRemovals,
-  resolveProjectFilterBadge,
 } from '@/components/applied-filter-badges.model';
 import {
   applyQueryFilterParam,
@@ -96,7 +90,6 @@ export default function WorkItemsTable({
   currentUserId,
   currentUserRole = 'member',
   tab = 'active',
-  suggestedDefaults = null,
   needsClientBootstrap = false,
   initialColumnVisibility,
   columnVisibilityHasCookie = true,
@@ -185,26 +178,8 @@ export default function WorkItemsTable({
     sprintFilter,
     projects,
     sprints,
-    suggestedDefaults,
   });
-  const {
-    savedPreference,
-    savedDefaultsApplied,
-    urlFiltersActive,
-    openDefaultsDialog,
-    resetUrlFilters,
-  } = boardDefaults;
-
-  const appliedDefaultsSummary = useMemo(() => {
-    if (!savedDefaultsApplied || !savedPreference) {
-      return null;
-    }
-    return resolveWorkspaceDefaultsAppliedSummary(
-      savedPreference,
-      projects,
-      sprints
-    );
-  }, [projects, savedDefaultsApplied, savedPreference, sprints]);
+  const { saveDefaults } = boardDefaults;
 
   const listDescription = resolveWorkItemsListDescription({
     isAssigneeLocked,
@@ -263,8 +238,6 @@ export default function WorkItemsTable({
     searchParams,
     isProjectLocked,
     isAssigneeLocked,
-    showWorkspaceDefaults,
-    urlFiltersActive,
   });
 
   const activeLabels = useMemo(
@@ -275,28 +248,21 @@ export default function WorkItemsTable({
   const appliedFilterItems = useMemo(() => {
     const projectActive =
       !isProjectLocked &&
-      (showWorkspaceDefaults
-        ? urlFiltersActive
-        : Boolean(
-            projectQuery.value && projectQuery.value !== projectAllValue
-          ));
-    const sprintActive = showWorkspaceDefaults
-      ? urlFiltersActive &&
-        Boolean(sprintQuery.value && sprintQuery.value !== sprintQuery.allValue)
-      : Boolean(
-          sprintQuery.value && sprintQuery.value !== sprintQuery.allValue
-        );
+      Boolean(projectQuery.value && projectQuery.value !== projectAllValue);
+    const sprintActive = Boolean(
+      sprintQuery.value && sprintQuery.value !== sprintQuery.allValue
+    );
 
     return buildAppliedFilterBadgeItems({
       search: searchParams.get('search')?.trim() || null,
-      project: resolveProjectFilterBadge({
-        showBadge: projectActive,
-        projectId: projectQuery.value,
-        allValue: projectAllValue,
-        resolveName: (projectId) =>
-          projects.find((project) => project.id === projectId)?.name ??
-          projectId,
-      }),
+      project: projectActive
+        ? {
+            id: projectQuery.value,
+            name:
+              projects.find((project) => project.id === projectQuery.value)
+                ?.name ?? projectQuery.value,
+          }
+        : null,
       sprint: sprintActive
         ? {
             id: sprintQuery.value,
@@ -337,13 +303,11 @@ export default function WorkItemsTable({
     projectQuery.value,
     projects,
     searchParams,
-    showWorkspaceDefaults,
     sprintQuery.allValue,
     sprintQuery.value,
     sprints,
     typeQuery.allValue,
     typeQuery.value,
-    urlFiltersActive,
   ]);
 
   const pushWorkItemParams = useCallback(
@@ -417,18 +381,19 @@ export default function WorkItemsTable({
       }
 
       if (plan.clearProject) {
-        if (showWorkspaceDefaults) {
-          setProjectFilterValue(projectAllValue);
-          setSprintFilterValue(sprintQuery.allValue);
-          resetUrlFilters();
-          return;
-        }
         projectQuery.setValue(projectAllValue);
         applyQueryFilterParam(
           params,
           'project',
           projectAllValue,
           projectAllValue
+        );
+        setSprintFilterValue(sprintQuery.allValue);
+        applyQueryFilterParam(
+          params,
+          'sprint',
+          sprintQuery.allValue,
+          sprintQuery.allValue
         );
       }
 
@@ -453,12 +418,9 @@ export default function WorkItemsTable({
       projectAllValue,
       projectQuery,
       pushWorkItemParams,
-      resetUrlFilters,
       searchParams,
-      setProjectFilterValue,
       setSearchQuery,
       setSprintFilterValue,
-      showWorkspaceDefaults,
       sprintQuery,
       typeQuery,
     ]
@@ -471,10 +433,6 @@ export default function WorkItemsTable({
     typeQuery.setValue(typeQuery.allValue);
     assigneeQuery.setValue(assigneeQuery.allValue);
     labelsQuery.setValue(labelsQuery.allValue);
-    if (showWorkspaceDefaults) {
-      resetUrlFilters();
-      return;
-    }
     const next = buildClearedWorkItemFilterParams({
       searchParams,
       listView,
@@ -660,10 +618,9 @@ export default function WorkItemsTable({
         columnVisibility={columnVisibility}
         onApplyColumnVisibility={handleApplyColumnVisibility}
         columnsHydrated={columnsHydrated}
-        showWorkspaceDefaults={showWorkspaceDefaults}
-        onOpenDefaultsDialog={openDefaultsDialog}
-        savedDefaultsApplied={savedDefaultsApplied}
-        appliedDefaultsSummary={appliedDefaultsSummary}
+        onSaveWorkspaceDefaults={
+          showWorkspaceDefaults ? saveDefaults : undefined
+        }
         hasActiveFilters={hasActiveFilters}
         appliedFilterItems={appliedFilterItems}
         onRemoveAppliedFilter={handleRemoveAppliedFilter}
@@ -723,13 +680,6 @@ export default function WorkItemsTable({
         lockAssigneeId={lockedAssigneeId}
         onClose={() => handleDialogChange(false)}
         onSuccess={() => handleUpdated()}
-      />
-
-      <WorkspaceDefaultsDialogHost
-        enabled={showWorkspaceDefaults}
-        projects={projects}
-        sprints={sprints}
-        defaults={pickWorkspaceDefaultsDialogController(boardDefaults)}
       />
 
       {lifecycle.itemToConfirm ? (

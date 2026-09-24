@@ -10,9 +10,15 @@ import {
   type BacklogActiveTab,
 } from '@/app/backlog/_helpers/backlog-item-utils';
 import { buildSprintFilterOptionsForQuery } from '@/app/board/_services/board.defaults.shared';
+import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
+import {
+  resolvePreferenceFromFilterDraft,
+  type WorkspaceDefaultsSaveIntent,
+} from '@/app/board/_helpers/workspace-defaults-shared';
 import {
   FilterDialogShell,
   FilterOptionsChecklistPane,
+  filterDialogOptionsBySearch,
   type FilterDialogNavField,
 } from '@/components/filter-dialog-shell';
 import { QUERY_FILTER_ALL_VALUE } from '@/hooks/use-query-filter';
@@ -69,6 +75,14 @@ type BacklogFilterDialogProps = {
   readonly hasActiveFilters: boolean;
   // eslint-disable-next-line no-unused-vars -- apply staged filters
   readonly onApplyFilters: (draft: BacklogFilterDraft) => void;
+  /**
+   * When the user checks “Set as default” and clicks Okay, persist workspace
+   * defaults (null = All/All / clear storage).
+   */
+  readonly onSaveWorkspaceDefaults?: (
+    // eslint-disable-next-line no-unused-vars -- callback signature
+    preference: BoardDefaultsPreference | null
+  ) => void;
 };
 
 const BACKLOG_FILTER_FIELDS = [
@@ -114,6 +128,7 @@ export function BacklogFilterDialog({
   activeTab,
   hasActiveFilters,
   onApplyFilters,
+  onSaveWorkspaceDefaults,
 }: Readonly<BacklogFilterDialogProps>) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<BacklogFilterDraft>({
@@ -126,6 +141,8 @@ export function BacklogFilterDialog({
     BacklogFilterFieldId.Project
   );
   const [optionSearch, setOptionSearch] = useState('');
+  const [defaultsIntent, setDefaultsIntent] =
+    useState<WorkspaceDefaultsSaveIntent | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -138,6 +155,7 @@ export function BacklogFilterDialog({
       [BacklogFilterFieldId.Priority]: priorityFilter,
     });
     setOptionSearch('');
+    setDefaultsIntent(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open transition only
   }, [open]);
 
@@ -190,9 +208,7 @@ export function BacklogFilterDialog({
     }
   }, [activeFieldId, candidateSprints, draft, projectMembers, projects]);
 
-  const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(optionSearch.trim().toLowerCase())
-  );
+  const filteredOptions = filterDialogOptionsBySearch(options, optionSearch);
 
   const selectedValue = draft[activeFieldId];
 
@@ -277,10 +293,41 @@ export function BacklogFilterDialog({
       }
       onClearActiveField={clearActiveField}
       onOkay={() => {
+        if (defaultsIntent && onSaveWorkspaceDefaults) {
+          onSaveWorkspaceDefaults(
+            resolvePreferenceFromFilterDraft({
+              intent: defaultsIntent,
+              projectValue: draft[BacklogFilterFieldId.Project],
+              sprintValue: draft[BacklogFilterFieldId.Sprint],
+              allValue: QUERY_FILTER_ALL_VALUE,
+              sprints,
+            })
+          );
+        }
         onApplyFilters(draft);
         setOpen(false);
       }}
       footerCountLabel={`${filteredOptions.length + 1} of ${filteredOptions.length + 1}`}
+      setAsDefault={
+        activeFieldId === BacklogFilterFieldId.Project ||
+        activeFieldId === BacklogFilterFieldId.Sprint
+          ? {
+              visible: true,
+              checked: defaultsIntent === activeFieldId,
+              onCheckedChange: (checked) => {
+                if (!checked) {
+                  setDefaultsIntent(null);
+                  return;
+                }
+                setDefaultsIntent(
+                  activeFieldId === BacklogFilterFieldId.Sprint
+                    ? 'sprint'
+                    : 'project'
+                );
+              },
+            }
+          : undefined
+      }
     >
       <FilterOptionsChecklistPane
         fieldId={activeField.id}

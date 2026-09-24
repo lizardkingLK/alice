@@ -5,11 +5,7 @@ import {
   type WorkItemListFilters,
 } from '@/app/work-items/_services/work-items.reads.server';
 import { needsWorkspaceProjectBootstrap } from '@/app/board/_helpers/workspace-defaults-shared';
-import { ALL_PROJECTS_ID } from '@/app/board/_helpers/board-defaults-storage';
-import {
-  EMPTY_ACTIVE_SPRINTS_PAGE,
-  getSuggestedBoardDefaults,
-} from '@/app/board/_services/board.reads.defaults.server';
+import { EMPTY_ACTIVE_SPRINTS_PAGE } from '@/app/board/_services/board.reads.defaults.server';
 import { getProjectMembersByProjectIds } from '@/app/projects/_services/projects.reads.server';
 import {
   resolveAssigneeFilterMembers,
@@ -167,16 +163,8 @@ export async function WorkItemsData({
 
   const activeProjects = filterActiveProjects(projects);
   const sprints = sprintsResult.sprints;
-  const suggestedDefaults =
-    !isProjectLocked && !isAssigneeLocked && dbUser
-      ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
-      : null;
 
-  const effectiveProjectId =
-    projectId ??
-    (suggestedDefaults && suggestedDefaults.projectId !== ALL_PROJECTS_ID
-      ? suggestedDefaults.projectId
-      : null);
+  const effectiveProjectId = projectId ?? null;
 
   const projectMembersForFilter = resolveAssigneeFilterMembers({
     membersByProjectId,
@@ -209,7 +197,6 @@ export async function WorkItemsData({
       currentUserId={resolvedUserId}
       currentUserRole={currentUserRole}
       tab={tab}
-      suggestedDefaults={suggestedDefaults}
       needsClientBootstrap={needsClientBootstrap}
       initialColumnVisibility={columnVisibilityBootstrap.visibility}
       columnVisibilityHasCookie={columnVisibilityBootstrap.hasCookie}

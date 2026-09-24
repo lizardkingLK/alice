@@ -4,10 +4,7 @@ import { getDbUser } from '@/lib/auth';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import { getAccessibleProjectList } from '@/lib/projects/accessible-project-list';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
-import {
-  EMPTY_ACTIVE_SPRINTS_PAGE,
-  getSuggestedBoardDefaults,
-} from '@/app/board/_services/board.reads.defaults.server';
+import { EMPTY_ACTIVE_SPRINTS_PAGE } from '@/app/board/_services/board.reads.defaults.server';
 import { ChartsWorkspace } from '@/app/charts/_components/charts-workspace';
 import { getAccessibleChartWorkspace } from '@/app/charts/_services/charts.reads.server';
 import { getProjectMembersByProjectIds } from '@/app/projects/_services/projects.reads.server';
@@ -66,9 +63,6 @@ export async function ChartsData({
       : Promise.resolve({}),
   ]);
   const sprints = sprintsResult.sprints;
-  const suggestedDefaults = dbUser
-    ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
-    : null;
 
   const accessibleProjects = activeProjects.map((project) => ({
     id: project.id,
@@ -93,7 +87,6 @@ export async function ChartsData({
       assigneeMembers={assigneeMembers}
       projects={activeProjects}
       sprints={sprints}
-      suggestedDefaults={suggestedDefaults}
     />
   );
 }

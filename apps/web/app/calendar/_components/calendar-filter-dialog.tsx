@@ -7,16 +7,22 @@ import {
   applyProjectFilterToSearchParams,
   buildSprintFilterOptionsForQuery,
 } from '@/app/board/_services/board.defaults.shared';
+import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
+import {
+  resolvePreferenceFromFilterDraft,
+  type WorkspaceDefaultsSaveIntent,
+} from '@/app/board/_helpers/workspace-defaults-shared';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import {
   FilterDialogShell,
   FilterOptionsChecklistPane,
+  filterDialogOptionsBySearch,
   type FilterDialogNavField,
+  type FilterDialogOption,
 } from '@/components/filter-dialog-shell';
 import { QUERY_FILTER_ALL_VALUE } from '@/hooks/use-query-filter';
-import type { CalendarFilterOption } from '@/app/calendar/_components/calendar-filter-controls';
 
 export type CalendarFilterDraft = {
   readonly project: string;
@@ -37,6 +43,10 @@ type CalendarFilterDialogProps = {
   readonly hasActiveFilters: boolean;
   // eslint-disable-next-line no-unused-vars -- apply staged filters
   readonly onApplyFilters: (draft: CalendarFilterDraft) => void;
+  readonly onSaveWorkspaceDefaults?: (
+    // eslint-disable-next-line no-unused-vars -- callback signature
+    preference: BoardDefaultsPreference | null
+  ) => void;
 };
 
 const CALENDAR_FILTER_FIELDS = [
@@ -87,6 +97,7 @@ export function CalendarFilterDialog({
   allowAllFilters,
   hasActiveFilters,
   onApplyFilters,
+  onSaveWorkspaceDefaults,
 }: Readonly<CalendarFilterDialogProps>) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<CalendarFilterDraft>({
@@ -98,6 +109,8 @@ export function CalendarFilterDialog({
   const [activeFieldId, setActiveFieldId] =
     useState<CalendarFilterFieldId>('project');
   const [optionSearch, setOptionSearch] = useState('');
+  const [defaultsIntent, setDefaultsIntent] =
+    useState<WorkspaceDefaultsSaveIntent | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -110,6 +123,7 @@ export function CalendarFilterDialog({
       type: typeValue,
     });
     setOptionSearch('');
+    setDefaultsIntent(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open transition only
   }, [open]);
 
@@ -121,11 +135,11 @@ export function CalendarFilterDialog({
     CALENDAR_FILTER_FIELDS.find((field) => field.id === activeFieldId) ??
     CALENDAR_FILTER_FIELDS[0];
 
-  const options: CalendarFilterOption[] = useMemo(() => {
+  const options: FilterDialogOption[] = useMemo(() => {
     switch (activeFieldId) {
       case 'project':
         return projects.map((project) => ({
-          id: project.id,
+          value: project.id,
           label: project.name,
         }));
       case 'sprint':
@@ -133,12 +147,15 @@ export function CalendarFilterDialog({
           sprints,
           draft.project,
           QUERY_FILTER_ALL_VALUE
-        ).map((option) => ({ id: option.value, label: option.label }));
+        );
       case 'assignee':
-        return users.map((user) => ({ id: user.id, label: user.name }));
+        return users.map((user) => ({
+          value: user.id,
+          label: user.name,
+        }));
       case 'type':
         return WORK_ITEM_TYPES.map((workItemType) => ({
-          id: workItemType,
+          value: workItemType,
           label: workItemType,
         }));
       default:
@@ -146,11 +163,7 @@ export function CalendarFilterDialog({
     }
   }, [activeFieldId, draft.project, projects, sprints, users]);
 
-  const filteredOptions = options
-    .filter((option) =>
-      option.label.toLowerCase().includes(optionSearch.trim().toLowerCase())
-    )
-    .map((option) => ({ value: option.id, label: option.label }));
+  const filteredOptions = filterDialogOptionsBySearch(options, optionSearch);
 
   const selectedValue = draft[activeFieldId];
   const showAllOption =
@@ -201,10 +214,38 @@ export function CalendarFilterDialog({
       onClearAll={() => setDraft(emptyDraft())}
       onClearActiveField={showAllOption ? clearActiveField : undefined}
       onOkay={() => {
+        if (defaultsIntent && onSaveWorkspaceDefaults) {
+          onSaveWorkspaceDefaults(
+            resolvePreferenceFromFilterDraft({
+              intent: defaultsIntent,
+              projectValue: draft.project,
+              sprintValue: draft.sprint,
+              allValue: QUERY_FILTER_ALL_VALUE,
+              sprints,
+            })
+          );
+        }
         onApplyFilters(draft);
         setOpen(false);
       }}
       footerCountLabel={`${filteredOptions.length + (showAllOption ? 1 : 0)} of ${filteredOptions.length + (showAllOption ? 1 : 0)}`}
+      setAsDefault={
+        activeFieldId === 'project' || activeFieldId === 'sprint'
+          ? {
+              visible: true,
+              checked: defaultsIntent === activeFieldId,
+              onCheckedChange: (checked) => {
+                if (!checked) {
+                  setDefaultsIntent(null);
+                  return;
+                }
+                setDefaultsIntent(
+                  activeFieldId === 'sprint' ? 'sprint' : 'project'
+                );
+              },
+            }
+          : undefined
+      }
     >
       <FilterOptionsChecklistPane
         fieldId={activeField.id}

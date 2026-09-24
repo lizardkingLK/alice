@@ -6,7 +6,6 @@ const getAccessibleProjectListMock = vi.hoisted(() => vi.fn());
 const getUserListMock = vi.hoisted(() => vi.fn());
 const getWorkItemsMock = vi.hoisted(() => vi.fn());
 const getSprintsPaginatedServerMock = vi.hoisted(() => vi.fn());
-const getSuggestedBoardDefaultsMock = vi.hoisted(() => vi.fn());
 const createClientMock = vi.hoisted(() => vi.fn());
 const workflowConfigQueryMocks = vi.hoisted(() => {
   const single = vi.fn();
@@ -46,7 +45,6 @@ vi.mock('@/app/sprints/_services/sprints.reads.server', () => ({
 
 vi.mock('@/app/board/_services/board.reads.defaults.server', () => ({
   EMPTY_ACTIVE_SPRINTS_PAGE: { sprints: [] },
-  getSuggestedBoardDefaults: getSuggestedBoardDefaultsMock,
 }));
 
 vi.mock('@/app/board/_components/board-workspace', () => ({
@@ -82,7 +80,6 @@ describe('BoardData project scoping', () => {
     getUserListMock.mockResolvedValue([]);
     getWorkItemsMock.mockResolvedValue(MOCK_WORK_ITEMS);
     getSprintsPaginatedServerMock.mockResolvedValue({ sprints: MOCK_SPRINTS });
-    getSuggestedBoardDefaultsMock.mockResolvedValue(null);
     createClientMock.mockResolvedValue({
       from: workflowConfigQueryMocks.from,
     });

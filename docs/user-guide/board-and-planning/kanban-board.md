@@ -49,24 +49,27 @@ registry.
 
 ## Filters
 
-Use search, the **Filter** icon (**Shift+F**), **Defaults** (sliders), then the
-people avatars — in that order — for project, sprint, priority, labels, and
-assignee.
+Use search, the **Filter** icon (**Shift+F**), then the people avatars — in that
+order — for project, sprint, priority, labels, and assignee.
 
-When your **saved** Defaults match the current URL, the Defaults button uses the
-applied outline style. Hover it to see **Active defaults** (saved project and
-sprint). If filters override those defaults, the button is not highlighted.
+In the Filter dialog, on the **Project** or **Sprint** pane you can check
+**Set as default**. Okay applies the filters to the URL and, if that box is
+checked, saves workspace defaults (All projects / All sprints clears saved
+defaults). Changing filters without checking the box does not change defaults.
 
-When any non-default filter is active, filter badges sit on the same toolbar
-row as search and filters (they take remaining space). When chips overflow,
-scroll the strip horizontally with the trackpad, mouse wheel, or Shift+wheel
-(scrollbar is hidden so short chips stay visually centered). Each badge names
-an applied filter (with an icon); use the badge **X** to remove just that
-filter, or the clear icon after the badges to reset all filters (including back
-to your saved Defaults for project/sprint). Rapid chip dismissals update the
+When any concrete filter is active in the URL, filter badges sit on the same
+toolbar row as search and filters (they take remaining space). **All projects**
+and **All sprints** are not shown as badges. When chips overflow, scroll the
+strip horizontally with the trackpad, mouse wheel, or Shift+wheel (scrollbar is
+hidden so short chips stay visually centered). Each badge names an applied
+filter (with an icon); use the badge **X** to remove just that filter, or the
+clear icon after the badges to reset filters. Rapid chip dismissals update the
 strip immediately and apply as one filter refresh after a short pause (so a
 fast burst is one request). Use the filter dialog if you need to change several
 filters at once in a structured way.
+
+Sidebar links for Board, Backlog, and Work items include your saved project /
+sprint defaults when set; with no saved defaults they open the unscoped view.
 
 Save a filtered URL as a [view](../navigation/favorites-and-views.md).
 

@@ -11,6 +11,11 @@ import {
   applyProjectFilterToSearchParams,
   buildSprintFilterOptionsForQuery,
 } from '@/app/board/_services/board.defaults.shared';
+import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
+import {
+  resolvePreferenceFromFilterDraft,
+  type WorkspaceDefaultsSaveIntent,
+} from '@/app/board/_helpers/workspace-defaults-shared';
 import type { WorkItemsFilterDraft } from '@/app/work-items/_components/work-item-table/work-item-table-helpers';
 import type { FilterQuery } from '@/app/work-items/_components/work-item-table/work-items-table-types';
 import type { WorkItemWorkspaceProps } from '@/app/work-items/_components/work-items-workspace';
@@ -24,6 +29,7 @@ import {
   FILTER_OPTIONS_SCROLL_CLASS,
   FilterDialogShell,
   FilterOptionsChecklistPane,
+  filterDialogOptionsBySearch,
   type FilterDialogOption,
 } from '@/components/filter-dialog-shell';
 
@@ -143,6 +149,9 @@ export type WorkItemsFilterDialogProps = {
   readonly isAssigneeLocked: boolean;
   readonly hasActiveFilters: boolean;
   readonly onApplyFilters: (draft: WorkItemsFilterDraft) => void;
+  readonly onSaveWorkspaceDefaults?: (
+    preference: BoardDefaultsPreference | null
+  ) => void;
 };
 /* eslint-enable no-unused-vars */
 
@@ -387,6 +396,7 @@ export function WorkItemsFilterDialog(
     isAssigneeLocked,
     hasActiveFilters,
     onApplyFilters,
+    onSaveWorkspaceDefaults,
     sprints,
     visibleFieldIds,
   } = props;
@@ -405,6 +415,8 @@ export function WorkItemsFilterDialog(
     fields[0]?.id ?? 'type'
   );
   const [optionSearch, setOptionSearch] = useState('');
+  const [defaultsIntent, setDefaultsIntent] =
+    useState<WorkspaceDefaultsSaveIntent | null>(null);
   const [placeholderSelections, setPlaceholderSelections] = useState<
     Partial<Record<WorkItemsFilterFieldId, string>>
   >({});
@@ -428,14 +440,13 @@ export function WorkItemsFilterDialog(
     }
     setDraft(snapshotDraft(props));
     setPlaceholderSelections({});
+    setDefaultsIntent(null);
     // Seed once when the dialog opens; ignore prop churn while editing.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open transition only
   }, [open]);
 
   const options = optionsForField(activeField.id, props, draft);
-  const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(optionSearch.trim().toLowerCase())
-  );
+  const filteredOptions = filterDialogOptionsBySearch(options, optionSearch);
 
   const isLabelsField = activeField.id === 'labels';
   const selectedValue = selectedValueForField(
@@ -502,6 +513,17 @@ export function WorkItemsFilterDialog(
   };
 
   const handleOkay = () => {
+    if (defaultsIntent && onSaveWorkspaceDefaults) {
+      onSaveWorkspaceDefaults(
+        resolvePreferenceFromFilterDraft({
+          intent: defaultsIntent,
+          projectValue: draft.project,
+          sprintValue: draft.sprint,
+          allValue: QUERY_FILTER_ALL_VALUE,
+          sprints,
+        })
+      );
+    }
     onApplyFilters(draft);
     setOpen(false);
   };
@@ -556,6 +578,23 @@ export function WorkItemsFilterDialog(
       onClearActiveField={clearActiveField}
       onOkay={handleOkay}
       footerCountLabel={footerCountLabel}
+      setAsDefault={
+        activeField.id === 'project' || activeField.id === 'sprint'
+          ? {
+              visible: true,
+              checked: defaultsIntent === activeField.id,
+              onCheckedChange: (checked) => {
+                if (!checked) {
+                  setDefaultsIntent(null);
+                  return;
+                }
+                setDefaultsIntent(
+                  activeField.id === 'sprint' ? 'sprint' : 'project'
+                );
+              },
+            }
+          : undefined
+      }
     >
       {fieldPane}
     </FilterDialogShell>

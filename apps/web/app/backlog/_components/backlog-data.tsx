@@ -10,7 +10,6 @@ export async function BacklogData() {
     sprints,
     userRole,
     currentUserId,
-    suggestedDefaults,
     error,
   } = await getBacklogWorkspace();
 
@@ -23,7 +22,6 @@ export async function BacklogData() {
       sprints={sprints}
       userRole={userRole}
       currentUserId={currentUserId}
-      suggestedDefaults={suggestedDefaults}
       error={error}
     />
   );

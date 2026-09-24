@@ -29,16 +29,9 @@ vi.mock('@/app/board/_hooks/use-board-defaults-bootstrap', () => ({
     savedPreference: null,
     savedDefaultsApplied: false,
     urlFiltersActive: false,
-    openDefaultsDialog: vi.fn(),
+    saveDefaults: vi.fn(),
     resetUrlFilters: vi.fn(),
   }),
-}));
-vi.mock('@/app/board/_components/workspace-defaults-dialog-host', () => ({
-  pickWorkspaceDefaultsDialogController: () => ({}),
-  WorkspaceDefaultsDialogHost: () => null,
-}));
-vi.mock('@/app/board/_components/workspace-defaults-controls', () => ({
-  WorkspaceDefaultsControls: () => null,
 }));
 vi.mock(
   '@/app/work-items/_components/work-item-registry/work-items-filter-dialog',
@@ -123,7 +116,6 @@ describe('Kanban board policy denial', () => {
           sprintFilter=""
           allowAllFilters
           userId="actor-1"
-          suggestedDefaults={null}
           needsClientBootstrap={false}
         />
       </TooltipProvider>

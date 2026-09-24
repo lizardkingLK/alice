@@ -48,7 +48,7 @@ export function useWorkspaceDefaultsNavPreference(
     }
 
     const refresh = () => {
-      setPreference(readBoardDefaults(userId)?.preference ?? null);
+      setPreference(readBoardDefaults(userId));
     };
 
     refresh();
