@@ -98,6 +98,7 @@ interface ProjectDetailsWorkspaceProps {
 const MANAGER_ONLY_TABS = new Set<ProjectDetailsTabId>([
   'teams',
   'sprints',
+  'integrations',
   'fields',
   'board',
   'settings',
@@ -140,6 +141,7 @@ const PROJECT_NAV_ITEMS: ReadonlyArray<{
     id: 'integrations',
     label: 'Integrations',
     Icon: Plug,
+    managerOrAdminOnly: true,
   },
   {
     id: 'fields',
