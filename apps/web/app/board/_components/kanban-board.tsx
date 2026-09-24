@@ -46,17 +46,11 @@ import {
   resolveItemColumnId,
 } from '@/app/board/_helpers/board-columns';
 import {
-  pickWorkspaceDefaultsDialogController,
-  WorkspaceDefaultsDialogHost,
-} from '@/app/board/_components/workspace-defaults-dialog-host';
-import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
-import {
   BoardLayoutMenu,
   useBoardLayout,
 } from '@/app/board/_components/board-layout-menu';
 import { BoardGroupedColumnsView } from '@/app/board/_components/board-grouped-columns-view';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
-import { resolveWorkspaceDefaultsAppliedSummary } from '@/app/board/_helpers/workspace-defaults-shared';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
@@ -86,7 +80,6 @@ import { AppliedFilterBadges } from '@/components/applied-filter-badges';
 import {
   buildAppliedFilterBadgeItems,
   planAppliedFilterRemovals,
-  resolveProjectFilterBadge,
 } from '@/components/applied-filter-badges.model';
 import { SearchInput } from '@/components/search-input';
 import { AssigneeAvatarFilter } from '@/components/assignee-avatar-filter';
@@ -134,10 +127,6 @@ type KanbanBoardProps = {
   readonly sprintFilter: string;
   readonly allowAllFilters: boolean;
   readonly userId: string | null;
-  readonly suggestedDefaults: {
-    readonly projectId: string;
-    readonly sprintId: string | null;
-  } | null;
   readonly needsClientBootstrap: boolean;
 };
 
@@ -151,7 +140,6 @@ export function KanbanBoard({
   sprintFilter,
   allowAllFilters,
   userId,
-  suggestedDefaults,
   needsClientBootstrap,
 }: Readonly<KanbanBoardProps>) {
   const { isUserOnline } = useRealtime();
@@ -177,15 +165,8 @@ export function KanbanBoard({
     sprintFilter,
     projects,
     sprints,
-    suggestedDefaults,
   });
-  const {
-    savedPreference,
-    savedDefaultsApplied,
-    urlFiltersActive,
-    openDefaultsDialog,
-    resetUrlFilters,
-  } = boardDefaults;
+  const { saveDefaults } = boardDefaults;
 
   const projectQuery = useQueryFilter('project', projectFilter);
   const sprintQuery = useQueryFilter('sprint', sprintFilter);
@@ -242,17 +223,6 @@ export function KanbanBoard({
     return Array.from(byId.values());
   }, [workItems]);
 
-  const appliedDefaultsSummary = useMemo(() => {
-    if (!savedDefaultsApplied || !savedPreference) {
-      return null;
-    }
-    return resolveWorkspaceDefaultsAppliedSummary(
-      savedPreference,
-      projects,
-      sprints
-    );
-  }, [projects, savedDefaultsApplied, savedPreference, sprints]);
-
   const boardFilterFieldIds = useMemo(() => {
     const fields: WorkItemsFilterFieldId[] = [];
     if (allowAllFilters || projects.length > 0) {
@@ -273,14 +243,22 @@ export function KanbanBoard({
   );
 
   const hasLabelsFilter = activeLabels.length > 0;
+  const projectFilterActive = Boolean(
+    projectQuery.value && projectQuery.value !== projectAllValue
+  );
+  const sprintFilterActive = Boolean(
+    sprintQuery.value && sprintQuery.value !== sprintQuery.allValue
+  );
   const hasLocalFilters =
     search.trim() !== '' ||
     priorityFilter !== QUERY_FILTER_ALL_VALUE ||
     assigneeFilter !== null ||
     hasLabelsFilter;
-  const hasActiveFilters = hasLocalFilters || urlFiltersActive;
+  const hasActiveFilters =
+    hasLocalFilters || projectFilterActive || sprintFilterActive;
   const hasDialogFilters =
-    urlFiltersActive ||
+    projectFilterActive ||
+    sprintFilterActive ||
     priorityFilter !== QUERY_FILTER_ALL_VALUE ||
     hasLabelsFilter;
 
@@ -362,54 +340,48 @@ export function KanbanBoard({
     setAssigneeFilter(null);
     setLabelsFilterValue(QUERY_FILTER_ALL_VALUE);
 
-    if (urlFiltersActive) {
+    if (projectFilterActive || sprintFilterActive || hasLabelsFilter) {
       setProjectFilterValue(projectAllValue);
       setSprintFilterValue(sprintQuery.allValue);
-      resetUrlFilters();
-      return;
-    }
-
-    if (hasLabelsFilter) {
       const params = new URLSearchParams(searchParams.toString());
+      params.set('project', projectAllValue);
+      params.delete('sprint');
       params.delete('labels');
       pushBoardParams(params);
     }
   }, [
     hasLabelsFilter,
     projectAllValue,
+    projectFilterActive,
     pushBoardParams,
-    resetUrlFilters,
     searchParams,
     setLabelsFilterValue,
     setProjectFilterValue,
     setSprintFilterValue,
+    sprintFilterActive,
     sprintQuery.allValue,
-    urlFiltersActive,
   ]);
 
   const appliedFilterItems = useMemo(
     () =>
       buildAppliedFilterBadgeItems({
         search,
-        project: resolveProjectFilterBadge({
-          showBadge: urlFiltersActive,
-          projectId: projectQuery.value,
-          allValue: projectAllValue,
-          resolveName: (projectId) =>
-            projects.find((project) => project.id === projectId)?.name ??
-            projectId,
-        }),
-        sprint:
-          urlFiltersActive &&
-          sprintQuery.value &&
-          sprintQuery.value !== sprintQuery.allValue
-            ? {
-                id: sprintQuery.value,
-                name:
-                  sprints.find((sprint) => sprint.id === sprintQuery.value)
-                    ?.name ?? sprintQuery.value,
-              }
-            : null,
+        project: projectFilterActive
+          ? {
+              id: projectQuery.value,
+              name:
+                projects.find((project) => project.id === projectQuery.value)
+                  ?.name ?? projectQuery.value,
+            }
+          : null,
+        sprint: sprintFilterActive
+          ? {
+              id: sprintQuery.value,
+              name:
+                sprints.find((sprint) => sprint.id === sprintQuery.value)
+                  ?.name ?? sprintQuery.value,
+            }
+          : null,
         priority:
           priorityFilter !== QUERY_FILTER_ALL_VALUE
             ? {
@@ -434,15 +406,14 @@ export function KanbanBoard({
       activeLabels,
       assigneeFilter,
       priorityFilter,
-      projectAllValue,
+      projectFilterActive,
       projectQuery.value,
       projects,
       search,
-      sprintQuery.allValue,
+      sprintFilterActive,
       sprintQuery.value,
       sprints,
       uniqueAssignees,
-      urlFiltersActive,
     ]
   );
 
@@ -497,11 +468,11 @@ export function KanbanBoard({
       if (plan.clearProject) {
         setProjectFilterValue(projectAllValue);
         setSprintFilterValue(sprintQuery.allValue);
-        resetUrlFilters();
-        return;
+        params.set('project', projectAllValue);
+        params.delete('sprint');
       }
 
-      if (plan.clearSprint) {
+      if (plan.clearSprint && !plan.clearProject) {
         setSprintFilterValue(sprintQuery.allValue);
         applyQueryFilterParam(
           params,
@@ -517,7 +488,6 @@ export function KanbanBoard({
       activeLabels,
       projectAllValue,
       pushBoardParams,
-      resetUrlFilters,
       searchParams,
       setAssigneeFilter,
       setLabelsFilterValue,
@@ -794,16 +764,9 @@ export function KanbanBoard({
             isProjectLocked={!allowAllFilters && projects.length === 0}
             isAssigneeLocked
             onApplyFilters={handleApplyFilters}
+            onSaveWorkspaceDefaults={userId ? saveDefaults : undefined}
             hasActiveFilters={hasDialogFilters}
           />
-
-          {userId ? (
-            <WorkspaceDefaultsControls
-              onOpenDefaultsDialog={openDefaultsDialog}
-              savedDefaultsApplied={savedDefaultsApplied}
-              appliedDefaultsSummary={appliedDefaultsSummary}
-            />
-          ) : null}
 
           <AssigneeAvatarFilter
             members={uniqueAssignees}
@@ -1105,13 +1068,6 @@ export function KanbanBoard({
           setCreateStatus(null);
           router.refresh();
         }}
-      />
-
-      <WorkspaceDefaultsDialogHost
-        enabled={Boolean(userId)}
-        projects={projects}
-        sprints={sprints}
-        defaults={pickWorkspaceDefaultsDialogController(boardDefaults)}
       />
     </div>
   );

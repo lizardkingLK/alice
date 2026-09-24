@@ -128,7 +128,10 @@ export function SettingsIntegrationsView({
 
     if (!shouldOpen && typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('showPopup') === '1' || params.get('showPopup') === 'true') {
+      if (
+        params.get('showPopup') === '1' ||
+        params.get('showPopup') === 'true'
+      ) {
         shouldOpen = true;
         target = params.get('integration') || undefined;
       }

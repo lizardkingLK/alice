@@ -4,17 +4,12 @@ import {
   setLocalStorageJson,
 } from '@/lib/local-storage';
 
-/** Sentinel stored in preferences when the user wants every project visible. */
+/** Sentinel used in preference objects and URL query values for All projects. */
 export const ALL_PROJECTS_ID = 'all';
 
 export type BoardDefaultsPreference = {
   readonly projectId: string;
   readonly sprintId: string | null;
-};
-
-export type BoardDefaultsRecord = {
-  readonly preference: BoardDefaultsPreference | null;
-  readonly prompted: boolean;
 };
 
 const STORAGE_PREFIX = 'alice:board-defaults:';
@@ -40,41 +35,76 @@ function isPreference(value: unknown): value is BoardDefaultsPreference {
   return true;
 }
 
-function isRecord(value: unknown): value is BoardDefaultsRecord {
+/**
+ * Legacy shape `{ preference, prompted }` from the old defaults dialog.
+ * Still accepted on read so existing browsers migrate cleanly.
+ */
+function preferenceFromLegacyRecord(
+  value: unknown
+): BoardDefaultsPreference | null {
   if (!value || typeof value !== 'object') {
-    return false;
+    return null;
   }
   const record = value as Record<string, unknown>;
-  if (typeof record.prompted !== 'boolean') {
-    return false;
+  if (!('preference' in record) || !('prompted' in record)) {
+    return null;
   }
-  if (record.preference !== null && !isPreference(record.preference)) {
-    return false;
+  if (record.preference === null) {
+    return null;
   }
-  return true;
+  return isPreference(record.preference) ? record.preference : null;
 }
 
 /**
- * Read board defaults for a user. Returns null when missing or corrupt.
+ * Normalize All/All to null (no storage). Concrete project/sprint otherwise.
  */
-export function readBoardDefaults(userId: string): BoardDefaultsRecord | null {
+export function normalizeBoardDefaultsPreference(
+  preference: BoardDefaultsPreference | null | undefined
+): BoardDefaultsPreference | null {
+  if (!preference || preference.projectId === ALL_PROJECTS_ID) {
+    return null;
+  }
+  return {
+    projectId: preference.projectId,
+    sprintId: preference.sprintId,
+  };
+}
+
+/**
+ * Read board defaults for a user. Missing key / All/All / corrupt → null.
+ */
+export function readBoardDefaults(
+  userId: string
+): BoardDefaultsPreference | null {
   if (!userId) {
     return null;
   }
 
   const parsed = getLocalStorageJson<unknown>(storageKey(userId));
-  return isRecord(parsed) ? parsed : null;
+  if (isPreference(parsed)) {
+    return normalizeBoardDefaultsPreference(parsed);
+  }
+  return normalizeBoardDefaultsPreference(preferenceFromLegacyRecord(parsed));
 }
 
+/**
+ * Persist a concrete project/sprint default. Pass null to clear (All/All).
+ */
 export function writeBoardDefaults(
   userId: string,
-  record: BoardDefaultsRecord
+  preference: BoardDefaultsPreference | null
 ): void {
   if (!userId) {
     return;
   }
 
-  setLocalStorageJson(storageKey(userId), record);
+  const normalized = normalizeBoardDefaultsPreference(preference);
+  if (!normalized) {
+    clearBoardDefaults(userId);
+    return;
+  }
+
+  setLocalStorageJson(storageKey(userId), normalized);
   emitBoardDefaultsChanged(userId);
 }
 
@@ -101,31 +131,32 @@ function emitBoardDefaultsChanged(userId: string): void {
 
 /**
  * Prefer stored preference when project (and sprint, if set) still exist.
- * Invalid preferences return null so callers can fall back to suggested defaults.
+ * Invalid preferences return null so callers treat as All/All.
  */
 export function validateBoardDefaultsPreference(
   preference: BoardDefaultsPreference,
   projectIds: ReadonlySet<string>,
   sprintById: ReadonlyMap<string, { readonly projectId: string | null }>
 ): BoardDefaultsPreference | null {
-  if (preference.projectId === ALL_PROJECTS_ID) {
-    return { projectId: ALL_PROJECTS_ID, sprintId: null };
-  }
-
-  if (!projectIds.has(preference.projectId)) {
+  const normalized = normalizeBoardDefaultsPreference(preference);
+  if (!normalized) {
     return null;
   }
 
-  if (preference.sprintId === null) {
-    return preference;
-  }
-
-  const sprint = sprintById.get(preference.sprintId);
-  if (sprint?.projectId !== preference.projectId) {
+  if (!projectIds.has(normalized.projectId)) {
     return null;
   }
 
-  return preference;
+  if (normalized.sprintId === null) {
+    return normalized;
+  }
+
+  const sprint = sprintById.get(normalized.sprintId);
+  if (sprint?.projectId !== normalized.projectId) {
+    return null;
+  }
+
+  return normalized;
 }
 
 /**
@@ -136,13 +167,16 @@ export function readValidatedBoardDefaults(
   projectIds: ReadonlySet<string>,
   sprintById: ReadonlyMap<string, { readonly projectId: string | null }>
 ): {
-  readonly record: BoardDefaultsRecord | null;
   readonly preference: BoardDefaultsPreference | null;
 } {
-  const record = readBoardDefaults(userId);
-  const preference = record?.preference
-    ? validateBoardDefaultsPreference(record.preference, projectIds, sprintById)
+  const stored = readBoardDefaults(userId);
+  const preference = stored
+    ? validateBoardDefaultsPreference(stored, projectIds, sprintById)
     : null;
 
-  return { record, preference };
+  if (stored && !preference) {
+    clearBoardDefaults(userId);
+  }
+
+  return { preference };
 }

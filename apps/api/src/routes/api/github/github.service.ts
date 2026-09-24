@@ -58,7 +58,6 @@ function requireGithubConfig(): {
 export class GithubService {
   constructor(private readonly githubRepository: GithubRepository) {}
 
-
   buildAuthorizeUrl(userId: string): string {
     const { clientId, redirectUri } = requireGithubConfig();
     const state = createOAuthState(userId, 'sign GitHub OAuth state (HMAC)');

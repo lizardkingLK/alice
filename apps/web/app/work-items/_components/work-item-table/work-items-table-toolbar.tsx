@@ -3,8 +3,7 @@
 import { Button } from '@repo/ui/components/ui/button';
 import { Archive, CircleDot, List, ListTree, Plus } from '@repo/ui/lib/icons';
 import type { VisibilityState } from '@tanstack/react-table';
-import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
-import type { WorkspaceDefaultsAppliedSummary } from '@/app/board/_components/workspace-defaults-controls';
+import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import {
   AppliedFilterBadges,
   type AppliedFilterBadgeItem,
@@ -85,10 +84,7 @@ export function WorkItemsTableToolbar({
   columnVisibility,
   onApplyColumnVisibility,
   columnsHydrated,
-  showWorkspaceDefaults,
-  onOpenDefaultsDialog,
-  savedDefaultsApplied,
-  appliedDefaultsSummary = null,
+  onSaveWorkspaceDefaults,
   hasActiveFilters,
   appliedFilterItems,
   onRemoveAppliedFilter,
@@ -126,10 +122,10 @@ export function WorkItemsTableToolbar({
   // eslint-disable-next-line no-unused-vars -- apply staged columns
   onApplyColumnVisibility: (visibility: VisibilityState) => void;
   columnsHydrated: boolean;
-  showWorkspaceDefaults: boolean;
-  onOpenDefaultsDialog: () => void;
-  savedDefaultsApplied: boolean;
-  appliedDefaultsSummary?: WorkspaceDefaultsAppliedSummary | null;
+  onSaveWorkspaceDefaults?: (
+    // eslint-disable-next-line no-unused-vars -- callback signature
+    preference: BoardDefaultsPreference | null
+  ) => void;
   hasActiveFilters: boolean;
   appliedFilterItems: readonly AppliedFilterBadgeItem[];
   // eslint-disable-next-line no-unused-vars -- chip dismiss batch
@@ -164,6 +160,7 @@ export function WorkItemsTableToolbar({
           isProjectLocked={isProjectLocked}
           isAssigneeLocked={isAssigneeLocked}
           onApplyFilters={onApplyFilters}
+          onSaveWorkspaceDefaults={onSaveWorkspaceDefaults}
           hasActiveFilters={hasActiveFilters}
         />
 
@@ -173,14 +170,6 @@ export function WorkItemsTableToolbar({
           disabled={!columnsHydrated}
           onApply={onApplyColumnVisibility}
         />
-
-        {showWorkspaceDefaults ? (
-          <WorkspaceDefaultsControls
-            onOpenDefaultsDialog={onOpenDefaultsDialog}
-            savedDefaultsApplied={savedDefaultsApplied}
-            appliedDefaultsSummary={appliedDefaultsSummary}
-          />
-        ) : null}
 
         {hasActiveFilters ? (
           <AppliedFilterBadges

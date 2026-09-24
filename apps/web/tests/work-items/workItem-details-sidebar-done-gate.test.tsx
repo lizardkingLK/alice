@@ -11,10 +11,7 @@ import {
 } from '@repo/types';
 import { linkPR } from '@/app/work-items/_services/work-items.mutations.client';
 import { getLinkedPRs } from '@/app/work-items/_services/work-items.reads.client';
-import {
-  mockPush,
-  resetNextNavigationMock,
-} from '../mocks/next-navigation';
+import { mockPush, resetNextNavigationMock } from '../mocks/next-navigation';
 
 vi.mock('next/navigation', () => import('../mocks/next-navigation'));
 
@@ -340,7 +337,10 @@ describe('WorkItemSidebar GitHub Integration & Role Restrictions', () => {
       prs: [],
       githubRepo: null,
       status: WorkItemGithubConfigStatusEnum.missing,
-      message: WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.missing],
+      message:
+        WORK_ITEM_GITHUB_STATUS_MESSAGES[
+          WorkItemGithubConfigStatusEnum.missing
+        ],
     });
 
     renderSidebar({ currentUserRole: UserRoleEnum.manager });
@@ -351,7 +351,9 @@ describe('WorkItemSidebar GitHub Integration & Role Restrictions', () => {
       )
     ).toBeInTheDocument();
 
-    const updateBtn = screen.getByRole('button', { name: /update connection/i });
+    const updateBtn = screen.getByRole('button', {
+      name: /update connection/i,
+    });
     expect(updateBtn).not.toBeDisabled();
 
     fireEvent.click(updateBtn);
@@ -365,7 +367,8 @@ describe('WorkItemSidebar GitHub Integration & Role Restrictions', () => {
       prs: [],
       githubRepo: 'owner/repo',
       status: WorkItemGithubConfigStatusEnum.stale,
-      message: WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.stale],
+      message:
+        WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.stale],
     });
 
     renderSidebar({ currentUserRole: UserRoleEnum.admin });
@@ -376,7 +379,9 @@ describe('WorkItemSidebar GitHub Integration & Role Restrictions', () => {
       )
     ).toBeInTheDocument();
 
-    const updateBtn = screen.getByRole('button', { name: /update connection/i });
+    const updateBtn = screen.getByRole('button', {
+      name: /update connection/i,
+    });
     expect(updateBtn).not.toBeDisabled();
 
     fireEvent.click(updateBtn);
@@ -390,7 +395,10 @@ describe('WorkItemSidebar GitHub Integration & Role Restrictions', () => {
       prs: [],
       githubRepo: 'owner/repo',
       status: WorkItemGithubConfigStatusEnum.invalid,
-      message: WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.invalid],
+      message:
+        WORK_ITEM_GITHUB_STATUS_MESSAGES[
+          WorkItemGithubConfigStatusEnum.invalid
+        ],
     });
 
     renderSidebar({ currentUserRole: UserRoleEnum.admin });
@@ -401,7 +409,9 @@ describe('WorkItemSidebar GitHub Integration & Role Restrictions', () => {
       )
     ).toBeInTheDocument();
 
-    const updateBtn = screen.getByRole('button', { name: /update connection/i });
+    const updateBtn = screen.getByRole('button', {
+      name: /update connection/i,
+    });
     expect(updateBtn).toBeInTheDocument();
   });
 
@@ -410,7 +420,10 @@ describe('WorkItemSidebar GitHub Integration & Role Restrictions', () => {
       prs: [],
       githubRepo: null,
       status: WorkItemGithubConfigStatusEnum.missing,
-      message: WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.missing],
+      message:
+        WORK_ITEM_GITHUB_STATUS_MESSAGES[
+          WorkItemGithubConfigStatusEnum.missing
+        ],
     });
 
     renderSidebar({ currentUserRole: UserRoleEnum.member });
@@ -421,7 +434,9 @@ describe('WorkItemSidebar GitHub Integration & Role Restrictions', () => {
       )
     ).toBeInTheDocument();
 
-    const updateBtn = screen.getByRole('button', { name: /update connection/i });
+    const updateBtn = screen.getByRole('button', {
+      name: /update connection/i,
+    });
     expect(updateBtn).toBeDisabled();
 
     fireEvent.click(updateBtn);
@@ -433,7 +448,10 @@ describe('WorkItemSidebar GitHub Integration & Role Restrictions', () => {
       prs: [],
       githubRepo: null,
       status: WorkItemGithubConfigStatusEnum.missing,
-      message: WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.missing],
+      message:
+        WORK_ITEM_GITHUB_STATUS_MESSAGES[
+          WorkItemGithubConfigStatusEnum.missing
+        ],
     });
 
     renderSidebar({ currentUserRole: UserRoleEnum.admin, readOnly: true });
@@ -449,4 +467,3 @@ describe('WorkItemSidebar GitHub Integration & Role Restrictions', () => {
     ).not.toBeInTheDocument();
   });
 });
-

@@ -1,9 +1,6 @@
 import { BoardWorkspace } from '@/app/board/_components/board-workspace';
 import { needsWorkspaceProjectBootstrap } from '@/app/board/_helpers/workspace-defaults-shared';
-import {
-  EMPTY_ACTIVE_SPRINTS_PAGE,
-  getSuggestedBoardDefaults,
-} from '@/app/board/_services/board.reads.defaults.server';
+import { EMPTY_ACTIVE_SPRINTS_PAGE } from '@/app/board/_services/board.reads.defaults.server';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
 import { getUserList } from '@/app/users/_services/users.reads.server';
 import { getWorkItems } from '@/app/work-items/_services/work-items.reads.server';
@@ -127,10 +124,6 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
     (sprint) => !sprint.project?.id || accessibleIds.includes(sprint.project.id)
   );
 
-  const suggestedDefaults = dbUser
-    ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
-    : null;
-
   const boardConfig = scopedProjectId
     ? await getProjectWorkflowConfig(scopedProjectId)
     : { columns: DEFAULT_BOARD_COLUMNS, usesCustomBoardConfig: false };
@@ -152,7 +145,6 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
       sprintFilter={sprintId ?? ''}
       allowAllFilters
       userId={dbUser?.id ?? null}
-      suggestedDefaults={suggestedDefaults}
       needsClientBootstrap={needsClientBootstrap}
     />
   );

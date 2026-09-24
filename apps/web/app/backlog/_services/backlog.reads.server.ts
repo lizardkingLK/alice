@@ -1,11 +1,7 @@
 import { getProjectTeamMemberCapacities } from '@/app/backlog/_services/backlog.team-capacity.server';
 import type { ProjectTeamMemberCapacity } from '@/app/backlog/_helpers/backlog-sprint-capacity';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
-import {
-  EMPTY_ACTIVE_SPRINTS_PAGE,
-  getSuggestedBoardDefaults,
-} from '@/app/board/_services/board.reads.defaults.server';
-import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
+import { EMPTY_ACTIVE_SPRINTS_PAGE } from '@/app/board/_services/board.reads.defaults.server';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
 import type { User as DbUser } from '@/app/users/_services/users.mutations.client';
@@ -28,7 +24,6 @@ export type BacklogWorkspaceData = {
   sprints: Sprint[];
   userRole: string;
   currentUserId?: string | null;
-  suggestedDefaults: BoardDefaultsPreference | null;
   error: string | null;
 };
 
@@ -81,9 +76,6 @@ export async function getBacklogWorkspace(): Promise<BacklogWorkspaceData> {
   const sprints = sprintsResult.sprints.filter(
     (sprint) => !sprint.project?.id || accessibleIds.includes(sprint.project.id)
   );
-  const suggestedDefaults = dbUser
-    ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
-    : null;
 
   return {
     projects: activeProjects,
@@ -93,7 +85,6 @@ export async function getBacklogWorkspace(): Promise<BacklogWorkspaceData> {
     sprints,
     userRole,
     currentUserId: dbUser?.id,
-    suggestedDefaults,
     error: fetchError,
   };
 }
