@@ -309,7 +309,7 @@ export function claimPersonalAgentAuthor(
   author: { readonly name: string; readonly email?: string }
 ): ChatAgentRecord | null {
   const current = getChatAgentById(agentId);
-  if (!current || current.kind !== 'personal') {
+  if (current?.kind !== 'personal') {
     return null;
   }
   const authorName = author.name.trim();
@@ -372,7 +372,7 @@ export function saveAgentDraft(
 /** Promote a personal agent to a forkable system template (admin). */
 export function markAgentAsSystem(agentId: string): ChatAgentRecord | null {
   const current = getChatAgentById(agentId);
-  if (!current || current.kind !== 'personal') {
+  if (current?.kind !== 'personal') {
     return null;
   }
   const next: ChatAgentRecord = {

@@ -18,8 +18,10 @@ import {
 } from '@repo/ui/components/ui/tooltip';
 import { Button } from '@repo/ui/components/ui/button';
 import { Camera } from '@repo/ui/lib/icons';
-import type { ChatAgentAutonomy } from '@/app/chat/_helpers/chat-agents-catalog';
-import type { ChatAgentKind } from '@/app/chat/_helpers/chat-agents-catalog';
+import type {
+  ChatAgentAutonomy,
+  ChatAgentKind,
+} from '@/app/chat/_helpers/chat-agents-catalog';
 import type { ChatAgentAvatarStyle } from '@/app/chat/_helpers/chat-agent-avatar';
 import { ChatAgentAvatar } from '@/app/chat/_components/chat-agent-avatar';
 
