@@ -15,6 +15,10 @@ vi.mock('@/components/optimistic-lock/optimistic-lock-provider', () => ({
   }),
 }));
 
+import { clearGithubCache } from '@/app/projects/_services/github-connection-cache';
+
 afterEach(() => {
   vi.clearAllMocks();
+  clearGithubCache();
 });
+

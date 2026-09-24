@@ -350,9 +350,14 @@ export function ProjectDetailsWorkspace({
           </div>
         )}
 
-        {activeTab === 'integrations' && canEditProject && (
+        {activeTab === 'integrations' && (
           <div className="space-y-6 p-6">
-            <ProjectIntegrationsTab project={project} />
+            <ProjectIntegrationsTab
+              project={project}
+              currentUserId={currentUserId}
+              currentUserRole={currentUserRole}
+              canEditProject={canEditProject}
+            />
           </div>
         )}
 

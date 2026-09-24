@@ -15,30 +15,6 @@ export type GithubConnectionStatus = z.infer<
   typeof githubConnectionStatusSchema
 >;
 
-export const githubConnectionDtoSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
-  status: githubConnectionStatusSchema,
-  account_login: z.string(),
-  account_id: z.union([z.string(), z.number()]).optional(),
-  account_name: z.string().optional(),
-  account_avatar_url: z.string().optional(),
-  scope: z.string().optional(),
-  expires_at: z.string().nullable().optional(),
-  has_access_token: z.boolean(),
-  has_refresh_token: z.boolean(),
-  created_at: z.union([z.date(), z.string()]),
-  updated_at: z.union([z.date(), z.string()]),
-});
-export type GithubConnectionDto = z.infer<typeof githubConnectionDtoSchema>;
-
-export const githubConnectionsResponseSchema = z.object({
-  connections: z.array(githubConnectionDtoSchema),
-});
-export type GithubConnectionsResponse = z.infer<
-  typeof githubConnectionsResponseSchema
->;
-
 export const githubRepoOwnerSchema = z.object({
   login: z.string(),
   avatar_url: z.string().optional(),
@@ -56,6 +32,37 @@ export const githubRepoOptionSchema = z.object({
   description: z.string().nullable().optional(),
 });
 export type GithubRepoOption = z.infer<typeof githubRepoOptionSchema>;
+
+export const githubConnectionDtoSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  status: githubConnectionStatusSchema,
+  account_login: z.string(),
+  account_id: z.union([z.string(), z.number()]).optional(),
+  account_name: z.string().optional(),
+  account_avatar_url: z.string().optional(),
+  scope: z.string().optional(),
+  expires_at: z.string().nullable().optional(),
+  has_access_token: z.boolean(),
+  has_refresh_token: z.boolean(),
+  created_at: z.union([z.date(), z.string()]),
+  updated_at: z.union([z.date(), z.string()]),
+  authorized_repo: z.string().nullable().optional(),
+  repositories: z.array(githubRepoOptionSchema).optional(),
+  created_by_user_id: z.string().nullable().optional(),
+  created_by_role: z.string().nullable().optional(),
+  created_by_name: z.string().nullable().optional(),
+  is_admin_owned: z.boolean().optional(),
+  can_manage: z.boolean().optional(),
+});
+export type GithubConnectionDto = z.infer<typeof githubConnectionDtoSchema>;
+
+export const githubConnectionsResponseSchema = z.object({
+  connections: z.array(githubConnectionDtoSchema),
+});
+export type GithubConnectionsResponse = z.infer<
+  typeof githubConnectionsResponseSchema
+>;
 
 export const githubRepositoriesResponseSchema = z.object({
   repositories: z.array(githubRepoOptionSchema),

@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import {
+  getCachedGithubConnections,
+  getCachedGithubRepositories,
   listGithubConnections,
   listGithubRepositories,
+  setCachedGithubRepositories,
   startGithubOAuth,
   type GithubConnectionDto,
   type GithubRepoOption,
@@ -24,7 +27,8 @@ export type UseGithubConnectionPickerResult = {
   clearError: () => void;
   // eslint-disable-next-line no-unused-vars
   setLoadError: (message: string | null) => void;
-  refreshConnections: () => void;
+  // eslint-disable-next-line no-unused-vars
+  refreshConnections: (force?: boolean) => void;
   handleConnectGithub: () => void;
 };
 
@@ -38,15 +42,22 @@ export type UseGithubConnectionPickerResult = {
 export function useGithubConnectionPicker(
   selectedConnectionId?: string
 ): UseGithubConnectionPickerResult {
-  const [connections, setConnections] = useState<GithubConnectionDto[]>([]);
+  const initialCached = getCachedGithubConnections();
+  const [connections, setConnections] = useState<GithubConnectionDto[]>(
+    () => initialCached?.filter((row) => row.status === 'active') ?? []
+  );
   const [repositories, setRepositories] = useState<GithubRepoOption[]>([]);
-  const [isLoadingConnections, setIsLoadingConnections] = useState(true);
+  const [isLoadingConnections, setIsLoadingConnections] = useState(
+    () => initialCached === null
+  );
   const [isLoadingRepositories, setIsLoadingRepositories] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const refreshConnections = useCallback(() => {
-    setIsLoadingConnections(true);
-    listGithubConnections()
+  const refreshConnections = useCallback((force = true) => {
+    if (getCachedGithubConnections() === null) {
+      setIsLoadingConnections(true);
+    }
+    listGithubConnections(force)
       .then((rows) => {
         setConnections(rows.filter((row) => row.status === 'active'));
       })
@@ -63,7 +74,9 @@ export function useGithubConnectionPicker(
   }, []);
 
   useEffect(() => {
-    refreshConnections();
+    if (getCachedGithubConnections() === null) {
+      refreshConnections(false);
+    }
   }, [refreshConnections]);
 
   const { isConnecting, handleConnect: handleConnectGithub } =
@@ -72,7 +85,7 @@ export function useGithubConnectionPicker(
       providerName: 'GitHub',
       windowName: OAUTH_WINDOW_NAME,
       startOAuth: startGithubOAuth,
-      onRefresh: refreshConnections,
+      onRefresh: () => refreshConnections(true),
       loadError,
       setLoadError,
     });
@@ -87,6 +100,26 @@ export function useGithubConnectionPicker(
   useEffect(() => {
     if (!activeConnection) {
       setRepositories([]);
+      return;
+    }
+
+    if (
+      activeConnection.repositories &&
+      activeConnection.repositories.length > 0
+    ) {
+      setRepositories(activeConnection.repositories);
+      setCachedGithubRepositories(
+        activeConnection.id,
+        activeConnection.repositories
+      );
+      setIsLoadingRepositories(false);
+      return;
+    }
+
+    const cachedRepos = getCachedGithubRepositories(activeConnection.id);
+    if (cachedRepos !== null) {
+      setRepositories(cachedRepos);
+      setIsLoadingRepositories(false);
       return;
     }
 
