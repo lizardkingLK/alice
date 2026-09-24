@@ -5,9 +5,6 @@ import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-default
 import {
   preferenceToProjectFilter,
   preferenceToSprintFilter,
-  projectFilterToPreference,
-  resolveBaselineProjectFilter,
-  resolveBaselineSprintFilter,
 } from '@/app/board/_helpers/workspace-defaults-shared';
 import { useWorkspaceDefaultsSession } from '@/app/board/_hooks/use-workspace-defaults-session';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
@@ -17,69 +14,43 @@ type UseBacklogProjectDefaultsOptions = {
   readonly userId: string | null;
   readonly projects: readonly DbProject[];
   readonly sprints: readonly Sprint[];
-  readonly suggestedDefaults: BoardDefaultsPreference | null;
 };
 
 export function useBacklogProjectDefaults({
   userId,
   projects,
   sprints,
-  suggestedDefaults,
 }: UseBacklogProjectDefaultsOptions) {
   const [projectFilter, setProjectFilter] = useState('all');
   const [sprintFilter, setSprintFilter] = useState('');
 
   const applyPreferenceFilters = useCallback(
-    (preference: BoardDefaultsPreference) => {
+    (preference: BoardDefaultsPreference | null) => {
+      if (!preference) {
+        setProjectFilter('all');
+        setSprintFilter('');
+        return;
+      }
       setProjectFilter(preferenceToProjectFilter(preference));
       setSprintFilter(preferenceToSprintFilter(preference));
     },
     []
   );
 
-  const {
-    defaultsDialogOpen,
-    setDefaultsDialogOpen,
-    allowSkipInDialog,
-    dialogInitialPreference,
-    savedPreference,
-    handleSaveDefaults,
-    handleSkipDefaults,
-    handleClearDefaults,
-    promptDefaultsDialog,
-    canClearDefaults,
-    consumeBootstrap,
-    openDefaultsDialog: openSessionDefaultsDialog,
-  } = useWorkspaceDefaultsSession({
-    userId,
-    projects,
-    sprints,
-    onSave: applyPreferenceFilters,
-  });
+  const { savedPreference, saveDefaults, consumeBootstrap } =
+    useWorkspaceDefaultsSession({
+      userId,
+      projects,
+      sprints,
+    });
 
   useEffect(() => {
     const boot = consumeBootstrap();
     if (!boot) {
       return;
     }
-
-    const { record, validated } = boot;
-
-    if (validated) {
-      applyPreferenceFilters(validated);
-    } else if (suggestedDefaults) {
-      applyPreferenceFilters(suggestedDefaults);
-    }
-
-    if (!record?.prompted && !validated && suggestedDefaults) {
-      promptDefaultsDialog(suggestedDefaults, true);
-    }
-  }, [
-    applyPreferenceFilters,
-    consumeBootstrap,
-    promptDefaultsDialog,
-    suggestedDefaults,
-  ]);
+    applyPreferenceFilters(boot.preference);
+  }, [applyPreferenceFilters, consumeBootstrap]);
 
   const updateProjectFilter = useCallback(
     (nextProjectFilter: string, nextSprintFilter?: string) => {
@@ -118,25 +89,9 @@ export function useBacklogProjectDefaults({
     preferenceToProjectFilter(savedPreference) === projectFilter &&
     preferenceToSprintFilter(savedPreference) === sprintFilter;
 
-  const openDefaultsDialog = useCallback(() => {
-    openSessionDefaultsDialog(
-      projectFilterToPreference(projectFilter, sprintFilter)
-    );
-  }, [openSessionDefaultsDialog, projectFilter, sprintFilter]);
-
-  const baselineProjectId = resolveBaselineProjectFilter(
-    savedPreference,
-    suggestedDefaults
-  );
-  const baselineSprintId = resolveBaselineSprintFilter(
-    savedPreference,
-    suggestedDefaults
-  );
-
-  const resetProjectFilterToBaseline = useCallback(() => {
-    setProjectFilter(baselineProjectId);
-    setSprintFilter(baselineSprintId);
-  }, [baselineProjectId, baselineSprintId]);
+  const resetFiltersToDefaults = useCallback(() => {
+    applyPreferenceFilters(savedPreference);
+  }, [applyPreferenceFilters, savedPreference]);
 
   return {
     projectFilter,
@@ -145,17 +100,7 @@ export function useBacklogProjectDefaults({
     setSprintFilter: updateSprintFilter,
     savedPreference,
     savedDefaultsApplied,
-    canClearDefaults,
-    baselineProjectId,
-    baselineSprintId,
-    defaultsDialogOpen,
-    setDefaultsDialogOpen,
-    allowSkipInDialog,
-    dialogInitialPreference,
-    openDefaultsDialog,
-    handleSaveDefaults,
-    handleSkipDefaults,
-    handleClearDefaults,
-    resetProjectFilterToBaseline,
+    saveDefaults,
+    resetFiltersToDefaults,
   };
 }

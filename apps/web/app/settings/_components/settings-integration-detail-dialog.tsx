@@ -10,7 +10,13 @@ import {
   DialogFooter,
   DialogHeader,
 } from '@repo/ui/components/ui/dialog';
-import { ExternalLink, CheckCircle2, Loader2, Plug, Unplug } from '@repo/ui/lib/icons';
+import {
+  ExternalLink,
+  CheckCircle2,
+  Loader2,
+  Plug,
+  Unplug,
+} from '@repo/ui/lib/icons';
 import {
   Avatar,
   AvatarFallback,
@@ -179,7 +185,8 @@ function GithubIntegrationDetailSection({
             </div>
           </div>
           <p className="text-muted-foreground text-xs leading-relaxed">
-            Connected GitHub account is active for the workspace. Work items can link pull requests and commits from repositories you have access to.
+            Connected GitHub account is active for the workspace. Work items can
+            link pull requests and commits from repositories you have access to.
           </p>
         </div>
       ) : (
@@ -191,7 +198,8 @@ function GithubIntegrationDetailSection({
             </span>
           </div>
           <p className="text-muted-foreground text-xs leading-relaxed">
-            Connect your GitHub account to enable linking pull requests, commits, and branches to Alice work items.
+            Connect your GitHub account to enable linking pull requests,
+            commits, and branches to Alice work items.
           </p>
           <div className="pt-2">
             <Button
@@ -435,9 +443,7 @@ export function IntegrationDetailDialog({
 
         <DialogFooter className="gap-2 sm:justify-between">
           <IntegrationVisitWebsiteButton href={externalHref} />
-          <div className="flex flex-wrap gap-2">
-            {actionButtons}
-          </div>
+          <div className="flex flex-wrap gap-2">{actionButtons}</div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

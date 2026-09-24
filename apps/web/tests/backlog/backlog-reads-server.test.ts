@@ -6,7 +6,6 @@ const getAccessibleProjectListMock = vi.hoisted(() => vi.fn());
 const getUserListMock = vi.hoisted(() => vi.fn());
 const getWorkItemsMock = vi.hoisted(() => vi.fn());
 const getSprintsPaginatedServerMock = vi.hoisted(() => vi.fn());
-const getSuggestedBoardDefaultsMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@/lib/auth', () => ({
   getDbUser: getDbUserMock,
@@ -34,7 +33,6 @@ vi.mock('@/app/sprints/_services/sprints.reads.server', () => ({
 
 vi.mock('@/app/board/_services/board.reads.defaults.server', () => ({
   EMPTY_ACTIVE_SPRINTS_PAGE: { sprints: [] },
-  getSuggestedBoardDefaults: getSuggestedBoardDefaultsMock,
 }));
 
 const getProjectTeamMemberCapacitiesMock = vi.hoisted(() => vi.fn());
@@ -67,7 +65,6 @@ describe('getBacklogWorkspace', () => {
     getUserListMock.mockResolvedValue([]);
     getWorkItemsMock.mockResolvedValue(MOCK_WORK_ITEMS);
     getSprintsPaginatedServerMock.mockResolvedValue({ sprints: MOCK_SPRINTS });
-    getSuggestedBoardDefaultsMock.mockResolvedValue(null);
     getProjectTeamMemberCapacitiesMock.mockResolvedValue([]);
   });
 

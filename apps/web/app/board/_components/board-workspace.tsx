@@ -29,10 +29,6 @@ type BoardWorkspaceProps = {
   readonly sprintFilter: string;
   readonly allowAllFilters: boolean;
   readonly userId: string | null;
-  readonly suggestedDefaults: {
-    readonly projectId: string;
-    readonly sprintId: string | null;
-  } | null;
   readonly needsClientBootstrap: boolean;
 };
 
@@ -47,7 +43,6 @@ export function BoardWorkspace({
   sprintFilter,
   allowAllFilters,
   userId,
-  suggestedDefaults,
   needsClientBootstrap,
 }: Readonly<BoardWorkspaceProps>) {
   const router = useRouter();
@@ -98,7 +93,6 @@ export function BoardWorkspace({
           sprintFilter={sprintFilter}
           allowAllFilters={allowAllFilters}
           userId={userId}
-          suggestedDefaults={suggestedDefaults}
           needsClientBootstrap={needsClientBootstrap}
         />
       </TabsContent>
@@ -115,7 +109,6 @@ export function BoardWorkspace({
           sprintFilter={sprintFilter}
           allowAllFilters={allowAllFilters}
           userId={userId}
-          suggestedDefaults={suggestedDefaults}
           needsClientBootstrap={needsClientBootstrap}
         />
       </TabsContent>

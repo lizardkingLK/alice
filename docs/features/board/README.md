@@ -15,4 +15,4 @@ Quick links:
 - Work item status updates: `apps/api/src/routes/api/workItems/`
 - Related: [work items](../work-items/), [sprints](../sprints/), [user guide — Kanban board](../../user-guide/board-and-planning/kanban-board.md)
 
-Toolbar filters: search, Filter dialog (project / sprint / priority / **labels**), Defaults, assignee avatars, then applied-filter badges (per-chip dismiss + clear-all icon) when non-default filters are active. Chip dismiss is optimistic and debounced into one `onRemove(ids)` / navigation.
+Toolbar filters: search, Filter dialog (project / sprint / priority / **labels**; **Set as default** on Project / Sprint), assignee avatars, then applied-filter badges (per-chip dismiss + clear-all icon) when concrete URL filters are active (All projects / All sprints are not shown as chips). Chip dismiss is optimistic and debounced into one `onRemove(ids)` / navigation. Shared Filter shell (`filter-dialog-shell.tsx`) uses a large two-pane layout; Sprint options are grouped by project in auto-expanded collapsibles, and option search hides non-matching rows (and empty groups). Missing localStorage defaults means All/All (no first-visit prompt).

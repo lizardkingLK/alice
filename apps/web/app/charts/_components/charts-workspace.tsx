@@ -14,12 +14,6 @@ import {
 import { Button } from '@repo/ui/components/ui/button';
 import { BarChart3, Layers } from '@repo/ui/lib/icons';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
-import {
-  pickWorkspaceDefaultsDialogController,
-  WorkspaceDefaultsDialogHost,
-} from '@/app/board/_components/workspace-defaults-dialog-host';
-import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
-import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { ChartsAddMenu } from '@/app/charts/_components/charts-add-widget-menu';
@@ -38,6 +32,7 @@ import {
 } from '@/app/charts/_components/charts-board-canvas';
 import { ChartsSaveWorkspaceDialog } from '@/app/charts/_components/charts-save-workspace-dialog';
 import { ChartsWorkspaceActionsMenu } from '@/app/charts/_components/charts-workspace-actions-menu';
+import { ChartsWorkspaceFilterDialog } from '@/app/charts/_components/charts-workspace-filter-dialog';
 import { isChartWidgetAvailable } from '@/app/charts/_components/charts-widget-catalog';
 import type {
   ChartBoardWidgetInstance,
@@ -89,7 +84,6 @@ type ChartsWorkspaceProps = {
   readonly assigneeMembers: readonly ChartsSampleMember[];
   readonly projects: readonly Project[];
   readonly sprints: readonly Sprint[];
-  readonly suggestedDefaults: BoardDefaultsPreference | null;
 };
 
 export function ChartsWorkspace({
@@ -101,7 +95,6 @@ export function ChartsWorkspace({
   assigneeMembers,
   projects,
   sprints,
-  suggestedDefaults,
 }: Readonly<ChartsWorkspaceProps>) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -126,12 +119,12 @@ export function ChartsWorkspace({
   const [actionError, setActionError] = useState<string | null>(null);
   const deleteInFlightRef = useRef(false);
 
-  const chartsDefaults = useChartsWorkspaceDefaults({
-    userId: currentUserId,
-    projects,
-    sprints,
-    suggestedDefaults,
-  });
+  const { savedPreference, insertPreference, saveDefaults } =
+    useChartsWorkspaceDefaults({
+      userId: currentUserId,
+      projects,
+      sprints,
+    });
 
   useEffect(() => {
     clearLegacyChartsLocalStorage(currentUserId);
@@ -214,9 +207,7 @@ export function ChartsWorkspace({
       }
       const filters =
         typeId === 'chart'
-          ? createChartWidgetFiltersFromDefaults(
-              chartsDefaults.insertPreference
-            )
+          ? createChartWidgetFiltersFromDefaults(insertPreference)
           : undefined;
       commitBoard(
         appendChartWidget(typeId, instances, layout, {
@@ -224,7 +215,7 @@ export function ChartsWorkspace({
         })
       );
     },
-    [chartsDefaults.insertPreference, commitBoard, instances, layout]
+    [commitBoard, insertPreference, instances, layout]
   );
 
   const handleAddWorkspace = useCallback(() => {
@@ -477,9 +468,11 @@ export function ChartsWorkspace({
               All workspaces
             </Link>
           </Button>
-          <WorkspaceDefaultsControls
-            onOpenDefaultsDialog={chartsDefaults.openDefaultsDialog}
-            savedDefaultsApplied={chartsDefaults.savedDefaultsApplied}
+          <ChartsWorkspaceFilterDialog
+            projects={projects}
+            sprints={sprints}
+            savedPreference={savedPreference}
+            onSaveWorkspaceDefaults={saveDefaults}
           />
         </div>
 
@@ -595,13 +588,6 @@ export function ChartsWorkspace({
           onConfirm={() => void handleConfirmDelete()}
         />
       ) : null}
-      <WorkspaceDefaultsDialogHost
-        enabled
-        projects={projects}
-        sprints={sprints}
-        defaults={pickWorkspaceDefaultsDialogController(chartsDefaults)}
-        showAllProjectsOption
-      />
     </div>
   );
 }

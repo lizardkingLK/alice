@@ -62,7 +62,7 @@ The dashboard shell breadcrumb on work-item detail is always project-scoped when
 
 Toolbar (same left / right split as other registries):
 
-- **Left:** Search → Filters → **Columns** (icon) → Defaults → applied-filter badges
+- **Left:** Search → Filters → **Columns** (icon) → applied-filter badges
   when active (inline; horizontal scroll when chips overflow, scrollbar hidden)
 - **Right:** **Flat / Hierarchy** segmented control (writes `view`, resets
   `page=1`) → Active / Archived **icon segment** tabs (`RegistryTabSwitcher`) →

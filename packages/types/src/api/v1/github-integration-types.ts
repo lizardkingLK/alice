@@ -97,7 +97,8 @@ export const WORK_ITEM_GITHUB_STATUS_MESSAGES: Record<
   WorkItemGithubConfigStatusEnum,
   string
 > = {
-  [WorkItemGithubConfigStatusEnum.connected]: 'GitHub Integration is connected.',
+  [WorkItemGithubConfigStatusEnum.connected]:
+    'GitHub Integration is connected.',
   [WorkItemGithubConfigStatusEnum.missing]:
     'GitHub configuration is missing for this project.',
   [WorkItemGithubConfigStatusEnum.invalid]:
@@ -105,4 +106,3 @@ export const WORK_ITEM_GITHUB_STATUS_MESSAGES: Record<
   [WorkItemGithubConfigStatusEnum.stale]:
     'GitHub connection is stale or expired. Please re-authenticate.',
 };
-
