@@ -319,8 +319,7 @@ export class ProjectsService {
     const previous = await this.projectsRepository.findById(projectId);
 
     if (
-      previous &&
-      previous.github_repo &&
+      previous?.github_repo &&
       input.github_repo !== undefined &&
       input.github_repo !== previous.github_repo
     ) {

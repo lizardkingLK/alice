@@ -14,18 +14,16 @@ export function setCachedGithubConnections(
 }
 
 export function getCachedGithubRepositories(
-  connectionId?: string
+  connectionId = '__default__'
 ): GithubRepoOption[] | null {
-  const key = connectionId || '__default__';
-  return cachedRepositoriesByConn.get(key) ?? null;
+  return cachedRepositoriesByConn.get(connectionId) ?? null;
 }
 
 export function setCachedGithubRepositories(
-  connectionId: string | undefined,
-  repositories: GithubRepoOption[]
+  connectionId = '__default__',
+  repositories: GithubRepoOption[] = []
 ): void {
-  const key = connectionId || '__default__';
-  cachedRepositoriesByConn.set(key, repositories);
+  cachedRepositoriesByConn.set(connectionId, repositories);
 }
 
 export function clearGithubCache(): void {
