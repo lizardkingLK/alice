@@ -27,14 +27,142 @@ import {
   parseGithubRepoPath,
 } from '@/lib/projects/github-repo-path';
 import { errorMessage } from '@/lib/errors/error-message';
+import type {
+  GithubConnectionDto,
+} from '@/app/projects/_services/projects.github.mutations.client';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 
 export type GithubSettingsCardProps = {
   readonly project: Project;
+  readonly currentUserId?: string | null;
+  readonly currentUserRole?: string | null;
+  readonly canEditProject?: boolean;
 };
+
+function validateSingleRepo(repoPath: string | null): string | null {
+  if (!repoPath) return null;
+  const parts = repoPath.split('/');
+  if (
+    parts.length !== 2 ||
+    !parts[0]?.trim() ||
+    !parts[1]?.trim() ||
+    repoPath.includes(',') ||
+    repoPath.includes(' ')
+  ) {
+    return 'Only one GitHub repository is allowed per project (format: owner/repo).';
+  }
+  return null;
+}
+
+function resolveAuthSummary(
+  activeConnection: GithubConnectionDto | null,
+  hasGithubToken?: boolean
+): string {
+  if (activeConnection) {
+    return activeConnection.account_login
+      ? `@${activeConnection.account_login} (OAuth 2.1)`
+      : `${activeConnection.name} (OAuth 2.1)`;
+  }
+  if (hasGithubToken) {
+    return 'Legacy PAT (OAuth recommended)';
+  }
+  return 'Not connected (Public repos only)';
+}
+
+type GithubSummaryViewProps = {
+  project: Project;
+  activeConnection: GithubConnectionDto | null;
+  canManage: boolean;
+  disconnectingId: string | null;
+  isConnecting: boolean;
+  onEdit: () => void;
+  // eslint-disable-next-line no-unused-vars
+  onDisconnect: (id: string) => void;
+  onConnect: () => void;
+};
+
+function GithubSummaryView({
+  project,
+  activeConnection,
+  canManage,
+  disconnectingId,
+  isConnecting,
+  onEdit,
+  onDisconnect,
+  onConnect,
+}: Readonly<GithubSummaryViewProps>) {
+  return (
+    <div className="space-y-4">
+      <IntegrationSummaryFields
+        fields={[
+          {
+            label: 'GitHub Repository',
+            value: project.github_repo || 'Not configured',
+          },
+          {
+            label: 'GitHub Account',
+            value: resolveAuthSummary(activeConnection, project.has_github_token),
+            mono: false,
+          },
+          {
+            label: 'OAuth Status',
+            value: activeConnection ? 'Connected' : 'Not Connected',
+          },
+        ]}
+      />
+
+      {canManage ? (
+        <div className="flex flex-wrap items-center gap-2 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onEdit}
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Modify GitHub Settings
+          </Button>
+          {activeConnection ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => onDisconnect(activeConnection.id)}
+              disabled={disconnectingId === activeConnection.id}
+              className="text-destructive hover:text-destructive"
+            >
+              {disconnectingId === activeConnection.id ? (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Unplug className="mr-1 h-3.5 w-3.5" />
+              )}
+              Disconnect
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onConnect}
+              disabled={isConnecting}
+            >
+              {isConnecting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Plug className="mr-2 h-4 w-4" />
+              )}
+              Connect GitHub
+            </Button>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export function GithubSettingsCard({
   project,
+  canEditProject = true,
 }: Readonly<GithubSettingsCardProps>) {
   const router = useRouter();
   const initial = parseGithubRepoPath(project.github_repo);
@@ -55,6 +183,24 @@ export function GithubSettingsCard({
     refreshConnections,
     handleConnectGithub,
   } = useGithubConnectionPicker();
+
+  const isRestrictedAdminOwned = Boolean(
+    activeConnection?.is_admin_owned && !activeConnection?.can_manage
+  );
+  const canManage = Boolean(canEditProject) && !isRestrictedAdminOwned;
+
+  useEffect(() => {
+    if (
+      !project.github_repo &&
+      activeConnection?.authorized_repo &&
+      !githubOwner &&
+      !githubRepoName
+    ) {
+      const parts = parseGithubRepoPath(activeConnection.authorized_repo);
+      setGithubOwner(parts.owner);
+      setGithubRepoName(parts.repoName);
+    }
+  }, [activeConnection, project.github_repo, githubOwner, githubRepoName]);
 
   const {
     isSaving: isSavingGithub,
@@ -94,6 +240,11 @@ export function GithubSettingsCard({
   const handleSaveGithub = async (e: FormEvent) => {
     e.preventDefault();
     const repoPath = formatGithubRepoPath(githubOwner, githubRepoName);
+    const repoError = validateSingleRepo(repoPath);
+    if (repoError) {
+      setFailure(repoError);
+      return;
+    }
     const body: Record<string, unknown> = {
       github_repo: repoPath,
     };
@@ -120,18 +271,6 @@ export function GithubSettingsCard({
     }
   };
 
-  const authSummaryValue = () => {
-    if (activeConnection) {
-      return activeConnection.account_login
-        ? `@${activeConnection.account_login} (OAuth 2.1)`
-        : `${activeConnection.name} (OAuth 2.1)`;
-    }
-    if (project.has_github_token) {
-      return 'Legacy PAT (OAuth recommended)';
-    }
-    return 'Not connected (Public repos only)';
-  };
-
   return (
     <Card className={REPORT_CARD_CLASS}>
       <CardHeader>
@@ -150,7 +289,13 @@ export function GithubSettingsCard({
           isError={isGithubError}
         />
 
-        {isEditingGithub ? (
+        {isRestrictedAdminOwned ? (
+          <div className="rounded border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
+            This GitHub connection was established by an administrator (@{activeConnection?.account_login}). Only that administrator can modify or disconnect this connection.
+          </div>
+        ) : null}
+
+        {isEditingGithub && canManage ? (
           <IntegrationEditForm
             onSubmit={handleSaveGithub}
             showCancel={Boolean(project.github_repo)}
@@ -172,74 +317,23 @@ export function GithubSettingsCard({
               setGithubRepoName={setGithubRepoName}
               onDisconnect={handleDisconnect}
               isDisconnecting={disconnectingId !== null}
+              canManage={canManage}
             />
           </IntegrationEditForm>
         ) : (
-          <div className="space-y-4">
-            <IntegrationSummaryFields
-              fields={[
-                {
-                  label: 'GitHub Repository',
-                  value: project.github_repo || 'Not configured',
-                },
-                {
-                  label: 'GitHub Account',
-                  value: authSummaryValue(),
-                  mono: false,
-                },
-                {
-                  label: 'OAuth Status',
-                  value: activeConnection ? 'Connected' : 'Not Connected',
-                },
-              ]}
-            />
-
-            <div className="flex flex-wrap items-center gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditingGithub(true)}
-              >
-                <Edit className="mr-2 h-4 w-4" />
-                Modify GitHub Settings
-              </Button>
-              {activeConnection ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDisconnect(activeConnection.id)}
-                  disabled={disconnectingId === activeConnection.id}
-                  className="text-destructive hover:text-destructive"
-                >
-                  {disconnectingId === activeConnection.id ? (
-                    <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Unplug className="mr-1 h-3.5 w-3.5" />
-                  )}
-                  Disconnect
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleConnectGithub}
-                  disabled={isConnecting}
-                >
-                  {isConnecting ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Plug className="mr-2 h-4 w-4" />
-                  )}
-                  Connect GitHub
-                </Button>
-              )}
-            </div>
-          </div>
+          <GithubSummaryView
+            project={project}
+            activeConnection={activeConnection}
+            canManage={canManage}
+            disconnectingId={disconnectingId}
+            isConnecting={isConnecting}
+            onEdit={() => setIsEditingGithub(true)}
+            onDisconnect={handleDisconnect}
+            onConnect={handleConnectGithub}
+          />
         )}
       </CardContent>
     </Card>
   );
 }
+

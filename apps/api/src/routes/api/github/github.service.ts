@@ -10,11 +10,10 @@ import {
 import {
   IntegrationStatus,
   Prisma,
-  type integrations,
 } from '@repo/types/prisma';
 import { UserRoleEnum, utcNow } from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
-import type { GithubRepository } from './github.repository';
+import type { GithubRepository, IntegrationWithCreator } from './github.repository';
 import {
   GithubConnectionStatusEnum,
   GithubInsufficientScopeError,
@@ -77,6 +76,15 @@ export class GithubService {
 
   async startOAuth(actorId: string): Promise<{ url: string }> {
     await requireGithubManager(actorId);
+
+    const activeAdminConn =
+      await this.githubRepository.findActiveAdminConnection();
+    if (activeAdminConn && activeAdminConn.created_by !== actorId) {
+      throw new Error(
+        'An administrator has connected GitHub. That administrator must disconnect the existing connection before a different account can be connected.'
+      );
+    }
+
     return { url: this.buildAuthorizeUrl(actorId) };
   }
 
@@ -88,7 +96,15 @@ export class GithubService {
       state,
       'sign GitHub OAuth state (HMAC)'
     );
-    await requireGithubManager(userId);
+    const actor = await requireGithubManager(userId);
+
+    const activeAdminConn =
+      await this.githubRepository.findActiveAdminConnection();
+    if (activeAdminConn && activeAdminConn.created_by !== userId) {
+      throw new Error(
+        'An administrator has connected GitHub. That administrator must disconnect the existing connection before a different account can be connected.'
+      );
+    }
 
     const tokens = await this.exchangeAuthorizationCode(code);
     const userInfo = await this.fetchUserProfile(tokens.access_token);
@@ -111,6 +127,8 @@ export class GithubService {
       account_avatar_url: userInfo.avatar_url ?? undefined,
     };
 
+    const user = await this.githubRepository.getUserById(userId);
+
     const row = await this.githubRepository.upsertConnection({
       userId,
       name: `GitHub (@${userInfo.login})`,
@@ -118,22 +136,48 @@ export class GithubService {
       status: IntegrationStatus.active,
     });
 
-    return this.toConnectionDto(row);
+    return this.toConnectionDto(
+      {
+        ...row,
+        created_by_user: user,
+      },
+      userId,
+      actor.role
+    );
   }
 
   async listConnections(actorId: string): Promise<GithubConnectionDto[]> {
-    await requireGithubManager(actorId);
+    const actor = await requireUserWithRole(
+      actorId,
+      [UserRoleEnum.admin, UserRoleEnum.manager, UserRoleEnum.member],
+      'Unauthorized. Please log in to view GitHub connections.'
+    );
+
     const rows = await this.githubRepository.listByUserId(actorId);
     if (rows.length > 0) {
-      return rows.map((r) => this.toConnectionDto(r));
+      return rows.map((r) => this.toConnectionDto(r, actorId, actor.role));
     }
 
     const allActive = await this.githubRepository.listAllActive();
-    return allActive.map((r) => this.toConnectionDto(r));
+    return allActive.map((r) => this.toConnectionDto(r, actorId, actor.role));
   }
 
   async deleteConnection(actorId: string, id: string): Promise<void> {
     await requireGithubManager(actorId);
+    const connection = await this.githubRepository.findById(id);
+    if (!connection) {
+      throw new Error('GitHub connection not found.');
+    }
+
+    const isCreatedByAdmin =
+      connection.created_by_user?.role === UserRoleEnum.admin;
+
+    if (isCreatedByAdmin && connection.created_by !== actorId) {
+      throw new Error(
+        'This GitHub connection was established by an administrator and can only be disconnected by that administrator.'
+      );
+    }
+
     const deleted = await this.githubRepository.deleteById(id, actorId);
     if (!deleted) {
       throw new Error('GitHub connection not found.');
@@ -378,8 +422,18 @@ export class GithubService {
     return (await response.json()) as GithubUserResponse;
   }
 
-  private toConnectionDto(row: integrations): GithubConnectionDto {
+  private toConnectionDto(
+    row: IntegrationWithCreator,
+    actorId?: string,
+    actorRole?: string
+  ): GithubConnectionDto {
     const config = (row.config as unknown as GithubOAuthConfigStored) || {};
+    const createdByRole = row.created_by_user?.role;
+    const isAdminOwned = createdByRole === UserRoleEnum.admin;
+    const canManage = isAdminOwned
+      ? Boolean(actorId && row.created_by && row.created_by === actorId)
+      : actorRole === UserRoleEnum.admin || actorRole === UserRoleEnum.manager;
+
     return {
       id: row.id,
       name: row.name,
@@ -397,6 +451,13 @@ export class GithubService {
       has_refresh_token: Boolean(config.refresh_token),
       created_at: row.created_at,
       updated_at: row.updated_at,
+      authorized_repo: config.authorized_repo || null,
+      repositories: config.repositories,
+      created_by_user_id: row.created_by,
+      created_by_role: createdByRole,
+      created_by_name: row.created_by_user?.name || null,
+      is_admin_owned: isAdminOwned,
+      can_manage: canManage,
     };
   }
 }

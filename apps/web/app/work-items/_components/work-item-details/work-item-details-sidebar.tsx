@@ -1140,9 +1140,7 @@ function DevelopmentSection({
         variant="outline"
         size="sm"
         onClick={() => {
-          router.push(
-            '/settings?tab=integrations&showPopup=1&integration=github'
-          );
+          router.push(`/projects/${workItem.project_id}?tab=integrations`);
         }}
         className="h-8 cursor-pointer px-4 text-xs"
       >

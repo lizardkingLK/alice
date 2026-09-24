@@ -1,3 +1,5 @@
+import type { GithubRepoOption } from '@repo/types/api/v1';
+
 export {
   GithubConnectionStatusEnum,
   type GithubConnectionDto,
@@ -77,4 +79,6 @@ export interface GithubOAuthConfigStored {
   account_id?: string | number;
   account_name?: string;
   account_avatar_url?: string;
+  authorized_repo?: string | null;
+  repositories?: GithubRepoOption[];
 }

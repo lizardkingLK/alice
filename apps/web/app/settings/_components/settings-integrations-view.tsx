@@ -130,12 +130,12 @@ export function SettingsIntegrationsView({
       const params = new URLSearchParams(window.location.search);
       if (params.get('showPopup') === '1' || params.get('showPopup') === 'true') {
         shouldOpen = true;
-        target = params.get('integration') || 'github';
+        target = params.get('integration') || undefined;
       }
     }
 
-    if (shouldOpen) {
-      const catalogId = (target || 'github').toLowerCase();
+    if (shouldOpen && target) {
+      const catalogId = target.toLowerCase();
       const match = WORKSPACE_INTEGRATIONS.find(
         (item) => item.id.toLowerCase() === catalogId
       );

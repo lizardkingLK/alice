@@ -356,7 +356,7 @@ describe('WorkItemSidebar GitHub Integration & Role Restrictions', () => {
 
     fireEvent.click(updateBtn);
     expect(mockPush).toHaveBeenCalledWith(
-      '/settings?tab=integrations&showPopup=1&integration=github'
+      '/projects/proj-1?tab=integrations'
     );
   });
 
@@ -381,7 +381,7 @@ describe('WorkItemSidebar GitHub Integration & Role Restrictions', () => {
 
     fireEvent.click(updateBtn);
     expect(mockPush).toHaveBeenCalledWith(
-      '/settings?tab=integrations&showPopup=1&integration=github'
+      '/projects/proj-1?tab=integrations'
     );
   });
 

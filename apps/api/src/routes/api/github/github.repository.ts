@@ -7,20 +7,34 @@ import {
   IntegrationCategory,
   IntegrationStatus,
   Prisma,
+  UserRole,
   type integrations,
 } from '@repo/types/prisma';
 
 export const GITHUB_PROVIDER = 'github';
 export const GITHUB_CATALOG_ID = 'github';
 
+export type IntegrationWithCreator = integrations & {
+  created_by_user?: {
+    id: string;
+    name: string;
+    role: UserRole;
+  } | null;
+};
+
 export class GithubRepository {
-  async findActive(userId?: string): Promise<integrations | null> {
+  async findActive(userId?: string): Promise<IntegrationWithCreator | null> {
     if (userId) {
       const userIntegration = await prisma.integrations.findFirst({
         where: {
           provider: GITHUB_PROVIDER,
           status: IntegrationStatus.active,
           created_by: userId,
+        },
+        include: {
+          created_by_user: {
+            select: { id: true, name: true, role: true },
+          },
         },
         orderBy: { updated_at: 'desc' },
       });
@@ -34,46 +48,96 @@ export class GithubRepository {
         provider: GITHUB_PROVIDER,
         status: IntegrationStatus.active,
       },
+      include: {
+        created_by_user: {
+          select: { id: true, name: true, role: true },
+        },
+      },
       orderBy: { updated_at: 'desc' },
     });
   }
 
-  async listByUserId(userId: string): Promise<integrations[]> {
+  async findActiveAdminConnection(): Promise<IntegrationWithCreator | null> {
+    return prisma.integrations.findFirst({
+      where: {
+        provider: GITHUB_PROVIDER,
+        status: IntegrationStatus.active,
+        created_by_user: {
+          role: UserRole.admin,
+        },
+      },
+      include: {
+        created_by_user: {
+          select: { id: true, name: true, role: true },
+        },
+      },
+      orderBy: { updated_at: 'desc' },
+    });
+  }
+
+  async getUserById(userId: string) {
+    return prisma.users.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, role: true },
+    });
+  }
+
+  async listByUserId(userId: string): Promise<IntegrationWithCreator[]> {
     return prisma.integrations.findMany({
       where: {
         provider: GITHUB_PROVIDER,
         status: IntegrationStatus.active,
         created_by: userId,
       },
-      orderBy: { updated_at: 'desc' },
-    });
-  }
-
-  async listAllActive(): Promise<integrations[]> {
-    return prisma.integrations.findMany({
-      where: {
-        provider: GITHUB_PROVIDER,
-        status: IntegrationStatus.active,
+      include: {
+        created_by_user: {
+          select: { id: true, name: true, role: true },
+        },
       },
       orderBy: { updated_at: 'desc' },
     });
   }
 
-  async findById(id: string): Promise<integrations | null> {
+  async listAllActive(): Promise<IntegrationWithCreator[]> {
+    return prisma.integrations.findMany({
+      where: {
+        provider: GITHUB_PROVIDER,
+        status: IntegrationStatus.active,
+      },
+      include: {
+        created_by_user: {
+          select: { id: true, name: true, role: true },
+        },
+      },
+      orderBy: { updated_at: 'desc' },
+    });
+  }
+
+  async findById(id: string): Promise<IntegrationWithCreator | null> {
     return prisma.integrations.findUnique({
       where: { id },
+      include: {
+        created_by_user: {
+          select: { id: true, name: true, role: true },
+        },
+      },
     });
   }
 
   async findByIdForUser(
     id: string,
     userId: string
-  ): Promise<integrations | null> {
+  ): Promise<IntegrationWithCreator | null> {
     return prisma.integrations.findFirst({
       where: {
         id,
         provider: GITHUB_PROVIDER,
         created_by: userId,
+      },
+      include: {
+        created_by_user: {
+          select: { id: true, name: true, role: true },
+        },
       },
     });
   }

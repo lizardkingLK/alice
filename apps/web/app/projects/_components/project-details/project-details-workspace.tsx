@@ -98,7 +98,6 @@ interface ProjectDetailsWorkspaceProps {
 const MANAGER_ONLY_TABS = new Set<ProjectDetailsTabId>([
   'teams',
   'sprints',
-  'integrations',
   'fields',
   'board',
   'settings',
@@ -141,7 +140,6 @@ const PROJECT_NAV_ITEMS: ReadonlyArray<{
     id: 'integrations',
     label: 'Integrations',
     Icon: Plug,
-    managerOrAdminOnly: true,
   },
   {
     id: 'fields',
@@ -350,9 +348,14 @@ export function ProjectDetailsWorkspace({
           </div>
         )}
 
-        {activeTab === 'integrations' && canEditProject && (
+        {activeTab === 'integrations' && (
           <div className="space-y-6 p-6">
-            <ProjectIntegrationsTab project={project} />
+            <ProjectIntegrationsTab
+              project={project}
+              currentUserId={currentUserId}
+              currentUserRole={currentUserRole}
+              canEditProject={canEditProject}
+            />
           </div>
         )}
 

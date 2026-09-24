@@ -12,7 +12,8 @@ import {
   CANONICAL_HIERARCHY_ORDER,
   type ProjectWorkflowConfig,
 } from '@repo/types';
-import type { ProjectStatus } from '@repo/types/prisma';
+import type { ProjectStatus, IntegrationStatus, UserRole } from '@repo/types/prisma';
+import { prisma } from '../../../lib/prisma';
 import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
 import { encryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
 import type { ProjectsRepository } from './projects.repository';
@@ -238,6 +239,20 @@ export class ProjectsService {
       throw new Error(`A project with the key "${input.key}" already exists.`);
     }
 
+    if (input.github_repo) {
+      const repo = input.github_repo.trim();
+      const parts = repo.split('/');
+      if (
+        parts.length !== 2 ||
+        !parts[0] ||
+        !parts[1] ||
+        repo.includes(',') ||
+        repo.includes(' ')
+      ) {
+        throw new Error('Only one GitHub repository is allowed per project.');
+      }
+    }
+
     const prepared = prepareGithubTokenForPersist(
       input,
       'create'
@@ -270,6 +285,20 @@ export class ProjectsService {
   ): Promise<ProjectRow> {
     await requireProjectManager(actorId);
 
+    if (input.github_repo !== undefined && input.github_repo !== null) {
+      const repo = input.github_repo.trim();
+      const parts = repo.split('/');
+      if (
+        parts.length !== 2 ||
+        !parts[0] ||
+        !parts[1] ||
+        repo.includes(',') ||
+        repo.includes(' ')
+      ) {
+        throw new Error('Only one GitHub repository is allowed per project.');
+      }
+    }
+
     if (input.key) {
       const duplicate = await this.projectsRepository.findByKey(
         input.key,
@@ -288,6 +317,30 @@ export class ProjectsService {
     ) as UpdateProjectInput;
 
     const previous = await this.projectsRepository.findById(projectId);
+
+    if (
+      previous &&
+      previous.github_repo &&
+      input.github_repo !== undefined &&
+      input.github_repo !== previous.github_repo
+    ) {
+      const activeAdminConn = await prisma.integrations.findFirst({
+        where: {
+          provider: 'github',
+          status: 'active' as IntegrationStatus,
+          created_by_user: {
+            role: 'admin' as UserRole,
+          },
+        },
+        select: { created_by: true },
+      });
+
+      if (activeAdminConn && activeAdminConn.created_by !== actorId) {
+        throw new Error(
+          'This project’s GitHub connection was established by an administrator and can only be modified or disconnected by that administrator.'
+        );
+      }
+    }
 
     await this.handleWorkItemTypeMigrationIfNeeded(
       projectId,

@@ -42,6 +42,8 @@ describe('GithubService', () => {
   const updateConfigMock = vi.fn();
   const updateStatusMock = vi.fn();
   const deleteByIdMock = vi.fn();
+  const findActiveAdminConnectionMock = vi.fn();
+  const getUserByIdMock = vi.fn();
 
   const repository = {
     findActive: findActiveMock,
@@ -52,6 +54,8 @@ describe('GithubService', () => {
     updateConfig: updateConfigMock,
     updateStatus: updateStatusMock,
     deleteById: deleteByIdMock,
+    findActiveAdminConnection: findActiveAdminConnectionMock,
+    getUserById: getUserByIdMock,
   } as unknown as GithubRepository;
 
   const service = new GithubService(repository);
@@ -59,6 +63,8 @@ describe('GithubService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireUserWithRoleMock.mockResolvedValue({ id: 'user-1', role: 'admin' });
+    findActiveAdminConnectionMock.mockResolvedValue(null);
+    getUserByIdMock.mockResolvedValue({ id: 'user-1', name: 'User 1', role: 'admin' });
   });
 
   afterEach(() => {
@@ -323,7 +329,7 @@ describe('GithubService', () => {
     });
   });
 
-  describe('role-based authorization', () => {
+  describe('role-based authorization and ownership', () => {
     it('allows manager to manage GitHub connections', async () => {
       requireUserWithRoleMock.mockResolvedValue({ id: 'user-manager', role: 'manager' });
       listByUserIdMock.mockResolvedValue([]);
@@ -333,15 +339,43 @@ describe('GithubService', () => {
       expect(result).toEqual([]);
     });
 
-    it('rejects member from managing GitHub connections', async () => {
+    it('allows member to view connections as read-only reference data', async () => {
+      requireUserWithRoleMock.mockResolvedValue({ id: 'user-member', role: 'member' });
+      listByUserIdMock.mockResolvedValue([]);
+      listAllActiveMock.mockResolvedValue([
+        {
+          id: 'conn-admin-1',
+          name: 'GitHub (@octocat)',
+          status: IntegrationStatus.active,
+          created_by: 'admin-1',
+          created_at: new Date(),
+          updated_at: new Date(),
+          config: {
+            kind: 'github_oauth',
+            account_login: 'octocat',
+          },
+          created_by_user: {
+            id: 'admin-1',
+            name: 'Admin User',
+            role: 'admin',
+          },
+        },
+      ]);
+
+      const result = await service.listConnections('user-member');
+      expect(result).toHaveLength(1);
+      expect(result[0]?.account_login).toBe('octocat');
+      expect(result[0]?.is_admin_owned).toBe(true);
+      expect(result[0]?.can_manage).toBe(false);
+      expect(result[0]?.created_by_role).toBe('admin');
+    });
+
+    it('rejects member from modifying or managing GitHub connections', async () => {
       requireUserWithRoleMock.mockRejectedValue(
         new Error('Unauthorized. Only admins and managers can manage GitHub connections.')
       );
 
       await expect(service.startOAuth('user-member')).rejects.toThrow(
-        'Unauthorized. Only admins and managers can manage GitHub connections.'
-      );
-      await expect(service.listConnections('user-member')).rejects.toThrow(
         'Unauthorized. Only admins and managers can manage GitHub connections.'
       );
       await expect(service.deleteConnection('user-member', 'conn-1')).rejects.toThrow(
@@ -350,6 +384,45 @@ describe('GithubService', () => {
       await expect(service.listRepositories('user-member')).rejects.toThrow(
         'Unauthorized. Only admins and managers can manage GitHub connections.'
       );
+    });
+
+    it('blocks manager from starting OAuth if an admin has an active connection', async () => {
+      requireUserWithRoleMock.mockResolvedValue({ id: 'manager-1', role: 'manager' });
+      findActiveAdminConnectionMock.mockResolvedValue({
+        id: 'admin-conn-1',
+        created_by: 'admin-1',
+        created_by_user: { id: 'admin-1', name: 'Admin', role: 'admin' },
+      });
+
+      await expect(service.startOAuth('manager-1')).rejects.toThrow(
+        'An administrator has connected GitHub. That administrator must disconnect the existing connection before a different account can be connected.'
+      );
+    });
+
+    it('blocks manager from deleting an admin-owned connection', async () => {
+      requireUserWithRoleMock.mockResolvedValue({ id: 'manager-1', role: 'manager' });
+      findByIdMock.mockResolvedValue({
+        id: 'admin-conn-1',
+        created_by: 'admin-1',
+        created_by_user: { id: 'admin-1', name: 'Admin', role: 'admin' },
+      });
+
+      await expect(service.deleteConnection('manager-1', 'admin-conn-1')).rejects.toThrow(
+        'This GitHub connection was established by an administrator and can only be disconnected by that administrator.'
+      );
+    });
+
+    it('allows the admin who created the connection to delete it', async () => {
+      requireUserWithRoleMock.mockResolvedValue({ id: 'admin-1', role: 'admin' });
+      findByIdMock.mockResolvedValue({
+        id: 'admin-conn-1',
+        created_by: 'admin-1',
+        created_by_user: { id: 'admin-1', name: 'Admin', role: 'admin' },
+      });
+      deleteByIdMock.mockResolvedValue({ id: 'admin-conn-1' });
+
+      await expect(service.deleteConnection('admin-1', 'admin-conn-1')).resolves.toBeUndefined();
+      expect(deleteByIdMock).toHaveBeenCalledWith('admin-conn-1', 'admin-1');
     });
   });
 });
