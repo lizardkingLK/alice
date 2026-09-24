@@ -20,7 +20,9 @@ describe('SettingsIntegrationsView', () => {
     expect(screen.getByText('Google Gemini')).toBeInTheDocument();
     expect(screen.getByText('Slack')).toBeInTheDocument();
     // GitHub card must not appear on settings?tab=integrations
-    expect(screen.queryByRole('heading', { name: 'GitHub' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'GitHub' })
+    ).not.toBeInTheDocument();
   });
 
   it('automatically opens detail dialog for workspace integration when autoOpenPopup is true', () => {
@@ -37,4 +39,3 @@ describe('SettingsIntegrationsView', () => {
     expect(within(dialog).getByText('Google Gemini')).toBeInTheDocument();
   });
 });
-

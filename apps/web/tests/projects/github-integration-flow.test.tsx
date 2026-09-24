@@ -86,7 +86,9 @@ describe('GitHub Project Integration & Ownership Flow', () => {
 
     // Summary fields
     expect(screen.getByText('acme/apollo')).toBeInTheDocument();
-    expect(screen.getByText(/@admin-octocat \(OAuth 2.1\)/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/@admin-octocat \(OAuth 2.1\)/)
+    ).toBeInTheDocument();
 
     // Modify and Disconnect buttons must be present
     expect(
@@ -130,14 +132,20 @@ describe('GitHub Project Integration & Ownership Flow', () => {
 
     // Summary reference data is displayed
     expect(screen.getByText('acme/apollo')).toBeInTheDocument();
-    expect(screen.getByText(/@admin-octocat \(OAuth 2.1\)/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/@admin-octocat \(OAuth 2.1\)/)
+    ).toBeInTheDocument();
 
     // Admin-lock banner must be displayed
     expect(
-      screen.getByText(/this github connection was established by an administrator/i)
+      screen.getByText(
+        /this github connection was established by an administrator/i
+      )
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/only that administrator can modify or disconnect this connection/i)
+      screen.getByText(
+        /only that administrator can modify or disconnect this connection/i
+      )
     ).toBeInTheDocument();
 
     // Modify and Disconnect buttons must NOT be rendered for non-owner manager
@@ -215,7 +223,9 @@ describe('GitHub Project Integration & Ownership Flow', () => {
     // In edit mode since project.github_repo is null
     const urlInput = screen.getByLabelText(/github repository url/i);
     fireEvent.change(urlInput, {
-      target: { value: 'https://github.com/org/repo1, https://github.com/org/repo2' },
+      target: {
+        value: 'https://github.com/org/repo1, https://github.com/org/repo2',
+      },
     });
 
     const form = urlInput.closest('form');
@@ -223,7 +233,9 @@ describe('GitHub Project Integration & Ownership Flow', () => {
     fireEvent.submit(form!);
 
     expect(mockSetFailure).toHaveBeenCalledWith(
-      expect.stringContaining('Only one GitHub repository is allowed per project')
+      expect.stringContaining(
+        'Only one GitHub repository is allowed per project'
+      )
     );
     expect(mockSave).not.toHaveBeenCalled();
   });

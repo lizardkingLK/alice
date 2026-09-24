@@ -10,6 +10,8 @@ import { ChatAttachmentLink } from './chat-attachment-link';
 import ChatBotAvatar from '@/app/chat/_components/chat-client-bot-avatar';
 import ChatUserAvatar from '@/app/chat/_components/chat-client-user-avatar';
 import ChatAliceStatusRow from '@/app/chat/_components/chat-client-alice-status-row';
+import { ChatAssistantNameBlock } from '@/app/chat/_components/chat-assistant-name-block';
+import type { ChatAssistantIdentity } from '@/app/chat/_helpers/use-bound-chat-agent';
 
 type ChatClientThreadProps = {
   readonly isPage: boolean;
@@ -19,6 +21,7 @@ type ChatClientThreadProps = {
   readonly error: string | null;
   readonly currentUserName?: string | null;
   readonly currentUserImageUrl?: string | null;
+  readonly assistantIdentity?: ChatAssistantIdentity | null;
   readonly messagesEndRef: React.RefObject<HTMLDivElement | null>;
 };
 
@@ -38,6 +41,7 @@ export default function ChatClientThread({
   error,
   currentUserName,
   currentUserImageUrl,
+  assistantIdentity = null,
   messagesEndRef,
 }: Readonly<ChatClientThreadProps>) {
   return (
@@ -61,7 +65,9 @@ export default function ChatClientThread({
                   isUser ? 'justify-end' : 'justify-start'
                 )}
               >
-                {!isUser ? <ChatBotAvatar /> : null}
+                {!isUser ? (
+                  <ChatBotAvatar identity={assistantIdentity} />
+                ) : null}
 
                 <div
                   className={cn(
@@ -69,9 +75,18 @@ export default function ChatClientThread({
                     isUser ? 'items-end' : 'items-start'
                   )}
                 >
-                  <span className="text-foreground px-1 text-xs font-semibold">
-                    {isUser ? 'You' : 'Alice'}
-                  </span>
+                  {isUser ? (
+                    <span className="text-foreground px-1 text-xs font-semibold">
+                      You
+                    </span>
+                  ) : (
+                    <ChatAssistantNameBlock
+                      identity={assistantIdentity}
+                      className="px-1"
+                      nameClassName="text-xs"
+                      titleClassName="text-[11px]"
+                    />
+                  )}
 
                   <div
                     className={cn(
@@ -133,14 +148,20 @@ export default function ChatClientThread({
           })}
 
           {isPending ? (
-            <ChatAliceStatusRow bubbleClassName="bg-muted/50 border-border text-muted-foreground flex items-center gap-2">
+            <ChatAliceStatusRow
+              identity={assistantIdentity}
+              bubbleClassName="bg-muted/50 border-border text-muted-foreground flex items-center gap-2"
+            >
               <Loader2 className="text-primary size-4 animate-spin" />
               <span>Thinking and executing actions...</span>
             </ChatAliceStatusRow>
           ) : null}
 
           {error ? (
-            <ChatAliceStatusRow bubbleClassName="bg-destructive/5 border-destructive/20 text-destructive flex w-full flex-col gap-1">
+            <ChatAliceStatusRow
+              identity={assistantIdentity}
+              bubbleClassName="bg-destructive/5 border-destructive/20 text-destructive flex w-full flex-col gap-1"
+            >
               <span className="text-xs font-semibold tracking-wider uppercase">
                 Error Encountered
               </span>

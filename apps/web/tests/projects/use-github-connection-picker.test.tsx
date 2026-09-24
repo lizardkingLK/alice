@@ -9,17 +9,22 @@ import {
 } from '@/app/projects/_services/projects.github.mutations.client';
 import { GithubConnectionStatusEnum } from '@repo/types/api/v1';
 
-vi.mock('@/app/projects/_services/projects.github.mutations.client', async () => {
-  const actual = await vi.importActual<
-    typeof import('@/app/projects/_services/projects.github.mutations.client')
-  >('@/app/projects/_services/projects.github.mutations.client');
-  return {
-    ...actual,
-    listGithubConnections: vi.fn(),
-    listGithubRepositories: vi.fn().mockResolvedValue([]),
-    startGithubOAuth: vi.fn().mockResolvedValue('https://github.com/login/oauth/authorize'),
-  };
-});
+vi.mock(
+  '@/app/projects/_services/projects.github.mutations.client',
+  async () => {
+    const actual = await vi.importActual<
+      typeof import('@/app/projects/_services/projects.github.mutations.client')
+    >('@/app/projects/_services/projects.github.mutations.client');
+    return {
+      ...actual,
+      listGithubConnections: vi.fn(),
+      listGithubRepositories: vi.fn().mockResolvedValue([]),
+      startGithubOAuth: vi
+        .fn()
+        .mockResolvedValue('https://github.com/login/oauth/authorize'),
+    };
+  }
+);
 
 describe('useGithubConnectionPicker caching & loading behavior', () => {
   beforeEach(() => {

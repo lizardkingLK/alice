@@ -191,7 +191,9 @@ function GithubLinkedCard({
 
       {isRestrictedAdminOwned ? (
         <div className="rounded border border-amber-500/20 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-300">
-          This GitHub connection was established by an administrator (@{activeConnection.account_login}). Only that administrator can modify or disconnect this connection.
+          This GitHub connection was established by an administrator (@
+          {activeConnection.account_login}). Only that administrator can modify
+          or disconnect this connection.
         </div>
       ) : null}
     </div>

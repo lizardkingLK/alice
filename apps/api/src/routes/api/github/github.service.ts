@@ -7,13 +7,13 @@ import {
   createOAuthState,
   verifyOAuthState,
 } from '../../../lib/secrets/oauth-state';
-import {
-  IntegrationStatus,
-  Prisma,
-} from '@repo/types/prisma';
+import { IntegrationStatus, Prisma } from '@repo/types/prisma';
 import { UserRoleEnum, utcNow } from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
-import type { GithubRepository, IntegrationWithCreator } from './github.repository';
+import type {
+  GithubRepository,
+  IntegrationWithCreator,
+} from './github.repository';
 import {
   GithubConnectionStatusEnum,
   GithubInsufficientScopeError,

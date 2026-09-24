@@ -12,7 +12,11 @@ import {
   CANONICAL_HIERARCHY_ORDER,
   type ProjectWorkflowConfig,
 } from '@repo/types';
-import type { ProjectStatus, IntegrationStatus, UserRole } from '@repo/types/prisma';
+import type {
+  ProjectStatus,
+  IntegrationStatus,
+  UserRole,
+} from '@repo/types/prisma';
 import { prisma } from '../../../lib/prisma';
 import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
 import { encryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
