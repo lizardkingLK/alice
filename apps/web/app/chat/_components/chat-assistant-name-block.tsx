@@ -26,9 +26,7 @@ export function ChatAssistantNameBlock({
 
   return (
     <div className={cn('min-w-0', className)}>
-      <TruncatedText
-        className={cn('text-sm font-semibold', nameClassName)}
-      >
+      <TruncatedText className={cn('text-sm font-semibold', nameClassName)}>
         {name}
       </TruncatedText>
       {title ? (

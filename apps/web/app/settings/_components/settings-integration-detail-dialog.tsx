@@ -44,8 +44,6 @@ type IntegrationDetailDialogProps = {
   /* eslint-enable no-unused-vars */
 };
 
-
-
 function IntegrationVisitWebsiteButton({ href }: Readonly<{ href: string }>) {
   return (
     <Button type="button" variant="outline" asChild>
@@ -248,9 +246,7 @@ export function IntegrationDetailDialog({
 
         <DialogFooter className="gap-2 sm:justify-between">
           <IntegrationVisitWebsiteButton href={externalHref} />
-          <div className="flex flex-wrap gap-2">
-            {actionButtons}
-          </div>
+          <div className="flex flex-wrap gap-2">{actionButtons}</div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

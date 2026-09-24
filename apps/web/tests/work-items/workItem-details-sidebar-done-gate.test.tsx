@@ -357,9 +357,7 @@ describe('WorkItemSidebar GitHub Integration & Role Restrictions', () => {
     expect(updateBtn).not.toBeDisabled();
 
     fireEvent.click(updateBtn);
-    expect(mockPush).toHaveBeenCalledWith(
-      '/projects/proj-1?tab=integrations'
-    );
+    expect(mockPush).toHaveBeenCalledWith('/projects/proj-1?tab=integrations');
   });
 
   it('displays stale configuration message and navigates on click for admin', async () => {
@@ -385,9 +383,7 @@ describe('WorkItemSidebar GitHub Integration & Role Restrictions', () => {
     expect(updateBtn).not.toBeDisabled();
 
     fireEvent.click(updateBtn);
-    expect(mockPush).toHaveBeenCalledWith(
-      '/projects/proj-1?tab=integrations'
-    );
+    expect(mockPush).toHaveBeenCalledWith('/projects/proj-1?tab=integrations');
   });
 
   it('displays invalid configuration message', async () => {

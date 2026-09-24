@@ -48,7 +48,7 @@ type ChatAgentCustomizeFormProps = {
 
 function MultilineText({ value }: Readonly<{ value: string }>) {
   return (
-    <p className="text-foreground whitespace-pre-wrap text-sm leading-relaxed">
+    <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
       {value.trim() ? value : '—'}
     </p>
   );
@@ -155,7 +155,9 @@ export function ChatAgentCustomizeForm({
         ) : (
           <>
             <ReadOnlyField label="Name">
-              <p className="text-foreground text-sm font-medium">{draft.name}</p>
+              <p className="text-foreground text-sm font-medium">
+                {draft.name}
+              </p>
             </ReadOnlyField>
             <ReadOnlyField label="Title">
               <p className="text-foreground text-sm">

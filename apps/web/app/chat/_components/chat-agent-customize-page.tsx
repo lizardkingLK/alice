@@ -227,9 +227,7 @@ export function ChatAgentCustomizePage({
     setIsForking(true);
     try {
       const authorName =
-        currentUserName?.trim() ||
-        currentUserEmail?.trim() ||
-        'You';
+        currentUserName?.trim() || currentUserEmail?.trim() || 'You';
       const forked = forkChatAgent(agent, {
         name: authorName,
         email: currentUserEmail?.trim() || undefined,
@@ -333,11 +331,7 @@ export function ChatAgentCustomizePage({
 
       <footer className="border-border bg-background flex shrink-0 flex-wrap items-center justify-end gap-2 border-t px-4 py-3 sm:px-6">
         {showMarkAsSystem ? (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleMarkAsSystem}
-          >
+          <Button type="button" variant="outline" onClick={handleMarkAsSystem}>
             <Shield data-icon="inline-start" />
             Mark as system
           </Button>

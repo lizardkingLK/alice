@@ -63,10 +63,7 @@ export function ChatAgentAvatar({
 
   const src =
     avatarStyle && avatarSeed
-      ? resolveChatAgentAvatarUrl(
-          { avatarStyle, avatarSeed },
-          PIXEL_SIZE[size]
-        )
+      ? resolveChatAgentAvatarUrl({ avatarStyle, avatarSeed }, PIXEL_SIZE[size])
       : null;
 
   if (src) {

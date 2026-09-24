@@ -27,9 +27,7 @@ import {
   parseGithubRepoPath,
 } from '@/lib/projects/github-repo-path';
 import { errorMessage } from '@/lib/errors/error-message';
-import type {
-  GithubConnectionDto,
-} from '@/app/projects/_services/projects.github.mutations.client';
+import type { GithubConnectionDto } from '@/app/projects/_services/projects.github.mutations.client';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 
 export type GithubSettingsCardProps = {
@@ -101,7 +99,10 @@ function GithubSummaryView({
           },
           {
             label: 'GitHub Account',
-            value: resolveAuthSummary(activeConnection, project.has_github_token),
+            value: resolveAuthSummary(
+              activeConnection,
+              project.has_github_token
+            ),
             mono: false,
           },
           {
@@ -113,12 +114,7 @@ function GithubSummaryView({
 
       {canManage ? (
         <div className="flex flex-wrap items-center gap-2 pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onEdit}
-          >
+          <Button type="button" variant="outline" size="sm" onClick={onEdit}>
             <Edit className="mr-2 h-4 w-4" />
             Modify GitHub Settings
           </Button>
@@ -291,7 +287,9 @@ export function GithubSettingsCard({
 
         {isRestrictedAdminOwned ? (
           <div className="rounded border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
-            This GitHub connection was established by an administrator (@{activeConnection?.account_login}). Only that administrator can modify or disconnect this connection.
+            This GitHub connection was established by an administrator (@
+            {activeConnection?.account_login}). Only that administrator can
+            modify or disconnect this connection.
           </div>
         ) : null}
 
@@ -336,4 +334,3 @@ export function GithubSettingsCard({
     </Card>
   );
 }
-

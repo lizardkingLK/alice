@@ -19,7 +19,6 @@ export {
   clearGithubCache,
 };
 
-
 export async function listGithubConnections(
   force = false
 ): Promise<GithubConnectionDto[]> {

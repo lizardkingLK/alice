@@ -62,7 +62,8 @@ function Toaster({ ...props }: Readonly<ToasterProps>) {
           toast:
             'cn-toast flex! w-auto min-w-[18rem] max-w-[26rem] items-start gap-3 rounded-xl! border bg-card py-3.5 pr-3.5 pl-4 shadow-lg',
           title: 'text-foreground text-sm leading-snug font-semibold',
-          description: 'text-muted-foreground text-sm leading-snug opacity-100!',
+          description:
+            'text-muted-foreground text-sm leading-snug opacity-100!',
           content: 'flex! min-w-0 flex-1 flex-col gap-0.5',
           icon: 'm-0! mt-0.5! mr-0!',
           success:

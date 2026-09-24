@@ -26,6 +26,9 @@ export function buildDicebearAvatarUrl(params: {
   return `https://api.dicebear.com/9.x/${params.style}/png?seed=${seed}&size=${size}`;
 }
 
-export function defaultAvatarSeedForAgent(agentId: string, name: string): string {
+export function defaultAvatarSeedForAgent(
+  agentId: string,
+  name: string
+): string {
   return name.trim() || agentId;
 }

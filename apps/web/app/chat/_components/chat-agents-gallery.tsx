@@ -92,9 +92,7 @@ function AgentGalleryCard({ agent }: Readonly<{ agent: ChatAgentRecord }>) {
           <p className="text-muted-foreground line-clamp-3 text-sm leading-relaxed">
             {agent.description}
           </p>
-          <p className="text-muted-foreground text-xs">
-            by {agent.authorName}
-          </p>
+          <p className="text-muted-foreground text-xs">by {agent.authorName}</p>
         </CardContent>
       </Card>
     </Link>

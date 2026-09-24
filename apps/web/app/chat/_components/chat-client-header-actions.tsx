@@ -121,10 +121,7 @@ function ModelPickerIconButton({
   );
   const showMarkDefault =
     canManageChatModels && Boolean(selectedModel) && !selectedModel?.is_default;
-  const modelLabel = selectedChatModelLabel(
-    chatModels,
-    selectedIntegrationId
-  );
+  const modelLabel = selectedChatModelLabel(chatModels, selectedIntegrationId);
 
   return (
     <DropdownMenu>
