@@ -7,7 +7,7 @@ import type {
   ClipboardEvent,
   RefObject,
 } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
 import { cn } from '@repo/ui/lib/utils';
 import { Textarea } from '@repo/ui/components/ui/textarea';
 import { Button } from '@repo/ui/components/ui/button';
@@ -38,12 +38,118 @@ import ChatClientHeaderActions from '@/app/chat/_components/chat-client-header-a
 import ChatClientMain from '@/app/chat/_components/chat-client-main';
 import { ChatAgentAvatar } from '@/app/chat/_components/chat-agent-avatar';
 import { ChatAssistantNameBlock } from '@/app/chat/_components/chat-assistant-name-block';
-import { buildChatAgentCustomizeHref } from '@/app/chat/_helpers/chat-url';
+import { ChatAgentsPanelDialog } from '@/app/chat/_components/chat-agents-panel-dialog';
 import { useBoundChatAgent } from '@/app/chat/_helpers/use-bound-chat-agent';
 import type { DashboardBreadcrumbOverride } from '@/app/dashboard/_components/dashboard-breadcrumb';
+import type { AppRole } from '@/lib/rbac';
 
 const CHAT_PANEL_HEADER_CLASS =
   'border-border flex h-14 shrink-0 items-center border-b px-3';
+
+const HEADER_IDENTITY_BUTTON_CLASS =
+  'hover:bg-muted/60 flex min-w-0 items-center justify-start gap-2 rounded-lg px-1.5 py-1 text-left sm:gap-3';
+
+function DefaultAliceMark() {
+  return (
+    <>
+      <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
+        <Sparkles className="size-4" />
+      </div>
+      <ChatAssistantNameBlock />
+    </>
+  );
+}
+
+type ChatFrameHeaderIdentityProps = {
+  readonly isPage: boolean;
+  readonly identity: ReturnType<typeof useBoundChatAgent>;
+  readonly onOpenGallery: () => void;
+  // eslint-disable-next-line no-unused-vars
+  readonly onOpenDetail: (agentId: string) => void;
+};
+
+function ChatFrameHeaderIdentity({
+  isPage,
+  identity,
+  onOpenGallery,
+  onOpenDetail,
+}: Readonly<ChatFrameHeaderIdentityProps>) {
+  if (identity) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            className={HEADER_IDENTITY_BUTTON_CLASS}
+            aria-label={`Customize ${identity.name}`}
+            onClick={() => onOpenDetail(identity.id)}
+          >
+            <ChatAgentAvatar
+              name={identity.name}
+              kind={identity.kind}
+              avatarStyle={identity.avatarStyle}
+              avatarSeed={identity.avatarSeed}
+              size="sm"
+            />
+            <ChatAssistantNameBlock identity={identity} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Customize agent</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  if (!isPage) {
+    return <DefaultAliceMark />;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className={HEADER_IDENTITY_BUTTON_CLASS}
+          aria-label="Browse agents"
+          onClick={onOpenGallery}
+        >
+          <DefaultAliceMark />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">Browse agents</TooltipContent>
+    </Tooltip>
+  );
+}
+
+type ChatFrameHistoryToggleProps = {
+  readonly showHistory: boolean;
+  readonly onToggleHistory: () => void;
+};
+
+function ChatFrameHistoryToggle({
+  showHistory,
+  onToggleHistory,
+}: Readonly<ChatFrameHistoryToggleProps>) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onToggleHistory}
+          aria-expanded={showHistory}
+          aria-controls="chat-history-sidebar"
+          aria-label={showHistory ? 'Hide chat history' : 'Show chat history'}
+        >
+          {showHistory ? <PanelLeftClose /> : <PanelLeft />}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        {showHistory ? 'Hide history' : 'Show history'}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 type ChatClientFrameProps = {
   readonly isPage: boolean;
@@ -67,7 +173,9 @@ type ChatClientFrameProps = {
   readonly messages: ChatMessage[];
   readonly error: string | null;
   readonly currentUserName?: string | null;
+  readonly currentUserEmail?: string | null;
   readonly currentUserImageUrl?: string | null;
+  readonly currentUserRole?: AppRole | null;
   readonly messagesEndRef: RefObject<HTMLDivElement | null>;
   readonly pendingAttachments: PendingChatAttachment[];
   readonly inputValue: string;
@@ -151,7 +259,9 @@ export function ChatClientFrame({
   messages,
   error,
   currentUserName,
+  currentUserEmail = null,
   currentUserImageUrl,
+  currentUserRole = null,
   messagesEndRef,
   pendingAttachments,
   inputValue,
@@ -186,6 +296,20 @@ export function ChatClientFrame({
   const assistantIdentity = useBoundChatAgent(
     isPage ? boundAgentId : undefined
   );
+  const [agentsPanelOpen, setAgentsPanelOpen] = useState(false);
+  const [agentsPanelAgentId, setAgentsPanelAgentId] = useState<string | null>(
+    null
+  );
+
+  const openAgentsGallery = () => {
+    setAgentsPanelAgentId(null);
+    setAgentsPanelOpen(true);
+  };
+
+  const openAgentDetail = (agentId: string) => {
+    setAgentsPanelAgentId(agentId);
+    setAgentsPanelOpen(true);
+  };
 
   return (
     <div
@@ -226,55 +350,17 @@ export function ChatClientFrame({
         >
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             {isPage ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={onToggleHistory}
-                    aria-expanded={showHistory}
-                    aria-controls="chat-history-sidebar"
-                    aria-label={
-                      showHistory ? 'Hide chat history' : 'Show chat history'
-                    }
-                  >
-                    {showHistory ? <PanelLeftClose /> : <PanelLeft />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  {showHistory ? 'Hide history' : 'Show history'}
-                </TooltipContent>
-              </Tooltip>
+              <ChatFrameHistoryToggle
+                showHistory={showHistory}
+                onToggleHistory={onToggleHistory}
+              />
             ) : null}
-            {assistantIdentity ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    href={buildChatAgentCustomizeHref(assistantIdentity.id)}
-                    className="hover:bg-muted/60 flex min-w-0 items-center gap-2 rounded-lg p-0.5 sm:gap-3"
-                    aria-label={`Customize ${assistantIdentity.name}`}
-                  >
-                    <ChatAgentAvatar
-                      name={assistantIdentity.name}
-                      kind={assistantIdentity.kind}
-                      avatarStyle={assistantIdentity.avatarStyle}
-                      avatarSeed={assistantIdentity.avatarSeed}
-                      size="sm"
-                    />
-                    <ChatAssistantNameBlock identity={assistantIdentity} />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">Customize agent</TooltipContent>
-              </Tooltip>
-            ) : (
-              <>
-                <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
-                  <Sparkles className="size-4" />
-                </div>
-                <ChatAssistantNameBlock />
-              </>
-            )}
+            <ChatFrameHeaderIdentity
+              isPage={isPage}
+              identity={assistantIdentity}
+              onOpenGallery={openAgentsGallery}
+              onOpenDetail={openAgentDetail}
+            />
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <ChatClientHeaderActions
@@ -287,6 +373,7 @@ export function ChatClientFrame({
               onSelectedIntegrationIdChange={onSelectedIntegrationIdChange}
               onMarkSelectedAsDefault={onMarkSelectedAsDefault}
               onNewChat={onNewChat}
+              onOpenAgentsGallery={isPage ? openAgentsGallery : undefined}
               onClose={onClose}
             />
           </div>
@@ -396,6 +483,16 @@ export function ChatClientFrame({
           isPending={isRenaming}
           onOpenChange={onRenameOpenChange}
           onConfirm={onConfirmRename}
+        />
+      ) : null}
+      {isPage ? (
+        <ChatAgentsPanelDialog
+          open={agentsPanelOpen}
+          onOpenChange={setAgentsPanelOpen}
+          initialAgentId={agentsPanelAgentId}
+          currentUserName={currentUserName}
+          currentUserEmail={currentUserEmail}
+          currentUserRole={currentUserRole}
         />
       ) : null}
     </div>

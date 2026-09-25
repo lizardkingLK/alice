@@ -22,11 +22,11 @@ conversation.
 
 ## Where to find them
 
-| Surface             | How                                            |
-| ------------------- | ---------------------------------------------- |
-| **Agents gallery**  | Open **Alice** (`/chat`) → **Agents** tab      |
-| **Customize**       | Click a gallery card → full customization page |
-| **Chat with agent** | On the customize page, choose **Chat**         |
+| Surface             | How                                                              |
+| ------------------- | ---------------------------------------------------------------- |
+| **Agents gallery**  | On `/chat`, select the **Agents** (grid) icon in the chat header |
+| **Customize**       | Open a gallery card inside the Agents dialog                     |
+| **Chat with agent** | On the agent detail view, choose the **Chat** icon               |
 
 The header Alice **drawer** stays conversation-only. Use the full **Alice** page
 to manage agents.
@@ -39,32 +39,36 @@ to manage agents.
 | ------------------ | -------------------------------------------------------------------- |
 | **Mine**           | System templates you can open, plus agents you own (including forks) |
 | **Shared with me** | Agents others shared with you (Views-style sharing)                  |
-| **Archived**       | Agents you archived                                                  |
+| **Archived**       | Personal agents you archived                                         |
+
+Use **Search agents…** (to the right of the Agents heading) to filter the
+active tab by name, title, persona, description, or author.
 
 ---
 
-## Customize page
+## Customize agent
 
-On `/chat/agents/…` you can:
+In the Agents dialog detail view you can:
 
 - Set a **Name** (persona, e.g. Alex) and a **Title** (role, e.g. Project
-  Manager). The title appears under the name on the customize page, gallery,
-  and in chat.
+  Manager). The title appears under the name in the gallery, detail view, and
+  in chat.
 - View system templates as read-only text (non-admins). Admins can edit system
   templates, including the portrait.
 - See the author byline as **by {name}** (no email). System templates show
   Alice Admin; after you fork, the byline shows you.
 - Admins can **Mark as system** on a personal agent so others can fork it.
-- **Fork** only from system templates (footer actions). Personal agents use
-  **Save** instead — forks cannot be forked again.
-- **Chat** (header icon) opens a conversation. If you have unsaved edits, you
-  are asked to save first; confirming saves then opens chat. **Save** also asks
-  for confirmation.
-- Customize the DiceBear portrait from the camera icon when editing is allowed
+- **Fork** only from system templates. Personal agents use **Save** instead.
+- **Archive** a personal agent (confirmation). It becomes read-only and moves
+  to **Archived**. Use **Restore** to edit again, or **Delete** to remove it
+  from this browser.
+- **Chat** opens a conversation with that agent (closes the dialog). Unsaved
+  edits ask you to save first.
 
 In an open chat bound to an agent, the header and message labels use that
-agent’s name, title, and portrait (click the header to return to customize).
-Without a bound agent, the chat still shows Alice.
+agent’s name, title, and portrait (click the header identity to reopen the
+Agents dialog on that agent). Without a bound agent, the chat still shows
+Alice.
 
 Project Manager only uses **projects you are a member of**.
 

@@ -1,6 +1,6 @@
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
 
-/** Form-shaped skeleton for `/chat/agents/[agentId]` (not the chat thread shell). */
+/** Form-shaped skeleton for the agents panel detail view. */
 export function ChatAgentCustomizeSkeleton() {
   return (
     <div

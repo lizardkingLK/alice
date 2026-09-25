@@ -1,19 +1,34 @@
 import { Suspense } from 'react';
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import { getDbUser } from '@/lib/auth';
 import { ChatClient } from './_components/chat-client';
-import { ChatWorkspace } from './_components/chat-workspace';
 import { getChatPageBootstrap } from './_services/chat.reads.server';
 import { listChatModelsForChat } from './_services/chat-models.reads.server';
 import { ChatPageSkeleton } from './_components/chat-page-skeleton';
-import { parseChatPageTab } from '@/lib/search-params';
+import {
+  CHAT_HISTORY_SIDEBAR_COOKIE_NAME,
+  parseChatHistorySidebarOpenCookie,
+} from './_helpers/chat-history-sidebar-storage';
+
+async function readChatHistorySidebarDefaultOpen(): Promise<boolean> {
+  const store = await cookies();
+  return parseChatHistorySidebarOpenCookie(
+    store.get(CHAT_HISTORY_SIDEBAR_COOKIE_NAME)?.value
+  );
+}
 
 async function ChatPageData({
   conversationId,
   agentId,
-}: Readonly<{ conversationId?: string; agentId?: string }>) {
+  initialHistoryOpen,
+}: Readonly<{
+  conversationId?: string;
+  agentId?: string;
+  initialHistoryOpen: boolean;
+}>) {
   const [bootstrapResult, chatModels, dbUser] = await Promise.all([
     safeServerFetch(
       getChatPageBootstrap(conversationId),
@@ -31,21 +46,19 @@ async function ChatPageData({
   const bootstrap = bootstrapResult.data;
 
   return (
-    <ChatWorkspace
-      conversation={
-        <ChatClient
-          key={`${conversationId ?? 'new'}:${agentId ?? ''}`}
-          initialConversations={bootstrap.conversations}
-          initialConversationId={bootstrap.activeConversationId}
-          initialMessages={bootstrap.messages}
-          initialChatModels={chatModels}
-          initialAgentId={agentId}
-          currentUserName={dbUser?.name}
-          currentUserImageUrl={dbUser?.profile_picture}
-          currentUserId={dbUser?.id}
-          currentUserRole={dbUser?.role}
-        />
-      }
+    <ChatClient
+      key={`${conversationId ?? 'new'}:${agentId ?? ''}`}
+      initialConversations={bootstrap.conversations}
+      initialConversationId={bootstrap.activeConversationId}
+      initialMessages={bootstrap.messages}
+      initialChatModels={chatModels}
+      initialAgentId={agentId}
+      initialHistoryOpen={initialHistoryOpen}
+      currentUserName={dbUser?.name}
+      currentUserEmail={dbUser?.email}
+      currentUserImageUrl={dbUser?.profile_picture}
+      currentUserId={dbUser?.id}
+      currentUserRole={dbUser?.role}
     />
   );
 }
@@ -56,27 +69,26 @@ export default async function ChatPage({
   searchParams: Promise<{
     conversationId?: string;
     agentId?: string;
-    tab?: string;
   }>;
 }>) {
   const resolved = await searchParams;
   const conversationId = resolved.conversationId;
   const agentId = resolved.agentId;
-  const tab = parseChatPageTab(resolved.tab);
+  const initialHistoryOpen = await readChatHistorySidebarDefaultOpen();
 
   return (
     <DashboardShell
-      description={
-        tab === 'agents'
-          ? 'Browse and open Alice agents to customize or chat.'
-          : 'Chat with the Alice AI assistant to create projects, sprints, and work items.'
-      }
+      description="Chat with the Alice AI assistant to create projects, sprints, and work items."
       stickyHeader
       contentScrollable={false}
       contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
       <Suspense fallback={<ChatPageSkeleton />}>
-        <ChatPageData conversationId={conversationId} agentId={agentId} />
+        <ChatPageData
+          conversationId={conversationId}
+          agentId={agentId}
+          initialHistoryOpen={initialHistoryOpen}
+        />
       </Suspense>
     </DashboardShell>
   );

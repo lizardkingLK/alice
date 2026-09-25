@@ -25,13 +25,17 @@ export function ChatAssistantNameBlock({
   const title = identity?.title?.trim() ?? '';
 
   return (
-    <div className={cn('min-w-0', className)}>
-      <TruncatedText className={cn('text-sm font-semibold', nameClassName)}>
+    <div className={cn('min-w-0 text-left', className)}>
+      <TruncatedText
+        as="span"
+        className={cn('block text-sm font-semibold', nameClassName)}
+      >
         {name}
       </TruncatedText>
       {title ? (
         <TruncatedText
-          className={cn('text-muted-foreground text-xs', titleClassName)}
+          as="span"
+          className={cn('text-muted-foreground block text-xs', titleClassName)}
         >
           {title}
         </TruncatedText>

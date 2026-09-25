@@ -48,6 +48,16 @@ const nextConfig = {
         destination: '/work-items/:id',
         permanent: true,
       },
+      {
+        source: '/chat/agents',
+        destination: '/chat',
+        permanent: false,
+      },
+      {
+        source: '/chat/agents/:agentId',
+        destination: '/chat',
+        permanent: false,
+      },
     ];
   },
   async rewrites() {

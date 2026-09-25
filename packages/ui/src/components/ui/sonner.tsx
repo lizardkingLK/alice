@@ -30,7 +30,9 @@ function Toaster({ ...props }: Readonly<ToasterProps>) {
   return (
     <Sonner
       theme={theme as ToasterProps['theme']}
-      className="toaster group"
+      // Above modal dialogs (z-50) + pointer-events-auto so dismiss stays
+      // clickable when Radix Dialog sets body { pointer-events: none }.
+      className="toaster group pointer-events-auto! z-100!"
       position="top-right"
       expand
       closeButton
@@ -55,6 +57,8 @@ function Toaster({ ...props }: Readonly<ToasterProps>) {
           '--toast-close-button-start': 'auto',
           '--toast-close-button-end': 'auto',
           '--toast-close-button-transform': 'none',
+          pointerEvents: 'auto',
+          zIndex: 100,
         } as React.CSSProperties
       }
       toastOptions={{

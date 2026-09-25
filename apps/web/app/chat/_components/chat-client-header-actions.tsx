@@ -23,6 +23,7 @@ import {
 } from '@repo/ui/components/ui/tooltip';
 import {
   Cpu,
+  LayoutGrid,
   MoreHorizontal,
   Plus,
   Settings2,
@@ -48,6 +49,7 @@ type ChatClientHeaderActionsProps = {
   readonly onSelectedIntegrationIdChange: (value: string) => void;
   readonly onMarkSelectedAsDefault: () => Promise<void>;
   readonly onNewChat: () => void;
+  readonly onOpenAgentsGallery?: () => void;
   readonly onClose?: () => void;
 };
 
@@ -254,9 +256,27 @@ export default function ChatClientHeaderActions({
   onSelectedIntegrationIdChange,
   onMarkSelectedAsDefault,
   onNewChat,
+  onOpenAgentsGallery,
   onClose,
 }: Readonly<ChatClientHeaderActionsProps>) {
   const hasModels = chatModels.length > 0;
+  const agentsGalleryButton =
+    variant === 'page' && onOpenAgentsGallery ? (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Open agents gallery"
+            onClick={onOpenAgentsGallery}
+          >
+            <LayoutGrid className="size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Agents</TooltipContent>
+      </Tooltip>
+    ) : null;
 
   if (!hasModels) {
     if (variant === 'drawer' && onClose) {
@@ -281,15 +301,18 @@ export default function ChatClientHeaderActions({
     // Still allow admins to reach model settings when none are configured.
     if (variant === 'page' && canManageChatModels) {
       return (
-        <NewChatOrAdminPlusButton
-          canManageChatModels={canManageChatModels}
-          isPending={isPending}
-          onNewChat={onNewChat}
-        />
+        <>
+          {agentsGalleryButton}
+          <NewChatOrAdminPlusButton
+            canManageChatModels={canManageChatModels}
+            isPending={isPending}
+            onNewChat={onNewChat}
+          />
+        </>
       );
     }
 
-    return null;
+    return agentsGalleryButton;
   }
 
   if (variant === 'drawer' && onClose) {
@@ -337,6 +360,7 @@ export default function ChatClientHeaderActions({
 
   return (
     <>
+      {agentsGalleryButton}
       <ModelPickerIconButton
         chatModels={chatModels}
         selectedIntegrationId={selectedIntegrationId}

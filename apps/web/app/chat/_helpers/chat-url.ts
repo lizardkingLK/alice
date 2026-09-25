@@ -1,24 +1,14 @@
-import type { ChatPageTab } from '@/lib/search-params';
-
 export type ChatConversationUrlInput = {
   readonly conversationId?: string | null;
   readonly agentId?: string | null;
 };
 
-export type BuildChatHrefInput = ChatConversationUrlInput & {
-  readonly tab?: ChatPageTab;
-};
-
-/** Build `/chat` href with conversation / agents query params. */
+/** Build `/chat` href with conversation / bound-agent query params. */
 export function buildChatHref({
-  tab = 'conversation',
   conversationId,
   agentId,
-}: BuildChatHrefInput = {}): string {
+}: ChatConversationUrlInput = {}): string {
   const params = new URLSearchParams();
-  if (tab === 'agents') {
-    params.set('tab', 'agents');
-  }
   if (conversationId) {
     params.set('conversationId', conversationId);
   }
@@ -29,12 +19,9 @@ export function buildChatHref({
   return query ? `/chat?${query}` : '/chat';
 }
 
+/** Agents gallery lives in the chat header panel (no separate route). */
 export function buildChatAgentsGalleryHref(): string {
-  return buildChatHref({ tab: 'agents' });
-}
-
-export function buildChatAgentCustomizeHref(agentId: string): string {
-  return `/chat/agents/${encodeURIComponent(agentId)}`;
+  return '/chat';
 }
 
 export function buildChatWithAgentHref(
@@ -42,7 +29,6 @@ export function buildChatWithAgentHref(
   conversationId?: string | null
 ): string {
   return buildChatHref({
-    tab: 'conversation',
     agentId,
     conversationId,
   });

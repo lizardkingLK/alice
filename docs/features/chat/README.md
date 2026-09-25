@@ -8,7 +8,7 @@ atomic imports, backlog synchronization, and signed URL auto-refresh.
 | Document                                               | Description                                                                                                                                                                          | Status      |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
 | [AI_CHATBOT.md](./AI_CHATBOT.md)                       | Architecture, 9 Gemini tools, multi-format attachments (JSON, CSV, TSV, MD, Outline, YAML), atomic imports, backlog sync, signed URL auto-refresh, storage, and deduplication engine | Implemented |
-| [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md) | Chat **Agents** gallery + customize page; Project Manager system template; share/fork versions; distinct from Settings LLM models                                                    | In progress |
+| [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md) | Chat header **Agents** gallery dialog + customize; Project Manager system template; archive/fork; distinct from Settings LLM models                                                  | In progress |
 | [USER_TEST_GUIDE.md](./USER_TEST_GUIDE.md)             | Step-by-step end-to-end testing guide with copy-pasteable sample JSON, CSV, Markdown, and Outline files, atomic failure handling, and backlog updates                                | Implemented |
 
 Quick links:

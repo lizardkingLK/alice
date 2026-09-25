@@ -49,12 +49,12 @@ Related:
 
 ## UX surfaces
 
-| Surface         | Location                                  | Behavior                                                                                                                                                                                                      |
-| --------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Full page       | `/chat`                                   | Edge-to-edge in the dashboard shell (no card chrome); **Conversation** / **Agents** tabs; toggleable history sidebar; New Chat, rename, delete; breadcrumb shows active chat title; suggestions, action cards |
-| Agents          | `/chat?tab=agents`, `/chat/agents/[id]`   | Gallery (Mine / Shared / Archived) and full-page agent customization — see [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md)                                                                             |
-| Navbar launcher | All `DashboardShell` pages except `/chat` | Header control between notifications and profile → right drawer; same `ChatClient` (`variant="drawer"`); conversation-only (no Agents tabs)                                                                   |
-| Nav             | Platform → **Alice** (`Sparkles` icon)    | Links to `/chat`                                                                                                                                                                                              |
+| Surface         | Location                                  | Behavior                                                                                                                                                                           |
+| --------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Full page       | `/chat`                                   | Edge-to-edge in the dashboard shell; history sidebar; Agents gallery via header icon dialog; New Chat / model icons; breadcrumb shows active chat title; suggestions, action cards |
+| Agents          | Header **Agents** dialog on `/chat`       | Gallery (Mine / Shared / Archived) and customize detail in-panel — see [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md)                                                      |
+| Navbar launcher | All `DashboardShell` pages except `/chat` | Header control between notifications and profile → right drawer; same `ChatClient` (`variant="drawer"`); conversation-only (no Agents panel)                                       |
+| Nav             | Platform → **Alice** (`Sparkles` icon)    | Links to `/chat`                                                                                                                                                                   |
 
 Empty-state suggestions cover common flows (e.g. create a bug, list projects).
 Successful mutations can render **executed action** cards with deep links to
