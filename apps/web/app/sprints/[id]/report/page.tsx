@@ -5,12 +5,10 @@ import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { notFound } from 'next/navigation';
 import { SprintReportView } from './sprint-report-view';
 import { SprintReportPlaceholder } from './sprint-report-placeholder';
-import { toShortId } from '@/app/_shared/utility';
 import { SprintStatusEnum } from '@repo/types';
 import {
+  buildSprintReportBreadcrumbOverrides,
   parseSprintReportFrom,
-  sprintReportHref,
-  type SprintReportFrom,
 } from '@/app/sprints/_helpers/sprint-report-links';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 
@@ -26,40 +24,6 @@ export const metadata: Metadata = {
     follow: false,
   },
 };
-
-function buildReportBreadcrumbs(
-  sprint: Sprint,
-  from: SprintReportFrom
-): { label: string; url: string }[] {
-  const reportUrl = sprintReportHref(sprint.id, from);
-  const sprintLabel = sprint.name?.trim() || toShortId(sprint.id);
-
-  if (from === 'sprints') {
-    return [
-      { label: 'Dashboard', url: '/dashboard' },
-      { label: 'Sprints', url: '/sprints' },
-      {
-        label: sprintLabel,
-        url: '#',
-      },
-      { label: 'Summary Report', url: reportUrl },
-    ];
-  }
-
-  return [
-    { label: 'Dashboard', url: '/dashboard' },
-    { label: 'Backlog', url: '/backlog' },
-    {
-      label: sprint.project?.name?.trim() || sprint.project?.key || 'Project',
-      url: sprint.project ? `/projects/${sprint.project.id}` : '#',
-    },
-    {
-      label: sprintLabel,
-      url: '#',
-    },
-    { label: 'Summary Report', url: reportUrl },
-  ];
-}
 
 function isLiveReportStatus(status: Sprint['status']): boolean {
   return (
@@ -93,7 +57,7 @@ export default async function SprintReportPage({
 
   return (
     <DashboardShell
-      breadcrumbOverrides={buildReportBreadcrumbs(sprint, from)}
+      breadcrumbOverrides={buildSprintReportBreadcrumbOverrides(sprint, from)}
       breadcrumbAsTrail={true}
       description={
         showLiveReport

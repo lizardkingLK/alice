@@ -511,6 +511,7 @@ export function SprintsWorkspace({
             onArchiveSprint={onArchiveSprint}
             onRestoreSprint={onRestoreSprint}
             onDeleteSprint={onDeleteSprint}
+            reportFrom={isProjectLocked ? 'project' : 'sprints'}
           />
         </div>
       </div>
