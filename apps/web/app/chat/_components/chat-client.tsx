@@ -36,6 +36,7 @@ import {
   bootstrapLatestChat,
   loadConversationHistory,
 } from './chat-client-bootstrap';
+import { writeChatHistorySidebarOpenCookie } from '@/app/chat/_helpers/chat-history-sidebar-storage';
 import {
   listChatConversationsAction,
   revalidateChatConversations,
@@ -599,6 +600,7 @@ interface ChatClientProps {
   readonly variant?: 'page' | 'drawer';
   readonly onClose?: () => void;
   readonly currentUserName?: string | null;
+  readonly currentUserEmail?: string | null;
   readonly currentUserImageUrl?: string | null;
   /** SSR bootstrap for `/chat` — skips the mount fetch when provided. */
   readonly initialConversations?: ChatConversation[];
@@ -607,6 +609,8 @@ interface ChatClientProps {
   readonly initialChatModels?: ChatModelOption[];
   /** Bound agent from `/chat?agentId=` (page variant). */
   readonly initialAgentId?: string;
+  /** SSR cookie preference for the conversation history sidebar. */
+  readonly initialHistoryOpen?: boolean;
   readonly currentUserId?: string | null;
   readonly currentUserRole?: AppRole | null;
 }
@@ -615,12 +619,14 @@ export function ChatClient({
   variant = 'page',
   onClose,
   currentUserName,
+  currentUserEmail = null,
   currentUserImageUrl,
   initialConversations,
   initialConversationId,
   initialMessages,
   initialChatModels,
   initialAgentId,
+  initialHistoryOpen = true,
   currentUserId,
   currentUserRole,
 }: Readonly<ChatClientProps>) {
@@ -654,8 +660,16 @@ export function ChatClient({
   const [conversationToRename, setConversationToRename] =
     useState<ChatConversation | null>(null);
   const isConversationBusy = isPending || isRenaming || isDeleting;
-  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(initialHistoryOpen);
   const [conversationSearch, setConversationSearch] = useState('');
+
+  const handleToggleHistory = useCallback(() => {
+    setIsHistoryOpen((open) => {
+      const next = !open;
+      writeChatHistorySidebarOpenCookie(next);
+      return next;
+    });
+  }, []);
   const [hasStartedEmptyConversation, setHasStartedEmptyConversation] =
     useState(Boolean(initialAgentId));
   const [boundAgentId] = useState<string | undefined>(initialAgentId);
@@ -1052,7 +1066,9 @@ export function ChatClient({
       messages={messages}
       error={error}
       currentUserName={currentUserName}
+      currentUserEmail={currentUserEmail}
       currentUserImageUrl={currentUserImageUrl}
+      currentUserRole={currentUserRole}
       messagesEndRef={messagesEndRef}
       pendingAttachments={pendingAttachments}
       inputValue={inputValue}
@@ -1070,7 +1086,7 @@ export function ChatClient({
       onNewChat={handleNewChat}
       onRenameConversationClick={handleRenameConversationClick}
       onDeleteConversationClick={handleDeleteConversationClick}
-      onToggleHistory={() => setIsHistoryOpen((open) => !open)}
+      onToggleHistory={handleToggleHistory}
       onMarkSelectedAsDefault={markSelectedAsDefault}
       onSelectedIntegrationIdChange={setSelectedIntegrationId}
       onSendMessage={(text) => {

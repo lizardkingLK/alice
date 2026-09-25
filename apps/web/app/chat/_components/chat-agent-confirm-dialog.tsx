@@ -17,19 +17,21 @@ type ChatAgentConfirmDialogProps = {
   readonly confirmLabel: string;
   readonly pendingLabel?: string;
   readonly isPending?: boolean;
+  readonly destructive?: boolean;
   // eslint-disable-next-line no-unused-vars
   readonly onOpenChange: (open: boolean) => void;
   readonly onConfirm: () => void;
 };
 
-/** Soft confirm dialog for save / save-before-chat (not destructive). */
+/** Soft confirm dialog for save / archive / delete (optional destructive). */
 export function ChatAgentConfirmDialog({
   open,
   title,
   description,
   confirmLabel,
-  pendingLabel = 'Saving…',
+  pendingLabel = 'Working…',
   isPending = false,
+  destructive = false,
   onOpenChange,
   onConfirm,
 }: Readonly<ChatAgentConfirmDialogProps>) {
@@ -49,7 +51,12 @@ export function ChatAgentConfirmDialog({
           >
             Cancel
           </Button>
-          <Button type="button" disabled={isPending} onClick={onConfirm}>
+          <Button
+            type="button"
+            variant={destructive ? 'destructive' : 'default'}
+            disabled={isPending}
+            onClick={onConfirm}
+          >
             {isPending ? pendingLabel : confirmLabel}
           </Button>
         </DialogFooter>

@@ -2,9 +2,9 @@
 
 Status: **In progress** (UI-first)
 
-Personalized **agents** (roles with instructions, scope, and autonomy) sit
-alongside the existing **conversation** workspace. They are distinct from
-Settings **AI models** (`IntegrationCategory.ai_agent` = LLM providers).
+Personalized **agents** (roles with instructions, scope, and autonomy) open
+from the chat header gallery panel. They are distinct from Settings **AI
+models** (`IntegrationCategory.ai_agent` = LLM providers).
 
 Related:
 
@@ -21,12 +21,13 @@ Related:
 
 - Let users pick and personalize **role agents** (starting with **Project
   Manager**) that bind into Alice chat.
-- Separate **Conversation** (threads) from **Agents** (gallery + customization).
+- Keep **/chat** conversation-first; Agents live in a **header gallery dialog**
+  (fullscreenable), not a second page tab.
 - Share agents with Views-style recipient ACL; **fork** creates a **new
   version** owned by the forking user.
 - Scope agent context to projects the actor can access (`project_members` /
   `listAccessibleProjectIds`).
-- Keep the header **drawer** conversation-only (no Agents gallery / tabs).
+- Keep the header **drawer** conversation-only (no Agents gallery).
 
 ## Non-goals (v1)
 
@@ -34,6 +35,7 @@ Related:
 - Custom agent builder from blank (system templates + fork only)
 - Drawer Agents UI
 - Replacing Settings model integrations with personas
+- Deep-linking the Agents panel via query params
 
 ---
 
@@ -62,16 +64,18 @@ forks persist in **localStorage** until the DB slice ships.
 (no portrait editor). Admins can edit system templates and **Mark as system**
 on personal agents. The Customize header byline shows `by {authorName}`
 (no email): system templates use Alice Admin; forks use the signed-in user.
-Only system agents can be forked; personal agents use Save. Chat / Save use
-confirmation dialogs when dirty. Toasts use title + description (Sonner,
-styled like [shadcn Toast](https://ui.shadcn.com/docs/components/base/toast)).
+Only system agents can be forked; personal agents use Save. Personal agents
+can be **archived** (readonly + Archived tab), **restored**, or **deleted**
+(localStorage). Chat / Save / lifecycle actions use confirmation dialogs.
+Toasts use title + description (Sonner).
 
 ### Fork = new version
 
 - Fork from system or shared → new personal agent with `forkedFrom` +
   incremented `version`.
 - System template stays immutable.
-- Gallery tabs: **Mine** | **Shared** | **Archived** (Views parity).
+- Gallery tabs: **Mine** | **Shared** | **Archived** (Views parity), with
+  search beside the Agents heading.
 
 ### Project Manager scope
 
@@ -83,102 +87,60 @@ styled like [shadcn Toast](https://ui.shadcn.com/docs/components/base/toast)).
 
 ## Routing & UX
 
-| Surface         | URL                                                       | Behavior                                                                            |
-| --------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Conversation    | `/chat` or `/chat?tab=conversation&conversationId=<uuid>` | Thread + composer; optional `&agentId=<uuid>` when bound                            |
-| Agents gallery  | `/chat?tab=agents`                                        | Mine / Shared / Archived cards                                                      |
-| Agent customize | `/chat/agents/[agentId]`                                  | Full-page editor (rename, save, fork, instructions, autonomy, scope) + **Chat** CTA |
-| Drawer          | Header launcher                                           | Conversation only — no tab shell                                                    |
+| Surface      | URL                                             | Behavior                                                   |
+| ------------ | ----------------------------------------------- | ---------------------------------------------------------- |
+| Conversation | `/chat` + optional `conversationId` / `agentId` | Thread + composer; Agents via header **LayoutGrid** dialog |
+| Agents panel | Client-only dialog on `/chat`                   | Gallery ↔ detail (back chevron); optional fullscreen       |
+| Drawer       | Header launcher                                 | Conversation only — no Agents panel                        |
 
-**Defaults:** bare `/chat` → conversation tab; bootstrap latest thread or empty
-states. Prefer query key `conversationId` (not bare `id`) for clarity and
-backward compatibility with today’s `?conversationId=`.
+Legacy `/chat/agents` and `/chat/agents/:id` **redirect** to `/chat`.
 
 ### Navigation flows
 
 ```text
-Gallery card  →  /chat/agents/[agentId]  (customize page)
-Chat CTA      →  /chat?tab=conversation&agentId=<id>[&conversationId=…]
+Header Agents icon  →  gallery dialog
+Card click          →  detail view in same dialog
+Chat CTA            →  close dialog → /chat?agentId=<id>
+Bound header identity →  reopen dialog on that agent’s detail
 ```
-
-Gallery does **not** jump straight into a thread.
-
-### Conversation empty / gate states (priority)
-
-1. **No AI models** → “Add an AI model first” (existing Settings deep link). No
-   create-conversation CTA.
-2. **Models ok, zero conversations** → charts-style centered CTA: **Create
-   conversation**.
-3. Otherwise → normal thread / hero.
 
 ### Bound chat identity
 
 - When `agentId` is set on `/chat`, the conversation header and assistant
-  message rows show that agent’s **name**, **title** (under the name), and
-  DiceBear avatar (not the generic Alice Sparkles mark).
-- Header identity links to `/chat/agents/[agentId]` (customize). There is **no**
-  right-hand agent sidebar.
-- Unbound chats (drawer / no `agentId`) keep the Alice brand.
+  message rows show that agent’s **name**, **title**, and DiceBear avatar.
+- Header identity opens the Agents panel on that agent (not a separate route).
+- Unbound chats keep the Alice brand.
 
 ---
 
 ## Naming clarity
 
-| Product label                         | Meaning                                          |
-| ------------------------------------- | ------------------------------------------------ |
-| **Agents** (chat tab / gallery)       | Role personalization                             |
-| **AI models** / Settings integrations | LLM providers (`ai_agent` category historically) |
-
-Avoid calling both “AI agents” in user-facing copy.
-
----
-
-## Implementation slices
-
-| Slice | Scope                                                                                                   | Status                     |
-| ----- | ------------------------------------------------------------------------------------------------------- | -------------------------- |
-| **1** | Plan doc; `/chat` tab shell; gallery; customize page stub; empty states; Chat CTA; mock Project Manager | Done (UI; session catalog) |
-| **2** | Persist agents / shares / versions (DB + API); Views-style Share dialog                                 | Planned                    |
-| **3** | Bind `agentId` on conversations; prompt + tool assembly; project_member enforcement                     | Planned                    |
-| **4** | Compact chat agent strip wired to live records                                                          | Planned                    |
-| **5** | Jobs / activity / mentions (Monday-like)                                                                | Later                      |
+| Product label              | Meaning                                          |
+| -------------------------- | ------------------------------------------------ |
+| **Agents** (gallery panel) | Role personalization                             |
+| **AI models** / Settings   | LLM providers (`ai_agent` category historically) |
 
 ---
 
 ## UI map (Slice 1)
 
 ```text
-/chat?tab=conversation
-┌────────────┬──────────────────────┬─────────────────┐
-│ History    │ Thread + composer    │ Agent strip     │
-│            │ Empty: model / create│ (when agentId)  │
-└────────────┴──────────────────────┴─────────────────┘
-
-/chat?tab=agents
+/chat
+┌────────────┬──────────────────────────────────────────┐
+│ History    │ Header: identity · Agents · model · new  │
+│            │ Thread + composer                        │
+└────────────┴──────────────────────────────────────────┘
+                      │
+                      ▼ Agents dialog
 ┌─────────────────────────────────────────────────────┐
-│ Gallery: Mine | Shared | Archived                   │
-│ Card → /chat/agents/[agentId]                       │
-└─────────────────────────────────────────────────────┘
-
-/chat/agents/[agentId]
-┌─────────────────────────────────────────────────────┐
-│ Customize form · Fork (new version) · Save · Chat   │
+│ Gallery: Mine | Shared | Archived  (or detail form) │
 └─────────────────────────────────────────────────────┘
 ```
 
 ### Code anchors (web)
 
-- Shell: `apps/web/app/chat/_components/chat-workspace.tsx`
+- Panel: `apps/web/app/chat/_components/chat-agents-panel-dialog.tsx`
 - Gallery: `apps/web/app/chat/_components/chat-agents-gallery.tsx`
-- Customize: `apps/web/app/chat/agents/[agentId]/`
+- Customize: `apps/web/app/chat/_components/chat-agent-customize-page.tsx`
+- Catalog: `apps/web/app/chat/_helpers/chat-agents-catalog.ts`
 - URL helpers: `apps/web/app/chat/_helpers/chat-url.ts`
-- Tab parse: `parseChatPageTab` in `apps/web/lib/search-params.ts`
-- Catalog seed: `apps/web/app/chat/_helpers/chat-agents-catalog.ts`
-
----
-
-## Open follow-ups (post–Slice 1)
-
-- Promote gallery sub-tab to `agentsTab` query when shareable links matter.
-- Session overrides in the chat strip vs always open full editor.
-- Admin UI to mark additional system templates.

@@ -113,10 +113,17 @@
   }
 }
 
+/* Sonner above Radix dialogs; keep interactive while body is pointer-events:none */
+[data-sonner-toaster] {
+  z-index: 100 !important;
+  pointer-events: auto !important;
+}
+
 /* Sonner: icon + (title/description) on the left, close on the right —
    matches shadcn Toast card layout (title + muted description).
    @see https://ui.shadcn.com/docs/components/base/toast */
 [data-sonner-toast][data-styled='true'] {
+  pointer-events: auto !important;
   display: flex !important;
   align-items: flex-start !important;
   justify-content: flex-start !important;

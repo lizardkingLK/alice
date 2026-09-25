@@ -362,6 +362,9 @@ export function saveAgentDraft(
   if (current.kind === 'system' && !options?.allowSystemEdit) {
     return null;
   }
+  if (current.status === 'archived' && patch.status !== 'active') {
+    return null;
+  }
   const next: ChatAgentRecord = {
     ...current,
     ...patch,
@@ -383,6 +386,45 @@ export function markAgentAsSystem(agentId: string): ChatAgentRecord | null {
     authorEmail: ALICE_SYSTEM_AUTHOR.email,
   };
   return upsertStoredAgent(next);
+}
+
+function setPersonalAgentStatus(
+  agentId: string,
+  status: ChatAgentStatus
+): ChatAgentRecord | null {
+  const current = getChatAgentById(agentId);
+  if (current?.kind !== 'personal') {
+    return null;
+  }
+  if (current.status === status) {
+    return current;
+  }
+  return upsertStoredAgent({ ...current, status });
+}
+
+/** Soft-archive a personal agent (Mine → Archived). */
+export function archivePersonalAgent(agentId: string): ChatAgentRecord | null {
+  return setPersonalAgentStatus(agentId, 'archived');
+}
+
+/** Restore an archived personal agent to Mine. */
+export function restorePersonalAgent(agentId: string): ChatAgentRecord | null {
+  return setPersonalAgentStatus(agentId, 'active');
+}
+
+/** Permanently delete a personal agent from this browser. */
+export function deletePersonalAgent(agentId: string): boolean {
+  const current = getChatAgentById(agentId);
+  if (current?.kind !== 'personal') {
+    return false;
+  }
+  const existing = readStoredAgents();
+  const next = existing.filter((row) => row.id !== agentId);
+  if (next.length === existing.length) {
+    return false;
+  }
+  writeStoredAgents(next);
+  return true;
 }
 
 export function savePersonalAgentDraft(
