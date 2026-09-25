@@ -17,6 +17,8 @@ export type JiraConnection = {
   status: 'active' | 'revoked' | 'expired';
   created_at: string;
   updated_at: string;
+  can_manage?: boolean;
+  is_shared?: boolean;
 };
 
 export type JiraCloudProject = {

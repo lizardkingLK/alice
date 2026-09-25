@@ -13,13 +13,24 @@ export function IntegrationFeedbackBanner({
   }
   return (
     <div
-      className={`rounded p-3 text-sm ${
+      className={`rounded border p-3 text-sm font-medium ${
         isError
-          ? 'bg-destructive/10 text-destructive'
-          : 'bg-emerald-500/10 text-emerald-600'
+          ? 'border-destructive/40 bg-destructive/10 text-zinc-950 dark:text-zinc-50'
+          : 'border-emerald-600/30 bg-emerald-500/10 text-zinc-950 dark:text-zinc-50'
       }`}
     >
       {message}
+    </div>
+  );
+}
+
+/** High-contrast ownership / restriction notice (GitHub admin-owned, shared Jira). */
+export function IntegrationOwnershipBanner({
+  children,
+}: Readonly<{ children: ReactNode }>) {
+  return (
+    <div className="rounded border border-amber-700/35 bg-amber-50 p-3 text-xs font-medium text-zinc-950 dark:border-amber-400/40 dark:bg-amber-950/50 dark:text-zinc-50">
+      {children}
     </div>
   );
 }

@@ -16,6 +16,7 @@ import { GitHubLogo } from '@/app/projects/_components/project-details/integrati
 import {
   IntegrationEditForm,
   IntegrationFeedbackBanner,
+  IntegrationOwnershipBanner,
   IntegrationSummaryFields,
 } from '@/app/projects/_components/project-details/integration-settings-shared';
 import { GithubConnectionFields } from '@/app/projects/_components/github-connection-fields';
@@ -286,11 +287,11 @@ export function GithubSettingsCard({
         />
 
         {isRestrictedAdminOwned ? (
-          <div className="rounded border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
+          <IntegrationOwnershipBanner>
             This GitHub connection was established by an administrator (@
             {activeConnection?.account_login}). Only that administrator can
             modify or disconnect this connection.
-          </div>
+          </IntegrationOwnershipBanner>
         ) : null}
 
         {isEditingGithub && canManage ? (

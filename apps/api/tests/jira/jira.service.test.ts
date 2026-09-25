@@ -1,16 +1,22 @@
 import { createHmac } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { selectSingleMock, upsertMock, findByIdForUserMock, updateTokensMock } =
-  vi.hoisted(() => {
-    process.env.GITHUB_ACTIONS = 'true';
-    return {
-      selectSingleMock: vi.fn(),
-      upsertMock: vi.fn(),
-      findByIdForUserMock: vi.fn(),
-      updateTokensMock: vi.fn(),
-    };
-  });
+const {
+  selectSingleMock,
+  upsertMock,
+  findByIdMock,
+  findByIdForUserMock,
+  updateTokensMock,
+} = vi.hoisted(() => {
+  process.env.GITHUB_ACTIONS = 'true';
+  return {
+    selectSingleMock: vi.fn(),
+    upsertMock: vi.fn(),
+    findByIdMock: vi.fn(),
+    findByIdForUserMock: vi.fn(),
+    updateTokensMock: vi.fn(),
+  };
+});
 
 vi.mock('../../src/lib/supabase', () => ({
   supabase: {
@@ -47,7 +53,8 @@ function signOAuthStateForTest(payload: Record<string, unknown>): string {
 describe('JiraService', () => {
   const repository = {
     listByUserId: vi.fn(),
-    findById: vi.fn(),
+    listAllActive: vi.fn(),
+    findById: findByIdMock,
     findByIdForUser: findByIdForUserMock,
     upsertByUserAndCloud: upsertMock,
     updateTokens: updateTokensMock,
@@ -157,8 +164,8 @@ describe('JiraService', () => {
   });
 
   it('fetches issues for import with a Bearer token', async () => {
-    // Arrange
-    findByIdForUserMock.mockResolvedValue({
+    // Arrange — shared resolve uses findById (any manager can import)
+    findByIdMock.mockResolvedValue({
       id: 'conn-1',
       user_id: 'user-manager',
       cloud_id: 'cloud-1',
@@ -221,5 +228,51 @@ describe('JiraService', () => {
     expect(fetchMock.mock.calls[1]?.[1]?.headers).toMatchObject({
       Authorization: 'Bearer access-fresh',
     });
+  });
+
+  it('allows another manager to import via a shared connection id', async () => {
+    findByIdMock.mockResolvedValue({
+      id: 'conn-owner',
+      user_id: 'user-owner',
+      cloud_id: 'cloud-1',
+      site_url: 'https://acme.atlassian.net',
+      account_email: 'owner@acme.test',
+      refresh_token_enc: encryptSecret('refresh-plain'),
+      access_token_enc: encryptSecret('access-cached'),
+      access_token_expires_at: new Date(Date.now() + 60 * 60 * 1000),
+      scopes: 'read:jira-work',
+      status: 'active',
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        issues: [
+          {
+            key: 'ALICE-2',
+            fields: {
+              summary: 'Shared import',
+              description: null,
+              issuetype: { name: 'Task' },
+            },
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const issues = await service.fetchIssuesForImport(
+      'user-other-manager',
+      'conn-owner',
+      'ALICE'
+    );
+
+    expect(issues).toEqual([
+      expect.objectContaining({ key: 'ALICE-2', title: 'Shared import' }),
+    ]);
+    expect(findByIdMock).toHaveBeenCalledWith('conn-owner');
+    expect(findByIdForUserMock).not.toHaveBeenCalled();
   });
 });

@@ -28,6 +28,7 @@ import type {
   GithubConnectionDto,
   GithubRepoOption,
 } from '@/app/projects/_services/projects.github.mutations.client';
+import { IntegrationOwnershipBanner } from '@/app/projects/_components/project-details/integration-settings-shared';
 import { parseGithubRepoPath } from '@/lib/projects/github-repo-path';
 
 type GithubUnlinkedCardProps = {
@@ -190,11 +191,11 @@ function GithubLinkedCard({
       </div>
 
       {isRestrictedAdminOwned ? (
-        <div className="rounded border border-amber-500/20 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-300">
+        <IntegrationOwnershipBanner>
           This GitHub connection was established by an administrator (@
           {activeConnection.account_login}). Only that administrator can modify
           or disconnect this connection.
-        </div>
+        </IntegrationOwnershipBanner>
       ) : null}
     </div>
   );
