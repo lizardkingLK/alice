@@ -52,6 +52,16 @@ export class JiraRepository {
     return rows.map(toDto);
   }
 
+  /** Active connections across the workspace (manager shared-view fallback). */
+  async listAllActive(): Promise<JiraConnectionDto[]> {
+    const rows = await prisma.jira_connections.findMany({
+      where: { status: 'active' },
+      select: PUBLIC_SELECT,
+      orderBy: { created_at: 'desc' },
+    });
+    return rows.map(toDto);
+  }
+
   async findById(id: string): Promise<JiraConnectionRow | null> {
     return await prisma.jira_connections.findUnique({ where: { id } });
   }

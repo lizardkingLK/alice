@@ -14,6 +14,10 @@ export type JiraConnectionDto = {
   status: JiraConnectionStatus;
   created_at: Date;
   updated_at: Date;
+  /** True when the current actor owns this OAuth connection. */
+  can_manage?: boolean;
+  /** True when this connection was authorized by a different user. */
+  is_shared?: boolean;
 };
 
 export type JiraConnectionRow = JiraConnectionDto & {

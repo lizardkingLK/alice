@@ -39,6 +39,10 @@ Use the **Jira** card to:
 
 After OAuth, return via `/integrations/jira/done` if redirected by Atlassian.
 
+If another manager already connected a Jira site, you can use that **shared**
+connection to link and sync. Only the person who authorized Atlassian can
+**Disconnect** the OAuth connection.
+
 ---
 
 ## Workspace vs project

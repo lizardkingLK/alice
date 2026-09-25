@@ -16,6 +16,7 @@ import { JiraLogo } from '@/app/projects/_components/project-details/integration
 import {
   IntegrationEditForm,
   IntegrationFeedbackBanner,
+  IntegrationOwnershipBanner,
   IntegrationSummaryFields,
 } from '@/app/projects/_components/project-details/integration-settings-shared';
 import {
@@ -76,6 +77,7 @@ function JiraConnectionsPanel({
       <ul className="space-y-2">
         {connections.map((connection) => {
           const isDisconnecting = disconnectingId === connection.id;
+          const canManage = connection.can_manage !== false;
           return (
             <li
               key={connection.id}
@@ -83,22 +85,29 @@ function JiraConnectionsPanel({
             >
               <span className="min-w-0 truncate">
                 {connectionLabel(connection)}
+                {connection.is_shared ? (
+                  <span className="text-muted-foreground ml-1 text-xs">
+                    (shared)
+                  </span>
+                ) : null}
               </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => onDisconnect(connection.id)}
-                disabled={isDisconnecting}
-                className="text-destructive hover:text-destructive shrink-0"
-              >
-                {isDisconnecting ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Unplug className="mr-1 h-3.5 w-3.5" />
-                )}
-                Disconnect
-              </Button>
+              {canManage ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onDisconnect(connection.id)}
+                  disabled={isDisconnecting}
+                  className="text-destructive hover:text-destructive shrink-0"
+                >
+                  {isDisconnecting ? (
+                    <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Unplug className="mr-1 h-3.5 w-3.5" />
+                  )}
+                  Disconnect
+                </Button>
+              ) : null}
             </li>
           );
         })}
@@ -232,6 +241,11 @@ export function JiraSettingsCard({ project }: Readonly<JiraSettingsCardProps>) {
     linkedConnectionSite(connections, project.jira_connection_id) ??
     'Linked site';
 
+  const linkedConnection = connections.find(
+    (row) => row.id === project.jira_connection_id
+  );
+  const isSharedLinkedConnection = Boolean(linkedConnection?.is_shared);
+
   const linkSection = isEditingJira ? (
     <IntegrationEditForm
       onSubmit={handleSaveJira}
@@ -312,6 +326,16 @@ export function JiraSettingsCard({ project }: Readonly<JiraSettingsCardProps>) {
           message={jiraMessage}
           isError={isJiraError}
         />
+        {isSharedLinkedConnection ? (
+          <IntegrationOwnershipBanner>
+            This Jira site was connected by another manager
+            {linkedConnection?.account_email
+              ? ` (${linkedConnection.account_email})`
+              : ''}
+            . You can sync and import with it; only that user can disconnect the
+            OAuth connection.
+          </IntegrationOwnershipBanner>
+        ) : null}
         <JiraConnectionsPanel
           connections={connections}
           isLoadingConnections={isLoadingConnections}

@@ -32,7 +32,8 @@ export type UseJiraConnectionPickerResult = {
  * (create wizard Imports step and project details Integrations card).
  *
  * Connect opens Atlassian consent in a **new tab/window** so modal create
- * dialogs stay open; connections refresh when this window regains focus.
+ * dialogs stay open; connections refresh when OAuth completes (or when this
+ * window regains focus while connecting).
  */
 export function useJiraConnectionPicker(
   jiraConnectionId: string
