@@ -8,21 +8,6 @@ import React, {
   useMemo,
 } from 'react';
 import { cn } from '@repo/ui/lib/utils';
-import { Textarea } from '@repo/ui/components/ui/textarea';
-import { Button } from '@repo/ui/components/ui/button';
-import { Separator } from '@repo/ui/components/ui/separator';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@repo/ui/components/ui/tooltip';
-import {
-  Send,
-  Sparkles,
-  PanelLeft,
-  PanelLeftClose,
-  Paperclip,
-} from '@repo/ui/lib/icons';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ChatRoles,
@@ -42,10 +27,7 @@ import {
   uploadChatAttachment,
   deleteChatAttachment,
 } from '../_services/chat-attachments.client';
-import {
-  ChatAttachmentTiles,
-  type PendingChatAttachment,
-} from './chat-attachment-tiles';
+import type { PendingChatAttachment } from './chat-attachment-tiles';
 import {
   revalidateAfterChatActions,
   type ChatMutationActionType,
@@ -54,21 +36,19 @@ import {
   bootstrapLatestChat,
   loadConversationHistory,
 } from './chat-client-bootstrap';
+import { writeChatHistorySidebarOpenCookie } from '@/app/chat/_helpers/chat-history-sidebar-storage';
 import {
   listChatConversationsAction,
   revalidateChatConversations,
 } from '../_services/chat.reads.actions.server';
-import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
-import ChatClientSidebar from '@/app/chat/_components/chat-client-sidebar';
-import { ChatRenameDialog } from '@/app/chat/_components/chat-rename-dialog';
-import ChatClientHeaderActions from '@/app/chat/_components/chat-client-header-actions';
-import ChatClientHeaderLeading from '@/app/chat/_components/chat-client-header-leading';
-import ChatClientMain from '@/app/chat/_components/chat-client-main';
+import { ChatConversationEmptyPanel } from '@/app/chat/_components/chat-conversation-empty-panel';
+import { ChatClientFrame } from '@/app/chat/_components/chat-client-frame';
 import { useWorkspaceChatModels } from '@/app/chat/_components/use-workspace-chat-models';
 import { useDashboardTrailBreadcrumb } from '@/app/dashboard/_components/dashboard-breadcrumb-runtime';
 import type { DashboardBreadcrumbOverride } from '@/app/dashboard/_components/dashboard-breadcrumb';
 import { isAdmin, type AppRole } from '@/lib/rbac';
 import { isChatFavoritesReady } from '../_helpers/is-chat-favorites-ready';
+import { buildChatHref } from '../_helpers/chat-url';
 
 function ChatPageTrailBreadcrumb({
   trail,
@@ -118,9 +98,48 @@ function buildChatBreadcrumbTrail(
     { label: 'Chat', url: '/chat' },
     {
       label: activeConversationTitle,
-      url: `/chat?conversationId=${activeConversationId}`,
+      url: buildChatHref({
+        conversationId: activeConversationId,
+      }),
     },
   ];
+}
+
+type ChatEmptyGate = 'no-models' | 'no-conversations' | null;
+
+function resolveChatEmptyGate(params: {
+  readonly isPage: boolean;
+  readonly isLoadingConversations: boolean;
+  readonly chatModelCount: number;
+  readonly conversationCount: number;
+  readonly hasStartedEmptyConversation: boolean;
+  readonly activeConversationId: string | undefined;
+  readonly messageCount: number;
+}): ChatEmptyGate {
+  const {
+    isPage,
+    isLoadingConversations,
+    chatModelCount,
+    conversationCount,
+    hasStartedEmptyConversation,
+    activeConversationId,
+    messageCount,
+  } = params;
+  if (!isPage || isLoadingConversations) {
+    return null;
+  }
+  if (chatModelCount === 0) {
+    return 'no-models';
+  }
+  if (
+    conversationCount === 0 &&
+    !hasStartedEmptyConversation &&
+    !activeConversationId &&
+    messageCount === 0
+  ) {
+    return 'no-conversations';
+  }
+  return null;
 }
 
 async function hydrateActiveConversationIfNeeded(params: {
@@ -423,9 +442,6 @@ function useChatClientBootstrap(params: {
 let messageCounter = 0;
 let attachmentCounter = 0;
 
-const CHAT_PANEL_HEADER_CLASS =
-  'border-border flex h-14 shrink-0 items-center border-b px-4';
-
 const NO_CHAT_MODEL_ERROR =
   'No chat model is configured. Use Add Model to connect one in Settings.';
 
@@ -506,6 +522,7 @@ function applySuccessfulChatResponse(params: {
     actions?: ActionItem[];
   };
   activeConversationId: string | undefined;
+  agentId?: string;
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   setActiveConversationId: React.Dispatch<
     React.SetStateAction<string | undefined>
@@ -517,6 +534,7 @@ function applySuccessfulChatResponse(params: {
   const {
     response,
     activeConversationId,
+    agentId,
     setMessages,
     setActiveConversationId,
     setConversations,
@@ -533,7 +551,12 @@ function applySuccessfulChatResponse(params: {
       hydratedRef.current = response.conversationId;
     }
     // Keep Next searchParams in sync so favorites / breadcrumbs use the new id.
-    router.replace(`/chat?conversationId=${response.conversationId}`);
+    router.replace(
+      buildChatHref({
+        conversationId: response.conversationId,
+        agentId,
+      })
+    );
     setActiveConversationId(response.conversationId);
     setConversations((prev) => [
       {
@@ -577,12 +600,17 @@ interface ChatClientProps {
   readonly variant?: 'page' | 'drawer';
   readonly onClose?: () => void;
   readonly currentUserName?: string | null;
+  readonly currentUserEmail?: string | null;
   readonly currentUserImageUrl?: string | null;
   /** SSR bootstrap for `/chat` — skips the mount fetch when provided. */
   readonly initialConversations?: ChatConversation[];
   readonly initialConversationId?: string;
   readonly initialMessages?: ChatMessage[];
   readonly initialChatModels?: ChatModelOption[];
+  /** Bound agent from `/chat?agentId=` (page variant). */
+  readonly initialAgentId?: string;
+  /** SSR cookie preference for the conversation history sidebar. */
+  readonly initialHistoryOpen?: boolean;
   readonly currentUserId?: string | null;
   readonly currentUserRole?: AppRole | null;
 }
@@ -591,11 +619,14 @@ export function ChatClient({
   variant = 'page',
   onClose,
   currentUserName,
+  currentUserEmail = null,
   currentUserImageUrl,
   initialConversations,
   initialConversationId,
   initialMessages,
   initialChatModels,
+  initialAgentId,
+  initialHistoryOpen = true,
   currentUserId,
   currentUserRole,
 }: Readonly<ChatClientProps>) {
@@ -629,8 +660,19 @@ export function ChatClient({
   const [conversationToRename, setConversationToRename] =
     useState<ChatConversation | null>(null);
   const isConversationBusy = isPending || isRenaming || isDeleting;
-  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(initialHistoryOpen);
   const [conversationSearch, setConversationSearch] = useState('');
+
+  const handleToggleHistory = useCallback(() => {
+    setIsHistoryOpen((open) => {
+      const next = !open;
+      writeChatHistorySidebarOpenCookie(next);
+      return next;
+    });
+  }, []);
+  const [hasStartedEmptyConversation, setHasStartedEmptyConversation] =
+    useState(Boolean(initialAgentId));
+  const [boundAgentId] = useState<string | undefined>(initialAgentId);
   const {
     chatModels,
     selectedIntegrationId,
@@ -658,13 +700,14 @@ export function ChatClient({
   const handleNewChat = useCallback(
     (force = false) => {
       if (isConversationBusy && !force) return;
-      router.replace('/chat');
+      router.replace(buildChatHref({ agentId: boundAgentId }));
       setActiveConversationId(undefined);
       setMessages([]);
       setPendingAttachments([]);
       setError(null);
+      setHasStartedEmptyConversation(true);
     },
-    [isConversationBusy, router]
+    [boundAgentId, isConversationBusy, router]
   );
 
   useChatConversationsRealtime({
@@ -696,7 +739,12 @@ export function ChatClient({
     if (isConversationBusy) return;
     if (id === activeConversationId && messages.length > 0) return;
 
-    router.replace(`/chat?conversationId=${id}`);
+    router.replace(
+      buildChatHref({
+        conversationId: id,
+        agentId: boundAgentId,
+      })
+    );
 
     setIsLoadingHistory(true);
     setActiveConversationId(id);
@@ -878,6 +926,7 @@ export function ChatClient({
       applySuccessfulChatResponse({
         response,
         activeConversationId,
+        agentId: boundAgentId,
         setMessages,
         setActiveConversationId,
         setConversations,
@@ -954,210 +1003,116 @@ export function ChatClient({
     messages.length === 0 &&
     !isLoadingHistory &&
     !isPending;
+  const emptyGate = resolveChatEmptyGate({
+    isPage,
+    isLoadingConversations,
+    chatModelCount: chatModels.length,
+    conversationCount: conversations.length,
+    hasStartedEmptyConversation,
+    activeConversationId,
+    messageCount: messages.length,
+  });
+
+  if (emptyGate) {
+    return (
+      <div
+        className={cn(
+          'bg-background flex min-h-0 w-full overflow-hidden',
+          isPage ? 'h-full min-h-0 flex-1' : 'h-full'
+        )}
+      >
+        {isPage ? (
+          <ChatPageTrailBreadcrumb
+            trail={chatBreadcrumbTrail}
+            isLoadingConversations={isLoadingConversations}
+            isLoadingHistory={isLoadingHistory}
+            activeConversationId={activeConversationId}
+          />
+        ) : null}
+        <ChatConversationEmptyPanel
+          kind={emptyGate}
+          onCreateConversation={
+            emptyGate === 'no-conversations'
+              ? () => {
+                  setHasStartedEmptyConversation(true);
+                }
+              : undefined
+          }
+        />
+      </div>
+    );
+  }
 
   return (
-    <div
-      className={cn(
-        'bg-background flex min-h-0 w-full overflow-hidden',
-        isPage ? 'h-full min-h-0 flex-1' : 'h-full'
-      )}
-    >
-      {isPage && (
-        <ChatPageTrailBreadcrumb
-          trail={chatBreadcrumbTrail}
-          isLoadingConversations={isLoadingConversations}
-          isLoadingHistory={isLoadingHistory}
-          activeConversationId={activeConversationId}
-        />
-      )}
-      {isPage && (
-        <ChatClientSidebar
-          showHistory={showHistory}
-          conversationSearch={conversationSearch}
-          onConversationSearchChange={setConversationSearch}
-          isLoadingConversations={isLoadingConversations}
-          conversations={conversations}
-          activeConversationId={activeConversationId}
-          onSelectConversation={(id) => {
-            void handleSelectConversation(id);
-          }}
-          onNewChat={handleNewChat}
-          onRenameConversationClick={handleRenameConversationClick}
-          onDeleteConversationClick={handleDeleteConversationClick}
-        />
-      )}
-
-      <div className="bg-background flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header
-          className={cn(
-            CHAT_PANEL_HEADER_CLASS,
-            'justify-between gap-3 sm:px-6'
-          )}
-        >
-          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            {isPage && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsHistoryOpen((open) => !open)}
-                    aria-expanded={isHistoryOpen}
-                    aria-controls="chat-history-sidebar"
-                    aria-label={
-                      isHistoryOpen ? 'Hide chat history' : 'Show chat history'
-                    }
-                  >
-                    {isHistoryOpen ? <PanelLeftClose /> : <PanelLeft />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  {isHistoryOpen ? 'Hide history' : 'Show history'}
-                </TooltipContent>
-              </Tooltip>
-            )}
-            <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
-              <Sparkles className="size-4" />
-            </div>
-            <div className="min-w-0">
-              <h2 className="truncate text-sm font-semibold">Alice</h2>
-            </div>
-            <ChatClientHeaderLeading
-              chatModels={chatModels}
-              selectedIntegrationId={selectedIntegrationId}
-              canManageChatModels={canManageChatModels}
-              isPending={isInputDisabled}
-              isMarkingDefault={isMarkingDefault}
-              onMarkSelectedAsDefault={markSelectedAsDefault}
-            />
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
-            <ChatClientHeaderActions
-              variant={variant}
-              isPending={isInputDisabled}
-              chatModels={chatModels}
-              selectedIntegrationId={selectedIntegrationId}
-              onSelectedIntegrationIdChange={setSelectedIntegrationId}
-              onNewChat={handleNewChat}
-              onClose={onClose}
-            />
-          </div>
-        </header>
-
-        <ChatClientMain
-          isPage={isPage}
-          isLoadingHistory={isLoadingHistory}
-          showHero={showHero}
-          showEmptyThread={showEmptyThread}
-          messages={messages}
-          isPending={isPending || isActiveConversationProcessing}
-          error={error}
-          currentUserName={currentUserName}
-          currentUserImageUrl={currentUserImageUrl}
-          messagesEndRef={messagesEndRef}
-          onSendMessage={(text) => {
-            void handleSendMessage(text);
-          }}
-        />
-
-        <Separator />
-        <div className="bg-muted/20 shrink-0 p-3 sm:p-4">
-          <div className="mx-auto max-w-3xl">
-            <ChatAttachmentTiles
-              attachments={pendingAttachments}
-              onRemove={handleRemoveAttachment}
-              disabled={isInputDisabled}
-            />
-            <form
-              onSubmit={handleFormSubmit}
-              className="flex items-end gap-2 sm:gap-3"
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files.length > 0) {
-                    void handleFileSelect(e.target.files);
-                  }
-                }}
-              />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-lg"
-                    disabled={isInputDisabled}
-                    onClick={() => fileInputRef.current?.click()}
-                    aria-label="Attach files (JSON, CSV, etc.)"
-                  >
-                    <Paperclip className="size-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  Attach files (or paste with Ctrl+V)
-                </TooltipContent>
-              </Tooltip>
-
-              <Textarea
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleComposerKeyDown}
-                onPaste={handlePaste}
-                disabled={isInputDisabled}
-                rows={1}
-                placeholder="Type your message, attach files, or paste with Ctrl+V…"
-                className="bg-background max-h-40 min-h-10 flex-1 resize-none px-3 py-2.5 sm:px-4"
-              />
-              <Button
-                type="submit"
-                size="icon-lg"
-                disabled={
-                  (!inputValue.trim() && pendingAttachments.length === 0) ||
-                  isInputDisabled ||
-                  pendingAttachments.some((a) => a.isUploading)
-                }
-                aria-label="Send message"
-              >
-                <Send />
-              </Button>
-            </form>
-          </div>
-        </div>
-      </div>
-      {conversationToDelete && (
-        <RegistryConfirmDialog
-          title="Permanently Delete Chat History"
-          subject={conversationToDelete.title}
-          detail="Warning: This action is irreversible. All messages and executed tool action logs associated with this session will be permanently destroyed."
-          confirmLabel="Delete Permanently"
-          pendingLabel="Deleting..."
-          isPending={isDeleting}
-          isSoft={false}
-          onCancel={() => setConversationToDelete(null)}
-          onConfirm={() => {
-            void handleConfirmDelete();
-          }}
-        />
-      )}
-      {conversationToRename && (
-        <ChatRenameDialog
-          open
-          title={conversationToRename.title}
-          isPending={isRenaming}
-          onOpenChange={(open) => {
-            if (!open && !isRenaming) {
-              setConversationToRename(null);
-            }
-          }}
-          onConfirm={(nextTitle) => {
-            void handleConfirmRename(nextTitle);
-          }}
-        />
-      )}
-    </div>
+    <ChatClientFrame
+      isPage={isPage}
+      variant={variant}
+      chatBreadcrumbTrail={chatBreadcrumbTrail}
+      isLoadingConversations={isLoadingConversations}
+      isLoadingHistory={isLoadingHistory}
+      activeConversationId={activeConversationId}
+      showHistory={showHistory}
+      conversationSearch={conversationSearch}
+      conversations={conversations}
+      chatModels={chatModels}
+      selectedIntegrationId={selectedIntegrationId}
+      canManageChatModels={canManageChatModels}
+      isInputDisabled={isInputDisabled}
+      isMarkingDefault={isMarkingDefault}
+      isPending={isPending}
+      isActiveConversationProcessing={isActiveConversationProcessing}
+      showHero={showHero}
+      showEmptyThread={showEmptyThread}
+      messages={messages}
+      error={error}
+      currentUserName={currentUserName}
+      currentUserEmail={currentUserEmail}
+      currentUserImageUrl={currentUserImageUrl}
+      currentUserRole={currentUserRole}
+      messagesEndRef={messagesEndRef}
+      pendingAttachments={pendingAttachments}
+      inputValue={inputValue}
+      fileInputRef={fileInputRef}
+      boundAgentId={boundAgentId}
+      conversationToDelete={conversationToDelete}
+      conversationToRename={conversationToRename}
+      isDeleting={isDeleting}
+      isRenaming={isRenaming}
+      onClose={onClose}
+      onConversationSearchChange={setConversationSearch}
+      onSelectConversation={(id) => {
+        void handleSelectConversation(id);
+      }}
+      onNewChat={handleNewChat}
+      onRenameConversationClick={handleRenameConversationClick}
+      onDeleteConversationClick={handleDeleteConversationClick}
+      onToggleHistory={handleToggleHistory}
+      onMarkSelectedAsDefault={markSelectedAsDefault}
+      onSelectedIntegrationIdChange={setSelectedIntegrationId}
+      onSendMessage={(text) => {
+        void handleSendMessage(text);
+      }}
+      onRemoveAttachment={handleRemoveAttachment}
+      onFormSubmit={handleFormSubmit}
+      onFileSelect={(files) => {
+        void handleFileSelect(files);
+      }}
+      onComposerKeyDown={handleComposerKeyDown}
+      onPaste={handlePaste}
+      onInputChange={setInputValue}
+      onCancelDelete={() => setConversationToDelete(null)}
+      onConfirmDelete={() => {
+        void handleConfirmDelete();
+      }}
+      onRenameOpenChange={(open) => {
+        if (!open && !isRenaming) {
+          setConversationToRename(null);
+        }
+      }}
+      onConfirmRename={(nextTitle) => {
+        void handleConfirmRename(nextTitle);
+      }}
+      TrailBreadcrumb={ChatPageTrailBreadcrumb}
+    />
   );
 }

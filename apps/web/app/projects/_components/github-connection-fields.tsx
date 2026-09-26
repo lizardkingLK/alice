@@ -28,6 +28,7 @@ import type {
   GithubConnectionDto,
   GithubRepoOption,
 } from '@/app/projects/_services/projects.github.mutations.client';
+import { IntegrationOwnershipBanner } from '@/app/projects/_components/project-details/integration-settings-shared';
 import { parseGithubRepoPath } from '@/lib/projects/github-repo-path';
 
 type GithubUnlinkedCardProps = {
@@ -35,6 +36,7 @@ type GithubUnlinkedCardProps = {
   isConnecting: boolean;
   onConnect: () => void;
   showConnectChrome: boolean;
+  canManage?: boolean;
 };
 
 function GithubUnlinkedCard({
@@ -42,6 +44,7 @@ function GithubUnlinkedCard({
   isConnecting,
   onConnect,
   showConnectChrome,
+  canManage = true,
 }: Readonly<GithubUnlinkedCardProps>) {
   return (
     <div className="border-border/60 bg-muted/20 space-y-3 rounded-lg border p-3">
@@ -52,7 +55,7 @@ function GithubUnlinkedCard({
             Status: Not connected
           </span>
         </div>
-        {showConnectChrome ? (
+        {showConnectChrome && canManage ? (
           <Button
             type="button"
             variant="outline"
@@ -88,6 +91,7 @@ type GithubLinkedCardProps = {
   onDisconnect?: (connectionId: string) => void;
   isDisconnecting: boolean;
   showConnectChrome: boolean;
+  canManage?: boolean;
 };
 
 function GithubLinkedCard({
@@ -97,6 +101,7 @@ function GithubLinkedCard({
   onDisconnect,
   isDisconnecting,
   showConnectChrome,
+  canManage = true,
 }: Readonly<GithubLinkedCardProps>) {
   const accountLabel = activeConnection.account_login
     ? `@${activeConnection.account_login}`
@@ -109,6 +114,10 @@ function GithubLinkedCard({
   )
     .slice(0, 2)
     .toUpperCase();
+
+  const isRestrictedAdminOwned =
+    activeConnection.is_admin_owned && !activeConnection.can_manage;
+  const isManageable = canManage && !isRestrictedAdminOwned;
 
   return (
     <div className="border-border/60 bg-muted/20 space-y-3 rounded-lg border p-3">
@@ -142,7 +151,7 @@ function GithubLinkedCard({
           </div>
         </div>
 
-        {showConnectChrome ? (
+        {showConnectChrome && isManageable ? (
           <div className="flex items-center gap-2">
             {onDisconnect ? (
               <Button
@@ -180,6 +189,14 @@ function GithubLinkedCard({
           </div>
         ) : null}
       </div>
+
+      {isRestrictedAdminOwned ? (
+        <IntegrationOwnershipBanner>
+          This GitHub connection was established by an administrator (@
+          {activeConnection.account_login}). Only that administrator can modify
+          or disconnect this connection.
+        </IntegrationOwnershipBanner>
+      ) : null}
     </div>
   );
 }
@@ -195,6 +212,7 @@ type GithubConnectionStatusCardProps = {
   isDisconnecting: boolean;
   showConnectChrome: boolean;
   emptyHint: string;
+  canManage?: boolean;
 };
 
 function GithubConnectionStatusCard({
@@ -207,6 +225,7 @@ function GithubConnectionStatusCard({
   isDisconnecting,
   showConnectChrome,
   emptyHint,
+  canManage = true,
 }: Readonly<GithubConnectionStatusCardProps>) {
   if (isLoading) {
     return (
@@ -224,6 +243,7 @@ function GithubConnectionStatusCard({
         isConnecting={isConnecting}
         onConnect={onConnect}
         showConnectChrome={showConnectChrome}
+        canManage={canManage}
       />
     );
   }
@@ -236,6 +256,7 @@ function GithubConnectionStatusCard({
       onDisconnect={onDisconnect}
       isDisconnecting={isDisconnecting}
       showConnectChrome={showConnectChrome}
+      canManage={canManage}
     />
   );
 }
@@ -244,6 +265,7 @@ type GithubRepositoryPickerProps = {
   repositories: GithubRepoOption[];
   selectedRepoFullName: string;
   isLoading: boolean;
+  canManage?: boolean;
   // eslint-disable-next-line no-unused-vars
   onSelectRepo: (fullName: string) => void;
 };
@@ -252,6 +274,7 @@ function GithubRepositoryPicker({
   repositories,
   selectedRepoFullName,
   isLoading,
+  canManage = true,
   onSelectRepo,
 }: Readonly<GithubRepositoryPickerProps>) {
   if (repositories.length === 0) {
@@ -270,7 +293,7 @@ function GithubRepositoryPicker({
       <Select
         value={selectedRepoFullName || undefined}
         onValueChange={onSelectRepo}
-        disabled={isLoading}
+        disabled={isLoading || !canManage}
       >
         <SelectTrigger
           id="githubRepoSelect"
@@ -310,6 +333,7 @@ export type GithubConnectionFieldsProps = {
   emptyHint?: string;
   footerHint?: string;
   showConnectChrome?: boolean;
+  canManage?: boolean;
 };
 
 export function GithubConnectionFields({
@@ -329,7 +353,13 @@ export function GithubConnectionFields({
   emptyHint = 'Authorize GitHub once to link repositories, pull requests, and commit activity.',
   footerHint,
   showConnectChrome = true,
+  canManage = true,
 }: Readonly<GithubConnectionFieldsProps>) {
+  const isRestrictedAdminOwned = Boolean(
+    activeConnection?.is_admin_owned && !activeConnection?.can_manage
+  );
+  const isEffectivelyManageable = canManage && !isRestrictedAdminOwned;
+
   const { githubUrl, handleUrlChange } = useGithubRepoUrl({
     githubOwner,
     setGithubOwner,
@@ -366,6 +396,7 @@ export function GithubConnectionFields({
         isDisconnecting={isDisconnecting}
         showConnectChrome={showConnectChrome}
         emptyHint={emptyHint}
+        canManage={isEffectivelyManageable}
       />
 
       {/* Repository Picker (dropdown when repositories available) */}
@@ -374,6 +405,7 @@ export function GithubConnectionFields({
           repositories={repositories}
           selectedRepoFullName={selectedRepoFullName}
           isLoading={isLoadingRepositories}
+          canManage={isEffectivelyManageable}
           onSelectRepo={handleSelectRepo}
         />
       ) : null}
@@ -388,6 +420,7 @@ export function GithubConnectionFields({
           value={githubUrl}
           onChange={(e) => handleUrlChange(e.target.value)}
           placeholder="e.g. https://github.com/facebook/react"
+          disabled={!isEffectivelyManageable}
           className="bg-background/50 h-9 text-sm"
         />
         <p className="text-muted-foreground text-[11px]">

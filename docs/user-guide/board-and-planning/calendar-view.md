@@ -15,8 +15,9 @@ Plan and reschedule work by due date on a month grid.
 
 ## Toolbar
 
-**Left:** **Filter** (**Shift+F**), Clear filters (when active), and **Defaults**
-(sliders).
+**Left:** **Filter** (**Shift+F**) and applied-filter badges (when active). Use
+**Set as default** in the Project / Sprint filter panes to save workspace
+defaults.
 
 **Right:** Month navigation, **Today**, and **Unscheduled** (list icon — opens
 the unscheduled panel; no count badge).

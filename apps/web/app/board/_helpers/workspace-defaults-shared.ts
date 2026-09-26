@@ -1,7 +1,6 @@
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import {
   ALL_PROJECTS_ID,
-  clearBoardDefaults,
   readValidatedBoardDefaults,
 } from '@/app/board/_helpers/board-defaults-storage';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
@@ -37,17 +36,7 @@ export function loadValidatedBoardDefaults(
   projectIds: ReadonlySet<string>,
   sprintById: SprintLookup
 ) {
-  const { record, preference: validated } = readValidatedBoardDefaults(
-    userId,
-    projectIds,
-    sprintById
-  );
-
-  if (record?.preference && !validated) {
-    clearBoardDefaults(userId);
-  }
-
-  return { record, validated };
+  return readValidatedBoardDefaults(userId, projectIds, sprintById);
 }
 
 export function resolveOpenDefaultsPreference(
@@ -68,6 +57,28 @@ export function isAllProjectsPreference(
   preference: BoardDefaultsPreference
 ): boolean {
   return preference.projectId === ALL_PROJECTS_ID;
+}
+
+/** Resolve saved defaults to display labels (null preference → All projects). */
+export function resolveWorkspaceDefaultsAppliedSummary(
+  preference: BoardDefaultsPreference | null,
+  projects: readonly { readonly id: string; readonly name: string }[],
+  sprints: readonly {
+    readonly id: string;
+    readonly name: string;
+  }[]
+): { readonly projectName: string; readonly sprintName: string | null } {
+  if (!preference || isAllProjectsPreference(preference)) {
+    return { projectName: 'All projects', sprintName: null };
+  }
+  const projectName =
+    projects.find((project) => project.id === preference.projectId)?.name ??
+    preference.projectId;
+  const sprintName = preference.sprintId
+    ? (sprints.find((sprint) => sprint.id === preference.sprintId)?.name ??
+      preference.sprintId)
+    : null;
+  return { projectName, sprintName };
 }
 
 /**
@@ -99,40 +110,10 @@ export function projectFilterToPreference(
   };
 }
 
-export function resolveBaselineProjectFilter(
-  savedPreference: BoardDefaultsPreference | null,
-  suggestedDefaults: BoardDefaultsPreference | null
-): string {
-  if (savedPreference) {
-    return preferenceToProjectFilter(savedPreference);
-  }
-  if (suggestedDefaults) {
-    return preferenceToProjectFilter(suggestedDefaults);
-  }
-  return 'all';
-}
-
 export function preferenceToSprintFilter(
   preference: BoardDefaultsPreference | null | undefined
 ): string {
   return preference?.sprintId ?? '';
-}
-
-export function resolveBaselineSprintFilter(
-  savedPreference: BoardDefaultsPreference | null,
-  suggestedDefaults: BoardDefaultsPreference | null
-): string {
-  if (savedPreference) {
-    return preferenceToSprintFilter(savedPreference);
-  }
-  return preferenceToSprintFilter(suggestedDefaults);
-}
-
-export function preferenceMatchesProjectFilter(
-  preference: BoardDefaultsPreference,
-  projectFilter: string
-): boolean {
-  return preferenceToProjectFilter(preference) === projectFilter;
 }
 
 export function preferenceMatchesBoardFilters(
@@ -141,10 +122,62 @@ export function preferenceMatchesBoardFilters(
   sprintFilter: string
 ): boolean {
   if (isAllProjectsPreference(preference)) {
-    return !projectFilter && (preference.sprintId ?? '') === sprintFilter;
+    return (
+      (!projectFilter || projectFilter === 'all') &&
+      (preference.sprintId ?? '') === sprintFilter
+    );
   }
   return (
     preference.projectId === projectFilter &&
     (preference.sprintId ?? '') === sprintFilter
   );
+}
+
+/** Which filter pane owns a “Set as default” intent. */
+export type WorkspaceDefaultsSaveIntent = 'project' | 'sprint';
+
+/**
+ * Build a storage preference from filter draft + save intent.
+ * Returns null for All/All (caller clears localStorage).
+ */
+export function resolvePreferenceFromFilterDraft(options: {
+  readonly intent: WorkspaceDefaultsSaveIntent;
+  readonly projectValue: string;
+  readonly sprintValue: string;
+  readonly allValue?: string;
+  readonly sprints: readonly {
+    readonly id: string;
+    readonly project?: { readonly id: string } | null;
+  }[];
+}): BoardDefaultsPreference | null {
+  const allValue = options.allValue ?? 'all';
+  const projectIsAll =
+    !options.projectValue || options.projectValue === allValue;
+  const sprintIsAll = !options.sprintValue || options.sprintValue === allValue;
+
+  if (options.intent === 'project') {
+    if (projectIsAll) {
+      return null;
+    }
+    return { projectId: options.projectValue, sprintId: null };
+  }
+
+  if (sprintIsAll) {
+    if (projectIsAll) {
+      return null;
+    }
+    return { projectId: options.projectValue, sprintId: null };
+  }
+
+  const sprint = options.sprints.find(
+    (entry) => entry.id === options.sprintValue
+  );
+  const projectId =
+    sprint?.project?.id ?? (projectIsAll ? null : options.projectValue);
+
+  if (!projectId) {
+    return null;
+  }
+
+  return { projectId, sprintId: options.sprintValue };
 }

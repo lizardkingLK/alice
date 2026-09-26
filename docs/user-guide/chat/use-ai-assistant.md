@@ -9,20 +9,25 @@ Chat with Alice to inspect and create workspace data.
 ## Full-page chat
 
 1. Open **Alice** in the sidebar (`/chat`).
-2. Optionally pick a **model** from the header menu (when your admin configured
-   models). Open a **provider** (for example Gemini or SpaceXAI), then choose the
-   model in the submenu.
-3. Admins can use the **star** icon (left of the title area) to mark the selected
-   model as the workspace default — the star hides once that model is already
-   default. Use the **plus** icon anytime to open Settings and add or configure
-   models.
-4. Type a message in the composer and press **Enter** to send (**Shift+Enter**
+2. Optionally open **Agents** from the grid icon in the chat header to browse
+   and customize role agents (see [Alice agents](./agents.md)).
+3. Optionally pick a **model** from the **Cpu** icon in the chat header (when
+   your admin configured models). Open a **provider** (for example Gemini or
+   SpaceXAI), then choose the model in the submenu.
+4. Use the **plus** icon to start a **new chat**. Admins also get **Configure AI
+   models** from that plus menu (opens Settings). Admins can mark the selected
+   model as the workspace default from the model menu.
+5. Type a message in the composer and press **Enter** to send (**Shift+Enter**
    for a new line).
-5. Read Alice's reply on the left; your messages appear on the right.
+6. Read Alice's reply on the left; your messages appear on the right.
 
-Use **New Chat** to start a fresh conversation. Open the history sidebar to
-switch, **rename**, or delete past threads. When a conversation is open, the
-header breadcrumb shows **Dashboard → Chat →** that chat’s title.
+Use the header **plus** (or **New chat** in the admin menu) to start a fresh
+conversation. Open the history sidebar to switch, **rename**, or delete past
+threads. When a conversation is open, the header breadcrumb shows
+**Dashboard → Chat →** that chat’s title.
+
+If no models are connected, Alice asks you to **add an AI model** first. If
+models exist but you have no conversations yet, use **Create conversation**.
 
 ---
 

@@ -62,8 +62,8 @@ The dashboard shell breadcrumb on work-item detail is always project-scoped when
 
 Toolbar (same left / right split as other registries):
 
-- **Left:** Search → Filters → **Columns** (icon) → Defaults → Clear filters
-  when active
+- **Left:** Search → Filters → **Columns** (icon) → applied-filter badges
+  when active (inline; horizontal scroll when chips overflow, scrollbar hidden)
 - **Right:** **Flat / Hierarchy** segmented control (writes `view`, resets
   `page=1`) → Active / Archived **icon segment** tabs (`RegistryTabSwitcher`) →
   Add Work-Item
@@ -71,6 +71,9 @@ Toolbar (same left / right split as other registries):
   types on the current page; **Collapse all** hides nested rows
 - Filters (project, sprint, type, assignee, search) apply to the **root query**
   only; expanded children are not re-filtered so the tree stays coherent
+- **Project** / **Sprint** cell badges: Project always links to project details
+  (new tab). Sprint links to the summary report only for manager+; members get
+  a plain badge because `/sprints` is role-gated
 
 Chevron affordances follow `getAllowedChildType` (Epic / Story / Task). Issues are leaves.
 

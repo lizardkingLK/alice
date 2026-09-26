@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
@@ -7,14 +8,27 @@ import { ChatClient } from './_components/chat-client';
 import { getChatPageBootstrap } from './_services/chat.reads.server';
 import { listChatModelsForChat } from './_services/chat-models.reads.server';
 import { ChatPageSkeleton } from './_components/chat-page-skeleton';
+import {
+  CHAT_HISTORY_SIDEBAR_COOKIE_NAME,
+  parseChatHistorySidebarOpenCookie,
+} from './_helpers/chat-history-sidebar-storage';
 
-export const metadata = {
-  title: 'Alice',
-};
+async function readChatHistorySidebarDefaultOpen(): Promise<boolean> {
+  const store = await cookies();
+  return parseChatHistorySidebarOpenCookie(
+    store.get(CHAT_HISTORY_SIDEBAR_COOKIE_NAME)?.value
+  );
+}
 
 async function ChatPageData({
   conversationId,
-}: Readonly<{ conversationId?: string }>) {
+  agentId,
+  initialHistoryOpen,
+}: Readonly<{
+  conversationId?: string;
+  agentId?: string;
+  initialHistoryOpen: boolean;
+}>) {
   const [bootstrapResult, chatModels, dbUser] = await Promise.all([
     safeServerFetch(
       getChatPageBootstrap(conversationId),
@@ -33,12 +47,15 @@ async function ChatPageData({
 
   return (
     <ChatClient
-      key={conversationId ?? 'new'}
+      key={`${conversationId ?? 'new'}:${agentId ?? ''}`}
       initialConversations={bootstrap.conversations}
       initialConversationId={bootstrap.activeConversationId}
       initialMessages={bootstrap.messages}
       initialChatModels={chatModels}
+      initialAgentId={agentId}
+      initialHistoryOpen={initialHistoryOpen}
       currentUserName={dbUser?.name}
+      currentUserEmail={dbUser?.email}
       currentUserImageUrl={dbUser?.profile_picture}
       currentUserId={dbUser?.id}
       currentUserRole={dbUser?.role}
@@ -49,9 +66,15 @@ async function ChatPageData({
 export default async function ChatPage({
   searchParams,
 }: Readonly<{
-  searchParams: Promise<{ conversationId?: string }>;
+  searchParams: Promise<{
+    conversationId?: string;
+    agentId?: string;
+  }>;
 }>) {
-  const { conversationId } = await searchParams;
+  const resolved = await searchParams;
+  const conversationId = resolved.conversationId;
+  const agentId = resolved.agentId;
+  const initialHistoryOpen = await readChatHistorySidebarDefaultOpen();
 
   return (
     <DashboardShell
@@ -61,7 +84,11 @@ export default async function ChatPage({
       contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
       <Suspense fallback={<ChatPageSkeleton />}>
-        <ChatPageData conversationId={conversationId} />
+        <ChatPageData
+          conversationId={conversationId}
+          agentId={agentId}
+          initialHistoryOpen={initialHistoryOpen}
+        />
       </Suspense>
     </DashboardShell>
   );

@@ -88,7 +88,8 @@ export interface WorkItemFormProps {
   preferProvidedMembers?: boolean;
   /**
    * Pin form actions to the bottom (calendar day-sheet create). Scrolls fields
-   * above a sticky footer with equal top/bottom/right padding.
+   * above a sticky footer with equal top/bottom/right padding. Status alerts
+   * always sit in a tray above the footer (even when this is false).
    */
   stickyActions?: boolean;
 }
@@ -424,7 +425,8 @@ export function WorkItemForm({
       <div
         className={cn(
           'no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto',
-          stickyActions ? 'p-6' : 'pr-1'
+          // Horizontal padding keeps focus rings / borders from clipping under overflow.
+          stickyActions ? 'p-6 pb-4' : 'px-1 py-0.5'
         )}
       >
         {useModernLayout ? (
@@ -448,7 +450,15 @@ export function WorkItemForm({
             descriptionDefault={itemToEdit?.description ?? null}
           />
         )}
+      </div>
 
+      <div
+        className={cn(
+          'shrink-0 space-y-2',
+          stickyActions ? 'px-6' : undefined,
+          (state?.error || state?.success) && 'pb-2'
+        )}
+      >
         <FormStatusAlerts error={state?.error} success={state?.success} />
       </div>
 
@@ -456,7 +466,7 @@ export function WorkItemForm({
         className={cn(
           'shrink-0',
           stickyActions &&
-            'bg-muted/50 -mx-0 mt-auto mb-0 rounded-none border-t px-6 py-4'
+            'bg-muted/50 mx-0 mt-auto mb-0 rounded-none border-t px-6 py-4'
         )}
       >
         {onClose ? (

@@ -188,13 +188,17 @@ async function fillStep1Basics() {
   await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
 }
 
+import { clearGithubCache } from '@/app/projects/_services/github-connection-cache';
+
 describe('ProjectForm Component', () => {
   beforeEach(() => {
+    clearGithubCache();
     mockJiraApiFetch({ connections: [] });
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+    clearGithubCache();
   });
 
   it('renders owner dropdown filtered only to managers', async () => {

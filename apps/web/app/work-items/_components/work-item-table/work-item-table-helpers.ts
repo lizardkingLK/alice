@@ -72,8 +72,6 @@ export function hasActiveWorkItemFilters(options: {
   readonly searchParams: URLSearchParams;
   readonly isProjectLocked: boolean;
   readonly isAssigneeLocked: boolean;
-  readonly showWorkspaceDefaults: boolean;
-  readonly urlFiltersActive: boolean;
 }): boolean {
   return WORK_ITEM_FILTER_PARAMS.some((key) => {
     if (key === 'project' && options.isProjectLocked) {
@@ -82,14 +80,14 @@ export function hasActiveWorkItemFilters(options: {
     if (key === 'assignee' && options.isAssigneeLocked) {
       return false;
     }
-    if (
-      options.showWorkspaceDefaults &&
-      (key === 'project' || key === 'sprint') &&
-      !options.urlFiltersActive
-    ) {
+    const value = options.searchParams.get(key)?.trim();
+    if (!value) {
       return false;
     }
-    return Boolean(options.searchParams.get(key)?.trim());
+    if ((key === 'project' || key === 'sprint') && value === 'all') {
+      return false;
+    }
+    return true;
   });
 }
 

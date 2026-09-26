@@ -65,7 +65,12 @@ export function useOAuthPopupManager({
   }, [provider, providerName, onRefresh, setLoadError]);
 
   // After OAuth in another tab, reload connections when the user returns here.
+  // Only while an OAuth attempt is in progress — avoid refetching on every tab focus.
   useEffect(() => {
+    if (!isConnecting) {
+      return;
+    }
+
     const onVisibleOrFocus = () => {
       if (document.visibilityState === 'hidden') {
         return;
@@ -80,7 +85,7 @@ export function useOAuthPopupManager({
       window.removeEventListener('focus', onVisibleOrFocus);
       document.removeEventListener('visibilitychange', onVisibleOrFocus);
     };
-  }, [onRefresh]);
+  }, [isConnecting, onRefresh]);
 
   // Clear "connecting" when the OAuth tab is closed.
   useEffect(() => {

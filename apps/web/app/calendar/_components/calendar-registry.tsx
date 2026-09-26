@@ -2,12 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight, ListTodo, X } from '@repo/ui/lib/icons';
+import { ChevronLeft, ChevronRight, ListTodo } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
-import {
-  pickWorkspaceDefaultsDialogController,
-  WorkspaceDefaultsDialogHost,
-} from '@/app/board/_components/workspace-defaults-dialog-host';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
 import { applyProjectFilterToSearchParams } from '@/app/board/_services/board.defaults.shared';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
@@ -16,6 +12,8 @@ import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.ser
 import type { User } from '@/app/users/_services/users.mutations.client';
 import { toNameCase } from '@repo/types';
 import { ALL_OPTION } from '@/app/_shared/values';
+import { AppliedFilterBadges } from '@/components/applied-filter-badges';
+import { buildAppliedFilterBadgeItems } from '@/components/applied-filter-badges.model';
 import { type CalendarActionItem } from './calendar-client.types';
 import { applyCalendarFilterChange } from './calendar-filter-controls';
 import {
@@ -28,7 +26,6 @@ import {
   QUERY_FILTER_ALL_VALUE,
   useQueryFilter,
 } from '@/hooks/use-query-filter';
-import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import { CalendarDaySheet } from '@/app/calendar/_components/calendar-day-sheet';
 import { CalendarDueDateWarningDialog } from '@/app/calendar/_components/calendar-due-date-warning-dialog';
 import { CalendarMonthGrid } from '@/app/calendar/_components/calendar-month-grid';
@@ -60,10 +57,6 @@ interface CalendarRegistryProps {
   readonly sprintFilter: string;
   readonly allowAllFilters: boolean;
   readonly userId: string | null;
-  readonly suggestedDefaults: {
-    readonly projectId: string;
-    readonly sprintId: string | null;
-  } | null;
   readonly needsClientBootstrap: boolean;
 }
 
@@ -77,7 +70,6 @@ export function CalendarRegistry({
   sprintFilter,
   allowAllFilters,
   userId,
-  suggestedDefaults,
   needsClientBootstrap,
 }: Readonly<CalendarRegistryProps>) {
   const router = useRouter();
@@ -110,8 +102,8 @@ export function CalendarRegistry({
     sprintFilter,
     projects,
     sprints,
-    suggestedDefaults,
   });
+  const { saveDefaults } = boardDefaults;
 
   const accessibleProjectIds = useMemo(
     () => projects.map((project) => project.id),
@@ -322,6 +314,80 @@ export function CalendarRegistry({
     selectedType !== ALL_OPTION
   );
 
+  const appliedFilterItems = useMemo(
+    () =>
+      buildAppliedFilterBadgeItems({
+        project:
+          allowAllFilters &&
+          projectQuery.value &&
+          projectQuery.value !== QUERY_FILTER_ALL_VALUE
+            ? {
+                id: projectQuery.value,
+                name:
+                  projects.find((p) => p.id === projectQuery.value)?.name ??
+                  projectQuery.value,
+              }
+            : null,
+        sprint:
+          allowAllFilters &&
+          sprintQuery.value &&
+          sprintQuery.value !== QUERY_FILTER_ALL_VALUE
+            ? {
+                id: sprintQuery.value,
+                name:
+                  sprints.find((s) => s.id === sprintQuery.value)?.name ??
+                  sprintQuery.value,
+              }
+            : null,
+        assignee:
+          selectedAssigneeId !== ALL_OPTION
+            ? {
+                id: selectedAssigneeId,
+                name:
+                  users.find((user) => user.id === selectedAssigneeId)?.name ??
+                  selectedAssigneeId,
+              }
+            : null,
+        type:
+          selectedType !== ALL_OPTION
+            ? {
+                id: selectedType,
+                name: toNameCase(selectedType),
+              }
+            : null,
+      }),
+    [
+      allowAllFilters,
+      projectQuery.value,
+      projects,
+      selectedAssigneeId,
+      selectedType,
+      sprintQuery.value,
+      sprints,
+      users,
+    ]
+  );
+
+  const handleRemoveAppliedFilter = (chipIds: readonly string[]) => {
+    for (const chipId of chipIds) {
+      if (chipId === 'project' && allowAllFilters) {
+        handleProjectChange(QUERY_FILTER_ALL_VALUE);
+        continue;
+      }
+      if (chipId === 'sprint') {
+        handleSprintChange(QUERY_FILTER_ALL_VALUE);
+        continue;
+      }
+      if (chipId === 'assignee') {
+        handleAssigneeChange(ALL_OPTION);
+        continue;
+      }
+      if (chipId === 'type') {
+        handleTypeChange(ALL_OPTION);
+      }
+    }
+  };
+
   const handleClearCalendarFilters = () => {
     if (allowAllFilters) {
       handleProjectChange(QUERY_FILTER_ALL_VALUE);
@@ -460,7 +526,7 @@ export function CalendarRegistry({
   return (
     <div className="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
       <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2">
           <CalendarFilterDialog
             projects={projects}
             sprints={sprints}
@@ -472,26 +538,14 @@ export function CalendarRegistry({
             allowAllFilters={allowAllFilters}
             hasActiveFilters={hasActiveCalendarFilters}
             onApplyFilters={handleApplyCalendarFilters}
+            onSaveWorkspaceDefaults={userId ? saveDefaults : undefined}
           />
 
           {hasActiveCalendarFilters ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleClearCalendarFilters}
-              className="text-muted-foreground hover:text-foreground h-8 px-2.5 text-xs"
-            >
-              Clear filters
-              <X className="size-3.5" />
-            </Button>
-          ) : null}
-
-          {userId ? (
-            <WorkspaceDefaultsControls
-              onOpenDefaultsDialog={boardDefaults.openDefaultsDialog}
-              savedDefaultsApplied={boardDefaults.savedDefaultsApplied}
-              buttonClassName="size-8 shrink-0"
+            <AppliedFilterBadges
+              items={appliedFilterItems}
+              onRemove={handleRemoveAppliedFilter}
+              onClearAll={handleClearCalendarFilters}
             />
           ) : null}
         </div>
@@ -612,13 +666,6 @@ export function CalendarRegistry({
           );
           closeEditDialog();
         }}
-      />
-
-      <WorkspaceDefaultsDialogHost
-        enabled={Boolean(userId)}
-        projects={projects}
-        sprints={sprints}
-        defaults={pickWorkspaceDefaultsDialogController(boardDefaults)}
       />
 
       <CalendarDueDateWarningDialog

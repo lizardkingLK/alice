@@ -6,6 +6,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import type { VisibilityState } from '@tanstack/react-table';
 import WorkItemsTable from '@/app/work-items/_components/work-item-table/work-items-table';
 import { loadWorkItemChildrenAction } from '@/app/work-items/_components/work-item-registry/actions';
 import {
@@ -13,6 +14,7 @@ import {
   purgeWorkItem,
   restoreWorkItem,
 } from '@/app/work-items/_services/work-items.mutations.client';
+import { getWorkItemById } from '@/app/work-items/_services/work-items.reads.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { formatDate } from '@/app/_shared/utility';
 import {
@@ -24,8 +26,10 @@ import {
 import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
+import { sprintFactory } from '../factories/sprint.factory';
 import { assertDebouncedSearchRedirect } from '../helpers/assert-debounced-search';
 import { paginationFactory } from '../factories/pagination.factory';
+import { DEFAULT_WORK_ITEM_TABLE_COLUMN_VISIBILITY } from '@/app/work-items/_helpers/work-item-table-columns-storage';
 
 vi.mock('@/components/realtime/realtime-provider', () => ({
   useRealtime: () => ({ isUserOnline: () => false }),
@@ -71,6 +75,12 @@ vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
 
 vi.mock('@/app/work-items/_services/work-items.reads.client', () => ({
   countWorkItemDescendants: vi.fn().mockResolvedValue(0),
+  getWorkItemById: vi.fn(),
+  listParentCandidateWorkItems: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('@/app/work-items/_hooks/use-work-item-create-form-mode', () => ({
+  useWorkItemCreateFormMode: () => 'classic' as const,
 }));
 
 vi.mock('@/app/work-items/_components/work-item-form/work-item-form', () => ({
@@ -122,6 +132,9 @@ async function renderTable(
     listView: 'flat' | 'hierarchy';
     lockedProjectId: string;
     lockedAssigneeId: string;
+    sprints: ReturnType<typeof sprintFactory.build>[];
+    initialColumnVisibility: VisibilityState;
+    columnVisibilityHasCookie: boolean;
   }> = {}
 ) {
   const projects = projectFactory.buildList(1);
@@ -141,7 +154,7 @@ async function renderTable(
     <WorkItemsTable
       projects={projects}
       projectMembers={projectMembers}
-      sprints={[]}
+      sprints={overrides.sprints ?? []}
       initialWorkItems={
         overrides.initialWorkItems ?? workItemFactory.buildList(2)
       }
@@ -160,6 +173,8 @@ async function renderTable(
       currentUserId={overrides.currentUserId}
       currentUserRole={overrides.currentUserRole}
       tab={overrides.tab}
+      initialColumnVisibility={overrides.initialColumnVisibility}
+      columnVisibilityHasCookie={overrides.columnVisibilityHasCookie}
     />
   );
   await waitForColumnsHydrated();
@@ -198,6 +213,8 @@ describe('WorkItemsTable', () => {
     vi.mocked(archiveWorkItem).mockReset();
     vi.mocked(restoreWorkItem).mockReset();
     vi.mocked(purgeWorkItem).mockReset();
+    vi.mocked(getWorkItemById).mockReset();
+    vi.mocked(getWorkItemById).mockResolvedValue(workItemFactory.build());
   });
 
   it('renders work item rows with core columns', async () => {
@@ -518,6 +535,7 @@ describe('WorkItemsTable', () => {
   it('opens create and edit dialogs with the mocked form', async () => {
     // Arrange
     const item = workItemFactory.build({ title: 'Editable item' });
+    vi.mocked(getWorkItemById).mockResolvedValue(item);
     await renderTable({
       initialWorkItems: [item],
       totalCount: 1,
@@ -527,20 +545,28 @@ describe('WorkItemsTable', () => {
     // Act — create
     fireEvent.click(screen.getByRole('button', { name: /Add Work-Item/i }));
 
-    // Assert — create
-    expect(screen.getByText(/Create Work Item/i)).toBeInTheDocument();
-    expect(screen.getByTestId('mock-work-item-form')).toHaveTextContent(
+    // Assert — create (dialog portal + detail-ready can be async)
+    expect(await screen.findByText(/Create Work Item/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('mock-work-item-form')).toHaveTextContent(
       'Create'
     );
 
     // Act — close then edit
     fireEvent.click(screen.getByRole('button', { name: /Close Form/i }));
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('mock-work-item-form')
+      ).not.toBeInTheDocument();
+    });
     fireEvent.click(screen.getByRole('button', { name: /Open menu/i }));
     fireEvent.click(screen.getByRole('button', { name: /Edit/i }));
 
-    // Assert — edit
-    expect(screen.getByText(/Edit Work Item/i)).toBeInTheDocument();
-    expect(screen.getByTestId('mock-work-item-form')).toHaveTextContent(
+    // Assert — edit (dialog fetches full detail including description)
+    await waitFor(() => {
+      expect(getWorkItemById).toHaveBeenCalledWith(item.id);
+    });
+    expect(await screen.findByText(/Edit Work Item/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('mock-work-item-form')).toHaveTextContent(
       'Editable item'
     );
 
@@ -549,7 +575,11 @@ describe('WorkItemsTable', () => {
 
     // Assert
     expect(mockRefresh).toHaveBeenCalled();
-    expect(screen.queryByTestId('mock-work-item-form')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('mock-work-item-form')
+      ).not.toBeInTheDocument();
+    });
   });
 
   it('shows clear filters when URL has filters and clears them', async () => {
@@ -905,6 +935,63 @@ describe('WorkItemsTable', () => {
 
     await waitFor(() => {
       expect(purgeWorkItem).toHaveBeenCalledWith('wi-purge-child');
+    });
+  });
+
+  describe('Project and Sprint relation badges', () => {
+    const sprint = sprintFactory.build({
+      id: 'sprint-alpha',
+      name: 'Sprint Alpha',
+    });
+    const itemWithSprint = workItemFactory.build({
+      id: 'wi-sprint-link',
+      title: 'Item with sprint',
+      sprint_id: sprint.id,
+      project_id: 'proj-1',
+    });
+    const columnsWithRelations: VisibilityState = {
+      ...DEFAULT_WORK_ITEM_TABLE_COLUMN_VISIBILITY,
+      project: true,
+      sprint: true,
+    };
+
+    it('links Sprint badge to summary report for managers', async () => {
+      await renderTable({
+        initialWorkItems: [itemWithSprint],
+        sprints: [sprint],
+        currentUserRole: 'manager',
+        initialColumnVisibility: columnsWithRelations,
+        columnVisibilityHasCookie: true,
+        totalCount: 1,
+        totalPages: 1,
+      });
+
+      const sprintLink = screen.getByRole('link', {
+        name: /Open Sprint Alpha in a new tab/i,
+      });
+      expect(sprintLink).toHaveAttribute(
+        'href',
+        '/sprints/sprint-alpha/report?from=work-items'
+      );
+    });
+
+    it('does not link Sprint badge for members', async () => {
+      await renderTable({
+        initialWorkItems: [itemWithSprint],
+        sprints: [sprint],
+        currentUserRole: 'member',
+        initialColumnVisibility: columnsWithRelations,
+        columnVisibilityHasCookie: true,
+        totalCount: 1,
+        totalPages: 1,
+      });
+
+      expect(screen.getByText('Sprint Alpha')).toBeInTheDocument();
+      expect(
+        screen.queryByRole('link', {
+          name: /Open Sprint Alpha in a new tab/i,
+        })
+      ).not.toBeInTheDocument();
     });
   });
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Label } from '@repo/ui/components/ui/label';
 import {
@@ -12,6 +12,7 @@ import { JiraConnectionFields } from '@/app/projects/_components/jira-connection
 import { useGithubConnectionPicker } from '@/app/projects/_hooks/use-github-connection-picker';
 import { deleteGithubConnection } from '@/app/projects/_services/projects.github.mutations.client';
 import { GithubConnectionFields } from '@/app/projects/_components/github-connection-fields';
+import { parseGithubRepoPath } from '@/lib/projects/github-repo-path';
 
 function IntegrationProviderOption({
   id,
@@ -181,6 +182,25 @@ export function Step3SourceControl({
 
   const [isDisconnecting, setIsDisconnecting] = useState(false);
 
+  useEffect(() => {
+    if (activeConnection?.authorized_repo && !githubOwner && !githubRepoName) {
+      const parts = parseGithubRepoPath(activeConnection.authorized_repo);
+      setGithubOwner(parts.owner);
+      setGithubRepoName(parts.repoName);
+    }
+  }, [
+    activeConnection,
+    githubOwner,
+    githubRepoName,
+    setGithubOwner,
+    setGithubRepoName,
+  ]);
+
+  const isRestrictedAdminOwned = Boolean(
+    activeConnection?.is_admin_owned && !activeConnection?.can_manage
+  );
+  const canManage = !isRestrictedAdminOwned;
+
   const handleDisconnect = async (connectionId: string) => {
     setIsDisconnecting(true);
     try {
@@ -232,6 +252,7 @@ export function Step3SourceControl({
                 setGithubRepoName={setGithubRepoName}
                 onDisconnect={handleDisconnect}
                 isDisconnecting={isDisconnecting}
+                canManage={canManage}
               />
             </div>
           </IntegrationProviderOption>

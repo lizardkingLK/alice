@@ -94,6 +94,7 @@ export default function WorkItemDetails({
   initialAttachments = [],
   initialWorkLogs = [],
   currentUserId,
+  currentUserRole,
   projectMembers = [],
   discussionWorkItems: discussionWorkItemsProp = [],
 }: Readonly<{
@@ -111,6 +112,7 @@ export default function WorkItemDetails({
   initialAttachments?: AttachmentWithUploader[];
   initialWorkLogs?: WorkItemWorkLog[];
   currentUserId?: string;
+  currentUserRole?: string | null;
   projectMembers?: readonly WorkItemPatchMemberOption[];
   discussionWorkItems?: CommentWorkItemOption[];
 }>) {
@@ -631,6 +633,7 @@ export default function WorkItemDetails({
           onWorkItemPatched={handleWorkItemPatched}
           onLogWorkClick={() => setActivityTab('work-log')}
           readOnly={isRecordReadOnly}
+          currentUserRole={currentUserRole}
         />
       </div>
 

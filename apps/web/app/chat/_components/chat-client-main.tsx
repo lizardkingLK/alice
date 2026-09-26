@@ -5,6 +5,7 @@ import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import type { ChatMessage } from './chat-client.types';
 import ChatHeroSection from '@/app/chat/_components/chat-client-hero';
 import ChatClientThread from '@/app/chat/_components/chat-client-thread';
+import type { ChatAssistantIdentity } from '@/app/chat/_helpers/use-bound-chat-agent';
 
 type ChatClientMainProps = {
   readonly isPage: boolean;
@@ -16,6 +17,7 @@ type ChatClientMainProps = {
   readonly error: string | null;
   readonly currentUserName?: string | null;
   readonly currentUserImageUrl?: string | null;
+  readonly assistantIdentity?: ChatAssistantIdentity | null;
   readonly messagesEndRef: React.RefObject<HTMLDivElement | null>;
   // eslint-disable-next-line no-unused-vars
   readonly onSendMessage: (text: string) => void;
@@ -31,6 +33,7 @@ export default function ChatClientMain({
   error,
   currentUserName,
   currentUserImageUrl,
+  assistantIdentity = null,
   messagesEndRef,
   onSendMessage,
 }: Readonly<ChatClientMainProps>) {
@@ -61,6 +64,7 @@ export default function ChatClientMain({
         error={error}
         currentUserName={currentUserName}
         currentUserImageUrl={currentUserImageUrl}
+        assistantIdentity={assistantIdentity}
         messagesEndRef={messagesEndRef}
       />
     </ScrollArea>

@@ -1,7 +1,10 @@
 'use client';
 
-import { CheckCircle2, CircleDot, Layers, Plus, X } from '@repo/ui/lib/icons';
-import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
+import { CheckCircle2, CircleDot, Layers, Plus } from '@repo/ui/lib/icons';
+import {
+  AppliedFilterBadges,
+  type AppliedFilterBadgeItem,
+} from '@/components/applied-filter-badges';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   DropdownMenu,
@@ -15,6 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
+import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import {
   BacklogFilterDialog,
   type BacklogFilterDraft,
@@ -52,10 +56,12 @@ type BacklogToolbarProps = {
   readonly priorityFilter: string;
   readonly onPriorityFilterChange: (value: string) => void;
   readonly isFiltersActive: boolean;
+  readonly appliedFilterItems: readonly AppliedFilterBadgeItem[];
+  readonly onRemoveAppliedFilter: (ids: readonly string[]) => void;
   readonly onClearFilters: () => void;
-  readonly showDefaultsControls: boolean;
-  readonly savedDefaultsApplied: boolean;
-  readonly onOpenDefaultsDialog: () => void;
+  readonly onSaveWorkspaceDefaults?: (
+    preference: BoardDefaultsPreference | null
+  ) => void;
 };
 /* eslint-enable no-unused-vars */
 
@@ -86,10 +92,10 @@ export function BacklogToolbar({
   priorityFilter,
   onPriorityFilterChange,
   isFiltersActive,
+  appliedFilterItems,
+  onRemoveAppliedFilter,
   onClearFilters,
-  showDefaultsControls,
-  savedDefaultsApplied,
-  onOpenDefaultsDialog,
+  onSaveWorkspaceDefaults,
 }: Readonly<BacklogToolbarProps>) {
   const handleApplyFilters = (draft: BacklogFilterDraft) => {
     const nextSprint =
@@ -102,12 +108,12 @@ export function BacklogToolbar({
 
   return (
     <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex min-w-0 flex-wrap items-center gap-3">
+      <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-3">
         <SearchInput
           value={searchQuery}
           onValueChange={onSearchChange}
           placeholder="Search backlog items..."
-          className="sm:w-64"
+          className="shrink-0 sm:w-64"
         />
 
         <BacklogFilterDialog
@@ -121,30 +127,19 @@ export function BacklogToolbar({
           activeTab={activeTab}
           hasActiveFilters={isFiltersActive}
           onApplyFilters={handleApplyFilters}
+          onSaveWorkspaceDefaults={onSaveWorkspaceDefaults}
         />
 
-        {showDefaultsControls ? (
-          <WorkspaceDefaultsControls
-            onOpenDefaultsDialog={onOpenDefaultsDialog}
-            savedDefaultsApplied={savedDefaultsApplied}
-          />
-        ) : null}
-
         {isFiltersActive ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onClearFilters}
-            className="text-muted-foreground hover:text-foreground h-9 cursor-pointer px-3 text-xs"
-          >
-            Clear filters
-            <X className="size-3.5" />
-          </Button>
+          <AppliedFilterBadges
+            items={appliedFilterItems}
+            onRemove={onRemoveAppliedFilter}
+            onClearAll={onClearFilters}
+          />
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 self-start sm:self-auto">
         <BacklogLayoutMenu
           preferredLayout={preferredLayout}
           onLayoutChange={onLayoutChange}

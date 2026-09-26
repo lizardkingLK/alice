@@ -101,11 +101,41 @@ describe('BacklogFilterDialog', () => {
     // Switch to Sprint tab
     fireEvent.click(screen.getByRole('button', { name: /^Sprint/ }));
 
-    // Should show All sprints, Sprint 1 Platform, Sprint 2 Platform, Sprint 1 EasyPass
+    // Should show All sprints, project group headers, and sprint names
     expect(screen.getByText('All sprints')).toBeDefined();
+    expect(screen.getByText('Alice Platform')).toBeDefined();
+    expect(screen.getByText('EasyPass')).toBeDefined();
     expect(screen.getByText('Sprint 1 Platform')).toBeDefined();
     expect(screen.getByText('Sprint 2 Platform')).toBeDefined();
     expect(screen.getByText('Sprint 1 EasyPass')).toBeDefined();
+  });
+
+  it('groups sprints by project and hides non-matching groups when searching', () => {
+    const onApplyFilters = vi.fn();
+    render(
+      <BacklogFilterDialog
+        projects={projects}
+        sprints={sprints}
+        projectMembers={projectMembers}
+        projectFilter="all"
+        sprintFilter=""
+        assigneeFilter="all"
+        priorityFilter="all"
+        activeTab="active"
+        hasActiveFilters={false}
+        onApplyFilters={onApplyFilters}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /open filters/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Sprint/ }));
+
+    const search = screen.getByPlaceholderText('Search sprints');
+    fireEvent.change(search, { target: { value: 'EasyPass' } });
+
+    expect(screen.getByText('Sprint 1 EasyPass')).toBeDefined();
+    expect(screen.queryByText('Sprint 1 Platform')).toBeNull();
+    expect(screen.queryByText('Sprint 2 Platform')).toBeNull();
   });
 
   it('dynamically filters sprint options when a project is selected', () => {

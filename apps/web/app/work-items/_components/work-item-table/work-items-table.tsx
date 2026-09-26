@@ -33,11 +33,20 @@ import {
 import { WorkItemsTableToolbar } from '@/app/work-items/_components/work-item-table/work-items-table-toolbar';
 import { WorkItemsSearchResultsPanel } from '@/app/work-items/_components/work-item-registry/work-items-search-results-panel';
 import type { DisplayRow } from '@/app/work-items/_components/work-item-table/work-items-table-types';
-import {
-  pickWorkspaceDefaultsDialogController,
-  WorkspaceDefaultsDialogHost,
-} from '@/app/board/_components/workspace-defaults-dialog-host';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
+import { formatLabelWithSpace } from '@/app/_shared/utility';
+import {
+  buildAppliedFilterBadgeItems,
+  planAppliedFilterRemovals,
+} from '@/components/applied-filter-badges.model';
+import {
+  applyQueryFilterParam,
+  useQueryFilter,
+} from '@/hooks/use-query-filter';
+import {
+  parseWorkItemLabelsFilterParam,
+  serializeWorkItemLabelsFilter,
+} from '@repo/types';
 import {
   DEFAULT_WORK_ITEM_TABLE_COLUMN_VISIBILITY,
   normalizeWorkItemTableColumnVisibility,
@@ -50,10 +59,9 @@ import { DismissibleError } from '@/components/dismissible-error';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
-import { useQueryFilter } from '@/hooks/use-query-filter';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { serializeWorkItemLabelsFilter } from '@repo/types';
 import type { WorkItemListView } from '@/lib/search-params';
+import { isAppRole, isManagerOrAdmin } from '@/lib/rbac';
 
 /** Match DialogContent `duration-200` so edit UI doesn't flash to create while closing. */
 const DIALOG_CLOSE_MS = 200;
@@ -82,7 +90,6 @@ export default function WorkItemsTable({
   currentUserId,
   currentUserRole = 'member',
   tab = 'active',
-  suggestedDefaults = null,
   needsClientBootstrap = false,
   initialColumnVisibility,
   columnVisibilityHasCookie = true,
@@ -93,6 +100,8 @@ export default function WorkItemsTable({
   const searchParams = useSearchParams();
   const isActiveView = tab === 'active';
   const isAdmin = currentUserRole === 'admin';
+  const canLinkSprintReport =
+    isAppRole(currentUserRole) && isManagerOrAdmin(currentUserRole);
   const isAssigneeLocked = Boolean(lockedAssigneeId);
   const isProjectLocked = Boolean(lockedProjectId);
   const hideLifecycleTabs = currentUserRole === 'member' && !isAssigneeLocked;
@@ -169,14 +178,8 @@ export default function WorkItemsTable({
     sprintFilter,
     projects,
     sprints,
-    suggestedDefaults,
   });
-  const {
-    savedDefaultsApplied,
-    urlFiltersActive,
-    openDefaultsDialog,
-    resetUrlFilters,
-  } = boardDefaults;
+  const { saveDefaults } = boardDefaults;
 
   const listDescription = resolveWorkItemsListDescription({
     isAssigneeLocked,
@@ -235,9 +238,193 @@ export default function WorkItemsTable({
     searchParams,
     isProjectLocked,
     isAssigneeLocked,
-    showWorkspaceDefaults,
-    urlFiltersActive,
   });
+
+  const activeLabels = useMemo(
+    () => parseWorkItemLabelsFilterParam(labelsQuery.value) ?? [],
+    [labelsQuery.value]
+  );
+
+  const appliedFilterItems = useMemo(() => {
+    const projectActive =
+      !isProjectLocked &&
+      Boolean(projectQuery.value && projectQuery.value !== projectAllValue);
+    const sprintActive = Boolean(
+      sprintQuery.value && sprintQuery.value !== sprintQuery.allValue
+    );
+
+    return buildAppliedFilterBadgeItems({
+      search: searchParams.get('search')?.trim() || null,
+      project: projectActive
+        ? {
+            id: projectQuery.value,
+            name:
+              projects.find((project) => project.id === projectQuery.value)
+                ?.name ?? projectQuery.value,
+          }
+        : null,
+      sprint: sprintActive
+        ? {
+            id: sprintQuery.value,
+            name:
+              sprints.find((sprint) => sprint.id === sprintQuery.value)?.name ??
+              sprintQuery.value,
+          }
+        : null,
+      type:
+        typeQuery.value && typeQuery.value !== typeQuery.allValue
+          ? {
+              id: typeQuery.value,
+              name: formatLabelWithSpace(typeQuery.value),
+            }
+          : null,
+      assignee:
+        !isAssigneeLocked &&
+        assigneeQuery.value &&
+        assigneeQuery.value !== assigneeQuery.allValue
+          ? {
+              id: assigneeQuery.value,
+              name:
+                projectMembers.find(
+                  (member) => member.id === assigneeQuery.value
+                )?.name ?? assigneeQuery.value,
+            }
+          : null,
+      labels: activeLabels,
+    });
+  }, [
+    activeLabels,
+    assigneeQuery.allValue,
+    assigneeQuery.value,
+    isAssigneeLocked,
+    isProjectLocked,
+    projectAllValue,
+    projectMembers,
+    projectQuery.value,
+    projects,
+    searchParams,
+    sprintQuery.allValue,
+    sprintQuery.value,
+    sprints,
+    typeQuery.allValue,
+    typeQuery.value,
+  ]);
+
+  const pushWorkItemParams = useCallback(
+    (params: URLSearchParams) => {
+      params.set('page', '1');
+      const query = params.toString();
+      router.push(query ? `${pathname}?${query}` : pathname);
+    },
+    [pathname, router]
+  );
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    const params = new URLSearchParams(searchParams.toString());
+    if (!params.has('search')) {
+      return;
+    }
+    params.delete('search');
+    pushWorkItemParams(params);
+  }, [pushWorkItemParams, searchParams, setSearchQuery]);
+
+  const handleRemoveAppliedFilter = useCallback(
+    (chipIds: readonly string[]) => {
+      if (chipIds.length === 0) {
+        return;
+      }
+
+      const plan = planAppliedFilterRemovals(chipIds, {
+        canClearAssignee: !isAssigneeLocked,
+        canClearProject: !isProjectLocked,
+      });
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (plan.labelsToDrop.size > 0) {
+        const nextLabels = activeLabels.filter(
+          (label) => !plan.labelsToDrop.has(label)
+        );
+        const encoded = serializeWorkItemLabelsFilter(nextLabels);
+        labelsQuery.setValue(encoded || labelsQuery.allValue);
+        applyQueryFilterParam(
+          params,
+          'labels',
+          encoded || labelsQuery.allValue,
+          labelsQuery.allValue
+        );
+      }
+
+      if (plan.clearSearch) {
+        setSearchQuery('');
+        params.delete('search');
+      }
+
+      if (plan.clearType) {
+        typeQuery.setValue(typeQuery.allValue);
+        applyQueryFilterParam(
+          params,
+          'type',
+          typeQuery.allValue,
+          typeQuery.allValue
+        );
+      }
+
+      if (plan.clearAssignee) {
+        assigneeQuery.setValue(assigneeQuery.allValue);
+        applyQueryFilterParam(
+          params,
+          'assignee',
+          assigneeQuery.allValue,
+          assigneeQuery.allValue
+        );
+      }
+
+      if (plan.clearProject) {
+        projectQuery.setValue(projectAllValue);
+        applyQueryFilterParam(
+          params,
+          'project',
+          projectAllValue,
+          projectAllValue
+        );
+        setSprintFilterValue(sprintQuery.allValue);
+        applyQueryFilterParam(
+          params,
+          'sprint',
+          sprintQuery.allValue,
+          sprintQuery.allValue
+        );
+      }
+
+      if (plan.clearSprint) {
+        sprintQuery.setValue(sprintQuery.allValue);
+        applyQueryFilterParam(
+          params,
+          'sprint',
+          sprintQuery.allValue,
+          sprintQuery.allValue
+        );
+      }
+
+      pushWorkItemParams(params);
+    },
+    [
+      activeLabels,
+      assigneeQuery,
+      isAssigneeLocked,
+      isProjectLocked,
+      labelsQuery,
+      projectAllValue,
+      projectQuery,
+      pushWorkItemParams,
+      searchParams,
+      setSearchQuery,
+      setSprintFilterValue,
+      sprintQuery,
+      typeQuery,
+    ]
+  );
 
   const handleClearFilters = () => {
     setSearchQuery('');
@@ -246,10 +433,6 @@ export default function WorkItemsTable({
     typeQuery.setValue(typeQuery.allValue);
     assigneeQuery.setValue(assigneeQuery.allValue);
     labelsQuery.setValue(labelsQuery.allValue);
-    if (showWorkspaceDefaults) {
-      resetUrlFilters();
-      return;
-    }
     const next = buildClearedWorkItemFilterParams({
       searchParams,
       listView,
@@ -259,18 +442,6 @@ export default function WorkItemsTable({
     const query = next.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
   };
-
-  const handleClearSearch = useCallback(() => {
-    setSearchQuery('');
-    const params = new URLSearchParams(searchParams.toString());
-    if (!params.has('search')) {
-      return;
-    }
-    params.delete('search');
-    params.set('page', '1');
-    const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname);
-  }, [pathname, router, searchParams, setSearchQuery]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<DbWorkItem | null>(null);
@@ -381,6 +552,7 @@ export default function WorkItemsTable({
         isHierarchy,
         currentUserId,
         isAdmin,
+        canLinkSprintReport,
         isActiveView,
         isPending: isBusy,
         projects,
@@ -392,6 +564,7 @@ export default function WorkItemsTable({
         onPurge: lifecycle.handlePurgeRequest,
       }),
     [
+      canLinkSprintReport,
       currentUserId,
       lifecycle.handleArchiveRequest,
       lifecycle.handlePurgeRequest,
@@ -445,10 +618,12 @@ export default function WorkItemsTable({
         columnVisibility={columnVisibility}
         onApplyColumnVisibility={handleApplyColumnVisibility}
         columnsHydrated={columnsHydrated}
-        showWorkspaceDefaults={showWorkspaceDefaults}
-        onOpenDefaultsDialog={openDefaultsDialog}
-        savedDefaultsApplied={savedDefaultsApplied}
+        onSaveWorkspaceDefaults={
+          showWorkspaceDefaults ? saveDefaults : undefined
+        }
         hasActiveFilters={hasActiveFilters}
+        appliedFilterItems={appliedFilterItems}
+        onRemoveAppliedFilter={handleRemoveAppliedFilter}
         onClearFilters={handleClearFilters}
         onCreate={openCreateDialog}
         hideCreate={!isActiveView}
@@ -505,13 +680,6 @@ export default function WorkItemsTable({
         lockAssigneeId={lockedAssigneeId}
         onClose={() => handleDialogChange(false)}
         onSuccess={() => handleUpdated()}
-      />
-
-      <WorkspaceDefaultsDialogHost
-        enabled={showWorkspaceDefaults}
-        projects={projects}
-        sprints={sprints}
-        defaults={pickWorkspaceDefaultsDialogController(boardDefaults)}
       />
 
       {lifecycle.itemToConfirm ? (

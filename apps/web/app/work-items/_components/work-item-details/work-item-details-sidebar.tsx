@@ -19,12 +19,17 @@ import {
   patchWorkItemDynamicFields,
 } from '@/app/work-items/_helpers/work-item-dynamic-fields';
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import { useRouter } from 'next/navigation';
 import {
   parseWorkItemLabels,
   type WorkItemStatus,
   type WorkItemWorkLog,
   ProjectFieldsConfigSchema,
+  WorkItemGithubConfigStatusEnum,
+  WORK_ITEM_GITHUB_STATUS_MESSAGES,
+  type WorkItemGithubConfigStatus,
 } from '@repo/types';
+import { isManagerOrAdmin, type AppRole } from '@/lib/rbac';
 import {
   Avatar,
   AvatarFallback,
@@ -410,6 +415,7 @@ export default function WorkItemSidebar({
   onWorkItemPatched,
   onLogWorkClick,
   readOnly = false,
+  currentUserRole,
 }: Readonly<{
   workItem: DbWorkItem;
   childStatuses?: readonly WorkItemStatus[];
@@ -425,6 +431,7 @@ export default function WorkItemSidebar({
   onWorkItemPatched: (updated: Partial<DbWorkItem>) => void;
   onLogWorkClick?: () => void;
   readOnly?: boolean;
+  currentUserRole?: string | null;
 }>) {
   const [activeField, setActiveField] = useState<
     'assignee_id' | 'reporter_id' | 'labels' | null
@@ -596,7 +603,11 @@ export default function WorkItemSidebar({
         onOpenChange={setDevelopmentOpen}
         collapsedHint="Branches, PRs, builds, releases…"
       >
-        <DevelopmentSection workItem={workItem} readOnly={readOnly} />
+        <DevelopmentSection
+          workItem={workItem}
+          readOnly={readOnly}
+          currentUserRole={currentUserRole}
+        />
 
         <DetailRow label="Releases">
           <div className="space-y-2 text-sm">
@@ -973,12 +984,21 @@ function PRsRow({
 function DevelopmentSection({
   workItem,
   readOnly = false,
+  currentUserRole,
 }: Readonly<{
   workItem: DbWorkItem;
   readOnly?: boolean;
+  currentUserRole?: string | null;
 }>) {
+  const router = useRouter();
   const [githubLinks, setGithubLinks] = useState<LinkedGithubPR[]>([]);
   const [githubRepo, setGithubRepo] = useState<string | null>(null);
+  const [githubStatus, setGithubStatus] = useState<WorkItemGithubConfigStatus>(
+    WorkItemGithubConfigStatusEnum.connected
+  );
+  const [githubStatusMessage, setGithubStatusMessage] = useState<string | null>(
+    null
+  );
   const [loadingGithub, setLoadingGithub] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [prUrlInput, setPrUrlInput] = useState('');
@@ -995,8 +1015,18 @@ function DevelopmentSection({
       const data = await getLinkedPRs(workItem.id);
       setGithubLinks(data.prs);
       setGithubRepo(data.githubRepo);
+      if (data.status) {
+        setGithubStatus(data.status);
+      } else if (!data.githubRepo) {
+        setGithubStatus(WorkItemGithubConfigStatusEnum.missing);
+      } else {
+        setGithubStatus(WorkItemGithubConfigStatusEnum.connected);
+      }
+      setGithubStatusMessage(data.message || null);
     } catch (e) {
       console.error('Failed to load GitHub PRs:', e);
+      setGithubStatus(WorkItemGithubConfigStatusEnum.invalid);
+      setGithubStatusMessage('Failed to load GitHub configuration.');
     } finally {
       setLoadingGithub(false);
     }
@@ -1093,31 +1123,58 @@ function DevelopmentSection({
 
   let content: React.ReactNode;
 
+  const isConfigIssue =
+    githubStatus !== WorkItemGithubConfigStatusEnum.connected || !githubRepo;
+  const canUpdateConnection =
+    !readOnly && isManagerOrAdmin(currentUserRole as AppRole);
+  const displayMessage =
+    githubStatusMessage ||
+    (githubStatus ? WORK_ITEM_GITHUB_STATUS_MESSAGES[githubStatus] : null) ||
+    WORK_ITEM_GITHUB_STATUS_MESSAGES[WorkItemGithubConfigStatusEnum.missing];
+
+  let updateConnectionButton: React.ReactNode = null;
+  if (canUpdateConnection) {
+    updateConnectionButton = (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          router.push(`/projects/${workItem.project_id}?tab=integrations`);
+        }}
+        className="h-8 cursor-pointer px-4 text-xs"
+      >
+        Update Connection
+      </Button>
+    );
+  } else if (!readOnly) {
+    updateConnectionButton = (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled
+        title="Only project Admins and Managers can update GitHub connection"
+        className="h-8 cursor-not-allowed px-4 text-xs opacity-50"
+      >
+        Update Connection
+      </Button>
+    );
+  }
+
   if (loadingGithub) {
     content = (
       <div className="flex justify-center py-4">
         <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
       </div>
     );
-  } else if (!githubRepo) {
+  } else if (isConfigIssue) {
     content = (
       <div className="bg-muted/5 my-1 flex flex-col items-center justify-center space-y-2.5 rounded-md border border-dashed p-4 text-center">
         <p className="text-muted-foreground text-xs font-medium">
-          GitHub Integration is not configured for this project.
+          {displayMessage}
         </p>
-        {!readOnly && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              window.location.href = `/projects/${workItem.project_id}?tab=settings`;
-            }}
-            className="h-8 cursor-pointer px-4 text-xs"
-          >
-            Configure the GitHub Repository
-          </Button>
-        )}
+        {updateConnectionButton}
       </div>
     );
   } else {

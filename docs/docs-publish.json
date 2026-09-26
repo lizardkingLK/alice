@@ -296,8 +296,12 @@
           "order": 2
         },
         {
-          "path": "user-guide/chat/user-test-guide.md",
+          "path": "user-guide/chat/agents.md",
           "order": 3
+        },
+        {
+          "path": "user-guide/chat/user-test-guide.md",
+          "order": 4
         }
       ]
     },

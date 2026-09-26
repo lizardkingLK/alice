@@ -186,6 +186,43 @@ export function IntegrationDetailDialog({
     }
   };
 
+  let detailSection: React.ReactNode = null;
+  if (canConfigure) {
+    detailSection = (
+      <IntegrationConfigForm
+        provider={provider}
+        activeRows={activeRows}
+        selectedRowId={selectedRowId}
+        selectedRow={selectedRow}
+        displayLabel={displayLabel}
+        modelId={modelId}
+        apiKey={apiKey}
+        isDefault={isDefault}
+        feedback={feedback}
+        onSelectRow={handleSelectRow}
+        onAddModel={handleAddModel}
+        onDisplayLabelChange={setDisplayLabel}
+        onModelIdChange={setModelId}
+        onApiKeyChange={setApiKey}
+        onIsDefaultChange={setIsDefault}
+        onApplySuggestedModel={handleApplySuggestedModel}
+      />
+    );
+  }
+
+  let actionButtons: React.ReactNode;
+  if (canConfigure) {
+    actionButtons = (
+      <IntegrationSaveButton
+        isSaving={isSaving}
+        isEditingExistingRow={Boolean(selectedRow)}
+        onSave={() => void handleSave()}
+      />
+    );
+  } else {
+    actionButtons = <IntegrationPlannedActions />;
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
@@ -205,40 +242,11 @@ export function IntegrationDetailDialog({
           <IntegrationHighlightsList highlights={integration.highlights} />
         ) : null}
 
-        {canConfigure ? (
-          <IntegrationConfigForm
-            provider={provider}
-            activeRows={activeRows}
-            selectedRowId={selectedRowId}
-            selectedRow={selectedRow}
-            displayLabel={displayLabel}
-            modelId={modelId}
-            apiKey={apiKey}
-            isDefault={isDefault}
-            feedback={feedback}
-            onSelectRow={handleSelectRow}
-            onAddModel={handleAddModel}
-            onDisplayLabelChange={setDisplayLabel}
-            onModelIdChange={setModelId}
-            onApiKeyChange={setApiKey}
-            onIsDefaultChange={setIsDefault}
-            onApplySuggestedModel={handleApplySuggestedModel}
-          />
-        ) : null}
+        {detailSection}
 
         <DialogFooter className="gap-2 sm:justify-between">
           <IntegrationVisitWebsiteButton href={externalHref} />
-          <div className="flex flex-wrap gap-2">
-            {canConfigure ? (
-              <IntegrationSaveButton
-                isSaving={isSaving}
-                isEditingExistingRow={Boolean(selectedRow)}
-                onSave={() => void handleSave()}
-              />
-            ) : (
-              <IntegrationPlannedActions />
-            )}
-          </div>
+          <div className="flex flex-wrap gap-2">{actionButtons}</div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import Link from 'next/link';
 import { AlertTriangle } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
 import {
@@ -14,6 +13,10 @@ import {
 /**
  * Listens for `alice:session-expired` from client `apiFetch` and shows a
  * sign-in dialog instead of letting NEXT_REDIRECT / generic fetch errors bubble.
+ *
+ * Uses a body portal above Radix modals (`z-50`) with `pointer-events-auto` so
+ * Sign in stays clickable while another dialog (charts, forms) left
+ * `pointer-events: none` on `document.body`.
  */
 export function SessionExpiredDialogHost() {
   const [loginPath, setLoginPath] = useState<string | null>(null);
@@ -38,12 +41,15 @@ export function SessionExpiredDialogHost() {
   }
 
   return createPortal(
-    <div className="animate-in fade-in fixed inset-0 z-[300] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
+    <div
+      className="animate-in fade-in pointer-events-auto fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200"
+      data-session-expired-overlay=""
+    >
       <div
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="session-expired-title"
-        className="bg-card border-border animate-in fade-in zoom-in-95 relative w-full max-w-md overflow-hidden rounded-xl border shadow-2xl duration-200"
+        className="bg-card border-border animate-in fade-in zoom-in-95 pointer-events-auto relative z-100 w-full max-w-md overflow-hidden rounded-xl border shadow-2xl duration-200"
       >
         <div className="p-6">
           <div className="mb-3 flex items-center gap-3 text-amber-600">
@@ -63,8 +69,15 @@ export function SessionExpiredDialogHost() {
           </p>
         </div>
         <div className="bg-muted/40 border-border flex justify-end gap-3 border-t px-6 py-4">
-          <Button asChild className="h-9 px-4 text-xs font-semibold">
-            <Link href={loginPath}>Sign in</Link>
+          <Button
+            type="button"
+            className="h-9 px-4 text-xs font-semibold"
+            onClick={() => {
+              // Full navigation clears dead client session state reliably.
+              globalThis.location.assign(loginPath);
+            }}
+          >
+            Sign in
           </Button>
         </div>
       </div>

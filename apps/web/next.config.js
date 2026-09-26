@@ -22,6 +22,12 @@ const nextConfig = {
         hostname: '*.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
+      // DiceBear agent character portraits
+      {
+        protocol: 'https',
+        hostname: 'api.dicebear.com',
+        pathname: '/**',
+      },
     ],
   },
   output: 'standalone',
@@ -41,6 +47,16 @@ const nextConfig = {
         source: '/calendar/:id',
         destination: '/work-items/:id',
         permanent: true,
+      },
+      {
+        source: '/chat/agents',
+        destination: '/chat',
+        permanent: false,
+      },
+      {
+        source: '/chat/agents/:agentId',
+        destination: '/chat',
+        permanent: false,
       },
     ];
   },

@@ -20,20 +20,24 @@ Typical layout:
 - **Sprint cards** — active sprints with room for planned items
 
 The toolbar matches other registries: **Search**, **Filter** (**Shift+F**), and
-**Defaults** on the left; **Layout** (icon), **Active** / **Completed** tabs, and
-a **+** menu (**Create Sprint** / **Create Work-Item**) on the right.
+applied-filter badges (when active) on the left; **Layout** (icon), **Active** /
+**Completed** tabs, and a **+** menu (**Create Sprint** / **Create Work-Item**)
+on the right.
 
-**Workspace defaults** on backlog apply **project and sprint**. When a sprint is
-saved in defaults (or chosen as **All Sprints**), the sprint cards pane shows
-only that sprint, or every sprint for the project. Newly created sprints appear
-in the Defaults sprint dropdown without a page refresh.
+**Workspace defaults** (project and optional sprint) are set from the Filter
+dialog with **Set as default** on the Project or Sprint pane. With no saved
+defaults, backlog opens to All projects / All sprints. When a sprint is saved
+in defaults, the sprint cards pane can focus that sprint for the project.
 
 ---
 
 ## Plan into a sprint
 
-1. Open **Filter** (**Shift+F**) to narrow by project, assignee, or priority if
-   needed.
+1. Open **Filter** (**Shift+F**) to narrow by project, sprint, assignee, or
+   priority if needed. In the Sprint pane, sprints are listed under their
+   project (sections start expanded); search hides non-matching sprints and
+   empty project groups. Check **Set as default** on Project or Sprint before
+   Okay if you want those values saved for next visits.
 2. **Drag** items from the backlog into a sprint card.
 
 Managers and admins can **Create Sprint** from the toolbar **+** menu. The form

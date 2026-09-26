@@ -186,7 +186,7 @@ Do this **first**, in one PR (or a stacked pair: “remove UI” then “remove 
 - Refresh tokens: server-only; encrypt at rest; never select into client DTOs.
 - OAuth `state` parameter: CSRF-bind to session user.
 - Scopes: least privilege (read issues / browse projects as needed for import).
-- Connection ownership: only the owning manager (or admin) may use/delete a connection; project link must reference a connection the actor can access.
+- Connection ownership: OAuth disconnect is owner-only. Other managers may **list** workspace connections when they have none of their own, and may **preview/import** via a project-linked connection (same pattern as GitHub shared connections). Access tokens refresh just-in-time on use.
 
 ---
 
@@ -209,16 +209,17 @@ Do this **first**, in one PR (or a stacked pair: “remove UI” then “remove 
 2. Alice opens Atlassian authorize in a **new tab** (`window.open`) so create/edit **dialogs stay open** in the original tab (scopes: `read:jira-work read:jira-user offline_access`).
 3. `state` is an HMAC-signed payload (`userId`, nonce, expiry) using the same **32-byte Base64** key as GitHub encryption — see [GITHUB_INTEGRATION.md](./GITHUB_INTEGRATION.md#what-is-a-32-byte-base64-key) (`resolveIntegrationEncryptionKey`).
 4. Callback `GET /api/jira/oauth/callback` verifies `state`, exchanges `code` for tokens, loads accessible resources, upserts `jira_connections` with **encrypted** refresh/access tokens.
-5. Redirects the OAuth tab to `/integrations/jira/done?jira=connected` (auto-close / “Close tab”); the original tab refreshes connections on focus / when the OAuth tab closes.
+5. Redirects the OAuth tab to `/integrations/jira/done?jira=connected` (auto-close / “Close tab”); the original tab refreshes connections when OAuth completes (BroadcastChannel / storage), when the OAuth tab closes, or on focus **only while Connect is in progress** (avoids refetch on every browser tab switch).
 
 ### Linking + import
 
 1. Create wizard **Imports** or details **Integrations** pick `jira_connection_id` + Jira project key.
 2. Project row stores those IDs (no API email/token columns).
-3. `POST /api/projects/:id/jira/preview|import` loads the connection, refreshes access token if needed, calls  
+3. `POST /api/projects/:id/jira/preview|import` loads the connection **by id** (any manager on the project), refreshes the access token if expired/near-expiry (`getValidAccessToken`), then calls  
    `https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/…` with Bearer auth.
-4. Import creates work items with `jira_issue_key`; duplicates skipped via unique `(project_id, jira_issue_key)`.
-5. Web `importJiraIssues` uses `timeoutMs: 90_000` (mirrors chat) so the shared `getResponse` abort does not cancel a healthy long import.
+4. Managers who did not authorize the site see a high-contrast ownership banner; only the OAuth owner can **Disconnect**.
+5. Import creates work items with `jira_issue_key`; duplicates skipped via unique `(project_id, jira_issue_key)`.
+6. Web `importJiraIssues` uses `timeoutMs: 90_000` (mirrors chat) so the shared `getResponse` abort does not cancel a healthy long import.
 
 ### Shared web pieces (deduped)
 

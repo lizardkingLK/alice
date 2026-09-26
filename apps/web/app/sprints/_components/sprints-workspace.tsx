@@ -12,7 +12,7 @@ import {
 import { updateSprintStatusWithOptimisticLock } from '@/app/sprints/_helpers/update-sprint-status-with-lock';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
-import { Archive, CircleDot, Search, Plus, X } from '@repo/ui/lib/icons';
+import { Archive, CircleDot, Search, Plus } from '@repo/ui/lib/icons';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import {
   SprintTabEnum,
@@ -25,6 +25,8 @@ import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-
 import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import { DismissibleError } from '@/components/dismissible-error';
+import { AppliedFilterBadges } from '@/components/applied-filter-badges';
+import { buildAppliedFilterBadgeItems } from '@/components/applied-filter-badges.model';
 import {
   QUERY_FILTER_ALL_VALUE,
   useQueryFilter,
@@ -174,12 +176,40 @@ function SprintsWorkspaceToolbar(props: {
   readonly isManagerOrAdmin: boolean;
   readonly onAddSprint: () => void;
 }) {
-  const showClearFilters = props.projectValue !== QUERY_FILTER_ALL_VALUE;
+  const showClearFilters =
+    props.projectValue !== QUERY_FILTER_ALL_VALUE ||
+    props.searchQuery.trim().length > 0;
+
+  const appliedFilterItems = buildAppliedFilterBadgeItems({
+    search: props.searchQuery,
+    project:
+      !props.isProjectLocked && props.projectValue !== QUERY_FILTER_ALL_VALUE
+        ? {
+            id: props.projectValue,
+            name:
+              props.projects.find(
+                (project) => project.id === props.projectValue
+              )?.name ?? props.projectValue,
+          }
+        : null,
+  });
+
+  const handleRemoveAppliedFilter = (chipIds: readonly string[]) => {
+    for (const chipId of chipIds) {
+      if (chipId === 'search') {
+        props.onSearchChange('');
+        continue;
+      }
+      if (chipId === 'project') {
+        props.onApplyProject(QUERY_FILTER_ALL_VALUE);
+      }
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative max-w-md flex-1">
+      <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:flex-nowrap sm:items-center">
+        <div className="relative max-w-md flex-1 shrink-0 sm:w-72 sm:flex-none">
           <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
             type="text"
@@ -191,28 +221,29 @@ function SprintsWorkspaceToolbar(props: {
         </div>
 
         {props.isProjectLocked ? null : (
-          <>
-            <SprintsFilterDialog
-              projects={props.projects}
-              projectValue={props.projectValue}
-              hasActiveFilters={showClearFilters}
-              onApplyProject={props.onApplyProject}
-            />
-
-            {showClearFilters ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => props.onApplyProject(QUERY_FILTER_ALL_VALUE)}
-                className="text-muted-foreground hover:text-foreground h-9 px-3 text-xs"
-              >
-                Clear filters
-                <X className="size-3.5" />
-              </Button>
-            ) : null}
-          </>
+          <SprintsFilterDialog
+            projects={props.projects}
+            projectValue={props.projectValue}
+            hasActiveFilters={props.projectValue !== QUERY_FILTER_ALL_VALUE}
+            onApplyProject={props.onApplyProject}
+          />
         )}
+
+        {showClearFilters ? (
+          <AppliedFilterBadges
+            items={appliedFilterItems}
+            onRemove={handleRemoveAppliedFilter}
+            onClearAll={() => {
+              props.onSearchChange('');
+              if (
+                !props.isProjectLocked &&
+                props.projectValue !== QUERY_FILTER_ALL_VALUE
+              ) {
+                props.onApplyProject(QUERY_FILTER_ALL_VALUE);
+              }
+            }}
+          />
+        ) : null}
       </div>
 
       <div className="flex flex-wrap items-center gap-3 self-start">
@@ -480,6 +511,7 @@ export function SprintsWorkspace({
             onArchiveSprint={onArchiveSprint}
             onRestoreSprint={onRestoreSprint}
             onDeleteSprint={onDeleteSprint}
+            reportFrom={isProjectLocked ? 'project' : 'sprints'}
           />
         </div>
       </div>

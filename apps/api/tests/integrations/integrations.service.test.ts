@@ -98,14 +98,25 @@ describe('IntegrationsService', () => {
     expect(integrations[0]?.config).not.toHaveProperty('api_key');
   });
 
-  it('rejects non-admin integration list access', async () => {
+  it('allows manager integration list access', async () => {
+    selectSingleMock.mockResolvedValue({
+      data: { role: 'manager', email: 'manager@alice.dev' },
+      error: null,
+    });
+    listMock.mockResolvedValue([integrationRow]);
+
+    const integrations = await service.listIntegrations('manager-1', {});
+    expect(integrations).toHaveLength(1);
+  });
+
+  it('rejects member integration list access', async () => {
     selectSingleMock.mockResolvedValue({
       data: { role: 'member', email: 'member@alice.dev' },
       error: null,
     });
 
     await expect(service.listIntegrations('member-1', {})).rejects.toThrow(
-      'Unauthorized. Only administrators can manage integrations.'
+      'Unauthorized. Only admins and managers can manage integrations.'
     );
   });
 

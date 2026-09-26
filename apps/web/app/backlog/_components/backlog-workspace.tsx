@@ -7,11 +7,10 @@ import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
 import { useBacklogLayout } from '@/app/backlog/_components/backlog-layout-menu';
 import { BacklogToolbar } from '@/app/backlog/_components/backlog-toolbar';
 import { useBacklogProjectDefaults } from '@/app/backlog/_hooks/use-backlog-project-defaults';
-import {
-  pickWorkspaceDefaultsDialogController,
-  WorkspaceDefaultsDialogHost,
-} from '@/app/board/_components/workspace-defaults-dialog-host';
-import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
+import { buildAppliedFilterBadgeItems } from '@/components/applied-filter-badges.model';
+import { PRIORITY_LABELS } from '@/app/work-items/_helpers/work-item-priority-ui';
+import type { WorkItemPriority } from '@/app/work-items/_helpers/work-item-priority-ui';
+import { formatLabelWithSpace } from '@/app/_shared/utility';
 import { BacklogSprintCard } from '@/app/backlog/_components/backlog-sprint-card';
 import { BacklogPanel } from '@/app/backlog/_components/backlog-panel';
 import { BacklogItemDetailsSheet } from '@/app/backlog/_components/backlog-item-details-sheet';
@@ -56,7 +55,6 @@ interface BacklogWorkspaceProps {
   sprints: Sprint[];
   userRole: string;
   currentUserId?: string | null;
-  suggestedDefaults: BoardDefaultsPreference | null;
   error?: string | null;
 }
 
@@ -68,7 +66,6 @@ export function BacklogWorkspace({
   sprints,
   userRole,
   currentUserId,
-  suggestedDefaults,
   error = null,
 }: Readonly<BacklogWorkspaceProps>) {
   const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
@@ -111,18 +108,13 @@ export function BacklogWorkspace({
     userId: currentUserId ?? null,
     projects,
     sprints: sprintList,
-    suggestedDefaults,
   });
   const {
     projectFilter,
     setProjectFilter,
     sprintFilter,
     setSprintFilter,
-    savedDefaultsApplied,
-    baselineProjectId,
-    baselineSprintId,
-    openDefaultsDialog,
-    resetProjectFilterToBaseline,
+    saveDefaults,
   } = backlogDefaults;
 
   // Filters state
@@ -500,14 +492,11 @@ export function BacklogWorkspace({
     Boolean(createIssueSprintId) && createIssueProjects.length === 1;
 
   const createSprintDefaultProjectId = useMemo(() => {
-    if (baselineProjectId !== 'all') {
-      return baselineProjectId;
-    }
     if (projectFilter !== 'all') {
       return projectFilter;
     }
     return undefined;
-  }, [baselineProjectId, projectFilter]);
+  }, [projectFilter]);
 
   const isProjectSprintMismatch = (
     currentItem: DbWorkItem | undefined,
@@ -677,7 +666,7 @@ export function BacklogWorkspace({
   // Clear filters
   const handleClearFilters = () => {
     setSearchQuery('');
-    resetProjectFilterToBaseline();
+    setProjectFilter('all');
     setAssigneeFilter('all');
     setPriorityFilter('all');
   };
@@ -686,9 +675,85 @@ export function BacklogWorkspace({
     searchQuery ||
     assigneeFilter !== 'all' ||
     priorityFilter !== 'all' ||
-    (projectFilter !== 'all' && projectFilter !== baselineProjectId) ||
-    (sprintFilter || '') !== (baselineSprintId || '')
+    projectFilter !== 'all' ||
+    Boolean(sprintFilter)
   );
+
+  const appliedFilterItems = useMemo(
+    () =>
+      buildAppliedFilterBadgeItems({
+        search: searchQuery,
+        project:
+          projectFilter !== 'all'
+            ? {
+                id: projectFilter,
+                name:
+                  projects.find((project) => project.id === projectFilter)
+                    ?.name ?? projectFilter,
+              }
+            : null,
+        sprint: sprintFilter
+          ? {
+              id: sprintFilter,
+              name:
+                sprintList.find((sprint) => sprint.id === sprintFilter)?.name ??
+                sprintFilter,
+            }
+          : null,
+        assignee:
+          assigneeFilter !== 'all'
+            ? {
+                id: assigneeFilter,
+                name:
+                  projectMembers.find((member) => member.id === assigneeFilter)
+                    ?.name ?? assigneeFilter,
+              }
+            : null,
+        priority:
+          priorityFilter !== 'all'
+            ? {
+                id: priorityFilter,
+                name:
+                  PRIORITY_LABELS[priorityFilter as WorkItemPriority] ??
+                  formatLabelWithSpace(priorityFilter),
+              }
+            : null,
+      }),
+    [
+      assigneeFilter,
+      priorityFilter,
+      projectFilter,
+      projectMembers,
+      projects,
+      searchQuery,
+      sprintFilter,
+      sprintList,
+    ]
+  );
+
+  const handleRemoveAppliedFilter = (chipIds: readonly string[]) => {
+    for (const chipId of chipIds) {
+      if (chipId === 'search') {
+        setSearchQuery('');
+        continue;
+      }
+      if (chipId === 'assignee') {
+        setAssigneeFilter('all');
+        continue;
+      }
+      if (chipId === 'priority') {
+        setPriorityFilter('all');
+        continue;
+      }
+      if (chipId === 'project') {
+        setProjectFilter('all');
+        continue;
+      }
+      if (chipId === 'sprint') {
+        setSprintFilter('');
+      }
+    }
+  };
 
   // Derived counts for the sprint confirmation dialogs
   const startSprintItems = sprintToStart
@@ -740,10 +805,10 @@ export function BacklogWorkspace({
           priorityFilter={priorityFilter}
           onPriorityFilterChange={setPriorityFilter}
           isFiltersActive={isFiltersActive}
+          appliedFilterItems={appliedFilterItems}
+          onRemoveAppliedFilter={handleRemoveAppliedFilter}
           onClearFilters={handleClearFilters}
-          showDefaultsControls={Boolean(currentUserId)}
-          savedDefaultsApplied={savedDefaultsApplied}
-          onOpenDefaultsDialog={openDefaultsDialog}
+          onSaveWorkspaceDefaults={currentUserId ? saveDefaults : undefined}
         />
 
         {/* Sprints & Backlog Containers */}
@@ -884,13 +949,6 @@ export function BacklogWorkspace({
             setIsErrorOpen(false);
             setActionError(null);
           }}
-        />
-
-        <WorkspaceDefaultsDialogHost
-          enabled={Boolean(currentUserId)}
-          projects={projects}
-          sprints={sprintList}
-          defaults={pickWorkspaceDefaultsDialogController(backlogDefaults)}
         />
       </div>
     </TooltipProvider>

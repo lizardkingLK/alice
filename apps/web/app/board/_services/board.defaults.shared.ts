@@ -71,13 +71,24 @@ export function resolveDefaultBoardSprint(
 export function buildSprintFilterOptions(
   sprints: readonly Sprint[],
   projectFilter: string
-): { readonly value: string; readonly label: string }[] {
+): {
+  readonly value: string;
+  readonly label: string;
+  readonly groupId?: string;
+  readonly groupLabel?: string;
+}[] {
   const scoped = projectFilter
     ? sprints.filter((sprint) => sprint.project?.id === projectFilter)
     : sprints;
   return scoped.map((sprint) => ({
     value: sprint.id,
     label: sprint.name,
+    ...(sprint.project
+      ? {
+          groupId: sprint.project.id,
+          groupLabel: sprint.project.name,
+        }
+      : {}),
   }));
 }
 
@@ -86,7 +97,12 @@ export function buildSprintFilterOptionsForQuery(
   sprints: readonly Sprint[],
   projectValue: string,
   allValue: string = 'all'
-): { readonly value: string; readonly label: string }[] {
+): {
+  readonly value: string;
+  readonly label: string;
+  readonly groupId?: string;
+  readonly groupLabel?: string;
+}[] {
   const scopedProject = projectValue === allValue ? '' : projectValue;
   return buildSprintFilterOptions(sprints, scopedProject);
 }

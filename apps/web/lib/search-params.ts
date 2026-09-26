@@ -27,6 +27,10 @@ export interface RawSearchParams {
   ownership?: string;
   /** Charts registry no longer uses these; kept for older bookmarked URLs. */
   status?: string;
+  /** Query parameter to automatically open integration popup (e.g. `1` or `true`). */
+  showPopup?: string;
+  /** Integration identifier to open in settings integrations view (e.g. `github`). */
+  integration?: string | string[];
 }
 
 export interface ParsedStandardParams {
@@ -231,6 +235,16 @@ export function parseBoardPageTab(tab?: string | null): BoardPageTab {
   return tab === 'calendar' ? 'calendar' : 'board';
 }
 
+/** Alice chat page tabs (`/chat?tab=`). Default `conversation` omits the query param. */
+export type ChatPageTab = 'conversation' | 'agents';
+
+export function parseChatPageTab(tab?: string | null): ChatPageTab {
+  return tab === 'agents' ? 'agents' : 'conversation';
+}
+
+/** Agents gallery sub-tabs — same values as Views (`mine` / `shared` / `archived`). */
+export const parseChatAgentsGalleryTab = parseViewsListTab;
+
 /** Account settings page tabs (`/settings?tab=`). */
 export type SettingsTab =
   'general' | 'security' | 'notifications' | 'preferences' | 'integrations';
@@ -250,12 +264,12 @@ export function parseSettingsTab(tab?: string | null): SettingsTab {
   return 'general';
 }
 
-/** Coerce admin-only tabs when the signed-in user is not an administrator. */
+/** Coerce privileged tabs when the signed-in user is not authorized to manage integrations (Admin/Manager). */
 export function resolveSettingsTabForUser(
   tab: SettingsTab,
-  userIsAdmin: boolean
+  canManageIntegrations: boolean
 ): SettingsTab {
-  if (tab === 'integrations' && !userIsAdmin) {
+  if (tab === 'integrations' && !canManageIntegrations) {
     return 'general';
   }
   return tab;

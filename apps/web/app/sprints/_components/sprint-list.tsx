@@ -38,6 +38,7 @@ import { RegistryTitleCell } from '@/components/registry-title-cell';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { formatDate } from '@/app/_shared/utility';
 import { sprintReportHref } from '@/app/sprints/_helpers/sprint-report-links';
+import type { SprintReportFrom } from '@/app/sprints/_helpers/sprint-report-links';
 
 type SprintListProps = {
   sprints: Sprint[];
@@ -67,6 +68,8 @@ type SprintListProps = {
   onRestoreSprint?: (sprint: Sprint) => void;
   // eslint-disable-next-line no-unused-vars
   onDeleteSprint?: (sprint: Sprint) => void;
+  /** Report link context — `project` when opened from project details. */
+  reportFrom?: SprintReportFrom;
 };
 
 const STATUS_STYLES = {
@@ -129,6 +132,7 @@ type SprintListContentProps = {
   onRestoreSprint?: (sprint: Sprint) => void;
   // eslint-disable-next-line no-unused-vars
   onDeleteSprint?: (sprint: Sprint) => void;
+  reportFrom?: SprintReportFrom;
 };
 
 /* eslint-disable no-unused-vars */
@@ -141,6 +145,7 @@ interface SprintTableMeta {
   readonly isAdmin?: boolean;
   readonly isManagerOrAdmin?: boolean;
   readonly filterTab?: SprintTab;
+  readonly reportFrom?: SprintReportFrom;
 }
 
 /* eslint-enable no-unused-vars */
@@ -149,11 +154,13 @@ function getSprintTableMeta(table: CellContext<Sprint, unknown>['table']) {
   return table.options.meta as SprintTableMeta;
 }
 
-function renderSprintNameCell({ row }: CellContext<Sprint, unknown>) {
+function renderSprintNameCell({ row, table }: CellContext<Sprint, unknown>) {
+  const meta = getSprintTableMeta(table);
   const projectName = row.original.project?.name;
+  const reportFrom = meta.reportFrom ?? 'sprints';
   return (
     <RegistryTitleCell
-      href={sprintReportHref(row.original.id, 'sprints')}
+      href={sprintReportHref(row.original.id, reportFrom)}
       title={row.original.name}
       subtitle={
         projectName ? (
@@ -313,6 +320,7 @@ function SprintListContent({
   onArchiveSprint,
   onRestoreSprint,
   onDeleteSprint,
+  reportFrom = 'sprints',
 }: Readonly<SprintListContentProps>) {
   const tableMeta = useMemo<SprintTableMeta>(
     () => ({
@@ -324,6 +332,7 @@ function SprintListContent({
       isAdmin,
       isManagerOrAdmin,
       filterTab,
+      reportFrom,
     }),
     [
       onSprintUpdated,
@@ -334,6 +343,7 @@ function SprintListContent({
       isAdmin,
       isManagerOrAdmin,
       filterTab,
+      reportFrom,
     ]
   );
 
@@ -412,6 +422,7 @@ export function SprintList({
   onArchiveSprint,
   onRestoreSprint,
   onDeleteSprint,
+  reportFrom = 'sprints',
 }: Readonly<SprintListProps>) {
   const filteredSprints = sprints;
 
@@ -443,6 +454,7 @@ export function SprintList({
           onArchiveSprint={onArchiveSprint}
           onRestoreSprint={onRestoreSprint}
           onDeleteSprint={onDeleteSprint}
+          reportFrom={reportFrom}
         />
         {pagination && pagination.totalCount > 0 && (
           <Pagination

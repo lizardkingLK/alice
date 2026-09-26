@@ -49,11 +49,12 @@ Related:
 
 ## UX surfaces
 
-| Surface         | Location                                  | Behavior                                                                                                                                                                  |
-| --------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Full page       | `/chat`                                   | Edge-to-edge in the dashboard shell (no card chrome); toggleable history sidebar; New Chat, rename, delete; breadcrumb shows active chat title; suggestions, action cards |
-| Navbar launcher | All `DashboardShell` pages except `/chat` | Header control between notifications and profile → right drawer; same `ChatClient` (`variant="drawer"`)                                                                   |
-| Nav             | Platform → **Alice** (`Sparkles` icon)    | Links to `/chat`                                                                                                                                                          |
+| Surface         | Location                                  | Behavior                                                                                                                                                                           |
+| --------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Full page       | `/chat`                                   | Edge-to-edge in the dashboard shell; history sidebar; Agents gallery via header icon dialog; New Chat / model icons; breadcrumb shows active chat title; suggestions, action cards |
+| Agents          | Header **Agents** dialog on `/chat`       | Gallery (Mine / Shared / Archived) and customize detail in-panel — see [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md)                                                      |
+| Navbar launcher | All `DashboardShell` pages except `/chat` | Header control between notifications and profile → right drawer; same `ChatClient` (`variant="drawer"`); conversation-only (no Agents panel)                                       |
+| Nav             | Platform → **Alice** (`Sparkles` icon)    | Links to `/chat`                                                                                                                                                                   |
 
 Empty-state suggestions cover common flows (e.g. create a bug, list projects).
 Successful mutations can render **executed action** cards with deep links to
@@ -360,11 +361,12 @@ approval step before tool mutations run.
 
 Admins configure one or more **`integrations`** rows (category `ai_agent`, `config.kind = chat_model`) from **Settings → Integrations**. Alice Chat lists active rows via `GET /api/integrations/chat-models` and sends `integrationId` on `POST /api/chat`. Resolution order: explicit `integrationId` → workspace default row → **400** `"No chat model configured"`.
 
-The header model control is a **provider → model** nested menu (`DropdownMenuSub`):
-models are grouped by `ChatModelOption.provider` (Gemini, SpaceXAI, …); selection
-remains the integration row UUID. Left of the title: always-visible **Add model**
-(plus → Settings AI agents) and, for admins, a **Mark as default** star that hides
-once the selected integration is already `is_default`.
+The header uses compact **icon buttons**: a **Cpu** control opens the
+**provider → model** nested menu (`DropdownMenuSub`); selection remains the
+integration row UUID. A **Plus** control starts a new chat for members and
+managers; for **admins** it opens a menu with **New chat** and **Configure AI
+models** (Settings). Admins can also **Mark as workspace default** from the
+model menu when the selected integration is not already `is_default`.
 
 See [SETTINGS_INTEGRATIONS.md](../integrations/SETTINGS_INTEGRATIONS.md).
 

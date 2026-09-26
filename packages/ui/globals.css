@@ -113,66 +113,78 @@
   }
 }
 
-/* Sonner: check + message grouped on the left, plain X on the right.
-   Close is first in the DOM, so use flex order to place it last. */
+/* Sonner above Radix dialogs; keep interactive while body is pointer-events:none */
+[data-sonner-toaster] {
+  z-index: 100 !important;
+  pointer-events: auto !important;
+}
+
+/* Sonner: icon + (title/description) on the left, close on the right —
+   matches shadcn Toast card layout (title + muted description).
+   @see https://ui.shadcn.com/docs/components/base/toast */
 [data-sonner-toast][data-styled='true'] {
+  pointer-events: auto !important;
   display: flex !important;
-  align-items: center !important;
+  align-items: flex-start !important;
   justify-content: flex-start !important;
-  gap: 0 !important;
+  gap: 0.75rem !important;
   isolation: isolate;
-  background: color-mix(in oklch, var(--card) 78%, transparent) !important;
-  backdrop-filter: blur(16px) saturate(1.35);
-  -webkit-backdrop-filter: blur(16px) saturate(1.35);
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.1)) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-[data-sonner-toast][data-styled='true'][data-type='success'] {
-  background: color-mix(
-    in oklch,
-    var(--card) 68%,
-    oklch(0.78 0.12 155)
-  ) !important;
-}
-
-[data-sonner-toast][data-styled='true'][data-type='error'] {
-  background: color-mix(
-    in oklch,
-    var(--card) 72%,
-    var(--destructive)
-  ) !important;
-}
-
-[data-sonner-toast][data-styled='true'][data-type='warning'] {
-  background: color-mix(
-    in oklch,
-    var(--card) 70%,
-    oklch(0.84 0.14 85)
-  ) !important;
+[data-sonner-toast][data-styled='true'][data-type='success'],
+[data-sonner-toast][data-styled='true'][data-type='error'],
+[data-sonner-toast][data-styled='true'][data-type='warning'],
+[data-sonner-toast][data-styled='true'][data-type='info'] {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
 }
 
 [data-sonner-toast][data-styled='true'] [data-icon] {
   order: 1;
   margin-left: 0 !important;
-  margin-right: 0.5rem !important;
+  margin-right: 0 !important;
   flex-shrink: 0;
 }
 
 [data-sonner-toast][data-styled='true'] [data-content] {
   order: 2;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
   min-width: 0;
   margin: 0 !important;
 }
 
 [data-sonner-toast][data-styled='true'] [data-title] {
+  color: var(--foreground) !important;
+  font-weight: 600;
   line-height: 1.25;
-  white-space: nowrap;
+  white-space: normal;
+}
+
+[data-sonner-toast][data-styled='true'] [data-description] {
+  display: block !important;
+  color: var(--muted-foreground) !important;
+  line-height: 1.35;
+  white-space: normal;
+  opacity: 1 !important;
+}
+
+[data-sonner-toast][data-styled='true'] [data-button][data-action] {
+  order: 3;
+  margin-left: 0.25rem;
 }
 
 [data-sonner-toast][data-styled='true'] [data-close-button] {
-  order: 3;
+  order: 4;
   position: static !important;
   inset: auto !important;
   top: auto !important;
@@ -186,7 +198,13 @@
   border: 0 !important;
   border-radius: 0.375rem !important;
   background: transparent !important;
+  color: var(--muted-foreground) !important;
   box-shadow: none !important;
+}
+
+[data-sonner-toast][data-styled='true'] [data-close-button]:hover {
+  background: transparent !important;
+  color: var(--foreground) !important;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */

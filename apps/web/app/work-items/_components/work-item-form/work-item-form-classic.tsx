@@ -1,10 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { Json } from '@repo/types';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
-import { Textarea } from '@repo/ui/components/ui/textarea';
 import { SearchableSelect } from '@/components/searchable-select';
 import type { WorkItemFormSharedFieldProps } from '@/app/work-items/_components/work-item-form/work-item-form-field-props';
 import {
@@ -12,7 +11,7 @@ import {
   WorkItemFormParentStatusSection,
 } from '@/app/work-items/_components/work-item-form/work-item-form-parent-status';
 import { WorkItemFormTypeSelect } from '@/app/work-items/_components/work-item-form/work-item-form-type-select';
-import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
+import { WorkItemFormModernDescription } from '@/app/work-items/_components/work-item-form/work-item-form-modern-description';
 import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels/work-item-labels-input';
 import { WorkItemPrioritySelect } from '@/app/work-items/_components/work-item-priority-select';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
@@ -61,12 +60,12 @@ export function WorkItemFormClassicFields({
   onParentIdChange,
 }: Readonly<WorkItemFormClassicFieldsProps>) {
   const [labels, setLabels] = useState<string[]>(() => [...labelsDefault]);
+  const [descriptionJson, setDescriptionJson] = useState<string | null>(null);
   const showParentPicker = resolveShowParentPicker(lockParent, parentTypeLabel);
 
-  const initialDescriptionText =
-    typeof descriptionDefault === 'string'
-      ? descriptionDefault
-      : descriptionToPlainText(descriptionDefault as Json);
+  const handleDescriptionChange = useCallback((json: string | null) => {
+    setDescriptionJson(json);
+  }, []);
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -82,13 +81,15 @@ export function WorkItemFormClassicFields({
 
       <div className="space-y-2 sm:col-span-2">
         <Label htmlFor="description">Description</Label>
-        <Textarea
+        <WorkItemFormModernDescription
           id="description"
-          name="description"
-          placeholder="e.g. Detailed description of the work item"
-          defaultValue={initialDescriptionText}
-          rows={3}
+          variant="classic"
+          initialContent={descriptionDefault as Json | null}
+          onJsonChange={handleDescriptionChange}
         />
+        {descriptionJson ? (
+          <input type="hidden" name="description" value={descriptionJson} />
+        ) : null}
       </div>
 
       <div className="space-y-2 sm:col-span-2">

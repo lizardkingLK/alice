@@ -164,7 +164,10 @@ export class JiraService {
 
   async listConnections(actorId: string): Promise<JiraConnectionDto[]> {
     await requireJiraManager(actorId);
-    return await this.jiraRepository.listByUserId(actorId);
+    const own = await this.jiraRepository.listByUserId(actorId);
+    const rows =
+      own.length > 0 ? own : await this.jiraRepository.listAllActive();
+    return rows.map((row) => this.toActorScopedDto(row, actorId));
   }
 
   async deleteConnection(actorId: string, connectionId: string): Promise<void> {
@@ -174,7 +177,9 @@ export class JiraService {
       actorId
     );
     if (!deleted) {
-      throw new Error('Jira connection not found.');
+      throw new Error(
+        'Jira connection not found, or you do not own this connection. Only the user who connected Jira can disconnect it.'
+      );
     }
   }
 
@@ -183,10 +188,7 @@ export class JiraService {
     connectionId: string
   ): Promise<JiraCloudProject[]> {
     await requireJiraManager(actorId);
-    const connection = await this.requireOwnedActiveConnection(
-      actorId,
-      connectionId
-    );
+    const connection = await this.requireActiveConnection(connectionId);
     const accessToken = await this.getValidAccessToken(connection);
 
     const response = await fetch(
@@ -220,6 +222,8 @@ export class JiraService {
   /**
    * Fetch and parse issues for a connection + Jira project key via Cloud REST.
    * Uses Bearer token against the Atlassian gateway (no free-form host URLs).
+   * Managers may use a workspace-linked connection they did not authorize
+   * (same pattern as GitHub shared connections); tokens refresh just-in-time.
    */
   async fetchIssuesForImport(
     actorId: string,
@@ -227,10 +231,7 @@ export class JiraService {
     jiraProjectKey: string
   ): Promise<ParsedJiraIssue[]> {
     await requireJiraManager(actorId);
-    const connection = await this.requireOwnedActiveConnection(
-      actorId,
-      connectionId
-    );
+    const connection = await this.requireActiveConnection(connectionId);
     return await this.searchIssues(connection, jiraProjectKey);
   }
 
@@ -249,14 +250,23 @@ export class JiraService {
     );
   }
 
-  private async requireOwnedActiveConnection(
-    actorId: string,
+  private toActorScopedDto(
+    row: JiraConnectionDto,
+    actorId: string
+  ): JiraConnectionDto {
+    const canManage = row.user_id === actorId;
+    return {
+      ...row,
+      can_manage: canManage,
+      is_shared: !canManage,
+    };
+  }
+
+  /** Resolve any active connection by id (project-linked shared use). */
+  private async requireActiveConnection(
     connectionId: string
   ): Promise<JiraConnectionRow> {
-    const connection = await this.jiraRepository.findByIdForUser(
-      connectionId,
-      actorId
-    );
+    const connection = await this.jiraRepository.findById(connectionId);
     if (!connection) {
       throw new Error('Jira connection not found.');
     }

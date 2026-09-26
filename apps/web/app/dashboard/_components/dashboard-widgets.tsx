@@ -220,9 +220,7 @@ async function resolvePreferredBurndown(
     data: { user },
   } = await supabase.auth.getUser();
 
-  const preference = user
-    ? (readBoardDefaults(user.id)?.preference ?? null)
-    : null;
+  const preference = user ? readBoardDefaults(user.id) : null;
   const selected = selectBurndownSprint(bootstrap.sprints, preference);
 
   if (!selected) {
