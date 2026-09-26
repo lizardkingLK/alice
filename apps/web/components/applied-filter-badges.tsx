@@ -230,13 +230,12 @@ export function AppliedFilterBadges({
   const isFlushPending = pendingRemoveIds.size > 0;
 
   return (
-    <div
+    <fieldset
       className={cn(
-        'flex max-w-full min-w-0 flex-1 items-center gap-2 overflow-hidden py-1',
+        'm-0 flex max-w-full min-w-0 flex-1 items-center gap-2 overflow-hidden border-0 p-0 py-1',
         isFlushPending && 'opacity-80',
         className
       )}
-      role="group"
       aria-label="Applied filters"
       aria-busy={isFlushPending || undefined}
     >
@@ -300,6 +299,6 @@ export function AppliedFilterBadges({
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-    </div>
+    </fieldset>
   );
 }
