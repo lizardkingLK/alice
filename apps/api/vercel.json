@@ -14,15 +14,5 @@
       "src": "/(.*)",
       "dest": "src/index.ts"
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/notifications/check-due-dates",
-      "schedule": "0 4 * * *"
-    },
-    {
-      "path": "/api/notifications/prune-read",
-      "schedule": "30 4 * * *"
-    }
   ]
 }
