@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type DragEvent } from 'react';
+import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { BOARD_WORK_ITEM_STATUSES } from '@repo/types';
 import {
@@ -53,6 +54,7 @@ import {
   DEFAULT_BOARD_COLUMNS,
   STATUS_META,
 } from '@/app/work-items/_helpers/work-item-status';
+import { buildBoardFilterRedirectPath } from '@/app/board/_services/board.defaults.shared';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
 import {
   updateProject,
@@ -151,6 +153,8 @@ export function BoardDesignerWorkspace({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const boardHref =
+    buildBoardFilterRedirectPath({ projectId: project.id }) ?? '/board';
   const urlBoardSection = parseBoardDesignerSection(
     searchParams.get('boardSection')
   );
@@ -593,6 +597,9 @@ export function BoardDesignerWorkspace({
         />
         {canEdit ? (
           <div className="flex items-center gap-1.5">
+            <Button asChild variant="outline" size="sm">
+              <Link href={boardHref}>Go to Board</Link>
+            </Button>
             <Button
               type="button"
               variant="outline"
