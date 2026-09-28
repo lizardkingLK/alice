@@ -14,7 +14,7 @@ import {
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
-import { WorkItemAccessError } from '../workItems/workItems.errors';
+import { WorkItemAccessError } from '../work-items/work-items.errors';
 import {
   AttachmentGoneError,
   AttachmentNotFoundError,

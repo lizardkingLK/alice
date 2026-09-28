@@ -88,18 +88,18 @@ URI prefixes stay in `routing.ts`, not in composition. See [API_VERSIONING.md](.
 
 ### Work-items (first product domain)
 
-| Piece            | Path                                                                             |
-| ---------------- | -------------------------------------------------------------------------------- |
-| Repository       | `apps/api/src/routes/api/workItems/workItems.repository.ts`                      |
-| Service          | `apps/api/src/routes/api/workItems/workItems.service.ts`                         |
-| Route factory    | `apps/api/src/routes/api/workItems/workItems.route.ts` → `createWorkItemsRouter` |
-| Injection config | `apps/api/src/config/composition.ts` → `workItems`                               |
-| Route mount      | `apps/api/src/config/routing.ts` → `workItems.router`                            |
-| Boot             | `apps/api/src/index.ts` → `app.use(routesConfig)`                                |
+| Piece            | Path                                                                               |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| Repository       | `apps/api/src/routes/api/work-items/work-items.repository.ts`                      |
+| Service          | `apps/api/src/routes/api/work-items/work-items.service.ts`                         |
+| Route factory    | `apps/api/src/routes/api/work-items/work-items.route.ts` → `createWorkItemsRouter` |
+| Injection config | `apps/api/src/config/composition.ts` → `workItems`                                 |
+| Route mount      | `apps/api/src/config/routing.ts` → `workItems.router`                              |
+| Boot             | `apps/api/src/index.ts` → `app.use(routesConfig)`                                  |
 
 Notifications are composed (`composition.ts` → `notifications`) and injected into the work-items **and** comments routers/services so assign/mention side-effects stay testable.
 
-Unused Prisma reads on this slice: `WorkItemRepository.listPaginated` / `getDetailById` → `WorkItemService.listWorkItemsPaginated` / `getWorkItemDetail` → `GET /api/workItems` and `GET /api/workItems/:id`. Mutation `getById` remains supabase-js. Next.js does not call the new GETs yet.
+Unused Prisma reads on this slice: `WorkItemRepository.listPaginated` / `getDetailById` → `WorkItemService.listWorkItemsPaginated` / `getWorkItemDetail` → `GET /api/work-items` and `GET /api/work-items/:id`. Mutation `getById` remains supabase-js. Next.js does not call the new GETs yet.
 
 ### Sprints
 
@@ -135,13 +135,13 @@ Prisma mutations stay on the process `prisma` client (same as work-items). Postg
 
 ### Access allowlist
 
-| Piece            | Path                                                                    |
-| ---------------- | ----------------------------------------------------------------------- |
-| Repository       | `apps/api/src/routes/api/accessAllowlist/accessAllowlist.repository.ts` |
-| Service          | `AccessAllowlistService`                                                |
-| Route factory    | `createAccessAllowlistRouter`                                           |
-| Injection config | `composition.ts` → `accessAllowlist`                                    |
-| Route mount      | `routing.ts` → `accessAllowlist.router`                                 |
+| Piece            | Path                                                                      |
+| ---------------- | ------------------------------------------------------------------------- |
+| Repository       | `apps/api/src/routes/api/access-allowlist/access-allowlist.repository.ts` |
+| Service          | `AccessAllowlistService`                                                  |
+| Route factory    | `createAccessAllowlistRouter`                                             |
+| Injection config | `composition.ts` → `accessAllowlist`                                      |
+| Route mount      | `routing.ts` → `accessAllowlist.router`                                   |
 
 ### Notifications
 
@@ -213,7 +213,7 @@ Chat receives `workItemService`, `sprintsService`, and projects (`projectsServic
 
 | Piece            | Path                                                                                   |
 | ---------------- | -------------------------------------------------------------------------------------- |
-| Repository       | `savedViews.repository.ts`                                                             |
+| Repository       | `saved-views.repository.ts`                                                            |
 | Service          | `SavedViewsService` — injects `NotificationsRepository` (`getUserName` / `insertMany`) |
 | Route factory    | `createSavedViewsRouter`                                                               |
 | Injection config | `composition.ts` → `savedViews` (after `notifications`)                                |

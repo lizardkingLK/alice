@@ -82,7 +82,7 @@ describe('work-item server reads retrieval toggle', () => {
 
     expect(shouldReadViaApiMock).toHaveBeenCalledWith('work-items');
     expect(apiFetchMock).toHaveBeenCalledWith(
-      `/api/workItems?page=1&limit=10&search=Ship&projectId=${row.project_id}&recordStatus=active`
+      `/api/work-items?page=1&limit=10&search=Ship&projectId=${row.project_id}&recordStatus=active`
     );
     expect(createClientMock).not.toHaveBeenCalled();
     expect(result.totalCount).toBe(1);
@@ -105,7 +105,7 @@ describe('work-item server reads retrieval toggle', () => {
     const result = await getWorkItem(`api-${row.id}`);
 
     expect(shouldReadViaApiMock).toHaveBeenCalledWith('work-items');
-    expect(apiFetchMock).toHaveBeenCalledWith(`/api/workItems/api-${row.id}`);
+    expect(apiFetchMock).toHaveBeenCalledWith(`/api/work-items/api-${row.id}`);
     expect(createClientMock).not.toHaveBeenCalled();
     expect(result?.id).toBe(row.id);
   });

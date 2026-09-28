@@ -16,7 +16,7 @@ import {
 } from '@repo/types/api/v1';
 import { ResponseDTO } from '@repo/types/connection';
 
-const workItemsPath = '/api/workItems';
+const workItemsPath = '/api/work-items';
 
 export async function createWorkItem(
   formData: FormData

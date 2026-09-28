@@ -1,6 +1,6 @@
 import type { WorkItemWorkLog, WorkLogListRow } from '@repo/types';
-import type { WorkItemRepository } from '../workItems/workItems.repository';
-import { WorkItemValidationError } from '../workItems/workItems.errors';
+import type { WorkItemRepository } from '../work-items/work-items.repository';
+import { WorkItemValidationError } from '../work-items/work-items.errors';
 import { WorklogsRepository } from './worklogs.repository';
 
 type WorkItemAccess = Pick<

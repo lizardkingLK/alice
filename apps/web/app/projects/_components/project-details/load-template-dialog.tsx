@@ -82,7 +82,7 @@ export function LoadTemplateDialog({
         const res = await apiFetch<{
           workItems: WorkItemSummaryItem[];
         }>(
-          `/api/workItems?projectId=${projectId}&includeDescription=true&limit=100`
+          `/api/work-items?projectId=${projectId}&includeDescription=true&limit=100`
         );
         if (isMounted && res?.workItems) {
           setLoadedWorkItems(res.workItems);

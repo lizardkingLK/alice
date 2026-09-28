@@ -14,7 +14,7 @@ import {
   prismaAuditCreateWithoutStatus,
   prismaAuditUpdate,
 } from '../../../lib/prisma-audit';
-import { parseChartWorkspaceIdFromPathname } from './savedViews.chart-path';
+import { parseChartWorkspaceIdFromPathname } from './saved-views.chart-path';
 
 export type SavedViewRow = Tables<'saved_views'>;
 export type SavedViewShareRow = Tables<'saved_view_shares'>;

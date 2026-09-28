@@ -9,13 +9,13 @@ allowBuilds:
   prisma: true
 
 minimumReleaseAgeExclude:
-  - '@turbo/darwin-64@2.11.3'
-  - '@turbo/darwin-arm64@2.11.3'
-  - '@turbo/linux-64@2.11.3'
-  - '@turbo/linux-arm64@2.11.3'
-  - '@turbo/windows-64@2.11.3'
-  - '@turbo/windows-arm64@2.11.3'
-  - turbo@2.11.3
+  - '@turbo/darwin-64@2.11.3 || 2.11.5'
+  - '@turbo/darwin-arm64@2.11.3 || 2.11.5'
+  - '@turbo/linux-64@2.11.3 || 2.11.5'
+  - '@turbo/linux-arm64@2.11.3 || 2.11.5'
+  - '@turbo/windows-64@2.11.3 || 2.11.5'
+  - '@turbo/windows-arm64@2.11.3 || 2.11.5'
+  - turbo@2.11.3 || 2.11.5
 
 overrides:
   js-yaml@>=4.0.0 <4.1.1: '>=4.1.1'

@@ -3,7 +3,7 @@ vi.hoisted(() => {
 });
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AccessRequestsService } from '../../src/routes/api/accessRequests/accessRequests.service';
+import type { AccessRequestsService } from '../../src/routes/api/access-requests/access-requests.service';
 import { createNotificationsRouter } from '../../src/routes/api/notifications/notifications.route';
 import type { NotificationsService } from '../../src/routes/api/notifications/notifications.service';
 import { withMountedRouter } from '../helpers/route-test.harness';

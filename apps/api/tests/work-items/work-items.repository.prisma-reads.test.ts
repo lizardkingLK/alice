@@ -35,7 +35,7 @@ vi.mock('../../src/lib/prisma', () => ({
   },
 }));
 
-import { WorkItemRepository } from '../../src/routes/api/workItems/workItems.repository';
+import { WorkItemRepository } from '../../src/routes/api/work-items/work-items.repository';
 
 const db = {} as SupabaseClient<Database>;
 const repository = new WorkItemRepository(db);

@@ -16,7 +16,7 @@ import type {
   AttachmentUploadSession,
   UploadedAttachmentResult,
 } from '@repo/types';
-import type { WorkItemRepository } from '../workItems/workItems.repository';
+import type { WorkItemRepository } from '../work-items/work-items.repository';
 import { AttachmentsRepository } from './attachments.repository';
 
 /** Attachment row does not exist (or is archived/deleted). */

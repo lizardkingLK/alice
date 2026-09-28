@@ -10,8 +10,8 @@ import {
   StatusTransitionForbiddenError,
   WorkItemAccessError,
   WorkItemValidationError,
-} from './workItems.errors';
-import { type WorkItemService } from './workItems.service';
+} from './work-items.errors';
+import { type WorkItemService } from './work-items.service';
 import type { NotificationsService } from '../notifications/notifications.service';
 import {
   createWorkItemBodySchema,
@@ -21,12 +21,12 @@ import {
   preprocessWorkItemMutationBody,
   workItemLifecycleActionBodySchema,
   type WorkItemUpdateBody,
-} from './workItems.schemas';
-import type { DbWorkItem } from './workItems.repository';
+} from './work-items.schemas';
+import type { DbWorkItem } from './work-items.repository';
 import {
   coalescePatchField,
   resolveBoardColumnPatchValue,
-} from './workItems.patch-utils';
+} from './work-items.patch-utils';
 import { listWorkItemsQuerySchema, parseWorkItemLabels } from '@repo/types';
 
 type PatchUpdateWorkItemPayload = z.infer<typeof patchWorkItemBodySchema>;

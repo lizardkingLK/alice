@@ -28,7 +28,7 @@ describe('getResponse', () => {
     );
 
     await expect(
-      getResponse('/api/workItems/item-1', 'token')
+      getResponse('/api/work-items/item-1', 'token')
     ).rejects.toMatchObject({
       name: 'ApiError',
       status: 403,

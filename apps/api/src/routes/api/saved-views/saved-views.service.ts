@@ -8,13 +8,13 @@ import {
 } from '@repo/types';
 import type { ChartsRepository } from '../charts/charts.repository';
 import type { NotificationsRepository } from '../notifications/notifications.repository';
-import { parseChartWorkspaceIdFromPathname } from './savedViews.chart-path';
+import { parseChartWorkspaceIdFromPathname } from './saved-views.chart-path';
 import {
   type SavedViewRow,
   type SavedViewsRepository,
-} from './savedViews.repository';
+} from './saved-views.repository';
 
-export { parseChartWorkspaceIdFromPathname } from './savedViews.chart-path';
+export { parseChartWorkspaceIdFromPathname } from './saved-views.chart-path';
 
 /** Resolve chart workspace id from a typed bookmark or /charts/[id] pathname. */
 export function resolveChartIdFromSavedView(

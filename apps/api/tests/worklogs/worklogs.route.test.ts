@@ -24,7 +24,7 @@ import type { WorklogsService } from '../../src/routes/api/worklogs/worklogs.ser
 import {
   WorkItemAccessError,
   WorkItemValidationError,
-} from '../../src/routes/api/workItems/workItems.errors';
+} from '../../src/routes/api/work-items/work-items.errors';
 import { createWorkLogListRow } from '../factories/worklog.factory';
 import { MOCK_AUTH_USER_ID } from '../helpers/mock-api-auth';
 import { withMountedRouter } from '../helpers/route-test.harness';

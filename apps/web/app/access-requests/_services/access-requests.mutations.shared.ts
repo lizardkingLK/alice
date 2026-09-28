@@ -37,7 +37,7 @@ export function createAccessRequestsService(
   // eslint-disable-next-line no-unused-vars -- structural callback type
   apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>
 ) {
-  const apiAccessRequests = '/api/accessRequests';
+  const apiAccessRequests = '/api/access-requests';
 
   async function denyAccessRequest(requestId: string): Promise<void> {
     await apiFetch<{ success: boolean }>(

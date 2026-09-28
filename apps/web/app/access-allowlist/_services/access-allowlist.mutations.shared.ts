@@ -43,7 +43,7 @@ export type AccessAllowlistListResult = {
 export function createAccessAllowlistService(
   apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>
 ) {
-  const apiAccessAllowlist = '/api/accessAllowlist';
+  const apiAccessAllowlist = '/api/access-allowlist';
 
   async function createAccessAllowlistEntry(
     input: AccessAllowlistCreateInput

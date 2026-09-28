@@ -30,7 +30,7 @@ export const chatAttachmentWireSchema = z.object({
   mimeType: z.string(),
   storagePath: z.string(),
   url: z.string(),
-  fileType: z.nativeEnum(ChatAttachmentFileTypeEnum),
+  fileType: z.enum(ChatAttachmentFileTypeEnum),
   expiresAt: z.string().nullable().optional(),
 });
 

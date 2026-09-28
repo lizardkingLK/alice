@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   resolveChartIdFromSavedView,
   SavedViewsService,
-} from '../../src/routes/api/savedViews/savedViews.service';
+} from '../../src/routes/api/saved-views/saved-views.service';
 
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
 const RECIPIENT_ID = '33333333-3333-4333-8333-333333333333';

@@ -85,7 +85,7 @@ describe('listWorkItemsPaginatedFromApi / getWorkItemFromApi', () => {
     });
 
     expect(apiFetchMock).toHaveBeenCalledWith(
-      `/api/workItems?page=1&limit=10&search=Ship&projectId=${row.project_id}&recordStatus=active`
+      `/api/work-items?page=1&limit=10&search=Ship&projectId=${row.project_id}&recordStatus=active`
     );
     expect(result.workItems[0]?.due_date).toBe('2026-08-17');
     expect(result.totalCount).toBe(1);

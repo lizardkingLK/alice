@@ -38,7 +38,7 @@ Page / RSC
   → getWorkItemsPaginated() / getWorkItem()     ← stable API
        → shouldReadViaApi('work-items')?
             no  → supabase-js (today)
-            yes → apiFetch GET /api/workItems     (Prisma on Express)
+            yes → apiFetch GET /api/work-items     (Prisma on Express)
 ```
 
 Client `apiFetch` in `*.service.ts` is **out of scope** (creates, patches, deletes, GitHub, signed URLs).
@@ -109,13 +109,13 @@ That is how one app toggle is limited to work-items without a second env var.
 
 Only readers that already have a Prisma Express twin:
 
-| Server function              | SSR today   | Express twin             | Gate?         |
-| ---------------------------- | ----------- | ------------------------ | ------------- |
-| `getWorkItemsPaginated`      | supabase-js | `GET /api/workItems`     | **Yes**       |
-| `getWorkItem`                | supabase-js | `GET /api/workItems/:id` | **Yes**       |
-| `getWorkItems` (unpaginated) | supabase-js | none yet                 | No — stay SSR |
-| `getWorkItemAncestors`       | supabase-js | none yet                 | No — stay SSR |
-| Worklogs / attachments list  | supabase-js | none / Storage           | No            |
+| Server function              | SSR today   | Express twin              | Gate?         |
+| ---------------------------- | ----------- | ------------------------- | ------------- |
+| `getWorkItemsPaginated`      | supabase-js | `GET /api/work-items`     | **Yes**       |
+| `getWorkItem`                | supabase-js | `GET /api/work-items/:id` | **Yes**       |
+| `getWorkItems` (unpaginated) | supabase-js | none yet                  | No — stay SSR |
+| `getWorkItemAncestors`       | supabase-js | none yet                  | No — stay SSR |
+| Worklogs / attachments list  | supabase-js | none / Storage            | No            |
 
 When a later domain adds Prisma `listPaginated` / `getDetailById`:
 

@@ -18,7 +18,7 @@ describe('createAccessAllowlistService', () => {
     const created = await service.createAccessAllowlistEntry(input);
 
     // Assert
-    expect(apiFetch).toHaveBeenCalledWith('/api/accessAllowlist', {
+    expect(apiFetch).toHaveBeenCalledWith('/api/access-allowlist', {
       method: 'POST',
       body: JSON.stringify(input),
     });
@@ -40,7 +40,7 @@ describe('createAccessAllowlistService', () => {
     );
 
     // Assert
-    expect(apiFetch).toHaveBeenCalledWith(`/api/accessAllowlist/${entry.id}`, {
+    expect(apiFetch).toHaveBeenCalledWith(`/api/access-allowlist/${entry.id}`, {
       method: 'PUT',
       body: JSON.stringify({
         ...input,
@@ -63,7 +63,7 @@ describe('createAccessAllowlistService', () => {
 
     // Assert
     expect(apiFetch).toHaveBeenCalledWith(
-      '/api/accessAllowlist/allowlist-123',
+      '/api/access-allowlist/allowlist-123',
       {
         method: 'DELETE',
         body: JSON.stringify({

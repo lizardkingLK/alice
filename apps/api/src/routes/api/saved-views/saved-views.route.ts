@@ -8,8 +8,8 @@ import {
   createSavedViewSchema,
   shareSavedViewSchema,
   updateSavedViewSchema,
-} from './savedViews.schemas';
-import { SavedViewsService } from './savedViews.service';
+} from './saved-views.schemas';
+import { SavedViewsService } from './saved-views.service';
 
 export type SavedViewsRouterDeps = {
   savedViewsService: SavedViewsService;

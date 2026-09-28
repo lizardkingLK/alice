@@ -18,14 +18,33 @@ requires appropriate permissions for each integration.
 
 ## GitHub
 
-Use the **GitHub** card to:
+Use the **GitHub** card to authorize your GitHub account with OAuth and bind one
+repository (`owner/repo`) to the project. Alice uses that link for pull
+requests, commits, and branch activity on work items.
 
-1. Select **Modify GitHub Settings** (or equivalent).
-2. Enter your repository and a **personal access token** (PAT).
-3. Save.
+### Connect or update
 
-Tokens are stored encrypted. Alice uses a **write-only** contract for linked PR
-and commit metadata — follow your org's token scope policy.
+1. Select **Modify GitHub Settings** (or **Connect GitHub** if nothing is linked
+   yet).
+2. If status shows **Not connected**, select **Connect GitHub**. A popup opens
+   for GitHub consent — allow popups for Alice if the browser blocks it.
+3. After you approve access, the popup returns via
+   `/integrations/github/done`. Close it when prompted; the project page
+   refreshes the connection automatically.
+4. Pick a repository from the list (or paste a
+   `https://github.com/owner/repo` URL).
+5. Select **Save GitHub Configuration**.
+
+You can **Switch Account** to reconnect with a different GitHub user, or
+**Disconnect** to revoke the OAuth connection. Only the person who authorized
+GitHub (or an admin who owns an admin-established connection) can disconnect
+it.
+
+Tokens stay on the server and are never shown in the UI. You do **not** paste a
+personal access token for the OAuth path. Projects that still have a legacy PAT
+are labeled as such until you reconnect with OAuth.
+
+Without a connected account, Alice can only work with **public** repositories.
 
 ---
 
