@@ -11,7 +11,7 @@ Related:
 - Feature index: [README.md](./README.md)
 - Dashboard shell: `apps/web/app/dashboard/_components/`
 - Favorites storage: `apps/web/lib/favorites/`
-- Views API: `apps/api/src/routes/api/savedViews/`
+- Views API: `apps/api/src/routes/api/saved-views/`
 - Schema: `saved_views`, `saved_view_shares`
 
 ---

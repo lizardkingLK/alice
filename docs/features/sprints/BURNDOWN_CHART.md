@@ -264,7 +264,7 @@ ALTER TABLE work_items
   ADD COLUMN done_at timestamptz NULL;
 ```
 
-**Backend rule (in `workItems.repository.ts`):**
+**Backend rule (in `work-items.repository.ts`):**
 
 ```ts
 // When status changes to 'Done', set done_at = now()

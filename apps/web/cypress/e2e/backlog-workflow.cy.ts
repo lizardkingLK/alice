@@ -96,8 +96,8 @@ describe('Backlog and Sprint E2E Workflow', () => {
 
     // Intercept API routes
     cy.intercept('POST', '**/api/sprints').as('createSprint');
-    cy.intercept('POST', '**/api/workItems').as('createWorkItem');
-    cy.intercept('PATCH', '**/api/workItems/*').as('updateWorkItem');
+    cy.intercept('POST', '**/api/work-items').as('createWorkItem');
+    cy.intercept('PATCH', '**/api/work-items/*').as('updateWorkItem');
     cy.intercept('PATCH', '**/api/sprints/*/status').as('updateSprintStatus');
   });
 

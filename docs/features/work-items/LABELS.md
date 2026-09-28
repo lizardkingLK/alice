@@ -10,7 +10,7 @@ Related:
 - Feature index: [README.md](./README.md)
 - Schema: `work_items.labels` in `packages/db/prisma/schema.prisma`
 - Shared helpers: `packages/types/src/work-item-labels.ts`
-- API: `apps/api/src/routes/api/workItems/`
+- API: `apps/api/src/routes/api/work-items/`
 - UI: classic/modern create, details sidebar patch, search results panel
 
 ---

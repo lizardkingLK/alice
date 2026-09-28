@@ -8,8 +8,8 @@ import {
   ACCESS_REQUEST_ALREADY_GRANTED_MESSAGE,
   ACCESS_REQUEST_LIMIT_MESSAGE,
 } from '@repo/types';
-import { AccessRequestsService } from '../../src/routes/api/accessRequests/accessRequests.service';
-import type { AccessRequestsRepository } from '../../src/routes/api/accessRequests/accessRequests.repository';
+import { AccessRequestsService } from '../../src/routes/api/access-requests/access-requests.service';
+import type { AccessRequestsRepository } from '../../src/routes/api/access-requests/access-requests.repository';
 import type { NotificationsRepository } from '../../src/routes/api/notifications/notifications.repository';
 
 const repository = {

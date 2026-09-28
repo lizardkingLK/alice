@@ -1,8 +1,8 @@
 import { supabase } from '../lib/supabase';
 import { NotificationsService } from '../routes/api/notifications/notifications.service';
-import { WorkItemRepository } from '../routes/api/workItems/workItems.repository';
-import { WorkItemService } from '../routes/api/workItems/workItems.service';
-import { createWorkItemsRouter } from '../routes/api/workItems/workItems.route';
+import { WorkItemRepository } from '../routes/api/work-items/work-items.repository';
+import { WorkItemService } from '../routes/api/work-items/work-items.service';
+import { createWorkItemsRouter } from '../routes/api/work-items/work-items.route';
 import {
   SprintsRepository,
   SprintBurndownRepository,
@@ -23,12 +23,12 @@ import { createAttachmentsRouter } from '../routes/api/attachments/attachments.r
 import { WorklogsRepository } from '../routes/api/worklogs/worklogs.repository';
 import { WorklogsService } from '../routes/api/worklogs/worklogs.service';
 import { createWorklogsRouter } from '../routes/api/worklogs/worklogs.route';
-import { AccessAllowlistRepository } from '../routes/api/accessAllowlist/accessAllowlist.repository';
-import { AccessAllowlistService } from '../routes/api/accessAllowlist/accessAllowlist.service';
-import { createAccessAllowlistRouter } from '../routes/api/accessAllowlist/accessAllowlist.route';
-import { AccessRequestsRepository } from '../routes/api/accessRequests/accessRequests.repository';
-import { AccessRequestsService } from '../routes/api/accessRequests/accessRequests.service';
-import { createAccessRequestsRouter } from '../routes/api/accessRequests/accessRequests.route';
+import { AccessAllowlistRepository } from '../routes/api/access-allowlist/access-allowlist.repository';
+import { AccessAllowlistService } from '../routes/api/access-allowlist/access-allowlist.service';
+import { createAccessAllowlistRouter } from '../routes/api/access-allowlist/access-allowlist.route';
+import { AccessRequestsRepository } from '../routes/api/access-requests/access-requests.repository';
+import { AccessRequestsService } from '../routes/api/access-requests/access-requests.service';
+import { createAccessRequestsRouter } from '../routes/api/access-requests/access-requests.route';
 import { CommentsRepository } from '../routes/api/comments/comments.repository';
 import { CommentsService } from '../routes/api/comments/comments.service';
 import { createCommentsRouter } from '../routes/api/comments/comments.route';
@@ -62,9 +62,9 @@ import { createTeamsRouter } from '../routes/api/teams/teams.route';
 import { ProfileService } from '../routes/api/profile/profile.service';
 import { ProfileRepository } from '../routes/api/profile/profile.repository';
 import { createProfileRouter } from '../routes/api/profile/profile.route';
-import { SavedViewsRepository } from '../routes/api/savedViews/savedViews.repository';
-import { SavedViewsService } from '../routes/api/savedViews/savedViews.service';
-import { createSavedViewsRouter } from '../routes/api/savedViews/savedViews.route';
+import { SavedViewsRepository } from '../routes/api/saved-views/saved-views.repository';
+import { SavedViewsService } from '../routes/api/saved-views/saved-views.service';
+import { createSavedViewsRouter } from '../routes/api/saved-views/saved-views.route';
 import { ChartsRepository } from '../routes/api/charts/charts.repository';
 import { ChartsService } from '../routes/api/charts/charts.service';
 import { createChartsRouter } from '../routes/api/charts/charts.route';

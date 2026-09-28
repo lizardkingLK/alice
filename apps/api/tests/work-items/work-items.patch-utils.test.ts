@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveBoardColumnPatchValue } from '../../src/routes/api/workItems/workItems.patch-utils';
+import { resolveBoardColumnPatchValue } from '../../src/routes/api/work-items/work-items.patch-utils';
 
 describe('resolveBoardColumnPatchValue', () => {
   it('preserves placement for unrelated omitted patches', () => {

@@ -21,8 +21,8 @@ import {
   updateProjectSchema,
 } from './projects.schemas';
 import { withoutIntegrationSecrets } from './projects.repository';
-import { type WorkItemBody } from '../workItems/workItems.schemas';
-import type { WorkItemService } from '../workItems/workItems.service';
+import { type WorkItemBody } from '../work-items/work-items.schemas';
+import type { WorkItemService } from '../work-items/work-items.service';
 import { supabase } from '../../../lib/supabase';
 import type { JiraService } from '../jira/jira.service';
 import type { ParsedJiraIssue } from '../jira/jira.types';

@@ -4,7 +4,7 @@ import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
-import { AccessRequestsService } from './accessRequests.service';
+import { AccessRequestsService } from './access-requests.service';
 
 function routeError(
   res: Response,

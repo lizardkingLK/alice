@@ -306,7 +306,7 @@ Unused GET still needs:
 - API unit tests for the Prisma query (select, `where`, order, pagination) **and** the HTTP handler
 - The same pagination/filter semantics as `runPaginatedSelect` / the feature’s server reader
 
-First domain: **work-items** (`GET /api/workItems`, `GET /api/workItems/:id`). Next.js still reads via RSC supabase-js.
+First domain: **work-items** (`GET /api/work-items`, `GET /api/work-items/:id`). Next.js still reads via RSC supabase-js.
 
 ---
 
@@ -398,6 +398,18 @@ Keep this rule:
 1. **`routing.ts` remains the mount table** for versioned routes (factory outputs are mounted under `/api/vN/...`).
 2. Optional middleware becomes a **single guard in front of the mount table**, so unknown versions get a consistent response (and you avoid doing this check per-feature).
 
+### Path naming (kebab-case)
+
+HTTP path segments and route **module** folders/files under `apps/api/src/routes/api/` use **kebab-case**, matching `apps/web` app segments:
+
+| Layer              | Convention             | Example                                                          |
+| ------------------ | ---------------------- | ---------------------------------------------------------------- |
+| Mount              | kebab-case             | `/api/work-items`, `/api/v1/work-items`, `/api/access-allowlist` |
+| Folder + files     | kebab-case             | `routes/api/work-items/work-items.route.ts`                      |
+| TypeScript symbols | camelCase / PascalCase | `workItems.router`, `WorkItemService`, `createWorkItemsRouter`   |
+
+Do **not** introduce new camelCase mounts (`/api/workItems`). Composition export keys may stay camelCase; they are not URLs.
+
 ### Recommended shape
 
 Put an Express “version guard” router directly under the version prefix, before the mounts:
@@ -421,7 +433,7 @@ routesConfig.use('/api/v', versionGuard);
 routesConfig.use('/api/v1/health', health.v1Router);
 routesConfig.use('/api/v2/health', health.v2Router);
 // ...
-routesConfig.use('/api/v5/workItems', workItems.v5Router);
+routesConfig.use('/api/v5/work-items', workItems.v5Router);
 ```
 
 ### Why a single guard instead of per-route middleware
@@ -432,7 +444,7 @@ routesConfig.use('/api/v5/workItems', workItems.v5Router);
 
 ### What not to do
 
-- Do not put version switching in each handler (e.g. inside `workItems.route.ts`).
+- Do not put version switching in each handler (e.g. inside `work-items.route.ts`).
 - Do not hide the mount table behind a rewrite that would make it unclear which router owns `/api/vN/<resource>`.
 
 ---
@@ -470,7 +482,7 @@ Anti-pattern: `WorkItemServiceV1` and `V2` that both `findMany` the same table.
 
 | Layer          | Location                                  | Notes                                                  |
 | -------------- | ----------------------------------------- | ------------------------------------------------------ |
-| API            | `apps/api/.../workItems.schemas.ts`       | Create + PATCH body Zod (to move)                      |
+| API            | `apps/api/.../work-items.schemas.ts`      | Create + PATCH body Zod (to move)                      |
 | Types v1 reads | `packages/types/src/api/v1/work-items.ts` | Prisma selects + `listWorkItemsQuerySchema` only       |
 | Web            | `work-items.mutations.client.ts`          | Hand-built `FormData` → `Record` → JSON; no shared Zod |
 
@@ -487,7 +499,7 @@ packages/types/src/api/v1/work-items.ts
   isBlockedPastDueDateChange()       # PATCH-only due_date rule (pure fn)
   z.infer types: CreateWorkItemBody, PatchWorkItemBody, …
 
-apps/api/.../workItems.schemas.ts
+apps/api/.../work-items.schemas.ts
   re-export from @repo/types/api/v1 (thin shim until imports updated)
 
 apps/web/app/work-items/_helpers/work-item-mutation-body.ts
@@ -511,7 +523,7 @@ apps/web/.../work-items.mutations.client.ts
 
 - Client-side Zod in every form component (optional UX follow-up; mutation client parse is the minimum).
 - Zod output/response schemas for mutation responses (Prisma payload / existing wire shape stays as-is).
-- `/api/v1/workItems` mount (step 5; schemas are version-agnostic until a breaking wire change).
+- `/api/v1/work-items` mount (step 5; schemas are version-agnostic until a breaking wire change).
 - Prisma Client inside `apps/web` for reads — use [DATA_RETRIEVAL.md](./DATA_RETRIEVAL.md) (`reads.api.server.ts` + toggle) instead.
 
 ---

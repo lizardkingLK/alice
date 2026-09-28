@@ -49,7 +49,7 @@ function setNullableId(
   }
 }
 
-/** Query string for `GET /api/workItems` (matches `listWorkItemsQuerySchema`). */
+/** Query string for `GET /api/work-items` (matches `listWorkItemsQuerySchema`). */
 export function buildWorkItemsListSearchParams(input: {
   page: number;
   limit: number;
@@ -120,7 +120,7 @@ export async function listWorkItemsPaginatedFromApi(
     filters,
   });
   const result = await apiFetch<GetWorkItemsPaginatedResponse>(
-    `/api/workItems?${params.toString()}`
+    `/api/work-items?${params.toString()}`
   );
 
   return {
@@ -136,7 +136,7 @@ export async function getWorkItemFromApi(
 ): Promise<DbWorkItem | null> {
   try {
     const result = await apiFetch<{ data: Record<string, unknown> | null }>(
-      `/api/workItems/${workItemId}`
+      `/api/work-items/${workItemId}`
     );
     if (!result.data) {
       return null;

@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createWorkItemsRouter } from '../../src/routes/api/workItems/workItems.route';
-import type { WorkItemService } from '../../src/routes/api/workItems/workItems.service';
+import { createWorkItemsRouter } from '../../src/routes/api/work-items/work-items.route';
+import type { WorkItemService } from '../../src/routes/api/work-items/work-items.service';
 import { MOCK_AUTH_USER_ID } from '../helpers/mock-api-auth';
 import { withMountedRouter } from '../helpers/route-test.harness';
 import { createWorkItemListRow } from '../factories/work-item.factory';
 import {
   BoardMoveForbiddenError,
   StatusTransitionForbiddenError,
-} from '../../src/routes/api/workItems/workItems.errors';
+} from '../../src/routes/api/work-items/work-items.errors';
 import {
   BOARD_MOVE_FORBIDDEN_CODE,
   STATUS_TRANSITION_FORBIDDEN_CODE,
@@ -62,11 +62,11 @@ describe('work-items unused Prisma GET routes', () => {
     listWorkItemsPaginatedMock.mockResolvedValue(page);
 
     await withMountedRouter(
-      '/api/workItems',
+      '/api/work-items',
       workItemsRouter,
       async (baseUrl) => {
         const response = await fetch(
-          `${baseUrl}/api/workItems?projectId=${page.workItems[0]!.project_id}&view=hierarchy`
+          `${baseUrl}/api/work-items?projectId=${page.workItems[0]!.project_id}&view=hierarchy`
         );
         const body = await response.json();
 
@@ -88,10 +88,10 @@ describe('work-items unused Prisma GET routes', () => {
 
   it('rejects invalid list pagination', async () => {
     await withMountedRouter(
-      '/api/workItems',
+      '/api/work-items',
       workItemsRouter,
       async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/api/workItems?page=0`);
+        const response = await fetch(`${baseUrl}/api/work-items?page=0`);
         expect(response.status).toBe(400);
         expect(listWorkItemsPaginatedMock).not.toHaveBeenCalled();
       }
@@ -103,10 +103,10 @@ describe('work-items unused Prisma GET routes', () => {
     getWorkItemDetailMock.mockResolvedValue(row);
 
     await withMountedRouter(
-      '/api/workItems',
+      '/api/work-items',
       workItemsRouter,
       async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/api/workItems/${row.id}`);
+        const response = await fetch(`${baseUrl}/api/work-items/${row.id}`);
         const body = await response.json();
 
         expect(response.status).toBe(200);
@@ -127,10 +127,10 @@ describe('work-items unused Prisma GET routes', () => {
     const id = '22222222-2222-4222-8222-222222222222';
 
     await withMountedRouter(
-      '/api/workItems',
+      '/api/work-items',
       workItemsRouter,
       async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/api/workItems/${id}`);
+        const response = await fetch(`${baseUrl}/api/work-items/${id}`);
         const body = await response.json();
 
         expect(response.status).toBe(404);
@@ -150,10 +150,10 @@ describe('work-items unused Prisma GET routes', () => {
     updateWorkItemMock.mockRejectedValue(new BoardMoveForbiddenError());
 
     await withMountedRouter(
-      '/api/workItems',
+      '/api/work-items',
       workItemsRouter,
       async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/api/workItems/${row.id}`, {
+        const response = await fetch(`${baseUrl}/api/work-items/${row.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -185,10 +185,10 @@ describe('work-items unused Prisma GET routes', () => {
     updateWorkItemMock.mockRejectedValue(new StatusTransitionForbiddenError());
 
     await withMountedRouter(
-      '/api/workItems',
+      '/api/work-items',
       workItemsRouter,
       async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/api/workItems/${row.id}`, {
+        const response = await fetch(`${baseUrl}/api/work-items/${row.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

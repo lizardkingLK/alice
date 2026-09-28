@@ -11,8 +11,8 @@ import {
   accessAllowlistCreateSchema,
   accessAllowlistLockActionSchema,
   accessAllowlistUpdateSchema,
-} from './accessAllowlist.schemas';
-import { AccessAllowlistService } from './accessAllowlist.service';
+} from './access-allowlist.schemas';
+import { AccessAllowlistService } from './access-allowlist.service';
 
 function routeError(
   res: Response,

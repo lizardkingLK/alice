@@ -89,17 +89,17 @@ generic error on `/login`.
 
 ### Deny
 
-Explicit action: `POST /api/accessRequests/:id/deny` (admin only)
+Explicit action: `POST /api/access-requests/:id/deny` (admin only)
 
 1. Sets request → `denied`
 2. Archives linked notifications
 
 ## API
 
-| Method | Path                           | Auth   | Purpose                         |
-| ------ | ------------------------------ | ------ | ------------------------------- |
-| POST   | `/api/notifications/contact`   | Public | Submit contact / access request |
-| POST   | `/api/accessRequests/:id/deny` | Admin  | Deny pending request            |
+| Method | Path                            | Auth   | Purpose                         |
+| ------ | ------------------------------- | ------ | ------------------------------- |
+| POST   | `/api/notifications/contact`    | Public | Submit contact / access request |
+| POST   | `/api/access-requests/:id/deny` | Admin  | Deny pending request            |
 
 Contact payload may include optional `requestedProjectKeys` (string or string[]).
 
@@ -109,7 +109,7 @@ List/read uses Supabase from the web RSC layer (`listAccessRequests`), same patt
 
 | File                                                        | Covers                                            |
 | ----------------------------------------------------------- | ------------------------------------------------- |
-| `apps/api/tests/access/accessRequests.service.test.ts`      | Submission limits, deny, grant hook, project keys |
+| `apps/api/tests/access/access-requests.service.test.ts`     | Submission limits, deny, grant hook, project keys |
 | `apps/web/tests/access/access-request-project-keys.test.ts` | Key parsing helpers                               |
 | `apps/web/tests/auth/login-error-message.test.ts`           | Invite / password login copy                      |
 | `apps/web/tests/dashboard/dashboard-notifications.test.tsx` | Inbox → Requests deep link                        |

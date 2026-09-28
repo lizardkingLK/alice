@@ -12,9 +12,9 @@ import {
   type AccessAllowlistKind,
   type AccessAllowlistRow,
   type AccessAllowlistStatus,
-} from './accessAllowlist.repository';
+} from './access-allowlist.repository';
 import { notifyAllowlistedEmail } from './notify-allowlisted-email';
-import type { AccessRequestsService } from '../accessRequests/accessRequests.service';
+import type { AccessRequestsService } from '../access-requests/access-requests.service';
 
 async function requireAdmin(actorId: string) {
   return await requireUserWithRole(

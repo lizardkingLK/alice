@@ -7,7 +7,7 @@ import {
 } from '@repo/types';
 import { env } from '../../../config/env';
 import type { NotificationsService } from './notifications.service';
-import type { AccessRequestsService } from '../accessRequests/accessRequests.service';
+import type { AccessRequestsService } from '../access-requests/access-requests.service';
 
 const sendSchema = z.object({
   subscriberId: z.string().min(1),

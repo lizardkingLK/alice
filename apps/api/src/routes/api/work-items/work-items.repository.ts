@@ -25,13 +25,13 @@ import {
   prismaOptionalDate,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
-import { WorkItemAccessError } from './workItems.errors';
-import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
+import { WorkItemAccessError } from './work-items.errors';
+import { WorkItemBody, WorkItemUpdateBody } from './work-items.schemas';
 import {
   buildWorkItemPrismaListWhere,
   workItemListPageSlice,
   type WorkItemPaginatedList,
-} from './workItems.prisma-query';
+} from './work-items.prisma-query';
 
 export type DbWorkItem = Tables<'work_items'>;
 

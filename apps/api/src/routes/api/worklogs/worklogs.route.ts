@@ -8,7 +8,7 @@ import {
 import {
   WorkItemAccessError,
   WorkItemValidationError,
-} from '../workItems/workItems.errors';
+} from '../work-items/work-items.errors';
 import { WorklogsService } from './worklogs.service';
 
 export type WorklogsRouterDeps = {

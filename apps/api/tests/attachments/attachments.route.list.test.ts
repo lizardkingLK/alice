@@ -33,7 +33,7 @@ vi.mock('../../src/routes/api/attachments/attachments.service', () => {
 
 import { createAttachmentsRouter } from '../../src/routes/api/attachments/attachments.route';
 import type { AttachmentsService } from '../../src/routes/api/attachments/attachments.service';
-import { WorkItemAccessError } from '../../src/routes/api/workItems/workItems.errors';
+import { WorkItemAccessError } from '../../src/routes/api/work-items/work-items.errors';
 import { createAttachmentListRow } from '../factories/attachment.factory';
 import { MOCK_AUTH_USER_ID } from '../helpers/mock-api-auth';
 import { withMountedRouter } from '../helpers/route-test.harness';

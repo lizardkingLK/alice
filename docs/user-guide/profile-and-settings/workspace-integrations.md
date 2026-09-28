@@ -48,10 +48,10 @@ If no model is configured, chat may show an error until an admin adds one here.
 
 ## vs project integrations
 
-| Scope         | Where                          | Examples               |
-| ------------- | ------------------------------ | ---------------------- |
-| **Workspace** | Settings → **Integrations**    | Chat models, Slack     |
-| **Project**   | Project → **Integrations** tab | GitHub PAT, Jira OAuth |
+| Scope         | Where                          | Examples                 |
+| ------------- | ------------------------------ | ------------------------ |
+| **Workspace** | Settings → **Integrations**    | Chat models, Slack       |
+| **Project**   | Project → **Integrations** tab | GitHub OAuth, Jira OAuth |
 
 Do not confuse workspace AI settings with per-project GitHub/Jira — see
 [Project integrations](../projects/project-integrations.md).

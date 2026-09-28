@@ -665,7 +665,7 @@ errors rather than being silently redirected.
 ### 9.4 Historical enforcement sketch (superseded)
 
 ```typescript
-// Historical proposal only; see workItems.service.ts for the shipped evaluator.
+// Historical proposal only; see work-items.service.ts for the shipped evaluator.
 
 async function assertColumnMovePermitted(
   boardConfig: BoardConfig,
@@ -907,16 +907,16 @@ All listed questions were resolved by Stages 1–5.
 
 ### Backend / API
 
-| File                                                      | Relevance                                                                 |
-| --------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `apps/api/src/routes/api/workItems/workItems.service.ts`  | Add column-move permission check before the status PATCH                  |
-| `apps/api/src/routes/api/workItems/workItems.route.ts`    | Wire any new validation into the route handler                            |
-| `apps/api/src/routes/api/workItems/workItems.errors.ts`   | Defines the stable `BoardMoveForbiddenError` policy denial (403)          |
-| `apps/api/src/routes/api/projects/projects.route.ts`      | Extend or add an endpoint to save `workflow_config`                       |
-| `apps/api/src/routes/api/projects/projects.repository.ts` | `patch.attributes_config` pattern (lines 81–82) shows how to write JSONB  |
-| `apps/api/src/routes/api/chat/chat.route.data.ts`         | Declares board entity and draft tools and the draft-only protocol         |
-| `apps/api/src/routes/api/chat/chat.service.ts`            | Checks access/role, resolves entities, validates, and emits draft actions |
-| `apps/api/src/routes/api/chat/board-draft.ts`             | Resolves stable/temporary column references into a validated BoardConfig  |
+| File                                                       | Relevance                                                                 |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `apps/api/src/routes/api/work-items/work-items.service.ts` | Add column-move permission check before the status PATCH                  |
+| `apps/api/src/routes/api/work-items/work-items.route.ts`   | Wire any new validation into the route handler                            |
+| `apps/api/src/routes/api/work-items/work-items.errors.ts`  | Defines the stable `BoardMoveForbiddenError` policy denial (403)          |
+| `apps/api/src/routes/api/projects/projects.route.ts`       | Extend or add an endpoint to save `workflow_config`                       |
+| `apps/api/src/routes/api/projects/projects.repository.ts`  | `patch.attributes_config` pattern (lines 81–82) shows how to write JSONB  |
+| `apps/api/src/routes/api/chat/chat.route.data.ts`          | Declares board entity and draft tools and the draft-only protocol         |
+| `apps/api/src/routes/api/chat/chat.service.ts`             | Checks access/role, resolves entities, validates, and emits draft actions |
+| `apps/api/src/routes/api/chat/board-draft.ts`              | Resolves stable/temporary column references into a validated BoardConfig  |
 
 ### Shared types / schemas
 

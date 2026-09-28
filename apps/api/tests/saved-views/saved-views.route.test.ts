@@ -23,7 +23,7 @@ vi.mock('../../src/middlewares/auth', async () => {
   return { requireApiAuth: mockRequireApiAuth };
 });
 
-vi.mock('../../src/routes/api/savedViews/savedViews.service', () => {
+vi.mock('../../src/routes/api/saved-views/saved-views.service', () => {
   class SavedViewsService {
     create = createMock;
     update = updateMock;
@@ -37,8 +37,8 @@ vi.mock('../../src/routes/api/savedViews/savedViews.service', () => {
   return { SavedViewsService };
 });
 
-import { createSavedViewsRouter } from '../../src/routes/api/savedViews/savedViews.route';
-import type { SavedViewsService } from '../../src/routes/api/savedViews/savedViews.service';
+import { createSavedViewsRouter } from '../../src/routes/api/saved-views/saved-views.route';
+import type { SavedViewsService } from '../../src/routes/api/saved-views/saved-views.service';
 import { MOCK_AUTH_USER_ID } from '../helpers/mock-api-auth';
 import { withMountedRouter } from '../helpers/route-test.harness';
 

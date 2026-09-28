@@ -18,16 +18,16 @@ Related:
 
 P0 coverage for the admission gate and admin form lives under `apps/web/tests/access/`:
 
-| Spec                                 | Focus                                                 |
-| ------------------------------------ | ----------------------------------------------------- |
-| `access-allowlist.test.ts`           | Pure helpers (`isPublicAccessPath`, normalize/expiry) |
-| `access-allowlist-gate.test.ts`      | `isEmailAllowed` with mocked admin client             |
-| `access-allowlist-schema.test.ts`    | Shared Zod domain/email create schemas                |
-| `accessAllowlist.service.test.ts`    | Web mutation service factory                          |
-| `access-allowlist-form.test.tsx`     | Admin create/edit form + Zod alerts                   |
-| `access-allowlist-registry.test.tsx` | Debounced search, pagination, delete                  |
-| `home-footer.test.tsx`               | Footer app-link gating                                |
-| `contact-request-schema.test.ts`     | Contact request Zod schema                            |
+| Spec                                        | Focus                                                 |
+| ------------------------------------------- | ----------------------------------------------------- |
+| `access-allowlist.test.ts`                  | Pure helpers (`isPublicAccessPath`, normalize/expiry) |
+| `access-allowlist-gate.test.ts`             | `isEmailAllowed` with mocked admin client             |
+| `access-allowlist-schema.test.ts`           | Shared Zod domain/email create schemas                |
+| `access-allowlist.mutations.shared.test.ts` | Web mutation service factory                          |
+| `access-allowlist-form.test.tsx`            | Admin create/edit form + Zod alerts                   |
+| `access-allowlist-registry.test.tsx`        | Debounced search, pagination, delete                  |
+| `home-footer.test.tsx`                      | Footer app-link gating                                |
+| `contact-request-schema.test.ts`            | Contact request Zod schema                            |
 
 Factory / mocks:
 
