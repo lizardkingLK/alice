@@ -19,7 +19,7 @@ import {
   type WorkItemType,
 } from '@repo/types';
 import { boardConfigSchema, type BoardConfig } from '@repo/types/api/v1';
-import type { WorkItemService } from '../workItems/workItems.service';
+import type { WorkItemService } from '../work-items/work-items.service';
 import type { SprintsService } from '../sprints/sprints.service';
 import type { ProjectsService } from '../projects/projects.service';
 import type { ProjectsRepository } from '../projects/projects.repository';
@@ -1583,23 +1583,22 @@ export class ChatService {
     messages: StoredChatMessage[]
   ): Promise<boolean> {
     const now = Date.now();
-    let hasRefreshedAny = false;
-
-    for (const msg of messages) {
-      if (!msg.attachments || msg.attachments.length === 0) continue;
-      for (let i = 0; i < msg.attachments.length; i++) {
-        const refreshed = await this.refreshAttachmentAtIndex(
-          msg.attachments,
-          i,
-          now
-        );
-        if (refreshed) {
-          hasRefreshedAny = true;
-        }
+    const refreshes = messages.flatMap((msg) => {
+      const attachments = msg.attachments;
+      if (!attachments || attachments.length === 0) {
+        return [];
       }
+      return attachments.map((_, index) =>
+        this.refreshAttachmentAtIndex(attachments, index, now)
+      );
+    });
+
+    if (refreshes.length === 0) {
+      return false;
     }
 
-    return hasRefreshedAny;
+    const results = await Promise.all(refreshes);
+    return results.some(Boolean);
   }
 
   async loadChatHistory(conversationId: string): Promise<StoredChatMessage[]> {

@@ -408,7 +408,7 @@ are logged; the allowlist row still saves.
 | Domain allowlist row     | None                                                    |
 | Inactive email on create | None                                                    |
 
-Implementation: `apps/api/src/routes/api/accessAllowlist/notify-allowlisted-email.ts`.
+Implementation: `apps/api/src/routes/api/access-allowlist/notify-allowlisted-email.ts`.
 Customize copy in the Supabase dashboard email templates (Invite / Magic Link).
 
 Until the invitee sets a password (invite link or **Forgot password**),
@@ -422,7 +422,7 @@ Invitees should use the invite email or **Forgot password**.
 ## API / security notes
 
 - Admin registry list on `/users` is RSC (`listAccessAllowlist`, admin-gated);
-  mutations stay `POST/PUT/DELETE /api/accessAllowlist`.
+  mutations stay `POST/PUT/DELETE /api/access-allowlist`.
 - Allowlist status badge is **display-derived**: inactive/archived/deleted stay
   as stored; `active` + past `expires_at` (UTC) shows **expired** via
   `getAccessAllowlistDisplayStatus` (does not mutate the row).
@@ -467,7 +467,7 @@ Invitees should use the invite email or **Forgot password**.
    `POST /api/notifications/contact`; API inserts in-app notifications for
    all active admins.
 9. ~~Admin CRUD for allowlist (can follow in a second PR).~~
-   **Done:** mutations under `POST/PUT/DELETE /api/accessAllowlist`;
+   **Done:** mutations under `POST/PUT/DELETE /api/access-allowlist`;
    list/detail reads are RSC (`accessAllowlist.service.server.ts`).
    Web mutation wrappers in `apps/web/app/access-allowlist/_services/`.
    Admin UI: `/users?tab=allowlist` tabbed panel (`UsersWorkspace` +
@@ -488,23 +488,23 @@ Invitees should use the invite email or **Forgot password**.
 Coverage lives under `apps/web/tests/access/` (see also
 [TESTING_DEVELOPMENT_FLOW.md](../../guides/TESTING_DEVELOPMENT_FLOW.md)):
 
-| Spec                                 | SUT                                                                                                                   | Focus                                                                            |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `access-allowlist.test.ts`           | `isPublicAccessPath`, `normalizeEmail`, `extractEmailDomain`, `isAllowlistExpired`, `getAccessAllowlistDisplayStatus` | Public path set, email normalize/reject, domain extract, expiry + display status |
-| `access-allowlist-gate.test.ts`      | `isEmailAllowed`                                                                                                      | Email/domain hits, expiry deny, invalid email short-circuit, DB error            |
-| `access-allowlist-schema.test.ts`    | `@repo/types` allowlist Zod                                                                                           | Domain requires TLD (`fff` reject / `fff.com` accept); email shape               |
-| `accessAllowlist.service.test.ts`    | `createAccessAllowlistService`                                                                                        | Create/update/delete paths via fake `apiFetch`                                   |
-| `access-allowlist-form.test.tsx`     | `AccessAllowlistForm`                                                                                                 | Zod domain/email alerts, create/edit submit, no HTML `required`                  |
-| `access-allowlist-registry.test.tsx` | `AccessAllowlistRegistry`                                                                                             | Debounced search, pagination, add dialog, delete confirm, expired badge          |
-| `home-footer.test.tsx`               | `HomeFooter`                                                                                                          | Hide/show Workspace + Team when `showAppLinks`                                   |
-| `contact-request-schema.test.ts`     | `contactRequestSchema`                                                                                                | Shared Zod contact payload validation                                            |
+| Spec                                        | SUT                                                                                                                   | Focus                                                                            |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `access-allowlist.test.ts`                  | `isPublicAccessPath`, `normalizeEmail`, `extractEmailDomain`, `isAllowlistExpired`, `getAccessAllowlistDisplayStatus` | Public path set, email normalize/reject, domain extract, expiry + display status |
+| `access-allowlist-gate.test.ts`             | `isEmailAllowed`                                                                                                      | Email/domain hits, expiry deny, invalid email short-circuit, DB error            |
+| `access-allowlist-schema.test.ts`           | `@repo/types` allowlist Zod                                                                                           | Domain requires TLD (`fff` reject / `fff.com` accept); email shape               |
+| `access-allowlist.mutations.shared.test.ts` | `createAccessAllowlistService`                                                                                        | Create/update/delete paths via fake `apiFetch`                                   |
+| `access-allowlist-form.test.tsx`            | `AccessAllowlistForm`                                                                                                 | Zod domain/email alerts, create/edit submit, no HTML `required`                  |
+| `access-allowlist-registry.test.tsx`        | `AccessAllowlistRegistry`                                                                                             | Debounced search, pagination, add dialog, delete confirm, expired badge          |
+| `home-footer.test.tsx`                      | `HomeFooter`                                                                                                          | Hide/show Workspace + Team when `showAppLinks`                                   |
+| `contact-request-schema.test.ts`            | `contactRequestSchema`                                                                                                | Shared Zod contact payload validation                                            |
 
 API (`apps/api/tests/access/`):
 
 | Spec                               | SUT                      | Focus                                             |
 | ---------------------------------- | ------------------------ | ------------------------------------------------- |
 | `notify-allowlisted-email.test.ts` | `notifyAllowlistedEmail` | Invite vs magic-link fallback; mailer errors      |
-| `accessAllowlist.service.test.ts`  | `AccessAllowlistService` | Email on create/reactivate; skip domain and edits |
+| `access-allowlist.service.test.ts` | `AccessAllowlistService` | Email on create/reactivate; skip domain and edits |
 
 Shared factory / mocks:
 

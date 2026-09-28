@@ -2,7 +2,7 @@ import { apiFetch } from '@/lib/api/api-fetch.reads.use.client';
 import type { WorkItemGithubConfigStatus } from '@repo/types';
 import type { DbWorkItem } from '@/app/work-items/_types/work-items.reads.types';
 
-const workItemsPath = '/api/workItems';
+const workItemsPath = '/api/work-items';
 
 export type ParentCandidateWorkItem = {
   id: string;

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AccessAllowlistService } from '../../src/routes/api/accessAllowlist/accessAllowlist.service';
-import type { AccessAllowlistRepository } from '../../src/routes/api/accessAllowlist/accessAllowlist.repository';
+import { AccessAllowlistService } from '../../src/routes/api/access-allowlist/access-allowlist.service';
+import type { AccessAllowlistRepository } from '../../src/routes/api/access-allowlist/access-allowlist.repository';
 import { EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE } from '@repo/types';
 
 const {
@@ -34,7 +34,7 @@ vi.mock('../../src/lib/supabase', () => ({
 }));
 
 vi.mock(
-  '../../src/routes/api/accessAllowlist/notify-allowlisted-email',
+  '../../src/routes/api/access-allowlist/notify-allowlisted-email',
   () => ({
     notifyAllowlistedEmail: notifyMock,
   })

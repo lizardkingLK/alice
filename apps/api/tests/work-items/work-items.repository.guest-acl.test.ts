@@ -8,7 +8,7 @@ vi.mock('../../src/config/env', () => ({
   },
 }));
 
-import { WorkItemRepository } from '../../src/routes/api/workItems/workItems.repository';
+import { WorkItemRepository } from '../../src/routes/api/work-items/work-items.repository';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@repo/types';
 

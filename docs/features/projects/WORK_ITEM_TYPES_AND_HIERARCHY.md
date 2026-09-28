@@ -42,7 +42,7 @@ ALICE uses a two-tier hierarchy model:
   - `linkImportedJiraParents`: Links imported Jira parents complying strictly with the project's active hierarchy.
 - **`src/routes/api/projects/projects.service.ts`**:
   - Detects removed types during project updates and triggers migration.
-- **`src/routes/api/workItems/workItems.service.ts`**:
+- **`src/routes/api/work-items/work-items.service.ts`**:
   - Validates that `createWorkItem` and `updateWorkItem` enforce allowed project types.
 - **`src/routes/api/projects/projects.route.ts`**:
   - `POST /:id/jira/preview`: Returns discovered Jira issue types and preview counts.

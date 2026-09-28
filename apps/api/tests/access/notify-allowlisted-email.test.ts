@@ -24,7 +24,7 @@ import {
   buildAllowlistAuthRedirect,
   isExistingAuthUserError,
   notifyAllowlistedEmail,
-} from '../../src/routes/api/accessAllowlist/notify-allowlisted-email';
+} from '../../src/routes/api/access-allowlist/notify-allowlisted-email';
 
 describe('notifyAllowlistedEmail', () => {
   beforeEach(() => {

@@ -21,6 +21,7 @@
 6. **Backend Patterns**: When writing Express code, use strict TypeScript, explicit Request/Response types, and separate business logic from routes. 
 i.e. 
 - Using individual routers `app.use('/users', userRouter)`
+- HTTP mounts and `routes/api/<resource>/` folders/files use **kebab-case** (align with `apps/web` segments), e.g. `/api/work-items` → `work-items/work-items.route.ts`. TypeScript symbols stay camelCase/PascalCase.
 - Using services with repository pattern with following folder structure
 ```
 - users

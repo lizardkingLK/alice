@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { WorkItemService } from '../../src/routes/api/workItems/workItems.service';
-import type { WorkItemRepository } from '../../src/routes/api/workItems/workItems.repository';
-import { WorkItemValidationError } from '../../src/routes/api/workItems/workItems.errors';
+import { WorkItemService } from '../../src/routes/api/work-items/work-items.service';
+import type { WorkItemRepository } from '../../src/routes/api/work-items/work-items.repository';
+import { WorkItemValidationError } from '../../src/routes/api/work-items/work-items.errors';
 
 const {
   getByIdMock,

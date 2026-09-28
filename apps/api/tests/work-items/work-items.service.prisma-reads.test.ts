@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ListWorkItemsQuery } from '@repo/types';
-import { WorkItemService } from '../../src/routes/api/workItems/workItems.service';
-import type { WorkItemRepository } from '../../src/routes/api/workItems/workItems.repository';
+import { WorkItemService } from '../../src/routes/api/work-items/work-items.service';
+import type { WorkItemRepository } from '../../src/routes/api/work-items/work-items.repository';
 import { createWorkItemListRow } from '../factories/work-item.factory';
 
 vi.mock('../../src/lib/auth-helpers', () => ({

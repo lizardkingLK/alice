@@ -3,7 +3,7 @@ import { listWorkItemsQuerySchema, paginationMeta } from '@repo/types';
 import {
   buildWorkItemPrismaListWhere,
   workItemListPageSlice,
-} from '../../src/routes/api/workItems/workItems.prisma-query';
+} from '../../src/routes/api/work-items/work-items.prisma-query';
 
 describe('buildWorkItemPrismaListWhere', () => {
   it('defaults record_status to active when there are no filters or search', () => {

@@ -10,6 +10,6 @@ query), with a `/views` workspace for manage / share / archive.
 Quick links:
 
 - Web UI: `apps/web/app/views/`, `apps/web/lib/favorites/`, dashboard sidebar / page meta
-- API: `apps/api/src/routes/api/savedViews/`
+- API: `apps/api/src/routes/api/saved-views/`
 - Schema: `saved_views`, `saved_view_shares` in `packages/db/prisma/schema.prisma`
 - Related: [Dashboard](../dashboard/README.md), [RBAC](../../auth/RBAC_AUTHORIZATION_SKELETON.md)

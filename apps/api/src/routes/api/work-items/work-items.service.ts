@@ -25,24 +25,24 @@ import {
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { env } from '../../../config/env';
 import { removeStorageObjects } from '../../../lib/file-helpers';
-import { WorkItemRepository } from './workItems.repository';
+import { WorkItemRepository } from './work-items.repository';
 import type {
   BoardActorContext,
   DbWorkItem,
   DbGithubPullRequest,
-} from './workItems.repository';
-import type { WorkItemPaginatedList } from './workItems.prisma-query';
-import { sameNullable } from './workItems.patch-utils';
+} from './work-items.repository';
+import type { WorkItemPaginatedList } from './work-items.prisma-query';
+import { sameNullable } from './work-items.patch-utils';
 import {
   toDateOnly,
   WorkItemBody,
   WorkItemUpdateBody,
-} from './workItems.schemas';
+} from './work-items.schemas';
 import {
   BoardMoveForbiddenError,
   StatusTransitionForbiddenError,
   WorkItemValidationError,
-} from './workItems.errors';
+} from './work-items.errors';
 import type { GithubService } from '../github/github.service';
 import {
   GithubInsufficientScopeError,

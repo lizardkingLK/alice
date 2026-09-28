@@ -10,7 +10,7 @@ import {
   type ContactRequestInput,
 } from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
-import { AccessRequestsRepository } from './accessRequests.repository';
+import { AccessRequestsRepository } from './access-requests.repository';
 import type { NotificationsRepository } from '../notifications/notifications.repository';
 
 async function requireAdmin(actorId: string) {

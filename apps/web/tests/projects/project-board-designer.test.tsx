@@ -123,6 +123,15 @@ describe('BoardDesignerWorkspace', () => {
     );
   });
 
+  it('links to the current project board', () => {
+    renderDesigner();
+
+    expect(screen.getByRole('link', { name: 'Go to Board' })).toHaveAttribute(
+      'href',
+      '/board?project=proj-1'
+    );
+  });
+
   it('adds, renames, maps, reorders, and saves a column with one stable UUID', async () => {
     renderDesigner();
     fireEvent.click(screen.getByRole('button', { name: 'Add column' }));

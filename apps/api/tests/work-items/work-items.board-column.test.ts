@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WorkItemUpdateBody } from '@repo/types/api/v1';
-import type { WorkItemRepository } from '../../src/routes/api/workItems/workItems.repository';
+import type { WorkItemRepository } from '../../src/routes/api/work-items/work-items.repository';
 import {
   BoardMoveForbiddenError,
   WorkItemAccessError,
   WorkItemValidationError,
-} from '../../src/routes/api/workItems/workItems.errors';
-import { WorkItemService } from '../../src/routes/api/workItems/workItems.service';
+} from '../../src/routes/api/work-items/work-items.errors';
+import { WorkItemService } from '../../src/routes/api/work-items/work-items.service';
 
 vi.mock('../../src/lib/auth-helpers', () => ({
   requireUserWithRole: vi.fn(),

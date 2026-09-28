@@ -239,7 +239,7 @@ function parseExcludeStatusesParam(
 }
 
 /**
- * GET `/api/workItems` query. Zod for filters/pagination; response is Prisma payload.
+ * GET `/api/work-items` query. Zod for filters/pagination; response is Prisma payload.
  * `sprintId=null` / `parentId=null` mean IS NULL (backlog / hierarchy roots).
  * `dueDate=null` / `dueDate=not_null`, or `dueDateFrom`+`dueDateTo` for a range.
  */
@@ -515,7 +515,7 @@ export const workItemLifecycleActionBodySchema = z.object({
   expectedUpdatedAt: expectedUpdatedAtSchema,
 });
 
-/** Wire input for `POST /api/workItems/:id/github` (format only; repo match is service logic). */
+/** Wire input for `POST /api/work-items/:id/github` (format only; repo match is service logic). */
 export const githubWorkItemPrUrlSchema = z
   .string()
   .trim()

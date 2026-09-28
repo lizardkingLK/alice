@@ -16,7 +16,7 @@ vi.mock('../../src/lib/prisma', () => ({
   },
 }));
 
-import { SavedViewsRepository } from '../../src/routes/api/savedViews/savedViews.repository';
+import { SavedViewsRepository } from '../../src/routes/api/saved-views/saved-views.repository';
 import type { Database } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
