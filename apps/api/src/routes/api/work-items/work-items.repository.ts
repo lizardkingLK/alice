@@ -257,6 +257,22 @@ export class WorkItemRepository {
     };
   }
 
+  /** Count direct children (active + archived) for hierarchy type-change gates. */
+  async countDirectChildren(parentId: string): Promise<number> {
+    return await prisma.work_items.count({
+      where: { parent_id: parentId },
+    });
+  }
+
+  /** Clear parent_id for every direct child of `parentId`. */
+  async detachDirectChildren(parentId: string): Promise<number> {
+    const result = await prisma.work_items.updateMany({
+      where: { parent_id: parentId },
+      data: { parent_id: null },
+    });
+    return result.count;
+  }
+
   /** Count direct children that are not yet Done (for Done-gate validation). */
   async countIncompleteChildren(parentId: string): Promise<number> {
     const { count, error } = await this.db

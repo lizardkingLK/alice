@@ -113,6 +113,147 @@ function unsafeCast<T>(val: unknown): T {
   return val as T;
 }
 
+type TypeRemovalStrategy = {
+  type: WorkItemType;
+  action: 'delete' | 'migrate';
+  migrateTo?: WorkItemType;
+};
+
+type AffectedWorkItem = { id: string; type: string };
+
+function assertValidMigrationTargets(
+  strategies: TypeRemovalStrategy[],
+  allowedTypes: WorkItemType[]
+): void {
+  for (const strategy of strategies) {
+    if (strategy.action !== 'migrate') {
+      continue;
+    }
+    const target = strategy.migrateTo;
+    if (!target || !allowedTypes.includes(target)) {
+      throw new Error(
+        `Migration target for ${strategy.type} must be one of the remaining project types`
+      );
+    }
+  }
+}
+
+function assertStrategiesCoverAffected(
+  strategies: TypeRemovalStrategy[],
+  affected: AffectedWorkItem[]
+): void {
+  const strategyByType = new Map(strategies.map((s) => [s.type, s]));
+  const missingStrategies = [
+    ...new Set(affected.map((item) => item.type as WorkItemType)),
+  ].filter((type) => !strategyByType.has(type));
+  if (missingStrategies.length > 0) {
+    throw new Error(
+      `Missing removal strategy for type(s): ${missingStrategies.join(', ')}`
+    );
+  }
+}
+
+async function detachLinksForAffectedItems(
+  projectId: string,
+  affectedIds: string[]
+): Promise<number> {
+  if (affectedIds.length === 0) {
+    return 0;
+  }
+  // Detach first: clear parent links involving removed-type items so
+  // migrate/delete cannot create invalid adjacency or type loops.
+  const result = await prisma.work_items.updateMany({
+    where: {
+      project_id: projectId,
+      parent_id: { not: null },
+      OR: [{ id: { in: affectedIds } }, { parent_id: { in: affectedIds } }],
+    },
+    data: { parent_id: null },
+  });
+  return result.count;
+}
+
+async function applyTypeRemovalActions(
+  strategies: TypeRemovalStrategy[],
+  affected: AffectedWorkItem[]
+): Promise<{ deletedCount: number; migratedCount: number }> {
+  const results = await Promise.all(
+    strategies.map(async (strategy) => {
+      const ids = affected
+        .filter((item) => item.type === strategy.type)
+        .map((item) => item.id);
+      if (ids.length === 0) {
+        return { deletedCount: 0, migratedCount: 0 };
+      }
+
+      if (strategy.action === 'delete') {
+        await prisma.notifications.deleteMany({
+          where: { related_item_id: { in: ids } },
+        });
+        const deleted = await prisma.work_items.deleteMany({
+          where: { id: { in: ids } },
+        });
+        return { deletedCount: deleted.count, migratedCount: 0 };
+      }
+
+      const migrated = await prisma.work_items.updateMany({
+        where: { id: { in: ids } },
+        data: { type: strategy.migrateTo! },
+      });
+      return { deletedCount: 0, migratedCount: migrated.count };
+    })
+  );
+
+  return results.reduce(
+    (totals, result) => ({
+      deletedCount: totals.deletedCount + result.deletedCount,
+      migratedCount: totals.migratedCount + result.migratedCount,
+    }),
+    { deletedCount: 0, migratedCount: 0 }
+  );
+}
+
+async function pruneInvalidHierarchyLinks(
+  projectId: string,
+  allowedTypes: WorkItemType[],
+  customHierarchy?: Record<string, string | null> | null
+): Promise<number> {
+  const { parentToChild } = resolveProjectHierarchy(
+    allowedTypes,
+    customHierarchy
+  );
+  const itemsWithParents = await prisma.work_items.findMany({
+    where: {
+      project_id: projectId,
+      parent_id: { not: null },
+    },
+    select: {
+      id: true,
+      type: true,
+      parent: { select: { type: true } },
+    },
+  });
+
+  const invalidChildIds = itemsWithParents
+    .filter((item) => {
+      if (!item.parent) {
+        return true;
+      }
+      return parentToChild[item.parent.type as WorkItemType] !== item.type;
+    })
+    .map((item) => item.id);
+
+  if (invalidChildIds.length === 0) {
+    return 0;
+  }
+
+  const unlinkResult = await prisma.work_items.updateMany({
+    where: { id: { in: invalidChildIds } },
+    data: { parent_id: null },
+  });
+  return unlinkResult.count;
+}
+
 export class ProjectsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
@@ -512,6 +653,137 @@ export class ProjectsRepository {
     await prisma.projects.deleteMany({ where: { id } });
   }
 
+  /**
+   * Preview work items (active + archived) for types about to be removed from
+   * a project's allowed set. Caps rows per type for the conflict UI.
+   */
+  async previewWorkItemTypeRemoval(
+    projectId: string,
+    removedTypes: WorkItemType[],
+    keptTypes: WorkItemType[],
+    customHierarchy?: Record<string, string | null> | null,
+    previewLimitPerType = 100
+  ): Promise<{
+    groups: Array<{
+      type: WorkItemType;
+      count: number;
+      childSlotParents: WorkItemType[];
+      items: Array<{
+        id: string;
+        title: string;
+        type: WorkItemType;
+        status: string;
+        record_status: string;
+        parent_id: string | null;
+        parent_title: string | null;
+        jira_issue_key: string | null;
+      }>;
+    }>;
+    totalAffected: number;
+  }> {
+    if (removedTypes.length === 0) {
+      return { groups: [], totalAffected: 0 };
+    }
+
+    const { parentToChild } = resolveProjectHierarchy(
+      [...keptTypes, ...removedTypes],
+      customHierarchy
+    );
+
+    const items = await prisma.work_items.findMany({
+      where: {
+        project_id: projectId,
+        type: { in: removedTypes },
+      },
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        status: true,
+        record_status: true,
+        parent_id: true,
+        jira_issue_key: true,
+        parent: { select: { id: true, title: true } },
+      },
+      orderBy: [{ type: 'asc' }, { title: 'asc' }],
+    });
+
+    const groups = removedTypes.map((type) => {
+      const typed = items.filter((item) => item.type === type);
+      const childSlotParents = keptTypes.filter(
+        (parent) => parentToChild[parent] === type
+      );
+      return {
+        type,
+        count: typed.length,
+        childSlotParents,
+        items: typed.slice(0, previewLimitPerType).map((item) => ({
+          id: item.id,
+          title: item.title,
+          type: item.type as WorkItemType,
+          status: item.status,
+          record_status: item.record_status,
+          parent_id: item.parent_id,
+          parent_title: item.parent?.title ?? null,
+          jira_issue_key: item.jira_issue_key,
+        })),
+      };
+    });
+
+    return {
+      groups,
+      totalAffected: items.length,
+    };
+  }
+
+  /**
+   * Detach hierarchy links, then delete or migrate items for removed types.
+   * Replaces silent Issue fallback.
+   */
+  async applyWorkItemTypeRemovalStrategies(
+    projectId: string,
+    allowedTypes: WorkItemType[],
+    strategies: TypeRemovalStrategy[],
+    customHierarchy?: Record<string, string | null> | null
+  ): Promise<{
+    detachedCount: number;
+    deletedCount: number;
+    migratedCount: number;
+  }> {
+    assertValidMigrationTargets(strategies, allowedTypes);
+
+    const removedTypes = strategies.map((s) => s.type);
+    const affected = await prisma.work_items.findMany({
+      where: {
+        project_id: projectId,
+        type: { in: removedTypes },
+      },
+      select: { id: true, type: true },
+    });
+
+    assertStrategiesCoverAffected(strategies, affected);
+
+    const affectedIds = affected.map((item) => item.id);
+    let detachedCount = await detachLinksForAffectedItems(
+      projectId,
+      affectedIds
+    );
+
+    const { deletedCount, migratedCount } = await applyTypeRemovalActions(
+      strategies,
+      affected
+    );
+
+    detachedCount += await pruneInvalidHierarchyLinks(
+      projectId,
+      allowedTypes,
+      customHierarchy
+    );
+
+    return { detachedCount, deletedCount, migratedCount };
+  }
+
+  /** @deprecated Prefer {@link applyWorkItemTypeRemovalStrategies}. */
   async migrateWorkItemTypesAndPruneHierarchy(
     projectId: string,
     allowedTypes: WorkItemType[],
@@ -523,12 +795,6 @@ export class ProjectsRepository {
       ? WorkItemTypeEnum.Issue
       : (allowedTypes.at(-1) ?? WorkItemTypeEnum.Issue);
 
-    const { parentToChild } = resolveProjectHierarchy(
-      allowedTypes,
-      customHierarchy
-    );
-
-    // 1. Find all work items in project whose type is no longer allowed
     const workItemsToMigrate = await prisma.work_items.findMany({
       where: {
         project_id: projectId,
@@ -537,62 +803,38 @@ export class ProjectsRepository {
       select: { id: true, type: true },
     });
 
-    const migratedIds = workItemsToMigrate.map((item) => item.id);
-    let migratedCount = 0;
+    const typesToMigrate = [
+      ...new Set(workItemsToMigrate.map((item) => item.type as WorkItemType)),
+    ];
 
-    if (migratedIds.length > 0) {
-      const updateResult = await prisma.work_items.updateMany({
-        where: { id: { in: migratedIds } },
-        data: { type: fallbackType },
-      });
-      migratedCount = updateResult.count;
-
-      // Leaf items (Issue) cannot have children; clear parent_id of any children of migrated items
-      await prisma.work_items.updateMany({
-        where: { parent_id: { in: migratedIds } },
-        data: { parent_id: null },
-      });
+    if (typesToMigrate.length === 0) {
+      const prune = await this.applyWorkItemTypeRemovalStrategies(
+        projectId,
+        allowedTypes,
+        [],
+        customHierarchy
+      );
+      return {
+        migratedCount: 0,
+        unlinkedCount: prune.detachedCount,
+      };
     }
 
-    // 2. Fetch all work items in the project that have a parent to verify hierarchy compliance
-    const itemsWithParents = await prisma.work_items.findMany({
-      where: {
-        project_id: projectId,
-        parent_id: { not: null },
-      },
-      select: {
-        id: true,
-        type: true,
-        parent_id: true,
-        parent: {
-          select: { id: true, type: true },
-        },
-      },
-    });
+    const result = await this.applyWorkItemTypeRemovalStrategies(
+      projectId,
+      allowedTypes,
+      typesToMigrate.map((type) => ({
+        type,
+        action: 'migrate' as const,
+        migrateTo: fallbackType,
+      })),
+      customHierarchy
+    );
 
-    const invalidChildIds: string[] = [];
-    for (const item of itemsWithParents) {
-      if (!item.parent) {
-        invalidChildIds.push(item.id);
-        continue;
-      }
-      const allowedChildForParent =
-        parentToChild[item.parent.type as WorkItemType];
-      if (allowedChildForParent !== item.type) {
-        invalidChildIds.push(item.id);
-      }
-    }
-
-    let unlinkedCount = 0;
-    if (invalidChildIds.length > 0) {
-      const unlinkResult = await prisma.work_items.updateMany({
-        where: { id: { in: invalidChildIds } },
-        data: { parent_id: null },
-      });
-      unlinkedCount = unlinkResult.count;
-    }
-
-    return { migratedCount, unlinkedCount };
+    return {
+      migratedCount: result.migratedCount,
+      unlinkedCount: result.detachedCount,
+    };
   }
 
   async linkImportedJiraParents(

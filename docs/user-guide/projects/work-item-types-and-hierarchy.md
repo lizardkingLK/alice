@@ -60,15 +60,43 @@ When creating or editing work items:
 
 ---
 
-## 3. Mandatory Type Behavior & Fallback to Issue
+## 3. Removing types that already have work items
 
 In ALICE, work items have a **mandatory** type field in the database.
 
-When an administrator or project manager removes an active type from a project:
+When an administrator or project manager removes an active type from a project
+and items of that type still exist (active **or** archived):
 
-1. **Automatic Fallback**: Any existing work items in that project with the removed type are automatically reassigned to **`Issue`** (the leaf type).
-2. **Hierarchy Pruning**: Since `Issue` cannot have subtasks, any children of the migrated items have their parent link cleared (`parent_id = null`).
-3. **Invalid Link Cleanup**: Any parent-child relationship that no longer conforms to the project's active hierarchy is unlinked to avoid orphan or cycle errors.
+1. **Save is blocked** until you choose a strategy for each affected type.
+2. A conflict dialog lists the work items under each removed type (collapsible
+   groups, similar to resolving merge conflicts).
+3. For each type, choose one of:
+   - **Delete permanently** — hard-deletes those work items (archive is not
+     offered, because restore would reintroduce a disallowed type).
+   - **Convert to…** — migrates them to one of the types that remain enabled.
+4. **Detach first** — before delete/migrate, ALICE clears parent links that
+   involve removed-type items (or that would be invalid after migration). That
+   avoids hierarchy loops when several types are removed together (for example
+   Epic and Story in one save).
+5. When a removed type is still the allowed child of a kept parent type, the
+   dialog warns that those parent→child links will be unlinked.
+
+If no work items use the removed types, the allowed-types list saves without the
+dialog.
+
+---
+
+## 3b. Changing type on a single work item with subtasks
+
+When you change the type of a work item that still has direct subtasks:
+
+1. ALICE asks how to proceed (default: **unlink subtasks, then change type**).
+2. Confirming detaches those children (`parent_id` cleared) and applies the new
+   type. If the new type cannot keep its current parent, that parent link is
+   cleared as well.
+3. You can cancel and unlink subtasks yourself first, then change the type.
+
+Leaf items (no children) change type without this prompt.
 
 ---
 

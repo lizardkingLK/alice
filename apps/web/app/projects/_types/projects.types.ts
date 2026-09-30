@@ -1,5 +1,8 @@
 import type { Tables } from '@repo/types';
-import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
+import type {
+  ProjectWorkflowConfig,
+  WorkItemTypeRemovalStrategy,
+} from '@repo/types/api/v1';
 import type { User } from '@/app/users/_services/users.mutations.client';
 
 export {
@@ -61,6 +64,7 @@ export type CreateProjectInput = Omit<
 
 export type UpdateProjectInput = Partial<CreateProjectInput> & {
   workflow_config?: ProjectWorkflowConfig | null;
+  typeRemovalStrategies?: WorkItemTypeRemovalStrategy[];
 };
 
 export type ProjectMemberWithUser = {

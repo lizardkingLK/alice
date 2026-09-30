@@ -12,6 +12,8 @@ const {
   updateMock,
   deleteMock,
   migrateWorkItemTypesAndPruneHierarchyMock,
+  previewWorkItemTypeRemovalMock,
+  applyWorkItemTypeRemovalStrategiesMock,
   listAccessibleProjectIdsMock,
   listAccessibleSummariesMock,
 } = vi.hoisted(() => {
@@ -28,6 +30,8 @@ const {
     updateMock: vi.fn(),
     deleteMock: vi.fn(),
     migrateWorkItemTypesAndPruneHierarchyMock: vi.fn(),
+    previewWorkItemTypeRemovalMock: vi.fn(),
+    applyWorkItemTypeRemovalStrategiesMock: vi.fn(),
     listAccessibleProjectIdsMock: vi.fn(),
     listAccessibleSummariesMock: vi.fn(),
   };
@@ -96,6 +100,8 @@ describe('ProjectsService backend tests', () => {
     delete: deleteMock,
     migrateWorkItemTypesAndPruneHierarchy:
       migrateWorkItemTypesAndPruneHierarchyMock,
+    previewWorkItemTypeRemoval: previewWorkItemTypeRemovalMock,
+    applyWorkItemTypeRemovalStrategies: applyWorkItemTypeRemovalStrategiesMock,
     listAccessibleProjectIds: listAccessibleProjectIdsMock,
     listAccessibleSummaries: listAccessibleSummariesMock,
   } as unknown as ProjectsRepository;
@@ -285,10 +291,48 @@ describe('ProjectsService backend tests', () => {
         'user-manager',
         mockProject.updated_at
       );
-      expect(result.name).toBe('Updated name');
+      expect(result.project.name).toBe('Updated name');
     });
 
-    it('migrates work items to Issue and prunes hierarchy when types are removed on update', async () => {
+    it('requires typeRemovalStrategies when removing types that still have work items', async () => {
+      mockActorRole('manager');
+      findByKeyMock.mockResolvedValue(null);
+      findByIdMock.mockResolvedValue({
+        ...mockProject,
+        workflow_config: {
+          work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+        },
+      });
+      previewWorkItemTypeRemovalMock.mockResolvedValue({
+        groups: [
+          {
+            type: 'Feature',
+            count: 2,
+            childSlotParents: [],
+            items: [],
+          },
+        ],
+        totalAffected: 2,
+      });
+
+      await expect(
+        service.updateProject(
+          'user-manager',
+          'project-1',
+          {
+            workflow_config: {
+              work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+            },
+          },
+          mockProject.updated_at
+        )
+      ).rejects.toThrow(/typeRemovalStrategies/);
+
+      expect(applyWorkItemTypeRemovalStrategiesMock).not.toHaveBeenCalled();
+      expect(updateMock).not.toHaveBeenCalled();
+    });
+
+    it('applies typeRemovalStrategies when removing types with existing work items', async () => {
       mockActorRole('manager');
       findByKeyMock.mockResolvedValue(null);
       findByIdMock.mockResolvedValue({
@@ -298,27 +342,48 @@ describe('ProjectsService backend tests', () => {
         },
       });
       updateMock.mockResolvedValue(mockProject);
-      migrateWorkItemTypesAndPruneHierarchyMock.mockResolvedValue({
+      previewWorkItemTypeRemovalMock.mockResolvedValue({
+        groups: [
+          {
+            type: 'Feature',
+            count: 2,
+            childSlotParents: [],
+            items: [],
+          },
+        ],
+        totalAffected: 2,
+      });
+      applyWorkItemTypeRemovalStrategiesMock.mockResolvedValue({
+        detachedCount: 1,
+        deletedCount: 0,
         migratedCount: 2,
-        unlinkedCount: 1,
       });
 
-      await service.updateProject(
+      const result = await service.updateProject(
         'user-manager',
         'project-1',
         {
           workflow_config: {
             work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
           },
+          typeRemovalStrategies: [
+            { type: 'Feature', action: 'migrate', migrateTo: 'Story' },
+          ],
         },
         mockProject.updated_at
       );
 
-      expect(migrateWorkItemTypesAndPruneHierarchyMock).toHaveBeenCalledWith(
+      expect(applyWorkItemTypeRemovalStrategiesMock).toHaveBeenCalledWith(
         'project-1',
         ['Epic', 'Story', 'Task', 'Issue'],
-        undefined
+        [{ type: 'Feature', action: 'migrate', migrateTo: 'Story' }],
+        null
       );
+      expect(result.typeRemoval).toEqual({
+        detachedCount: 1,
+        deletedCount: 0,
+        migratedCount: 2,
+      });
     });
 
     it('validates key uniqueness on update', async () => {

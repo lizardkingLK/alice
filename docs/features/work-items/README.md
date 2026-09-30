@@ -21,7 +21,7 @@ Quick links:
 
 ## Types and hierarchy
 
-`WorkItemType` values: **Epic**, **Story**, **Task**, **Issue**.
+`WorkItemType` values: **Epic**, **Story**, **Task**, **Issue** (plus optional **Feature**).
 
 Subtasks use self-referential `work_items.parent_id`. Allowed child types:
 
@@ -38,6 +38,28 @@ Rules enforced on API create/update when `parent_id` is set:
 - Child must be in the same project
 - Child `type` must match the table above
 - A work item cannot be its own parent
+
+### Removing allowed types (project settings)
+
+Silent fallback to **Issue** is no longer used (#480). When managers remove
+types that still have work items:
+
+1. `GET /api/projects/:id/work-item-type-removal-preview` lists active + archived
+   rows per removed type.
+2. `PUT /api/projects/:id` accepts `typeRemovalStrategies`:
+   `{ type, action: 'delete' | 'migrate', migrateTo? }[]`.
+3. Apply order: **detach** invalid/involved parent links → delete or migrate →
+   save `workflow_config.work_item_types`.
+
+UI: collapsible per-type conflict dialog on Settings save
+(`project-type-removal-strategy-dialog.tsx`).
+
+### Changing type on a parent (#482)
+
+`PATCH /api/work-items/:id` with a new `type` when the item has direct children
+requires `detachChildren: true` (otherwise `409` + `code: HIERARCHY_TYPE_CHANGE`).
+When set, children are unlinked, then the type is updated; an incompatible own
+parent link is cleared.
 
 On the work-item details page:
 

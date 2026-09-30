@@ -11,6 +11,22 @@ export class WorkItemValidationError extends Error {
   }
 }
 
+/** Type change blocked because the item still has direct children. */
+export class WorkItemHierarchyTypeChangeError extends WorkItemValidationError {
+  readonly code = 'HIERARCHY_TYPE_CHANGE' as const;
+  readonly childCount: number;
+  readonly httpStatus = 409;
+
+  constructor(childCount: number) {
+    super(
+      `This work item has ${childCount} subtask${childCount === 1 ? '' : 's'}. Unlink them first, or confirm detaching children when changing type.`
+    );
+    this.name = 'WorkItemHierarchyTypeChangeError';
+    this.childCount = childCount;
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
 /** Actor cannot view or mutate work items outside their accessible projects. */
 export class WorkItemAccessError extends Error {
   constructor(message = "You're not a member of this project.") {

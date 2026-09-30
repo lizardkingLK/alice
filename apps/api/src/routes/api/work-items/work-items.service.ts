@@ -3,6 +3,7 @@ import {
   findBoardTransition,
   findStatusTransition,
   getAllowedChildType,
+  getAllowedParentType,
   normalizeBoardConfig,
   resolveBoardDestinationColumn,
   resolveBoardSourceColumn,
@@ -41,6 +42,7 @@ import {
 import {
   BoardMoveForbiddenError,
   StatusTransitionForbiddenError,
+  WorkItemHierarchyTypeChangeError,
   WorkItemValidationError,
 } from './work-items.errors';
 import type { GithubService } from '../github/github.service';
@@ -270,7 +272,8 @@ export class WorkItemService {
     userId: string,
     workItemId: string,
     input: WorkItemUpdateBody,
-    expectedUpdatedAt: string
+    expectedUpdatedAt: string,
+    options?: { detachChildren?: boolean }
   ): Promise<DbWorkItem> {
     await this.workItems.requireProjectMember(workItemId, userId);
     await this.workItems.assertCanAccessProject(userId, input.project_id);
@@ -285,10 +288,19 @@ export class WorkItemService {
       );
     }
 
-    const statusChanged = current.status !== input.status;
-    const workflow = await this.resolveWorkflowValidation(
+    const nextInput = await this.resolveInputAfterTypeChange({
+      workItemId,
       current,
       input,
+      allowedTypes,
+      hierarchy,
+      detachChildren: options?.detachChildren === true,
+    });
+
+    const statusChanged = current.status !== nextInput.status;
+    const workflow = await this.resolveWorkflowValidation(
+      current,
+      nextInput,
       workflowConfig,
       workflowConfigError
     );
@@ -302,7 +314,11 @@ export class WorkItemService {
         : null;
     const statusTransition =
       statusChanged && workflow.config
-        ? findStatusTransition(workflow.config, current.status, input.status)
+        ? findStatusTransition(
+            workflow.config,
+            current.status,
+            nextInput.status
+          )
         : null;
     await this.assertWorkflowTransitionsAllowed(
       userId,
@@ -311,50 +327,46 @@ export class WorkItemService {
       statusTransition
     );
 
-    if (
-      !sameNullable(input.parent_id, current?.parent_id) ||
-      (input.type && input.type !== current?.type)
-    ) {
-      await this.assertValidParentLink({
-        parentId:
-          input.parent_id !== undefined ? input.parent_id : current?.parent_id,
-        projectId: input.project_id,
-        childType: input.type ?? (current.type as WorkItemType),
-        childId: workItemId,
-        allowedTypes,
-        hierarchy,
-      });
-    }
+    await this.assertParentLinkWhenHierarchyTouches({
+      current,
+      nextInput,
+      workItemId,
+      allowedTypes,
+      hierarchy,
+    });
 
-    await this.assertCanBecomeDone(current, workItemId, input.status);
-    this.assertDoneIsReadOnlyExceptStatus(current, input);
+    await this.assertCanBecomeDone(current, workItemId, nextInput.status);
+    this.assertDoneIsReadOnlyExceptStatus(current, nextInput);
 
-    const sprintId = 'sprint_id' in input ? input.sprint_id : current.sprint_id;
+    const sprintId =
+      'sprint_id' in nextInput ? nextInput.sprint_id : current.sprint_id;
     const assigneeId =
-      'assignee_id' in input ? input.assignee_id : current.assignee_id;
+      'assignee_id' in nextInput ? nextInput.assignee_id : current.assignee_id;
     const storyPoints =
-      'story_points' in input ? input.story_points : current.story_points;
+      'story_points' in nextInput
+        ? nextInput.story_points
+        : current.story_points;
 
     await this.validateAllocation(
-      input.project_id,
+      nextInput.project_id,
       sprintId,
       assigneeId,
       storyPoints,
       workItemId
     );
 
-    const sprintChanged = !sameNullable(input.sprint_id, current.sprint_id);
+    const sprintChanged = !sameNullable(nextInput.sprint_id, current.sprint_id);
     const assigneeChanged = !sameNullable(
-      input.assignee_id,
+      nextInput.assignee_id,
       current.assignee_id
     );
     const storyPointsChanged = !sameNullable(
-      input.story_points,
+      nextInput.story_points,
       current.story_points
     );
 
     const updated = await this.workItems.update({
-      ...input,
+      ...nextInput,
       id: workItemId,
       updatedBy: userId,
       expectedUpdatedAt,
@@ -375,6 +387,95 @@ export class WorkItemService {
     }
 
     return updated;
+  }
+
+  private async resolveInputAfterTypeChange(params: {
+    workItemId: string;
+    current: DbWorkItem;
+    input: WorkItemUpdateBody;
+    allowedTypes: readonly WorkItemType[];
+    hierarchy?: Record<string, string | null> | null;
+    detachChildren: boolean;
+  }): Promise<WorkItemUpdateBody> {
+    const { workItemId, current, input, allowedTypes, hierarchy } = params;
+    const typeChanged =
+      Boolean(input.type) && input.type !== (current.type as WorkItemType);
+    if (!typeChanged) {
+      return input;
+    }
+
+    const childCount = await this.workItems.countDirectChildren(workItemId);
+    if (childCount > 0) {
+      if (!params.detachChildren) {
+        throw new WorkItemHierarchyTypeChangeError(childCount);
+      }
+      await this.workItems.detachDirectChildren(workItemId);
+    }
+
+    return await this.clearParentIfInvalidForNewType({
+      current,
+      input,
+      allowedTypes,
+      hierarchy,
+    });
+  }
+
+  private async clearParentIfInvalidForNewType(params: {
+    current: DbWorkItem;
+    input: WorkItemUpdateBody;
+    allowedTypes: readonly WorkItemType[];
+    hierarchy?: Record<string, string | null> | null;
+  }): Promise<WorkItemUpdateBody> {
+    const { current, input, allowedTypes, hierarchy } = params;
+    const parentId =
+      input.parent_id !== undefined ? input.parent_id : current.parent_id;
+    if (!parentId) {
+      return input;
+    }
+
+    const parent = await this.workItems.getById(parentId);
+    const allowedParent = getAllowedParentType(
+      input.type as WorkItemType,
+      allowedTypes,
+      hierarchy
+    );
+    if (
+      !parent ||
+      !allowedParent ||
+      (parent.type as WorkItemType) !== allowedParent
+    ) {
+      return { ...input, parent_id: null };
+    }
+    return input;
+  }
+
+  private async assertParentLinkWhenHierarchyTouches(params: {
+    current: DbWorkItem;
+    nextInput: WorkItemUpdateBody;
+    workItemId: string;
+    allowedTypes: readonly WorkItemType[];
+    hierarchy?: Record<string, string | null> | null;
+  }): Promise<void> {
+    const { current, nextInput, workItemId, allowedTypes, hierarchy } = params;
+    const parentChanged = !sameNullable(nextInput.parent_id, current.parent_id);
+    const typeChanged = Boolean(
+      nextInput.type && nextInput.type !== current.type
+    );
+    if (!parentChanged && !typeChanged) {
+      return;
+    }
+
+    await this.assertValidParentLink({
+      parentId:
+        nextInput.parent_id !== undefined
+          ? nextInput.parent_id
+          : current.parent_id,
+      projectId: nextInput.project_id,
+      childType: nextInput.type ?? (current.type as WorkItemType),
+      childId: workItemId,
+      allowedTypes,
+      hierarchy,
+    });
   }
 
   private async resolveWorkflowValidation(

@@ -33,6 +33,9 @@ use the shared **Work Item** form:
   text for formatting).
 - Validation and save messages stay **above Cancel / Save** so you do not need
   to scroll the form to see them.
+- Changing **Type** on an item that still has subtasks opens a confirmation:
+  unlink those children and continue (default), or cancel and unlink them
+  yourself first.
 
 ---
 
