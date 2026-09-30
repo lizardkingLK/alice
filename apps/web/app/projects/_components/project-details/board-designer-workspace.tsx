@@ -1,6 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState, type DragEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type DragEvent,
+  type MouseEvent,
+} from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { BOARD_WORK_ITEM_STATUSES } from '@repo/types';
@@ -199,6 +205,7 @@ export function BoardDesignerWorkspace({
   const [deleteColumn, setDeleteColumn] = useState<BoardColumn | null>(null);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
+  const [goToBoardDialogOpen, setGoToBoardDialogOpen] = useState(false);
   const [ruleToRemove, setRuleToRemove] =
     useState<WorkItemStatusTransition | null>(null);
   const [rulesTargetColumn, setRulesTargetColumn] =
@@ -212,6 +219,8 @@ export function BoardDesignerWorkspace({
   );
   const [aliceDraftLoaded, setAliceDraftLoaded] = useState(false);
   const [aliceDeletionWarningOpen, setAliceDeletionWarningOpen] =
+    useState(false);
+  const [goToBoardAfterAliceConfirmation, setGoToBoardAfterAliceConfirmation] =
     useState(false);
   /** Freshly added columns stay pending until renamed away from the default. */
   const [pendingNewColumnIds, setPendingNewColumnIds] = useState(
@@ -474,19 +483,19 @@ export function BoardDesignerWorkspace({
     });
   };
 
-  const performSave = async () => {
-    if (!canEdit || isSaving) return;
+  const performSave = async (): Promise<boolean> => {
+    if (!canEdit || isSaving) return false;
     const parsed = boardConfigSchema.safeParse(draft);
     if (!parsed.success) {
       setMessage(validationMessage(draft));
       setMessageIsError(true);
-      return;
+      return false;
     }
     setIsSaving(true);
     setMessage(null);
     try {
       const result = await saveWorkflowConfig(parsed.data);
-      if (!result) return;
+      if (!result) return false;
       const saved = cloneConfig(parsed.data);
       setDraft(cloneConfig(saved));
       setBaseline(cloneConfig(saved));
@@ -500,6 +509,7 @@ export function BoardDesignerWorkspace({
       setMessageIsError(false);
       toast.success('Board configuration saved.');
       router.refresh();
+      return true;
     } catch (error) {
       const detail =
         error instanceof Error
@@ -508,17 +518,42 @@ export function BoardDesignerWorkspace({
       setMessage(detail);
       setMessageIsError(true);
       toast.error(detail);
+      return false;
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleSave = async () => {
+  const requestSave = async (goToBoard: boolean) => {
+    if (!canEdit || isSaving) return;
     if (aliceDraftLoaded && removedPersistedColumns.length > 0) {
+      setGoToBoardAfterAliceConfirmation(goToBoard);
+      if (goToBoard) setGoToBoardDialogOpen(false);
       setAliceDeletionWarningOpen(true);
       return;
     }
-    await performSave();
+    const saved = await performSave();
+    if (saved && goToBoard) {
+      setGoToBoardDialogOpen(false);
+      router.push(boardHref);
+    }
+  };
+
+  const handleSave = async () => {
+    await requestSave(false);
+  };
+
+  const handleGoToBoard = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!dirty) return;
+    event.preventDefault();
+    setGoToBoardDialogOpen(true);
+  };
+
+  const handleDiscardAndGoToBoard = () => {
+    if (isSaving) return;
+    discardChanges();
+    setGoToBoardDialogOpen(false);
+    router.push(boardHref);
   };
 
   const handleReset = async () => {
@@ -598,7 +633,9 @@ export function BoardDesignerWorkspace({
         {canEdit ? (
           <div className="flex items-center gap-1.5">
             <Button asChild variant="outline" size="sm">
-              <Link href={boardHref}>Go to Board</Link>
+              <Link href={boardHref} onClick={handleGoToBoard}>
+                Go to Board
+              </Link>
             </Button>
             <Button
               type="button"
@@ -900,6 +937,52 @@ export function BoardDesignerWorkspace({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog
+        open={goToBoardDialogOpen}
+        onOpenChange={(open) => {
+          if (!isSaving) setGoToBoardDialogOpen(open);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Unsaved board changes</DialogTitle>
+            <DialogDescription>
+              You have unsaved Board configuration changes. Save them before
+              going to the Board, or discard them and continue.
+              {currentValidationMessage ? (
+                <span className="text-destructive mt-2 block">
+                  This draft cannot be saved: {currentValidationMessage}
+                </span>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setGoToBoardDialogOpen(false)}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleDiscardAndGoToBoard}
+              disabled={isSaving}
+            >
+              Discard and go to Board
+            </Button>
+            <Button
+              type="button"
+              onClick={async () => requestSave(true)}
+              disabled={isSaving || Boolean(currentValidationMessage)}
+            >
+              Save and go to Board
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={discardDialogOpen} onOpenChange={setDiscardDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -961,7 +1044,11 @@ export function BoardDesignerWorkspace({
       </Dialog>
       <Dialog
         open={aliceDeletionWarningOpen}
-        onOpenChange={setAliceDeletionWarningOpen}
+        onOpenChange={(open) => {
+          if (isSaving) return;
+          setAliceDeletionWarningOpen(open);
+          if (!open) setGoToBoardAfterAliceConfirmation(false);
+        }}
       >
         <DialogContent>
           <DialogHeader>
@@ -977,16 +1064,24 @@ export function BoardDesignerWorkspace({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setAliceDeletionWarningOpen(false)}
+              onClick={() => {
+                setAliceDeletionWarningOpen(false);
+                setGoToBoardAfterAliceConfirmation(false);
+              }}
+              disabled={isSaving}
             >
               Cancel
             </Button>
             <Button
               type="button"
               onClick={async () => {
+                const shouldGoToBoard = goToBoardAfterAliceConfirmation;
                 setAliceDeletionWarningOpen(false);
-                await performSave();
+                const saved = await performSave();
+                setGoToBoardAfterAliceConfirmation(false);
+                if (saved && shouldGoToBoard) router.push(boardHref);
               }}
+              disabled={isSaving}
             >
               Save board draft
             </Button>

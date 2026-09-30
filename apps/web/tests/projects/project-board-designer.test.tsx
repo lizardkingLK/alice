@@ -123,13 +123,139 @@ describe('BoardDesignerWorkspace', () => {
     );
   });
 
-  it('links to the current project board', () => {
+  it('links a clean draft directly to the current project board', () => {
     renderDesigner();
 
     expect(screen.getByRole('link', { name: 'Go to Board' })).toHaveAttribute(
       'href',
       '/board?project=proj-1'
     );
+    expect(
+      screen.queryByRole('dialog', { name: /unsaved board changes/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it('warns about unsaved board changes before Go to Board after applying a movement rule', async () => {
+    renderDesigner(true, {
+      ...customConfig,
+      columns: customConfig.columns.map((column) =>
+        column.id === 'backlog' ? { ...column, name: 'New' } : column
+      ),
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: /rules for Code Review/i })
+    );
+    await pickComboboxOption('Source column', 'New');
+    await pickSelectValue('Access mode', 'Restricted');
+    fireEvent.click(screen.getByLabelText(/Alice Reviewer/));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Apply movement rule' })
+    );
+
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+    expect(updateProject).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Go to Board' }));
+
+    expect(
+      screen.getByRole('dialog', { name: /unsaved board changes/i })
+    ).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
+    expect(updateProject).not.toHaveBeenCalled();
+  });
+
+  it('allows only discard or cancel when Go to Board is clicked with invalid unsaved changes', () => {
+    renderDesigner();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Backlog' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete column' }));
+
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('link', { name: 'Go to Board' }));
+
+    expect(
+      screen.getByRole('dialog', { name: /unsaved board changes/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Save and go to Board' })
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Discard and go to Board' })
+    ).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
+    expect(push).not.toHaveBeenCalled();
+    expect(updateProject).not.toHaveBeenCalled();
+  });
+
+  it('saves valid unsaved changes once before navigating to the Board', async () => {
+    const savedProject = projectFactory.build({
+      workflow_config: customConfig,
+      updated_at: '2026-09-11T01:00:00.000Z',
+    });
+    let resolveSave;
+    renderDesigner();
+    fireEvent.change(screen.getByLabelText('Column name 1'), {
+      target: { value: 'Incoming' },
+    });
+    fireEvent.click(screen.getByRole('link', { name: 'Go to Board' }));
+
+    const saveAndGo = screen.getByRole('button', {
+      name: 'Save and go to Board',
+    });
+    vi.mocked(updateProject).mockImplementationOnce(
+      () =>
+        new Promise<Awaited<ReturnType<typeof updateProject>>>((resolve) => {
+          resolveSave = resolve;
+        })
+    );
+    fireEvent.click(saveAndGo);
+    fireEvent.click(saveAndGo);
+    await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+    expect(push).not.toHaveBeenCalled();
+
+    resolveSave!(savedProject);
+
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith('/board?project=proj-1')
+    );
+  });
+
+  it('keeps unsaved board changes and does not navigate when Save and go fails', async () => {
+    renderDesigner();
+    fireEvent.change(screen.getByLabelText('Column name 1'), {
+      target: { value: 'Incoming' },
+    });
+    fireEvent.click(screen.getByRole('link', { name: 'Go to Board' }));
+
+    const saveAndGo = screen.getByRole('button', {
+      name: 'Save and go to Board',
+    });
+    vi.mocked(updateProject).mockRejectedValueOnce(
+      new Error('Failed to save board configuration.')
+    );
+    fireEvent.click(saveAndGo);
+
+    expect(
+      await screen.findByText('Failed to save board configuration.')
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Incoming')).toBeInTheDocument();
+    expect(updateProject).toHaveBeenCalledTimes(1);
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('discards unsaved board changes before navigating to the Board', () => {
+    renderDesigner();
+    fireEvent.change(screen.getByLabelText('Column name 1'), {
+      target: { value: 'Incoming' },
+    });
+    fireEvent.click(screen.getByRole('link', { name: 'Go to Board' }));
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Discard and go to Board' })
+    );
+
+    expect(updateProject).not.toHaveBeenCalled();
+    expect(screen.getByDisplayValue('Backlog')).toBeInTheDocument();
+    expect(push).toHaveBeenCalledWith('/board?project=proj-1');
   });
 
   it('adds, renames, maps, reorders, and saves a column with one stable UUID', async () => {
