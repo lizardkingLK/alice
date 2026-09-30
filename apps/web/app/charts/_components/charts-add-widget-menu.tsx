@@ -13,12 +13,6 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@repo/ui/components/ui/tooltip';
 import { BarChart3, LayoutDashboard, Plus } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { BrowseWidgetsDialog } from '@/app/charts/_components/charts-browse-widgets-dialog';
@@ -106,73 +100,67 @@ export function ChartsAddMenu({
 
   return (
     <>
-      <TooltipProvider delayDuration={200}>
-        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  size="icon"
-                  className={cn('size-8 shrink-0 cursor-pointer', className)}
-                  aria-label="Add"
-                >
-                  <Plus className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Add</TooltipContent>
-          </Tooltip>
-          <DropdownMenuContent align="end" className="w-56 p-1.5">
-            <DropdownMenuItem
-              className="cursor-pointer gap-2"
-              onSelect={() => {
-                onAddWorkspace();
-                setMenuOpen(false);
-              }}
-            >
-              <LayoutDashboard className="size-4" />
-              Add workspace
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="my-1.5" />
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="cursor-pointer gap-2">
-                <BarChart3 className="size-4" />
-                Add widget
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="w-80 p-1.5">
-                {quickPrimary.map((item) => (
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            size="icon"
+            className={cn('size-8 shrink-0 cursor-pointer', className)}
+            aria-label="Add"
+            title="Add"
+          >
+            <Plus className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56 p-1.5">
+          <DropdownMenuItem
+            className="cursor-pointer gap-2"
+            onSelect={() => {
+              onAddWorkspace();
+              setMenuOpen(false);
+            }}
+          >
+            <LayoutDashboard className="size-4" />
+            Add workspace
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="my-1.5" />
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="cursor-pointer gap-2">
+              <BarChart3 className="size-4" />
+              Add widget
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="w-80 p-1.5">
+              {quickPrimary.map((item) => (
+                <QuickAddMenuItem
+                  key={item.id}
+                  item={item}
+                  onSelect={() => handleSelect(item.id)}
+                />
+              ))}
+              {appsItem ? (
+                <>
+                  <DropdownMenuSeparator className="my-1.5" />
                   <QuickAddMenuItem
-                    key={item.id}
-                    item={item}
-                    onSelect={() => handleSelect(item.id)}
+                    item={appsItem}
+                    onSelect={() => handleSelect(appsItem.id)}
                   />
-                ))}
-                {appsItem ? (
-                  <>
-                    <DropdownMenuSeparator className="my-1.5" />
-                    <QuickAddMenuItem
-                      item={appsItem}
-                      onSelect={() => handleSelect(appsItem.id)}
-                    />
-                  </>
-                ) : null}
-                <DropdownMenuSeparator className="my-1.5" />
-                <DropdownMenuItem
-                  className="text-muted-foreground hover:text-foreground cursor-pointer justify-center rounded-lg py-2.5 text-sm font-medium"
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    setMenuOpen(false);
-                    setBrowseOpen(true);
-                  }}
-                >
-                  More widgets
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </TooltipProvider>
+                </>
+              ) : null}
+              <DropdownMenuSeparator className="my-1.5" />
+              <DropdownMenuItem
+                className="text-muted-foreground hover:text-foreground cursor-pointer justify-center rounded-lg py-2.5 text-sm font-medium"
+                onSelect={(event) => {
+                  event.preventDefault();
+                  setMenuOpen(false);
+                  setBrowseOpen(true);
+                }}
+              >
+                More widgets
+              </DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <BrowseWidgetsDialog
         open={browseOpen}

@@ -394,8 +394,7 @@ export function WorkItemForm({
     }
     const expectedUpdatedAt = itemToEdit.updated_at;
     return await runLockedMutationOrThrow({
-      mutate: () =>
-        updateWorkItem(itemToEdit.id, formData, expectedUpdatedAt),
+      mutate: () => updateWorkItem(itemToEdit.id, formData, expectedUpdatedAt),
       handleMutationError,
       entityType: 'work_item',
       entityId: itemToEdit.id,

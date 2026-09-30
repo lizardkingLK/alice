@@ -127,22 +127,18 @@ function ModelPickerIconButton({
 
   return (
     <DropdownMenu>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              disabled={isPending}
-              aria-label={`Chat model: ${modelLabel}`}
-            >
-              <Cpu className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">{modelLabel}</TooltipContent>
-      </Tooltip>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          disabled={isPending}
+          aria-label={`Chat model: ${modelLabel}`}
+          title={modelLabel}
+        >
+          <Cpu className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Provider</DropdownMenuLabel>
         <ChatModelProviderSubmenus
@@ -213,22 +209,18 @@ function NewChatOrAdminPlusButton({
 
   return (
     <DropdownMenu>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              disabled={isPending}
-              aria-label="New chat or configure models"
-            >
-              <Plus className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">New chat or configure</TooltipContent>
-      </Tooltip>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          disabled={isPending}
+          aria-label="New chat or configure models"
+          title="New chat or configure"
+        >
+          <Plus className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuItem onClick={onNewChat} disabled={isPending}>
           <Plus className="size-4" />
