@@ -977,4 +977,53 @@ describe('BoardDesignerWorkspace', () => {
       vi.mocked(updateProject).mock.calls[0]?.[1].workflow_config?.columns
     ).toHaveLength(5);
   });
+  it('does not warn and uses defaults for a new project with only work_item_types in workflow_config', () => {
+    renderDesigner(true, {
+      work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+    });
+
+    expect(
+      screen.queryByText(/saved board configuration is invalid/i)
+    ).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue('New')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    expect(updateProject).not.toHaveBeenCalled();
+  });
+
+  it('does not warn and uses defaults when workflow_config has non-board settings like hierarchy', () => {
+    renderDesigner(true, {
+      work_item_types: ['Epic', 'Story', 'Task'],
+      hierarchy: { Epic: null, Story: 'Epic', Task: 'Story' },
+    });
+
+    expect(
+      screen.queryByText(/saved board configuration is invalid/i)
+    ).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue('New')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    expect(updateProject).not.toHaveBeenCalled();
+  });
+
+  it('does not warn and uses defaults when workflow_config is an empty object', () => {
+    renderDesigner(true, {});
+
+    expect(
+      screen.queryByText(/saved board configuration is invalid/i)
+    ).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue('New')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    expect(updateProject).not.toHaveBeenCalled();
+  });
+
+  it('shows invalid configuration warning when board data is genuinely malformed', () => {
+    renderDesigner(true, {
+      version: '2',
+      columns: 'invalid-columns-data',
+    });
+
+    expect(
+      screen.getByText(/saved board configuration is invalid/i)
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+  });
 });

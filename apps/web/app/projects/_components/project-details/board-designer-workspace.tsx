@@ -178,11 +178,24 @@ export function BoardDesignerWorkspace({
         invalidPersistedConfig: false,
       };
     }
+
+    const wc = project.workflow_config;
+    const isPlainObject =
+      typeof wc === 'object' && wc !== null && !Array.isArray(wc);
+    const hasBoardConfigFields =
+      isPlainObject &&
+      ('version' in wc ||
+        'columns' in wc ||
+        'transitions' in wc ||
+        'statusTransitions' in wc);
+
+    const isAbsent = wc == null || (isPlainObject && !hasBoardConfigFields);
+
     return {
       config: defaultConfig(),
       savedConfig: null,
-      usesDefault: project.workflow_config == null,
-      invalidPersistedConfig: project.workflow_config != null,
+      usesDefault: isAbsent,
+      invalidPersistedConfig: !isAbsent,
     };
   }, [project.workflow_config]);
   const [draft, setDraft] = useState<BoardConfig>(() =>
