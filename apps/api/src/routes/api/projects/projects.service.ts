@@ -11,6 +11,7 @@ import {
   type WorkItemType,
   CANONICAL_HIERARCHY_ORDER,
   type ProjectWorkflowConfig,
+  type WorkItemTypeRemovalApplyResult,
 } from '@repo/types';
 import type {
   ProjectStatus,
@@ -286,7 +287,10 @@ export class ProjectsService {
     projectId: string,
     input: UpdateProjectInput,
     expectedUpdatedAt: string
-  ): Promise<ProjectRow> {
+  ): Promise<{
+    project: ProjectRow;
+    typeRemoval: WorkItemTypeRemovalApplyResult | null;
+  }> {
     await requireProjectManager(actorId);
 
     if (input.github_repo !== undefined && input.github_repo !== null) {
@@ -345,15 +349,18 @@ export class ProjectsService {
       }
     }
 
-    await this.handleWorkItemTypeMigrationIfNeeded(
+    const removalResult = await this.handleWorkItemTypeMigrationIfNeeded(
       projectId,
       prepared,
       previous
     );
 
+    const persistInput: UpdateProjectInput = { ...prepared };
+    delete persistInput.typeRemovalStrategies;
+
     const updated = await this.projectsRepository.update(
       projectId,
-      prepared,
+      persistInput,
       actorId,
       expectedUpdatedAt
     );
@@ -371,7 +378,31 @@ export class ProjectsService {
       );
     }
 
-    return updated;
+    return { project: updated, typeRemoval: removalResult };
+  }
+
+  async previewWorkItemTypeRemoval(
+    actorId: string,
+    projectId: string,
+    removedTypes: WorkItemType[],
+    keptTypes: WorkItemType[]
+  ) {
+    await requireProjectManager(actorId);
+
+    const project = await this.projectsRepository.findById(projectId);
+    if (!project) {
+      throw new Error('Project not found');
+    }
+
+    const existingConfig =
+      (project.workflow_config as ProjectWorkflowConfig | null) ?? null;
+
+    return await this.projectsRepository.previewWorkItemTypeRemoval(
+      projectId,
+      removedTypes,
+      keptTypes,
+      existingConfig?.hierarchy ?? null
+    );
   }
 
   async softDeleteProject(
@@ -521,17 +552,17 @@ export class ProjectsService {
     projectId: string,
     prepared: UpdateProjectInput,
     previous: ProjectRow | null
-  ): Promise<void> {
+  ): Promise<WorkItemTypeRemovalApplyResult | null> {
     if (
       !prepared.workflow_config ||
       typeof prepared.workflow_config !== 'object'
     ) {
-      return;
+      return null;
     }
 
     const newConfig = prepared.workflow_config as ProjectWorkflowConfig;
     if (!newConfig.work_item_types || newConfig.work_item_types.length === 0) {
-      return;
+      return null;
     }
 
     const previousConfig = previous?.workflow_config as
@@ -542,16 +573,60 @@ export class ProjectsService {
         ? previousConfig.work_item_types
         : [...CANONICAL_HIERARCHY_ORDER];
 
-    const hasRemovedTypes = previousTypes.some(
+    const removedTypes = previousTypes.filter(
       (t) => !newConfig.work_item_types!.includes(t)
     );
 
-    if (hasRemovedTypes) {
-      await this.projectsRepository.migrateWorkItemTypesAndPruneHierarchy(
+    if (removedTypes.length === 0) {
+      return null;
+    }
+
+    const preview = await this.projectsRepository.previewWorkItemTypeRemoval(
+      projectId,
+      removedTypes,
+      newConfig.work_item_types,
+      newConfig.hierarchy ?? null,
+      1
+    );
+
+    const typesWithItems = preview.groups
+      .filter((group) => group.count > 0)
+      .map((group) => group.type);
+
+    if (typesWithItems.length === 0) {
+      return await this.projectsRepository.applyWorkItemTypeRemovalStrategies(
         projectId,
         newConfig.work_item_types,
-        newConfig.hierarchy
+        [],
+        newConfig.hierarchy ?? null
       );
     }
+
+    const strategies = prepared.typeRemovalStrategies ?? [];
+    const strategyTypes = new Set(strategies.map((s) => s.type));
+    const missing = typesWithItems.filter((t) => !strategyTypes.has(t));
+    if (missing.length > 0) {
+      throw new Error(
+        `Work items still use removed type(s) ${missing.join(', ')}. Provide typeRemovalStrategies (delete or migrate) for each before saving.`
+      );
+    }
+
+    const invalidMigrate = strategies.filter(
+      (s) =>
+        s.action === 'migrate' &&
+        (!s.migrateTo || !newConfig.work_item_types!.includes(s.migrateTo))
+    );
+    if (invalidMigrate.length > 0) {
+      throw new Error(
+        `Migration targets must be among the remaining project types.`
+      );
+    }
+
+    return await this.projectsRepository.applyWorkItemTypeRemovalStrategies(
+      projectId,
+      newConfig.work_item_types,
+      strategies.filter((s) => typesWithItems.includes(s.type)),
+      newConfig.hierarchy ?? null
+    );
   }
 }

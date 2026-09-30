@@ -36,6 +36,8 @@ The child appears in the **Subtasks** section and in hierarchy list view.
 - Child type must match the hierarchy (Epic → Story → Task → Issue).
 - Parent and child must be in the **same project**.
 - **Issue** items cannot have subtasks.
+- Changing the **Type** of an item that still has subtasks asks you to unlink
+  those children first (or confirm detaching them), so the hierarchy stays valid.
 
 ---
 

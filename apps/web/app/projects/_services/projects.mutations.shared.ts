@@ -34,14 +34,32 @@ export function createProjectsService(
       input: UpdateProjectInput,
       expectedUpdatedAt: string
     ): Promise<Project> {
-      const data = await apiFetch<{ project: Project }>(
-        `${apiProjects}/${id}`,
-        {
-          method: 'PUT',
-          body: JSON.stringify({ ...input, expectedUpdatedAt }),
-        }
-      );
+      const data = await apiFetch<{
+        project: Project;
+        typeRemoval?: {
+          detachedCount: number;
+          deletedCount: number;
+          migratedCount: number;
+        };
+      }>(`${apiProjects}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ ...input, expectedUpdatedAt }),
+      });
       return data.project;
+    },
+
+    async previewWorkItemTypeRemoval(
+      id: string,
+      removedTypes: string[],
+      keptTypes: string[]
+    ): Promise<import('@repo/types/api/v1').WorkItemTypeRemovalPreviewResponse> {
+      const params = new URLSearchParams({
+        removeTypes: removedTypes.join(','),
+        keepTypes: keptTypes.join(','),
+      });
+      return await apiFetch(
+        `${apiProjects}/${id}/work-item-type-removal-preview?${params.toString()}`
+      );
     },
 
     /** Force-apply pending fields after a user confirms Keep mine / merge. */

@@ -488,17 +488,28 @@ export const patchWorkItemBodySchema = workItemCoreObject
       .trim()
       .min(1, 'Board column ID is required')
       .nullable(),
+    /**
+     * When changing type on a parent that still has children, set true to
+     * unlink direct children (`parent_id = null`) before applying the new type.
+     */
+    detachChildren: z.boolean().optional(),
   })
   .partial()
   .extend({
     expectedUpdatedAt: expectedUpdatedAtSchema,
   })
   .refine(
-    (data) => Object.keys(data).some((key) => key !== 'expectedUpdatedAt'),
+    (data) =>
+      Object.keys(data).some(
+        (key) => key !== 'expectedUpdatedAt' && key !== 'detachChildren'
+      ),
     {
       message: 'At least one field must be provided for update',
     }
   );
+
+/** API `code` when type change is blocked because the item still has children. */
+export const HIERARCHY_TYPE_CHANGE_CODE = 'HIERARCHY_TYPE_CHANGE' as const;
 
 export const patchWorkItemStatusBodySchema = z.object({
   status: workItemStatusSchema,
@@ -548,6 +559,42 @@ export type WorkItemUpdateBody = CreateWorkItemBody & {
 
 export type WorkItemMutationDescriptionParseMode = 'strict' | 'lenient';
 
+function preprocessDescriptionField(
+  processed: Record<string, unknown>,
+  description: string,
+  descriptionParseMode: WorkItemMutationDescriptionParseMode
+): boolean {
+  const raw = description.trim();
+  if (!raw) {
+    delete processed.description;
+    return true;
+  }
+
+  try {
+    processed.description = JSON.parse(raw);
+    return true;
+  } catch {
+    if (descriptionParseMode === 'lenient') {
+      processed.description = description;
+      return true;
+    }
+    return false;
+  }
+}
+
+function preprocessDetachChildrenField(
+  processed: Record<string, unknown>,
+  raw: unknown
+): void {
+  if (raw === true || raw === 'true' || raw === '1') {
+    processed.detachChildren = true;
+    return;
+  }
+  if (raw === false || raw === 'false' || raw === '0' || raw === '') {
+    delete processed.detachChildren;
+  }
+}
+
 /**
  * Normalize FormData / JSON bodies before Zod parse.
  * - `strict` (PATCH): invalid description JSON → `null`
@@ -561,24 +608,22 @@ export function preprocessWorkItemMutationBody(
   const processed = { ...body };
 
   if (typeof body.description === 'string') {
-    const raw = body.description.trim();
-    if (!raw) {
-      delete processed.description;
-    } else {
-      try {
-        processed.description = JSON.parse(raw);
-      } catch {
-        if (descriptionParseMode === 'lenient') {
-          processed.description = body.description;
-        } else {
-          return null;
-        }
-      }
+    const ok = preprocessDescriptionField(
+      processed,
+      body.description,
+      descriptionParseMode
+    );
+    if (!ok) {
+      return null;
     }
   }
 
   if ('labels' in body) {
     processed.labels = coerceLabelsFormField(body.labels);
+  }
+
+  if ('detachChildren' in body) {
+    preprocessDetachChildrenField(processed, body.detachChildren);
   }
 
   return processed;

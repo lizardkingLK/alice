@@ -146,6 +146,62 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
   );
 
   projectsRouter.get(
+    '/:id/work-item-type-removal-preview',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.id);
+      if (!parsedId.success) {
+        return res.status(400).json({ error: 'Invalid project id' });
+      }
+
+      const removeRaw = firstQueryValue(req.query.removeTypes);
+      const keepRaw = firstQueryValue(req.query.keepTypes);
+      const parseTypes = (raw: string | undefined): WorkItemType[] => {
+        if (!raw) {
+          return [];
+        }
+        return raw
+          .split(',')
+          .map((part) => part.trim())
+          .filter((part): part is WorkItemType =>
+            (Object.values(WorkItemTypeEnum) as string[]).includes(part)
+          );
+      };
+
+      const removedTypes = parseTypes(removeRaw);
+      const keptTypes = parseTypes(keepRaw);
+
+      if (removedTypes.length === 0) {
+        return res.status(400).json({
+          error: 'Query removeTypes must list at least one work-item type',
+        });
+      }
+      if (keptTypes.length === 0) {
+        return res.status(400).json({
+          error:
+            'Query keepTypes must list at least one remaining work-item type',
+        });
+      }
+
+      try {
+        const preview = await projectsService.previewWorkItemTypeRemoval(
+          req.userId!,
+          parsedId.data,
+          removedTypes,
+          keptTypes
+        );
+        res.json(preview);
+      } catch (error) {
+        const { status, error: message } = jsonErrorFromCaught(
+          error,
+          'Failed to preview work-item type removal'
+        );
+        return res.status(status).json({ error: message });
+      }
+    }
+  );
+
+  projectsRouter.get(
     '/:id/members',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
@@ -470,13 +526,16 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
 
       try {
         const { expectedUpdatedAt, ...input } = parsed.data;
-        const project = await projectsService.updateProject(
+        const { project, typeRemoval } = await projectsService.updateProject(
           req.userId!,
           id,
           input,
           expectedUpdatedAt
         );
-        res.json({ project: withoutIntegrationSecrets(project) });
+        res.json({
+          project: withoutIntegrationSecrets(project),
+          ...(typeRemoval ? { typeRemoval } : {}),
+        });
       } catch (error) {
         sendRouteMutationError(res, error, 'Failed to update project');
       }

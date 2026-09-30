@@ -15,6 +15,7 @@ import { Button } from '@repo/ui/components/ui/button';
 import { DialogFooter } from '@repo/ui/components/ui/dialog';
 import { Loader2 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
+import { HIERARCHY_TYPE_CHANGE_CODE } from '@repo/types/api/v1';
 import { User as DbUser } from '@/app/users/_services/users.mutations.client';
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import {
@@ -25,6 +26,7 @@ import { listParentCandidateWorkItems } from '@/app/work-items/_services/work-it
 import { FormStatusAlerts } from '@/app/work-items/_components/work-item-form/work-item-form-alerts';
 import { WorkItemFormClassicFields } from '@/app/work-items/_components/work-item-form/work-item-form-classic';
 import { WorkItemFormModernFields } from '@/app/work-items/_components/work-item-form/work-item-form-modern';
+import { WorkItemTypeChangeDetachDialog } from '@/app/work-items/_components/work-item-form/work-item-type-change-detach-dialog';
 import type { WorkItemCreateFormMode } from '@/app/work-items/_helpers/work-item-create-form-preference';
 import { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import { useProjectMembers } from '@/app/work-items/_hooks/use-project-members';
@@ -34,8 +36,24 @@ import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import type { SearchableSelectOption } from '@/components/searchable-select';
+import { ApiError } from '@/lib/api/api-fetch.helper';
 
 type WorkItemFormMember = Pick<DbUser, 'id' | 'name' | 'email'>;
+
+function isHierarchyTypeChangeConflict(
+  error: unknown,
+  alreadyDetaching: boolean
+): error is ApiError {
+  return (
+    !alreadyDetaching &&
+    error instanceof ApiError &&
+    error.code === HIERARCHY_TYPE_CHANGE_CODE
+  );
+}
+
+function formErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Something went wrong.';
+}
 
 export interface WorkItemFormProps {
   onClose?: () => void;
@@ -56,6 +74,11 @@ export interface WorkItemFormProps {
   allowedTypes?: readonly WorkItemType[];
   /** When true, type select is disabled (value still submitted). */
   lockType?: boolean;
+  /**
+   * Direct child count when editing. Used to confirm detach-before-type-change
+   * (#482). When omitted, the API 409 path still prompts after submit.
+   */
+  childCount?: number;
   /** Initial / locked status for create (e.g. board column). */
   defaultStatus?: WorkItemStatus;
   /** When true, status is fixed and submitted via hidden input. */
@@ -180,6 +203,7 @@ export function WorkItemForm({
   lockParent = false,
   allowedTypes,
   lockType = false,
+  childCount = 0,
   defaultStatus,
   lockStatus = false,
   defaultSprintId = null,
@@ -222,6 +246,11 @@ export function WorkItemForm({
   const [type, setType] = useState(
     itemToEdit?.type ?? (typeLocked ? (availableTypes[0] ?? '') : '')
   );
+  const [detachChildren, setDetachChildren] = useState(false);
+  const [pendingType, setPendingType] = useState<string | null>(null);
+  const [typeChangeChildCount, setTypeChangeChildCount] = useState(childCount);
+  const [typeChangeDialogOpen, setTypeChangeDialogOpen] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
 
   useEffect(() => {
     if (
@@ -330,40 +359,94 @@ export function WorkItemForm({
     return () => globalThis.clearTimeout(timer);
   }, [useModernLayout, state?.error]);
 
+  const handleTypeChange = (nextType: string) => {
+    if (
+      isEditMode &&
+      itemToEdit &&
+      nextType !== itemToEdit.type &&
+      childCount > 0 &&
+      !detachChildren
+    ) {
+      setPendingType(nextType);
+      setTypeChangeChildCount(childCount);
+      setTypeChangeDialogOpen(true);
+      return;
+    }
+    if (nextType === itemToEdit?.type) {
+      setDetachChildren(false);
+    }
+    setType(nextType);
+  };
+
+  const openTypeChangeDialogFromConflict = (
+    formData: FormData,
+    error: ApiError
+  ) => {
+    setPendingFormData(formData);
+    setPendingType(String(formData.get('type') ?? type));
+    setTypeChangeChildCount(error.childCount ?? childCount);
+    setTypeChangeDialogOpen(true);
+  };
+
+  const mutateExistingWorkItem = async (formData: FormData) => {
+    if (!itemToEdit) {
+      return null;
+    }
+    const expectedUpdatedAt = itemToEdit.updated_at;
+    return await runLockedMutationOrThrow({
+      mutate: () =>
+        updateWorkItem(itemToEdit.id, formData, expectedUpdatedAt),
+      handleMutationError,
+      entityType: 'work_item',
+      entityId: itemToEdit.id,
+      expectedUpdatedAt,
+      pendingFields: Object.fromEntries(formData.entries()),
+    });
+  };
+
+  const submitWorkItem = async (
+    formData: FormData
+  ): Promise<ResponseDTO<DbWorkItem> | 'hierarchy-dialog' | null> => {
+    const isUpdate = isEditMode && itemToEdit;
+
+    if (localMutate) {
+      const data = await localMutate({
+        mode: isUpdate ? 'update' : 'create',
+        formData,
+        itemToEdit: isUpdate ? itemToEdit : null,
+      });
+      return { data, error: null };
+    }
+
+    if (isUpdate) {
+      try {
+        return await mutateExistingWorkItem(formData);
+      } catch (error) {
+        if (isHierarchyTypeChangeConflict(error, detachChildren)) {
+          openTypeChangeDialogFromConflict(formData, error);
+          return 'hierarchy-dialog';
+        }
+        throw error;
+      }
+    }
+
+    return await createWorkItem(formData);
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPending(true);
     setState(null);
 
     const formData = new FormData(event.currentTarget);
+    if (detachChildren) {
+      formData.set('detachChildren', 'true');
+    }
 
     try {
-      const isUpdate = isEditMode && itemToEdit;
-      let response: ResponseDTO<DbWorkItem> | null = null;
-
-      if (localMutate) {
-        const data = await localMutate({
-          mode: isUpdate ? 'update' : 'create',
-          formData,
-          itemToEdit: isUpdate ? itemToEdit : null,
-        });
-        response = { data, error: null };
-      } else if (isUpdate) {
-        const expectedUpdatedAt = itemToEdit.updated_at;
-        response = await runLockedMutationOrThrow({
-          mutate: () =>
-            updateWorkItem(itemToEdit.id, formData, expectedUpdatedAt),
-          handleMutationError,
-          entityType: 'work_item',
-          entityId: itemToEdit.id,
-          expectedUpdatedAt,
-          pendingFields: Object.fromEntries(formData.entries()),
-        });
-        if (!response) {
-          return;
-        }
-      } else {
-        response = await createWorkItem(formData);
+      const response = await submitWorkItem(formData);
+      if (response === 'hierarchy-dialog' || !response) {
+        return;
       }
 
       setState({
@@ -374,14 +457,54 @@ export function WorkItemForm({
       });
 
       await delay();
-
       onSuccess(response.data!);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Something went wrong.';
-      setState({ success: null, error: message });
+      setState({ success: null, error: formErrorMessage(error) });
     } finally {
       setPending(false);
+    }
+  };
+
+  const retryUpdateWithDetach = async () => {
+    if (!itemToEdit) {
+      return;
+    }
+    setDetachChildren(true);
+    if (pendingType) {
+      setType(pendingType);
+    }
+    setPending(true);
+    setState(null);
+    try {
+      if (!pendingFormData) {
+        // Type was confirmed before submit — wait for next submit.
+        setPendingFormData(null);
+        setPendingType(null);
+        return;
+      }
+
+      const formData = pendingFormData;
+      formData.set('detachChildren', 'true');
+      if (pendingType) {
+        formData.set('type', pendingType);
+      }
+
+      const response = await mutateExistingWorkItem(formData);
+      if (!response) {
+        return;
+      }
+      setState({
+        success: 'Work item updated successfully.',
+        error: null,
+      });
+      await delay();
+      onSuccess(response.data!);
+    } catch (error) {
+      setState({ success: null, error: formErrorMessage(error) });
+    } finally {
+      setPending(false);
+      setPendingFormData(null);
+      setPendingType(null);
     }
   };
 
@@ -405,7 +528,7 @@ export function WorkItemForm({
     status: statusValue,
     onProjectIdChange: setProjectId,
     onAssigneeIdChange: setAssigneeId,
-    onTypeChange: setType,
+    onTypeChange: handleTypeChange,
     onPriorityChange: setPriority,
     onParentIdChange: setParentId,
   };
@@ -421,6 +544,36 @@ export function WorkItemForm({
       {!isEditMode && defaultSprintId ? (
         <input type="hidden" name="sprint_id" value={defaultSprintId} />
       ) : null}
+      {detachChildren ? (
+        <input type="hidden" name="detachChildren" value="true" />
+      ) : null}
+
+      <WorkItemTypeChangeDetachDialog
+        open={typeChangeDialogOpen}
+        onOpenChange={(open) => {
+          setTypeChangeDialogOpen(open);
+          if (!open) {
+            setPendingType(null);
+            if (!detachChildren) {
+              setPendingFormData(null);
+            }
+          }
+        }}
+        fromType={itemToEdit?.type ?? type}
+        toType={pendingType ?? type}
+        childCount={typeChangeChildCount}
+        onConfirmDetach={() => {
+          if (pendingFormData) {
+            void retryUpdateWithDetach();
+            return;
+          }
+          if (pendingType) {
+            setDetachChildren(true);
+            setType(pendingType);
+            setPendingType(null);
+          }
+        }}
+      />
 
       <div
         className={cn(

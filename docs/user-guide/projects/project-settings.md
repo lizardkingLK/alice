@@ -1,6 +1,6 @@
 # Project settings
 
-Edit project name, dates, and metadata.
+Edit project name, dates, metadata, and allowed work-item types.
 
 **Audience:** Managers and admins
 
@@ -19,8 +19,11 @@ Managers and admins who can access the project workspace can edit metadata.
 sidebar entries.
 
 On **Settings**, permitted work-item types use a stacked list with confirmation
-before removing a previously saved type (existing items fall back to Issue on
-save).
+before removing a previously saved type. When you save after removing types that
+still have work items (active or archived), a conflict dialog asks how to handle
+each type: **delete permanently** or **convert to** a remaining type. Parent
+links that would become invalid are detached first. Archive is not offered,
+because restoring would put a disallowed type back into the project.
 
 ---
 
@@ -57,3 +60,4 @@ Confirm destructive actions carefully — work items and history may be affected
 
 - [Browse projects](./browse-projects.md)
 - [Project members](./project-members.md)
+- [Work-item types and hierarchy](./work-item-types-and-hierarchy.md)

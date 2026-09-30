@@ -9,6 +9,7 @@ import {
   BoardMoveForbiddenError,
   StatusTransitionForbiddenError,
   WorkItemAccessError,
+  WorkItemHierarchyTypeChangeError,
   WorkItemValidationError,
 } from './work-items.errors';
 import { type WorkItemService } from './work-items.service';
@@ -147,6 +148,14 @@ function sendWorkItemMutationError(
       data: null,
       error: message,
       ...(code ? { code } : {}),
+    });
+  }
+  if (error instanceof WorkItemHierarchyTypeChangeError) {
+    return res.status(409).json({
+      data: null,
+      error: message,
+      code: error.code,
+      childCount: error.childCount,
     });
   }
   if (
@@ -463,7 +472,8 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
           req.userId!,
           req.params.id!,
           domainFields,
-          expectedUpdatedAt
+          expectedUpdatedAt,
+          { detachChildren: parsed.data.detachChildren === true }
         );
 
         await notifyAssigneeAfterCommit(
