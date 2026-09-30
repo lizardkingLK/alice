@@ -11,12 +11,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@repo/ui/components/ui/dialog';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@repo/ui/components/ui/tooltip';
 import { Columns3 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { ColumnOptionRow } from '@/components/table-columns/column-option-row';
@@ -106,30 +100,24 @@ export function TableColumnsDialog({
         setOpen(next);
       }}
     >
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DialogTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className={cn(
-                  triggerClassName,
-                  (applied || (highlightTriggerWhenOpen && open)) &&
-                    PREFERENCE_APPLIED_OUTLINE_BUTTON_CLASS
-                )}
-                disabled={disabled}
-                aria-label={resolvedTriggerAriaLabel}
-                aria-expanded={open}
-              >
-                <Columns3 className="size-4" />
-              </Button>
-            </DialogTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">Columns</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <DialogTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className={cn(
+            triggerClassName,
+            (applied || (highlightTriggerWhenOpen && open)) &&
+              PREFERENCE_APPLIED_OUTLINE_BUTTON_CLASS
+          )}
+          disabled={disabled}
+          aria-label={resolvedTriggerAriaLabel}
+          aria-expanded={open}
+          title="Columns"
+        >
+          <Columns3 className="size-4" />
+        </Button>
+      </DialogTrigger>
       <DialogContent className={contentClassName}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>

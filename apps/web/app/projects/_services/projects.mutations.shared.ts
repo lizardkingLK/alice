@@ -52,7 +52,9 @@ export function createProjectsService(
       id: string,
       removedTypes: string[],
       keptTypes: string[]
-    ): Promise<import('@repo/types/api/v1').WorkItemTypeRemovalPreviewResponse> {
+    ): Promise<
+      import('@repo/types/api/v1').WorkItemTypeRemovalPreviewResponse
+    > {
       const params = new URLSearchParams({
         removeTypes: removedTypes.join(','),
         keepTypes: keptTypes.join(','),

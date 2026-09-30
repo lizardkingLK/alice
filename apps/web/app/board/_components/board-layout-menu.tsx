@@ -13,12 +13,6 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@repo/ui/components/ui/tooltip';
-import {
   BOARD_LAYOUT_OPTIONS,
   readBoardLayout,
   writeBoardLayout,
@@ -59,48 +53,40 @@ export function BoardLayoutMenu({
   onLayoutChange,
 }: Readonly<BoardLayoutMenuProps>) {
   return (
-    <TooltipProvider delayDuration={200}>
-      <DropdownMenu>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="size-8 shrink-0 cursor-pointer"
-                aria-label="Change board layout"
-              >
-                <LayoutGrid className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">Layout</TooltipContent>
-        </Tooltip>
-        <DropdownMenuContent align="end" className="w-64">
-          <DropdownMenuLabel>Board layout</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuRadioGroup
-            value={layout}
-            onValueChange={(value) => {
-              onLayoutChange(value as BoardLayoutId);
-            }}
-          >
-            {BOARD_LAYOUT_OPTIONS.map((option) => (
-              <DropdownMenuRadioItem key={option.id} value={option.id}>
-                <div className="flex flex-col gap-0.5 pr-2">
-                  <span className="leading-none font-medium">
-                    {option.label}
-                  </span>
-                  <span className="text-muted-foreground text-xs font-normal">
-                    {option.description}
-                  </span>
-                </div>
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </TooltipProvider>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="size-8 shrink-0 cursor-pointer"
+          aria-label="Change board layout"
+          title="Layout"
+        >
+          <LayoutGrid className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuLabel>Board layout</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuRadioGroup
+          value={layout}
+          onValueChange={(value) => {
+            onLayoutChange(value as BoardLayoutId);
+          }}
+        >
+          {BOARD_LAYOUT_OPTIONS.map((option) => (
+            <DropdownMenuRadioItem key={option.id} value={option.id}>
+              <div className="flex flex-col gap-0.5 pr-2">
+                <span className="leading-none font-medium">{option.label}</span>
+                <span className="text-muted-foreground text-xs font-normal">
+                  {option.description}
+                </span>
+              </div>
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

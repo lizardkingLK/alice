@@ -170,10 +170,7 @@ function readApiErrorChildCount(data: unknown): number | undefined {
   return undefined;
 }
 
-function throwApiErrorFromResponse(
-  response: Response,
-  data: unknown
-): never {
+function throwApiErrorFromResponse(response: Response, data: unknown): never {
   const message = getApiErrorMessage(data);
   if (
     response.status === OPTIMISTIC_LOCK_HTTP_STATUS &&

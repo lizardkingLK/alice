@@ -358,8 +358,6 @@ type FilterDialogShellProps = {
   // eslint-disable-next-line no-unused-vars -- dialog open state
   readonly onOpenChange: (open: boolean) => void;
   readonly hasActiveFilters: boolean;
-  readonly hideTooltipWhileOpen?: boolean;
-  readonly delayDuration?: number;
   /** When set, renders the two-pane field nav layout. */
   readonly fields?: readonly FilterDialogNavField[];
   readonly activeFieldId?: string;
@@ -398,8 +396,6 @@ export function FilterDialogShell({
   open,
   onOpenChange,
   hasActiveFilters,
-  hideTooltipWhileOpen = true,
-  delayDuration = 600,
   fields,
   activeFieldId,
   onActiveFieldIdChange,
@@ -489,12 +485,7 @@ export function FilterDialogShell({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <FilterShortcutTrigger
-        open={open}
-        hasActiveFilters={hasActiveFilters}
-        hideTooltipWhileOpen={hideTooltipWhileOpen}
-        delayDuration={delayDuration}
-      />
+      <FilterShortcutTrigger open={open} hasActiveFilters={hasActiveFilters} />
 
       <DialogContent
         showCloseButton
@@ -505,7 +496,7 @@ export function FilterDialogShell({
         )}
       >
         {hasFieldNav ? (
-          <div className="flex min-h-[28rem]">
+          <div className="flex min-h-112">
             <aside className="border-border flex w-52 shrink-0 flex-col border-r p-3 pb-4">
               <nav className="space-y-0.5" aria-label="Filter fields">
                 {fields!.map((field) => (
