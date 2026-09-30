@@ -1,5 +1,7 @@
-import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
-import type { WorkItemTypeRemovalStrategy } from '@repo/types/api/v1';
+import type {
+  ProjectWorkflowConfig,
+  WorkItemTypeRemovalStrategy,
+} from '@repo/types/api/v1';
 
 export type ProjectRow = {
   id: string;

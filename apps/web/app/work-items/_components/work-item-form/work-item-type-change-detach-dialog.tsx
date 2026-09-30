@@ -11,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
-import { Label } from '@repo/ui/components/ui/label';
 
 type WorkItemTypeChangeDetachDialogProps = {
   readonly open: boolean;
@@ -59,15 +58,19 @@ export function WorkItemTypeChangeDetachDialog({
 
         <fieldset className="space-y-3 py-2">
           <legend className="sr-only">Hierarchy handling</legend>
-          <label className="flex cursor-pointer items-start gap-3">
+          <div className="flex items-start gap-3">
             <input
+              id="type-change-detach"
               type="radio"
               name="type-change-hierarchy"
               className="mt-1"
               checked={choice === 'detach'}
               onChange={() => setChoice('detach')}
             />
-            <span className="text-sm">
+            <label
+              htmlFor="type-change-detach"
+              className="cursor-pointer text-sm"
+            >
               <span className="font-medium">
                 Unlink subtasks, then change type to {toType}
               </span>
@@ -75,24 +78,28 @@ export function WorkItemTypeChangeDetachDialog({
                 Direct children become top-level items. Their own children stay
                 attached to them.
               </span>
-            </span>
-          </label>
-          <label className="flex cursor-pointer items-start gap-3">
+            </label>
+          </div>
+          <div className="flex items-start gap-3">
             <input
+              id="type-change-cancel"
               type="radio"
               name="type-change-hierarchy"
               className="mt-1"
               checked={choice === 'cancel'}
               onChange={() => setChoice('cancel')}
             />
-            <Label className="text-sm font-normal">
+            <label
+              htmlFor="type-change-cancel"
+              className="cursor-pointer text-sm"
+            >
               <span className="font-medium">Cancel — I will unlink first</span>
               <span className="text-muted-foreground block font-normal">
                 Keep the current type and unlink subtasks yourself, then change
                 the type afterwards.
               </span>
-            </Label>
-          </label>
+            </label>
+          </div>
         </fieldset>
 
         <DialogFooter>

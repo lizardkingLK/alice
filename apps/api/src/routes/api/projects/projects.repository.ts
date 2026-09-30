@@ -177,36 +177,40 @@ async function applyTypeRemovalActions(
   strategies: TypeRemovalStrategy[],
   affected: AffectedWorkItem[]
 ): Promise<{ deletedCount: number; migratedCount: number }> {
-  let deletedCount = 0;
-  let migratedCount = 0;
+  const results = await Promise.all(
+    strategies.map(async (strategy) => {
+      const ids = affected
+        .filter((item) => item.type === strategy.type)
+        .map((item) => item.id);
+      if (ids.length === 0) {
+        return { deletedCount: 0, migratedCount: 0 };
+      }
 
-  for (const strategy of strategies) {
-    const ids = affected
-      .filter((item) => item.type === strategy.type)
-      .map((item) => item.id);
-    if (ids.length === 0) {
-      continue;
-    }
+      if (strategy.action === 'delete') {
+        await prisma.notifications.deleteMany({
+          where: { related_item_id: { in: ids } },
+        });
+        const deleted = await prisma.work_items.deleteMany({
+          where: { id: { in: ids } },
+        });
+        return { deletedCount: deleted.count, migratedCount: 0 };
+      }
 
-    if (strategy.action === 'delete') {
-      await prisma.notifications.deleteMany({
-        where: { related_item_id: { in: ids } },
-      });
-      const deleted = await prisma.work_items.deleteMany({
+      const migrated = await prisma.work_items.updateMany({
         where: { id: { in: ids } },
+        data: { type: strategy.migrateTo! },
       });
-      deletedCount += deleted.count;
-      continue;
-    }
+      return { deletedCount: 0, migratedCount: migrated.count };
+    })
+  );
 
-    const migrated = await prisma.work_items.updateMany({
-      where: { id: { in: ids } },
-      data: { type: strategy.migrateTo! },
-    });
-    migratedCount += migrated.count;
-  }
-
-  return { deletedCount, migratedCount };
+  return results.reduce(
+    (totals, result) => ({
+      deletedCount: totals.deletedCount + result.deletedCount,
+      migratedCount: totals.migratedCount + result.migratedCount,
+    }),
+    { deletedCount: 0, migratedCount: 0 }
+  );
 }
 
 async function pruneInvalidHierarchyLinks(

@@ -109,25 +109,32 @@ function GroupStrategyPanel({
         ) : null}
 
         <fieldset className="space-y-3">
-          <legend className="text-sm font-medium">How should these be handled?</legend>
-          <label className="flex cursor-pointer items-start gap-3">
+          <legend className="text-sm font-medium">
+            How should these be handled?
+          </legend>
+          <div className="flex items-start gap-3">
             <input
+              id={`strategy-delete-${group.type}`}
               type="radio"
               name={`strategy-${group.type}`}
               className="mt-1"
               checked={action === 'delete'}
               onChange={() => onDraftChange({ action: 'delete' })}
             />
-            <span className="text-sm">
+            <label
+              htmlFor={`strategy-delete-${group.type}`}
+              className="cursor-pointer text-sm"
+            >
               <span className="font-medium">Delete permanently</span>
               <span className="text-muted-foreground block">
                 Removes these work items. Archive is not offered because
                 restoring would reintroduce a disallowed type.
               </span>
-            </span>
-          </label>
-          <label className="flex cursor-pointer items-start gap-3">
+            </label>
+          </div>
+          <div className="flex items-start gap-3">
             <input
+              id={`strategy-migrate-${group.type}`}
               type="radio"
               name={`strategy-${group.type}`}
               className="mt-1"
@@ -139,7 +146,10 @@ function GroupStrategyPanel({
                 })
               }
             />
-            <span className="flex min-w-0 flex-1 flex-col gap-2 text-sm">
+            <label
+              htmlFor={`strategy-migrate-${group.type}`}
+              className="flex min-w-0 flex-1 cursor-pointer flex-col gap-2 text-sm"
+            >
               <span className="font-medium">Convert to another type</span>
               <div className="flex max-w-xs flex-col gap-1">
                 <Label htmlFor={`migrate-to-${group.type}`} className="sr-only">
@@ -167,12 +177,14 @@ function GroupStrategyPanel({
                   </SelectContent>
                 </Select>
               </div>
-            </span>
-          </label>
+            </label>
+          </div>
         </fieldset>
 
         {group.items.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No work items of this type.</p>
+          <p className="text-muted-foreground text-sm">
+            No work items of this type.
+          </p>
         ) : (
           <div className="border-border max-h-56 overflow-auto rounded-md border">
             <table className="w-full text-left text-sm">
@@ -339,7 +351,12 @@ export function ProjectTypeRemovalStrategyDialog({
           </Button>
           <Button
             type="button"
-            disabled={!allReady || isSubmitting || previewLoading || Boolean(previewError)}
+            disabled={
+              !allReady ||
+              isSubmitting ||
+              previewLoading ||
+              Boolean(previewError)
+            }
             onClick={handleConfirm}
           >
             {isSubmitting ? (
