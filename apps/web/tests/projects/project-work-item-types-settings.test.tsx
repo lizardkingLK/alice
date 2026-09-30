@@ -89,17 +89,17 @@ describe('ProjectSettingsTab Component', () => {
       <ProjectSettingsTab project={mockProject} isManagerOrAdmin={true} />
     );
 
-    // Uncheck Story — confirm migration dialog first
+    // Uncheck Story — confirm removal dialog first
     const storyCheckbox = screen.getByRole('checkbox', { name: /story/i });
     fireEvent.click(storyCheckbox);
     fireEvent.click(screen.getByRole('button', { name: /Remove type/i }));
 
     expect(
-      screen.getByText(/Work items will be migrated/i)
+      screen.getByText(/Existing items need a resolution strategy/i)
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /will cause all existing items of those types in this project to fall back/i
+        /will prompt you to delete or convert each affected type when you save/i
       )
     ).toBeInTheDocument();
   });
