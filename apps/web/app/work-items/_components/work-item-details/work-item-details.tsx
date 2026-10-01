@@ -10,7 +10,6 @@ import {
   type Json,
   type WorkItemWorkLog,
 } from '@repo/types';
-import { getInitials } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
 import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form/work-item-form-dialog';
@@ -21,7 +20,6 @@ import {
   WorkItemActivityTabs,
   type WorkItemActivityTab,
 } from '@/app/work-items/_components/work-item-details/work-item-activity-tabs';
-import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import { Progress } from '@repo/ui/components/ui/progress';
@@ -74,6 +72,8 @@ import type { CommentWorkItemOption } from '@/app/comments/_services/comments.mu
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import type { WorkItemAncestor } from '@/app/work-items/_services/work-items.reads.server';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
+import { useRealtime } from '@/components/realtime/realtime-provider';
+import { UserAvatar } from '@/components/user-avatar';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { useOptimisticPending } from '@/lib/optimistic-lock/use-optimistic-pending';
 import { useOptimisticPendingHydrate } from '@/lib/optimistic-lock/use-optimistic-pending-hydrate';
@@ -117,6 +117,7 @@ export default function WorkItemDetails({
   discussionWorkItems?: CommentWorkItemOption[];
 }>) {
   const router = useRouter();
+  const { isUserOnline } = useRealtime();
   const { handleMutationError } = useOptimisticLock();
   const [workItem, setWorkItem] = useState<DbWorkItem>(workItemDetails);
   const lifecycle = useWorkItemLifecycleActions({
@@ -536,14 +537,16 @@ export default function WorkItemDetails({
                           <PriorityBadge priority={child.priority} />
                         </TableCell>
                         <TableCell className="px-2 py-2.5">
-                          <Avatar
-                            size="sm"
+                          <UserAvatar
+                            name={child.assignee?.name}
                             title={child.assignee?.name ?? 'Unassigned'}
-                          >
-                            <AvatarFallback>
-                              {getInitials(child.assignee?.name)}
-                            </AvatarFallback>
-                          </Avatar>
+                            isOnline={Boolean(
+                              child.assignee_id &&
+                              isUserOnline(child.assignee_id)
+                            )}
+                            className="border-0"
+                            fallbackClassName="text-xs font-normal"
+                          />
                         </TableCell>
                         <TableCell className="px-3 py-2.5">
                           <WorkItemStatusBadge status={child.status} />

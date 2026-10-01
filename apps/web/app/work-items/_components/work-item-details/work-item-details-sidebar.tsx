@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  formatLabelWithSpace,
-  formatDate,
-  getInitials,
-} from '@/app/_shared/utility';
+import { formatLabelWithSpace, formatDate } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import {
   WORK_ITEM_PATCH_FIELD_CONFIG,
@@ -19,6 +15,8 @@ import {
   patchWorkItemDynamicFields,
 } from '@/app/work-items/_helpers/work-item-dynamic-fields';
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import { useRealtime } from '@/components/realtime/realtime-provider';
+import { UserAvatar } from '@/components/user-avatar';
 import { useRouter } from 'next/navigation';
 import {
   parseWorkItemLabels,
@@ -30,11 +28,6 @@ import {
   type WorkItemGithubConfigStatus,
 } from '@repo/types';
 import { isManagerOrAdmin, type AppRole } from '@/lib/rbac';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@repo/ui/components/ui/avatar';
 import { Button } from '@repo/ui/components/ui/button';
 import { ButtonGroup } from '@repo/ui/components/ui/button-group';
 import {
@@ -291,20 +284,25 @@ function SidebarCollapsibleSection({
 function UserPill({
   name,
   imageUrl,
+  isOnline,
   emptyLabel = 'Unassigned',
 }: Readonly<{
   name?: string | null;
   imageUrl?: string | null;
+  isOnline: boolean;
   emptyLabel?: string;
 }>) {
   const displayName = name?.trim() || emptyLabel;
 
   return (
     <div className="flex items-center gap-2">
-      <Avatar size="sm">
-        {imageUrl ? <AvatarImage src={imageUrl} alt={displayName} /> : null}
-        <AvatarFallback>{getInitials(name)}</AvatarFallback>
-      </Avatar>
+      <UserAvatar
+        name={name}
+        imageUrl={imageUrl}
+        isOnline={isOnline}
+        className="border-0"
+        fallbackClassName="text-xs font-normal"
+      />
       <span className="text-sm font-medium">{displayName}</span>
     </div>
   );
@@ -314,6 +312,7 @@ function UserPill({
 type EditableUserFieldProps = {
   readonly name?: string | null;
   readonly imageUrl?: string | null;
+  readonly isOnline: boolean;
   readonly field: 'assignee_id' | 'reporter_id';
   readonly onEdit: (field: 'assignee_id' | 'reporter_id') => void;
   readonly readOnly?: boolean;
@@ -346,6 +345,7 @@ function DetailFieldEditButton({
 function EditableUserField({
   name,
   imageUrl,
+  isOnline,
   field,
   onEdit,
   readOnly = false,
@@ -357,6 +357,7 @@ function EditableUserField({
       <UserPill
         name={name}
         imageUrl={imageUrl}
+        isOnline={isOnline}
         emptyLabel={config.unassignedLabel ?? 'Unassigned'}
       />
       {readOnly ? null : (
@@ -433,12 +434,19 @@ export default function WorkItemSidebar({
   readOnly?: boolean;
   currentUserRole?: string | null;
 }>) {
+  const { isUserOnline } = useRealtime();
   const [activeField, setActiveField] = useState<
     'assignee_id' | 'reporter_id' | 'labels' | null
   >(null);
   const [developmentOpen, setDevelopmentOpen] = useState(true);
   const [additionalFieldsOpen, setAdditionalFieldsOpen] = useState(true);
   const labels = parseWorkItemLabels(workItem.labels);
+  const assigneeIsOnline = Boolean(
+    workItem.assignee_id && isUserOnline(workItem.assignee_id)
+  );
+  const reporterIsOnline = Boolean(
+    workItem.reporter_id && isUserOnline(workItem.reporter_id)
+  );
 
   const hasValidDynamicFields = useMemo(() => {
     if (!project?.attributes_config) return false;
@@ -547,6 +555,7 @@ export default function WorkItemSidebar({
           <EditableUserField
             name={workItem.assignee?.name}
             imageUrl={workItem.assignee?.profile_picture}
+            isOnline={assigneeIsOnline}
             field="assignee_id"
             onEdit={setActiveField}
             readOnly={readOnly}
@@ -556,6 +565,7 @@ export default function WorkItemSidebar({
           <EditableUserField
             name={workItem.reporter?.name}
             imageUrl={workItem.reporter?.profile_picture}
+            isOnline={reporterIsOnline}
             field="reporter_id"
             onEdit={setActiveField}
             readOnly={readOnly}

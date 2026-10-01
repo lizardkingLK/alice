@@ -1,7 +1,15 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { BoardGroupedColumnsView } from '@/app/board/_components/board-grouped-columns-view';
 import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
+
+const { isUserOnlineMock } = vi.hoisted(() => ({
+  isUserOnlineMock: vi.fn((userId: string) => userId === 'online-user-id'),
+}));
+
+vi.mock('@/components/realtime/realtime-provider', () => ({
+  useRealtime: () => ({ isUserOnline: isUserOnlineMock }),
+}));
 
 const columns = [
   { id: 'new', name: 'New', status: 'New' as const },
@@ -104,5 +112,61 @@ describe('BoardGroupedColumnsView', () => {
 
     const row = container.querySelector('tr.opacity-40');
     expect(row).toBeTruthy();
+  });
+
+  it('shows presence only for online assignees', () => {
+    const onlineItem = {
+      ...item,
+      id: 'online-item-id',
+      title: 'Online row',
+      assignee_id: 'online-user-id',
+      assignee: {
+        id: 'online-user-id',
+        name: 'Online Owner',
+        email: 'online@example.com',
+        profile_picture: null,
+      },
+    };
+    const offlineItem = {
+      ...item,
+      id: 'offline-item-id',
+      title: 'Offline row',
+      assignee_id: 'offline-user-id',
+      assignee: {
+        id: 'offline-user-id',
+        name: 'Offline Owner',
+        email: 'offline@example.com',
+        profile_picture: null,
+      },
+    };
+    const map = new Map([['new', [onlineItem as never, offlineItem as never]]]);
+
+    render(
+      <TooltipProvider>
+        <BoardGroupedColumnsView
+          boardColumns={columns}
+          columnItemsMap={map}
+          activeDropCol={null}
+          draggedTaskId={null}
+          pendingStatusIds={new Set()}
+          onSelectItem={vi.fn()}
+          onCreateInColumn={vi.fn()}
+          onItemDragStart={vi.fn()}
+          onItemDragEnd={vi.fn()}
+          onColumnDragOver={vi.fn()}
+          onColumnDragLeave={vi.fn()}
+          onColumnDrop={vi.fn()}
+        />
+      </TooltipProvider>
+    );
+
+    expect(isUserOnlineMock).toHaveBeenCalledWith('online-user-id');
+    expect(isUserOnlineMock).toHaveBeenCalledWith('offline-user-id');
+    expect(
+      within(screen.getByTitle('Online Owner')).getByLabelText('Online')
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTitle('Offline Owner')).queryByLabelText('Online')
+    ).not.toBeInTheDocument();
   });
 });
