@@ -168,7 +168,8 @@ describe('parseProjectDetailsTab', () => {
     expect(parseProjectDetailsTab('sprints')).toBe('sprints');
     expect(parseProjectDetailsTab('integrations')).toBe('integrations');
     expect(parseProjectDetailsTab('board')).toBe('board');
-    expect(parseProjectDetailsTab('settings')).toBe('settings');
+    expect(parseProjectDetailsTab('types')).toBe('types');
+    expect(parseProjectDetailsTab('settings')).toBe('types');
   });
 
   it('falls back to "details" for unknown or empty values', () => {
@@ -338,7 +339,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       screen.queryByRole('link', { name: /board/i })
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('link', { name: /settings/i })
+      screen.queryByRole('link', { name: /^types$/i })
     ).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /details/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /members/i })).toBeInTheDocument();

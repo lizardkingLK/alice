@@ -34,7 +34,7 @@ a member.
 
 - Open the project workspace to add **Members**, **Teams**, and **Work items**
 - Configure **Integrations** on the project **Integrations** tab
-- Adjust metadata with [Project settings](./project-settings.md)
+- Adjust allowed types with [Project types](./project-settings.md)
 
 The creating admin and the owner stay on the Members list and cannot be removed
 from membership (see [Project members](./project-members.md)).

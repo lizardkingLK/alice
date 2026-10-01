@@ -8,7 +8,7 @@ import {
   Kanban,
   Network,
   Plug,
-  Settings,
+  Shapes,
   SlidersHorizontal,
   Timer,
   Users,
@@ -101,7 +101,7 @@ const MANAGER_ONLY_TABS = new Set<ProjectDetailsTabId>([
   'integrations',
   'fields',
   'board',
-  'settings',
+  'types',
 ]);
 
 const PROJECT_NAV_ITEMS: ReadonlyArray<{
@@ -156,9 +156,9 @@ const PROJECT_NAV_ITEMS: ReadonlyArray<{
     managerOrAdminOnly: true,
   },
   {
-    id: 'settings',
-    label: 'Settings',
-    Icon: Settings,
+    id: 'types',
+    label: 'Types',
+    Icon: Shapes,
     managerOrAdminOnly: true,
   },
 ];
@@ -392,7 +392,7 @@ export function ProjectDetailsWorkspace({
           </div>
         )}
 
-        {activeTab === 'settings' && canEditProject && (
+        {activeTab === 'types' && canEditProject && (
           <div className="p-6">
             <ProjectSettingsTab
               project={project}

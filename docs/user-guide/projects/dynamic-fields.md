@@ -22,7 +22,8 @@ When you open a project from **Projects** (`/projects/[id]`), the left sidebar p
 - **Members**: Project membership roster and roles.
 - **Teams**: Teams assigned to or working on this project. When creating or editing a team, **Designated Team Manager** lists only managers and admins who are members of that project.
 - **Work Items**: The full-width work items table (including the **Sprint** column), backlog, and hierarchy view. Use **Filter** to narrow by sprint, assignee (scoped to the selected/default project’s members, or the union of members across your projects when no project is selected), and other fields.
-- **Sprints**: Sprint registry for this project (managers and admins only).
+- **Sprints**: Sprint registry for this project (managers and admins only). Use **Go to Backlog** (with the backlog icon) in the toolbar to open `/backlog` filtered to this project.
+- **Board**: Board column/rules configuration (managers and admins). Use **Go to Board** (kanban icon) to open the live board for this project.
 - **Integrations**: Connections to GitHub and Atlassian Jira Cloud.
 - **Fields**: Configuration interface for project dynamic fields (managers and admins).
 
@@ -117,7 +118,7 @@ Once dynamic fields are saved for a project:
 
 ## Related
 
-- [Project settings](./project-settings.md)
+- [Project types](./project-settings.md)
 - [User testing guide](./dynamic-fields-testing.md)
 - [Create work item](../work-items/create-work-item.md)
 - [Alice AI assistant](../chat/use-ai-assistant.md)

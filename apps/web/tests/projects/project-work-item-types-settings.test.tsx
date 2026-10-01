@@ -121,7 +121,7 @@ describe('ProjectSettingsTab Component', () => {
     fireEvent.click(taskCheckbox);
     fireEvent.click(screen.getByRole('button', { name: /Remove type/i }));
 
-    const saveButton = screen.getByRole('button', { name: /Save Settings/i });
+    const saveButton = screen.getByRole('button', { name: /Save Types/i });
     expect(saveButton).toBeDisabled();
   });
 
@@ -141,7 +141,7 @@ describe('ProjectSettingsTab Component', () => {
     const featureCheckbox = screen.getByRole('checkbox', { name: /feature/i });
     fireEvent.click(featureCheckbox);
 
-    const saveButton = screen.getByRole('button', { name: /Save Settings/i });
+    const saveButton = screen.getByRole('button', { name: /Save Types/i });
     fireEvent.click(saveButton);
 
     await waitFor(() => {
@@ -164,11 +164,11 @@ describe('ProjectSettingsTab Component', () => {
 
     expect(
       screen.getByText(
-        /Only Project Managers and Administrators can configure project settings/i
+        /Only Project Managers and Administrators can configure work-item types/i
       )
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: /Save Settings/i })
+      screen.queryByRole('button', { name: /Save Types/i })
     ).not.toBeInTheDocument();
   });
 });

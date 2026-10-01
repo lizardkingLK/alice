@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
@@ -12,7 +13,7 @@ import {
 import { updateSprintStatusWithOptimisticLock } from '@/app/sprints/_helpers/update-sprint-status-with-lock';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
-import { Archive, CircleDot, Search, Plus } from '@repo/ui/lib/icons';
+import { Archive, CircleDot, ListTodo, Search, Plus } from '@repo/ui/lib/icons';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import {
   SprintTabEnum,
@@ -33,6 +34,7 @@ import {
 } from '@/hooks/use-query-filter';
 import { SprintsFilterDialog } from '@/app/sprints/_components/sprints-filter-dialog';
 import { SprintDeleteConfirmDialog } from './sprint-delete-confirm-dialog';
+import { buildWorkspaceFilterRedirectPath } from '@/app/board/_services/board.defaults.shared';
 
 const SPRINT_STATUS_TABS = [
   { id: SprintTabEnum.Active, label: 'Active', icon: CircleDot },
@@ -166,6 +168,7 @@ function SprintsWorkspaceToolbar(props: {
   // eslint-disable-next-line no-unused-vars
   readonly onSearchChange: (value: string) => void;
   readonly isProjectLocked: boolean;
+  readonly lockedProjectId?: string;
   readonly projects: Project[];
   readonly projectValue: string;
   // eslint-disable-next-line no-unused-vars
@@ -179,6 +182,12 @@ function SprintsWorkspaceToolbar(props: {
   const showClearFilters =
     props.projectValue !== QUERY_FILTER_ALL_VALUE ||
     props.searchQuery.trim().length > 0;
+
+  const backlogHref = props.lockedProjectId
+    ? (buildWorkspaceFilterRedirectPath('/backlog', {
+        projectId: props.lockedProjectId,
+      }) ?? '/backlog')
+    : null;
 
   const appliedFilterItems = buildAppliedFilterBadgeItems({
     search: props.searchQuery,
@@ -247,6 +256,15 @@ function SprintsWorkspaceToolbar(props: {
       </div>
 
       <div className="flex flex-wrap items-center gap-3 self-start">
+        {backlogHref ? (
+          <Button asChild variant="outline" size="sm" className="h-10">
+            <Link href={backlogHref}>
+              <ListTodo data-icon="inline-start" className="size-4" />
+              Go to Backlog
+            </Link>
+          </Button>
+        ) : null}
+
         <RegistryTabSwitcher
           tabs={SPRINT_STATUS_TABS}
           value={props.filterTab}
@@ -486,6 +504,7 @@ export function SprintsWorkspace({
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           isProjectLocked={isProjectLocked}
+          lockedProjectId={lockedProjectId}
           projects={projects}
           projectValue={projectQuery.value}
           onApplyProject={projectQuery.setFilter}

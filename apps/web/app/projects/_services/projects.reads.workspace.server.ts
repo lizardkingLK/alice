@@ -117,7 +117,7 @@ const MANAGER_ONLY_PROJECT_TABS = new Set([
   'integrations',
   'fields',
   'board',
-  'settings',
+  'types',
 ] as const);
 
 function resolveWorkspaceTab(

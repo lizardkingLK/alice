@@ -1,49 +1,37 @@
-# Project settings
+# Project types
 
-Edit project name, dates, metadata, and allowed work-item types.
+Configure which work-item types are permitted in a project.
 
 **Audience:** Managers and admins
 
 ---
 
-## Open settings
+## Open Types
 
 1. Go to **Projects** and open a project.
-2. On **Details**, use the banner for branding (cover/logo) when you are a
-   manager or admin. Key, timeline, description, and owner appear on the banner;
-   summary cards link to Members, Teams, Work Items, and other sections.
+2. In the project sidebar, select **Types** (`/projects/[id]?tab=types`).
+   The tab uses a shapes icon so it stays distinct from Fields and Board.
 
-Managers and admins who can access the project workspace can edit metadata.
-**Admins** can also hard-delete projects from admin-only actions where shown.
-**Members** do not see the Settings, Board, Fields, Teams, or Integrations
-sidebar entries.
+Managers and admins who can access the project workspace see **Types**.
+**Members** do not see the Types, Board, Fields, Teams, Sprints, or Integrations
+sidebar entries (deep links fall back to Details).
 
-On **Settings**, permitted work-item types use a stacked list with confirmation
+On **Types**, permitted work-item types use a stacked list with confirmation
 before removing a previously saved type. When you save after removing types that
 still have work items (active or archived), a conflict dialog asks how to handle
 each type: **delete permanently** or **convert to** a remaining type. Parent
 links that would become invalid are detached first. Archive is not offered,
 because restoring would put a disallowed type back into the project.
 
----
-
-## What you can change
-
-Typical fields include:
-
-- **Name** and **description**
-- **Start** and **end** dates
-- **Owner** (transfer ownership — admins/managers per policy)
-- Status or archival flags where available
-
-Submit **Save Changes** when finished.
+Submit **Save Types** when finished.
 
 ---
 
-## Branding
+## Branding and metadata
 
-Some deployments allow editing project branding (color or banner) from the
-project header — available to managers and admins on that project.
+Project name, dates, description, and owner appear on the **Details** banner.
+Some deployments allow editing project branding (cover or logo) from that
+banner — available to managers and admins on that project.
 
 ---
 

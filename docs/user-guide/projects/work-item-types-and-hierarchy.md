@@ -100,18 +100,18 @@ Leaf items (no children) change type without this prompt.
 
 ---
 
-## 4. Restoring Removed Types in Project Settings
+## 4. Restoring Removed Types on the Types Tab
 
 Managers and Admins can update allowed work-item types at any time:
 
-1. Open the project workspace and select the **Settings** tab (`/projects/[id]?tab=settings`).
+1. Open the project workspace and select the **Types** tab (`/projects/[id]?tab=types`).
 2. In the **Allowed Work-Item Types** card:
    - Check or uncheck permitted types.
-   - If removing a type that currently has work items, a warning alert explains that affected items will fall back to `Issue`.
-3. Select **Save Settings**.
+   - If removing a type that currently has work items, a warning alert explains that those items must be deleted or converted when you save.
+3. Select **Save Types**. When items still use a removed type, complete the conflict dialog (delete or convert each type).
 4. **Restoring a Type**:
    - Re-enabling a previously removed type allows it to be used for new work items immediately.
-   - **Important**: Restoring a type does **not** retroactively convert items that previously fell back to `Issue` back to their old type.
+   - **Important**: Restoring a type does **not** retroactively change items that were deleted or converted when the type was removed.
 
 ---
 
@@ -132,13 +132,13 @@ When importing issues from Jira into ALICE:
 5. Select **Start Import**:
    - Issues are imported with their mapped types.
    - Parent-child links are established conforming strictly to the configured target hierarchy.
-   - The custom hierarchy is saved in the project configuration, and an indicator badge in **Settings** confirms custom hierarchy is active.
+   - The custom hierarchy is saved in the project configuration, and an indicator badge on **Types** confirms custom hierarchy is active.
 
 ---
 
 ## Related Documentation
 
 - [User Testing Guide](./work-item-types-testing.md)
-- [Project Settings](./project-settings.md)
+- [Project types](./project-settings.md)
 - [Create a Project](./create-project.md)
 - [Project Integrations](./project-integrations.md)
