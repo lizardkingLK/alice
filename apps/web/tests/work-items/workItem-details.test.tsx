@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import WorkItemDetails from '@/app/work-items/_components/work-item-details/work-item-details';
 import {
   mockRefresh,
@@ -9,6 +15,18 @@ import {
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
 import { userFactory } from '../factories/user.factory';
+
+/* eslint-disable no-unused-vars -- callback signature */
+type IsUserOnline = (userId: string) => boolean;
+/* eslint-enable no-unused-vars */
+
+const { isUserOnlineMock } = vi.hoisted(() => ({
+  isUserOnlineMock: vi.fn<IsUserOnline>().mockReturnValue(false),
+}));
+
+vi.mock('@/components/realtime/realtime-provider', () => ({
+  useRealtime: () => ({ isUserOnline: isUserOnlineMock }),
+}));
 
 vi.mock('next/navigation', () => import('../mocks/next-navigation'));
 
@@ -213,6 +231,7 @@ describe('WorkItemDetails subtasks', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    isUserOnlineMock.mockImplementation(() => false);
     resetNextNavigationMock();
     configureNextNavigationMock({ pathname: '/work-items/wi-story' });
   });
@@ -333,6 +352,97 @@ describe('WorkItemDetails subtasks', () => {
     expect(
       screen.getByRole('link', { name: /Child task title/i })
     ).toHaveAttribute('href', '/work-items/wi-child-done');
+  });
+
+  it('shows presence only for online subtask assignees', () => {
+    const story = workItemFactory.build({
+      id: 'wi-story',
+      type: 'Story',
+      project_id: project.id,
+    });
+    const onlineChild = workItemFactory.build({
+      id: 'wi-child-online',
+      title: 'Online assigned child',
+      type: 'Task',
+      parent_id: story.id,
+      assignee_id: 'online-subtask-user-id',
+      assignee: {
+        id: 'online-subtask-user-id',
+        name: 'Online Subtask Assignee',
+        email: 'online-subtask@example.com',
+        profile_picture: null,
+      },
+    });
+    const offlineChild = workItemFactory.build({
+      id: 'wi-child-offline',
+      title: 'Offline assigned child',
+      type: 'Task',
+      parent_id: story.id,
+      assignee_id: 'offline-subtask-user-id',
+      assignee: {
+        id: 'offline-subtask-user-id',
+        name: 'Offline Subtask Assignee',
+        email: 'offline-subtask@example.com',
+        profile_picture: null,
+      },
+    });
+    isUserOnlineMock.mockImplementation(
+      (userId) => userId === 'online-subtask-user-id'
+    );
+
+    render(
+      <WorkItemDetails
+        workItemDetails={story}
+        project={project}
+        childWorkItems={[onlineChild, offlineChild]}
+        projectMembers={members}
+      />
+    );
+
+    expect(isUserOnlineMock).toHaveBeenCalledWith('online-subtask-user-id');
+    expect(isUserOnlineMock).toHaveBeenCalledWith('offline-subtask-user-id');
+    expect(
+      within(screen.getByTitle('Online Subtask Assignee')).getByLabelText(
+        'Online'
+      )
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTitle('Offline Subtask Assignee')).queryByLabelText(
+        'Online'
+      )
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps unassigned subtasks offline without checking a null user ID', () => {
+    const story = workItemFactory.build({
+      id: 'wi-story',
+      type: 'Story',
+      project_id: project.id,
+    });
+    const unassignedChild = workItemFactory.build({
+      id: 'wi-child-unassigned',
+      title: 'Unassigned child',
+      type: 'Task',
+      parent_id: story.id,
+      assignee_id: null,
+      assignee: null,
+    });
+
+    render(
+      <WorkItemDetails
+        workItemDetails={story}
+        project={project}
+        childWorkItems={[unassignedChild]}
+        projectMembers={members}
+      />
+    );
+
+    expect(isUserOnlineMock).not.toHaveBeenCalledWith(null);
+    const unassignedAvatar = screen.getByTitle('Unassigned');
+    expect(within(unassignedAvatar).getByText('?')).toBeInTheDocument();
+    expect(
+      within(unassignedAvatar).queryByLabelText('Online')
+    ).not.toBeInTheDocument();
   });
 
   it('shows active comment counts on each subtask row', () => {

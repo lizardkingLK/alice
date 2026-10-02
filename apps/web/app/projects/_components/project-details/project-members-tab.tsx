@@ -19,6 +19,8 @@ import {
   Users,
 } from '@repo/ui/lib/icons';
 import { SearchableSelect } from '@/components/searchable-select';
+import { useRealtime } from '@/components/realtime/realtime-provider';
+import { UserAvatar } from '@/components/user-avatar';
 import { UserRoleEnum } from '@repo/types';
 import { REPORT_CARD_CLASS } from '@/app/projects/_components/project-details/project-details-shared';
 import {
@@ -67,6 +69,7 @@ export function ProjectMembersTab({
   currentUserRole,
 }: Readonly<ProjectMembersTabProps>) {
   const router = useRouter();
+  const { isUserOnline } = useRealtime();
   const [error, setError] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
@@ -170,9 +173,13 @@ export function ProjectMembersTab({
                     className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
                   >
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="bg-muted text-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold">
-                        {userName.slice(0, 1).toUpperCase()}
-                      </div>
+                      <UserAvatar
+                        name={userName}
+                        title={userName}
+                        isOnline={isUserOnline(member.user_id)}
+                        className="size-8 border-0 after:border-0 data-[size=sm]:size-8"
+                        fallbackClassName="bg-muted text-foreground text-xs font-bold"
+                      />
                       <div className="min-w-0">
                         <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold">
                           <TruncatedText className="text-foreground min-w-0">

@@ -13,6 +13,7 @@ import { STATUS_META } from '@/app/work-items/_helpers/work-item-status';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { GroupedItemsPaginatedTable } from '@/components/grouped-items/grouped-items-paginated-table';
 import { GroupedItemsSection } from '@/components/grouped-items/grouped-items-section';
+import { useRealtime } from '@/components/realtime/realtime-provider';
 import { UserAvatar } from '@/components/user-avatar';
 
 type BoardGroupedColumnsViewProps = {
@@ -38,7 +39,9 @@ type BoardGroupedColumnsViewProps = {
 
 function buildColumns(
   // eslint-disable-next-line no-unused-vars
-  onSelect: (item: DbWorkItem) => void
+  onSelect: (item: DbWorkItem) => void,
+  // eslint-disable-next-line no-unused-vars
+  isUserOnline: (userId: string) => boolean
 ): ColumnDef<DbWorkItem>[] {
   return [
     {
@@ -83,6 +86,10 @@ function buildColumns(
               name={assignee.name}
               imageUrl={assignee.profile_picture}
               className="size-6"
+              isOnline={Boolean(
+                row.original.assignee_id &&
+                isUserOnline(row.original.assignee_id)
+              )}
             />
             <TruncatedText className="max-w-28 text-sm">
               {assignee.name}
@@ -124,7 +131,11 @@ export function BoardGroupedColumnsView({
   onColumnDrop,
   className,
 }: Readonly<BoardGroupedColumnsViewProps>) {
-  const columns = useMemo(() => buildColumns(onSelectItem), [onSelectItem]);
+  const { isUserOnline } = useRealtime();
+  const columns = useMemo(
+    () => buildColumns(onSelectItem, isUserOnline),
+    [onSelectItem, isUserOnline]
+  );
 
   const getRowProps = (row: Row<DbWorkItem>) => {
     const id = row.original.id;

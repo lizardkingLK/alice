@@ -32,6 +32,7 @@ import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work
 import { STATUS_META } from '@/app/work-items/_helpers/work-item-status';
 import { GroupedItemsPaginatedTable } from '@/components/grouped-items/grouped-items-paginated-table';
 import { GroupedItemsSection } from '@/components/grouped-items/grouped-items-section';
+import { useRealtime } from '@/components/realtime/realtime-provider';
 import { UserAvatar } from '@/components/user-avatar';
 
 type ChartsStatusGroupedTableProps = {
@@ -73,6 +74,8 @@ export function buildChartStatusGroups(
 function buildColumns(
   visibleColumns: readonly ChartsTableColumnId[],
   // eslint-disable-next-line no-unused-vars
+  isUserOnline: (userId: string) => boolean,
+  // eslint-disable-next-line no-unused-vars
   onEditWorkItem?: (item: ChartDrilldownTableItem) => void
 ): ColumnDef<ChartDrilldownTableItem>[] {
   const allowed = new Set(
@@ -110,6 +113,9 @@ function buildColumns(
               name={assigneeName}
               imageUrl={assigneeAvatar}
               className="size-6"
+              isOnline={Boolean(
+                row.original.assigneeId && isUserOnline(row.original.assigneeId)
+              )}
             />
             <TruncatedText className="max-w-28 text-sm">
               {assigneeName}
@@ -214,14 +220,15 @@ export function ChartsStatusGroupedTable({
   visibleColumns = DEFAULT_CHARTS_VISIBLE_TABLE_COLUMNS,
   onEditWorkItem,
 }: Readonly<ChartsStatusGroupedTableProps>) {
+  const { isUserOnline } = useRealtime();
   const groups = useMemo(
     () => buildChartStatusGroups(workItems, focusedStatus),
     [focusedStatus, workItems]
   );
 
   const columns = useMemo(
-    () => buildColumns(visibleColumns, onEditWorkItem),
-    [onEditWorkItem, visibleColumns]
+    () => buildColumns(visibleColumns, isUserOnline, onEditWorkItem),
+    [isUserOnline, onEditWorkItem, visibleColumns]
   );
 
   if (loading) {
