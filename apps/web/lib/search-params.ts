@@ -178,6 +178,7 @@ export type ProjectDetailsTab =
   | 'integrations'
   | 'fields'
   | 'board'
+  | 'workflow'
   | 'types';
 
 export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
@@ -192,7 +193,8 @@ export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
     tab === 'sprints' ||
     tab === 'integrations' ||
     tab === 'fields' ||
-    tab === 'board'
+    tab === 'board' ||
+    tab === 'workflow'
   ) {
     return tab;
   }

@@ -1,12 +1,16 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
   ClipboardPenLine,
+  GitBranch,
   Info,
   Kanban,
   Network,
+  PanelLeft,
+  PanelLeftClose,
   Plug,
   Shapes,
   SlidersHorizontal,
@@ -14,6 +18,19 @@ import {
   Users,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
+import { Button } from '@repo/ui/components/ui/button';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@repo/ui/components/ui/avatar';
+import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@repo/ui/components/ui/tooltip';
 import { ProjectTeamsPanel } from '@/app/projects/_components/project-details/project-teams-panel';
 import { ProjectSummaryBanner } from '@/app/projects/_components/project-details/project-summary-banner';
 import { ProjectDetailsTab } from '@/app/projects/_components/project-details/project-details-tab';
@@ -23,6 +40,7 @@ import { ProjectFieldsWorkspace } from '@/app/projects/_components/project-detai
 import { BoardDesignerWorkspace } from '@/app/projects/_components/project-details/board-designer-workspace';
 import { ProjectSettingsTab } from '@/app/projects/_components/project-details/project-settings-tab';
 import { projectDetailHref } from '@/app/projects/_helpers/project-links';
+import { persistProjectDetailsSidebarOpen } from '@/app/projects/_helpers/project-details-sidebar-storage';
 import type {
   Project,
   ProjectMemberWithUser,
@@ -93,6 +111,8 @@ interface ProjectDetailsWorkspaceProps {
   readonly boardRuleTeams?: Team[];
   readonly initialColumnVisibility?: VisibilityState;
   readonly columnVisibilityHasCookie?: boolean;
+  /** SSR cookie seed — expanded by default. */
+  readonly initialSidebarOpen?: boolean;
 }
 
 const MANAGER_ONLY_TABS = new Set<ProjectDetailsTabId>([
@@ -101,6 +121,7 @@ const MANAGER_ONLY_TABS = new Set<ProjectDetailsTabId>([
   'integrations',
   'fields',
   'board',
+  'workflow',
   'types',
 ]);
 
@@ -156,6 +177,12 @@ const PROJECT_NAV_ITEMS: ReadonlyArray<{
     managerOrAdminOnly: true,
   },
   {
+    id: 'workflow',
+    label: 'Workflow',
+    Icon: GitBranch,
+    managerOrAdminOnly: true,
+  },
+  {
     id: 'types',
     label: 'Types',
     Icon: Shapes,
@@ -173,6 +200,90 @@ function resolveVisibleProjectTab(
   return requestedTab;
 }
 
+function ProjectSidebarBrand({
+  project,
+  collapsed,
+}: Readonly<{ project: Project; collapsed: boolean }>) {
+  const keyLetters = (project.key || project.name).slice(0, 2).toUpperCase();
+
+  if (collapsed) {
+    return (
+      <div className="flex justify-center px-1.5 py-3">
+        <Avatar
+          size="sm"
+          className="border-primary/20 size-9 border shadow-sm"
+          title={project.name}
+        >
+          {project.logo_url ? (
+            <AvatarImage src={project.logo_url} alt={`${project.name} logo`} />
+          ) : null}
+          <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+            {keyLetters}
+          </AvatarFallback>
+        </Avatar>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-4 sm:px-4">
+      <Avatar
+        size="sm"
+        className="border-primary/20 size-9 shrink-0 border shadow-sm"
+        title={project.name}
+      >
+        {project.logo_url ? (
+          <AvatarImage src={project.logo_url} alt={`${project.name} logo`} />
+        ) : null}
+        <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+          {keyLetters}
+        </AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+          Project
+        </span>
+        <TruncatedText className="text-foreground mt-0.5 text-sm font-semibold">
+          {project.name}
+        </TruncatedText>
+      </div>
+    </div>
+  );
+}
+
+function ProjectSidebarCollapseToggle({
+  expanded,
+  onToggle,
+}: Readonly<{ expanded: boolean; onToggle: () => void }>) {
+  return (
+    <div
+      className={cn(
+        'border-border hidden shrink-0 border-t p-2 md:flex',
+        expanded ? 'justify-start' : 'justify-center'
+      )}
+    >
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="text-muted-foreground hover:text-foreground border-border/60 size-8 bg-transparent shadow-none"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        aria-controls="project-details-sidebar-nav"
+        aria-label={
+          expanded ? 'Collapse project sidebar' : 'Expand project sidebar'
+        }
+      >
+        {expanded ? (
+          <PanelLeftClose className="size-4" />
+        ) : (
+          <PanelLeft className="size-4" />
+        )}
+      </Button>
+    </div>
+  );
+}
+
 export function ProjectDetailsWorkspace({
   project,
   members,
@@ -185,9 +296,11 @@ export function ProjectDetailsWorkspace({
   boardRuleTeams = [],
   initialColumnVisibility,
   columnVisibilityHasCookie,
+  initialSidebarOpen = true,
 }: Readonly<ProjectDetailsWorkspaceProps>) {
   const searchParams = useSearchParams();
   const requestedTab = parseProjectDetailsTab(searchParams.get('tab'));
+  const [sidebarOpen, setSidebarOpen] = useState(initialSidebarOpen);
 
   const appRole = isAppRole(currentUserRole) ? currentUserRole : null;
   const canEditProject = isManagerOrAdmin(appRole);
@@ -198,58 +311,122 @@ export function ProjectDetailsWorkspace({
     (item) => !item.managerOrAdminOnly || canEditProject
   );
 
+  const toggleSidebar = () => {
+    setSidebarOpen((prev) => {
+      const next = !prev;
+      persistProjectDetailsSidebarOpen(currentUserId, next);
+      return next;
+    });
+  };
+
+  const boardDesignerSharedProps = {
+    project,
+    canEdit: canEditProject,
+    currentUserId,
+    teams: boardRuleTeams.map((team) => ({
+      id: team.id,
+      name: team.name,
+    })),
+    members: members
+      .filter((member) => member.user !== null)
+      .map((member) => ({
+        userId: member.user_id,
+        name: member.user?.name ?? member.user_id,
+        email: member.user?.email,
+        role: member.user?.role,
+      })),
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col md:flex-row">
-      {/* Sidebar Navigation */}
-      <aside className="border-border shrink-0 border-b md:flex md:h-full md:w-56 md:flex-col md:border-r md:border-b-0">
-        <div className="px-4 py-4 sm:px-5">
-          <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-            Project
-          </span>
-          <p
-            className="text-foreground mt-0.5 truncate text-sm font-semibold"
-            title={project.name}
-          >
-            {project.name}
-          </p>
-        </div>
-        <nav
-          aria-label="Project sections"
-          className="overflow-x-auto px-2 pb-3 md:overflow-x-visible md:pb-6"
+      <TooltipProvider delayDuration={300}>
+        <aside
+          className={cn(
+            'border-border shrink-0 border-b md:flex md:h-full md:flex-col md:border-r md:border-b-0',
+            sidebarOpen ? 'md:w-56' : 'md:w-14'
+          )}
         >
-          <ul className="flex flex-row gap-0.5 md:flex-col">
-            {visibleNavItems.map(({ id, label, Icon }) => {
-              const isActive = activeTab === id;
-              return (
-                <li key={id} className="shrink-0">
+          <ProjectSidebarBrand project={project} collapsed={!sidebarOpen} />
+          <nav
+            id="project-details-sidebar-nav"
+            aria-label="Project sections"
+            className={cn(
+              'min-h-0 flex-1 overflow-x-auto px-2 pb-2 md:overflow-x-visible md:overflow-y-auto md:pb-3',
+              !sidebarOpen && 'md:px-1.5'
+            )}
+          >
+            <ul className="flex flex-row gap-0.5 md:flex-col">
+              {visibleNavItems.map(({ id, label, Icon }) => {
+                const isActive = activeTab === id;
+                const linkClassName = cn(
+                  'flex items-center rounded-lg text-left text-sm whitespace-nowrap transition-colors',
+                  sidebarOpen
+                    ? 'w-full gap-2.5 px-3 py-2'
+                    : 'md:size-10 md:justify-center md:px-0 md:py-0',
+                  !sidebarOpen && 'gap-2.5 px-3 py-2',
+                  isActive
+                    ? 'bg-muted text-foreground font-medium'
+                    : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                );
+
+                const link = (
                   <Link
                     href={projectDetailHref(project.id, id)}
                     prefetch
-                    className={cn(
-                      'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm whitespace-nowrap transition-colors',
-                      isActive
-                        ? 'bg-muted text-foreground font-medium'
-                        : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                    )}
+                    className={linkClassName}
                     aria-current={isActive ? 'page' : undefined}
+                    aria-label={label}
+                    title={!sidebarOpen ? label : undefined}
                   >
                     <Icon className="size-4 shrink-0" />
-                    <span className="min-w-0 leading-snug">{label}</span>
+                    <span
+                      className={cn(
+                        'min-w-0 leading-snug',
+                        !sidebarOpen && 'md:hidden'
+                      )}
+                    >
+                      {label}
+                    </span>
                   </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-      </aside>
+                );
 
-      {/* Main Content Area */}
+                return (
+                  <li key={id} className="shrink-0">
+                    {!sidebarOpen ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>{link}</TooltipTrigger>
+                        <TooltipContent
+                          side="right"
+                          className="hidden md:block"
+                        >
+                          {label}
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      link
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+          <ProjectSidebarCollapseToggle
+            expanded={sidebarOpen}
+            onToggle={toggleSidebar}
+          />
+        </aside>
+      </TooltipProvider>
+
       <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         {activeTab === 'details' && (
           <div className="space-y-6 p-6">
             <ProjectSummaryBanner
               project={project}
               canEditBranding={canEditProject}
+              canEditDetails={canEditProject}
+              isAdmin={appRole === 'admin'}
+              currentUserId={currentUserId}
+              ownerOptions={allUsers}
             />
             <ProjectDetailsTab
               project={project}
@@ -372,22 +549,15 @@ export function ProjectDetailsWorkspace({
 
         {activeTab === 'board' && canEditProject && (
           <div className="p-6">
+            <BoardDesignerWorkspace {...boardDesignerSharedProps} />
+          </div>
+        )}
+
+        {activeTab === 'workflow' && canEditProject && (
+          <div className="p-6">
             <BoardDesignerWorkspace
-              project={project}
-              canEdit={canEditProject}
-              currentUserId={currentUserId}
-              teams={boardRuleTeams.map((team) => ({
-                id: team.id,
-                name: team.name,
-              }))}
-              members={members
-                .filter((member) => member.user !== null)
-                .map((member) => ({
-                  userId: member.user_id,
-                  name: member.user?.name ?? member.user_id,
-                  email: member.user?.email,
-                  role: member.user?.role,
-                }))}
+              {...boardDesignerSharedProps}
+              lockedSection="rules"
             />
           </div>
         )}

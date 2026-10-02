@@ -117,6 +117,7 @@ const MANAGER_ONLY_PROJECT_TABS = new Set([
   'integrations',
   'fields',
   'board',
+  'workflow',
   'types',
 ] as const);
 
@@ -136,7 +137,9 @@ function resolveWorkspaceTab(
 function shouldFetchAllUsers(
   activeTab: ReturnType<typeof parseProjectDetailsTab>
 ) {
-  return activeTab === 'members' || activeTab === 'teams';
+  return (
+    activeTab === 'members' || activeTab === 'teams' || activeTab === 'details'
+  );
 }
 
 function shouldFetchProjectTeams(options: {
@@ -563,7 +566,10 @@ export async function getProjectWorkspace(
       search: sprintsSearch,
       projectId,
     }),
-    fetchBoardRuleTeams(activeTab === 'board' && isManagerOrAdmin, projectId),
+    fetchBoardRuleTeams(
+      (activeTab === 'board' || activeTab === 'workflow') && isManagerOrAdmin,
+      projectId
+    ),
   ]);
 
   return {

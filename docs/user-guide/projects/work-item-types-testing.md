@@ -125,13 +125,13 @@ Verify Jira import issue type mapping and hierarchy customization:
 
 ## Summary Checklist
 
-| #   | Test Case                       | Expected Result                                                                                      | Pass/Fail |
-| --- | ------------------------------- | ---------------------------------------------------------------------------------------------------- | :-------: |
-| 1   | Project creation type selection | Checkboxes for all 5 types; at least one required                                                    |    [ ]    |
-| 2   | Create/Edit form type scoping   | Disallowed types hidden from dropdown                                                                |    [ ]    |
-| 3   | Global filters                  | All 5 types remain available globally                                                                |    [ ]    |
-| 4   | Remove type on Types tab        | Conflict dialog; delete or convert; parents detached first                                           |    [ ]    |
-| 5   | Restore type on Types tab       | Type available for new items; previously deleted/converted items unchanged                           |    [ ]    |
-| 6   | Jira import layout & width      | Wide dialog (`max-w-4xl`), no scrollbar, fixed bottom buttons                                        |    [ ]    |
-| 7   | Jira import type mappings       | `Map`, `Ignore`, `Drop` actions executed cleanly                                                     |    [ ]    |
-| 8   | Jira import hierarchy           | Hierarchy reordered and saved in `workflow_config.hierarchy`                                         |    [ ]    |
+| #   | Test Case                       | Expected Result                                                            | Pass/Fail |
+| --- | ------------------------------- | -------------------------------------------------------------------------- | :-------: |
+| 1   | Project creation type selection | Checkboxes for all 5 types; at least one required                          |    [ ]    |
+| 2   | Create/Edit form type scoping   | Disallowed types hidden from dropdown                                      |    [ ]    |
+| 3   | Global filters                  | All 5 types remain available globally                                      |    [ ]    |
+| 4   | Remove type on Types tab        | Conflict dialog; delete or convert; parents detached first                 |    [ ]    |
+| 5   | Restore type on Types tab       | Type available for new items; previously deleted/converted items unchanged |    [ ]    |
+| 6   | Jira import layout & width      | Wide dialog (`max-w-4xl`), no scrollbar, fixed bottom buttons              |    [ ]    |
+| 7   | Jira import type mappings       | `Map`, `Ignore`, `Drop` actions executed cleanly                           |    [ ]    |
+| 8   | Jira import hierarchy           | Hierarchy reordered and saved in `workflow_config.hierarchy`               |    [ ]    |
