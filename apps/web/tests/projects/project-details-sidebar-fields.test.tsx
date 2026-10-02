@@ -168,6 +168,7 @@ describe('parseProjectDetailsTab', () => {
     expect(parseProjectDetailsTab('sprints')).toBe('sprints');
     expect(parseProjectDetailsTab('integrations')).toBe('integrations');
     expect(parseProjectDetailsTab('board')).toBe('board');
+    expect(parseProjectDetailsTab('workflow')).toBe('workflow');
     expect(parseProjectDetailsTab('types')).toBe('types');
     expect(parseProjectDetailsTab('settings')).toBe('types');
   });
@@ -187,6 +188,50 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
 
   it('renders the board designer for ?tab=board', () => {
     searchParamsValue = new URLSearchParams('tab=board');
+
+    render(
+      <ProjectDetailsWorkspace
+        project={mockProject}
+        members={[]}
+        allUsers={[]}
+        currentUserId="user-manager-1"
+        currentUserRole="manager"
+        workItems={{
+          initialWorkItems: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          typeFilter: '',
+          assigneeFilter: '',
+          sprintFilter: '',
+          listView: 'flat',
+          tab: 'active',
+        }}
+        teams={{
+          items: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          status: 'active',
+        }}
+        sprints={{
+          sprints: [],
+          pagination: { page: 1, limit: 10, totalCount: 0, totalPages: 1 },
+          filterTab: 'active',
+          search: '',
+        }}
+      />
+    );
+
+    expect(screen.getByTestId('board-designer-workspace')).toBeInTheDocument();
+  });
+
+  it('renders the workflow designer for ?tab=workflow', () => {
+    searchParamsValue = new URLSearchParams('tab=workflow');
 
     render(
       <ProjectDetailsWorkspace
@@ -281,7 +326,10 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       screen.getByRole('link', { name: /integrations/i })
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /fields/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /board/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^board$/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /^workflow$/i })
+    ).toBeInTheDocument();
   });
 
   it('hides manager-only nav for members', () => {
@@ -336,7 +384,10 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       screen.queryByRole('link', { name: /fields/i })
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('link', { name: /board/i })
+      screen.queryByRole('link', { name: /^board$/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /^workflow$/i })
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: /^types$/i })

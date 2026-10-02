@@ -89,6 +89,8 @@ type BoardDesignerWorkspaceProps = {
   readonly currentUserId?: string | null;
   readonly teams?: readonly BoardRuleTeamOption[];
   readonly members?: readonly MemberCheckboxOption[];
+  /** When set, lock the designer to this section and hide the section switcher. */
+  readonly lockedSection?: BoardDesignerSection;
 };
 
 const BOARD_SECTION_TABS = [
@@ -149,12 +151,105 @@ function movementRuleCount(config: BoardConfig, columnId: string): number {
     .length;
 }
 
+type InitialBoardState = {
+  readonly config: BoardConfig;
+  readonly savedConfig: BoardConfig | null;
+  readonly usesDefault: boolean;
+  readonly invalidPersistedConfig: boolean;
+};
+
+/** Parse persisted workflow_config into designer draft/baseline state. */
+function resolveInitialBoardState(
+  workflowConfig: Project['workflow_config']
+): InitialBoardState {
+  const parsed = boardConfigSchema.safeParse(workflowConfig);
+  if (parsed.success) {
+    const config = cloneConfig(parsed.data);
+    return {
+      config,
+      savedConfig: config,
+      usesDefault: false,
+      invalidPersistedConfig: false,
+    };
+  }
+
+  const isPlainObject =
+    typeof workflowConfig === 'object' &&
+    workflowConfig !== null &&
+    !Array.isArray(workflowConfig);
+  const hasBoardConfigFields =
+    isPlainObject &&
+    ('version' in workflowConfig ||
+      'columns' in workflowConfig ||
+      'transitions' in workflowConfig ||
+      'statusTransitions' in workflowConfig);
+  const isAbsent =
+    workflowConfig == null || (isPlainObject && !hasBoardConfigFields);
+
+  return {
+    config: defaultConfig(),
+    savedConfig: null,
+    usesDefault: isAbsent,
+    invalidPersistedConfig: !isAbsent,
+  };
+}
+
+function lockedSectionHint(section: BoardDesignerSection): string {
+  if (section === 'rules') {
+    return 'Configure which status transitions are allowed on this project.';
+  }
+  return 'Configure board columns for this project.';
+}
+
+function buildBoardSectionQuery(
+  current: URLSearchParams,
+  next: BoardDesignerSection
+): string {
+  const params = new URLSearchParams(current.toString());
+  params.set('tab', 'board');
+  if (next === 'columns') {
+    params.delete('boardSection');
+  } else {
+    params.set('boardSection', next);
+  }
+  return params.toString();
+}
+
+function BoardDesignerSectionChrome({
+  lockedSection,
+  effectiveBoardSection,
+  onNavigateSection,
+}: Readonly<{
+  lockedSection?: BoardDesignerSection;
+  effectiveBoardSection: BoardDesignerSection;
+  // eslint-disable-next-line no-unused-vars -- section change callback
+  onNavigateSection: (next: BoardDesignerSection) => void;
+}>) {
+  if (lockedSection) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        {lockedSectionHint(lockedSection)}
+      </p>
+    );
+  }
+
+  return (
+    <RegistryTabSwitcher
+      tabs={BOARD_SECTION_TABS}
+      value={effectiveBoardSection}
+      onChange={onNavigateSection}
+      aria-label="Board configuration section"
+    />
+  );
+}
+
 export function BoardDesignerWorkspace({
   project,
   canEdit,
   currentUserId,
   teams = [],
   members = [],
+  lockedSection,
 }: Readonly<BoardDesignerWorkspaceProps>) {
   const router = useRouter();
   const pathname = usePathname();
@@ -164,40 +259,15 @@ export function BoardDesignerWorkspace({
   const urlBoardSection = parseBoardDesignerSection(
     searchParams.get('boardSection')
   );
-  const [boardSection, setBoardSection] =
-    useState<BoardDesignerSection>(urlBoardSection);
+  const [boardSection, setBoardSection] = useState<BoardDesignerSection>(
+    lockedSection ?? urlBoardSection
+  );
+  const effectiveBoardSection = lockedSection ?? boardSection;
   const { handleMutationError } = useOptimisticLock();
-  const initial = useMemo(() => {
-    const parsed = boardConfigSchema.safeParse(project.workflow_config);
-    if (parsed.success) {
-      const config = cloneConfig(parsed.data);
-      return {
-        config,
-        savedConfig: config,
-        usesDefault: false,
-        invalidPersistedConfig: false,
-      };
-    }
-
-    const wc = project.workflow_config;
-    const isPlainObject =
-      typeof wc === 'object' && wc !== null && !Array.isArray(wc);
-    const hasBoardConfigFields =
-      isPlainObject &&
-      ('version' in wc ||
-        'columns' in wc ||
-        'transitions' in wc ||
-        'statusTransitions' in wc);
-
-    const isAbsent = wc == null || (isPlainObject && !hasBoardConfigFields);
-
-    return {
-      config: defaultConfig(),
-      savedConfig: null,
-      usesDefault: isAbsent,
-      invalidPersistedConfig: !isAbsent,
-    };
-  }, [project.workflow_config]);
+  const initial = useMemo(
+    () => resolveInitialBoardState(project.workflow_config),
+    [project.workflow_config]
+  );
   const [draft, setDraft] = useState<BoardConfig>(() =>
     cloneConfig(initial.config)
   );
@@ -261,8 +331,8 @@ export function BoardDesignerWorkspace({
     draft.version === '2' ? (draft.statusTransitions ?? []) : [];
 
   useEffect(() => {
-    setBoardSection(urlBoardSection);
-  }, [urlBoardSection]);
+    setBoardSection(lockedSection ?? urlBoardSection);
+  }, [urlBoardSection, lockedSection]);
 
   useEffect(() => {
     const storageKey = `board_draft_${project.id}`;
@@ -304,15 +374,11 @@ export function BoardDesignerWorkspace({
   };
 
   const navigateBoardSection = (next: BoardDesignerSection) => {
-    setBoardSection(next);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('tab', 'board');
-    if (next === 'columns') {
-      params.delete('boardSection');
-    } else {
-      params.set('boardSection', next);
+    if (lockedSection) {
+      return;
     }
-    const query = params.toString();
+    setBoardSection(next);
+    const query = buildBoardSectionQuery(searchParams, next);
     router.push(query ? `${pathname}?${query}` : pathname);
   };
 
@@ -340,12 +406,15 @@ export function BoardDesignerWorkspace({
   };
 
   const handlePrimaryAdd = () => {
-    if (boardSection === 'rules') {
+    if (effectiveBoardSection === 'rules') {
       openAddStatusRule();
       return;
     }
     addColumn();
   };
+
+  const primaryAddLabel =
+    effectiveBoardSection === 'rules' ? 'Add rule' : 'Add column';
 
   const handleColumnDragStart = (
     event: DragEvent<HTMLElement>,
@@ -637,11 +706,10 @@ export function BoardDesignerWorkspace({
       )}
       <FormAlertMessage message={feedbackMessage} isError={feedbackIsError} />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <RegistryTabSwitcher
-          tabs={BOARD_SECTION_TABS}
-          value={boardSection}
-          onChange={navigateBoardSection}
-          aria-label="Board configuration section"
+        <BoardDesignerSectionChrome
+          lockedSection={lockedSection}
+          effectiveBoardSection={effectiveBoardSection}
+          onNavigateSection={navigateBoardSection}
         />
         {canEdit ? (
           <div className="flex items-center gap-1.5">
@@ -693,8 +761,8 @@ export function BoardDesignerWorkspace({
               type="button"
               size="icon"
               className="size-8"
-              title={boardSection === 'rules' ? 'Add rule' : 'Add column'}
-              aria-label={boardSection === 'rules' ? 'Add rule' : 'Add column'}
+              title={primaryAddLabel}
+              aria-label={primaryAddLabel}
               onClick={handlePrimaryAdd}
               disabled={isSaving}
             >
@@ -703,7 +771,7 @@ export function BoardDesignerWorkspace({
           </div>
         ) : null}
       </div>
-      {boardSection === 'columns' ? (
+      {effectiveBoardSection === 'columns' ? (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Columns</CardTitle>

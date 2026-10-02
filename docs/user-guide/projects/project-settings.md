@@ -13,8 +13,8 @@ Configure which work-item types are permitted in a project.
    The tab uses a shapes icon so it stays distinct from Fields and Board.
 
 Managers and admins who can access the project workspace see **Types**.
-**Members** do not see the Types, Board, Fields, Teams, Sprints, or Integrations
-sidebar entries (deep links fall back to Details).
+**Members** do not see the Types, Workflow, Board, Fields, Teams, Sprints, or
+Integrations sidebar entries (deep links fall back to Details).
 
 On **Types**, permitted work-item types use a stacked list with confirmation
 before removing a previously saved type. When you save after removing types that
@@ -30,8 +30,14 @@ Submit **Save Types** when finished.
 ## Branding and metadata
 
 Project name, dates, description, and owner appear on the **Details** banner.
-Some deployments allow editing project branding (cover or logo) from that
-banner — available to managers and admins on that project.
+Managers and admins on an **active** project can select **Edit** to open a light
+dialog for those fields plus status (active/archived). Owner options are limited
+to users with the **manager** role. Cover and logo actions appear only on
+**active** projects.
+
+On an **archived** project, **Edit**, cover, and logo are hidden. Managers and
+admins see **Restore**; admins also see **Purge**. Both reuse the same
+confirmation dialogs as the Projects registry Archived tab.
 
 ---
 

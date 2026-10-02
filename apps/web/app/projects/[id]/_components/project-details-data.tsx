@@ -1,6 +1,11 @@
 import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { ProjectDetailsWorkspace } from '@/app/projects/_components/project-details/project-details-workspace';
 import { ProjectWorkspaceAccessDenied } from '@/app/projects/_components/project-details/project-workspace-access-denied';
+import {
+  PROJECT_DETAILS_SIDEBAR_COOKIE_NAME,
+  parseProjectDetailsSidebarOpenCookie,
+} from '@/app/projects/_helpers/project-details-sidebar-storage';
 import { getProjectWorkspace } from '@/app/projects/_services/projects.reads.workspace.server';
 import { readWorkItemTableColumnVisibilityBootstrap } from '@/app/work-items/_helpers/work-item-table-columns-cookie.server';
 import type { RawSearchParams } from '@/lib/search-params';
@@ -10,15 +15,24 @@ type ProjectDetailsDataProps = {
   readonly searchParams: Promise<RawSearchParams>;
 };
 
+async function readProjectDetailsSidebarDefaultOpen(): Promise<boolean> {
+  const store = await cookies();
+  return parseProjectDetailsSidebarOpenCookie(
+    store.get(PROJECT_DETAILS_SIDEBAR_COOKIE_NAME)?.value
+  );
+}
+
 export async function ProjectDetailsData({
   projectId,
   searchParams,
 }: Readonly<ProjectDetailsDataProps>) {
   const resolvedSearchParams = await searchParams;
-  const [workspace, columnVisibilityBootstrap] = await Promise.all([
-    getProjectWorkspace(projectId, resolvedSearchParams),
-    readWorkItemTableColumnVisibilityBootstrap(),
-  ]);
+  const [workspace, columnVisibilityBootstrap, initialSidebarOpen] =
+    await Promise.all([
+      getProjectWorkspace(projectId, resolvedSearchParams),
+      readWorkItemTableColumnVisibilityBootstrap(),
+      readProjectDetailsSidebarDefaultOpen(),
+    ]);
 
   if (!workspace) {
     notFound();
@@ -49,6 +63,7 @@ export async function ProjectDetailsData({
         boardRuleTeams={workspace.boardRuleTeams}
         initialColumnVisibility={columnVisibilityBootstrap.visibility}
         columnVisibilityHasCookie={columnVisibilityBootstrap.hasCookie}
+        initialSidebarOpen={initialSidebarOpen}
       />
     </div>
   );

@@ -23,9 +23,23 @@ When you open a project from **Projects** (`/projects/[id]`), the left sidebar p
 - **Teams**: Teams assigned to or working on this project. When creating or editing a team, **Designated Team Manager** lists only managers and admins who are members of that project.
 - **Work Items**: The full-width work items table (including the **Sprint** column), backlog, and hierarchy view. Use **Filter** to narrow by sprint, assignee (scoped to the selected/default project’s members, or the union of members across your projects when no project is selected), and other fields.
 - **Sprints**: Sprint registry for this project (managers and admins only). Use **Go to Backlog** (with the backlog icon) in the toolbar to open `/backlog` filtered to this project.
-- **Board**: Board column/rules configuration (managers and admins). Use **Go to Board** (kanban icon) to open the live board for this project.
 - **Integrations**: Connections to GitHub and Atlassian Jira Cloud.
 - **Fields**: Configuration interface for project dynamic fields (managers and admins).
+- **Board**: Board column configuration (managers and admins). Use **Go to Board** (kanban icon) to open the live board for this project. Transition rules also remain available under Board’s section switcher.
+- **Workflow**: Status transition rules for this project (managers and admins) — dedicated entry under Board.
+- **Types**: Allowed work-item types (managers and admins).
+
+The project sidebar can be **collapsed** on desktop to free space for the main
+canvas. Use the outline icon at the **bottom left** of the sidebar (desktop).
+Collapse persists via cookie (SSR) and localStorage (per user). When collapsed,
+the project name is hidden and only the project logo (or key initials) remains.
+
+On **Details**, managers and admins can use **Edit** (icon + label, same style
+as cover/logo actions) to open a light dialog for **name**, **timeline**,
+**description**, **owner** (managers only), and **status** (active/archived).
+**Edit**, cover, and logo are hidden when the project is archived. Archived
+projects instead show **Restore** (managers/admins) and **Purge** (admins),
+using the same confirmation dialogs as the Projects registry.
 
 On **Details**, summary cards (Members, Teams, Work Items, Sprints, Integrations, Fields) are links into those tabs. The **Sprints** card and sidebar item are hidden for members.
 
