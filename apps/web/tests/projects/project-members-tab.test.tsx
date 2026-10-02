@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, within } from '@testing-library/react';
 import { ProjectMembersTab } from '@/app/projects/_components/project-details/project-members-tab';
 import type {
   Project,
@@ -7,6 +7,18 @@ import type {
 } from '@/app/projects/_services/projects.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import { UserRole } from '@repo/types';
+
+/* eslint-disable no-unused-vars -- callback signature */
+type IsUserOnline = (userId: string) => boolean;
+/* eslint-enable no-unused-vars */
+
+const { isUserOnlineMock } = vi.hoisted(() => ({
+  isUserOnlineMock: vi.fn<IsUserOnline>().mockReturnValue(false),
+}));
+
+vi.mock('@/components/realtime/realtime-provider', () => ({
+  useRealtime: () => ({ isUserOnline: isUserOnlineMock }),
+}));
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -64,6 +76,11 @@ function member(
 describe('ProjectMembersTab protected members', () => {
   const allUsers: User[] = [];
 
+  beforeEach(() => {
+    vi.clearAllMocks();
+    isUserOnlineMock.mockReturnValue(false);
+  });
+
   it('disables remove for owner and creator', () => {
     render(
       <ProjectMembersTab
@@ -90,5 +107,32 @@ describe('ProjectMembersTab protected members', () => {
       )
     ).toBeDisabled();
     expect(screen.getByTitle('Remove Member')).not.toBeDisabled();
+  });
+
+  it('shows presence only for online project members', () => {
+    isUserOnlineMock.mockImplementation(
+      (userId) => userId === 'online-user-id'
+    );
+
+    render(
+      <ProjectMembersTab
+        project={baseProject}
+        members={[
+          member('online-user-id', 'Online Member', 'member'),
+          member('offline-user-id', 'Offline Member', 'member'),
+        ]}
+        allUsers={allUsers}
+        currentUserRole="member"
+      />
+    );
+
+    expect(isUserOnlineMock).toHaveBeenCalledWith('online-user-id');
+    expect(isUserOnlineMock).toHaveBeenCalledWith('offline-user-id');
+    expect(
+      within(screen.getByTitle('Online Member')).getByLabelText('Online')
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTitle('Offline Member')).queryByLabelText('Online')
+    ).not.toBeInTheDocument();
   });
 });
