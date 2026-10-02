@@ -178,9 +178,13 @@ export type ProjectDetailsTab =
   | 'integrations'
   | 'fields'
   | 'board'
-  | 'settings';
+  | 'types';
 
 export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
+  // Legacy `settings` bookmarks resolve to the Types tab.
+  if (tab === 'settings' || tab === 'types') {
+    return 'types';
+  }
   if (
     tab === 'members' ||
     tab === 'teams' ||
@@ -188,8 +192,7 @@ export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
     tab === 'sprints' ||
     tab === 'integrations' ||
     tab === 'fields' ||
-    tab === 'board' ||
-    tab === 'settings'
+    tab === 'board'
   ) {
     return tab;
   }

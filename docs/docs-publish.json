@@ -135,6 +135,7 @@
         },
         {
           "path": "user-guide/projects/project-settings.md",
+          "title": "Project types",
           "order": 4,
           "minimumRole": "manager"
         },

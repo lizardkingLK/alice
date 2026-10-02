@@ -74,17 +74,19 @@ function GroupStrategyPanel({
     <Collapsible
       open={open}
       onOpenChange={setOpen}
-      className="border-border rounded-lg border"
+      className="border-border overflow-hidden rounded-lg border"
     >
       <CollapsibleTrigger asChild>
         <button
           type="button"
-          className="hover:bg-muted/40 flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+          className="hover:bg-muted/40 flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left"
         >
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2.5">
             <WorkItemTypeBadge type={group.type} />
             <span className="text-sm font-semibold">{group.type}</span>
-            <Badge variant="secondary">{group.count}</Badge>
+            <Badge variant="secondary" className="tabular-nums">
+              {group.count}
+            </Badge>
           </div>
           <ChevronDown
             className={cn(
@@ -94,9 +96,9 @@ function GroupStrategyPanel({
           />
         </button>
       </CollapsibleTrigger>
-      <CollapsibleContent className="border-border space-y-4 border-t px-4 py-3">
+      <CollapsibleContent className="border-border space-y-5 border-t px-4 pt-4 pb-5">
         {group.childSlotParents.length > 0 ? (
-          <div className="flex items-start gap-2 rounded-md border border-amber-700/30 bg-amber-100 p-3 text-sm text-amber-950 dark:border-amber-500/40 dark:bg-amber-950 dark:text-amber-100">
+          <div className="flex items-start gap-3 rounded-md border border-amber-700/30 bg-amber-100 px-3.5 py-3 text-sm leading-relaxed text-amber-950 dark:border-amber-500/40 dark:bg-amber-950 dark:text-amber-100">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <p>
               Parent links from{' '}
@@ -108,8 +110,8 @@ function GroupStrategyPanel({
           </div>
         ) : null}
 
-        <fieldset className="space-y-3">
-          <legend className="text-sm font-medium">
+        <fieldset className="space-y-4">
+          <legend className="mb-1 text-sm font-medium">
             How should these be handled?
           </legend>
           <div className="flex items-start gap-3">
@@ -117,16 +119,16 @@ function GroupStrategyPanel({
               id={`strategy-delete-${group.type}`}
               type="radio"
               name={`strategy-${group.type}`}
-              className="mt-1"
+              className="mt-1 size-4 shrink-0"
               checked={action === 'delete'}
               onChange={() => onDraftChange({ action: 'delete' })}
             />
             <label
               htmlFor={`strategy-delete-${group.type}`}
-              className="cursor-pointer text-sm"
+              className="flex cursor-pointer flex-col gap-1 text-sm"
             >
               <span className="font-medium">Delete permanently</span>
-              <span className="text-muted-foreground block">
+              <span className="text-muted-foreground leading-relaxed">
                 Removes these work items. Archive is not offered because
                 restoring would reintroduce a disallowed type.
               </span>
@@ -137,7 +139,7 @@ function GroupStrategyPanel({
               id={`strategy-migrate-${group.type}`}
               type="radio"
               name={`strategy-${group.type}`}
-              className="mt-1"
+              className="mt-1 size-4 shrink-0"
               checked={action === 'migrate'}
               onChange={() =>
                 onDraftChange({
@@ -148,7 +150,7 @@ function GroupStrategyPanel({
             />
             <label
               htmlFor={`strategy-migrate-${group.type}`}
-              className="flex min-w-0 flex-1 cursor-pointer flex-col gap-2 text-sm"
+              className="flex min-w-0 flex-1 cursor-pointer flex-col gap-2.5 text-sm"
             >
               <span className="font-medium">Convert to another type</span>
               <div className="flex max-w-xs flex-col gap-1">
@@ -186,48 +188,50 @@ function GroupStrategyPanel({
             No work items of this type.
           </p>
         ) : (
-          <div className="border-border max-h-56 overflow-auto rounded-md border">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-muted/40 text-muted-foreground sticky top-0">
-                <tr>
-                  <th className="px-3 py-2 font-medium">Title</th>
-                  <th className="px-3 py-2 font-medium">Status</th>
-                  <th className="px-3 py-2 font-medium">Record</th>
-                  <th className="px-3 py-2 font-medium">Parent</th>
-                </tr>
-              </thead>
-              <tbody>
-                {group.items.map((item) => (
-                  <tr key={item.id} className="border-border border-t">
-                    <td className="px-3 py-2">
-                      <TruncatedText className="max-w-48 font-medium">
-                        {item.title}
-                      </TruncatedText>
-                      {item.jira_issue_key ? (
-                        <span className="text-muted-foreground block text-xs">
-                          {item.jira_issue_key}
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="px-3 py-2">
-                      <WorkItemStatusBadge
-                        status={item.status as WorkItemStatus}
-                      />
-                    </td>
-                    <td className="text-muted-foreground px-3 py-2 capitalize">
-                      {item.record_status}
-                    </td>
-                    <td className="px-3 py-2">
-                      <TruncatedText className="text-muted-foreground max-w-36 text-xs">
-                        {item.parent_title ?? '—'}
-                      </TruncatedText>
-                    </td>
+          <div className="border-border overflow-hidden rounded-md border">
+            <div className="max-h-56 overflow-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-muted/40 text-muted-foreground sticky top-0">
+                  <tr>
+                    <th className="px-3.5 py-2.5 font-medium">Title</th>
+                    <th className="px-3.5 py-2.5 font-medium">Status</th>
+                    <th className="px-3.5 py-2.5 font-medium">Record</th>
+                    <th className="px-3.5 py-2.5 font-medium">Parent</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {group.items.map((item) => (
+                    <tr key={item.id} className="border-border border-t">
+                      <td className="px-3.5 py-2.5">
+                        <TruncatedText className="max-w-48 font-medium">
+                          {item.title}
+                        </TruncatedText>
+                        {item.jira_issue_key ? (
+                          <span className="text-muted-foreground mt-0.5 block text-xs">
+                            {item.jira_issue_key}
+                          </span>
+                        ) : null}
+                      </td>
+                      <td className="px-3.5 py-2.5">
+                        <WorkItemStatusBadge
+                          status={item.status as WorkItemStatus}
+                        />
+                      </td>
+                      <td className="text-muted-foreground px-3.5 py-2.5 capitalize">
+                        {item.record_status}
+                      </td>
+                      <td className="px-3.5 py-2.5">
+                        <TruncatedText className="text-muted-foreground max-w-36 text-xs">
+                          {item.parent_title ?? '—'}
+                        </TruncatedText>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             {group.count > group.items.length ? (
-              <p className="text-muted-foreground border-border border-t px-3 py-2 text-xs">
+              <p className="text-muted-foreground border-border border-t px-3.5 py-2.5 text-xs">
                 Showing {group.items.length} of {group.count}
               </p>
             ) : null}
@@ -303,17 +307,17 @@ export function ProjectTypeRemovalStrategyDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-3xl flex-col gap-0 overflow-hidden p-0">
-        <DialogHeader className="border-border space-y-2 border-b px-6 py-4">
+      <DialogContent className="flex max-h-[90vh] max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+        <DialogHeader className="border-border space-y-2 border-b px-6 pt-5 pr-12 pb-4 text-left">
           <DialogTitle>Resolve removed work-item types</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="leading-relaxed">
             Choose how to handle existing work items (active and archived) for
             each type you are removing. Parent links that would become invalid
             are detached first.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-6 py-4">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
           {previewLoading ? (
             <div className="text-muted-foreground flex items-center justify-center gap-2 py-12 text-sm">
               <Loader2 className="size-4 animate-spin" />
@@ -321,7 +325,7 @@ export function ProjectTypeRemovalStrategyDialog({
             </div>
           ) : null}
           {previewError ? (
-            <div className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+            <div className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border px-3.5 py-3 text-sm leading-relaxed">
               {previewError}
             </div>
           ) : null}
@@ -340,7 +344,7 @@ export function ProjectTypeRemovalStrategyDialog({
             : null}
         </div>
 
-        <DialogFooter className="border-border border-t px-6 py-4">
+        <DialogFooter className="border-border m-0 shrink-0 gap-2 border-t px-6 pt-4 pb-5 sm:justify-end">
           <Button
             type="button"
             variant="outline"

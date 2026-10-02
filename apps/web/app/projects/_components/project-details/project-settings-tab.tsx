@@ -24,7 +24,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Loader2,
-  Settings,
+  Shapes,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import {
@@ -252,8 +252,8 @@ export function ProjectSettingsTab({
       <Card className="border-border/60 h-full w-full">
         <CardContent className="p-6 text-center">
           <p className="text-muted-foreground text-sm">
-            Only Project Managers and Administrators can configure project
-            settings.
+            Only Project Managers and Administrators can configure work-item
+            types.
           </p>
         </CardContent>
       </Card>
@@ -265,7 +265,7 @@ export function ProjectSettingsTab({
       <Card className="border-border/60 flex h-full min-h-0 w-full flex-1 flex-col shadow-sm">
         <CardHeader>
           <CardTitle className="text-primary flex items-center gap-2 text-base font-semibold">
-            <Settings className="h-5 w-5" />
+            <Shapes className="h-5 w-5" />
             Allowed Work-Item Types
           </CardTitle>
           <CardDescription className="text-muted-foreground text-sm">
@@ -359,13 +359,13 @@ export function ProjectSettingsTab({
               )}
 
             {hasRemovedTypes && (
-              <div className="flex items-start gap-3 rounded-lg border border-amber-700/30 bg-amber-100 p-3.5 text-sm text-amber-950 dark:border-amber-500/40 dark:bg-amber-950 dark:text-amber-100">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-800 dark:text-amber-300" />
+              <div className="border-destructive/20 bg-destructive/10 text-destructive flex items-start gap-3 rounded-lg border p-3.5 text-sm">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                 <div className="space-y-1">
-                  <p className="font-semibold text-amber-950 dark:text-amber-50">
+                  <p className="font-semibold">
                     Existing items need a resolution strategy
                   </p>
-                  <p className="text-amber-900 dark:text-amber-100/90">
+                  <p className="text-destructive/90 leading-relaxed">
                     Removing{' '}
                     <span className="font-bold">{removedTypes.join(', ')}</span>{' '}
                     will prompt you to delete or convert each affected type when
@@ -381,10 +381,10 @@ export function ProjectSettingsTab({
                 type="submit"
                 disabled={isSaving || selectedTypes.length === 0 || !isDirty}
                 size="sm"
-                title="Save settings"
+                title="Save types"
               >
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Settings
+                Save Types
               </Button>
             </div>
           </form>

@@ -647,6 +647,7 @@ export function BoardDesignerWorkspace({
           <div className="flex items-center gap-1.5">
             <Button asChild variant="outline" size="sm">
               <Link href={boardHref} onClick={handleGoToBoard}>
+                <Kanban data-icon="inline-start" className="size-4" />
                 Go to Board
               </Link>
             </Button>

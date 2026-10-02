@@ -127,7 +127,7 @@ export function ProjectSummaryBanner({
 
         <div className="relative flex flex-col gap-4 px-6 py-4 md:px-8 md:py-5">
           {canEditBranding ? (
-            <div className="absolute end-3 top-3 z-10 flex flex-wrap gap-2 sm:end-4 sm:top-4">
+            <div className="absolute inset-e-3 top-3 z-10 flex flex-wrap gap-2 sm:inset-e-4 sm:top-4">
               <Button
                 type="button"
                 size="sm"

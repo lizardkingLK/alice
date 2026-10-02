@@ -68,33 +68,34 @@ Verify that global filters continue listing all canonical types:
 
 ---
 
-### 4. Project Settings: Type Removal & Fallback to Issue
+### 4. Project Types: Type Removal Conflict Dialog
 
-Verify that deselecting a type migrates existing items to `Issue` and unlinks invalid parents:
+Verify that deselecting a type with existing items requires an explicit delete or convert strategy:
 
-1. Open `Alpha Project` -> click the **Settings** tab.
+1. Open `Alpha Project` -> click the **Types** tab.
 2. In **Allowed Work-Item Types**:
    - Deselect `Story`.
-   - Verify the warning banner appears: _"Removing Story will cause all existing items of those types in this project to fall back to Issue..."_
-3. Click **Save Settings**:
+   - Confirm the remove-type dialog, then verify the warning banner explains that affected items must be deleted or converted when saving.
+3. Click **Save Types**:
+   - Complete the conflict dialog (e.g. **Convert to** `Issue`, or **Delete permanently**).
    - Verify success notification.
 4. Navigate to the project's **Work Items** or **Backlog**:
-   - Verify the item that was previously a `Story` now has type **`Issue`**.
-   - Verify its child relationships have been pruned appropriately (child parent links set to `null`).
+   - Verify items follow the chosen strategy.
+   - Verify parent links involving removed-type items were detached first.
 
 ---
 
-### 5. Project Settings: Restoring Removed Types
+### 5. Project Types: Restoring Removed Types
 
-Verify that re-enabling a previously removed type allows it for future items without reverting migrated items:
+Verify that re-enabling a previously removed type allows it for future items without reverting prior strategies:
 
-1. Return to `Alpha Project` -> **Settings** tab.
+1. Return to `Alpha Project` -> **Types** tab.
 2. Check `Story` and check `Feature`.
-3. Click **Save Settings**.
+3. Click **Save Types**.
 4. Open **+ New Work Item**:
    - Verify both `Story` and `Feature` are selectable.
-5. Inspect the work item that was migrated to `Issue`:
-   - Verify it remains an `Issue` and was not automatically changed back.
+5. Inspect work items that were deleted or converted when `Story` was removed:
+   - Verify they were not automatically restored to `Story`.
 
 ---
 
@@ -117,20 +118,20 @@ Verify Jira import issue type mapping and hierarchy customization:
    - Verify ignored issues are skipped.
    - Verify dropped issues are created as `Issue`.
    - Verify parent links conform strictly to the custom hierarchy.
-7. Return to **Settings** tab:
+7. Return to **Types** tab:
    - Verify the informational badge indicates: _"Jira Import Custom Hierarchy Active"_.
 
 ---
 
 ## Summary Checklist
 
-| #   | Test Case                       | Expected Result                                                                    | Pass/Fail |
-| --- | ------------------------------- | ---------------------------------------------------------------------------------- | :-------: |
-| 1   | Project creation type selection | Checkboxes for all 5 types; at least one required                                  |    [ ]    |
-| 2   | Create/Edit form type scoping   | Disallowed types hidden from dropdown                                              |    [ ]    |
-| 3   | Global filters                  | All 5 types remain available globally                                              |    [ ]    |
-| 4   | Remove type in Settings         | Warning alert shown; affected items fall back to `Issue`; invalid parents unlinked |    [ ]    |
-| 5   | Restore type in Settings        | Type available for new items; previously migrated items stay as `Issue`            |    [ ]    |
-| 6   | Jira import layout & width      | Wide dialog (`max-w-4xl`), no scrollbar, fixed bottom buttons                      |    [ ]    |
-| 7   | Jira import type mappings       | `Map`, `Ignore`, `Drop` actions executed cleanly                                   |    [ ]    |
-| 8   | Jira import hierarchy           | Hierarchy reordered and saved in `workflow_config.hierarchy`                       |    [ ]    |
+| #   | Test Case                       | Expected Result                                                                                      | Pass/Fail |
+| --- | ------------------------------- | ---------------------------------------------------------------------------------------------------- | :-------: |
+| 1   | Project creation type selection | Checkboxes for all 5 types; at least one required                                                    |    [ ]    |
+| 2   | Create/Edit form type scoping   | Disallowed types hidden from dropdown                                                                |    [ ]    |
+| 3   | Global filters                  | All 5 types remain available globally                                                                |    [ ]    |
+| 4   | Remove type on Types tab        | Conflict dialog; delete or convert; parents detached first                                           |    [ ]    |
+| 5   | Restore type on Types tab       | Type available for new items; previously deleted/converted items unchanged                           |    [ ]    |
+| 6   | Jira import layout & width      | Wide dialog (`max-w-4xl`), no scrollbar, fixed bottom buttons                                        |    [ ]    |
+| 7   | Jira import type mappings       | `Map`, `Ignore`, `Drop` actions executed cleanly                                                     |    [ ]    |
+| 8   | Jira import hierarchy           | Hierarchy reordered and saved in `workflow_config.hierarchy`                                         |    [ ]    |
