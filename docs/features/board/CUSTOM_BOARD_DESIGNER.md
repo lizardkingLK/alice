@@ -2,6 +2,11 @@
 
 Status: **Implemented through Stage 5**
 
+> **Successor (planned):** Graph-based [Workflow](../workflow/) will replace this
+> column designer. Until workflow implementation **Step 9**, this document remains
+> authoritative for the shipped board config. Do not remove this file when
+> starting workflow work — update status to historical at retirement.
+
 Design document for a **Custom Board Designer** that lets managers define named
 kanban columns, map each column to a `WorkItemStatus` value, and attach
 source-to-destination movement rules scoped to a team, a role, or an individual

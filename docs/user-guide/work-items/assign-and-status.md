@@ -6,23 +6,30 @@ Set who owns work and move items through your workflow.
 
 ---
 
-## Status workflow
+## States and categories
 
-Common statuses (project may vary):
+Each work item follows its project **workflow** (by type). The details sidebar
+shows the **workflow name** and the current **state**. Lists and filters group
+work by **category** (for example to do, in progress, done) so cross-project
+views stay simple.
 
-| Status          | Meaning               |
-| --------------- | --------------------- |
-| **Draft**       | Not on the board yet  |
-| **New**         | Ready but not started |
-| **To Do**       | Queued for work       |
-| **In Progress** | Actively being worked |
-| **Testing**     | In review or QA       |
-| **Done**        | Complete              |
+Typical default states (projects may rename or add their own):
 
-Change status from the work-item sidebar dropdown, the board (drag cards), or
-bulk actions where available.
+| State           | Usual category | Meaning               |
+| --------------- | -------------- | --------------------- |
+| **Draft**       | draft          | Not on the board yet  |
+| **New**         | todo           | Ready but not started |
+| **To Do**       | todo           | Queued for work       |
+| **In Progress** | in progress    | Actively being worked |
+| **Testing**     | in progress    | In review or QA       |
+| **Done**        | done           | Complete              |
 
-**Draft** items are hidden from the kanban board.
+Change state from the work-item sidebar, the board (drag cards), or bulk actions
+where available. Only **allowed transitions** appear or succeed — including
+moves back (for example Testing → In Progress) when the workflow defines them.
+
+**Draft** items are hidden from the kanban board unless the project workflow
+exposes a matching state.
 
 ---
 
@@ -36,20 +43,24 @@ items where you are assignee.
 
 ---
 
-## Done rules
+## Completion and locks
 
-Before marking **Done**:
+Workflow edges can require that **direct subtasks** are finished (**All
+complete**) or already in the parent’s target state (**Match parent target**)
+before you move the parent. If blocked, a dialog explains what to fix.
 
-- All **direct subtasks** must be Done (or unlinked)
-- If blocked, a dialog explains which children are incomplete
+When a state has **Lock record in this state**, most fields stay read-only until
+you move the item (for example reopen from Done). **Terminal** states have no
+outbound moves.
 
-After **Done**, most fields become read-only until status changes again.
+Managers configure these rules in the
+[Workflow designer](../board-and-planning/workflow-designer.md).
 
 ---
 
 ## Board and backlog
 
-- **Board** — drag a card between columns to change status
+- **Board** — pick a workflow in the switcher, then drag cards between columns
 - **Backlog** — drag items into sprints or reorder within the backlog pane
 
 ---
@@ -57,4 +68,6 @@ After **Done**, most fields become read-only until status changes again.
 ## Related
 
 - [Kanban board](../board-and-planning/kanban-board.md)
+- [Workflow designer](../board-and-planning/workflow-designer.md)
 - [Edit a work item](./edit-work-item.md)
+- [Comments and activity](./comments-and-activity.md)

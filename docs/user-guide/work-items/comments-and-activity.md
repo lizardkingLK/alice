@@ -32,7 +32,9 @@ for mentionable teammates.
 
 ## Activity tab
 
-The **Activity** tab shows field changes and status updates over time.
+The **Activity** tab shows field changes, workflow state transitions, and
+resolution outcomes over time (when the activity feed is enabled for your
+workspace).
 
 If the tab shows placeholder text, your workspace may still be rolling out the
 full activity timeline — check back after upgrades.

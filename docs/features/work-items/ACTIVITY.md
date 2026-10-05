@@ -14,6 +14,8 @@ Related:
 - Notifications (inbox): `notifications` model + `apps/web/app/dashboard/_components/dashboard-notifications.tsx`
 - Schema today: `work_items`, `comments`, `attachments` in `packages/db/prisma/schema.prisma`
 - Novu removed — realtime is Supabase client channels + table writes
+- Workflow plan (transitions / resolutions on this feed):
+  [../workflow/WORKFLOW.md](../workflow/WORKFLOW.md)
 
 ---
 
@@ -77,10 +79,20 @@ Optional: standard `created_by` if we want consistency with [AUDIT_COLUMNS.md](.
 
 ```text
 created | field_changed | attachment_added | attachment_removed | commented
+| workflow_transition | escalation_resolved
 ```
 
 `field_changed` uses `field` + `old_value` / `new_value`. Side effects that are
 not a single column on `work_items` use dedicated actions + `meta`.
+
+Workflow extensions (when [Workflow](../workflow/) Step 5 lands):
+
+| `action`              | `meta` highlights                                  |
+| --------------------- | -------------------------------------------------- |
+| `workflow_transition` | `fromStateId`, `toStateId`, `workflowId`, `edgeId` |
+| `escalation_resolved` | Preset id, snapshot of fields/outcome labels       |
+
+Do **not** store these in `work_item_worklogs` (time tracking only).
 
 Indexes:
 

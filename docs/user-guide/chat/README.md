@@ -10,7 +10,7 @@ Ask Alice to create projects, sprints, and work items in natural language.
 
 | Page                                          | What you'll learn                                          |
 | --------------------------------------------- | ---------------------------------------------------------- |
-| [Use the AI assistant](./use-ai-assistant.md) | Full page chat and the header drawer                       |
+| [Use the AI assistant](./use-ai-assistant.md) | Full page chat, header drawer, workflow designer sidebar   |
 | [Alice agents](./agents.md)                   | Agents gallery dialog, Project Manager, customize and chat |
 | [User testing guide](./user-test-guide.md)    | Testing document attachments, parsing, and batch import    |
 
@@ -22,16 +22,20 @@ for the board or registries.
 
 ## Where to open Alice
 
-| Surface       | How                                                            |
-| ------------- | -------------------------------------------------------------- |
-| **Full page** | Sidebar **Platform** → **Alice** (`/chat`)                     |
-| **Drawer**    | Header **Alice** launcher on any dashboard page except `/chat` |
+| Surface                 | How                                                             |
+| ----------------------- | --------------------------------------------------------------- |
+| **Full page**           | Sidebar **Platform** → **Alice** (`/chat`)                      |
+| **Drawer**              | Header **Alice** launcher on any dashboard page except `/chat`  |
+| **Workflow side panel** | Project **Workflow** designer (managers) — docked beside canvas |
 
-Both surfaces share the same conversation client.
+Surfaces share the same conversation client. On the workflow designer, Alice can
+propose graph changes; you **Apply** or **Reject** before anything is saved.
+See [Use the AI assistant](./use-ai-assistant.md).
 
 ---
 
 ## Related
 
 - [Create a work item](../work-items/create-work-item.md)
+- [Workflow designer](../board-and-planning/workflow-designer.md)
 - [Workspace integrations](../profile-and-settings/workspace-integrations.md) (admins — chat models)
