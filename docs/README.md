@@ -58,7 +58,7 @@ One folder per product area. Prefer a local `README.md` as the index.
 | Profile      | [features/profile/](./features/profile/) ([EDIT_PROFILE.md](./features/profile/EDIT_PROFILE.md))                                                                                                                                          |
 | Integrations | [features/integrations/](./features/integrations/) ([SETTINGS_INTEGRATIONS.md](./features/integrations/SETTINGS_INTEGRATIONS.md)) — workspace AI/tools, `integrations` DB plan (**In progress**)                                          |
 | Docs (app)   | [features/docs/](./features/docs/) — in-app `/docs` browser (**Living**)                                                                                                                                                                  |
-| Platform     | [features/platform/](./features/platform/) ([DAY_ONE_SETUP.md](./features/platform/DAY_ONE_SETUP.md)) — new-env script (**Plan**); [KEYBOARD_SHORTCUTS.md](./features/platform/KEYBOARD_SHORTCUTS.md) — global shortcut gate (**Living**) |
+| Platform     | [features/platform/](./features/platform/) ([DAY_ONE_SETUP.md](./features/platform/DAY_ONE_SETUP.md)) — local config (**Living**); [KEYBOARD_SHORTCUTS.md](./features/platform/KEYBOARD_SHORTCUTS.md) — global shortcut gate (**Living**) |
 
 ### Database
 
@@ -76,7 +76,7 @@ Authentication and authorization. Index: [auth/README.md](./auth/README.md).
 - [RBAC_AUTHORIZATION_SKELETON.md](./auth/RBAC_AUTHORIZATION_SKELETON.md) — Phase-1 role route matrix (**Implemented**)
 - [FORGOT_PASSWORD_AUTH_PLAN.md](./auth/FORGOT_PASSWORD_AUTH_PLAN.md) — original recovery plan (**Plan**; see AUTHENTICATION.md §7 for as-built)
 - Admission allowlist: [features/access/ACCESS_ALLOWLIST.md](./features/access/ACCESS_ALLOWLIST.md) (**Living**)
-- Day-one env bootstrap (Google + SMTP): [features/platform/DAY_ONE_SETUP.md](./features/platform/DAY_ONE_SETUP.md) (**Plan**)
+- Day One local developer setup: [features/platform/DAY_ONE_SETUP.md](./features/platform/DAY_ONE_SETUP.md) (**Living**)
 - Account deactivation / offboarding: [features/users/ACCOUNT_DEACTIVATION.md](./features/users/ACCOUNT_DEACTIVATION.md) (phase 1 implemented)
 - User membership pending → active: [features/users/USER_MEMBERSHIP_STATUS.md](./features/users/USER_MEMBERSHIP_STATUS.md) (**Plan**)
 
@@ -94,7 +94,7 @@ How we work day to day.
 
 - [TESTING_DEVELOPMENT_FLOW.md](./guides/TESTING_DEVELOPMENT_FLOW.md) — Project development & testing flow for all features
 - [DATABASE.md](./guides/DATABASE.md) — Prisma / Supabase workflow
-- Day-one env bootstrap (Plan): [features/platform/DAY_ONE_SETUP.md](./features/platform/DAY_ONE_SETUP.md)
+- [DAY_ONE_SETUP.md](./features/platform/DAY_ONE_SETUP.md) — clone, configure, initialize, and run Alice locally
 - [PERFORMANCE.md](./guides/PERFORMANCE.md) — RSC data loading, caching, parallel fetches + roadmap
 - [DEBUGGING.md](./guides/DEBUGGING.md) — IDE debug configs
 - [SEO.md](./guides/SEO.md) — metadata, sitemap, robots
