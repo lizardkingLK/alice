@@ -329,6 +329,9 @@ model work_items {
   due_date     DateTime?        @db.Date
   story_points Int?
   status          WorkItemStatus @default(New)
+  /// Single-current workflow placement: { workflowId, stateId, category, historyByWorkflow? }.
+  /// Nullable while legacy rows rely on `status`; writers dual-fill via @repo/types helpers.
+  state           Json?
   board_column_id String?
   record_status   RecordStatus   @default(active)
   done_at         DateTime?      @db.Timestamptz(6)

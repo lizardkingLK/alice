@@ -236,8 +236,18 @@ Single-current placement (not a live map of every workflow):
 Compatibility window: keep deriving legacy `work_items.status` + `done_at` on
 transition where needed; thin callers toward `state` / category.
 Prefer trigger-maintained or generated columns (`state_workflow_id`,
-`state_id`, `status_category`) for indexes and chart rollups.
+`state_id`, `status_category`) for indexes and chart rollups (**Step 7**).
 Retire `board_column_id` in favor of `stateId`.
+
+### As-built — `work_items.state` (Step 1)
+
+| Item     | Detail                                                                                                                   |
+| -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Column   | `work_items.state` `Json?` / JSONB (migration `add_work_items_state`)                                                    |
+| Shape    | Zod `workItemStateSchema` in `packages/types/src/work-item-state.ts`                                                     |
+| Helpers  | `buildWorkItemStateFromLegacy`, `resolveWorkItemState`, `syncWorkItemStateForStatusChange`, `doneAtForCategoryChange`, … |
+| Writers  | Create/update dual-write `state` (+ category-based `done_at`) in work-items repository                                   |
+| Fallback | Null/invalid `state` → derive from `status` (+ optional `board_column_id`)                                               |
 
 Parallel boards do **not** mean two live states on one card.
 
