@@ -68,6 +68,8 @@ Seeded workflow id constant: `DEFAULT_WORKFLOW_ID` (`wf-default`).
 
 ## Step 2 — Workflow Zod + project API
 
+**Status:** **Done** (as-built below)
+
 **Goal:** Validate and save the multi-workflow envelope on `projects.workflow_config`.
 
 1. Zod schemas in `packages/types`: envelope, states, edges, presets stubs,
@@ -80,6 +82,21 @@ Seeded workflow id constant: `DEFAULT_WORKFLOW_ID` (`wf-default`).
 6. Keep existing board-config readers working via fallback until Step 4/9.
 
 **Exit:** Managers can persist a valid envelope; invalid JSON never crashes reads.
+
+### As-built (Step 2)
+
+| Piece           | Location                                                                                                         |
+| --------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Zod + helpers   | `packages/types/src/api/v1/workflow-config.ts`                                                                   |
+| Seeded default  | `createSeededDefaultWorkflowConfig()` / `DEFAULT_WORKFLOW_ID`                                                    |
+| Resolve / merge | `resolveWorkflowConfig`, `mergeWorkflowEnvelopeIntoProjectConfig`                                                |
+| Routes          | `GET/PUT /api/projects/:id/workflow-config`, `POST …/fork`, `POST …/:workflowId/default`, `DELETE …/:workflowId` |
+| Service         | `ProjectsService` workflow methods + team-manager fork gate                                                      |
+| Tests           | `apps/api/tests/work-items/workflow-config.test.ts`, `apps/api/tests/projects/projects.workflow-config.test.ts`  |
+
+Legacy board JSON without `schemaVersion`/`workflows` still fails the envelope parse and
+**falls back to the seeded default** on workflow reads. Board designer continues
+to use `boardConfigSchema` until Steps 4/9.
 
 ---
 
