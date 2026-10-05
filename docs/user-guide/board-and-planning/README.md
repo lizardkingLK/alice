@@ -8,26 +8,28 @@ Kanban board, calendar, backlog, and sprints for delivery planning.
 
 ## In this topic
 
-| Page                                | Who      | What you'll learn                    |
-| ----------------------------------- | -------- | ------------------------------------ |
-| [Kanban board](./kanban-board.md)   | Everyone | Drag-and-drop status columns         |
-| [Calendar view](./calendar-view.md) | Everyone | Due dates on a month grid            |
-| [Backlog](./backlog.md)             | Everyone | Unscheduled work and sprint planning |
-| [Sprints](./sprints.md)             | Manager+ | Sprint registry and reports          |
+| Page                                        | Who      | What you'll learn                         |
+| ------------------------------------------- | -------- | ----------------------------------------- |
+| [Kanban board](./kanban-board.md)           | Everyone | Drag-and-drop columns / workflow switcher |
+| [Workflow designer](./workflow-designer.md) | Manager+ | Paths, locks, subtask rules, presets      |
+| [Calendar view](./calendar-view.md)         | Everyone | Due dates on a month grid                 |
+| [Backlog](./backlog.md)                     | Everyone | Unscheduled work and sprint planning      |
+| [Sprints](./sprints.md)                     | Manager+ | Sprint registry and reports               |
 
 ---
 
 ## Where to start
 
-| Goal                           | Go to                                       |
-| ------------------------------ | ------------------------------------------- |
-| See work by status             | **Board** → **Board** tab                   |
-| Plan by due date               | **Board** → **Calendar** tab                |
-| Groom backlog and fill sprints | **Backlog**                                 |
-| Manage sprint records          | Project → **Sprints** tab (managers/admins) |
+| Goal                           | Go to                                        |
+| ------------------------------ | -------------------------------------------- |
+| See work by status             | **Board** → **Board** tab                    |
+| Design workflow paths          | Project → **Workflow** tab (managers/admins) |
+| Plan by due date               | **Board** → **Calendar** tab                 |
+| Groom backlog and fill sprints | **Backlog**                                  |
+| Manage sprint records          | Project → **Sprints** tab (managers/admins)  |
 
-All platform roles can open Board and Backlog. Sprint administration requires
-**manager** or **admin**.
+All platform roles can open Board and Backlog. Sprint administration and the
+**Workflow designer** require **manager** or **admin**.
 
 ---
 

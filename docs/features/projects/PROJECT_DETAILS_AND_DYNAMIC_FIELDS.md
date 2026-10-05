@@ -502,11 +502,12 @@ Dynamic field values are stored directly within work items using a resilient two
    ```
 2. **Backward-Compatibility Fallback (Text Marker)**:
    For plain text descriptions or legacy documents, fields are extracted from a standardized text marker:
-   ```text
+
+```text
    [Dynamic Fields]
    moscowRating: Must
    businessValue: 85
-   ```
+```
 
 ### 7.3 Shared Extraction & Mutation Helpers
 

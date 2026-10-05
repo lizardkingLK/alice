@@ -28,21 +28,34 @@ dragging cards on the board.
 
 ---
 
-## Columns
+## Columns and workflow switcher
 
-Cards group by status:
+When a **project** is selected, columns come from that project’s **workflow**
+(states such as To Do, In Progress, Testing, Done). Use the **workflow / type
+switcher** on the board to view one workflow at a time (for example Default vs
+Bug). Each work-item type follows the workflow it is bound to; cards only appear
+on the matching board.
+
+Without a custom workflow (or if configuration is invalid), the board uses a
+safe **default** set of columns:
 
 **New** → **To Do** → **In Progress** → **Testing** → **Done**
 
-**Draft** items do not appear on the board.
+**Draft** items do not appear on the board unless a designer adds an equivalent
+state.
+
+Managers configure paths, who may move cards, and subtask checks in the project
+[Workflow designer](./workflow-designer.md).
 
 ---
 
 ## Update status
 
-Drag a card from one column to another. Status saves automatically.
+Drag a card from one column to another when that move is allowed. The change
+saves automatically. Some moves may ask for a short form, require permission, or
+block until subtasks are ready — those rules come from the project workflow.
 
-You can also change status from the work-item detail sidebar or the Work Items
+You can also change state from the work-item detail sidebar or the Work Items
 registry.
 
 ---
@@ -77,5 +90,6 @@ Save a filtered URL as a [view](../navigation/favorites-and-views.md).
 
 ## Related
 
+- [Workflow designer](./workflow-designer.md) (managers)
 - [Calendar view](./calendar-view.md)
 - [Assign and status](../work-items/assign-and-status.md)

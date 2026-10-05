@@ -7,6 +7,10 @@
 | [LABELS.md](./LABELS.md)                                            | JSONB text-array labels, create/details edit, search UX      | Implemented |
 | [ACTIVITY.md](./ACTIVITY.md)                                        | Work-item activity timeline next to Discussion               | Plan        |
 
+> Workflow transitions and escalation resolutions will write to `activities`
+> when [Workflow](../workflow/) ships — see ACTIVITY.md extensions and
+> [WORKFLOW.md](../workflow/WORKFLOW.md).
+
 Quick links:
 
 - Implementation: `apps/web/app/work-items/`
@@ -16,7 +20,8 @@ Quick links:
 - API: `apps/api/src/routes/api/work-items/`
 - Schema: `work_items` in `packages/db/prisma/schema.prisma`
 - Shared hierarchy helpers: `packages/types/src/work-item-types.ts`
-- Related: [board](../board/), [database ER diagram](../../database/ER_DIAGRAM.md)
+- Related: [board](../board/), [workflow (plan)](../workflow/),
+  [database ER diagram](../../database/ER_DIAGRAM.md)
 - Testing guide: [TESTING_DEVELOPMENT_FLOW.md](../../guides/TESTING_DEVELOPMENT_FLOW.md)
 
 ## Types and hierarchy
