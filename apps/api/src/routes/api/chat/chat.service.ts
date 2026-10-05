@@ -543,16 +543,19 @@ async function rollbackBatchImport(params: {
     }
   }
 
-  for (const orig of updatedOriginalStates) {
-    try {
-      await prisma.work_items.update({
+  const restoreResults = await Promise.allSettled(
+    updatedOriginalStates.map((orig) =>
+      prisma.work_items.update({
         where: { id: orig.id },
         data: { parent_id: orig.parent_id },
-      });
-    } catch (restoreErr) {
+      })
+    )
+  );
+  for (const result of restoreResults) {
+    if (result.status === 'rejected') {
       console.error(
         'Failed to restore updated work item during rollback:',
-        sanitizeLog(restoreErr)
+        sanitizeLog(result.reason)
       );
     }
   }
@@ -650,25 +653,30 @@ async function executeChildNodesImport(
   parentId: string
 ): Promise<void> {
   const allowedChildType = getAllowedChildType(parentType);
-  for (const child of children) {
-    if (!allowedChildType) {
-      if (ctx.skipInvalidHierarchy) {
+  if (!allowedChildType) {
+    if (ctx.skipInvalidHierarchy) {
+      for (const child of children) {
         ctx.skippedItems.push({
           title: child.title,
           reason: `Parent of type ${parentType} cannot have subtasks`,
         });
-        continue;
       }
-      throw new Error(
-        `Parent of type ${parentType} cannot have subtasks (found on "${parentTitle}"). Import aborted; no work items were created.`
-      );
+      return;
     }
-    const effectiveChild: ParsedWorkItemNode = {
-      ...child,
-      type: child.type || allowedChildType,
-    };
-    await executeSingleNodeImport(ctx, effectiveChild, parentId);
+    throw new Error(
+      `Parent of type ${parentType} cannot have subtasks (found on "${parentTitle}"). Import aborted; no work items were created.`
+    );
   }
+
+  await Promise.all(
+    children.map((child) => {
+      const effectiveChild: ParsedWorkItemNode = {
+        ...child,
+        type: child.type || allowedChildType,
+      };
+      return executeSingleNodeImport(ctx, effectiveChild, parentId);
+    })
+  );
 }
 
 async function executeSingleNodeImport(
@@ -835,21 +843,58 @@ async function processReferencedParentItem(
   await executeSingleNodeImport(ctx, effectiveItem, parentId);
 }
 
+function isParentReferenceResolvable(
+  item: ParsedWorkItemNode,
+  ctx: BatchImportContext
+): boolean {
+  const parentRef = item.parentReference;
+  if (!parentRef) {
+    return true;
+  }
+  return (
+    ctx.idMapping.has(parentRef) ||
+    ctx.idMapping.has(parentRef.toLowerCase().trim()) ||
+    ctx.idMapping.has(parentRef.toUpperCase().trim())
+  );
+}
+
+async function processReferencedImportItems(
+  items: ParsedWorkItemNode[],
+  ctx: BatchImportContext
+): Promise<void> {
+  if (items.length === 0) {
+    return;
+  }
+
+  const ready = items.filter((item) => isParentReferenceResolvable(item, ctx));
+  const deferred = items.filter(
+    (item) => !isParentReferenceResolvable(item, ctx)
+  );
+
+  if (ready.length === 0) {
+    await Promise.all(
+      deferred.map((item) => processReferencedParentItem(item, ctx))
+    );
+    return;
+  }
+
+  await Promise.all(
+    ready.map((item) => processReferencedParentItem(item, ctx))
+  );
+  await processReferencedImportItems(deferred, ctx);
+}
+
 async function processValidImportItems(
   validItems: ParsedWorkItemNode[],
   ctx: BatchImportContext
 ): Promise<void> {
-  for (const item of validItems) {
-    if (!item.parentReference) {
-      await executeSingleNodeImport(ctx, item, null);
-    }
-  }
+  const rootItems = validItems.filter((item) => !item.parentReference);
+  const referencedItems = validItems.filter((item) => item.parentReference);
 
-  for (const item of validItems) {
-    if (item.parentReference) {
-      await processReferencedParentItem(item, ctx);
-    }
-  }
+  await Promise.all(
+    rootItems.map((item) => executeSingleNodeImport(ctx, item, null))
+  );
+  await processReferencedImportItems(referencedItems, ctx);
 }
 
 export class ChatService {
@@ -901,35 +946,41 @@ export class ChatService {
     toolActionsPerformed: ToolAction[],
     history: StoredChatMessage[] = []
   ): Promise<ChatContentPart[]> {
-    const functionResponseParts: ChatContentPart[] = [];
-    for (const call of functionCalls) {
-      if (!call.functionCall) continue;
-      const { name, args } = call.functionCall;
-      let result: unknown;
+    const callable = functionCalls.filter(
+      (call): call is ChatContentPart & {
+        functionCall: NonNullable<ChatContentPart['functionCall']>;
+      } => Boolean(call.functionCall)
+    );
 
-      try {
-        result = await this.executeTool(
-          userId,
-          name,
-          args || {},
-          toolActionsPerformed,
-          history
-        );
-      } catch (err: unknown) {
-        console.error(`Error executing tool ${sanitizeLog(name)}`);
-        result = {
-          error: err instanceof Error ? err.message : 'Unknown error',
+    return Promise.all(
+      callable.map(async (call) => {
+        const { name, args } = call.functionCall;
+        let result: unknown;
+
+        try {
+          result = await this.executeTool(
+            userId,
+            name,
+            args || {},
+            toolActionsPerformed,
+            history
+          );
+        } catch (err: unknown) {
+          console.error(`Error executing tool ${sanitizeLog(name)}`);
+          result = {
+            error: err instanceof Error ? err.message : 'Unknown error',
+          };
+        }
+
+        const part: ChatContentPart = {
+          functionResponse: {
+            name,
+            response: { result },
+          },
         };
-      }
-
-      functionResponseParts.push({
-        functionResponse: {
-          name,
-          response: { result },
-        },
-      });
-    }
-    return functionResponseParts;
+        return part;
+      })
+    );
   }
 
   private async executeTool(
@@ -1792,12 +1843,14 @@ Current Workspace State:
 ${attachmentsInstruction}
 `;
 
-    let responseText = '';
     const toolActionsPerformed: ToolAction[] = [];
-    let loopCount = 0;
     const maxLoops = 5;
 
-    while (loopCount < maxLoops) {
+    const runToolRounds = async (loopCount: number): Promise<string> => {
+      if (loopCount >= maxLoops) {
+        return '';
+      }
+
       const llmResponse = await this.callChatModelAPI(
         chatModel,
         contents,
@@ -1816,11 +1869,11 @@ ${attachmentsInstruction}
         (p: ChatContentPart) => p.functionCall
       );
       if (!functionCalls || functionCalls.length === 0) {
-        responseText =
+        return (
           modelContent.parts
             ?.map((p: ChatContentPart) => p.text || '')
-            .join('\n') || '';
-        break;
+            .join('\n') || ''
+        );
       }
 
       const functionResponseParts = await this.processFunctionCalls(
@@ -1834,9 +1887,10 @@ ${attachmentsInstruction}
         parts: functionResponseParts,
       });
 
-      loopCount++;
-    }
+      return runToolRounds(loopCount + 1);
+    };
 
+    const responseText = await runToolRounds(0);
     return { responseText, toolActionsPerformed };
   }
 
