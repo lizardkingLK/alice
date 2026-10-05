@@ -36,6 +36,8 @@ board JSON in MVP).
 
 ## Step 1 — Schema + `state` bridge
 
+**Status:** **Done** (as-built below)
+
 **Goal:** Persist single-current workflow placement without breaking enum callers.
 
 1. Add Prisma / migration for `work_items.state` JSONB (nullable initially).
@@ -47,6 +49,20 @@ board JSON in MVP).
 6. Eng note in this folder or WORKFLOW.md “as-built” section when columns land.
 
 **Exit:** New items can store `state`; old rows still work via status fallback.
+
+### As-built (Step 1)
+
+| Piece             | Location                                                                      |
+| ----------------- | ----------------------------------------------------------------------------- |
+| Column            | `work_items.state` JSONB nullable — migration `add_work_items_state`          |
+| Types / helpers   | `packages/types/src/work-item-state.ts` (exported from `@repo/types`)         |
+| Dual-write        | `WorkItemsRepository.create` / `.update` sync `state` + `done_at` from status |
+| Tests             | `apps/api/tests/work-items/work-item-state.test.ts`                           |
+| Generated columns | **Deferred to Step 7** (chart rollups)                                        |
+
+Legacy `status` + `board_column_id` remain authoritative for callers that ignore
+`state`. `resolveWorkItemState` derives placement when `state` is null/invalid.
+Seeded workflow id constant: `DEFAULT_WORKFLOW_ID` (`wf-default`).
 
 ---
 
