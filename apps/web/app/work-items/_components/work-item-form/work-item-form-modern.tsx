@@ -466,10 +466,6 @@ function ModernDueDateField({
     );
   }
 
-  if (lockDueDate && dueDateDefault) {
-    return <input type="hidden" name="due_date" value={dueDateDefault} />;
-  }
-
   return null;
 }
 

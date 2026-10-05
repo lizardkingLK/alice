@@ -143,26 +143,58 @@ describe('WorkItemForm', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('pre-fills and locks due date in modern create when defaultDueDate is set', () => {
-    render(
-      <WorkItemForm
-        projects={projects}
-        projectMembers={projectMembers}
-        onSuccess={vi.fn()}
-        createFormMode="modern"
-        defaultDueDate="2026-08-27"
-        lockDueDate
-      />
-    );
+  it.each(['classic', 'modern'] as const)(
+    'submits a locked default due date in %s create mode',
+    async (createFormMode) => {
+      const created = workItemFactory.build({
+        title: 'Calendar work item',
+        project_id: projects[0]!.id,
+        type: 'Task',
+        due_date: '2099-08-27',
+      });
+      vi.mocked(createWorkItem).mockResolvedValue({
+        data: created,
+        error: null,
+      });
 
-    const dueDateInput = screen.getByLabelText(/^Due date$/i);
-    expect(dueDateInput).toBeInTheDocument();
-    expect(dueDateInput).toHaveValue('2026-08-27');
-    expect(dueDateInput).toBeDisabled();
-    expect(
-      screen.queryByRole('menuitem', { name: /^Due date$/i })
-    ).not.toBeInTheDocument();
-  });
+      render(
+        <WorkItemForm
+          projects={[projects[0]!]}
+          projectMembers={projectMembers}
+          onSuccess={vi.fn()}
+          createFormMode={createFormMode}
+          defaultDueDate="2099-08-27"
+          lockDueDate
+          lockProject
+          allowedTypes={['Task']}
+          lockType
+        />
+      );
+
+      fireEvent.change(screen.getByLabelText(/^Title$/i), {
+        target: { value: 'Calendar work item' },
+      });
+
+      const dueDateInput = screen.getByLabelText(/^Due date$/i);
+      expect(dueDateInput).toHaveValue('2099-08-27');
+      expect(dueDateInput).toBeDisabled();
+      if (createFormMode === 'modern') {
+        expect(
+          screen.queryByRole('menuitem', { name: /^Due date$/i })
+        ).not.toBeInTheDocument();
+      }
+
+      fireEvent.submit(screen.getByLabelText(/^Title$/i).closest('form')!);
+
+      await waitFor(() => {
+        expect(createWorkItem).toHaveBeenCalledTimes(1);
+      });
+
+      const formData = vi.mocked(createWorkItem).mock.calls[0]![0] as FormData;
+      expect(formData.get('due_date')).toBe('2099-08-27');
+      expect(formData.getAll('due_date')).toEqual(['2099-08-27']);
+    }
+  );
 
   it('uses modern fields in edit mode when createFormMode is modern', () => {
     const itemToEdit = workItemFactory.build({

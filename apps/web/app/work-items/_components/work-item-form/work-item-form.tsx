@@ -120,6 +120,21 @@ export interface WorkItemFormProps {
 const taskTypes = WORK_ITEM_TYPES;
 const ALERT_DISMISS_MS = 5000;
 
+function LockedDueDateInput({
+  isEditMode,
+  lockDueDate,
+  dueDate,
+}: Readonly<{
+  isEditMode: boolean;
+  lockDueDate: boolean;
+  dueDate: string;
+}>) {
+  if (isEditMode || !lockDueDate || !dueDate) {
+    return null;
+  }
+  return <input type="hidden" name="due_date" value={dueDate} />;
+}
+
 function isWorkItemPriority(value: string): value is WorkItemPriority {
   return (WORK_ITEM_PRIORITIES as readonly string[]).includes(value);
 }
@@ -543,6 +558,11 @@ export function WorkItemForm({
       {!isEditMode && defaultSprintId ? (
         <input type="hidden" name="sprint_id" value={defaultSprintId} />
       ) : null}
+      <LockedDueDateInput
+        isEditMode={isEditMode}
+        lockDueDate={lockDueDate}
+        dueDate={dueDateDefault}
+      />
       {detachChildren ? (
         <input type="hidden" name="detachChildren" value="true" />
       ) : null}
