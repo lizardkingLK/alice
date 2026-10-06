@@ -62,10 +62,8 @@ function resolveInitialEnvelope(workflowConfig: Project['workflow_config']): {
   };
 }
 
-type WorkflowNodesSettledHandler = {
-  /* eslint-disable-next-line no-unused-vars -- callback type signature */
-  (settledNodes: Node[]): void;
-};
+// eslint-disable-next-line no-unused-vars -- callback parameter name documents the payload
+type WorkflowNodesSettledHandler = (settledNodes: Node[]) => void;
 
 function WorkflowDesignerCanvas({
   activeWorkflow,
