@@ -210,6 +210,17 @@ Named forms live in `resolutionPresets[]` on each workflow document.
 Fallback: `null`, parse failure, or Zod failure → **seeded default** workflow
 document (and default board lanes). Optional manager-only soft notice later.
 
+### As-built — workflow envelope API (Step 2)
+
+| Item           | Detail                                                                                                                                               |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Schema         | `workflowConfigEnvelopeSchema` in `packages/types/src/api/v1/workflow-config.ts`                                                                     |
+| Seeded default | `createSeededDefaultWorkflowConfig()` — board statuses as states, linear path + Testing↔InProgress, Done edges use `all_complete`                    |
+| Resolve        | `resolveWorkflowConfig(raw)` → `{ config, usedFallback }`                                                                                            |
+| Merge          | `mergeWorkflowEnvelopeIntoProjectConfig` preserves `work_item_types` / legacy board keys                                                             |
+| HTTP           | `GET/PUT /api/projects/:id/workflow-config`; `POST …/fork`; `POST …/:workflowId/default`; `DELETE …/:workflowId` (body includes `expectedUpdatedAt`) |
+| Auth           | GET: project member; PUT/default/delete: manager/admin; fork: manager/admin **or** active project team `manager_id`                                  |
+
 ---
 
 ## Work item `state` JSONB

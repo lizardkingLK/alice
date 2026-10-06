@@ -32,6 +32,32 @@ export {
   type RuntimeBoardConfig,
   type WorkItemStatusTransition,
 } from './board-config.js';
+export {
+  WORKFLOW_CONFIG_SCHEMA_VERSION,
+  WORKFLOW_REQUIRE_CHILDREN,
+  createSeededDefaultWorkflowConfig,
+  findWorkflowById,
+  mergeWorkflowEnvelopeIntoProjectConfig,
+  parseWorkflowConfigEnvelope,
+  resolveWorkflowConfig,
+  resolveWorkflowForWorkItemType,
+  seededDefaultWorkflowConfig,
+  workflowConfigEnvelopeSchema,
+  workflowDocumentSchema,
+  workflowEdgeSchema,
+  workflowGraphSchema,
+  workflowLayoutSchema,
+  workflowResolutionFieldSchema,
+  workflowResolutionOutcomeSchema,
+  workflowResolutionPresetSchema,
+  workflowStateNodeSchema,
+  type WorkflowConfigEnvelope,
+  type WorkflowDocument,
+  type WorkflowEdge,
+  type WorkflowRequireChildren,
+  type WorkflowResolutionPreset,
+  type WorkflowStateNode,
+} from './workflow-config.js';
 export * from './jira-import-types.js';
 export * from './github-integration-types.js';
 export {

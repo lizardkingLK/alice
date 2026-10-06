@@ -12,12 +12,19 @@ import {
   CANONICAL_HIERARCHY_ORDER,
   type ProjectWorkflowConfig,
   type WorkItemTypeRemovalApplyResult,
+  type WorkflowConfigEnvelope,
+  type WorkflowDocument,
+  findWorkflowById,
+  mergeWorkflowEnvelopeIntoProjectConfig,
+  resolveWorkflowConfig,
+  workflowConfigEnvelopeSchema,
 } from '@repo/types';
 import type {
   ProjectStatus,
   IntegrationStatus,
   UserRole,
 } from '@repo/types/prisma';
+import { randomUUID } from 'node:crypto';
 import { prisma } from '../../../lib/prisma';
 import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
 import { encryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
@@ -29,6 +36,7 @@ import type {
   ProjectRowWithOwner,
   UpdateProjectInput,
 } from './projects.types';
+import { WorkflowConfigError } from './workflow-config.errors';
 
 export type { CreateProjectInput, UpdateProjectInput } from './projects.types';
 
@@ -628,5 +636,239 @@ export class ProjectsService {
       strategies.filter((s) => typesWithItems.includes(s.type)),
       newConfig.hierarchy ?? null
     );
+  }
+
+  async getWorkflowConfig(projectId: string, actorId: string) {
+    await this.assertProjectReadable(projectId, actorId);
+    const project = await this.projectsRepository.findById(projectId);
+    if (!project) {
+      throw new WorkflowConfigError('Project not found.', 404);
+    }
+
+    const resolved = resolveWorkflowConfig(project.workflow_config);
+    return {
+      config: resolved.config,
+      usedFallback: resolved.usedFallback,
+      updatedAt: project.updated_at,
+    };
+  }
+
+  async putWorkflowConfig(
+    actorId: string,
+    projectId: string,
+    envelope: WorkflowConfigEnvelope,
+    expectedUpdatedAt: string
+  ) {
+    await requireProjectManager(actorId);
+    const project = await this.requireProjectRow(projectId);
+    const merged = mergeWorkflowEnvelopeIntoProjectConfig(
+      project.workflow_config,
+      envelope
+    );
+
+    const updated = await this.projectsRepository.update(
+      projectId,
+      { workflow_config: merged as ProjectWorkflowConfig },
+      actorId,
+      expectedUpdatedAt
+    );
+
+    return {
+      config: resolveWorkflowConfig(updated.workflow_config).config,
+      usedFallback: false,
+      updatedAt: updated.updated_at,
+    };
+  }
+
+  async forkWorkflow(
+    actorId: string,
+    projectId: string,
+    input: {
+      readonly sourceWorkflowId?: string;
+      readonly title?: string;
+      readonly description?: string;
+    },
+    expectedUpdatedAt: string
+  ) {
+    await this.assertCanForkWorkflow(actorId, projectId);
+    const project = await this.requireProjectRow(projectId);
+    const { config } = resolveWorkflowConfig(project.workflow_config);
+    const sourceId = input.sourceWorkflowId ?? config.defaultWorkflowId;
+    const source = findWorkflowById(config, sourceId);
+    if (!source) {
+      throw new WorkflowConfigError(`Source workflow "${sourceId}" not found.`);
+    }
+    if (source.forkedFromId) {
+      throw new WorkflowConfigError(
+        'Cannot fork a forked workflow (fork depth is limited to 1).'
+      );
+    }
+
+    const forkId = `wf-${randomUUID()}`;
+    const fork: WorkflowDocument = {
+      ...structuredClone(source),
+      id: forkId,
+      title: input.title?.trim() || `${source.title} (fork)`,
+      description: input.description ?? source.description,
+      forkedFromId: source.id,
+      typeBindings: [],
+    };
+
+    const nextEnvelope = workflowConfigEnvelopeSchema.parse({
+      ...config,
+      workflows: [...config.workflows, fork],
+    });
+
+    const merged = mergeWorkflowEnvelopeIntoProjectConfig(
+      project.workflow_config,
+      nextEnvelope
+    );
+
+    const updated = await this.projectsRepository.update(
+      projectId,
+      { workflow_config: merged as ProjectWorkflowConfig },
+      actorId,
+      expectedUpdatedAt
+    );
+
+    return {
+      config: resolveWorkflowConfig(updated.workflow_config).config,
+      forkedWorkflowId: forkId,
+      updatedAt: updated.updated_at,
+    };
+  }
+
+  async setDefaultWorkflow(
+    actorId: string,
+    projectId: string,
+    workflowId: string,
+    expectedUpdatedAt: string
+  ) {
+    await requireProjectManager(actorId);
+    const project = await this.requireProjectRow(projectId);
+    const { config } = resolveWorkflowConfig(project.workflow_config);
+    if (!findWorkflowById(config, workflowId)) {
+      throw new WorkflowConfigError(`Workflow "${workflowId}" not found.`);
+    }
+
+    const nextEnvelope = workflowConfigEnvelopeSchema.parse({
+      ...config,
+      defaultWorkflowId: workflowId,
+    });
+    const merged = mergeWorkflowEnvelopeIntoProjectConfig(
+      project.workflow_config,
+      nextEnvelope
+    );
+
+    const updated = await this.projectsRepository.update(
+      projectId,
+      { workflow_config: merged as ProjectWorkflowConfig },
+      actorId,
+      expectedUpdatedAt
+    );
+
+    return {
+      config: resolveWorkflowConfig(updated.workflow_config).config,
+      updatedAt: updated.updated_at,
+    };
+  }
+
+  async deleteWorkflow(
+    actorId: string,
+    projectId: string,
+    workflowId: string,
+    expectedUpdatedAt: string
+  ) {
+    await requireProjectManager(actorId);
+    const project = await this.requireProjectRow(projectId);
+    const { config } = resolveWorkflowConfig(project.workflow_config);
+
+    if (!findWorkflowById(config, workflowId)) {
+      throw new WorkflowConfigError(`Workflow "${workflowId}" not found.`);
+    }
+    if (config.workflows.length <= 1) {
+      throw new WorkflowConfigError(
+        'Cannot delete the only workflow on a project.'
+      );
+    }
+    if (config.defaultWorkflowId === workflowId) {
+      throw new WorkflowConfigError(
+        'Cannot delete the default workflow. Mark another workflow as default first.'
+      );
+    }
+
+    const nextEnvelope = workflowConfigEnvelopeSchema.parse({
+      ...config,
+      workflows: config.workflows.filter(
+        (workflow) => workflow.id !== workflowId
+      ),
+    });
+    const merged = mergeWorkflowEnvelopeIntoProjectConfig(
+      project.workflow_config,
+      nextEnvelope
+    );
+
+    const updated = await this.projectsRepository.update(
+      projectId,
+      { workflow_config: merged as ProjectWorkflowConfig },
+      actorId,
+      expectedUpdatedAt
+    );
+
+    return {
+      config: resolveWorkflowConfig(updated.workflow_config).config,
+      updatedAt: updated.updated_at,
+    };
+  }
+
+  private async requireProjectRow(projectId: string): Promise<ProjectRow> {
+    const project = await this.projectsRepository.findById(projectId);
+    if (!project) {
+      throw new WorkflowConfigError('Project not found.', 404);
+    }
+    return project;
+  }
+
+  private async assertProjectReadable(
+    projectId: string,
+    actorId: string
+  ): Promise<void> {
+    const accessible =
+      await this.projectsRepository.listAccessibleProjectIds(actorId);
+    if (!accessible.includes(projectId)) {
+      throw new WorkflowConfigError(
+        'Unauthorized project workspace access.',
+        403
+      );
+    }
+  }
+
+  private async assertCanForkWorkflow(
+    actorId: string,
+    projectId: string
+  ): Promise<void> {
+    const actor = await getActorUser(actorId);
+    if (
+      actor.role === UserRoleEnum.admin ||
+      actor.role === UserRoleEnum.manager
+    ) {
+      return;
+    }
+
+    const team = await prisma.teams.findFirst({
+      where: {
+        project_id: projectId,
+        manager_id: actorId,
+        status: 'active',
+      },
+      select: { id: true },
+    });
+
+    if (!team) {
+      throw new WorkflowConfigError(
+        'Unauthorized. Only project managers/admins or a project team manager can fork workflows.',
+        403
+      );
+    }
   }
 }
