@@ -709,10 +709,7 @@ export class ProjectsService {
       ...structuredClone(source),
       id: forkId,
       title: input.title?.trim() || `${source.title} (fork)`,
-      description:
-        input.description !== undefined
-          ? input.description
-          : source.description,
+      description: input.description ?? source.description,
       forkedFromId: source.id,
       typeBindings: [],
     };
