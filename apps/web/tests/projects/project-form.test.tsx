@@ -5,6 +5,7 @@ import {
   createProject,
   updateProject,
 } from '@/app/projects/_services/projects.mutations.client';
+import { invalidateProjectDropdownCache } from '@/app/projects/_services/projects.cache.actions.server';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import {
@@ -19,6 +20,10 @@ vi.mock('@/lib/api/api-fetch.mutations.use.client', () => ({
 vi.mock('@/app/projects/_services/projects.mutations.client', () => ({
   createProject: vi.fn(),
   updateProject: vi.fn(),
+}));
+
+vi.mock('@/app/projects/_services/projects.cache.actions.server', () => ({
+  invalidateProjectDropdownCache: vi.fn(),
 }));
 
 vi.mock('@repo/ui/components/ui/select', () =>
@@ -194,6 +199,7 @@ describe('ProjectForm Component', () => {
   beforeEach(() => {
     clearGithubCache();
     mockJiraApiFetch({ connections: [] });
+    vi.mocked(invalidateProjectDropdownCache).mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -292,10 +298,90 @@ describe('ProjectForm Component', () => {
       await screen.findByText(/Project "Project Alice" created/i)
     ).toBeInTheDocument();
     expect(onProjectUpdated).toHaveBeenCalledWith(mockProject);
+    expect(invalidateProjectDropdownCache).toHaveBeenCalledOnce();
+    expect(vi.mocked(createProject).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(invalidateProjectDropdownCache).mock.invocationCallOrder[0]!
+    );
+    expect(
+      vi.mocked(invalidateProjectDropdownCache).mock.invocationCallOrder[0]
+    ).toBeLessThan(onProjectUpdated.mock.invocationCallOrder[0]!);
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalled(), {
       timeout: 2_000,
     });
+    expect(
+      vi.mocked(invalidateProjectDropdownCache).mock.invocationCallOrder[0]
+    ).toBeLessThan(onSuccess.mock.invocationCallOrder[0]!);
+  });
+
+  it('keeps creation successful when cache invalidation fails', async () => {
+    const onSuccess = vi.fn();
+    const onProjectUpdated = vi.fn();
+    const cacheError = new Error('Cache invalidation failed.');
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    vi.mocked(createProject).mockResolvedValue(mockProject);
+    vi.mocked(invalidateProjectDropdownCache).mockRejectedValue(cacheError);
+
+    try {
+      render(
+        <ProjectForm
+          users={mockUsers}
+          onSuccess={onSuccess}
+          onProjectUpdated={onProjectUpdated}
+        />
+      );
+
+      await fillStep1Basics();
+      fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
+
+      expect(
+        await screen.findByText(/Project "Project Alice" created/i)
+      ).toBeInTheDocument();
+      expect(invalidateProjectDropdownCache).toHaveBeenCalledOnce();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Failed to invalidate project dropdown cache after project creation:',
+        cacheError
+      );
+      expect(onProjectUpdated).toHaveBeenCalledWith(mockProject);
+      expect(screen.queryByText(cacheError.message)).not.toBeInTheDocument();
+      await waitFor(() => expect(onSuccess).toHaveBeenCalled(), {
+        timeout: 2_000,
+      });
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
+  });
+
+  it('does not invalidate the project cache when creation fails', async () => {
+    const onSuccess = vi.fn();
+    const onProjectUpdated = vi.fn();
+    vi.mocked(createProject).mockRejectedValue(
+      new Error('Project creation failed.')
+    );
+
+    render(
+      <ProjectForm
+        users={mockUsers}
+        onSuccess={onSuccess}
+        onProjectUpdated={onProjectUpdated}
+      />
+    );
+
+    await fillStep1Basics();
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
+
+    expect(
+      await screen.findByText('Project creation failed.')
+    ).toBeInTheDocument();
+    expect(invalidateProjectDropdownCache).not.toHaveBeenCalled();
+    expect(onProjectUpdated).not.toHaveBeenCalled();
+    expect(onSuccess).not.toHaveBeenCalled();
   });
 
   it('populates fields from projectToEdit and updates correctly in edit mode', async () => {
