@@ -44,6 +44,7 @@ import {
   type Project,
   type CreateProjectInput,
 } from '@/app/projects/_services/projects.mutations.client';
+import { invalidateProjectDropdownCache } from '@/app/projects/_services/projects.cache.actions.server';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import { cn } from '@repo/ui/lib/utils';
@@ -889,6 +890,14 @@ export function ProjectForm({
 
   const handleProjectCreate = async (projectData: CreateProjectInput) => {
     const result = await createProject(projectData);
+    try {
+      await invalidateProjectDropdownCache();
+    } catch (error) {
+      console.error(
+        'Failed to invalidate project dropdown cache after project creation:',
+        error
+      );
+    }
     setMessage(`Project "${result.name}" created.`);
 
     const hasJiraConfig = jiraConnectionId && jiraProjectKey;

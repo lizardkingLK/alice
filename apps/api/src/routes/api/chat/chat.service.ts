@@ -947,7 +947,9 @@ export class ChatService {
     history: StoredChatMessage[] = []
   ): Promise<ChatContentPart[]> {
     const callable = functionCalls.filter(
-      (call): call is ChatContentPart & {
+      (
+        call
+      ): call is ChatContentPart & {
         functionCall: NonNullable<ChatContentPart['functionCall']>;
       } => Boolean(call.functionCall)
     );
