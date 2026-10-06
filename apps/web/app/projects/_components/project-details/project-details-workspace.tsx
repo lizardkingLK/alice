@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -61,6 +62,21 @@ import {
 } from '@/lib/search-params';
 import { isAppRole, isManagerOrAdmin } from '@/lib/rbac/roles';
 import type { VisibilityState } from '@tanstack/react-table';
+
+const WorkflowDesignerWorkspace = dynamic(
+  () =>
+    import('@/app/projects/_components/project-details/workflow-designer-workspace').then(
+      (mod) => mod.WorkflowDesignerWorkspace
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        Loading workflow designer…
+      </div>
+    ),
+  }
+);
 
 interface ProjectWorkItemsProps {
   readonly initialWorkItems: DbWorkItem[];
@@ -555,9 +571,10 @@ export function ProjectDetailsWorkspace({
 
         {activeTab === 'workflow' && canEditProject && (
           <div className="p-6">
-            <BoardDesignerWorkspace
-              {...boardDesignerSharedProps}
-              lockedSection="rules"
+            <WorkflowDesignerWorkspace
+              project={project}
+              canEdit={canEditProject}
+              currentUserId={currentUserId}
             />
           </div>
         )}

@@ -17,18 +17,20 @@ board JSON in MVP).
 
 ## Phase map
 
-| Step | Name                           | Delivers                                               |
-| ---- | ------------------------------ | ------------------------------------------------------ |
-| 1    | Schema + `state` bridge        | DB columns, types, dual-write helpers                  |
-| 2    | Workflow Zod + project API     | Envelope schema, CRUD/save, fallback                   |
-| 3    | React Flow designer + Settings | Workflow tab UI, graph/layout, locks, children options |
-| 4    | Board switcher + transitions   | Parallel boards, DnD/API gates, pickers                |
-| 5    | Activity table                 | `activities` + transition/resolution writers + UI      |
-| 6    | Resolution presets             | Form / Preview / JSON designer + runtime dialog        |
-| 7    | Charts category + state        | Rollups + Charts UI **State** label                    |
-| 8    | Docked Alice + workflow tools  | Sidebar, view context, propose/apply confirm           |
-| 9    | Retire board designer          | Remove board config UI; update board feature docs      |
-| 10   | User-guide polish              | Living guides synced with shipped UI                   |
+| Step | Name                          | Delivers                                           |
+| ---- | ----------------------------- | -------------------------------------------------- |
+| 1    | Schema + `state` bridge       | DB columns, types, dual-write helpers              |
+| 2    | Workflow Zod + project API    | Envelope schema, CRUD/save, fallback               |
+| 3a   | Flow canvas + load/save       | XYFlow canvas, layout persist, Save/Discard        |
+| 3b   | Settings sidebar              | Node/edge forms, tooltips / popovers               |
+| 3c   | Designer rules + dirty flag   | Lock/terminal/children/escalation stub, chat dirty |
+| 4    | Board switcher + transitions  | Parallel boards, DnD/API gates, pickers            |
+| 5    | Activity table                | `activities` + transition/resolution writers + UI  |
+| 6    | Resolution presets            | Form / Preview / JSON designer + runtime dialog    |
+| 7    | Charts category + state       | Rollups + Charts UI **State** label                |
+| 8    | Docked Alice + workflow tools | Sidebar, view context, propose/apply confirm       |
+| 9    | Retire board designer         | Remove board config UI; update board feature docs  |
+| 10   | User-guide polish             | Living guides synced with shipped UI               |
 
 **Deferred (next)** after MVP: see [§ Deferred (next)](#deferred-next).
 
@@ -102,21 +104,62 @@ to use `boardConfigSchema` until Steps 4/9.
 
 ## Step 3 — React Flow designer + Settings
 
-**Goal:** Replace the Workflow tab placeholder with a real designer (Board tab
-designer still exists until Step 9).
+Split into **3a / 3b / 3c** so canvas, Settings forms, and rule wiring land in
+reviewable PRs. Board tab designer still exists until Step 9. Preset picker
+stubs until Step 6.
 
-1. Add XYFlow / React Flow dependency to the web app (or shared UI if justified).
-2. Canvas: states as nodes, transitions as edges; separate `layout` persistence.
-3. **Settings** sidebar: node + edge forms; info tooltips / popovers.
-4. Wire **Lock record in this state** and **Terminal state** (outbound-edge
+### Step 3a — Flow canvas + load/save
+
+**Status:** **Done** (as-built below)
+
+**Goal:** Replace the Workflow tab placeholder with a real graph canvas.
+
+1. Add `@xyflow/react` to `@repo/ui`; export a themed flow-canvas primitive.
+2. Workflow tab: resolve envelope → render states as nodes, transitions as edges.
+3. Separate `layout` persistence (drag nodes; graph semantics unchanged).
+4. Workflow switcher when multiple workflows exist; Save / Discard for dirty layout.
+5. Client calls dedicated `GET/PUT …/workflow-config` (optimistic lock).
+6. Component tests: canvas mounts from seeded/fallback config; save persists layout.
+
+**Exit:** Managers open Workflow, rearrange nodes, save layout without crashing reads.
+
+### As-built (Step 3a)
+
+| Piece              | Location                                                                                           |
+| ------------------ | -------------------------------------------------------------------------------------------------- |
+| XYFlow dependency  | `@xyflow/react` in `packages/ui`; styles via `packages/ui/globals.css`                             |
+| Flow canvas        | `@repo/ui/components/ui/flow-canvas`                                                               |
+| Designer workspace | `apps/web/.../workflow-designer-workspace.tsx` (replaces Board designer on Workflow tab)           |
+| Layout helpers     | `apps/web/app/projects/_helpers/workflow-designer.layout.ts`                                       |
+| Client API         | `putProjectWorkflowConfig` → `PUT /api/projects/:id/workflow-config`                               |
+| Tests              | `apps/web/tests/projects/workflow-designer.layout.test.ts`, `workflow-designer-workspace.test.tsx` |
+
+Settings forms, lock/terminal/children wiring, and chat dirty flag are **3b / 3c**.
+
+### Step 3b — Settings sidebar
+
+**Goal:** Context-sensitive node/edge editors beside the canvas.
+
+1. **Settings** sidebar: node + edge forms; info tooltips / popovers.
+2. Wire fields that already exist on the Zod document (name, category, matchers,
+   require-children enum, etc.) — validation UX only; runtime gates stay Step 4.
+3. Component tests for Settings field persistence on save/reload.
+
+**Exit:** Selecting a node or edge edits document fields via Settings.
+
+### Step 3c — Designer rules + dirty flag
+
+**Goal:** Finish designer semantics before board runtime (Step 4).
+
+1. Wire **Lock record in this state** and **Terminal state** (outbound-edge
    remove confirm before terminal).
-5. Wire **Require children**: Off / All complete / Match parent target.
-6. Requires escalation checkbox (preset required on outbound — enforce in Zod;
-   preset picker can stub until Step 6).
-7. Save / discard; dirty flag for chat (Step 8).
-8. Component tests for Settings validation UX; schema tests for lock/terminal.
+2. Wire **Require children**: Off / All complete / Match parent target.
+3. Requires escalation checkbox (preset required on outbound — enforce in Zod;
+   preset picker stub until Step 6).
+4. Dirty flag for chat (Step 8).
+5. Schema / Settings confirmation tests for lock/terminal.
 
-**Exit:** Managers design and save a graph for a project.
+**Exit:** Managers design and save a valid graph for a project (Settings + rules).
 
 ---
 
@@ -233,9 +276,10 @@ designer still exists until Step 9).
 
 ## Suggested PR slicing
 
-Prefer one PR per step (or 1–2 tightly coupled steps). Do not combine Step 3
-designer with Step 9 deletion. Activity (5) can parallelize after Step 4 if
-staffed; presets (6) need Step 3 Settings shell.
+Prefer one PR per step (or 1–2 tightly coupled steps). Step 3 is already split
+into **3a / 3b / 3c** — keep those separate. Do not combine Step 3 designer with
+Step 9 deletion. Activity (5) can parallelize after Step 4 if staffed; presets
+(6) need Step 3b Settings shell.
 
 ---
 

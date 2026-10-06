@@ -75,6 +75,13 @@ schemas in `packages/types`, API tests under `apps/api/tests`, web under
 
 ## Manual QA (per milestone)
 
+### After Step 3a (designer canvas)
+
+1. Open project **Workflow** tab as manager → seeded default graph renders.
+2. Drag a state → **Save** → reload → position persists.
+3. **Discard** restores last saved layout.
+4. Member cannot open/edit designer (tab gated); manager can.
+
 ### After Step 4 (board + transitions)
 
 1. Open project board → switch workflows → confirm columns and card sets.
