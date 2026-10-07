@@ -8,8 +8,6 @@ import {
   getAllowedParentType,
   normalizeBoardConfig,
   parseWorkflowConfigEnvelope,
-  resolveBoardDestinationColumn,
-  resolveBoardSourceColumn,
   resolveWorkItemState,
   workflowStatesToBoardColumns,
   type BoardRuleMatcher,
@@ -21,7 +19,6 @@ import {
   type WorkflowStateNode,
   CANONICAL_HIERARCHY_ORDER,
   type ProjectWorkflowConfig,
-  parseWorkItemLabels,
   paginationMeta,
   type ListWorkItemsQuery,
   type WorkItemDetailRow,
@@ -43,12 +40,12 @@ import type {
   DbGithubPullRequest,
 } from './work-items.repository';
 import type { WorkItemPaginatedList } from './work-items.prisma-query';
-import { sameNullable } from './work-items.patch-utils';
 import {
-  toDateOnly,
-  WorkItemBody,
-  WorkItemUpdateBody,
-} from './work-items.schemas';
+  hasNonStatusWorkItemFieldChanges,
+  resolveValidatedBoardMove,
+  sameNullable,
+} from './work-items.patch-utils';
+import { WorkItemBody, WorkItemUpdateBody } from './work-items.schemas';
 import {
   BoardMoveForbiddenError,
   StatusTransitionForbiddenError,
@@ -613,35 +610,11 @@ export class WorkItemService {
     }
 
     const config = normalizeBoardConfig(parsed.data);
-    if (input.board_column_id !== null) {
-      const configuredColumn = config.columns.find(
-        (candidate) => candidate.id === input.board_column_id
-      );
-      if (!configuredColumn) {
-        throw new WorkItemValidationError(
-          'Board column does not exist in this project'
-        );
-      }
-      if (configuredColumn.status !== input.status) {
-        throw new WorkItemValidationError(
-          'Board column does not match the work item status'
-        );
-      }
-    }
-
-    const destination = resolveBoardDestinationColumn(
-      { status: input.status, board_column_id: input.board_column_id },
+    const { boardMove } = resolveValidatedBoardMove(
+      current,
+      input,
       config.columns
     );
-    if (!destination) {
-      throw new WorkItemValidationError(
-        'Board column does not exist in this project'
-      );
-    }
-
-    const source = resolveBoardSourceColumn(current, config.columns);
-    const boardMove =
-      source && source.id !== destination.id ? { source, destination } : null;
 
     return { mode: 'legacy', config, boardMove };
   }
@@ -671,33 +644,8 @@ export class WorkItemService {
       envelope.workflows[0]!;
 
     const columns = workflowStatesToBoardColumns(workflow);
-    if (input.board_column_id !== null) {
-      const configuredColumn = columns.find(
-        (candidate) => candidate.id === input.board_column_id
-      );
-      if (!configuredColumn) {
-        throw new WorkItemValidationError(
-          'Board column does not exist in this project'
-        );
-      }
-      if (configuredColumn.status !== input.status) {
-        throw new WorkItemValidationError(
-          'Board column does not match the work item status'
-        );
-      }
-    }
-
-    const destinationColumn = resolveBoardDestinationColumn(
-      { status: input.status, board_column_id: input.board_column_id },
-      columns
-    );
-    if (!destinationColumn) {
-      throw new WorkItemValidationError(
-        'Board column does not exist in this project'
-      );
-    }
-
-    const sourceColumn = resolveBoardSourceColumn(current, columns);
+    const { source: sourceColumn, destination: destinationColumn } =
+      resolveValidatedBoardMove(current, input, columns);
     const fromStateId = sourceColumn?.id ?? currentState.stateId;
     const toStateId = destinationColumn.id;
 
@@ -827,31 +775,7 @@ export class WorkItemService {
       return;
     }
 
-    const dueUnchanged =
-      toDateOnly(input.due_date) === toDateOnly(current.due_date);
-    const descriptionUnchanged =
-      JSON.stringify(input.description ?? null) ===
-      JSON.stringify(current.description ?? null);
-    const labelsUnchanged =
-      JSON.stringify(input.labels ?? parseWorkItemLabels(current.labels)) ===
-      JSON.stringify(parseWorkItemLabels(current.labels));
-
-    const nonStatusChanged =
-      input.title !== current.title ||
-      input.project_id !== current.project_id ||
-      input.type !== current.type ||
-      input.priority !== current.priority ||
-      !sameNullable(input.assignee_id, current.assignee_id) ||
-      !sameNullable(input.reporter_id, current.reporter_id) ||
-      !dueUnchanged ||
-      !sameNullable(input.sprint_id, current.sprint_id) ||
-      !sameNullable(input.story_points, current.story_points) ||
-      !sameNullable(input.parent_id, current.parent_id) ||
-      !descriptionUnchanged ||
-      !labelsUnchanged ||
-      !sameNullable(input.jira_issue_key, current.jira_issue_key);
-
-    if (nonStatusChanged) {
+    if (hasNonStatusWorkItemFieldChanges(current, input)) {
       throw new WorkItemValidationError(
         'This work item is locked in its current state. Change state to edit other fields.'
       );
@@ -1123,31 +1047,7 @@ export class WorkItemService {
       return;
     }
 
-    const dueUnchanged =
-      toDateOnly(input.due_date) === toDateOnly(current.due_date);
-    const descriptionUnchanged =
-      JSON.stringify(input.description ?? null) ===
-      JSON.stringify(current.description ?? null);
-    const labelsUnchanged =
-      JSON.stringify(input.labels ?? parseWorkItemLabels(current.labels)) ===
-      JSON.stringify(parseWorkItemLabels(current.labels));
-
-    const nonStatusChanged =
-      input.title !== current.title ||
-      input.project_id !== current.project_id ||
-      input.type !== current.type ||
-      input.priority !== current.priority ||
-      !sameNullable(input.assignee_id, current.assignee_id) ||
-      !sameNullable(input.reporter_id, current.reporter_id) ||
-      !dueUnchanged ||
-      !sameNullable(input.sprint_id, current.sprint_id) ||
-      !sameNullable(input.story_points, current.story_points) ||
-      !sameNullable(input.parent_id, current.parent_id) ||
-      !descriptionUnchanged ||
-      !labelsUnchanged ||
-      !sameNullable(input.jira_issue_key, current.jira_issue_key);
-
-    if (nonStatusChanged) {
+    if (hasNonStatusWorkItemFieldChanges(current, input)) {
       throw new WorkItemValidationError(
         'Done work items are read-only except Status. Change status to edit other fields.'
       );
