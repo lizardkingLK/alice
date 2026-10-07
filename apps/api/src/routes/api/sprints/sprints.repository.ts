@@ -10,13 +10,11 @@ import {
   type SprintDetailRow,
   type SprintPrismaListFilters,
   paginationMeta,
-  normalizeSprintGoal,
 } from '@repo/types';
 import { prisma } from '../../../lib/prisma';
 import { env } from '../../../config/env';
 import { removeStorageObjects } from '../../../lib/file-helpers';
 import {
-  prismaAuditCreateWithoutStatus,
   prismaAuditUpdate,
   prismaLockTimestamp,
   prismaOptionalDate,
@@ -30,36 +28,11 @@ import {
   sprintListPageSlice,
   type SprintPaginatedList,
 } from './sprints.prisma-query';
+import { insertSprint, type CreateSprintRecord } from './sprints.prisma';
+
+export { insertSprint, type CreateSprintRecord } from './sprints.prisma';
 
 export type SprintRow = Tables<'sprints'>;
-
-export type CreateSprintRecord = {
-  name: string;
-  goal?: string | null;
-  startDate: string;
-  endDate: string;
-  createdBy: string;
-  projectId: string;
-};
-
-type SprintCreateClient = Pick<typeof prisma, 'sprints'>;
-
-/** Insert a sprint through either the global client or an existing transaction. */
-export async function insertSprint(
-  client: SprintCreateClient,
-  input: CreateSprintRecord
-) {
-  return await client.sprints.create({
-    data: {
-      name: input.name,
-      goal: normalizeSprintGoal(input.goal),
-      start_date: prismaOptionalDate(input.startDate)!,
-      end_date: prismaOptionalDate(input.endDate)!,
-      project_id: input.projectId,
-      ...prismaAuditCreateWithoutStatus(input.createdBy),
-    },
-  });
-}
 
 export class SprintsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}

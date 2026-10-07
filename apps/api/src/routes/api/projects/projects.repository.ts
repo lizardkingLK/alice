@@ -26,7 +26,7 @@ import {
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import { listAccessibleProjectIds } from '../../../lib/project-access';
-import { insertSprint } from '../sprints/sprints.repository';
+import { insertSprint } from '../sprints/sprints.prisma';
 import type {
   ProjectMemberWithUser,
   ProjectRow,
