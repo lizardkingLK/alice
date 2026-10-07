@@ -138,6 +138,8 @@ Settings forms, lock/terminal/children wiring, and chat dirty flag are **3b / 3c
 
 ### Step 3b — Settings sidebar
 
+**Status:** **Done** (as-built below)
+
 **Goal:** Context-sensitive node/edge editors beside the canvas.
 
 1. **Settings** sidebar: node + edge forms; info tooltips / popovers.
@@ -146,6 +148,20 @@ Settings forms, lock/terminal/children wiring, and chat dirty flag are **3b / 3c
 3. Component tests for Settings field persistence on save/reload.
 
 **Exit:** Selecting a node or edge edits document fields via Settings.
+
+### As-built (Step 3b)
+
+| Piece | Location |
+| ----- | -------- |
+| Settings panel | `workflow-designer-settings.tsx` |
+| Selection | Node/edge/pane clicks on `FlowCanvas` → Settings |
+| State fields | Name, category (+ tooltips) |
+| Edge fields | Require children, Who can move (`TransitionRulePermissions`) |
+| Document patches | `patchStateInDocument` / `patchEdgeInDocument` in layout helpers |
+| Teams/members | Passed from project details via `boardDesignerSharedProps` |
+| Tests | `workflow-designer-settings.test.tsx`, layout patch tests, workspace selection test |
+
+Lock / Terminal / escalation checkboxes and outbound-edge confirm are **Step 3c**.
 
 ### Step 3c — Designer rules + dirty flag
 

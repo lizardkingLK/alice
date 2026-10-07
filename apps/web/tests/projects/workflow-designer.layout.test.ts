@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { WorkItemStatusEnum } from '@repo/types';
 import { createSeededDefaultWorkflowConfig } from '@repo/types/api/v1';
 import {
   applyNodePositionsToDocument,
   defaultStatePosition,
+  patchEdgeInDocument,
+  patchStateInDocument,
   readLayoutPosition,
   replaceWorkflowInEnvelope,
   workflowDocumentToFlowElements,
@@ -62,5 +65,30 @@ describe('workflow-designer.layout', () => {
     expect(next.layout.nodes.New).toEqual({ x: 10, y: 20 });
     expect(next.layout.nodes.ToDo).toEqual({ x: 30, y: 40 });
     expect(replaced.workflows[0]?.layout.nodes.New).toEqual({ x: 10, y: 20 });
+  });
+
+  it('patches state name and category in the document graph', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const next = patchStateInDocument(workflow, WorkItemStatusEnum.ToDo, {
+      name: 'Ready',
+      category: 'in_progress',
+    });
+    const patched = next.graph.states.find(
+      (state) => state.id === WorkItemStatusEnum.ToDo
+    );
+    expect(patched?.name).toBe('Ready');
+    expect(patched?.category).toBe('in_progress');
+  });
+
+  it('patches edge requireChildren and allowAnyOf', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const edgeId = workflow.graph.edges[0]!.id;
+    const next = patchEdgeInDocument(workflow, edgeId, {
+      requireChildren: 'match_parent_target',
+      allowAnyOf: [{ scope: 'role', role: 'manager' }],
+    });
+    const patched = next.graph.edges.find((edge) => edge.id === edgeId);
+    expect(patched?.requireChildren).toBe('match_parent_target');
+    expect(patched?.allowAnyOf).toEqual([{ scope: 'role', role: 'manager' }]);
   });
 });

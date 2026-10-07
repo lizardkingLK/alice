@@ -5,10 +5,11 @@ items, and optional checks before a move.
 
 **Audience:** Managers and admins
 
-**Shipping note:** The Workflow tab currently supports the **canvas** (view
-states and transitions, drag to rearrange, **Save** / **Discard** layout).
-State and transition **Settings** forms land next; board runtime still uses the
-legacy Board tab designer until later milestones.
+**Shipping note:** The Workflow tab supports the **canvas** (view states and
+transitions, drag to rearrange) and **Settings** for the selected state or
+transition (**Name**, **Category**, **Require children**, **Who can move**).
+Lock / Terminal / escalation options and board runtime (workflow columns instead
+of the legacy Board tab) land in later milestones.
 
 ---
 

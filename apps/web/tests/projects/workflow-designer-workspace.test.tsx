@@ -20,8 +20,39 @@ vi.mock('@repo/ui/components/ui/sonner', () => ({
 }));
 
 vi.mock('@repo/ui/components/ui/flow-canvas', () => ({
-  FlowCanvas: ({ children }: { readonly children?: React.ReactNode }) => (
-    <div data-testid="flow-canvas">{children}</div>
+  FlowCanvas: ({
+    children,
+    onNodeClick,
+    onEdgeClick,
+    onPaneClick,
+  }: {
+    readonly children?: React.ReactNode;
+    // eslint-disable-next-line no-unused-vars -- FlowCanvas prop shape
+    readonly onNodeClick?: (event: unknown, node: { id: string }) => void;
+    // eslint-disable-next-line no-unused-vars -- FlowCanvas prop shape
+    readonly onEdgeClick?: (event: unknown, edge: { id: string }) => void;
+    readonly onPaneClick?: () => void;
+  }) => (
+    <div data-testid="flow-canvas">
+      <button
+        type="button"
+        data-testid="select-state-new"
+        onClick={() => onNodeClick?.(null, { id: 'New' })}
+      >
+        Select New
+      </button>
+      <button
+        type="button"
+        data-testid="select-edge-0"
+        onClick={() => onEdgeClick?.(null, { id: 'e-New-to-ToDo' })}
+      >
+        Select edge
+      </button>
+      <button type="button" data-testid="clear-selection" onClick={onPaneClick}>
+        Clear
+      </button>
+      {children}
+    </div>
   ),
   ReactFlowProvider: ({
     children,
@@ -102,5 +133,20 @@ describe('WorkflowDesignerWorkspace', () => {
     await waitFor(() => {
       expect(refresh).toHaveBeenCalled();
     });
+  });
+
+  it('opens state settings when a canvas node is selected', () => {
+    const project = projectFactory.build({ workflow_config: null });
+    render(
+      <WorkflowDesignerWorkspace
+        project={project}
+        canEdit
+        currentUserId="user-manager-1"
+      />
+    );
+    expect(screen.getByTestId('workflow-settings-empty')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('select-state-new'));
+    expect(screen.getByTestId('workflow-settings-state')).toBeInTheDocument();
+    expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
   });
 });
