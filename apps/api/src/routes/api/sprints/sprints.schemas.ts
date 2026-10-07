@@ -2,11 +2,11 @@ import {
   createSprintBodySchema,
   expectedUpdatedAtSchema,
   SPRINT_STATUSES,
-  type CreateSprintBody,
 } from '@repo/types';
 import { z } from 'zod';
 
-export { createSprintBodySchema, type CreateSprintBody };
+export { createSprintBodySchema };
+export type { CreateSprintBody } from '@repo/types';
 
 export const updateSprintStatusSchema = z.object({
   status: z.enum(SPRINT_STATUSES),
