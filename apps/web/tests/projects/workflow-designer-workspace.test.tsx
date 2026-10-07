@@ -149,4 +149,19 @@ describe('WorkflowDesignerWorkspace', () => {
     expect(screen.getByTestId('workflow-settings-state')).toBeInTheDocument();
     expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
   });
+
+  it('exposes data-dirty for chat context when the fallback envelope is shown', () => {
+    const project = projectFactory.build({ workflow_config: null });
+    render(
+      <WorkflowDesignerWorkspace
+        project={project}
+        canEdit
+        currentUserId="user-manager-1"
+      />
+    );
+    expect(screen.getByTestId('workflow-designer-workspace')).toHaveAttribute(
+      'data-dirty',
+      'true'
+    );
+  });
 });

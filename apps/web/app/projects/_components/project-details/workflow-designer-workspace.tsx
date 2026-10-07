@@ -45,6 +45,7 @@ import {
   applyNodePositionsToDocument,
   cloneWorkflowEnvelope,
   envelopesEqualForDesigner,
+  makeStateTerminalInDocument,
   patchEdgeInDocument,
   patchStateInDocument,
   replaceWorkflowInEnvelope,
@@ -216,11 +217,26 @@ export function WorkflowDesignerWorkspace({
   const handleStateChange = useCallback(
     (
       stateId: string,
-      patch: Partial<Pick<WorkflowStateNode, 'name' | 'category'>>
+      patch: Partial<
+        Pick<
+          WorkflowStateNode,
+          'name' | 'category' | 'lockRecord' | 'terminal' | 'requiresEscalation'
+        >
+      >
     ) => {
       updateActiveWorkflow((workflow) =>
         patchStateInDocument(workflow, stateId, patch)
       );
+    },
+    [updateActiveWorkflow]
+  );
+
+  const handleMakeStateTerminal = useCallback(
+    (stateId: string) => {
+      updateActiveWorkflow((workflow) =>
+        makeStateTerminalInDocument(workflow, stateId)
+      );
+      setCanvasEpoch((epoch) => epoch + 1);
     },
     [updateActiveWorkflow]
   );
@@ -302,7 +318,12 @@ export function WorkflowDesignerWorkspace({
   };
 
   return (
-    <div className="space-y-4" data-testid="workflow-designer-workspace">
+    <div
+      className="space-y-4"
+      data-testid="workflow-designer-workspace"
+      data-dirty={dirty ? 'true' : 'false'}
+      data-workflow-id={activeWorkflow.id}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -417,6 +438,7 @@ export function WorkflowDesignerWorkspace({
           members={members}
           onStateChange={handleStateChange}
           onEdgeChange={handleEdgeChange}
+          onMakeStateTerminal={handleMakeStateTerminal}
         />
       </div>
     </div>

@@ -142,7 +142,12 @@ export function replaceWorkflowInEnvelope(
 export function patchStateInDocument(
   document: WorkflowDocument,
   stateId: string,
-  patch: Partial<Pick<WorkflowStateNode, 'name' | 'category' | 'lockRecord' | 'terminal' | 'requiresEscalation'>>
+  patch: Partial<
+    Pick<
+      WorkflowStateNode,
+      'name' | 'category' | 'lockRecord' | 'terminal' | 'requiresEscalation'
+    >
+  >
 ): WorkflowDocument {
   return {
     ...document,
@@ -153,6 +158,31 @@ export function patchStateInDocument(
       ),
     },
   };
+}
+
+export function removeOutboundEdgesFromState(
+  document: WorkflowDocument,
+  stateId: string
+): WorkflowDocument {
+  return {
+    ...document,
+    graph: {
+      ...document.graph,
+      edges: document.graph.edges.filter((edge) => edge.from !== stateId),
+    },
+  };
+}
+
+/** Sets `terminal: true` and removes every outbound edge (never silent). */
+export function makeStateTerminalInDocument(
+  document: WorkflowDocument,
+  stateId: string
+): WorkflowDocument {
+  return patchStateInDocument(
+    removeOutboundEdgesFromState(document, stateId),
+    stateId,
+    { terminal: true }
+  );
 }
 
 export function patchEdgeInDocument(

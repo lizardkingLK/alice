@@ -165,6 +165,8 @@ Lock / Terminal / escalation checkboxes and outbound-edge confirm are **Step 3c*
 
 ### Step 3c — Designer rules + dirty flag
 
+**Status:** **Done** (as-built below)
+
 **Goal:** Finish designer semantics before board runtime (Step 4).
 
 1. Wire **Lock record in this state** and **Terminal state** (outbound-edge
@@ -176,6 +178,19 @@ Lock / Terminal / escalation checkboxes and outbound-edge confirm are **Step 3c*
 5. Schema / Settings confirmation tests for lock/terminal.
 
 **Exit:** Managers design and save a valid graph for a project (Settings + rules).
+
+### As-built (Step 3c)
+
+| Piece | Location |
+| ----- | -------- |
+| Lock / Terminal / escalation checkboxes | `workflow-designer-settings.tsx` |
+| Terminal outbound confirm | Dialog → `makeStateTerminalInDocument` |
+| Require children | Already in Step 3b Settings |
+| Resolution preset stub | Disabled picker on edge Settings |
+| Zod gates | Existing envelope validators (API save) |
+| Dirty flag for chat | `data-dirty` + `data-workflow-id` on workspace root |
+| Helpers | `removeOutboundEdgesFromState`, `makeStateTerminalInDocument` |
+| Tests | Settings lock/terminal confirm + layout terminal helper |
 
 ---
 

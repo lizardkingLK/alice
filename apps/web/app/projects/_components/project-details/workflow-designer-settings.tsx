@@ -1,6 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import { Info } from '@repo/ui/lib/icons';
+import { Button } from '@repo/ui/components/ui/button';
+import { Checkbox } from '@repo/ui/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@repo/ui/components/ui/dialog';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import {
@@ -39,15 +50,23 @@ export type WorkflowDesignerSelection =
   | { readonly kind: 'edge'; readonly edgeId: string }
   | null;
 
+export type WorkflowStateSettingsPatch = Partial<
+  Pick<
+    WorkflowStateNode,
+    'name' | 'category' | 'lockRecord' | 'terminal' | 'requiresEscalation'
+  >
+>;
+
 /* eslint-disable no-unused-vars -- callback parameter names document the payload */
 type WorkflowStateChangeHandler = (
   stateId: string,
-  patch: Partial<Pick<WorkflowStateNode, 'name' | 'category'>>
+  patch: WorkflowStateSettingsPatch
 ) => void;
 type WorkflowEdgeChangeHandler = (
   edgeId: string,
   patch: Partial<Pick<WorkflowEdge, 'requireChildren' | 'allowAnyOf'>>
 ) => void;
+type WorkflowMakeTerminalHandler = (stateId: string) => void;
 /* eslint-enable no-unused-vars */
 
 type WorkflowDesignerSettingsProps = {
@@ -58,6 +77,7 @@ type WorkflowDesignerSettingsProps = {
   readonly members: readonly MemberCheckboxOption[];
   readonly onStateChange: WorkflowStateChangeHandler;
   readonly onEdgeChange: WorkflowEdgeChangeHandler;
+  readonly onMakeStateTerminal: WorkflowMakeTerminalHandler;
 };
 
 const CATEGORY_LABELS: Record<WorkflowStateCategory, string> = {
@@ -109,15 +129,72 @@ function FieldLabel({
   );
 }
 
+// eslint-disable-next-line no-unused-vars -- callback parameter name documents the payload
+type StateFlagCheckedHandler = (checked: boolean) => void;
+
+function StateFlagRow({
+  id,
+  label,
+  tip,
+  checked,
+  disabled,
+  onCheckedChange,
+}: {
+  readonly id: string;
+  readonly label: string;
+  readonly tip: string;
+  readonly checked: boolean;
+  readonly disabled: boolean;
+  readonly onCheckedChange: StateFlagCheckedHandler;
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <Checkbox
+        id={id}
+        checked={checked}
+        disabled={disabled}
+        onCheckedChange={(value) => onCheckedChange(value === true)}
+        className="mt-0.5"
+      />
+      <div className="min-w-0 flex-1 space-y-0.5">
+        <div className="flex items-center gap-1.5">
+          <Label htmlFor={id} className="leading-snug">
+            {label}
+          </Label>
+          <SettingsInfoTip text={tip} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StateSettingsForm({
   state,
+  outboundCount,
   canEdit,
   onStateChange,
+  onMakeStateTerminal,
 }: {
   readonly state: WorkflowStateNode;
+  readonly outboundCount: number;
   readonly canEdit: boolean;
   readonly onStateChange: WorkflowDesignerSettingsProps['onStateChange'];
+  readonly onMakeStateTerminal: WorkflowDesignerSettingsProps['onMakeStateTerminal'];
 }) {
+  const [terminalConfirmOpen, setTerminalConfirmOpen] = useState(false);
+
+  const requestTerminal = (checked: boolean) => {
+    if (!checked) {
+      onStateChange(state.id, { terminal: false });
+      return;
+    }
+    if (outboundCount === 0) {
+      onStateChange(state.id, { terminal: true });
+      return;
+    }
+    setTerminalConfirmOpen(true);
+  };
+
   return (
     <div className="space-y-4" data-testid="workflow-settings-state">
       <div>
@@ -174,10 +251,76 @@ function StateSettingsForm({
         </Select>
       </div>
 
-      <p className="text-muted-foreground text-xs leading-relaxed">
-        Lock record, Terminal, and escalation options land in the next designer
-        slice.
-      </p>
+      <div className="space-y-3 border-t border-border pt-3">
+        <StateFlagRow
+          id="workflow-state-lock-record"
+          label="Lock record in this state"
+          tip="While an item is here, most fields are read-only. Changing state (for example reopen) can still be allowed."
+          checked={state.lockRecord}
+          disabled={!canEdit}
+          onCheckedChange={(checked) =>
+            onStateChange(state.id, { lockRecord: checked })
+          }
+        />
+        <StateFlagRow
+          id="workflow-state-terminal"
+          label="Terminal state"
+          tip="No outbound transitions. If edges already leave this state, confirm removing them before turning this on."
+          checked={state.terminal}
+          disabled={!canEdit}
+          onCheckedChange={requestTerminal}
+        />
+        <StateFlagRow
+          id="workflow-state-requires-escalation"
+          label="Requires escalation"
+          tip="Leaving this state requires a resolution preset on every outbound transition. Preset picker lands later; Save validates via schema."
+          checked={state.requiresEscalation}
+          disabled={!canEdit}
+          onCheckedChange={(checked) =>
+            onStateChange(state.id, { requiresEscalation: checked })
+          }
+        />
+        {state.requiresEscalation && outboundCount > 0 ? (
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            Outbound edges must reference a resolution preset before Save
+            succeeds. Preset editing arrives in a later milestone.
+          </p>
+        ) : null}
+      </div>
+
+      <Dialog open={terminalConfirmOpen} onOpenChange={setTerminalConfirmOpen}>
+        <DialogContent data-testid="workflow-terminal-confirm">
+          <DialogHeader>
+            <DialogTitle>Make this a terminal state?</DialogTitle>
+            <DialogDescription>
+              This removes {outboundCount} outbound transition
+              {outboundCount === 1 ? '' : 's'} from{' '}
+              <span className="font-medium">{state.name}</span>
+              {'. '}
+              Terminal states cannot have exits.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setTerminalConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                onMakeStateTerminal(state.id);
+                setTerminalConfirmOpen(false);
+              }}
+            >
+              Remove outbound and lock
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -197,12 +340,14 @@ function EdgeSettingsForm({
   readonly members: readonly MemberCheckboxOption[];
   readonly onEdgeChange: WorkflowDesignerSettingsProps['onEdgeChange'];
 }) {
-  const fromName =
-    workflow.graph.states.find((state) => state.id === edge.from)?.name ??
-    edge.from;
+  const fromState = workflow.graph.states.find(
+    (state) => state.id === edge.from
+  );
+  const fromName = fromState?.name ?? edge.from;
   const toName =
     workflow.graph.states.find((state) => state.id === edge.to)?.name ??
     edge.to;
+  const fromRequiresEscalation = fromState?.requiresEscalation === true;
 
   const accessMode: TransitionRulePermissionsValue['accessMode'] =
     edge.allowAnyOf.length > 0 ? 'restricted' : 'everyone';
@@ -248,6 +393,35 @@ function EdgeSettingsForm({
       </div>
 
       <div className="space-y-2">
+        <FieldLabel
+          htmlFor="workflow-edge-resolution-preset"
+          label="Resolution preset"
+          tip="Optional named form completed when taking this transition. Required when the source state requires escalation."
+        />
+        <Select
+          disabled
+          value={edge.resolutionPresetId ?? undefined}
+        >
+          <SelectTrigger id="workflow-edge-resolution-preset">
+            <SelectValue placeholder="Preset picker coming soon" />
+          </SelectTrigger>
+          <SelectContent>
+            {edge.resolutionPresetId ? (
+              <SelectItem value={edge.resolutionPresetId}>
+                {edge.resolutionPresetId}
+              </SelectItem>
+            ) : null}
+          </SelectContent>
+        </Select>
+        {fromRequiresEscalation && !edge.resolutionPresetId ? (
+          <p className="text-amber-700 dark:text-amber-400 text-xs leading-relaxed">
+            Source state requires escalation — Save will reject until a preset
+            is assigned (picker arrives later).
+          </p>
+        ) : null}
+      </div>
+
+      <div className="space-y-2">
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-medium">Who can move</p>
           <SettingsInfoTip text="Empty (everyone) allows any project member. Restricted mode limits the transition to selected roles, teams, or people." />
@@ -282,6 +456,7 @@ export function WorkflowDesignerSettings({
   members,
   onStateChange,
   onEdgeChange,
+  onMakeStateTerminal,
 }: WorkflowDesignerSettingsProps) {
   const selectedState =
     selection?.kind === 'state'
@@ -293,6 +468,10 @@ export function WorkflowDesignerSettings({
       ? (workflow.graph.edges.find((edge) => edge.id === selection.edgeId) ??
         null)
       : null;
+  const outboundCount = selectedState
+    ? workflow.graph.edges.filter((edge) => edge.from === selectedState.id)
+        .length
+    : 0;
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -310,8 +489,10 @@ export function WorkflowDesignerSettings({
           {selectedState ? (
             <StateSettingsForm
               state={selectedState}
+              outboundCount={outboundCount}
               canEdit={canEdit}
               onStateChange={onStateChange}
+              onMakeStateTerminal={onMakeStateTerminal}
             />
           ) : null}
           {selectedEdge ? (
