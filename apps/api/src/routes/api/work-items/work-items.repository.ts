@@ -296,6 +296,48 @@ export class WorkItemRepository {
     return count ?? 0;
   }
 
+  /**
+   * Count direct children that are not yet in the parent's target state
+   * (or same category when state ids differ across workflows).
+   */
+  async countChildrenNotInTargetState(
+    parentId: string,
+    targetStateId: string,
+    targetCategory: string
+  ): Promise<number> {
+    const { data, error } = await this.db
+      .from('work_items')
+      .select('id, status, state, board_column_id')
+      .eq('parent_id', parentId)
+      .eq('record_status', 'active');
+
+    if (error) {
+      console.error(
+        'error. failed to list children for target-state gate:',
+        error.message
+      );
+      throw new Error('Failed to list children for target-state gate');
+    }
+
+    let mismatched = 0;
+    for (const child of data ?? []) {
+      const resolved = resolveWorkItemState({
+        state: child.state,
+        status: child.status,
+        boardColumnId: child.board_column_id,
+      });
+      const matchesState =
+        resolved.stateId === targetStateId ||
+        child.board_column_id === targetStateId ||
+        child.status === targetStateId;
+      const matchesCategory = resolved.category === targetCategory;
+      if (!matchesState && !matchesCategory) {
+        mismatched += 1;
+      }
+    }
+    return mismatched;
+  }
+
   async create(input: CreateWorkItemRecord): Promise<DbWorkItem> {
     const status = input.status ?? WorkItemStatusEnum.New;
     const synced = syncWorkItemStateForStatusChange({

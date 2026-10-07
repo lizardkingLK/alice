@@ -58,6 +58,22 @@ export {
   type WorkflowResolutionPreset,
   type WorkflowStateNode,
 } from './workflow-config.js';
+export {
+  findWorkflowEdge,
+  findWorkflowState,
+  listBoardWorkflowTabs,
+  resolveActiveWorkflow,
+  resolveProjectBoardRuntime,
+  resolveWorkflowPlacementState,
+  workItemBelongsToActiveWorkflow,
+  workflowStateToBoardColumn,
+  workflowStatesToBoardColumns,
+  type BoardWorkflowTab,
+  type DefaultBoardRuntime,
+  type LegacyBoardRuntime,
+  type ProjectBoardRuntime,
+  type WorkflowBoardRuntime,
+} from './board-runtime.js';
 export * from './jira-import-types.js';
 export * from './github-integration-types.js';
 export {

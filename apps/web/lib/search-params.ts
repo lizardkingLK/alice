@@ -15,6 +15,8 @@ export interface RawSearchParams {
   requestId?: string;
   project?: string;
   sprint?: string;
+  /** Board workflow switcher (`/board?workflow=`). */
+  workflow?: string;
   type?: string;
   assignee?: string;
   /** JSON array of exact label strings, e.g. `["Mobile","auth"]`. */
@@ -238,6 +240,17 @@ export type BoardPageTab = 'board' | 'calendar';
 
 export function parseBoardPageTab(tab?: string | null): BoardPageTab {
   return tab === 'calendar' ? 'calendar' : 'board';
+}
+
+/** Active workflow on `/board?workflow=` (envelope projects only). */
+export function parseBoardWorkflowId(
+  workflow?: string | null
+): string | undefined {
+  if (typeof workflow !== 'string') {
+    return undefined;
+  }
+  const trimmed = workflow.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }
 
 /** Alice chat page tabs (`/chat?tab=`). Default `conversation` omits the query param. */

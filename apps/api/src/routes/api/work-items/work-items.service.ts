@@ -2,13 +2,23 @@ import {
   boardConfigSchema,
   findBoardTransition,
   findStatusTransition,
+  findWorkflowEdge,
+  findWorkflowState,
   getAllowedChildType,
   getAllowedParentType,
   normalizeBoardConfig,
+  parseWorkflowConfigEnvelope,
   resolveBoardDestinationColumn,
   resolveBoardSourceColumn,
+  resolveWorkItemState,
+  workflowStatesToBoardColumns,
   type BoardRuleMatcher,
+  type RuntimeBoardConfig,
   type WorkItemType,
+  type WorkflowConfigEnvelope,
+  type WorkflowDocument,
+  type WorkflowEdge,
+  type WorkflowStateNode,
   CANONICAL_HIERARCHY_ORDER,
   type ProjectWorkflowConfig,
   parseWorkItemLabels,
@@ -297,34 +307,19 @@ export class WorkItemService {
       detachChildren: options?.detachChildren === true,
     });
 
-    const statusChanged = current.status !== nextInput.status;
     const workflow = await this.resolveWorkflowValidation(
       current,
       nextInput,
       workflowConfig,
       workflowConfigError
     );
-    const boardTransition =
-      workflow.config && workflow.boardMove
-        ? findBoardTransition(
-            workflow.config,
-            workflow.boardMove.source.id,
-            workflow.boardMove.destination.id
-          )
-        : null;
-    const statusTransition =
-      statusChanged && workflow.config
-        ? findStatusTransition(
-            workflow.config,
-            current.status,
-            nextInput.status
-          )
-        : null;
-    await this.assertWorkflowTransitionsAllowed(
+
+    await this.assertResolvedTransitions(
       userId,
-      current.project_id,
-      boardTransition,
-      statusTransition
+      current,
+      nextInput,
+      workItemId,
+      workflow
     );
 
     await this.assertParentLinkWhenHierarchyTouches({
@@ -335,8 +330,12 @@ export class WorkItemService {
       hierarchy,
     });
 
-    await this.assertCanBecomeDone(current, workItemId, nextInput.status);
-    this.assertDoneIsReadOnlyExceptStatus(current, nextInput);
+    await this.assertResolvedLockAndDoneGates(
+      current,
+      nextInput,
+      workItemId,
+      workflow
+    );
 
     const sprintId =
       'sprint_id' in nextInput ? nextInput.sprint_id : current.sprint_id;
@@ -478,30 +477,131 @@ export class WorkItemService {
     });
   }
 
+  private async assertResolvedTransitions(
+    userId: string,
+    current: DbWorkItem,
+    nextInput: WorkItemUpdateBody,
+    workItemId: string,
+    workflow: Awaited<ReturnType<WorkItemService['resolveWorkflowValidation']>>
+  ): Promise<void> {
+    if (workflow.mode === 'legacy') {
+      const statusChanged = current.status !== nextInput.status;
+      const boardTransition = workflow.boardMove
+        ? findBoardTransition(
+            workflow.config,
+            workflow.boardMove.source.id,
+            workflow.boardMove.destination.id
+          )
+        : null;
+      const statusTransition = statusChanged
+        ? findStatusTransition(
+            workflow.config,
+            current.status,
+            nextInput.status
+          )
+        : null;
+      await this.assertLegacyTransitionsAllowed(
+        userId,
+        current.project_id,
+        boardTransition,
+        statusTransition
+      );
+      return;
+    }
+
+    if (workflow.mode === 'workflow') {
+      await this.assertGraphTransitionAllowed(
+        userId,
+        current.project_id,
+        workflow
+      );
+      await this.assertWorkflowRequireChildren(
+        workItemId,
+        workflow.edge,
+        workflow.destinationState
+      );
+    }
+  }
+
+  private async assertResolvedLockAndDoneGates(
+    current: DbWorkItem,
+    nextInput: WorkItemUpdateBody,
+    workItemId: string,
+    workflow: Awaited<ReturnType<WorkItemService['resolveWorkflowValidation']>>
+  ): Promise<void> {
+    if (workflow.mode === 'workflow') {
+      this.assertLockRecordReadOnly(workflow.sourceState, current, nextInput);
+      if (workflow.destinationState.category === 'done') {
+        await this.assertCanBecomeDone(current, workItemId, nextInput.status);
+      }
+      return;
+    }
+
+    await this.assertCanBecomeDone(current, workItemId, nextInput.status);
+    this.assertDoneIsReadOnlyExceptStatus(current, nextInput);
+  }
+
   private async resolveWorkflowValidation(
     current: DbWorkItem,
     input: WorkItemUpdateBody,
     workflowConfig: unknown,
     workflowConfigError: unknown
-  ) {
+  ): Promise<
+    | { mode: 'none' }
+    | {
+        mode: 'legacy';
+        config: RuntimeBoardConfig;
+        boardMove: {
+          source: { id: string };
+          destination: { id: string };
+        } | null;
+      }
+    | {
+        mode: 'workflow';
+        workflow: WorkflowDocument;
+        edge: WorkflowEdge | null;
+        sourceState: WorkflowStateNode;
+        destinationState: WorkflowStateNode;
+      }
+  > {
     if (input.project_id !== current.project_id) {
       if (input.board_column_id !== null) {
         throw new WorkItemValidationError(
           'Board column placement cannot be carried to another project'
         );
       }
-      return { config: null, boardMove: null };
+      return { mode: 'none' };
     }
 
     const statusChanged = current.status !== input.status;
     const boardPlacementChanged =
       statusChanged || current.board_column_id !== input.board_column_id;
     if (!boardPlacementChanged) {
-      return { config: null, boardMove: null };
+      return { mode: 'none' };
     }
 
     throwWorkflowConfigLoadError(workflowConfigError);
 
+    const envelope = parseWorkflowConfigEnvelope(workflowConfig);
+    if (envelope) {
+      return this.resolveGraphWorkflowValidation(current, input, envelope);
+    }
+
+    return this.resolveLegacyBoardValidation(current, input, workflowConfig);
+  }
+
+  private resolveLegacyBoardValidation(
+    current: DbWorkItem,
+    input: WorkItemUpdateBody,
+    workflowConfig: unknown
+  ): {
+    mode: 'legacy';
+    config: RuntimeBoardConfig;
+    boardMove: {
+      source: { id: string };
+      destination: { id: string };
+    } | null;
+  } | { mode: 'none' } {
     const parsed = boardConfigSchema.safeParse(workflowConfig);
     if (!parsed.success) {
       if (input.board_column_id !== null) {
@@ -509,7 +609,7 @@ export class WorkItemService {
           'This project does not have a valid custom board configuration'
         );
       }
-      return { config: null, boardMove: null };
+      return { mode: 'none' };
     }
 
     const config = normalizeBoardConfig(parsed.data);
@@ -543,10 +643,89 @@ export class WorkItemService {
     const boardMove =
       source && source.id !== destination.id ? { source, destination } : null;
 
-    return { config, boardMove };
+    return { mode: 'legacy', config, boardMove };
   }
 
-  private async assertWorkflowTransitionsAllowed(
+  private resolveGraphWorkflowValidation(
+    current: DbWorkItem,
+    input: WorkItemUpdateBody,
+    envelope: WorkflowConfigEnvelope
+  ): {
+    mode: 'workflow';
+    workflow: WorkflowDocument;
+    edge: WorkflowEdge | null;
+    sourceState: WorkflowStateNode;
+    destinationState: WorkflowStateNode;
+  } {
+    const currentState = resolveWorkItemState({
+      state: current.state,
+      status: current.status,
+    });
+    const workflow =
+      envelope.workflows.find(
+        (candidate) => candidate.id === currentState.workflowId
+      ) ??
+      envelope.workflows.find(
+        (candidate) => candidate.id === envelope.defaultWorkflowId
+      ) ??
+      envelope.workflows[0]!;
+
+    const columns = workflowStatesToBoardColumns(workflow);
+    if (input.board_column_id !== null) {
+      const configuredColumn = columns.find(
+        (candidate) => candidate.id === input.board_column_id
+      );
+      if (!configuredColumn) {
+        throw new WorkItemValidationError(
+          'Board column does not exist in this project'
+        );
+      }
+      if (configuredColumn.status !== input.status) {
+        throw new WorkItemValidationError(
+          'Board column does not match the work item status'
+        );
+      }
+    }
+
+    const destinationColumn = resolveBoardDestinationColumn(
+      { status: input.status, board_column_id: input.board_column_id },
+      columns
+    );
+    if (!destinationColumn) {
+      throw new WorkItemValidationError(
+        'Board column does not exist in this project'
+      );
+    }
+
+    const sourceColumn = resolveBoardSourceColumn(current, columns);
+    const fromStateId = sourceColumn?.id ?? currentState.stateId;
+    const toStateId = destinationColumn.id;
+
+    const sourceState =
+      findWorkflowState(workflow, fromStateId) ??
+      findWorkflowState(workflow, currentState.stateId);
+    const destinationState = findWorkflowState(workflow, toStateId);
+    if (!sourceState || !destinationState) {
+      throw new WorkItemValidationError(
+        'Workflow state does not exist in this project'
+      );
+    }
+
+    const edge =
+      sourceState.id === destinationState.id
+        ? null
+        : findWorkflowEdge(workflow, sourceState.id, destinationState.id);
+
+    return {
+      mode: 'workflow',
+      workflow,
+      edge,
+      sourceState,
+      destinationState,
+    };
+  }
+
+  private async assertLegacyTransitionsAllowed(
     actorId: string,
     projectId: string,
     boardTransition: ReturnType<typeof findBoardTransition>,
@@ -566,6 +745,116 @@ export class WorkItemService {
       !doesTransitionRuleAllowActor(statusTransition.allowAnyOf, actor, actorId)
     ) {
       throw new StatusTransitionForbiddenError();
+    }
+  }
+
+  private async assertGraphTransitionAllowed(
+    actorId: string,
+    projectId: string,
+    workflow: {
+      edge: WorkflowEdge | null;
+      sourceState: WorkflowStateNode;
+      destinationState: WorkflowStateNode;
+    }
+  ): Promise<void> {
+    if (workflow.sourceState.id === workflow.destinationState.id) {
+      return;
+    }
+
+    if (workflow.sourceState.terminal) {
+      throw new WorkItemValidationError(
+        'Terminal states cannot have outbound transitions'
+      );
+    }
+
+    if (!workflow.edge) {
+      throw new BoardMoveForbiddenError();
+    }
+
+    if (workflow.edge.allowAnyOf.length === 0) {
+      return;
+    }
+
+    const actor = await this.workItems.getBoardActorContext(actorId, projectId);
+    if (
+      !doesTransitionRuleAllowActor(workflow.edge.allowAnyOf, actor, actorId)
+    ) {
+      throw new BoardMoveForbiddenError();
+    }
+  }
+
+  private async assertWorkflowRequireChildren(
+    workItemId: string,
+    edge: WorkflowEdge | null,
+    destinationState: WorkflowStateNode
+  ): Promise<void> {
+    if (!edge || edge.requireChildren === 'off') {
+      return;
+    }
+
+    if (edge.requireChildren === 'all_complete') {
+      const incompleteCount =
+        await this.workItems.countIncompleteChildren(workItemId);
+      if (incompleteCount > 0) {
+        throw new WorkItemValidationError(
+          `Cannot move while ${incompleteCount} subtask${incompleteCount === 1 ? ' is' : 's are'} incomplete. Complete or unlink them first.`
+        );
+      }
+      return;
+    }
+
+    if (edge.requireChildren === 'match_parent_target') {
+      const mismatched =
+        await this.workItems.countChildrenNotInTargetState(
+          workItemId,
+          destinationState.id,
+          destinationState.category
+        );
+      if (mismatched > 0) {
+        throw new WorkItemValidationError(
+          `Cannot move while ${mismatched} subtask${mismatched === 1 ? ' is' : 's are'} not in the target state. Align children first.`
+        );
+      }
+    }
+  }
+
+  private assertLockRecordReadOnly(
+    sourceState: WorkflowStateNode,
+    current: DbWorkItem,
+    input: WorkItemUpdateBody
+  ): void {
+    if (!sourceState.lockRecord) {
+      return;
+    }
+
+    const dueUnchanged =
+      toDateOnly(input.due_date) === toDateOnly(current.due_date);
+    const descriptionUnchanged =
+      JSON.stringify(input.description ?? null) ===
+      JSON.stringify(current.description ?? null);
+    const labelsUnchanged =
+      JSON.stringify(input.labels ?? parseWorkItemLabels(current.labels)) ===
+      JSON.stringify(parseWorkItemLabels(current.labels));
+
+    const nonStatusChanged =
+      input.title !== current.title ||
+      input.project_id !== current.project_id ||
+      input.type !== current.type ||
+      input.priority !== current.priority ||
+      !sameNullable(input.assignee_id, current.assignee_id) ||
+      !sameNullable(input.reporter_id, current.reporter_id) ||
+      !dueUnchanged ||
+      !sameNullable(input.sprint_id, current.sprint_id) ||
+      !sameNullable(input.story_points, current.story_points) ||
+      !sameNullable(input.parent_id, current.parent_id) ||
+      !descriptionUnchanged ||
+      !labelsUnchanged ||
+      !sameNullable(input.jira_issue_key, current.jira_issue_key);
+
+    if (nonStatusChanged) {
+      throw new WorkItemValidationError(
+        'This work item is locked in its current state. Change state to edit other fields.'
+      );
     }
   }
 
