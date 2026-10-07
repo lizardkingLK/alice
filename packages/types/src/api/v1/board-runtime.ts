@@ -51,9 +51,7 @@ export type DefaultBoardRuntime = {
 };
 
 export type ProjectBoardRuntime =
-  | WorkflowBoardRuntime
-  | LegacyBoardRuntime
-  | DefaultBoardRuntime;
+  WorkflowBoardRuntime | LegacyBoardRuntime | DefaultBoardRuntime;
 
 function isBoardWorkItemStatus(
   value: string
@@ -123,9 +121,7 @@ export function findWorkflowState(
   workflow: WorkflowDocument,
   stateId: string
 ): WorkflowStateNode | null {
-  return (
-    workflow.graph.states.find((state) => state.id === stateId) ?? null
-  );
+  return workflow.graph.states.find((state) => state.id === stateId) ?? null;
 }
 
 export function resolveActiveWorkflow(

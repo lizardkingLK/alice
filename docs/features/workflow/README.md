@@ -7,11 +7,11 @@ Projects store one or more workflow documents in `projects.workflow_config`.
 The kanban board becomes a **per-workflow** view (type / workflow switcher).
 Work items carry a single-current **`state`** JSONB placement.
 
-| Document                                                             | Description                                                             | Status                     |
-| -------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------- |
-| [WORKFLOW.md](./WORKFLOW.md)                                         | Product rules, JSON shape, Settings, locks, escalation, data model      | Plan (Steps 1–2 as-built)  |
-| [WORKFLOW_IMPLEMENTATION_PLAN.md](./WORKFLOW_IMPLEMENTATION_PLAN.md) | Atomic development steps (Step 3 split 3a/3b/3c), deferred-next backlog | Plan (Steps 1–4 Done) |
-| [WORKFLOW_TESTING.md](./WORKFLOW_TESTING.md)                         | Unit / API / UI test matrix and manual QA                               | Plan                       |
+| Document                                                             | Description                                                             | Status                    |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------- |
+| [WORKFLOW.md](./WORKFLOW.md)                                         | Product rules, JSON shape, Settings, locks, escalation, data model      | Plan (Steps 1–2 as-built) |
+| [WORKFLOW_IMPLEMENTATION_PLAN.md](./WORKFLOW_IMPLEMENTATION_PLAN.md) | Atomic development steps (Step 3 split 3a/3b/3c), deferred-next backlog | Plan (Steps 1–4 Done)     |
+| [WORKFLOW_TESTING.md](./WORKFLOW_TESTING.md)                         | Unit / API / UI test matrix and manual QA                               | Plan                      |
 
 ## Related
 

@@ -191,9 +191,8 @@ describe('BoardData project scoping', () => {
   });
 
   it('loads workflow envelope columns and tabs for an accessible project', async () => {
-    const { createSeededDefaultWorkflowConfig } = await import(
-      '@repo/types/api/v1'
-    );
+    const { createSeededDefaultWorkflowConfig } =
+      await import('@repo/types/api/v1');
     getDbUserMock.mockResolvedValue({ id: 'member-1', role: 'member' });
     listAccessibleProjectIdsMock.mockResolvedValue(['proj-1']);
     const envelope = createSeededDefaultWorkflowConfig();

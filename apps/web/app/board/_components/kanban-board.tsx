@@ -39,7 +39,6 @@ import {
   parseWorkItemLabelsFilterParam,
   serializeWorkItemLabelsFilter,
 } from '@repo/types';
-import type { BoardWorkflowTab } from '@repo/types/api/v1';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
 import {
   assignItemsToColumns,
@@ -99,6 +98,7 @@ import { toast } from '@repo/ui/components/ui/sonner';
 import {
   BOARD_MOVE_FORBIDDEN_CODE,
   type BoardColumn,
+  type BoardWorkflowTab,
 } from '@repo/types/api/v1';
 
 type BoardStatus = BoardColumn['status'];
@@ -129,7 +129,9 @@ function resolveActiveWorkflowBindings(
   if (boardMode !== 'workflow' || !activeWorkflowId) {
     return null;
   }
-  const tab = workflowTabs.find((candidate) => candidate.id === activeWorkflowId);
+  const tab = workflowTabs.find(
+    (candidate) => candidate.id === activeWorkflowId
+  );
   return tab ? new Set(tab.typeBindings) : null;
 }
 
@@ -632,7 +634,7 @@ export function KanbanBoard({
     }
     const params = new URLSearchParams(searchParams.toString());
     const defaultTab = workflowTabs.find((tab) => tab.isDefault);
-    if (defaultTab && workflowId === defaultTab.id) {
+    if (workflowId === defaultTab?.id) {
       params.delete('workflow');
     } else {
       params.set('workflow', workflowId);

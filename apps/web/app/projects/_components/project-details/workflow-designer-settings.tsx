@@ -251,7 +251,7 @@ function StateSettingsForm({
         </Select>
       </div>
 
-      <div className="space-y-3 border-t border-border pt-3">
+      <div className="border-border space-y-3 border-t pt-3">
         <StateFlagRow
           id="workflow-state-lock-record"
           label="Lock record in this state"
@@ -398,10 +398,7 @@ function EdgeSettingsForm({
           label="Resolution preset"
           tip="Optional named form completed when taking this transition. Required when the source state requires escalation."
         />
-        <Select
-          disabled
-          value={edge.resolutionPresetId ?? undefined}
-        >
+        <Select disabled value={edge.resolutionPresetId ?? undefined}>
           <SelectTrigger id="workflow-edge-resolution-preset">
             <SelectValue placeholder="Preset picker coming soon" />
           </SelectTrigger>
@@ -414,7 +411,7 @@ function EdgeSettingsForm({
           </SelectContent>
         </Select>
         {fromRequiresEscalation && !edge.resolutionPresetId ? (
-          <p className="text-amber-700 dark:text-amber-400 text-xs leading-relaxed">
+          <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
             Source state requires escalation — Save will reject until a preset
             is assigned (picker arrives later).
           </p>
@@ -460,8 +457,9 @@ export function WorkflowDesignerSettings({
 }: WorkflowDesignerSettingsProps) {
   const selectedState =
     selection?.kind === 'state'
-      ? (workflow.graph.states.find((state) => state.id === selection.stateId) ??
-        null)
+      ? (workflow.graph.states.find(
+          (state) => state.id === selection.stateId
+        ) ?? null)
       : null;
   const selectedEdge =
     selection?.kind === 'edge'

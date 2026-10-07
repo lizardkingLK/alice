@@ -591,14 +591,16 @@ export class WorkItemService {
     current: DbWorkItem,
     input: WorkItemUpdateBody,
     workflowConfig: unknown
-  ): {
-    mode: 'legacy';
-    config: RuntimeBoardConfig;
-    boardMove: {
-      source: { id: string };
-      destination: { id: string };
-    } | null;
-  } | { mode: 'none' } {
+  ):
+    | {
+        mode: 'legacy';
+        config: RuntimeBoardConfig;
+        boardMove: {
+          source: { id: string };
+          destination: { id: string };
+        } | null;
+      }
+    | { mode: 'none' } {
     const parsed = boardConfigSchema.safeParse(workflowConfig);
     if (!parsed.success) {
       if (input.board_column_id !== null) {
@@ -752,12 +754,11 @@ export class WorkItemService {
     }
 
     if (edge.requireChildren === 'match_parent_target') {
-      const mismatched =
-        await this.workItems.countChildrenNotInTargetState(
-          workItemId,
-          destinationState.id,
-          destinationState.category
-        );
+      const mismatched = await this.workItems.countChildrenNotInTargetState(
+        workItemId,
+        destinationState.id,
+        destinationState.category
+      );
       if (mismatched > 0) {
         throw new WorkItemValidationError(
           `Cannot move while ${mismatched} subtask${mismatched === 1 ? ' is' : 's are'} not in the target state. Align children first.`

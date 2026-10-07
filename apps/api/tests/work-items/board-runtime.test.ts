@@ -23,7 +23,10 @@ describe('board-runtime', () => {
 
   it('resolves a persisted envelope as workflow runtime', () => {
     const envelope = createSeededDefaultWorkflowConfig();
-    const runtime = resolveProjectBoardRuntime(envelope, envelope.defaultWorkflowId);
+    const runtime = resolveProjectBoardRuntime(
+      envelope,
+      envelope.defaultWorkflowId
+    );
     expect(runtime.kind).toBe('workflow');
     if (runtime.kind !== 'workflow') {
       return;
@@ -60,7 +63,11 @@ describe('board-runtime', () => {
     );
     expect(edge?.id).toBe('e-New-to-ToDo');
     expect(
-      findWorkflowEdge(workflow, WorkItemStatusEnum.Done, WorkItemStatusEnum.New)
+      findWorkflowEdge(
+        workflow,
+        WorkItemStatusEnum.Done,
+        WorkItemStatusEnum.New
+      )
     ).toBeNull();
   });
 });
