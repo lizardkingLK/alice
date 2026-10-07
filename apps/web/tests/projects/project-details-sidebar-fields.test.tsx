@@ -49,6 +49,8 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+vi.mock('next/dynamic', () => import('../mocks/next-dynamic'));
+
 vi.mock(
   '@/app/projects/_components/project-details/project-summary-banner',
   () => ({
@@ -99,6 +101,15 @@ vi.mock(
   () => ({
     BoardDesignerWorkspace: () => (
       <div data-testid="board-designer-workspace">Board Designer</div>
+    ),
+  })
+);
+
+vi.mock(
+  '@/app/projects/_components/project-details/workflow-designer-workspace',
+  () => ({
+    WorkflowDesignerWorkspace: () => (
+      <div data-testid="workflow-designer-workspace">Workflow Designer</div>
     ),
   })
 );
@@ -230,7 +241,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
     expect(screen.getByTestId('board-designer-workspace')).toBeInTheDocument();
   });
 
-  it('renders the workflow designer for ?tab=workflow', () => {
+  it('renders the workflow designer for ?tab=workflow', async () => {
     searchParamsValue = new URLSearchParams('tab=workflow');
 
     render(
@@ -271,7 +282,9 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       />
     );
 
-    expect(screen.getByTestId('board-designer-workspace')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('workflow-designer-workspace')
+    ).toBeInTheDocument();
   });
 
   it('renders all navigation options including role-gated Sprints and Board', () => {

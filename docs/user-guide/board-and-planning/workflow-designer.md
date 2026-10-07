@@ -5,6 +5,11 @@ items, and optional checks before a move.
 
 **Audience:** Managers and admins
 
+**Shipping note:** The Workflow tab currently supports the **canvas** (view
+states and transitions, drag to rearrange, **Save** / **Discard** layout).
+State and transition **Settings** forms land next; board runtime still uses the
+legacy Board tab designer until later milestones.
+
 ---
 
 ## Open the designer
