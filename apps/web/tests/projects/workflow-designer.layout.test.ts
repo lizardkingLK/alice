@@ -30,8 +30,8 @@ describe('workflow-designer.layout', () => {
     expect(edges[0]?.target).toBe(workflow.graph.edges[0]?.to);
     expect(edges[0]?.markerEnd).toEqual({
       type: 'arrowclosed',
-      width: 16,
-      height: 16,
+      width: 20,
+      height: 20,
     });
   });
 
