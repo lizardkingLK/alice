@@ -7,6 +7,53 @@ import {
   paginatedListPageField,
 } from './query-preprocess.js';
 
+const sprintDateStringSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
+
+const sprintCreateFields = {
+  name: z.string().trim().min(1, 'Name is required').max(200),
+  goal: z.string().trim().max(2000).nullable().optional(),
+  startDate: sprintDateStringSchema,
+  endDate: sprintDateStringSchema,
+};
+
+export function normalizeSprintGoal(
+  goal: string | null | undefined
+): string | null {
+  return goal === undefined || goal === '' ? null : goal;
+}
+
+function withValidSprintDateRange<T extends z.ZodObject>(schema: T) {
+  return schema.refine(
+    (data) => {
+      const dates = data as { startDate: string; endDate: string };
+      return dates.endDate >= dates.startDate;
+    },
+    {
+      message: 'End date must be on or after the start date',
+      path: ['endDate'],
+    }
+  );
+}
+
+/** Sprint fields accepted while creating a project; the project id is derived. */
+export const initialSprintSchema = withValidSprintDateRange(
+  z.object(sprintCreateFields).strict()
+);
+
+export type InitialSprintInput = z.infer<typeof initialSprintSchema>;
+
+/** Standalone sprint-create contract. */
+export const createSprintBodySchema = withValidSprintDateRange(
+  z.object({
+    ...sprintCreateFields,
+    projectId: z.uuid('Project ID must be a valid UUID'),
+  })
+);
+
+export type CreateSprintBody = z.infer<typeof createSprintBodySchema>;
+
 export const sprintProjectSelect = {
   id: true,
   key: true,

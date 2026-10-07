@@ -1,5 +1,6 @@
 import type { Tables } from '@repo/types';
 import type {
+  InitialSprintInput,
   ProjectWorkflowConfig,
   WorkItemTypeRemovalStrategy,
 } from '@repo/types/api/v1';
@@ -35,7 +36,7 @@ export type GetProjectsPaginatedResponse = {
   totalPages: number;
 };
 
-export type CreateProjectInput = Omit<
+type ProjectMutationInput = Omit<
   Tables<'projects'>,
   | 'id'
   | 'created_at'
@@ -62,7 +63,11 @@ export type CreateProjectInput = Omit<
   workflow_config?: ProjectWorkflowConfig | null;
 };
 
-export type UpdateProjectInput = Partial<CreateProjectInput> & {
+export type CreateProjectInput = ProjectMutationInput & {
+  sprint?: InitialSprintInput;
+};
+
+export type UpdateProjectInput = Partial<ProjectMutationInput> & {
   workflow_config?: ProjectWorkflowConfig | null;
   typeRemovalStrategies?: WorkItemTypeRemovalStrategy[];
 };

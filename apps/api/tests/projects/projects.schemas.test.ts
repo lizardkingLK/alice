@@ -52,6 +52,65 @@ describe('projects schemas', () => {
       }
     });
 
+    it('accepts valid nested sprint configuration', () => {
+      const parsed = createProjectSchema.safeParse({
+        ...validCreateInput,
+        sprint: {
+          name: 'Sprint 1',
+          goal: 'Ship the first increment',
+          startDate: '2026-09-01',
+          endDate: '2026-09-14',
+        },
+      });
+
+      expect(parsed.success).toBe(true);
+    });
+
+    it('rejects invalid nested sprint configuration', () => {
+      const invalidSprints = [
+        {
+          name: '',
+          startDate: '2026-09-01',
+          endDate: '2026-09-14',
+        },
+        {
+          name: 'x'.repeat(201),
+          startDate: '2026-09-01',
+          endDate: '2026-09-14',
+        },
+        {
+          name: 'Sprint 1',
+          startDate: '09/01/2026',
+          endDate: '2026-09-14',
+        },
+        {
+          name: 'Sprint 1',
+          startDate: '2026-09-14',
+          endDate: '2026-09-01',
+        },
+      ];
+
+      for (const sprint of invalidSprints) {
+        expect(
+          createProjectSchema.safeParse({ ...validCreateInput, sprint }).success
+        ).toBe(false);
+      }
+    });
+
+    it('does not accept a projectId in nested sprint configuration', () => {
+      const parsed = createProjectSchema.safeParse({
+        ...validCreateInput,
+        sprint: {
+          name: 'Sprint 1',
+          projectId: '33333333-3333-4333-8333-333333333333',
+          startDate: '2026-09-01',
+          endDate: '2026-09-14',
+        },
+      });
+
+      expect(parsed.success).toBe(false);
+    });
+
     it('rejects end_date in the past', () => {
       const parsed = createProjectSchema.safeParse({
         ...validCreateInput,

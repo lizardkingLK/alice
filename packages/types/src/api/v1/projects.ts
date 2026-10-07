@@ -15,6 +15,7 @@ import {
   paginatedListPageField,
 } from './query-preprocess.js';
 import { ProjectFieldsConfigSchema } from './dynamic-fields.js';
+import { initialSprintSchema } from './sprints.js';
 
 export * from './jira-import-types.js';
 export { projectWorkflowConfigSchema };
@@ -84,6 +85,9 @@ const baseCreateProjectSchema = z.object({
 });
 
 export const createProjectSchema = baseCreateProjectSchema
+  .extend({
+    sprint: initialSprintSchema.optional(),
+  })
   .refine(
     (data) => {
       if (data.start_date && data.end_date) {

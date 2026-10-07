@@ -11,6 +11,7 @@ import {
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
+import { Textarea } from '@repo/ui/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -34,7 +35,11 @@ import {
   Maximize2,
   Minimize2,
 } from '@repo/ui/lib/icons';
-import { CANONICAL_HIERARCHY_ORDER, type WorkItemType } from '@repo/types';
+import {
+  CANONICAL_HIERARCHY_ORDER,
+  initialSprintSchema,
+  type WorkItemType,
+} from '@repo/types';
 import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import type { User } from '@/app/users/_services/users.mutations.client';
@@ -209,6 +214,29 @@ function validateStep3(
   return null;
 }
 
+function validateSprintStep(
+  createInitialSprint: boolean,
+  name: string,
+  goal: string,
+  startDate: string,
+  endDate: string
+): string | null {
+  if (!createInitialSprint) {
+    return null;
+  }
+
+  const parsed = initialSprintSchema.safeParse({
+    name,
+    goal: goal || null,
+    startDate,
+    endDate,
+  });
+
+  return parsed.success
+    ? null
+    : (parsed.error.issues[0]?.message ?? 'Invalid sprint configuration.');
+}
+
 function getStepError(
   currentStep: number,
   fields: {
@@ -228,6 +256,11 @@ function getStepError(
     enableGithub: boolean;
     githubOwner: string;
     githubRepoName: string;
+    createInitialSprint: boolean;
+    sprintName: string;
+    sprintGoal: string;
+    sprintStartDate: string;
+    sprintEndDate: string;
   }
 ): string | null {
   if (currentStep === 1) {
@@ -256,6 +289,15 @@ function getStepError(
       fields.enableGithub,
       fields.githubOwner,
       fields.githubRepoName
+    );
+  }
+  if (currentStep === 4) {
+    return validateSprintStep(
+      fields.createInitialSprint,
+      fields.sprintName,
+      fields.sprintGoal,
+      fields.sprintStartDate,
+      fields.sprintEndDate
     );
   }
   return null;
@@ -488,6 +530,104 @@ function Step1BasicDetails({
   );
 }
 
+/* eslint-disable no-unused-vars */
+type Step4SprintProps = {
+  createInitialSprint: boolean;
+  setCreateInitialSprint: (_enabled: boolean) => void;
+  sprintName: string;
+  setSprintName: (_name: string) => void;
+  sprintGoal: string;
+  setSprintGoal: (_goal: string) => void;
+  sprintStartDate: string;
+  setSprintStartDate: (_date: string) => void;
+  sprintEndDate: string;
+  setSprintEndDate: (_date: string) => void;
+};
+/* eslint-enable no-unused-vars */
+
+function Step4Sprint({
+  createInitialSprint,
+  setCreateInitialSprint,
+  sprintName,
+  setSprintName,
+  sprintGoal,
+  setSprintGoal,
+  sprintStartDate,
+  setSprintStartDate,
+  sprintEndDate,
+  setSprintEndDate,
+}: Readonly<Step4SprintProps>) {
+  return (
+    <div className="animate-in fade-in slide-in-from-left-2 space-y-4 duration-300">
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="create_initial_sprint"
+            checked={createInitialSprint}
+            onCheckedChange={(checked) =>
+              setCreateInitialSprint(checked === true)
+            }
+          />
+          <Label htmlFor="create_initial_sprint" className="font-medium">
+            Create an initial sprint
+          </Label>
+        </div>
+        <p className="text-muted-foreground text-xs">
+          Optional. Skip this step to create the project without a sprint.
+        </p>
+      </div>
+
+      {createInitialSprint ? (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="sprint_name">Sprint Name</Label>
+            <Input
+              id="sprint_name"
+              value={sprintName}
+              onChange={(event) => setSprintName(event.target.value)}
+              maxLength={200}
+              placeholder="e.g. Sprint 1"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="sprint_goal">Sprint Goal</Label>
+            <Textarea
+              id="sprint_goal"
+              value={sprintGoal}
+              onChange={(event) => setSprintGoal(event.target.value)}
+              maxLength={2000}
+              placeholder="What should this sprint achieve?"
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="sprint_start_date">Sprint Start Date</Label>
+              <Input
+                id="sprint_start_date"
+                type="date"
+                value={sprintStartDate}
+                onChange={(event) => setSprintStartDate(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sprint_end_date">Sprint End Date</Label>
+              <Input
+                id="sprint_end_date"
+                type="date"
+                value={sprintEndDate}
+                onChange={(event) => setSprintEndDate(event.target.value)}
+                min={sprintStartDate || undefined}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function ProjectFormWindowActions({
   isMaximized,
   onToggleMaximize,
@@ -543,14 +683,20 @@ function useBodyScrollLock(locked: boolean) {
   }, [locked]);
 }
 
-function ProjectFormStepper({ step }: Readonly<{ step: number }>) {
+function ProjectFormStepper({
+  step,
+  isEditMode,
+}: Readonly<{ step: number; isEditMode: boolean }>) {
+  const steps = [
+    { number: 1, label: 'Basic Info' },
+    { number: 2, label: 'Imports' },
+    { number: 3, label: 'Source Control' },
+    ...(!isEditMode ? [{ number: 4, label: 'Sprint' }] : []),
+  ];
+
   return (
     <div className="mt-4 flex items-center justify-between px-1">
-      {[
-        { number: 1, label: 'Basic Info' },
-        { number: 2, label: 'Imports' },
-        { number: 3, label: 'Source Control' },
-      ].map((s, idx) => {
+      {steps.map((s, idx) => {
         const isActive = step === s.number;
         const isCompleted = step > s.number;
         let stepIconClass = 'bg-muted text-muted-foreground';
@@ -590,7 +736,7 @@ function ProjectFormStepper({ step }: Readonly<{ step: number }>) {
                 {s.label}
               </span>
             </div>
-            {idx < 2 && (
+            {idx < steps.length - 1 && (
               <div
                 className={cn(
                   'mx-2 h-0.5 flex-1 transition-colors duration-500',
@@ -622,6 +768,7 @@ function getSubmitButtonContent(
 
 function ProjectFormNavButtons({
   step,
+  finalStep,
   isBusy,
   isMaximized,
   onClose,
@@ -629,6 +776,7 @@ function ProjectFormNavButtons({
   submitLabel,
 }: Readonly<{
   step: number;
+  finalStep: number;
   isBusy: boolean;
   isMaximized: boolean;
   onClose?: () => void;
@@ -676,11 +824,11 @@ function ProjectFormNavButtons({
       ) : null}
       {/*
         Always type="submit" (label Next vs Create). Swapping a type="button"
-        Next for a type="submit" Create under the same click submits the form
-        on step 3 immediately and skips Source Control.
+        Next for a type="submit" final action under the same click can submit
+        immediately and skip the newly rendered step.
       */}
       <Button type="submit" disabled={isBusy} className={primaryClass}>
-        {step < 3 ? 'Next' : submitLabel}
+        {step < finalStep ? 'Next' : submitLabel}
       </Button>
     </div>
   );
@@ -691,11 +839,13 @@ function ProjectFormStepBody({
   step1,
   step2,
   step3,
+  step4,
 }: Readonly<{
   step: number;
   step1: ComponentProps<typeof Step1BasicDetails>;
   step2: Step2ImportsProps;
   step3: Step3SourceControlProps;
+  step4: Step4SprintProps;
 }>) {
   if (step === 1) {
     return <Step1BasicDetails {...step1} />;
@@ -703,7 +853,10 @@ function ProjectFormStepBody({
   if (step === 2) {
     return <Step2Imports {...step2} />;
   }
-  return <Step3SourceControl {...step3} />;
+  if (step === 3) {
+    return <Step3SourceControl {...step3} />;
+  }
+  return <Step4Sprint {...step4} />;
 }
 
 export function ProjectForm({
@@ -765,6 +918,15 @@ export function ProjectForm({
   const [githubRepoName, setGithubRepoName] = useState('');
   const [githubToken, setGithubToken] = useState('');
 
+  // Initial Sprint States (create mode only)
+  const [createInitialSprint, setCreateInitialSprint] = useState(false);
+  const [sprintName, setSprintName] = useState('');
+  const [sprintGoal, setSprintGoal] = useState('');
+  const [sprintStartDate, setSprintStartDate] = useState('');
+  const [sprintEndDate, setSprintEndDate] = useState('');
+
+  const finalStep = isEditMode ? 3 : 4;
+
   const validateStep = (currentStep: number): boolean => {
     setMessage(null);
     setIsError(false);
@@ -789,6 +951,11 @@ export function ProjectForm({
       enableGithub,
       githubOwner,
       githubRepoName,
+      createInitialSprint,
+      sprintName,
+      sprintGoal,
+      sprintStartDate,
+      sprintEndDate,
     });
     if (errorMsg) {
       setMessage(errorMsg);
@@ -929,13 +1096,34 @@ export function ProjectForm({
     return `Failed to ${isEdit ? 'update' : 'create'} project.`;
   };
 
+  const resolveInitialSprintInput = (): Pick<CreateProjectInput, 'sprint'> => {
+    if (projectToEdit || !createInitialSprint) {
+      return {};
+    }
+
+    return {
+      sprint: {
+        name: sprintName.trim(),
+        goal: sprintGoal.trim() || null,
+        startDate: sprintStartDate,
+        endDate: sprintEndDate,
+      },
+    };
+  };
+
+  const validateFinalStep = (): boolean => isEditMode || validateStep(step);
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (step < 3) {
+    if (step < finalStep) {
       if (validateStep(step)) {
         setStep((s) => s + 1);
       }
+      return;
+    }
+
+    if (!validateFinalStep()) {
       return;
     }
 
@@ -982,6 +1170,7 @@ export function ProjectForm({
           ? formatGithubRepoPath(githubOwner, githubRepoName)
           : null,
         github_token: resolveGithubToken(),
+        ...resolveInitialSprintInput(),
       };
 
       if (projectToEdit) {
@@ -1043,7 +1232,7 @@ export function ProjectForm({
             : 'Register a new project workspace to organize tasks and sprints.'}
         </CardDescription>
 
-        <ProjectFormStepper step={step} />
+        <ProjectFormStepper step={step} isEditMode={isEditMode} />
       </CardHeader>
       <CardContent
         className={cn(
@@ -1107,6 +1296,18 @@ export function ProjectForm({
                 githubToken,
                 setGithubToken,
               }}
+              step4={{
+                createInitialSprint,
+                setCreateInitialSprint,
+                sprintName,
+                setSprintName,
+                sprintGoal,
+                setSprintGoal,
+                sprintStartDate,
+                setSprintStartDate,
+                sprintEndDate,
+                setSprintEndDate,
+              }}
             />
           </div>
 
@@ -1120,6 +1321,7 @@ export function ProjectForm({
             <FormAlertMessage message={message} isError={isError} />
             <ProjectFormNavButtons
               step={step}
+              finalStep={finalStep}
               isBusy={isSubmitting || isSuccess}
               isMaximized={isMaximized}
               onClose={onClose}

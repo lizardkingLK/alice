@@ -30,6 +30,35 @@ describe('createProjectsService frontend tests', () => {
     expect(result).toEqual(project);
   });
 
+  it('includes initial sprint data in the project POST body', async () => {
+    const project = projectFactory.build();
+    const apiFetch = vi.fn().mockResolvedValue({ project });
+    const service = createProjectsService(apiFetch);
+    const input: CreateProjectInput = {
+      name: 'Project Alpha',
+      key: 'PAL',
+      description: null,
+      owner_id: 'user-1',
+      status: 'active',
+      start_date: null,
+      end_date: null,
+      attributes_config: null,
+      sprint: {
+        name: 'Sprint 1',
+        goal: null,
+        startDate: '2026-09-01',
+        endDate: '2026-09-14',
+      },
+    };
+
+    await service.createProject(input);
+
+    expect(apiFetch).toHaveBeenCalledWith('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  });
+
   it('updates project via PUT', async () => {
     const project = projectFactory.build({ name: 'Updated name' });
     const apiFetch = vi.fn().mockResolvedValue({ project });
