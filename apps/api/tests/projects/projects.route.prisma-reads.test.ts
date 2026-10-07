@@ -27,10 +27,12 @@ const {
   listProjectsPaginatedMock,
   getProjectDetailMock,
   listProjectMembersPrismaMock,
+  createProjectMock,
 } = vi.hoisted(() => ({
   listProjectsPaginatedMock: vi.fn(),
   getProjectDetailMock: vi.fn(),
   listProjectMembersPrismaMock: vi.fn(),
+  createProjectMock: vi.fn(),
 }));
 
 vi.mock('../../src/middlewares/auth', () => ({
@@ -48,6 +50,7 @@ const projectsService = {
   listProjectsPaginated: listProjectsPaginatedMock,
   getProjectDetail: getProjectDetailMock,
   listProjectMembersPrisma: listProjectMembersPrismaMock,
+  createProject: createProjectMock,
 } as unknown as ProjectsService;
 
 const workItemService = {
@@ -61,6 +64,7 @@ const jiraService = {
 async function withApp(run: (baseUrl: string) => Promise<void>): Promise<void> {
   const app = express();
   app.disable('x-powered-by');
+  app.use(express.json());
   app.use(
     '/api/projects',
     createProjectsRouter({ projectsService, workItemService, jiraService })
@@ -100,6 +104,16 @@ const mockProjectDetail = {
     name: 'Owner',
     email: 'owner@example.com',
   },
+};
+
+const validCreateBody = {
+  name: 'Alice Project',
+  key: 'ALICE',
+  description: 'A description',
+  owner_id: '11111111-1111-4111-8111-111111111111',
+  start_date: '2099-09-01',
+  end_date: '2099-09-30',
+  status: 'active',
 };
 
 describe('projects unused Prisma GET routes', () => {
@@ -201,6 +215,67 @@ describe('projects unused Prisma GET routes', () => {
         '33333333-3333-4333-8333-333333333333',
         '11111111-1111-4111-8111-111111111111'
       );
+    });
+  });
+
+  it('passes nested sprint configuration to project creation', async () => {
+    createProjectMock.mockResolvedValue(mockProjectDetail);
+    const sprint = {
+      name: 'Sprint Alpha',
+      goal: 'Deliver the first increment',
+      startDate: '2099-09-01',
+      endDate: '2099-09-14',
+    };
+
+    await withApp(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...validCreateBody, sprint }),
+      });
+
+      expect(response.status).toBe(201);
+      expect(createProjectMock).toHaveBeenCalledWith(
+        '11111111-1111-4111-8111-111111111111',
+        expect.objectContaining({ sprint })
+      );
+    });
+  });
+
+  it('keeps project creation without sprint backward compatible', async () => {
+    createProjectMock.mockResolvedValue(mockProjectDetail);
+
+    await withApp(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(validCreateBody),
+      });
+
+      expect(response.status).toBe(201);
+      const [actorId, input] = createProjectMock.mock.calls[0]!;
+      expect(actorId).toBe('11111111-1111-4111-8111-111111111111');
+      expect(input).not.toHaveProperty('sprint');
+    });
+  });
+
+  it('rejects invalid nested sprint configuration before the service', async () => {
+    await withApp(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...validCreateBody,
+          sprint: {
+            name: 'Sprint Alpha',
+            startDate: '2099-09-14',
+            endDate: '2099-09-01',
+          },
+        }),
+      });
+
+      expect(response.status).toBe(400);
+      expect(createProjectMock).not.toHaveBeenCalled();
     });
   });
 });

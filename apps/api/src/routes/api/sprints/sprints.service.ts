@@ -10,6 +10,7 @@ import {
   type SprintDetailRow,
   type SprintPrismaListFilters,
   paginationMeta,
+  normalizeSprintGoal,
 } from '@repo/types';
 import type { CreateSprintBody, UpdateSprintBody } from './sprints.schemas';
 import type {
@@ -51,8 +52,7 @@ export class SprintsService {
     input: CreateSprintBody
   ): Promise<SprintResponse> {
     await requireManagerOrAdmin(userId);
-    const goal =
-      input.goal === undefined || input.goal === '' ? null : input.goal;
+    const goal = normalizeSprintGoal(input.goal);
 
     const duplicate = await this.sprints.findByNameInProject(
       input.projectId,
@@ -144,8 +144,7 @@ export class SprintsService {
     input: UpdateSprintBody
   ): Promise<SprintResponse> {
     await requireManagerOrAdmin(userId);
-    const goal =
-      input.goal === undefined || input.goal === '' ? null : input.goal;
+    const goal = normalizeSprintGoal(input.goal);
 
     const currentSprint = await this.sprints.findById(sprintId);
     if (!currentSprint) {

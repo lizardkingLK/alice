@@ -525,6 +525,7 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
           github_token: parsed.data.github_token ?? null,
           attributes_config: parsed.data.attributes_config ?? null,
           workflow_config: parsed.data.workflow_config ?? null,
+          ...(parsed.data.sprint ? { sprint: parsed.data.sprint } : {}),
         });
         res.status(201).json({ project: withoutIntegrationSecrets(project) });
       } catch (error) {

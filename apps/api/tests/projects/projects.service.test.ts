@@ -188,6 +188,26 @@ describe('ProjectsService backend tests', () => {
       expect(result).toEqual(mockProject);
     });
 
+    it('preserves initial sprint data during project preparation', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      createMock.mockResolvedValue(mockProject);
+      const sprint = {
+        name: 'Sprint 1',
+        goal: 'Initial delivery',
+        startDate: '2026-09-01',
+        endDate: '2026-09-14',
+      };
+      const input = createProjectInput({ sprint });
+
+      await service.createProject('user-admin', input);
+
+      expect(createMock).toHaveBeenCalledWith(
+        expect.objectContaining({ sprint }),
+        'user-admin'
+      );
+    });
+
     it('rejects creation for managers', async () => {
       mockActorRole('manager');
 

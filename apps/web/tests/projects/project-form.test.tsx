@@ -195,6 +195,15 @@ async function fillStep1Basics() {
 
 import { clearGithubCache } from '@/app/projects/_services/github-connection-cache';
 
+async function advanceCreateFormToSprintStep() {
+  fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+  await screen.findByText('Import sources');
+  fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+  await screen.findByText('Source control');
+  fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+  await screen.findByRole('checkbox', { name: /Create an initial sprint/i });
+}
+
 describe('ProjectForm Component', () => {
   beforeEach(() => {
     clearGithubCache();
@@ -268,10 +277,7 @@ describe('ProjectForm Component', () => {
       target: { value: endDateStr },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-    await screen.findByText('Import sources');
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-    await screen.findByText('Source control');
+    await advanceCreateFormToSprintStep();
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -314,6 +320,77 @@ describe('ProjectForm Component', () => {
     ).toBeLessThan(onSuccess.mock.invocationCallOrder[0]!);
   });
 
+  it('keeps sprint state local and includes it in the project create payload', async () => {
+    vi.mocked(createProject).mockResolvedValue(mockProject);
+    render(<ProjectForm users={mockUsers} />);
+
+    await fillStep1Basics();
+    await advanceCreateFormToSprintStep();
+
+    expect(createProject).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: /Create an initial sprint/i })
+    );
+    fireEvent.change(screen.getByLabelText(/Sprint Name/i), {
+      target: { value: 'Sprint 1' },
+    });
+    fireEvent.change(screen.getByLabelText(/Sprint Goal/i), {
+      target: { value: 'Initial delivery' },
+    });
+    fireEvent.change(screen.getByLabelText(/Sprint Start Date/i), {
+      target: { value: '2099-09-01' },
+    });
+    fireEvent.change(screen.getByLabelText(/Sprint End Date/i), {
+      target: { value: '2099-09-14' },
+    });
+
+    expect(createProject).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
+
+    await waitFor(() => {
+      expect(createProject).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sprint: {
+            name: 'Sprint 1',
+            goal: 'Initial delivery',
+            startDate: '2099-09-01',
+            endDate: '2099-09-14',
+          },
+        })
+      );
+    });
+    expect(invalidateProjectDropdownCache).toHaveBeenCalledOnce();
+    expect(apiFetch).not.toHaveBeenCalledWith(
+      '/api/sprints',
+      expect.anything()
+    );
+  });
+
+  it('blocks project creation when enabled sprint data is invalid', async () => {
+    render(<ProjectForm users={mockUsers} />);
+
+    await fillStep1Basics();
+    await advanceCreateFormToSprintStep();
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: /Create an initial sprint/i })
+    );
+    fireEvent.change(screen.getByLabelText(/Sprint Name/i), {
+      target: { value: 'Sprint 1' },
+    });
+    fireEvent.change(screen.getByLabelText(/Sprint Start Date/i), {
+      target: { value: '2099-09-14' },
+    });
+    fireEvent.change(screen.getByLabelText(/Sprint End Date/i), {
+      target: { value: '2099-09-01' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
+
+    expect(
+      await screen.findByText('End date must be on or after the start date')
+    ).toBeInTheDocument();
+    expect(createProject).not.toHaveBeenCalled();
+  });
+
   it('keeps creation successful when cache invalidation fails', async () => {
     const onSuccess = vi.fn();
     const onProjectUpdated = vi.fn();
@@ -334,8 +411,7 @@ describe('ProjectForm Component', () => {
       );
 
       await fillStep1Basics();
-      fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-      fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+      await advanceCreateFormToSprintStep();
       fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
       expect(
@@ -372,8 +448,7 @@ describe('ProjectForm Component', () => {
     );
 
     await fillStep1Basics();
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await advanceCreateFormToSprintStep();
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     expect(
@@ -416,6 +491,9 @@ describe('ProjectForm Component', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    expect(
+      screen.queryByRole('checkbox', { name: /Create an initial sprint/i })
+    ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Save Changes/i }));
 
     await waitFor(() => {
@@ -515,9 +593,7 @@ describe('ProjectForm Component', () => {
     expect(
       await screen.findByRole('checkbox', { name: /^GitHub$/i })
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /Create Project/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Next/i })).toBeInTheDocument();
     expect(createProject).not.toHaveBeenCalled();
   });
 
@@ -546,6 +622,9 @@ describe('ProjectForm Component', () => {
     fireEvent.change(projectSelect, { target: { value: 'TEST' } });
 
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await screen.findByRole('checkbox', { name: /^GitHub$/i });
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await screen.findByRole('checkbox', { name: /Create an initial sprint/i });
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -586,6 +665,8 @@ describe('ProjectForm Component', () => {
       target: { value: 'https://github.com/facebook/react' },
     });
 
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await screen.findByRole('checkbox', { name: /Create an initial sprint/i });
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -657,6 +738,8 @@ describe('ProjectForm Component', () => {
       target: { value: 'https://github.com/facebook/react.git' },
     });
 
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await screen.findByRole('checkbox', { name: /Create an initial sprint/i });
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {

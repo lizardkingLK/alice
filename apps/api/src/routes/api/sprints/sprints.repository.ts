@@ -15,7 +15,6 @@ import { prisma } from '../../../lib/prisma';
 import { env } from '../../../config/env';
 import { removeStorageObjects } from '../../../lib/file-helpers';
 import {
-  prismaAuditCreateWithoutStatus,
   prismaAuditUpdate,
   prismaLockTimestamp,
   prismaOptionalDate,
@@ -29,17 +28,11 @@ import {
   sprintListPageSlice,
   type SprintPaginatedList,
 } from './sprints.prisma-query';
+import { insertSprint, type CreateSprintRecord } from './sprints.prisma';
+
+export { insertSprint, type CreateSprintRecord } from './sprints.prisma';
 
 export type SprintRow = Tables<'sprints'>;
-
-export type CreateSprintRecord = {
-  name: string;
-  goal: string | null;
-  startDate: string;
-  endDate: string;
-  createdBy: string;
-  projectId: string;
-};
 
 export class SprintsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
@@ -67,16 +60,7 @@ export class SprintsRepository {
   }
 
   async create(input: CreateSprintRecord): Promise<SprintRowWithProject> {
-    const created = await prisma.sprints.create({
-      data: {
-        name: input.name,
-        goal: input.goal,
-        start_date: prismaOptionalDate(input.startDate)!,
-        end_date: prismaOptionalDate(input.endDate)!,
-        project_id: input.projectId,
-        ...prismaAuditCreateWithoutStatus(input.createdBy),
-      },
-    });
+    const created = await insertSprint(prisma, input);
 
     const row = await this.findById(created.id);
     if (!row) {

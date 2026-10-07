@@ -26,6 +26,7 @@ import {
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import { listAccessibleProjectIds } from '../../../lib/project-access';
+import { insertSprint } from '../sprints/sprints.prisma';
 import type {
   ProjectMemberWithUser,
   ProjectRow,
@@ -609,6 +610,14 @@ export class ProjectsRepository {
           ...prismaAuditCreate(actorId),
         })),
       });
+
+      if (data.sprint) {
+        await insertSprint(tx, {
+          ...data.sprint,
+          projectId: project.id,
+          createdBy: actorId,
+        });
+      }
 
       return project;
     });

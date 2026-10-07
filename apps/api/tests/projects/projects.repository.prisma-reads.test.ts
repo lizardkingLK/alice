@@ -16,6 +16,10 @@ const {
   groupByMock,
   updateManyMock,
   memberFindManyMock,
+  transactionMock,
+  projectCreateMock,
+  memberCreateManyMock,
+  sprintCreateMock,
 } = vi.hoisted(() => ({
   findManyMock: vi.fn(),
   findUniqueMock: vi.fn(),
@@ -23,26 +27,39 @@ const {
   groupByMock: vi.fn(),
   updateManyMock: vi.fn(),
   memberFindManyMock: vi.fn(),
+  transactionMock: vi.fn(),
+  projectCreateMock: vi.fn(),
+  memberCreateManyMock: vi.fn(),
+  sprintCreateMock: vi.fn(),
 }));
 
 vi.mock('../../src/lib/prisma', () => ({
   prisma: {
+    $transaction: transactionMock,
     projects: {
       findMany: findManyMock,
       findUnique: findUniqueMock,
       count: countMock,
       updateMany: updateManyMock,
+      create: projectCreateMock,
     },
     teams: {
       groupBy: groupByMock,
     },
     project_members: {
       findMany: memberFindManyMock,
+      createMany: memberCreateManyMock,
+    },
+    sprints: {
+      create: sprintCreateMock,
     },
   },
 }));
 
-import { ProjectsRepository } from '../../src/routes/api/projects/projects.repository';
+import {
+  ProjectsRepository,
+  type CreateProjectInput,
+} from '../../src/routes/api/projects/projects.repository';
 
 const db = {
   from: vi.fn(() => ({
@@ -78,6 +95,20 @@ const mockProjectRow = {
 describe('ProjectsRepository Prisma reads', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    transactionMock.mockImplementation(
+      async (
+        callback: (tx: {
+          projects: { create: typeof projectCreateMock };
+          project_members: { createMany: typeof memberCreateManyMock };
+          sprints: { create: typeof sprintCreateMock };
+        }) => Promise<unknown>
+      ) =>
+        callback({
+          projects: { create: projectCreateMock },
+          project_members: { createMany: memberCreateManyMock },
+          sprints: { create: sprintCreateMock },
+        })
+    );
   });
 
   it('lists with status filter, search, page slice, and includes team_count', async () => {
@@ -234,5 +265,103 @@ describe('ProjectsRepository Prisma reads', () => {
         data: expect.objectContaining({ workflow_config: Prisma.DbNull }),
       })
     );
+  });
+
+  const createProjectInput = (
+    overrides: Partial<CreateProjectInput> = {}
+  ): CreateProjectInput => ({
+    name: 'Alice Project',
+    key: 'ALICE',
+    description: null,
+    status: 'active',
+    start_date: null,
+    end_date: null,
+    owner_id: 'owner-1',
+    jira_project_key: null,
+    jira_connection_id: null,
+    github_repo: null,
+    github_token: null,
+    attributes_config: null,
+    workflow_config: null,
+    ...overrides,
+  });
+
+  it('creates project, memberships, and initial sprint in one transaction', async () => {
+    projectCreateMock.mockResolvedValue({ id: 'project-1' });
+    memberCreateManyMock.mockResolvedValue({ count: 2 });
+    sprintCreateMock.mockResolvedValue({ id: 'sprint-1' });
+
+    await repository.create(
+      createProjectInput({
+        sprint: {
+          name: 'Sprint 1',
+          goal: '',
+          startDate: '2099-09-01',
+          endDate: '2099-09-14',
+        },
+      }),
+      'actor-1'
+    );
+
+    expect(projectCreateMock).toHaveBeenCalledOnce();
+    expect(memberCreateManyMock).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          project_id: 'project-1',
+          user_id: 'owner-1',
+        }),
+        expect.objectContaining({
+          project_id: 'project-1',
+          user_id: 'actor-1',
+        }),
+      ],
+    });
+    expect(sprintCreateMock).toHaveBeenCalledWith({
+      data: {
+        name: 'Sprint 1',
+        goal: null,
+        start_date: new Date('2099-09-01'),
+        end_date: new Date('2099-09-14'),
+        project_id: 'project-1',
+        created_by: 'actor-1',
+        updated_by: 'actor-1',
+      },
+    });
+    expect(projectCreateMock.mock.invocationCallOrder[0]).toBeLessThan(
+      memberCreateManyMock.mock.invocationCallOrder[0]!
+    );
+    expect(memberCreateManyMock.mock.invocationCallOrder[0]).toBeLessThan(
+      sprintCreateMock.mock.invocationCallOrder[0]!
+    );
+  });
+
+  it('does not insert a sprint when project creation omits it', async () => {
+    projectCreateMock.mockResolvedValue({ id: 'project-1' });
+    memberCreateManyMock.mockResolvedValue({ count: 2 });
+
+    await repository.create(createProjectInput(), 'actor-1');
+
+    expect(sprintCreateMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects the transaction when initial sprint insertion fails', async () => {
+    const sprintError = new Error('Sprint insert failed');
+    projectCreateMock.mockResolvedValue({ id: 'project-1' });
+    memberCreateManyMock.mockResolvedValue({ count: 2 });
+    sprintCreateMock.mockRejectedValue(sprintError);
+
+    await expect(
+      repository.create(
+        createProjectInput({
+          sprint: {
+            name: 'Sprint 1',
+            goal: null,
+            startDate: '2099-09-01',
+            endDate: '2099-09-14',
+          },
+        }),
+        'actor-1'
+      )
+    ).rejects.toBe(sprintError);
   });
 });
