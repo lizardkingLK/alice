@@ -571,11 +571,7 @@ export function ProjectDetailsWorkspace({
 
         {activeTab === 'workflow' && canEditProject && (
           <div className="p-6">
-            <WorkflowDesignerWorkspace
-              project={project}
-              canEdit={canEditProject}
-              currentUserId={currentUserId}
-            />
+            <WorkflowDesignerWorkspace {...boardDesignerSharedProps} />
           </div>
         )}
 

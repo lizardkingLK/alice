@@ -7,6 +7,8 @@ import {
   resolveWorkflowConfig,
   type WorkflowConfigEnvelope,
   type WorkflowDocument,
+  type WorkflowEdge,
+  type WorkflowStateNode,
 } from '@repo/types/api/v1';
 import { Button } from '@repo/ui/components/ui/button';
 import {
@@ -33,10 +35,18 @@ import type { Project } from '@/app/projects/_services/projects.mutations.client
 import { putProjectWorkflowConfig } from '@/app/projects/_services/projects.workflow-config.client';
 import { WorkflowStateFlowNode } from '@/app/projects/_components/project-details/workflow-state-flow-node';
 import {
+  WorkflowDesignerSettings,
+  type WorkflowDesignerSelection,
+} from '@/app/projects/_components/project-details/workflow-designer-settings';
+import type { TransitionRuleTeamOption } from '@/app/projects/_components/project-details/transition-rule-permissions';
+import type { MemberCheckboxOption } from '@/components/member-checkbox-list';
+import {
   WORKFLOW_STATE_NODE_TYPE,
   applyNodePositionsToDocument,
   cloneWorkflowEnvelope,
   envelopesEqualForDesigner,
+  patchEdgeInDocument,
+  patchStateInDocument,
   replaceWorkflowInEnvelope,
   workflowDocumentToFlowElements,
 } from '@/app/projects/_helpers/workflow-designer.layout';
@@ -45,6 +55,8 @@ type WorkflowDesignerWorkspaceProps = {
   readonly project: Project;
   readonly canEdit: boolean;
   readonly currentUserId?: string | null;
+  readonly teams?: readonly TransitionRuleTeamOption[];
+  readonly members?: readonly MemberCheckboxOption[];
 };
 
 const nodeTypes = {
@@ -64,15 +76,19 @@ function resolveInitialEnvelope(workflowConfig: Project['workflow_config']): {
 
 // eslint-disable-next-line no-unused-vars -- callback parameter name documents the payload
 type WorkflowNodesSettledHandler = (settledNodes: Node[]) => void;
+// eslint-disable-next-line no-unused-vars -- callback parameter name documents the payload
+type WorkflowSelectionHandler = (selection: WorkflowDesignerSelection) => void;
 
 function WorkflowDesignerCanvas({
   activeWorkflow,
   canEdit,
   onNodesSettled,
+  onSelectionChange,
 }: {
   readonly activeWorkflow: WorkflowDocument;
   readonly canEdit: boolean;
   readonly onNodesSettled: WorkflowNodesSettledHandler;
+  readonly onSelectionChange: WorkflowSelectionHandler;
 }) {
   const initial = workflowDocumentToFlowElements(activeWorkflow);
   const [nodes, , onNodesChange] = useNodesState(initial.nodes as Node[]);
@@ -94,10 +110,19 @@ function WorkflowDesignerCanvas({
       onNodesChange={canEdit ? onNodesChange : undefined}
       onEdgesChange={onEdgesChange}
       onNodeDragStop={canEdit ? handleNodeDragStop : undefined}
+      onNodeClick={(_event, node) => {
+        onSelectionChange({ kind: 'state', stateId: node.id });
+      }}
+      onEdgeClick={(_event, edge) => {
+        onSelectionChange({ kind: 'edge', edgeId: edge.id });
+      }}
+      onPaneClick={() => {
+        onSelectionChange(null);
+      }}
       nodesDraggable={canEdit}
       nodesConnectable={false}
-      elementsSelectable={canEdit}
-      edgesFocusable={false}
+      elementsSelectable
+      edgesFocusable
       panOnScroll
       fitView
       showMiniMap
@@ -109,6 +134,8 @@ export function WorkflowDesignerWorkspace({
   project,
   canEdit,
   currentUserId = null,
+  teams = [],
+  members = [],
 }: WorkflowDesignerWorkspaceProps) {
   const router = useRouter();
   const { handleMutationError } = useOptimisticLock();
@@ -130,6 +157,7 @@ export function WorkflowDesignerWorkspace({
   const [activeWorkflowId, setActiveWorkflowId] = useState(
     () => initialResolved.envelope.defaultWorkflowId
   );
+  const [selection, setSelection] = useState<WorkflowDesignerSelection>(null);
   const [canvasEpoch, setCanvasEpoch] = useState(0);
   const [updatedAt, setUpdatedAt] = useState(project.updated_at);
   const [isSaving, setIsSaving] = useState(false);
@@ -146,6 +174,7 @@ export function WorkflowDesignerWorkspace({
         ? current
         : next.envelope.defaultWorkflowId
     );
+    setSelection(null);
     setUpdatedAt(project.updated_at);
     setCanvasEpoch((epoch) => epoch + 1);
   }, [project.workflow_config, project.updated_at]);
@@ -161,25 +190,56 @@ export function WorkflowDesignerWorkspace({
   // Fallback envelope is not persisted yet — allow Save even before layout edits.
   const dirty = usedFallback || !envelopesEqualForDesigner(draft, baseline);
 
-  const handleNodesSettled = useCallback(
-    (nextNodes: Node[]) => {
+  const updateActiveWorkflow = useCallback(
+    // eslint-disable-next-line no-unused-vars -- callback parameter name documents the payload
+    (updater: (workflow: WorkflowDocument) => WorkflowDocument) => {
       setDraft((current) => {
         const currentWorkflow =
           findWorkflowById(current, activeWorkflowId) ??
           findWorkflowById(current, current.defaultWorkflowId) ??
           current.workflows[0]!;
-        const nextWorkflow = applyNodePositionsToDocument(
-          currentWorkflow,
-          nextNodes
-        );
-        return replaceWorkflowInEnvelope(current, nextWorkflow);
+        return replaceWorkflowInEnvelope(current, updater(currentWorkflow));
       });
     },
     [activeWorkflowId]
   );
 
+  const handleNodesSettled = useCallback(
+    (nextNodes: Node[]) => {
+      updateActiveWorkflow((workflow) =>
+        applyNodePositionsToDocument(workflow, nextNodes)
+      );
+    },
+    [updateActiveWorkflow]
+  );
+
+  const handleStateChange = useCallback(
+    (
+      stateId: string,
+      patch: Partial<Pick<WorkflowStateNode, 'name' | 'category'>>
+    ) => {
+      updateActiveWorkflow((workflow) =>
+        patchStateInDocument(workflow, stateId, patch)
+      );
+    },
+    [updateActiveWorkflow]
+  );
+
+  const handleEdgeChange = useCallback(
+    (
+      edgeId: string,
+      patch: Partial<Pick<WorkflowEdge, 'requireChildren' | 'allowAnyOf'>>
+    ) => {
+      updateActiveWorkflow((workflow) =>
+        patchEdgeInDocument(workflow, edgeId, patch)
+      );
+    },
+    [updateActiveWorkflow]
+  );
+
   const discardChanges = () => {
     setDraft(cloneWorkflowEnvelope(baseline));
+    setSelection(null);
     setMessage(null);
     setMessageIsError(false);
     setCanvasEpoch((epoch) => epoch + 1);
@@ -210,9 +270,9 @@ export function WorkflowDesignerWorkspace({
       setUsedFallback(result.usedFallback);
       setUpdatedAt(result.updatedAt);
       setCanvasEpoch((epoch) => epoch + 1);
-      setMessage('Workflow layout saved.');
+      setMessage('Workflow configuration saved.');
       setMessageIsError(false);
-      toast.success('Workflow layout saved.');
+      toast.success('Workflow configuration saved.');
       router.refresh();
       return true;
     } catch (error) {
@@ -252,9 +312,9 @@ export function WorkflowDesignerWorkspace({
             </h2>
           </div>
           <p className="text-muted-foreground mt-1 max-w-3xl text-sm leading-relaxed">
-            Arrange states on the canvas. Layout is saved separately from
-            transition rules — Settings and rule editors arrive in the next
-            slices.
+            Arrange states on the canvas and edit the selected state or
+            transition in Settings. Save persists layout and field changes
+            together.
           </p>
         </div>
         {canEdit ? (
@@ -315,6 +375,7 @@ export function WorkflowDesignerWorkspace({
               return;
             }
             setActiveWorkflowId(value);
+            setSelection(null);
             setCanvasEpoch((epoch) => epoch + 1);
           }}
         >
@@ -336,7 +397,7 @@ export function WorkflowDesignerWorkspace({
         </span>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="h-[480px] min-h-[320px]">
           <ReactFlowProvider>
             <WorkflowDesignerCanvas
@@ -344,30 +405,19 @@ export function WorkflowDesignerWorkspace({
               activeWorkflow={activeWorkflow}
               canEdit={canEdit}
               onNodesSettled={handleNodesSettled}
+              onSelectionChange={setSelection}
             />
           </ReactFlowProvider>
         </div>
-        <aside className="border-border bg-muted/20 rounded-lg border p-4">
-          <h3 className="text-foreground text-sm font-semibold">Settings</h3>
-          <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-            Select a state or transition to edit its options. The Settings
-            sidebar lands in Step 3b.
-          </p>
-          <dl className="text-muted-foreground mt-4 space-y-2 text-xs">
-            <div>
-              <dt className="text-foreground font-medium">Active workflow</dt>
-              <dd>{activeWorkflow.title}</dd>
-            </div>
-            <div>
-              <dt className="text-foreground font-medium">Type bindings</dt>
-              <dd>
-                {activeWorkflow.typeBindings.length > 0
-                  ? activeWorkflow.typeBindings.join(', ')
-                  : 'None'}
-              </dd>
-            </div>
-          </dl>
-        </aside>
+        <WorkflowDesignerSettings
+          selection={selection}
+          workflow={activeWorkflow}
+          canEdit={canEdit}
+          teams={teams}
+          members={members}
+          onStateChange={handleStateChange}
+          onEdgeChange={handleEdgeChange}
+        />
       </div>
     </div>
   );

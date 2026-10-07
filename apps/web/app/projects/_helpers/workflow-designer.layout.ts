@@ -2,6 +2,7 @@ import type { WorkflowStateCategory } from '@repo/types';
 import type {
   WorkflowConfigEnvelope,
   WorkflowDocument,
+  WorkflowEdge,
   WorkflowStateNode,
 } from '@repo/types/api/v1';
 
@@ -135,6 +136,40 @@ export function replaceWorkflowInEnvelope(
     workflows: envelope.workflows.map((candidate) =>
       candidate.id === workflow.id ? workflow : candidate
     ),
+  };
+}
+
+export function patchStateInDocument(
+  document: WorkflowDocument,
+  stateId: string,
+  patch: Partial<Pick<WorkflowStateNode, 'name' | 'category' | 'lockRecord' | 'terminal' | 'requiresEscalation'>>
+): WorkflowDocument {
+  return {
+    ...document,
+    graph: {
+      ...document.graph,
+      states: document.graph.states.map((state) =>
+        state.id === stateId ? { ...state, ...patch } : state
+      ),
+    },
+  };
+}
+
+export function patchEdgeInDocument(
+  document: WorkflowDocument,
+  edgeId: string,
+  patch: Partial<
+    Pick<WorkflowEdge, 'requireChildren' | 'allowAnyOf' | 'resolutionPresetId'>
+  >
+): WorkflowDocument {
+  return {
+    ...document,
+    graph: {
+      ...document.graph,
+      edges: document.graph.edges.map((edge) =>
+        edge.id === edgeId ? { ...edge, ...patch } : edge
+      ),
+    },
   };
 }
 
