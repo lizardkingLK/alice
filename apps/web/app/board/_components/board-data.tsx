@@ -4,6 +4,7 @@ import { EMPTY_ACTIVE_SPRINTS_PAGE } from '@/app/board/_services/board.reads.def
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
 import { getUserList } from '@/app/users/_services/users.reads.server';
 import { getWorkItems } from '@/app/work-items/_services/work-items.reads.server';
+import { DEFAULT_BOARD_COLUMNS } from '@/app/work-items/_helpers/work-item-status';
 import { getDbUser } from '@/lib/auth';
 import { getAccessibleProjectList } from '@/lib/projects/accessible-project-list';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
@@ -11,16 +12,37 @@ import { listAccessibleProjectIds } from '@/lib/projects/project-workspace-acces
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
   parseBoardPageTab,
+  parseBoardWorkflowId,
   parseWorkItemFilters,
   type RawSearchParams,
 } from '@/lib/search-params';
 import { createClient } from '@/lib/supabase/server';
-import { boardConfigSchema, type BoardColumn } from '@repo/types/api/v1';
-import { DEFAULT_BOARD_COLUMNS } from '@/app/work-items/_helpers/work-item-status';
+import {
+  resolveProjectBoardRuntime,
+  type BoardColumn,
+  type BoardWorkflowTab,
+} from '@repo/types/api/v1';
 
-async function getProjectWorkflowConfig(
-  projectId: string
-): Promise<{ columns: BoardColumn[]; usesCustomBoardConfig: boolean }> {
+type ProjectBoardLoadResult = {
+  readonly columns: BoardColumn[];
+  readonly usesCustomBoardConfig: boolean;
+  readonly workflowTabs: readonly BoardWorkflowTab[];
+  readonly activeWorkflowId: string | null;
+  readonly boardMode: 'workflow' | 'legacy' | 'default';
+};
+
+async function getProjectBoardRuntime(
+  projectId: string,
+  requestedWorkflowId: string | undefined
+): Promise<ProjectBoardLoadResult> {
+  const fallback: ProjectBoardLoadResult = {
+    columns: DEFAULT_BOARD_COLUMNS,
+    usesCustomBoardConfig: false,
+    workflowTabs: [],
+    activeWorkflowId: null,
+    boardMode: 'default',
+  };
+
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -34,41 +56,41 @@ async function getProjectWorkflowConfig(
         `error. failed to fetch workflow_config for project ${projectId}:`,
         error.message
       );
-      return {
-        columns: DEFAULT_BOARD_COLUMNS,
-        usesCustomBoardConfig: false,
-      };
+      return fallback;
     }
 
-    if (!data.workflow_config) {
-      return {
-        columns: DEFAULT_BOARD_COLUMNS,
-        usesCustomBoardConfig: false,
-      };
-    }
-
-    const parsed = boardConfigSchema.safeParse(data.workflow_config);
-    if (parsed.success) {
-      return { columns: parsed.data.columns, usesCustomBoardConfig: true };
-    }
-
-    console.warn(
-      `[BoardData] Invalid workflow_config for project ${projectId}`,
-      parsed.error
+    const runtime = resolveProjectBoardRuntime(
+      data.workflow_config,
+      requestedWorkflowId
     );
-    return {
-      columns: DEFAULT_BOARD_COLUMNS,
-      usesCustomBoardConfig: false,
-    };
+
+    if (runtime.kind === 'workflow') {
+      return {
+        columns: runtime.columns,
+        usesCustomBoardConfig: true,
+        workflowTabs: runtime.tabs,
+        activeWorkflowId: runtime.activeWorkflow.id,
+        boardMode: 'workflow',
+      };
+    }
+
+    if (runtime.kind === 'legacy') {
+      return {
+        columns: runtime.columns,
+        usesCustomBoardConfig: true,
+        workflowTabs: [],
+        activeWorkflowId: null,
+        boardMode: 'legacy',
+      };
+    }
+
+    return fallback;
   } catch (error) {
     console.error(
       `error. failed to fetch workflow_config for project ${projectId}:`,
       error
     );
-    return {
-      columns: DEFAULT_BOARD_COLUMNS,
-      usesCustomBoardConfig: false,
-    };
+    return fallback;
   }
 }
 
@@ -79,6 +101,9 @@ type BoardDataProps = {
 export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
   const resolvedSearchParams = await searchParams;
   const activeTab = parseBoardPageTab(resolvedSearchParams.tab);
+  const requestedWorkflowId = parseBoardWorkflowId(
+    resolvedSearchParams.workflow
+  );
   const { projectId, sprintId } = parseWorkItemFilters(resolvedSearchParams);
   const dbUser = await getDbUser();
 
@@ -125,8 +150,14 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
   );
 
   const boardConfig = scopedProjectId
-    ? await getProjectWorkflowConfig(scopedProjectId)
-    : { columns: DEFAULT_BOARD_COLUMNS, usesCustomBoardConfig: false };
+    ? await getProjectBoardRuntime(scopedProjectId, requestedWorkflowId)
+    : {
+        columns: DEFAULT_BOARD_COLUMNS,
+        usesCustomBoardConfig: false,
+        workflowTabs: [],
+        activeWorkflowId: null,
+        boardMode: 'default' as const,
+      };
 
   const needsClientBootstrap = needsWorkspaceProjectBootstrap(
     resolvedSearchParams.project
@@ -137,6 +168,9 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
     <BoardWorkspace
       boardColumns={boardConfig.columns}
       usesCustomBoardConfig={boardConfig.usesCustomBoardConfig}
+      workflowTabs={boardConfig.workflowTabs}
+      activeWorkflowId={boardConfig.activeWorkflowId}
+      boardMode={boardConfig.boardMode}
       initialWorkItems={boardItems}
       projects={activeProjects}
       sprints={sprints}

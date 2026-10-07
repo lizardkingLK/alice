@@ -187,6 +187,31 @@ describe('BoardData project scoping', () => {
     expect(workflowConfigQueryMocks.from).toHaveBeenCalledWith('projects');
     expect(jsx.props.boardColumns).toEqual(columns);
     expect(jsx.props.usesCustomBoardConfig).toBe(true);
+    expect(jsx.props.boardMode).toBe('legacy');
+  });
+
+  it('loads workflow envelope columns and tabs for an accessible project', async () => {
+    const { createSeededDefaultWorkflowConfig } =
+      await import('@repo/types/api/v1');
+    getDbUserMock.mockResolvedValue({ id: 'member-1', role: 'member' });
+    listAccessibleProjectIdsMock.mockResolvedValue(['proj-1']);
+    const envelope = createSeededDefaultWorkflowConfig();
+    workflowConfigQueryMocks.single.mockResolvedValue({
+      data: { workflow_config: envelope },
+      error: null,
+    });
+
+    const jsx = await BoardData({
+      searchParams: Promise.resolve({ project: 'proj-1' }),
+    });
+
+    expect(jsx.props.boardMode).toBe('workflow');
+    expect(jsx.props.activeWorkflowId).toBe(envelope.defaultWorkflowId);
+    expect(jsx.props.workflowTabs).toHaveLength(1);
+    expect(jsx.props.usesCustomBoardConfig).toBe(true);
+    expect(
+      jsx.props.boardColumns.map((column: { id: string }) => column.id)
+    ).toEqual(['New', 'ToDo', 'InProgress', 'Testing', 'Done']);
   });
 
   it('does not load workflow config for an inaccessible selected project', async () => {

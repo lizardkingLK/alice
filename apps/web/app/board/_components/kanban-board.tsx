@@ -98,6 +98,7 @@ import { toast } from '@repo/ui/components/ui/sonner';
 import {
   BOARD_MOVE_FORBIDDEN_CODE,
   type BoardColumn,
+  type BoardWorkflowTab,
 } from '@repo/types/api/v1';
 
 type BoardStatus = BoardColumn['status'];
@@ -117,9 +118,108 @@ function assigneeName(item: DbWorkItem) {
   return item.assignee?.name?.trim() || 'Unassigned';
 }
 
+// eslint-disable-next-line no-unused-vars -- callback parameter name documents the payload
+type BoardWorkflowChangeHandler = (workflowId: string) => void;
+
+function resolveActiveWorkflowBindings(
+  boardMode: 'workflow' | 'legacy' | 'default',
+  activeWorkflowId: string | null,
+  workflowTabs: readonly BoardWorkflowTab[]
+): ReadonlySet<string> | null {
+  if (boardMode !== 'workflow' || !activeWorkflowId) {
+    return null;
+  }
+  const tab = workflowTabs.find(
+    (candidate) => candidate.id === activeWorkflowId
+  );
+  return tab ? new Set(tab.typeBindings) : null;
+}
+
+function BoardWorkflowSwitcher({
+  boardMode,
+  workflowTabs,
+  activeWorkflowId,
+  onWorkflowChange,
+}: {
+  readonly boardMode: 'workflow' | 'legacy' | 'default';
+  readonly workflowTabs: readonly BoardWorkflowTab[];
+  readonly activeWorkflowId: string | null;
+  readonly onWorkflowChange: BoardWorkflowChangeHandler;
+}) {
+  if (boardMode !== 'workflow' || workflowTabs.length <= 1) {
+    return null;
+  }
+
+  return (
+    <label className="text-muted-foreground flex shrink-0 items-center gap-2 text-sm">
+      <span className="font-medium">Workflow</span>
+      <select
+        className="border-input bg-background h-8 rounded-md border px-2 text-sm"
+        data-testid="board-workflow-switcher"
+        value={activeWorkflowId ?? workflowTabs[0]?.id ?? ''}
+        onChange={(event) => onWorkflowChange(event.target.value)}
+      >
+        {workflowTabs.map((tab) => (
+          <option key={tab.id} value={tab.id}>
+            {tab.title}
+            {tab.isDefault ? ' (default)' : ''}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function itemMatchesBoardFilters(
+  item: DbWorkItem,
+  params: {
+    readonly query: string;
+    readonly priorityFilter: string;
+    readonly assigneeFilter: string | null;
+    readonly activeLabels: readonly string[];
+    readonly activeWorkflowBindings: ReadonlySet<string> | null;
+  }
+): boolean {
+  if (item.status === 'Draft') {
+    return false;
+  }
+
+  if (
+    params.activeWorkflowBindings &&
+    params.activeWorkflowBindings.size > 0 &&
+    !params.activeWorkflowBindings.has(item.type)
+  ) {
+    return false;
+  }
+
+  const description = descriptionToPlainText(item.description ?? null);
+  const assignee = assigneeName(item).toLowerCase();
+  const matchesSearch =
+    !params.query ||
+    item.title.toLowerCase().includes(params.query) ||
+    item.id.toLowerCase().includes(params.query) ||
+    description.toLowerCase().includes(params.query) ||
+    assignee.includes(params.query) ||
+    item.type.toLowerCase().includes(params.query);
+  const matchesPriority =
+    params.priorityFilter === QUERY_FILTER_ALL_VALUE ||
+    item.priority === params.priorityFilter;
+  const matchesAssignee =
+    !params.assigneeFilter || item.assignee_id === params.assigneeFilter;
+  const itemLabels = parseWorkItemLabels(item.labels);
+  const matchesLabels =
+    params.activeLabels.length === 0 ||
+    params.activeLabels.some((label) => itemLabels.includes(label));
+
+  return matchesSearch && matchesPriority && matchesAssignee && matchesLabels;
+}
+
 type KanbanBoardProps = {
   readonly boardColumns: BoardColumn[];
   readonly usesCustomBoardConfig: boolean;
+  readonly workflowTabs?: readonly BoardWorkflowTab[];
+  readonly activeWorkflowId?: string | null;
+  readonly boardMode?: 'workflow' | 'legacy' | 'default';
   readonly initialWorkItems: DbWorkItem[];
   readonly projects: Project[];
   readonly sprints: Sprint[];
@@ -133,6 +233,9 @@ type KanbanBoardProps = {
 export function KanbanBoard({
   boardColumns,
   usesCustomBoardConfig,
+  workflowTabs = [],
+  activeWorkflowId = null,
+  boardMode = 'default',
   initialWorkItems,
   projects,
   sprints,
@@ -499,42 +602,46 @@ export function KanbanBoard({
     ]
   );
 
+  const activeWorkflowBindings = useMemo(
+    () =>
+      resolveActiveWorkflowBindings(boardMode, activeWorkflowId, workflowTabs),
+    [boardMode, activeWorkflowId, workflowTabs]
+  );
+
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();
+    return workItems.filter((item) =>
+      itemMatchesBoardFilters(item, {
+        query,
+        priorityFilter,
+        assigneeFilter,
+        activeLabels,
+        activeWorkflowBindings,
+      })
+    );
+  }, [
+    workItems,
+    search,
+    priorityFilter,
+    assigneeFilter,
+    activeLabels,
+    activeWorkflowBindings,
+  ]);
 
-    return workItems.filter((item) => {
-      if (item.status === 'Draft') {
-        return false;
-      }
-
-      const description = descriptionToPlainText(item.description ?? null);
-      const assignee = assigneeName(item).toLowerCase();
-
-      const matchesSearch =
-        !query ||
-        item.title.toLowerCase().includes(query) ||
-        item.id.toLowerCase().includes(query) ||
-        description.toLowerCase().includes(query) ||
-        assignee.includes(query) ||
-        item.type.toLowerCase().includes(query);
-
-      const matchesPriority =
-        priorityFilter === QUERY_FILTER_ALL_VALUE ||
-        item.priority === priorityFilter;
-
-      const matchesAssignee =
-        !assigneeFilter || item.assignee_id === assigneeFilter;
-
-      const itemLabels = parseWorkItemLabels(item.labels);
-      const matchesLabels =
-        activeLabels.length === 0 ||
-        activeLabels.some((label) => itemLabels.includes(label));
-
-      return (
-        matchesSearch && matchesPriority && matchesAssignee && matchesLabels
-      );
-    });
-  }, [workItems, search, priorityFilter, assigneeFilter, activeLabels]);
+  const handleWorkflowChange = (workflowId: string | null) => {
+    if (!workflowId) {
+      return;
+    }
+    const params = new URLSearchParams(searchParams.toString());
+    const defaultTab = workflowTabs.find((tab) => tab.isDefault);
+    if (workflowId === defaultTab?.id) {
+      params.delete('workflow');
+    } else {
+      params.set('workflow', workflowId);
+    }
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  };
 
   const columnItemsMap = useMemo(() => {
     return assignItemsToColumns(filteredItems, boardColumns);
@@ -743,6 +850,13 @@ export function KanbanBoard({
 
       <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-3">
+          <BoardWorkflowSwitcher
+            boardMode={boardMode}
+            workflowTabs={workflowTabs}
+            activeWorkflowId={activeWorkflowId}
+            onWorkflowChange={handleWorkflowChange}
+          />
+
           <SearchInput
             value={search}
             onValueChange={setSearch}

@@ -151,15 +151,15 @@ Settings forms, lock/terminal/children wiring, and chat dirty flag are **3b / 3c
 
 ### As-built (Step 3b)
 
-| Piece | Location |
-| ----- | -------- |
-| Settings panel | `workflow-designer-settings.tsx` |
-| Selection | Node/edge/pane clicks on `FlowCanvas` → Settings |
-| State fields | Name, category (+ tooltips) |
-| Edge fields | Require children, Who can move (`TransitionRulePermissions`) |
-| Document patches | `patchStateInDocument` / `patchEdgeInDocument` in layout helpers |
-| Teams/members | Passed from project details via `boardDesignerSharedProps` |
-| Tests | `workflow-designer-settings.test.tsx`, layout patch tests, workspace selection test |
+| Piece            | Location                                                                            |
+| ---------------- | ----------------------------------------------------------------------------------- |
+| Settings panel   | `workflow-designer-settings.tsx`                                                    |
+| Selection        | Node/edge/pane clicks on `FlowCanvas` → Settings                                    |
+| State fields     | Name, category (+ tooltips)                                                         |
+| Edge fields      | Require children, Who can move (`TransitionRulePermissions`)                        |
+| Document patches | `patchStateInDocument` / `patchEdgeInDocument` in layout helpers                    |
+| Teams/members    | Passed from project details via `boardDesignerSharedProps`                          |
+| Tests            | `workflow-designer-settings.test.tsx`, layout patch tests, workspace selection test |
 
 Lock / Terminal / escalation checkboxes and outbound-edge confirm are **Step 3c**.
 
@@ -181,20 +181,22 @@ Lock / Terminal / escalation checkboxes and outbound-edge confirm are **Step 3c*
 
 ### As-built (Step 3c)
 
-| Piece | Location |
-| ----- | -------- |
-| Lock / Terminal / escalation checkboxes | `workflow-designer-settings.tsx` |
-| Terminal outbound confirm | Dialog → `makeStateTerminalInDocument` |
-| Require children | Already in Step 3b Settings |
-| Resolution preset stub | Disabled picker on edge Settings |
-| Zod gates | Existing envelope validators (API save) |
-| Dirty flag for chat | `data-dirty` + `data-workflow-id` on workspace root |
-| Helpers | `removeOutboundEdgesFromState`, `makeStateTerminalInDocument` |
-| Tests | Settings lock/terminal confirm + layout terminal helper |
+| Piece                                   | Location                                                      |
+| --------------------------------------- | ------------------------------------------------------------- |
+| Lock / Terminal / escalation checkboxes | `workflow-designer-settings.tsx`                              |
+| Terminal outbound confirm               | Dialog → `makeStateTerminalInDocument`                        |
+| Require children                        | Already in Step 3b Settings                                   |
+| Resolution preset stub                  | Disabled picker on edge Settings                              |
+| Zod gates                               | Existing envelope validators (API save)                       |
+| Dirty flag for chat                     | `data-dirty` + `data-workflow-id` on workspace root           |
+| Helpers                                 | `removeOutboundEdgesFromState`, `makeStateTerminalInDocument` |
+| Tests                                   | Settings lock/terminal confirm + layout terminal helper       |
 
 ---
 
 ## Step 4 — Board switcher + transitions
+
+**Status:** **Done** (as-built below; details/backlog pickers still enum-based)
 
 **Goal:** Runtime uses workflows instead of board columns for scoped projects.
 
@@ -208,6 +210,19 @@ Lock / Terminal / escalation checkboxes and outbound-edge confirm are **Step 3c*
 7. User-guide drafts can start updating kanban / assign-and-status (finalize in Step 10).
 
 **Exit:** Project board + details honor the designer graph.
+
+### As-built (Step 4)
+
+| Piece               | Location                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| Runtime helpers     | `packages/types/.../board-runtime.ts`                                                       |
+| Board loader        | `board-data.tsx` via `resolveProjectBoardRuntime`                                           |
+| Workflow switcher   | `?workflow=` + kanban select when multiple tabs                                             |
+| Type-binding filter | Active workflow bindings filter cards                                                       |
+| API graph gates     | `WorkItemService` edge / allowAnyOf / require-children / lock / terminal                    |
+| Legacy board        | Still supported when blob is v1/v2 board config                                             |
+| Pickers             | Create-from-column uses column status; details/backlog enum pickers deferred                |
+| Tests               | `board-runtime.test.ts`, `work-items.workflow-transition.test.ts`, board-data envelope case |
 
 ---
 
