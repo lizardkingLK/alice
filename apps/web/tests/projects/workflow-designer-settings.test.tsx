@@ -16,6 +16,7 @@ describe('WorkflowDesignerSettings', () => {
         members={[]}
         onStateChange={vi.fn()}
         onEdgeChange={vi.fn()}
+        onMakeStateTerminal={vi.fn()}
       />
     );
     expect(screen.getByTestId('workflow-settings-empty')).toBeInTheDocument();
@@ -33,6 +34,7 @@ describe('WorkflowDesignerSettings', () => {
         members={[]}
         onStateChange={onStateChange}
         onEdgeChange={vi.fn()}
+        onMakeStateTerminal={vi.fn()}
       />
     );
     expect(screen.getByTestId('workflow-settings-state')).toBeInTheDocument();
@@ -44,7 +46,51 @@ describe('WorkflowDesignerSettings', () => {
     });
   });
 
-  it('exposes require-children for a selected edge', () => {
+  it('toggles lock record without a confirm dialog', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const onStateChange = vi.fn();
+    render(
+      <WorkflowDesignerSettings
+        selection={{ kind: 'state', stateId: WorkItemStatusEnum.New }}
+        workflow={workflow}
+        canEdit
+        teams={[]}
+        members={[]}
+        onStateChange={onStateChange}
+        onEdgeChange={vi.fn()}
+        onMakeStateTerminal={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByLabelText(/lock record in this state/i));
+    expect(onStateChange).toHaveBeenCalledWith(WorkItemStatusEnum.New, {
+      lockRecord: true,
+    });
+  });
+
+  it('confirms before making a state with outbound edges terminal', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const onMakeStateTerminal = vi.fn();
+    render(
+      <WorkflowDesignerSettings
+        selection={{ kind: 'state', stateId: WorkItemStatusEnum.New }}
+        workflow={workflow}
+        canEdit
+        teams={[]}
+        members={[]}
+        onStateChange={vi.fn()}
+        onEdgeChange={vi.fn()}
+        onMakeStateTerminal={onMakeStateTerminal}
+      />
+    );
+    fireEvent.click(screen.getByLabelText(/terminal state/i));
+    expect(screen.getByTestId('workflow-terminal-confirm')).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', { name: /remove outbound and lock/i })
+    );
+    expect(onMakeStateTerminal).toHaveBeenCalledWith(WorkItemStatusEnum.New);
+  });
+
+  it('exposes require-children and resolution preset stub for a selected edge', () => {
     const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
     const edge = workflow.graph.edges[0]!;
     render(
@@ -56,10 +102,12 @@ describe('WorkflowDesignerSettings', () => {
         members={[]}
         onStateChange={vi.fn()}
         onEdgeChange={vi.fn()}
+        onMakeStateTerminal={vi.fn()}
       />
     );
     expect(screen.getByTestId('workflow-settings-edge')).toBeInTheDocument();
     expect(screen.getByText(/require children/i)).toBeInTheDocument();
+    expect(screen.getByText(/resolution preset/i)).toBeInTheDocument();
     expect(screen.getByText(/who can move/i)).toBeInTheDocument();
   });
 });

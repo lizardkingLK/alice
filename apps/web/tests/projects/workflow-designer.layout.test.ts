@@ -4,6 +4,7 @@ import { createSeededDefaultWorkflowConfig } from '@repo/types/api/v1';
 import {
   applyNodePositionsToDocument,
   defaultStatePosition,
+  makeStateTerminalInDocument,
   patchEdgeInDocument,
   patchStateInDocument,
   readLayoutPosition,
@@ -90,5 +91,22 @@ describe('workflow-designer.layout', () => {
     const patched = next.graph.edges.find((edge) => edge.id === edgeId);
     expect(patched?.requireChildren).toBe('match_parent_target');
     expect(patched?.allowAnyOf).toEqual([{ scope: 'role', role: 'manager' }]);
+  });
+
+  it('makes a state terminal by removing outbound edges', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const beforeOutbound = workflow.graph.edges.filter(
+      (edge) => edge.from === WorkItemStatusEnum.New
+    ).length;
+    expect(beforeOutbound).toBeGreaterThan(0);
+
+    const next = makeStateTerminalInDocument(workflow, WorkItemStatusEnum.New);
+    const state = next.graph.states.find(
+      (candidate) => candidate.id === WorkItemStatusEnum.New
+    );
+    expect(state?.terminal).toBe(true);
+    expect(
+      next.graph.edges.filter((edge) => edge.from === WorkItemStatusEnum.New)
+    ).toHaveLength(0);
   });
 });
