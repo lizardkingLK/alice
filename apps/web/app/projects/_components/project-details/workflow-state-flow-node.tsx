@@ -1,7 +1,11 @@
 'use client';
 
 import { memo } from 'react';
-import type { WorkflowStateCategory } from '@repo/types';
+import {
+  WORK_ITEM_STATUSES,
+  type WorkItemStatus,
+  type WorkflowStateCategory,
+} from '@repo/types';
 import {
   Handle,
   Position,
@@ -10,28 +14,62 @@ import {
 } from '@repo/ui/components/ui/flow-canvas';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
+import { formatLabelWithSpace } from '@/app/_shared/utility';
+import { WORK_ITEM_STATUS_BADGE_STYLES } from '@/app/work-items/_helpers/work-item-status';
 import type { WorkflowStateNodeData } from '@/app/projects/_helpers/workflow-designer.layout';
 
+/**
+ * Lighter board badge surfaces (`WORK_ITEM_STATUS_BADGE_STYLES`).
+ * Prefer exact status styles when the state id is a known WorkItemStatus
+ * so New / Testing match the kanban columns.
+ */
 const CATEGORY_CLASS: Record<WorkflowStateCategory, string> = {
-  draft: 'border-muted-foreground/40 bg-muted/60',
-  todo: 'border-border bg-card',
-  in_progress: 'border-primary/40 bg-primary/5',
-  done: 'border-chart-1/50 bg-chart-1/10',
+  draft: WORK_ITEM_STATUS_BADGE_STYLES.Draft,
+  todo: WORK_ITEM_STATUS_BADGE_STYLES.ToDo,
+  in_progress: WORK_ITEM_STATUS_BADGE_STYLES.InProgress,
+  done: WORK_ITEM_STATUS_BADGE_STYLES.Done,
 };
 
-function categoryLabel(category: WorkflowStateCategory): string {
-  return category.replaceAll('_', ' ');
+const CATEGORY_CAPTION: Record<WorkflowStateCategory, string> = {
+  draft: 'Draft',
+  todo: 'To Do',
+  in_progress: 'In Progress',
+  done: 'Done',
+};
+
+function isWorkItemStatus(value: string): value is WorkItemStatus {
+  return (WORK_ITEM_STATUSES as readonly string[]).includes(value);
+}
+
+function nodeSurfaceClass(
+  stateId: string,
+  category: WorkflowStateCategory
+): string {
+  if (isWorkItemStatus(stateId)) {
+    return WORK_ITEM_STATUS_BADGE_STYLES[stateId];
+  }
+  return CATEGORY_CLASS[category];
+}
+
+function nodeCaption(stateId: string, category: WorkflowStateCategory): string {
+  if (isWorkItemStatus(stateId)) {
+    return formatLabelWithSpace(stateId);
+  }
+  return CATEGORY_CAPTION[category];
 }
 
 function WorkflowStateFlowNodeComponent({
+  id,
   data,
   selected,
 }: NodeProps<Node<WorkflowStateNodeData>>) {
   return (
     <div
       className={cn(
-        'border-border min-w-[148px] rounded-md border px-3 py-2 shadow-sm',
-        CATEGORY_CLASS[data.category],
+        'min-w-37 rounded-md border px-3 py-2 shadow-sm',
+        nodeSurfaceClass(id, data.category),
+        // Board badges tint label color; designer nodes keep dark body text.
+        'text-foreground!',
         selected && 'ring-ring ring-2 ring-offset-1'
       )}
     >
@@ -43,8 +81,8 @@ function WorkflowStateFlowNodeComponent({
       <TruncatedText className="text-foreground text-sm font-medium">
         {data.label}
       </TruncatedText>
-      <p className="text-muted-foreground mt-0.5 text-xs capitalize">
-        {categoryLabel(data.category)}
+      <p className="text-foreground/70 mt-0.5 text-xs">
+        {nodeCaption(id, data.category)}
       </p>
       <Handle
         type="source"

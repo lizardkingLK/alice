@@ -28,6 +28,11 @@ describe('workflow-designer.layout', () => {
     expect(nodes[1]?.position).toEqual(defaultStatePosition(1));
     expect(edges[0]?.source).toBe(workflow.graph.edges[0]?.from);
     expect(edges[0]?.target).toBe(workflow.graph.edges[0]?.to);
+    expect(edges[0]?.markerEnd).toEqual({
+      type: 'arrowclosed',
+      width: 16,
+      height: 16,
+    });
   });
 
   it('reads persisted layout coordinates for a state', () => {

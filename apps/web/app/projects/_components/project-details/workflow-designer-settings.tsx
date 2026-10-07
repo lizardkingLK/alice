@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Info } from '@repo/ui/lib/icons';
+import { Info, PanelRightClose, Settings } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import {
@@ -44,6 +44,8 @@ import {
   type TransitionRuleTeamOption,
 } from '@/app/projects/_components/project-details/transition-rule-permissions';
 import type { MemberCheckboxOption } from '@/components/member-checkbox-list';
+import { WORK_ITEM_STATUS_BADGE_STYLES } from '@/app/work-items/_helpers/work-item-status';
+import { cn } from '@repo/ui/lib/utils';
 
 export type WorkflowDesignerSelection =
   | { readonly kind: 'state'; readonly stateId: string }
@@ -67,6 +69,7 @@ type WorkflowEdgeChangeHandler = (
   patch: Partial<Pick<WorkflowEdge, 'requireChildren' | 'allowAnyOf'>>
 ) => void;
 type WorkflowMakeTerminalHandler = (stateId: string) => void;
+type WorkflowSettingsOpenChangeHandler = (open: boolean) => void;
 /* eslint-enable no-unused-vars */
 
 type WorkflowDesignerSettingsProps = {
@@ -78,13 +81,25 @@ type WorkflowDesignerSettingsProps = {
   readonly onStateChange: WorkflowStateChangeHandler;
   readonly onEdgeChange: WorkflowEdgeChangeHandler;
   readonly onMakeStateTerminal: WorkflowMakeTerminalHandler;
+  /** Controlled open state (workspace owns cookie/localStorage persist). */
+  readonly open: boolean;
+  readonly onOpenChange: WorkflowSettingsOpenChangeHandler;
 };
 
+/** Labels match board status wording (representative status per category). */
 const CATEGORY_LABELS: Record<WorkflowStateCategory, string> = {
   draft: 'Draft',
-  todo: 'To do',
-  in_progress: 'In progress',
+  todo: 'To Do',
+  in_progress: 'In Progress',
   done: 'Done',
+};
+
+/** Lighter board badge surfaces for category options (same tokens as kanban). */
+const CATEGORY_BADGE_CLASS: Record<WorkflowStateCategory, string> = {
+  draft: WORK_ITEM_STATUS_BADGE_STYLES.Draft,
+  todo: WORK_ITEM_STATUS_BADGE_STYLES.ToDo,
+  in_progress: WORK_ITEM_STATUS_BADGE_STYLES.InProgress,
+  done: WORK_ITEM_STATUS_BADGE_STYLES.Done,
 };
 
 const REQUIRE_CHILDREN_LABELS: Record<WorkflowRequireChildren, string> = {
@@ -199,16 +214,13 @@ function StateSettingsForm({
     <div className="space-y-4" data-testid="workflow-settings-state">
       <div>
         <p className="text-foreground text-sm font-medium">State</p>
-        <p className="text-muted-foreground mt-0.5 font-mono text-xs">
-          {state.id}
-        </p>
       </div>
 
       <div className="space-y-2">
         <FieldLabel
           htmlFor="workflow-state-name"
           label="Name"
-          tip="Label shown on the board column and in state pickers."
+          tip="Shown on the board and in status menus."
         />
         <Input
           id="workflow-state-name"
@@ -224,7 +236,7 @@ function StateSettingsForm({
         <FieldLabel
           htmlFor="workflow-state-category"
           label="Category"
-          tip="Used for list filters, charts, and Done-style gates across projects."
+          tip="Matches board colors and filters. To Do includes New; In Progress includes Testing."
         />
         <Select
           value={state.category}
@@ -244,7 +256,14 @@ function StateSettingsForm({
           <SelectContent>
             {WORKFLOW_STATE_CATEGORIES.map((category) => (
               <SelectItem key={category} value={category}>
-                {CATEGORY_LABELS[category]}
+                <span
+                  className={cn(
+                    'text-foreground! inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium',
+                    CATEGORY_BADGE_CLASS[category]
+                  )}
+                >
+                  {CATEGORY_LABELS[category]}
+                </span>
               </SelectItem>
             ))}
           </SelectContent>
@@ -255,7 +274,7 @@ function StateSettingsForm({
         <StateFlagRow
           id="workflow-state-lock-record"
           label="Lock record in this state"
-          tip="While an item is here, most fields are read-only. Changing state (for example reopen) can still be allowed."
+          tip="Most fields become read-only here. Moving to another state can still be allowed."
           checked={state.lockRecord}
           disabled={!canEdit}
           onCheckedChange={(checked) =>
@@ -265,7 +284,7 @@ function StateSettingsForm({
         <StateFlagRow
           id="workflow-state-terminal"
           label="Terminal state"
-          tip="No outbound transitions. If edges already leave this state, confirm removing them before turning this on."
+          tip="End of the path — no exits. Existing exits are removed when you turn this on."
           checked={state.terminal}
           disabled={!canEdit}
           onCheckedChange={requestTerminal}
@@ -273,7 +292,7 @@ function StateSettingsForm({
         <StateFlagRow
           id="workflow-state-requires-escalation"
           label="Requires escalation"
-          tip="Leaving this state requires a resolution preset on every outbound transition. Preset picker lands later; Save validates via schema."
+          tip="Leaving this state needs a resolution form on each exit."
           checked={state.requiresEscalation}
           disabled={!canEdit}
           onCheckedChange={(checked) =>
@@ -282,8 +301,7 @@ function StateSettingsForm({
         />
         {state.requiresEscalation && outboundCount > 0 ? (
           <p className="text-muted-foreground text-xs leading-relaxed">
-            Outbound edges must reference a resolution preset before Save
-            succeeds. Preset editing arrives in a later milestone.
+            Each exit needs a resolution form before you can save.
           </p>
         ) : null}
       </div>
@@ -293,11 +311,10 @@ function StateSettingsForm({
           <DialogHeader>
             <DialogTitle>Make this a terminal state?</DialogTitle>
             <DialogDescription>
-              This removes {outboundCount} outbound transition
+              This removes {outboundCount} exit
               {outboundCount === 1 ? '' : 's'} from{' '}
               <span className="font-medium">{state.name}</span>
-              {'. '}
-              Terminal states cannot have exits.
+              {'. '}A terminal state has nowhere left to go.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -316,7 +333,7 @@ function StateSettingsForm({
                 setTerminalConfirmOpen(false);
               }}
             >
-              Remove outbound and lock
+              Remove exits
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -365,7 +382,7 @@ function EdgeSettingsForm({
         <FieldLabel
           htmlFor="workflow-edge-require-children"
           label="Require children"
-          tip="Off — no check. All complete — every direct child must be in a done category. Match parent target — children must already be in the parent’s target state (or same category when workflows differ)."
+          tip="Off — no check. All complete — every direct child must be Done. Match parent — children must already be in the target state (or same category when types differ)."
         />
         <Select
           value={edge.requireChildren}
@@ -396,11 +413,11 @@ function EdgeSettingsForm({
         <FieldLabel
           htmlFor="workflow-edge-resolution-preset"
           label="Resolution preset"
-          tip="Optional named form completed when taking this transition. Required when the source state requires escalation."
+          tip="Optional form filled when taking this move. Required when the from-state needs escalation."
         />
         <Select disabled value={edge.resolutionPresetId ?? undefined}>
           <SelectTrigger id="workflow-edge-resolution-preset">
-            <SelectValue placeholder="Preset picker coming soon" />
+            <SelectValue placeholder="Coming soon" />
           </SelectTrigger>
           <SelectContent>
             {edge.resolutionPresetId ? (
@@ -412,8 +429,7 @@ function EdgeSettingsForm({
         </Select>
         {fromRequiresEscalation && !edge.resolutionPresetId ? (
           <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
-            Source state requires escalation — Save will reject until a preset
-            is assigned (picker arrives later).
+            This move needs a resolution form before you can save.
           </p>
         ) : null}
       </div>
@@ -421,7 +437,7 @@ function EdgeSettingsForm({
       <div className="space-y-2">
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-medium">Who can move</p>
-          <SettingsInfoTip text="Empty (everyone) allows any project member. Restricted mode limits the transition to selected roles, teams, or people." />
+          <SettingsInfoTip text="Everyone allows any member. Restricted limits who can take this move." />
         </div>
         <TransitionRulePermissions
           idPrefix={`workflow-edge-${edge.id}`}
@@ -454,6 +470,8 @@ export function WorkflowDesignerSettings({
   onStateChange,
   onEdgeChange,
   onMakeStateTerminal,
+  open,
+  onOpenChange,
 }: WorkflowDesignerSettingsProps) {
   const selectedState =
     selection?.kind === 'state'
@@ -471,17 +489,52 @@ export function WorkflowDesignerSettings({
         .length
     : 0;
 
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        data-testid="workflow-designer-settings-expand"
+        aria-expanded={false}
+        aria-controls="workflow-designer-settings-panel"
+        aria-label="Expand settings"
+        onClick={() => {
+          onOpenChange(true);
+        }}
+        className={cn(
+          'border-border bg-muted/20 text-muted-foreground hover:text-foreground',
+          'hover:bg-muted/40 h-full min-h-0 w-10 shrink-0 rounded-lg px-0 shadow-none'
+        )}
+      >
+        <Settings className="size-4 shrink-0" />
+      </Button>
+    );
+  }
+
   return (
     <TooltipProvider delayDuration={200}>
       <aside
-        className="border-border bg-muted/20 flex h-[480px] min-h-[320px] flex-col rounded-lg border"
+        id="workflow-designer-settings-panel"
+        className="border-border bg-muted/20 flex h-full min-h-0 w-70 shrink-0 flex-col rounded-lg border"
         data-testid="workflow-designer-settings"
       >
-        <div className="border-border border-b px-4 py-3">
+        <div className="border-border flex items-center justify-between gap-2 border-b px-3 py-2.5">
           <h3 className="text-foreground text-sm font-semibold">Settings</h3>
-          <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-            Select a state or transition on the canvas to edit its options.
-          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="text-muted-foreground hover:text-foreground border-border/60 size-8 bg-transparent shadow-none"
+            onClick={() => {
+              onOpenChange(false);
+            }}
+            aria-expanded
+            aria-controls="workflow-designer-settings-panel"
+            aria-label="Collapse settings"
+            data-testid="workflow-designer-settings-collapse"
+          >
+            <PanelRightClose className="size-4" />
+          </Button>
         </div>
         <div className="flex-1 overflow-y-auto p-4">
           {selectedState ? (
@@ -505,10 +558,6 @@ export function WorkflowDesignerSettings({
           ) : null}
           {!selectedState && !selectedEdge ? (
             <div className="space-y-3" data-testid="workflow-settings-empty">
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Nothing selected. Click a state node or transition edge to open
-                its settings.
-              </p>
               <dl className="text-muted-foreground space-y-2 text-xs">
                 <div>
                   <dt className="text-foreground font-medium">

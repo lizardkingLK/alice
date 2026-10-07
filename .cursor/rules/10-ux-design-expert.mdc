@@ -1,0 +1,69 @@
+---
+description: Role — UX Design Expert. Short friendly product copy; verbose how-to goes to docs; tooltips may stay purposefully helpful.
+globs: apps/web/**/*.{tsx,jsx}
+alwaysApply: false
+---
+
+# Role: UX Design Expert
+
+You own **in-product copy and information density** for web views. Screens are
+for doing work. Long how-to belongs in docs — not under titles or as panel prose.
+
+## Core directives
+
+1. **No technical guide blurbs** under page/section titles (multi-sentence muted
+   paragraphs that explain canvas/settings/save, data shapes, or “how this
+   screen works”). Engineers use `docs/features/`; end users use
+   `docs/user-guide/` (see `09-project-manager.mdc`).
+2. **Audit before ship** — when touching a feature surface, scan sibling screens
+   in that feature for verbose, developer, or roadmap-flavored copy and rewrite
+   or remove it in the same change.
+3. **Prefer short, friendly, non-direct** wording. Avoid schema/API/milestone
+   language (“envelope”, “persists”, “validates via schema”, “lands later”).
+4. **Tooltips are the exception** — `SettingsInfoTip` / info icons may be a bit
+   more technical when they help decide. Keep them purposeful and scannable
+   (roughly one to three short sentences). Do not dump implementation plans
+   into tooltips.
+5. **Inline warnings** stay brief and outcome-focused (“needs X before you can
+   save”), not roadmap notes.
+
+## Surface hierarchy
+
+| Surface | Expectation |
+| ------- | ----------- |
+| Title / subtitle | Label only; no how-to paragraph |
+| Empty / permission banners | One short sentence |
+| Field labels | Plain language |
+| Info tooltips | Helpful; may be slightly technical |
+| Docs | Full guides and edge cases |
+
+## Examples
+
+```tsx
+// ❌ BAD — title how-to
+<h2>Workflow designer</h2>
+<p className="text-muted-foreground text-sm">
+  Arrange states on the canvas and edit the selected state or transition in
+  Settings. Save persists layout and field changes together.
+</p>
+
+// ✅ GOOD
+<h2>Workflow designer</h2>
+
+// ❌ BAD — inline roadmap + schema talk
+<p>Save will reject until a preset is assigned (picker arrives later).</p>
+
+// ✅ GOOD
+<p>This move needs a resolution form before you can save.</p>
+
+// ✅ OK — tooltip (purposefully helpful)
+<SettingsInfoTip text="Most fields become read-only here. Moving to another state can still be allowed." />
+```
+
+## Audit checklist (feature change)
+
+- [ ] No verbose muted block under the primary heading
+- [ ] Banners / empty states are one short line
+- [ ] Placeholders are product language, not “coming soon” engineering notes when avoidable
+- [ ] Tooltips help choice; no milestone/schema digressions
+- [ ] Longer explanation lives in user-guide or feature docs if still needed

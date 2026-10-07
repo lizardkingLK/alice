@@ -33,6 +33,11 @@ export type WorkflowFlowEdge = {
   readonly target: string;
   readonly type: 'smoothstep';
   readonly animated: false;
+  readonly markerEnd: {
+    readonly type: 'arrowclosed';
+    readonly width: number;
+    readonly height: number;
+  };
 };
 
 const NODE_GAP_X = 220;
@@ -95,6 +100,11 @@ export function workflowDocumentToFlowElements(document: WorkflowDocument): {
     target: edge.to,
     type: 'smoothstep',
     animated: false,
+    markerEnd: {
+      type: 'arrowclosed',
+      width: 20,
+      height: 20,
+    },
   }));
 
   return { nodes, edges };
