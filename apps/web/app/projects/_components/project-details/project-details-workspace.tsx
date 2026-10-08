@@ -129,6 +129,8 @@ interface ProjectDetailsWorkspaceProps {
   readonly columnVisibilityHasCookie?: boolean;
   /** SSR cookie seed — expanded by default. */
   readonly initialSidebarOpen?: boolean;
+  /** SSR cookie seed for workflow designer Settings — expanded by default. */
+  readonly initialWorkflowSettingsOpen?: boolean;
 }
 
 const MANAGER_ONLY_TABS = new Set<ProjectDetailsTabId>([
@@ -313,6 +315,7 @@ export function ProjectDetailsWorkspace({
   initialColumnVisibility,
   columnVisibilityHasCookie,
   initialSidebarOpen = true,
+  initialWorkflowSettingsOpen = true,
 }: Readonly<ProjectDetailsWorkspaceProps>) {
   const searchParams = useSearchParams();
   const requestedTab = parseProjectDetailsTab(searchParams.get('tab'));
@@ -570,8 +573,11 @@ export function ProjectDetailsWorkspace({
         )}
 
         {activeTab === 'workflow' && canEditProject && (
-          <div className="p-6">
-            <WorkflowDesignerWorkspace {...boardDesignerSharedProps} />
+          <div className="p-6 pb-8">
+            <WorkflowDesignerWorkspace
+              {...boardDesignerSharedProps}
+              initialSettingsOpen={initialWorkflowSettingsOpen}
+            />
           </div>
         )}
 

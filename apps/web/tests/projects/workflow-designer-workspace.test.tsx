@@ -91,7 +91,7 @@ describe('WorkflowDesignerWorkspace', () => {
       screen.getByTestId('workflow-designer-workspace')
     ).toBeInTheDocument();
     expect(screen.getByTestId('flow-canvas')).toBeInTheDocument();
-    expect(screen.getByText(/showing the seeded default/i)).toBeInTheDocument();
+    expect(screen.getByText(/using the default workflow/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^save$/i })).toBeEnabled();
   });
 

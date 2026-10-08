@@ -51,6 +51,7 @@ import {
   replaceWorkflowInEnvelope,
   workflowDocumentToFlowElements,
 } from '@/app/projects/_helpers/workflow-designer.layout';
+import { persistWorkflowDesignerSettingsOpen } from '@/app/projects/_helpers/workflow-designer-settings-storage';
 
 type WorkflowDesignerWorkspaceProps = {
   readonly project: Project;
@@ -58,6 +59,8 @@ type WorkflowDesignerWorkspaceProps = {
   readonly currentUserId?: string | null;
   readonly teams?: readonly TransitionRuleTeamOption[];
   readonly members?: readonly MemberCheckboxOption[];
+  /** SSR cookie seed for Settings panel — expanded by default. */
+  readonly initialSettingsOpen?: boolean;
 };
 
 const nodeTypes = {
@@ -85,11 +88,13 @@ function WorkflowDesignerCanvas({
   canEdit,
   onNodesSettled,
   onSelectionChange,
+  onOpenSettings,
 }: {
   readonly activeWorkflow: WorkflowDocument;
   readonly canEdit: boolean;
   readonly onNodesSettled: WorkflowNodesSettledHandler;
   readonly onSelectionChange: WorkflowSelectionHandler;
+  readonly onOpenSettings: () => void;
 }) {
   const initial = workflowDocumentToFlowElements(activeWorkflow);
   const [nodes, , onNodesChange] = useNodesState(initial.nodes as Node[]);
@@ -117,6 +122,25 @@ function WorkflowDesignerCanvas({
       onEdgeClick={(_event, edge) => {
         onSelectionChange({ kind: 'edge', edgeId: edge.id });
       }}
+      onNodeDoubleClick={(event, node) => {
+        // Dblclick otherwise selects text in the Settings panel as it opens/updates.
+        event.preventDefault();
+        event.stopPropagation();
+        onSelectionChange({ kind: 'state', stateId: node.id });
+        onOpenSettings();
+        requestAnimationFrame(() => {
+          window.getSelection()?.removeAllRanges();
+        });
+      }}
+      onEdgeDoubleClick={(event, edge) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onSelectionChange({ kind: 'edge', edgeId: edge.id });
+        onOpenSettings();
+        requestAnimationFrame(() => {
+          window.getSelection()?.removeAllRanges();
+        });
+      }}
       onPaneClick={() => {
         onSelectionChange(null);
       }}
@@ -137,6 +161,7 @@ export function WorkflowDesignerWorkspace({
   currentUserId = null,
   teams = [],
   members = [],
+  initialSettingsOpen = true,
 }: WorkflowDesignerWorkspaceProps) {
   const router = useRouter();
   const { handleMutationError } = useOptimisticLock();
@@ -159,6 +184,7 @@ export function WorkflowDesignerWorkspace({
     () => initialResolved.envelope.defaultWorkflowId
   );
   const [selection, setSelection] = useState<WorkflowDesignerSelection>(null);
+  const [settingsOpen, setSettingsOpen] = useState(initialSettingsOpen);
   const [canvasEpoch, setCanvasEpoch] = useState(0);
   const [updatedAt, setUpdatedAt] = useState(project.updated_at);
   const [isSaving, setIsSaving] = useState(false);
@@ -241,6 +267,18 @@ export function WorkflowDesignerWorkspace({
     [updateActiveWorkflow]
   );
 
+  const handleSettingsOpenChange = useCallback(
+    (open: boolean) => {
+      setSettingsOpen(open);
+      persistWorkflowDesignerSettingsOpen(currentUserId, open);
+    },
+    [currentUserId]
+  );
+
+  const handleOpenSettings = useCallback(() => {
+    handleSettingsOpenChange(true);
+  }, [handleSettingsOpenChange]);
+
   const handleEdgeChange = useCallback(
     (
       edgeId: string,
@@ -286,16 +324,14 @@ export function WorkflowDesignerWorkspace({
       setUsedFallback(result.usedFallback);
       setUpdatedAt(result.updatedAt);
       setCanvasEpoch((epoch) => epoch + 1);
-      setMessage('Workflow configuration saved.');
+      setMessage('Workflow saved.');
       setMessageIsError(false);
-      toast.success('Workflow configuration saved.');
+      toast.success('Workflow saved.');
       router.refresh();
       return true;
     } catch (error) {
       const detail =
-        error instanceof Error
-          ? error.message
-          : 'Failed to save workflow configuration.';
+        error instanceof Error ? error.message : 'Could not save the workflow.';
       setMessage(detail);
       setMessageIsError(true);
       toast.error(detail);
@@ -308,9 +344,7 @@ export function WorkflowDesignerWorkspace({
   const handleSaveClick = () => {
     performSave().catch((error: unknown) => {
       const detail =
-        error instanceof Error
-          ? error.message
-          : 'Failed to save workflow configuration.';
+        error instanceof Error ? error.message : 'Could not save the workflow.';
       setMessage(detail);
       setMessageIsError(true);
       toast.error(detail);
@@ -332,11 +366,6 @@ export function WorkflowDesignerWorkspace({
               Workflow designer
             </h2>
           </div>
-          <p className="text-muted-foreground mt-1 max-w-3xl text-sm leading-relaxed">
-            Arrange states on the canvas and edit the selected state or
-            transition in Settings. Save persists layout and field changes
-            together.
-          </p>
         </div>
         {canEdit ? (
           <div className="flex items-center gap-1.5">
@@ -366,17 +395,13 @@ export function WorkflowDesignerWorkspace({
       {!canEdit ? (
         <div className="border-border bg-muted/40 text-muted-foreground flex items-center gap-3 rounded-lg border p-3 text-sm">
           <Lock className="size-4 shrink-0 text-amber-500" />
-          <span>
-            You have view-only access. Only project managers and administrators
-            can edit and save workflows.
-          </span>
+          <span>View only — managers and admins can edit.</span>
         </div>
       ) : null}
 
       {usedFallback ? (
         <div className="border-border bg-muted/40 text-muted-foreground rounded-lg border p-3 text-sm">
-          No valid workflow envelope was stored yet — showing the seeded
-          default. Save to persist it on this project.
+          Using the default workflow. Save to keep it on this project.
         </div>
       ) : null}
 
@@ -400,7 +425,7 @@ export function WorkflowDesignerWorkspace({
             setCanvasEpoch((epoch) => epoch + 1);
           }}
         >
-          <SelectTrigger id="workflow-designer-switcher" className="w-[220px]">
+          <SelectTrigger id="workflow-designer-switcher" className="w-55">
             <SelectValue placeholder="Select workflow" />
           </SelectTrigger>
           <SelectContent>
@@ -418,8 +443,8 @@ export function WorkflowDesignerWorkspace({
         </span>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="h-[480px] min-h-[320px]">
+      <div className="flex h-[min(560px,calc(100dvh-16rem))] min-h-80 gap-4 pb-2">
+        <div className="min-h-0 min-w-0 flex-1">
           <ReactFlowProvider>
             <WorkflowDesignerCanvas
               key={`${activeWorkflow.id}:${canvasEpoch}`}
@@ -427,6 +452,7 @@ export function WorkflowDesignerWorkspace({
               canEdit={canEdit}
               onNodesSettled={handleNodesSettled}
               onSelectionChange={setSelection}
+              onOpenSettings={handleOpenSettings}
             />
           </ReactFlowProvider>
         </div>
@@ -439,6 +465,8 @@ export function WorkflowDesignerWorkspace({
           onStateChange={handleStateChange}
           onEdgeChange={handleEdgeChange}
           onMakeStateTerminal={handleMakeStateTerminal}
+          open={settingsOpen}
+          onOpenChange={handleSettingsOpenChange}
         />
       </div>
     </div>
