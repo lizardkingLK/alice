@@ -66,6 +66,10 @@ import {
   type Step2ImportsProps,
   type Step3SourceControlProps,
 } from '@/app/projects/_components/project-form-integration-steps';
+import {
+  Step5Team,
+  type Step5TeamProps,
+} from '@/app/projects/_components/project-form-team-step';
 
 interface ProjectFormProps {
   readonly onClose?: () => void;
@@ -237,6 +241,27 @@ function validateSprintStep(
     : (parsed.error.issues[0]?.message ?? 'Invalid sprint configuration.');
 }
 
+function validateTeamStep(
+  createInitialTeam: boolean,
+  teamName: string,
+  teamManagerId: string
+): string | null {
+  // Team creation is optional.
+  if (!createInitialTeam) {
+    return null;
+  }
+
+  if (teamName.trim().length < 2) {
+    return 'Team name must be at least 2 characters.';
+  }
+
+  if (!teamManagerId) {
+    return 'Please select a team manager.';
+  }
+
+  return null;
+}
+
 function getStepError(
   currentStep: number,
   fields: {
@@ -261,6 +286,9 @@ function getStepError(
     sprintGoal: string;
     sprintStartDate: string;
     sprintEndDate: string;
+    createInitialTeam: boolean;
+    teamName: string;
+    teamManagerId: string;
   }
 ): string | null {
   if (currentStep === 1) {
@@ -298,6 +326,13 @@ function getStepError(
       fields.sprintGoal,
       fields.sprintStartDate,
       fields.sprintEndDate
+    );
+  }
+  if (currentStep === 5) {
+    return validateTeamStep(
+      fields.createInitialTeam,
+      fields.teamName,
+      fields.teamManagerId
     );
   }
   return null;
@@ -691,7 +726,12 @@ function ProjectFormStepper({
     { number: 1, label: 'Basic Info' },
     { number: 2, label: 'Imports' },
     { number: 3, label: 'Source Control' },
-    ...(!isEditMode ? [{ number: 4, label: 'Sprint' }] : []),
+    ...(!isEditMode
+      ? [
+          { number: 4, label: 'Sprint' },
+          { number: 5, label: 'Team' },
+        ]
+      : []),
   ];
 
   return (
@@ -840,12 +880,14 @@ function ProjectFormStepBody({
   step2,
   step3,
   step4,
+  step5,
 }: Readonly<{
   step: number;
   step1: ComponentProps<typeof Step1BasicDetails>;
   step2: Step2ImportsProps;
   step3: Step3SourceControlProps;
   step4: Step4SprintProps;
+  step5: Step5TeamProps;
 }>) {
   if (step === 1) {
     return <Step1BasicDetails {...step1} />;
@@ -856,7 +898,11 @@ function ProjectFormStepBody({
   if (step === 3) {
     return <Step3SourceControl {...step3} />;
   }
-  return <Step4Sprint {...step4} />;
+  if (step === 4) {
+    return <Step4Sprint {...step4} />;
+  }
+
+  return <Step5Team {...step5} />;
 }
 
 export function ProjectForm({
@@ -924,8 +970,15 @@ export function ProjectForm({
   const [sprintGoal, setSprintGoal] = useState('');
   const [sprintStartDate, setSprintStartDate] = useState('');
   const [sprintEndDate, setSprintEndDate] = useState('');
+  // Initial Team States (create mode only)
+  const [createInitialTeam, setCreateInitialTeam] = useState(false);
+  const [teamName, setTeamName] = useState('');
+  const [teamDescription, setTeamDescription] = useState('');
+  const [teamManagerId, setTeamManagerId] = useState('');
+  const [teamTechStack, setTeamTechStack] = useState('');
+  const [teamMemberIds, setTeamMemberIds] = useState<string[]>([]);
 
-  const finalStep = isEditMode ? 3 : 4;
+  const finalStep = isEditMode ? 3 : 5;
 
   const validateStep = (currentStep: number): boolean => {
     setMessage(null);
@@ -956,6 +1009,9 @@ export function ProjectForm({
       sprintGoal,
       sprintStartDate,
       sprintEndDate,
+      createInitialTeam,
+      teamName,
+      teamManagerId,
     });
     if (errorMsg) {
       setMessage(errorMsg);
@@ -1111,6 +1167,23 @@ export function ProjectForm({
     };
   };
 
+  const resolveInitialTeamInput = (): Pick<CreateProjectInput, 'team'> => {
+    if (projectToEdit || !createInitialTeam) {
+      return {};
+    }
+
+    return {
+      team: {
+        name: teamName.trim(),
+        description: teamDescription.trim() || null,
+        manager_id: teamManagerId,
+        tech_stack: teamTechStack.trim() || null,
+        status: 'active',
+        member_ids: [...new Set(teamMemberIds)],
+      },
+    };
+  };
+
   const validateFinalStep = (): boolean => isEditMode || validateStep(step);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -1171,6 +1244,7 @@ export function ProjectForm({
           : null,
         github_token: resolveGithubToken(),
         ...resolveInitialSprintInput(),
+        ...resolveInitialTeamInput(),
       };
 
       if (projectToEdit) {
@@ -1307,6 +1381,21 @@ export function ProjectForm({
                 setSprintStartDate,
                 sprintEndDate,
                 setSprintEndDate,
+              }}
+              step5={{
+                createInitialTeam,
+                setCreateInitialTeam,
+                teamName,
+                setTeamName,
+                teamDescription,
+                setTeamDescription,
+                teamManagerId,
+                setTeamManagerId,
+                teamTechStack,
+                setTeamTechStack,
+                teamMemberIds,
+                setTeamMemberIds,
+                users,
               }}
             />
           </div>

@@ -140,6 +140,7 @@ export {
   projectRelationSelect,
   createProjectSchema,
   updateProjectSchema,
+  type InitialProjectTeamInput,
   workItemTypeRemovalStrategySchema,
   workItemTypeRemovalStrategiesSchema,
   type WorkItemTypeRemovalStrategy,

@@ -40,6 +40,14 @@ import { WorkflowConfigError } from './workflow-config.errors';
 
 export type { CreateProjectInput, UpdateProjectInput } from './projects.types';
 
+export class ProjectTeamValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ProjectTeamValidationError';
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
 async function requireProjectManager(actorId: string) {
   return await requireUserWithRole(
     actorId,
@@ -263,6 +271,50 @@ export class ProjectsService {
         repo.includes(' ')
       ) {
         throw new Error('Only one GitHub repository is allowed per project.');
+      }
+    }
+
+    const team = input.team;
+
+    if (team) {
+      // Collect the selected team member IDs.
+      const selectedMemberIds =
+        team.members?.map((member) => member.user_id) ?? team.member_ids ?? [];
+
+      // Include the manager and remove duplicate user IDs.
+      const teamUserIds = [...new Set([team.manager_id, ...selectedMemberIds])];
+
+      // Find active users matching the supplied IDs.
+      const activeUsers = await prisma.users.findMany({
+        where: {
+          id: { in: teamUserIds },
+          active: true,
+          membership_status: 'active',
+        },
+        select: {
+          id: true,
+          role: true,
+        },
+      });
+
+      // Every selected user must exist and be active.
+      if (activeUsers.length !== teamUserIds.length) {
+        throw new ProjectTeamValidationError(
+          'Team manager and members must be active users.'
+        );
+      }
+
+      // Only admins or managers can manage a team.
+      const manager = activeUsers.find((user) => user.id === team.manager_id);
+
+      if (
+        !manager ||
+        (manager.role !== UserRoleEnum.admin &&
+          manager.role !== UserRoleEnum.manager)
+      ) {
+        throw new ProjectTeamValidationError(
+          'Team manager must have an admin or manager role.'
+        );
       }
     }
 
