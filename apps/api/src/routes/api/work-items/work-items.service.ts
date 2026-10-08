@@ -41,11 +41,13 @@ import type {
 } from './work-items.repository';
 import type { WorkItemPaginatedList } from './work-items.prisma-query';
 import {
+  collectWorkItemFieldChanges,
   hasNonStatusWorkItemFieldChanges,
   resolveValidatedBoardMove,
   sameNullable,
 } from './work-items.patch-utils';
 import { WorkItemBody, WorkItemUpdateBody } from './work-items.schemas';
+import type { ActivitiesService } from '../activities/activities.service';
 import {
   BoardMoveForbiddenError,
   StatusTransitionForbiddenError,
@@ -132,7 +134,8 @@ function throwWorkflowConfigLoadError(error: unknown): void {
 export class WorkItemService {
   constructor(
     private readonly workItems: WorkItemRepository,
-    private readonly githubService?: GithubService
+    private readonly githubService?: GithubService,
+    private readonly activities?: ActivitiesService
   ) {}
 
   private async resolveGithubHeaders(
@@ -240,6 +243,11 @@ export class WorkItemService {
     const created = await this.workItems.create({
       ...input,
       createdBy: userId,
+    });
+
+    await this.activities?.recordCreated({
+      workItemId: created.id,
+      actorId: userId,
     });
 
     if (input.sprint_id || input.assignee_id || input.story_points) {
@@ -368,6 +376,14 @@ export class WorkItemService {
       expectedUpdatedAt,
     });
 
+    await this.recordUpdateActivities({
+      userId,
+      workItemId,
+      current,
+      nextInput,
+      workflow,
+    });
+
     if (sprintChanged || assigneeChanged || storyPointsChanged) {
       await this.createWorkItemUpdateWorklog({
         userId,
@@ -383,6 +399,47 @@ export class WorkItemService {
     }
 
     return updated;
+  }
+
+  private async recordUpdateActivities(params: {
+    userId: string;
+    workItemId: string;
+    current: DbWorkItem;
+    nextInput: WorkItemUpdateBody;
+    workflow: Awaited<ReturnType<WorkItemService['resolveWorkflowValidation']>>;
+  }): Promise<void> {
+    if (!this.activities) {
+      return;
+    }
+
+    const { userId, workItemId, current, nextInput, workflow } = params;
+    let wroteWorkflowTransition = false;
+
+    if (workflow.mode === 'workflow') {
+      const { sourceState, destinationState, edge, workflow: doc } = workflow;
+      if (sourceState.id !== destinationState.id) {
+        wroteWorkflowTransition = true;
+        await this.activities.recordWorkflowTransition({
+          workItemId,
+          actorId: userId,
+          meta: {
+            fromStateId: sourceState.id,
+            toStateId: destinationState.id,
+            workflowId: doc.id,
+            edgeId: edge?.id ?? null,
+          },
+        });
+      }
+    }
+
+    const fieldChanges = collectWorkItemFieldChanges(current, nextInput, {
+      includeStatus: !wroteWorkflowTransition,
+    });
+    await this.activities.recordFieldChanges({
+      workItemId,
+      actorId: userId,
+      changes: fieldChanges,
+    });
   }
 
   private async resolveInputAfterTypeChange(params: {

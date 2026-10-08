@@ -44,6 +44,99 @@ export function resolveBoardColumnPatchValue(input: {
   return input.workflowContextChanged ? null : input.currentValue;
 }
 
+export type WorkItemFieldChangeDiff = {
+  field: string;
+  oldValue: unknown;
+  newValue: unknown;
+};
+
+/**
+ * Collect activity-worthy field diffs for the Activity feed.
+ * Pass `includeStatus: false` when a `workflow_transition` row covers the move.
+ */
+export function collectWorkItemFieldChanges(
+  current: DbWorkItem,
+  input: WorkItemUpdateBody,
+  options?: { includeStatus?: boolean }
+): WorkItemFieldChangeDiff[] {
+  const includeStatus = options?.includeStatus !== false;
+  const changes: WorkItemFieldChangeDiff[] = [];
+
+  const pushIfChanged = (
+    field: string,
+    oldValue: unknown,
+    newValue: unknown,
+    equal: boolean
+  ) => {
+    if (!equal) {
+      changes.push({ field, oldValue, newValue });
+    }
+  };
+
+  pushIfChanged(
+    'title',
+    current.title,
+    input.title,
+    input.title === current.title
+  );
+  pushIfChanged('type', current.type, input.type, input.type === current.type);
+  pushIfChanged(
+    'priority',
+    current.priority,
+    input.priority,
+    input.priority === current.priority
+  );
+  pushIfChanged(
+    'assignee_id',
+    current.assignee_id,
+    input.assignee_id ?? null,
+    sameNullable(input.assignee_id, current.assignee_id)
+  );
+  pushIfChanged(
+    'sprint_id',
+    current.sprint_id,
+    input.sprint_id ?? null,
+    sameNullable(input.sprint_id, current.sprint_id)
+  );
+  pushIfChanged(
+    'parent_id',
+    current.parent_id,
+    input.parent_id ?? null,
+    sameNullable(input.parent_id, current.parent_id)
+  );
+
+  const currentLabels = parseWorkItemLabels(current.labels);
+  const nextLabels = input.labels ?? currentLabels;
+  pushIfChanged(
+    'labels',
+    currentLabels,
+    nextLabels,
+    JSON.stringify(nextLabels) === JSON.stringify(currentLabels)
+  );
+
+  const descriptionUnchanged =
+    JSON.stringify(input.description ?? null) ===
+    JSON.stringify(current.description ?? null);
+  if (!descriptionUnchanged) {
+    changes.push({
+      field: 'description',
+      oldValue: current.description == null ? null : 'updated',
+      newValue: input.description == null ? null : 'updated',
+    });
+  }
+
+  if (includeStatus) {
+    pushIfChanged(
+      'status',
+      current.status,
+      input.status,
+      current.status === input.status
+    );
+  }
+
+  return changes;
+}
+
 /**
  * True when a PATCH changes any field other than status / board placement.
  * Shared by Done read-only and workflow lock-record gates.

@@ -529,11 +529,15 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         });
         res.status(201).json({ project: withoutIntegrationSecrets(project) });
       } catch (error) {
-        const { status, error: message } = jsonErrorFromCaught(
-          error,
-          'Failed to create project'
-        );
-        res.status(status).json({ error: message });
+        const {
+          status,
+          error: message,
+          code,
+        } = jsonErrorFromCaught(error, 'Failed to create project');
+        res.status(status).json({
+          error: message,
+          ...(code ? { code } : {}),
+        });
       }
     }
   );

@@ -92,6 +92,17 @@ schemas in `packages/types`, API tests under `apps/api/tests`, web under
 6. **Terminal** state: no outbound in designer; cannot transition out at runtime.
 7. Invalid `workflow_config` in DB (staging only) → board shows seeded default.
 
+### After Step 5 (activity)
+
+1. Create a work item → Activity shows a created row.
+2. Rename or reassign → Activity shows field change lines.
+3. Drag an allowed workflow edge on the board → Activity shows transition
+   (not a duplicate status `field_changed` for that move).
+4. Add/remove an attachment → Activity shows attachment rows.
+5. Work Log tab still only lists time entries (no activity pollution).
+6. Maximize / minimize the Discussion \| Activity \| Work Log section;
+   active tab is preserved.
+
 ### After Step 6 (presets)
 
 1. Create named preset (Form + JSON parity).

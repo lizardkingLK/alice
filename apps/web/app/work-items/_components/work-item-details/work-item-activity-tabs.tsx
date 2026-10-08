@@ -1,23 +1,30 @@
 'use client';
 
-import { formatDate } from '@/app/_shared/utility';
 import { CommentsFeed } from '@/app/comments/_components/comments-feed';
 import { CommentsSortMenu } from '@/app/comments/_components/comments-sort-menu';
 import type { CommentsSortOrder } from '@/app/comments/_components/comments-feed-helpers';
 import type { CommentItem } from '@/app/comments/_services/comments.mutations.client';
 import type { CommentWorkItemOption } from '@/app/comments/_services/comments.mutations.shared';
+import { WorkItemActivityFeed } from '@/app/work-items/_components/work-item-details/work-item-activity-feed';
 import { WorkItemWorkLogPanel } from '@/app/work-items/_components/work-item-work-logs/work-item-work-log-panel';
-import type { WorkItemWorkLog } from '@repo/types';
+import type { WorkItemActivity, WorkItemWorkLog } from '@repo/types';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
-import { Card, CardContent } from '@repo/ui/components/ui/card';
+import { Button } from '@repo/ui/components/ui/button';
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@repo/ui/components/ui/tabs';
-import { History } from '@repo/ui/lib/icons';
-import { useLayoutEffect, useRef, useState, type FormEvent } from 'react';
+import { Maximize2, Minimize2 } from '@repo/ui/lib/icons';
+import { cn } from '@repo/ui/lib/utils';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react';
 
 export type WorkItemActivityTab = 'discussion' | 'activity' | 'work-log';
 
@@ -29,6 +36,7 @@ type WorkItemActivityTabsProps = {
   // eslint-disable-next-line no-unused-vars -- callback signature
   onActiveTabChange: (tab: WorkItemActivityTab) => void;
   initialComments: CommentItem[];
+  initialActivities?: WorkItemActivity[];
   workItem: DbWorkItem;
   discussionWorkItems: CommentWorkItemOption[];
   currentUserId?: string;
@@ -83,6 +91,7 @@ export function WorkItemActivityTabs({
   activeTab,
   onActiveTabChange,
   initialComments,
+  initialActivities = [],
   workItem,
   discussionWorkItems,
   currentUserId,
@@ -100,6 +109,19 @@ export function WorkItemActivityTabs({
   const captureScrollBeforeTabChange = usePreserveScrollOnTabChange(activeTab);
   const [commentsSortOrder, setCommentsSortOrder] =
     useState<CommentsSortOrder>('newest');
+  const [isMaximized, setIsMaximized] = useState(false);
+
+  useEffect(() => {
+    if (!isMaximized) {
+      return;
+    }
+
+    const originalStyle = globalThis.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, [isMaximized]);
 
   const handleTabChange = (value: string) => {
     captureScrollBeforeTabChange();
@@ -107,11 +129,19 @@ export function WorkItemActivityTabs({
   };
 
   return (
-    <section className="space-y-3 [overflow-anchor:none]">
-      <h2 className="text-sm font-semibold">Activity</h2>
-
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <div className="flex items-center justify-between gap-2 border-b">
+    <section
+      className={cn(
+        'space-y-3 [overflow-anchor:none]',
+        isMaximized &&
+          'bg-background fixed inset-0 z-50 flex h-screen w-screen flex-col gap-4 overflow-y-auto rounded-none p-6'
+      )}
+    >
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className={cn(isMaximized && 'flex min-h-0 flex-1 flex-col')}
+      >
+        <div className="flex items-center gap-2 border-b">
           <TabsList className="h-auto justify-start rounded-none border-0 bg-transparent p-0">
             <TabsTrigger
               value="discussion"
@@ -139,9 +169,28 @@ export function WorkItemActivityTabs({
               onSortOrderChange={setCommentsSortOrder}
             />
           ) : null}
+
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="ml-auto"
+            title={isMaximized ? 'Minimize section' : 'Maximize section'}
+            aria-label={isMaximized ? 'Minimize section' : 'Maximize section'}
+            onClick={() => setIsMaximized((prev) => !prev)}
+          >
+            {isMaximized ? (
+              <Minimize2 className="h-4 w-4" />
+            ) : (
+              <Maximize2 className="h-4 w-4" />
+            )}
+          </Button>
         </div>
 
-        <TabsContent value="discussion" className="mt-4 pb-6">
+        <TabsContent
+          value="discussion"
+          className={cn('mt-4 pb-6', isMaximized && 'min-h-0 flex-1')}
+        >
           <CommentsFeed
             embedded
             hideSortControl
@@ -154,26 +203,17 @@ export function WorkItemActivityTabs({
           />
         </TabsContent>
 
-        <TabsContent value="activity" className="mt-4 pb-6">
-          <Card className="border-dashed">
-            <CardContent className="space-y-3 pt-12 pb-14 text-center">
-              <div className="bg-muted mx-auto flex size-12 items-center justify-center rounded-full">
-                <History className="text-muted-foreground size-6" />
-              </div>
-              <h3 className="text-foreground text-base font-semibold">
-                No activity yet
-              </h3>
-              <p className="text-muted-foreground mx-auto max-w-sm text-sm">
-                Status changes, field updates, and transitions will appear here.
-              </p>
-              <p className="text-muted-foreground text-xs">
-                Last updated {formatDate(workItem.updated_at)}
-              </p>
-            </CardContent>
-          </Card>
+        <TabsContent
+          value="activity"
+          className={cn('mt-4 pb-6', isMaximized && 'min-h-0 flex-1')}
+        >
+          <WorkItemActivityFeed activities={initialActivities} />
         </TabsContent>
 
-        <TabsContent value="work-log" className="mt-4 pb-6">
+        <TabsContent
+          value="work-log"
+          className={cn('mt-4 pb-6', isMaximized && 'min-h-0 flex-1')}
+        >
           <WorkItemWorkLogPanel
             workLogs={workLogs}
             currentUserId={currentUserId}

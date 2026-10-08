@@ -32,12 +32,15 @@ for mentionable teammates.
 
 ## Activity tab
 
-The **Activity** tab shows field changes, workflow state transitions, and
-resolution outcomes over time (when the activity feed is enabled for your
-workspace).
+The **Activity** tab shows who changed what on the work item over time:
 
-If the tab shows placeholder text, your workspace may still be rolling out the
-full activity timeline — check back after upgrades.
+- Field updates (title, assignee, status, and similar)
+- Workflow state transitions
+- Attachments added or removed
+
+Use the maximize icon on the right of the Discussion \| Activity \| Work Log
+tab row to expand the whole section for long threads or history (same pattern
+as the description editor).
 
 ---
 

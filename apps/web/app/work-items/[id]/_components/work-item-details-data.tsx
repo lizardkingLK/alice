@@ -12,6 +12,7 @@ import {
   getWorkItemDiscussion,
   listCommentWorkItemOptions,
 } from '@/app/comments/_services/comments.reads.server';
+import { getWorkItemActivities } from '@/app/work-items/_services/activities.reads.supabase.server';
 import {
   getProject,
   getProjectMembers,
@@ -29,13 +30,19 @@ type WorkItemDetailsDataProps = {
 export async function WorkItemDetailsData({
   workItemId,
 }: Readonly<WorkItemDetailsDataProps>) {
-  const [workItem, initialComments, initialAttachments, dbUser] =
-    await Promise.all([
-      getWorkItem(workItemId),
-      getWorkItemDiscussion(workItemId),
-      getWorkItemAttachments(workItemId),
-      getDbUser(),
-    ]);
+  const [
+    workItem,
+    initialComments,
+    initialAttachments,
+    initialActivities,
+    dbUser,
+  ] = await Promise.all([
+    getWorkItem(workItemId),
+    getWorkItemDiscussion(workItemId),
+    getWorkItemAttachments(workItemId),
+    getWorkItemActivities(workItemId),
+    getDbUser(),
+  ]);
 
   if (!workItem) {
     redirect('/dashboard');
@@ -139,6 +146,7 @@ export async function WorkItemDetailsData({
       project={project}
       initialComments={initialComments}
       initialAttachments={initialAttachments}
+      initialActivities={initialActivities}
       initialWorkLogs={initialWorkLogs}
       currentUserId={currentUserId}
       currentUserRole={currentUserRole}
