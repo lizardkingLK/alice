@@ -32,6 +32,7 @@ import {
   type WorkflowDocument,
   type WorkflowEdge,
   type WorkflowRequireChildren,
+  type WorkflowResolutionPreset,
   type WorkflowStateNode,
 } from '@repo/types/api/v1';
 import {
@@ -45,6 +46,7 @@ import {
 } from '@/app/projects/_components/project-details/transition-rule-permissions';
 import type { MemberCheckboxOption } from '@/components/member-checkbox-list';
 import { WORK_ITEM_STATUS_BADGE_STYLES } from '@/app/work-items/_helpers/work-item-status';
+import { WorkflowResolutionPresetEditor } from '@/app/projects/_components/project-details/workflow-resolution-preset-editor';
 import { cn } from '@repo/ui/lib/utils';
 
 export type WorkflowDesignerSelection =
@@ -66,10 +68,15 @@ type WorkflowStateChangeHandler = (
 ) => void;
 type WorkflowEdgeChangeHandler = (
   edgeId: string,
-  patch: Partial<Pick<WorkflowEdge, 'requireChildren' | 'allowAnyOf'>>
+  patch: Partial<
+    Pick<WorkflowEdge, 'requireChildren' | 'allowAnyOf' | 'resolutionPresetId'>
+  >
 ) => void;
 type WorkflowMakeTerminalHandler = (stateId: string) => void;
 type WorkflowSettingsOpenChangeHandler = (open: boolean) => void;
+type WorkflowResolutionPresetUpsertHandler = (
+  preset: WorkflowResolutionPreset
+) => void;
 /* eslint-enable no-unused-vars */
 
 type WorkflowDesignerSettingsProps = {
@@ -81,6 +88,7 @@ type WorkflowDesignerSettingsProps = {
   readonly onStateChange: WorkflowStateChangeHandler;
   readonly onEdgeChange: WorkflowEdgeChangeHandler;
   readonly onMakeStateTerminal: WorkflowMakeTerminalHandler;
+  readonly onUpsertResolutionPreset: WorkflowResolutionPresetUpsertHandler;
   /** Controlled open state (workspace owns cookie/localStorage persist). */
   readonly open: boolean;
   readonly onOpenChange: WorkflowSettingsOpenChangeHandler;
@@ -349,6 +357,7 @@ function EdgeSettingsForm({
   teams,
   members,
   onEdgeChange,
+  onUpsertResolutionPreset,
 }: {
   readonly edge: WorkflowEdge;
   readonly workflow: WorkflowDocument;
@@ -356,6 +365,7 @@ function EdgeSettingsForm({
   readonly teams: readonly TransitionRuleTeamOption[];
   readonly members: readonly MemberCheckboxOption[];
   readonly onEdgeChange: WorkflowDesignerSettingsProps['onEdgeChange'];
+  readonly onUpsertResolutionPreset: WorkflowDesignerSettingsProps['onUpsertResolutionPreset'];
 }) {
   const fromState = workflow.graph.states.find(
     (state) => state.id === edge.from
@@ -415,23 +425,17 @@ function EdgeSettingsForm({
           label="Resolution preset"
           tip="Optional form filled when taking this move. Required when the from-state needs escalation."
         />
-        <Select disabled value={edge.resolutionPresetId ?? undefined}>
-          <SelectTrigger id="workflow-edge-resolution-preset">
-            <SelectValue placeholder="Coming soon" />
-          </SelectTrigger>
-          <SelectContent>
-            {edge.resolutionPresetId ? (
-              <SelectItem value={edge.resolutionPresetId}>
-                {edge.resolutionPresetId}
-              </SelectItem>
-            ) : null}
-          </SelectContent>
-        </Select>
-        {fromRequiresEscalation && !edge.resolutionPresetId ? (
-          <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
-            This move needs a resolution form before you can save.
-          </p>
-        ) : null}
+        <WorkflowResolutionPresetEditor
+          workflow={workflow}
+          edgeId={edge.id}
+          presetId={edge.resolutionPresetId}
+          canEdit={canEdit}
+          required={fromRequiresEscalation}
+          onBindPreset={(nextPresetId) =>
+            onEdgeChange(edge.id, { resolutionPresetId: nextPresetId })
+          }
+          onUpsertPreset={onUpsertResolutionPreset}
+        />
       </div>
 
       <div className="space-y-2">
@@ -470,6 +474,7 @@ export function WorkflowDesignerSettings({
   onStateChange,
   onEdgeChange,
   onMakeStateTerminal,
+  onUpsertResolutionPreset,
   open,
   onOpenChange,
 }: WorkflowDesignerSettingsProps) {
@@ -554,6 +559,7 @@ export function WorkflowDesignerSettings({
               teams={teams}
               members={members}
               onEdgeChange={onEdgeChange}
+              onUpsertResolutionPreset={onUpsertResolutionPreset}
             />
           ) : null}
           {!selectedState && !selectedEdge ? (

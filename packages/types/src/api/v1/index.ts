@@ -59,6 +59,22 @@ export {
   type WorkflowStateNode,
 } from './workflow-config.js';
 export {
+  buildEscalationResolvedMeta,
+  cloneResolutionPreset,
+  createEmptyResolutionPreset,
+  findResolutionPreset,
+  getResolutionRequirement,
+  upsertResolutionPreset,
+  validateResolutionPayload,
+  workflowResolutionAnswerSchema,
+  workflowResolutionPayloadSchema,
+  type EscalationResolvedMeta,
+  type ResolutionRequirement,
+  type ResolutionValidationResult,
+  type WorkflowResolutionAnswer,
+  type WorkflowResolutionPayload,
+} from './workflow-resolution.js';
+export {
   findWorkflowEdge,
   findWorkflowState,
   listBoardWorkflowTabs,

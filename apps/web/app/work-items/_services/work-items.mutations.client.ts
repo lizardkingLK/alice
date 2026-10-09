@@ -44,11 +44,13 @@ export async function updateWorkItemStatus(
   id: string,
   status: DbWorkItem['status'],
   expectedUpdatedAt: string,
-  boardColumnId?: string | null
+  boardColumnId?: string | null,
+  resolution?: PatchWorkItemStatusBody['resolution']
 ): Promise<ResponseDTO<DbWorkItem>> {
   const body: PatchWorkItemStatusBody = {
     status,
     ...(boardColumnId === undefined ? {} : { board_column_id: boardColumnId }),
+    ...(resolution ? { resolution } : {}),
     expectedUpdatedAt,
   };
   const parsed = patchWorkItemStatusBodySchema.safeParse(body);

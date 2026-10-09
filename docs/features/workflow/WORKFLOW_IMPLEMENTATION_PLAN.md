@@ -17,20 +17,21 @@ board JSON in MVP).
 
 ## Phase map
 
-| Step | Name                          | Delivers                                           |
-| ---- | ----------------------------- | -------------------------------------------------- |
-| 1    | Schema + `state` bridge       | DB columns, types, dual-write helpers              |
-| 2    | Workflow Zod + project API    | Envelope schema, CRUD/save, fallback               |
-| 3a   | Flow canvas + load/save       | XYFlow canvas, layout persist, Save/Discard        |
-| 3b   | Settings sidebar              | Node/edge forms, tooltips / popovers               |
-| 3c   | Designer rules + dirty flag   | Lock/terminal/children/escalation stub, chat dirty |
-| 4    | Board switcher + transitions  | Parallel boards, DnD/API gates, pickers            |
-| 5    | Activity table                | `activities` + transition writers + UI (**Done**)  |
-| 6    | Resolution presets            | Form / Preview / JSON designer + runtime dialog    |
-| 7    | Charts category + state       | Rollups + Charts UI **State** label                |
-| 8    | Docked Alice + workflow tools | Sidebar, view context, propose/apply confirm       |
-| 9    | Retire board designer         | Remove board config UI; update board feature docs  |
-| 10   | User-guide polish             | Living guides synced with shipped UI               |
+| Step | Name                          | Delivers                                                   |
+| ---- | ----------------------------- | ---------------------------------------------------------- |
+| 1    | Schema + `state` bridge       | DB columns, types, dual-write helpers                      |
+| 2    | Workflow Zod + project API    | Envelope schema, CRUD/save, fallback                       |
+| 3a   | Flow canvas + load/save       | XYFlow canvas, layout persist, Save/Discard                |
+| 3b   | Settings sidebar              | Node/edge forms, tooltips / popovers                       |
+| 3c   | Designer rules + dirty flag   | Lock/terminal/children/escalation stub, chat dirty         |
+| 4    | Board switcher + transitions  | Parallel boards, DnD/API gates, pickers                    |
+| 5    | Activity table                | `activities` + transition writers + UI (**Done**)          |
+| 6    | Resolution presets            | Form / Preview / JSON designer + runtime dialog (**Done**) |
+| 7    | Charts category + state       | Rollups + Charts UI **State** label                        |
+| 8    | Docked Alice + workflow tools | Sidebar, view context, propose/apply confirm               |
+| 9    | Retire board designer         | Remove board config UI; update board feature docs          |
+| 10   | User-guide polish             | Living guides synced with shipped UI                       |
+| 11   | Async project create          | Non-blocking create + notify (busy-retry hidden)           |
 
 **Deferred (next)** after MVP: see [§ Deferred (next)](#deferred-next).
 
@@ -272,6 +273,8 @@ Guide: [DATABASE_BUSY_RETRY.md](../../guides/DATABASE_BUSY_RETRY.md).
 
 ## Step 6 — Resolution presets
 
+**Status: Done (as-built)**
+
 **Goal:** Named dialogs with Form / Preview / JSON and runtime collection.
 
 1. Preset Zod + Settings UI (create, rename, load, save-as).
@@ -280,6 +283,15 @@ Guide: [DATABASE_BUSY_RETRY.md](../../guides/DATABASE_BUSY_RETRY.md).
 4. Transition UI/API: require `resolution` payload when edge/preset demands it.
 5. Activity snapshot on resolve.
 6. Tests for schema, promote/load, API rejection without resolution.
+
+### As-built
+
+| Piece               | Location                                                |
+| ------------------- | ------------------------------------------------------- |
+| Payload + helpers   | `packages/types/src/api/v1/workflow-resolution.ts`      |
+| Designer editor     | `workflow-resolution-preset-editor.tsx` (edge Settings) |
+| API gate + activity | `work-items.service.ts` + `escalation_resolved`         |
+| Runtime dialog      | `work-item-resolution-dialog.tsx` via status dropdown   |
 
 **Exit:** Escalation/resolution works end-to-end on configured edges.
 
@@ -350,12 +362,87 @@ Guide: [DATABASE_BUSY_RETRY.md](../../guides/DATABASE_BUSY_RETRY.md).
 
 ---
 
+## Step 11 — Async project create (busy-safe)
+
+**Goal:** Creating a project must not block the admin UI on pool / transaction
+pressure. Mirror the **chat async** pattern: accept the request, return quickly,
+finish work in the background with existing `withBusyRetry`, then notify the
+actor when done.
+
+### Product behavior
+
+1. Client submits create → API accepts and returns **quickly** (e.g. `202` /
+   accepted) with a short message: creation will finish shortly.
+2. Connection closes; user is unblocked (stay on `/projects` or dismiss the
+   create dialog — no waiting spinner on the HTTP call).
+3. Server runs create (incl. optional team/sprint) inside the existing
+   `withBusyRetry` + longer `$transaction` `maxWait` path.
+4. **Success notification (required):** insert inbox notification for the
+   creating admin with a **deep link to the new project details page**
+   (`/projects/{id}`), not message-only. Reuse notifications realtime (same
+   path as `chat_processed`).
+5. **Failure notification (required):** notify the same admin that create
+   failed (after retries exhausted), with enough context to retry or escalate
+   (name/key + short reason). No project link when no row exists.
+6. The client **must not** show the global “Database is busy. Retrying…” toast
+   for this create call (opt out of `notifyDatabaseBusyRetry` on that path).
+   Server-side busy retries still run.
+
+### Success notification shape
+
+| Field             | Value                                                                                                                                                 |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`            | New enum value e.g. `project_created`                                                                                                                 |
+| `related_item_id` | New `projects.id`                                                                                                                                     |
+| `message`         | Short copy (“**Acme** is ready”)                                                                                                                      |
+| Inbox click       | `resolveNotificationHref` → `/projects/{id}` (extend [`resolve-notification-href.ts`](../../apps/web/lib/notifications/resolve-notification-href.ts)) |
+
+### Failure escalation (discussion → plan default)
+
+Today `activities` is **work-item-only** (`work_item_id` NOT NULL + FK). Reusing
+that table with an “entity type = projects” flag would force a polymorphic
+redesign of the work-item Activity feed — too heavy for Step 11.
+
+**Step 11 default (ship with create):**
+
+1. `project_create_failed` notification to the actor (inbox + realtime).
+2. Structured server log / error reporting with a **correlation id** echoed in
+   the notification message (support can find the attempt).
+3. Optional: store attempt payload (name, key, actor) in notification `message`
+   or a small JSON meta later if the notifications table gains `meta`.
+
+**Follow-up (not Step 11):** durable multi-entity audit belongs in a future
+**Application logs** platform feature (see Deferred N10) — a common table that
+can absorb today’s work-item `activities` after careful indexing. Step 11 stays
+**notifications + correlation id + server logs** only. Do **not** overload
+work-item `activities` for project create.
+
+### Implementation sketch
+
+| Layer           | Work                                                                                                                      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Schema          | Add `NotificationType` values `project_created`, `project_create_failed` (+ migration)                                    |
+| API             | `POST /api/projects`: validate → accept → background create with busy retry → notify success (with project id) or failure |
+| Web create form | Non-blocking submit; “Creating… you’ll be notified”; suppress busy-retry toast for this mutation                          |
+| Inbox           | Extend `resolveNotificationHref` for `project_created` → `/projects/{id}`; copy for failed type                           |
+| Docs            | User-guide project create + `DATABASE_BUSY_RETRY.md` toast exception; notifications user-guide type table                 |
+
+### Exit
+
+- Admin is not stuck on create under DB pressure.
+- Success notification opens the new project details page.
+- Failure notifies the admin with actionable context (and correlation id).
+- Busy-retry toast is suppressed only for this create path.
+
+---
+
 ## Suggested PR slicing
 
 Prefer one PR per step (or 1–2 tightly coupled steps). Step 3 is already split
 into **3a / 3b / 3c** — keep those separate. Do not combine Step 3 designer with
 Step 9 deletion. Activity (5) can parallelize after Step 4 if staffed; presets
-(6) need Step 3b Settings shell.
+(6) need Step 3b Settings shell. Step **11** (async project create) can ship
+independently of Steps 7–10; keep it separate from designer work.
 
 ---
 
@@ -364,17 +451,103 @@ Step 9 deletion. Activity (5) can parallelize after Step 4 if staffed; presets
 Implement **after** MVP Steps 1–10 unless a step’s design must reserve schema
 hooks (prefer reserved optional fields over building UI now).
 
-| ID  | Item                                    | Notes                                                                               |
-| --- | --------------------------------------- | ----------------------------------------------------------------------------------- |
-| N1  | **Category lock**                       | Group seal: internal edges OK; remove cross-category outbound before lock; tooltips |
-| N2  | **All-types union board**               | Optional merged strip / read-only overview                                          |
-| N3  | **Outcome → target state**              | Resolution buttons may override edge target                                         |
-| N4  | **Cross-workflow presets**              | Shared library beyond per-workflow copy-on-fork                                     |
-| N5  | **Dynamic fields in resolution forms**  | Reuse project dynamic-fields engine                                                 |
-| N6  | **Auto-migrate board v1/v2 → workflow** | Replace fallback-only strategy                                                      |
-| N7  | **Workflow doc version / OCC**          | Concurrent editor safety                                                            |
-| N8  | Activity Realtime                       | Optional live feed on details                                                       |
-| N9  | Enter-only escalation gates             | MVP is exit-only                                                                    |
+| ID  | Item                                    | Notes                                                                                    |
+| --- | --------------------------------------- | ---------------------------------------------------------------------------------------- |
+| N1  | **Category lock**                       | Group seal: internal edges OK; remove cross-category outbound before lock; tooltips      |
+| N2  | **All-types union board**               | Optional merged strip / read-only overview                                               |
+| N3  | **Outcome → target state**              | Resolution buttons may override edge target                                              |
+| N4  | **Cross-workflow presets**              | Shared library beyond per-workflow copy-on-fork                                          |
+| N5  | **Dynamic fields in resolution forms**  | Reuse project dynamic-fields engine                                                      |
+| N6  | **Auto-migrate board v1/v2 → workflow** | Replace fallback-only strategy                                                           |
+| N7  | **Workflow doc version / OCC**          | Concurrent editor safety                                                                 |
+| N8  | Activity Realtime                       | Optional live feed on details                                                            |
+| N9  | Enter-only escalation gates             | MVP is exit-only                                                                         |
+| N10 | **Application logs** (platform feature) | See [§ Application logs (N10) — planning inputs](#application-logs-n10--planning-inputs) |
+| N11 | **API / observability logs**            | Request/trace logs; prefer **external** sink (not primary DB); own docs/plan             |
 
 Track these in the next implementation plan revision when MVP ships; do not
-silently pull them into Steps 1–10.
+silently pull them into Steps 1–11. N10/N11 are cross-cutting platform features
+with separate document sets — only cross-linked here.
+
+---
+
+## Application logs (N10) — planning inputs
+
+**Not a workflow step.** Future platform feature with its own
+`docs/features/application-logs/` (or similar) plan. Captured here so Step 11
+and activity work stay aligned.
+
+### Authorization (product)
+
+Logs are **project-scoped**. A reader must be an **active project member** (or
+admin via existing ACL), then further filtered by a **visibility / audience**
+on each event (or on the query):
+
+| Audience          | Who can see                                                         |
+| ----------------- | ------------------------------------------------------------------- |
+| **all** (project) | Any project member                                                  |
+| **team**          | Members of named team(s) on that project                            |
+| **user**          | Named user(s) only (e.g. actor + assignees, or explicit recipients) |
+
+Managers/admins may still have a wider default (project **all**) where product
+policy allows; never leak cross-project rows. Enforce in API with the same
+membership helpers as work items — not “trust the UI filter.”
+
+Writers stamp `project_id` + `visibility` (and team/user targets when needed)
+at insert time so reads stay simple predicate filters.
+
+### Storage shape (direction)
+
+- Common **application log** store: `entity_type` + `entity_id` + `action` +
+  `actor_id` + `project_id` + `visibility` + `payload`/`meta` + `created_at`.
+- Migrate / dual-write work-item `activities` into this store, then retire the
+  WI-only table once readers move.
+- Retention + archival policy required before high-volume entities write here.
+
+### Offload to a time / search indexer?
+
+**Yes — recommended as the durable hot path for N10 once volume grows**, not
+as a Day-1 blocker if early traffic is small.
+
+| Approach                                                                                    | When                                                        |
+| ------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| **Postgres first** (partitioned)                                                            | Early MVP of application logs; same tenancy/RLS habits      |
+| **Dual-write → external indexer** (OpenSearch / Elasticsearch, ClickHouse, Timescale, etc.) | When timeline scans and fan-out filters dominate primary DB |
+| **External as source of truth + thin Postgres pointer**                                     | If primary DB must stay OLTP-only                           |
+
+Same story as N11: do **not** let unbounded log volume compete with CRUD on the
+primary DB. Prefer append-only ingest, time-based indexes/partitions, and
+query APIs that always require `project_id` + time range.
+
+Application logs (audit/product timeline) and API/observability logs (N11) can
+share an **ingest pipeline** but should stay **separate indexes/collections** —
+different retention, PII rules, and auth.
+
+### Query optimization techniques (must-haves in the feature plan)
+
+1. **Mandatory filters:** every list query requires `project_id` + bounded
+   `created_at` range (no unbounded “all history”).
+2. **Composite indexes** aligned to access patterns, e.g.
+   `(project_id, created_at DESC)`, `(project_id, entity_type, entity_id, created_at DESC)`,
+   and visibility helpers as needed (partial indexes for `visibility = 'all'`).
+3. **Partitioning** by time (monthly/weekly) or by `project_id` hash if
+   multi-tenant scan cost dominates.
+4. **Cursor pagination** on `(created_at, id)` — avoid deep `OFFSET`.
+5. **Visibility predicate pushdown** early (project membership ∩ audience) so
+   the indexer/DB never returns rows the caller cannot see.
+6. **Denormalize carefully** for list cards (actor display name snapshot) to
+   avoid N+1 joins on hot paths; keep full payload in `meta`.
+7. **Write path:** batch inserts / async ingest; never block user mutations on
+   log fan-out (outbox or fire-and-forget with retry).
+8. **Read path SLOs:** cap page size; reject queries without time bound; optional
+   summary/count endpoints that use approximate or pre-agg where needed.
+9. **If external indexer:** map Alice auth → filtered queries (tenant + project
+   - visibility terms); never expose a raw cluster to the browser.
+10. **Retention jobs** prune/compact old partitions; hot tier vs cold storage.
+
+### Relation to Step 11
+
+Step 11 (async project create) uses **notifications + correlation id + server
+logs** only. When N10 ships, project create success/failure _may_ also emit
+application-log events (`entity_type = project`) with visibility `user` or
+`all` — that is additive, not a prerequisite.

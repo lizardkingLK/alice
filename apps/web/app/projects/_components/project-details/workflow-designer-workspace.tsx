@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import {
   findWorkflowById,
   resolveWorkflowConfig,
+  upsertResolutionPreset,
   type WorkflowConfigEnvelope,
   type WorkflowDocument,
   type WorkflowEdge,
+  type WorkflowResolutionPreset,
   type WorkflowStateNode,
 } from '@repo/types/api/v1';
 import { Button } from '@repo/ui/components/ui/button';
@@ -282,10 +284,24 @@ export function WorkflowDesignerWorkspace({
   const handleEdgeChange = useCallback(
     (
       edgeId: string,
-      patch: Partial<Pick<WorkflowEdge, 'requireChildren' | 'allowAnyOf'>>
+      patch: Partial<
+        Pick<
+          WorkflowEdge,
+          'requireChildren' | 'allowAnyOf' | 'resolutionPresetId'
+        >
+      >
     ) => {
       updateActiveWorkflow((workflow) =>
         patchEdgeInDocument(workflow, edgeId, patch)
+      );
+    },
+    [updateActiveWorkflow]
+  );
+
+  const handleUpsertResolutionPreset = useCallback(
+    (preset: WorkflowResolutionPreset) => {
+      updateActiveWorkflow((workflow) =>
+        upsertResolutionPreset(workflow, preset)
       );
     },
     [updateActiveWorkflow]
@@ -465,6 +481,7 @@ export function WorkflowDesignerWorkspace({
           onStateChange={handleStateChange}
           onEdgeChange={handleEdgeChange}
           onMakeStateTerminal={handleMakeStateTerminal}
+          onUpsertResolutionPreset={handleUpsertResolutionPreset}
           open={settingsOpen}
           onOpenChange={handleSettingsOpenChange}
         />

@@ -9,6 +9,7 @@ import {
   type WorkItemPatchMemberOption,
 } from '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog';
 import { IncompleteSubtasksDoneBlockedDialog } from '@/app/work-items/_components/work-item-subtasks/incomplete-subtasks-done-blocked-dialog';
+import { WorkItemResolutionDialog } from '@/app/work-items/_components/work-item-details/work-item-resolution-dialog';
 import { hasIncompleteStatuses } from '@/app/work-items/_helpers/work-item-status';
 import {
   extractDynamicFieldValues,
@@ -27,6 +28,14 @@ import {
   WORK_ITEM_GITHUB_STATUS_MESSAGES,
   type WorkItemGithubConfigStatus,
 } from '@repo/types';
+import {
+  findResolutionPreset,
+  findWorkflowEdge,
+  findWorkflowState,
+  getResolutionRequirement,
+  resolveWorkflowConfig,
+  resolveWorkflowForWorkItemType,
+} from '@repo/types/api/v1';
 import { isManagerOrAdmin, type AppRole } from '@/lib/rbac';
 import { Button } from '@repo/ui/components/ui/button';
 import { ButtonGroup } from '@repo/ui/components/ui/button-group';
@@ -85,6 +94,7 @@ import {
   linkPR,
   unlinkPR,
   updateWorkItem,
+  updateWorkItemStatus,
 } from '@/app/work-items/_services/work-items.mutations.client';
 import { SafeDynamicFieldsSection } from './safe-dynamic-fields-section';
 import { ProjectFieldsErrorDialog } from '@/app/projects/_components/project-details/project-fields-error-dialog';
@@ -110,23 +120,50 @@ function StatusDropdown({
   expectedUpdatedAt,
   workItemStatus,
   childStatuses,
+  workItemType,
+  workflowConfig,
   onPatched,
 }: Readonly<{
   workItemId: string;
   expectedUpdatedAt: string;
   workItemStatus: DbWorkItem['status'];
   childStatuses: readonly WorkItemStatus[];
+  workItemType: DbWorkItem['type'];
+  workflowConfig: unknown;
   // eslint-disable-next-line no-unused-vars -- callback signature
   onPatched: (updated: Partial<DbWorkItem>) => void;
 }>) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [resolutionOpen, setResolutionOpen] = useState(false);
   const [blockedOpen, setBlockedOpen] = useState(false);
+  const [isSavingResolution, setIsSavingResolution] = useState(false);
   const [pendingStatus, setPendingStatus] =
     useState<DbWorkItem['status']>(workItemStatus);
 
   const incompleteSubtaskCount = childStatuses.filter(
     (status) => status !== 'Done'
   ).length;
+
+  const resolutionPreset = useMemo(() => {
+    const resolved = resolveWorkflowConfig(workflowConfig);
+    const workflow = resolveWorkflowForWorkItemType(
+      resolved.config,
+      workItemType
+    );
+    if (!workflow) {
+      return null;
+    }
+    const edge = findWorkflowEdge(workflow, workItemStatus, pendingStatus);
+    const source = findWorkflowState(workflow, workItemStatus);
+    if (!edge || !source) {
+      return null;
+    }
+    const requirement = getResolutionRequirement(edge, source);
+    if (!requirement.required || !requirement.presetId) {
+      return null;
+    }
+    return findResolutionPreset(workflow, requirement.presetId);
+  }, [workflowConfig, workItemType, workItemStatus, pendingStatus]);
 
   const handleStatusSelect = (value: string) => {
     const nextStatus = value as DbWorkItem['status'];
@@ -138,6 +175,25 @@ function StatusDropdown({
       return;
     }
     setPendingStatus(nextStatus);
+
+    const resolved = resolveWorkflowConfig(workflowConfig);
+    const workflow = resolveWorkflowForWorkItemType(
+      resolved.config,
+      workItemType
+    );
+    const edge = workflow
+      ? findWorkflowEdge(workflow, workItemStatus, nextStatus)
+      : null;
+    const source = workflow
+      ? findWorkflowState(workflow, workItemStatus)
+      : null;
+    if (edge && source) {
+      const requirement = getResolutionRequirement(edge, source);
+      if (requirement.required && requirement.presetId) {
+        setResolutionOpen(true);
+        return;
+      }
+    }
     setDialogOpen(true);
   };
 
@@ -184,6 +240,44 @@ function StatusDropdown({
         currentValue={pendingStatus}
         onPatched={onPatched}
       />
+
+      {resolutionPreset ? (
+        <WorkItemResolutionDialog
+          open={resolutionOpen}
+          onOpenChange={setResolutionOpen}
+          preset={resolutionPreset}
+          targetStatusLabel={formatLabelWithSpace(pendingStatus)}
+          isPending={isSavingResolution}
+          onSubmit={async (payload) => {
+            setIsSavingResolution(true);
+            try {
+              const response = await updateWorkItemStatus(
+                workItemId,
+                pendingStatus,
+                expectedUpdatedAt,
+                undefined,
+                payload
+              );
+              toast.success(
+                `Status updated to ${formatLabelWithSpace(pendingStatus)}.`
+              );
+              onPatched({
+                status: response.data?.status ?? pendingStatus,
+                updated_at: response.data?.updated_at,
+              });
+              setResolutionOpen(false);
+            } catch (error) {
+              toast.error(
+                error instanceof Error
+                  ? error.message
+                  : 'Could not update status.'
+              );
+            } finally {
+              setIsSavingResolution(false);
+            }
+          }}
+        />
+      ) : null}
 
       <IncompleteSubtasksDoneBlockedDialog
         open={blockedOpen}
@@ -543,6 +637,8 @@ export default function WorkItemSidebar({
         expectedUpdatedAt={workItem.updated_at}
         workItemStatus={workItem.status}
         childStatuses={childStatuses}
+        workItemType={workItem.type}
+        workflowConfig={project?.workflow_config}
         onPatched={onWorkItemPatched}
       />
 
@@ -1043,7 +1139,7 @@ function DevelopmentSection({
   }, [workItem.id]);
 
   useEffect(() => {
-    fetchGithubLinks();
+    void fetchGithubLinks();
   }, [fetchGithubLinks]);
 
   const handleLinkPRSubmit = async (e: React.FormEvent) => {
@@ -1086,7 +1182,7 @@ function DevelopmentSection({
       await linkPR(workItem.id, url);
       setPrUrlInput('');
       setLinkDialogOpen(false);
-      fetchGithubLinks();
+      void fetchGithubLinks();
     } catch (err) {
       console.error(err);
       const message =
@@ -1101,7 +1197,7 @@ function DevelopmentSection({
   const handleUnlinkPR = async (prId: string) => {
     try {
       await unlinkPR(workItem.id, prId);
-      fetchGithubLinks();
+      void fetchGithubLinks();
     } catch (err) {
       console.error(err);
       toast.error('Failed to unlink pull request');
