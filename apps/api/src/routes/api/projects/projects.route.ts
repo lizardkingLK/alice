@@ -536,11 +536,15 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         if (error instanceof ProjectTeamValidationError) {
           return res.status(400).json({ error: error.message });
         }
-        const { status, error: message } = jsonErrorFromCaught(
-          error,
-          'Failed to create project'
-        );
-        res.status(status).json({ error: message });
+        const {
+          status,
+          error: message,
+          code,
+        } = jsonErrorFromCaught(error, 'Failed to create project');
+        res.status(status).json({
+          error: message,
+          ...(code ? { code } : {}),
+        });
       }
     }
   );

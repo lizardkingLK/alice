@@ -1,3 +1,5 @@
+import { databaseBusyJsonError, isDatabaseBusyError } from './prisma-errors';
+
 /**
  * Map service Error messages to HTTP status for integration / RBAC routes.
  * - Unauthorized… → 403
@@ -20,7 +22,11 @@ export function httpStatusFromErrorMessage(
 export function jsonErrorFromCaught(
   error: unknown,
   fallbackMessage: string
-): { status: number; error: string } {
+): { status: number; error: string; code?: string } {
+  if (isDatabaseBusyError(error)) {
+    return databaseBusyJsonError();
+  }
+
   const message = error instanceof Error ? error.message : fallbackMessage;
   return {
     status: httpStatusFromErrorMessage(message),

@@ -3,6 +3,7 @@ import {
   OPTIMISTIC_LOCK_HTTP_STATUS,
 } from '@repo/types';
 import type { RequestHandler, Router } from 'express';
+import { databaseBusyJsonError, isDatabaseBusyError } from './prisma-errors';
 
 /**
  * Thrown from repositories/services when a conditional update matched 0 rows
@@ -128,6 +129,14 @@ export function sendRouteMutationError(
   fallbackMessage: string
 ): void {
   if (trySendOptimisticLockError(res, error)) {
+    return;
+  }
+  if (isDatabaseBusyError(error)) {
+    const busy = databaseBusyJsonError();
+    res.status(busy.status).json({
+      error: busy.error,
+      code: busy.code,
+    });
     return;
   }
   const message = error instanceof Error ? error.message : fallbackMessage;

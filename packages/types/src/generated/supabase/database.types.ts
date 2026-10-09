@@ -155,6 +155,57 @@ export type Database = {
           },
         ]
       }
+      activities: {
+        Row: {
+          action: Database["public"]["Enums"]["ActivityAction"]
+          actor_id: string | null
+          created_at: string
+          field: string | null
+          id: string
+          meta: Json | null
+          new_value: string | null
+          old_value: string | null
+          work_item_id: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["ActivityAction"]
+          actor_id?: string | null
+          created_at?: string
+          field?: string | null
+          id?: string
+          meta?: Json | null
+          new_value?: string | null
+          old_value?: string | null
+          work_item_id: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["ActivityAction"]
+          actor_id?: string | null
+          created_at?: string
+          field?: string | null
+          id?: string
+          meta?: Json | null
+          new_value?: string | null
+          old_value?: string | null
+          work_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_work_item_id_fkey"
+            columns: ["work_item_id"]
+            isOneToOne: false
+            referencedRelation: "work_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attachments: {
         Row: {
           created_at: string
@@ -1652,6 +1703,14 @@ export type Database = {
       AccessAllowlistKind: "domain" | "email"
       AccessRequestKind: "admission" | "project_expansion"
       AccessRequestStatus: "pending" | "granted" | "denied"
+      ActivityAction:
+        | "created"
+        | "field_changed"
+        | "attachment_added"
+        | "attachment_removed"
+        | "commented"
+        | "workflow_transition"
+        | "escalation_resolved"
       IntegrationCategory:
         | "ai_agent"
         | "communication"
@@ -1815,6 +1874,15 @@ export const Constants = {
       AccessAllowlistKind: ["domain", "email"],
       AccessRequestKind: ["admission", "project_expansion"],
       AccessRequestStatus: ["pending", "granted", "denied"],
+      ActivityAction: [
+        "created",
+        "field_changed",
+        "attachment_added",
+        "attachment_removed",
+        "commented",
+        "workflow_transition",
+        "escalation_resolved",
+      ],
       IntegrationCategory: [
         "ai_agent",
         "communication",

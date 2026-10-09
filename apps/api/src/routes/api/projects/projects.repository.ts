@@ -15,6 +15,7 @@ import {
   type ActorProjectsSummary,
 } from '@repo/types';
 import { Prisma, ProjectStatus, RecordStatus } from '@repo/types/prisma';
+import { withBusyRetry } from '@repo/db';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { prisma } from '../../../lib/prisma';
 import {
@@ -574,115 +575,128 @@ export class ProjectsRepository {
   }
 
   async create(data: CreateProjectInput, actorId: string): Promise<ProjectRow> {
-    const created = await prisma.$transaction(async (tx) => {
-      const project = await tx.projects.create({
-        data: {
-          name: data.name,
-          key: data.key,
-          description: data.description,
-          status: data.status,
-          start_date: prismaOptionalDate(data.start_date) ?? null,
-          end_date: prismaOptionalDate(data.end_date) ?? null,
-          owner_id: data.owner_id,
-          jira_project_key: data.jira_project_key,
-          jira_connection_id: data.jira_connection_id,
-          github_repo: data.github_repo,
-          github_token: data.github_token,
-          logo_url: data.logo_url ?? null,
-          cover_picture: data.cover_picture ?? null,
-          attributes_config:
-            (data.attributes_config as Prisma.InputJsonValue) ?? null,
-          workflow_config:
-            (data.workflow_config as Prisma.InputJsonValue) ?? null,
-          deleted_at: null,
-          ...prismaAuditCreateWithoutStatus(actorId),
-        },
-      });
+    const created = await withBusyRetry(
+      () =>
+        prisma.$transaction(
+          async (tx) => {
+            const project = await tx.projects.create({
+              data: {
+                name: data.name,
+                key: data.key,
+                description: data.description,
+                status: data.status,
+                start_date: prismaOptionalDate(data.start_date) ?? null,
+                end_date: prismaOptionalDate(data.end_date) ?? null,
+                owner_id: data.owner_id,
+                jira_project_key: data.jira_project_key,
+                jira_connection_id: data.jira_connection_id,
+                github_repo: data.github_repo,
+                github_token: data.github_token,
+                logo_url: data.logo_url ?? null,
+                cover_picture: data.cover_picture ?? null,
+                attributes_config:
+                  (data.attributes_config as Prisma.InputJsonValue) ?? null,
+                workflow_config:
+                  (data.workflow_config as Prisma.InputJsonValue) ?? null,
+                deleted_at: null,
+                ...prismaAuditCreateWithoutStatus(actorId),
+              },
+            });
 
-      // Owner (manager) is always a project member so ACL and Members UI stay
-      // consistent. The creating admin is also a member when they are not the
-      // owner, so they keep workspace access under membership-scoped ACL.
-      // Define the structure of a team member.
-      type InitialTeamMember = {
-        user_id: string;
-        capacity?: number | null;
-        allocation?: number | null;
-      };
+            // Owner (manager) is always a project member so ACL and Members UI stay
+            // consistent. The creating admin is also a member when they are not the
+            // owner, so they keep workspace access under membership-scoped ACL.
+            type InitialTeamMember = {
+              user_id: string;
+              capacity?: number | null;
+              allocation?: number | null;
+            };
 
-      // Use detailed members when provided; otherwise use member IDs.
-      const initialTeamMembers: InitialTeamMember[] =
-        data.team?.members ??
-        data.team?.member_ids?.map((user_id: string) => ({
-          user_id,
-          capacity: null,
-          allocation: null,
-        })) ??
-        [];
+            const initialTeamMembers: InitialTeamMember[] =
+              data.team?.members ??
+              data.team?.member_ids?.map((user_id: string) => ({
+                user_id,
+                capacity: null,
+                allocation: null,
+              })) ??
+              [];
 
-      // Avoid creating duplicate team memberships.
-      const uniqueTeamMembers = [
-        ...new Map<string, InitialTeamMember>(
-          initialTeamMembers.map((member) => [member.user_id, member])
-        ).values(),
-      ];
+            const uniqueTeamMembers = [
+              ...new Map<string, InitialTeamMember>(
+                initialTeamMembers.map((member) => [member.user_id, member])
+              ).values(),
+            ];
 
-      const memberUserIds: string[] = [
-        ...new Set<string>([
-          data.owner_id,
-          actorId,
-          ...(data.team ? [data.team.manager_id] : []),
-          ...uniqueTeamMembers.map((member) => member.user_id),
-        ]),
-      ];
+            const memberUserIds: string[] = [
+              ...new Set<string>([
+                data.owner_id,
+                actorId,
+                ...(data.team ? [data.team.manager_id] : []),
+                ...uniqueTeamMembers.map((member) => member.user_id),
+              ]),
+            ];
 
-      await tx.project_members.createMany({
-        data: memberUserIds.map((userId) => ({
-          project_id: project.id,
-          user_id: userId,
-          ...prismaAuditCreate(actorId),
-        })),
-      });
+            await tx.project_members.createMany({
+              data: memberUserIds.map((userId) => ({
+                project_id: project.id,
+                user_id: userId,
+                ...prismaAuditCreate(actorId),
+              })),
+            });
 
-      // Create the optional initial team within the project transaction.
-      if (data.team) {
-        const team = await tx.teams.create({
-          data: {
-            name: data.team.name,
-            description: data.team.description ?? null,
-            manager_id: data.team.manager_id,
-            project_id: project.id,
-            tech_stack: data.team.tech_stack ?? null,
-            status: data.team.status ?? RecordStatus.active,
-            ...prismaAuditCreateWithoutStatus(actorId),
+            if (data.team) {
+              const team = await tx.teams.create({
+                data: {
+                  name: data.team.name,
+                  description: data.team.description ?? null,
+                  manager_id: data.team.manager_id,
+                  project_id: project.id,
+                  tech_stack: data.team.tech_stack ?? null,
+                  status: data.team.status ?? RecordStatus.active,
+                  ...prismaAuditCreateWithoutStatus(actorId),
+                },
+              });
+
+              if (uniqueTeamMembers.length > 0) {
+                await tx.team_members.createMany({
+                  data: uniqueTeamMembers.map((member) => ({
+                    team_id: team.id,
+                    user_id: member.user_id,
+                    capacity: member.capacity ?? null,
+                    allocation: member.allocation ?? null,
+                    status: RecordStatus.active,
+                    created_by: actorId,
+                    updated_by: actorId,
+                  })),
+                });
+              }
+            }
+
+            if (data.sprint) {
+              await insertSprint(tx, {
+                ...data.sprint,
+                projectId: project.id,
+                createdBy: actorId,
+              });
+            }
+
+            return project;
           },
-        });
-
-        // Add the selected users to the newly created team.
-        if (uniqueTeamMembers.length > 0) {
-          await tx.team_members.createMany({
-            data: uniqueTeamMembers.map((member) => ({
-              team_id: team.id,
-              user_id: member.user_id,
-              capacity: member.capacity ?? null,
-              allocation: member.allocation ?? null,
-              status: RecordStatus.active,
-              created_by: actorId,
-              updated_by: actorId,
-            })),
-          });
-        }
+          {
+            // Prisma default maxWait (2s) is too aggressive under adapter-pg load
+            // (alice#562 / prisma#27990).
+            maxWait: 10_000,
+            timeout: 15_000,
+          }
+        ),
+      {
+        onRetry: (attempt) => {
+          console.warn(
+            `warn. project create transaction busy; retrying (attempt ${attempt})`
+          );
+        },
       }
-
-      if (data.sprint) {
-        await insertSprint(tx, {
-          ...data.sprint,
-          projectId: project.id,
-          createdBy: actorId,
-        });
-      }
-
-      return project;
-    });
+    );
 
     const row = await this.findById(created.id);
     if (!row) {

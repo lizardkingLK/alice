@@ -8,6 +8,7 @@ import {
   type WorkItemType,
   type AttachmentWithUploader,
   type Json,
+  type WorkItemActivity,
   type WorkItemWorkLog,
 } from '@repo/types';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
@@ -92,6 +93,7 @@ export default function WorkItemDetails({
   project = null,
   initialComments = [],
   initialAttachments = [],
+  initialActivities = [],
   initialWorkLogs = [],
   currentUserId,
   currentUserRole,
@@ -110,6 +112,7 @@ export default function WorkItemDetails({
   project?: DbProject | null;
   initialComments?: CommentItem[];
   initialAttachments?: AttachmentWithUploader[];
+  initialActivities?: WorkItemActivity[];
   initialWorkLogs?: WorkItemWorkLog[];
   currentUserId?: string;
   currentUserRole?: string | null;
@@ -606,6 +609,7 @@ export default function WorkItemDetails({
             activeTab={activityTab}
             onActiveTabChange={setActivityTab}
             initialComments={initialComments}
+            initialActivities={initialActivities}
             workItem={workItem}
             discussionWorkItems={discussionWorkItems}
             currentUserId={currentUserId}

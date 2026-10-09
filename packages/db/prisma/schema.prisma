@@ -84,6 +84,17 @@ enum NotificationType {
   access_request
 }
 
+/// Append-only work-item activity feed actions (see docs/features/work-items/ACTIVITY.md).
+enum ActivityAction {
+  created
+  field_changed
+  attachment_added
+  attachment_removed
+  commented
+  workflow_transition
+  escalation_resolved
+}
+
 enum AccessAllowlistKind {
   domain
   email
@@ -151,6 +162,7 @@ model users {
   comments            comments[]        @relation("CommentAuthor")
   attachments         attachments[]     @relation("AttachmentUploader")
   work_item_worklogs  work_item_worklogs[] @relation("WorkLogAuthor")
+  activities          activities[]         @relation("ActivityActor")
 
   created_projects        projects[]        @relation("ProjectCreatedBy")
   updated_projects        projects[]        @relation("ProjectUpdatedBy")
@@ -352,6 +364,7 @@ model work_items {
   comments             comments[]
   attachments          attachments[]
   worklogs             work_item_worklogs[]
+  activities           activities[]
   github_pull_requests github_pull_requests[]
 
   @@unique([project_id, jira_issue_key])
@@ -361,6 +374,24 @@ model work_items {
   @@index([sprint_id])
   @@index([project_id, status])
   @@index([created_at])
+}
+
+/// Append-only timeline of field changes, transitions, and side effects on a work item.
+model activities {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  work_item_id String         @db.Uuid
+  actor_id     String?        @db.Uuid
+  action       ActivityAction
+  field        String?
+  old_value    String?
+  new_value    String?
+  meta         Json?
+  created_at   DateTime       @default(now()) @db.Timestamptz(6)
+
+  work_item work_items @relation(fields: [work_item_id], references: [id], onDelete: Cascade)
+  actor     users?     @relation("ActivityActor", fields: [actor_id], references: [id], onDelete: SetNull)
+
+  @@index([work_item_id, created_at(sort: Desc)])
 }
 
 /// Precomputed categorical counts for Charts Tier 1 (trigger-maintained).

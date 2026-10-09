@@ -53,6 +53,11 @@ export type sprints = Prisma.sprintsModel
  */
 export type work_items = Prisma.work_itemsModel
 /**
+ * Model activities
+ * Append-only timeline of field changes, transitions, and side effects on a work item.
+ */
+export type activities = Prisma.activitiesModel
+/**
  * Model work_item_chart_rollups
  * Precomputed categorical counts for Charts Tier 1 (trigger-maintained).
  * `grain_key` encodes bucket + dimensions so upserts ignore SQL NULL uniqueness quirks.

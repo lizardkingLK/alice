@@ -112,6 +112,19 @@ export const NotificationType = {
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType]
 
 
+export const ActivityAction = {
+  created: 'created',
+  field_changed: 'field_changed',
+  attachment_added: 'attachment_added',
+  attachment_removed: 'attachment_removed',
+  commented: 'commented',
+  workflow_transition: 'workflow_transition',
+  escalation_resolved: 'escalation_resolved'
+} as const
+
+export type ActivityAction = (typeof ActivityAction)[keyof typeof ActivityAction]
+
+
 export const AccessAllowlistKind = {
   domain: 'domain',
   email: 'email'

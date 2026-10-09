@@ -131,4 +131,21 @@ describe('sendRouteMutationError', () => {
     expect(status).toHaveBeenCalledWith(500);
     expect(json).toHaveBeenCalledWith({ error: 'boom' });
   });
+
+  it('sends 503 DATABASE_BUSY for transaction start timeouts', () => {
+    const json = vi.fn();
+    const status = vi.fn(() => ({ json }));
+    sendRouteMutationError(
+      { status },
+      new Error(
+        'Transaction API error: Unable to start a transaction in the given time.'
+      ),
+      'fallback'
+    );
+    expect(status).toHaveBeenCalledWith(503);
+    expect(json).toHaveBeenCalledWith({
+      error: 'Database is busy. Please try again in a moment.',
+      code: 'DATABASE_BUSY',
+    });
+  });
 });

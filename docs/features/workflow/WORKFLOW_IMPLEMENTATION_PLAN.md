@@ -25,7 +25,7 @@ board JSON in MVP).
 | 3b   | Settings sidebar              | Node/edge forms, tooltips / popovers               |
 | 3c   | Designer rules + dirty flag   | Lock/terminal/children/escalation stub, chat dirty |
 | 4    | Board switcher + transitions  | Parallel boards, DnD/API gates, pickers            |
-| 5    | Activity table                | `activities` + transition/resolution writers + UI  |
+| 5    | Activity table                | `activities` + transition writers + UI (**Done**)  |
 | 6    | Resolution presets            | Form / Preview / JSON designer + runtime dialog    |
 | 7    | Charts category + state       | Rollups + Charts UI **State** label                |
 | 8    | Docked Alice + workflow tools | Sidebar, view context, propose/apply confirm       |
@@ -228,6 +228,8 @@ Lock / Terminal / escalation checkboxes and outbound-edge confirm are **Step 3c*
 
 ## Step 5 — Activity table
 
+**Status:** **Done** (as-built below)
+
 **Goal:** Timeline for field changes, transitions, and resolutions.
 
 1. Implement `activities` per [../work-items/ACTIVITY.md](../work-items/ACTIVITY.md).
@@ -237,6 +239,34 @@ Lock / Terminal / escalation checkboxes and outbound-edge confirm are **Step 3c*
 5. API + UI tests; do not mix into `work_item_worklogs`.
 
 **Exit:** Status/state changes appear on Activity; worklogs stay time-only.
+
+### As-built (Step 5)
+
+| Piece           | Location                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| Schema          | `activities` + `ActivityAction` — `packages/db/prisma/migrations/add_activities`                 |
+| Shared types    | `packages/types/src/work-item-activity.ts`                                                       |
+| API writers     | `ActivitiesService` via work-item create/update + attachment add/remove                          |
+| Workflow rows   | `workflow_transition` with `fromStateId` / `toStateId` / `workflowId` / `edgeId` (no status dup) |
+| Escalation rows | Action enum reserved; writer deferred to Step 6                                                  |
+| RSC + UI        | `getWorkItemActivities`, Activity tab feed, section maximize                                     |
+| Realtime        | Deferred (N8)                                                                                    |
+| Tests           | `activities.service.test.ts`, `work-items.activity.test.ts`, web feed/tabs                       |
+
+### Adjacent hardening (alice#562) — shipped with Step 5 delivery
+
+Not a Workflow product step, but landed while validating create-project under
+pool pressure (same Prisma adapter-pg class of failure):
+
+| Piece             | Location                                                                   |
+| ----------------- | -------------------------------------------------------------------------- |
+| Larger pg pool    | `packages/db` `PG_POOL_MAX` 10 → 20                                        |
+| Server retry util | `withBusyRetry` + higher `maxWait` on project create `$transaction`        |
+| Stable API code   | `DATABASE_BUSY` (503) via `jsonErrorFromCaught` / `sendRouteMutationError` |
+| Client wrapper    | `withApiBusyRetry` on client `apiFetch` + toast “Database is busy…”        |
+
+Issue: [lizardkingLK/alice#562](https://github.com/lizardkingLK/alice/issues/562).  
+Guide: [DATABASE_BUSY_RETRY.md](../../guides/DATABASE_BUSY_RETRY.md).
 
 ---
 
