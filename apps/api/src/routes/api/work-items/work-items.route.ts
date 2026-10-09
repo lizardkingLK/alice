@@ -473,7 +473,10 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
           req.params.id!,
           domainFields,
           expectedUpdatedAt,
-          { detachChildren: parsed.data.detachChildren === true }
+          {
+            detachChildren: parsed.data.detachChildren === true,
+            resolution: parsed.data.resolution,
+          }
         );
 
         await notifyAssigneeAfterCommit(

@@ -7,8 +7,8 @@ items, and optional checks before a move.
 
 **Shipping note:** The Workflow tab supports the **canvas** and **Settings**
 (name, category, lock record, terminal with outbound-edge confirm, escalation
-flag, require children, who can move). Resolution **preset picker** and board
-runtime (workflow columns instead of the legacy Board tab) land later.
+flag, require children, who can move, **resolution presets**). When a move uses
+a preset, work-item details asks for the form before changing status.
 
 ---
 

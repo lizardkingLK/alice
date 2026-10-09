@@ -15,6 +15,7 @@ import {
   WorkItemLabelsValidationError,
 } from '../../work-item-labels.js';
 import { emptyToUndefined } from './query-preprocess.js';
+import { workflowResolutionPayloadSchema } from './workflow-resolution.js';
 
 /**
  * Prisma `select` objects for unused Express work-item GETs.
@@ -493,6 +494,7 @@ export const patchWorkItemBodySchema = workItemCoreObject
      * unlink direct children (`parent_id = null`) before applying the new type.
      */
     detachChildren: z.boolean().optional(),
+    resolution: workflowResolutionPayloadSchema.optional(),
   })
   .partial()
   .extend({
@@ -519,6 +521,7 @@ export const patchWorkItemStatusBodySchema = z.object({
     .min(1, 'Board column ID is required')
     .nullable()
     .optional(),
+  resolution: workflowResolutionPayloadSchema.optional(),
   expectedUpdatedAt: expectedUpdatedAtSchema,
 });
 

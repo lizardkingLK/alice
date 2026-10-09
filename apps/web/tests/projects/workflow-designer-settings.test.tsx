@@ -23,6 +23,7 @@ function renderSettings(
         onStateChange={vi.fn()}
         onEdgeChange={vi.fn()}
         onMakeStateTerminal={vi.fn()}
+        onUpsertResolutionPreset={vi.fn()}
         open
         onOpenChange={onOpenChange}
         {...overrides}
@@ -58,6 +59,7 @@ describe('WorkflowDesignerSettings', () => {
         onStateChange={vi.fn()}
         onEdgeChange={vi.fn()}
         onMakeStateTerminal={vi.fn()}
+        onUpsertResolutionPreset={vi.fn()}
         open={false}
         onOpenChange={onOpenChange}
       />
@@ -112,7 +114,7 @@ describe('WorkflowDesignerSettings', () => {
     expect(onMakeStateTerminal).toHaveBeenCalledWith(WorkItemStatusEnum.New);
   });
 
-  it('exposes require-children and resolution preset stub for a selected edge', () => {
+  it('exposes require-children and resolution preset picker for a selected edge', () => {
     const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
     const edge = workflow.graph.edges[0]!;
     renderSettings({
@@ -122,6 +124,9 @@ describe('WorkflowDesignerSettings', () => {
     expect(screen.getByTestId('workflow-settings-edge')).toBeInTheDocument();
     expect(screen.getByText(/require children/i)).toBeInTheDocument();
     expect(screen.getByText(/resolution preset/i)).toBeInTheDocument();
+    expect(
+      screen.getByTestId(`workflow-resolution-preset-${edge.id}`)
+    ).toBeInTheDocument();
     expect(screen.getByText(/who can move/i)).toBeInTheDocument();
   });
 });

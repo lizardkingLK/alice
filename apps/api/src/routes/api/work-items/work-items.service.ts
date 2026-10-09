@@ -2,13 +2,17 @@ import {
   boardConfigSchema,
   findBoardTransition,
   findStatusTransition,
+  buildEscalationResolvedMeta,
+  findResolutionPreset,
   findWorkflowEdge,
   findWorkflowState,
   getAllowedChildType,
   getAllowedParentType,
+  getResolutionRequirement,
   normalizeBoardConfig,
   parseWorkflowConfigEnvelope,
   resolveWorkItemState,
+  validateResolutionPayload,
   workflowStatesToBoardColumns,
   type BoardRuleMatcher,
   type RuntimeBoardConfig,
@@ -16,6 +20,7 @@ import {
   type WorkflowConfigEnvelope,
   type WorkflowDocument,
   type WorkflowEdge,
+  type WorkflowResolutionPayload,
   type WorkflowStateNode,
   CANONICAL_HIERARCHY_ORDER,
   type ProjectWorkflowConfig,
@@ -288,7 +293,10 @@ export class WorkItemService {
     workItemId: string,
     input: WorkItemUpdateBody,
     expectedUpdatedAt: string,
-    options?: { detachChildren?: boolean }
+    options?: {
+      detachChildren?: boolean;
+      resolution?: WorkflowResolutionPayload;
+    }
   ): Promise<DbWorkItem> {
     await this.workItems.requireProjectMember(workItemId, userId);
     await this.workItems.assertCanAccessProject(userId, input.project_id);
@@ -312,11 +320,16 @@ export class WorkItemService {
       detachChildren: options?.detachChildren === true,
     });
 
-    const workflow = await this.resolveWorkflowValidation(
+    const workflow = this.resolveWorkflowValidation(
       current,
       nextInput,
       workflowConfig,
       workflowConfigError
+    );
+
+    const resolutionMeta = this.assertWorkflowResolution(
+      workflow,
+      options?.resolution
     );
 
     await this.assertResolvedTransitions(
@@ -382,6 +395,7 @@ export class WorkItemService {
       current,
       nextInput,
       workflow,
+      resolutionMeta,
     });
 
     if (sprintChanged || assigneeChanged || storyPointsChanged) {
@@ -407,12 +421,14 @@ export class WorkItemService {
     current: DbWorkItem;
     nextInput: WorkItemUpdateBody;
     workflow: Awaited<ReturnType<WorkItemService['resolveWorkflowValidation']>>;
+    resolutionMeta: ReturnType<typeof buildEscalationResolvedMeta> | null;
   }): Promise<void> {
     if (!this.activities) {
       return;
     }
 
-    const { userId, workItemId, current, nextInput, workflow } = params;
+    const { userId, workItemId, current, nextInput, workflow, resolutionMeta } =
+      params;
     let wroteWorkflowTransition = false;
 
     if (workflow.mode === 'workflow') {
@@ -429,6 +445,13 @@ export class WorkItemService {
             edgeId: edge?.id ?? null,
           },
         });
+        if (resolutionMeta) {
+          await this.activities.recordEscalationResolved({
+            workItemId,
+            actorId: userId,
+            meta: resolutionMeta,
+          });
+        }
       }
     }
 
@@ -439,6 +462,54 @@ export class WorkItemService {
       workItemId,
       actorId: userId,
       changes: fieldChanges,
+    });
+  }
+
+  private assertWorkflowResolution(
+    workflow: Awaited<ReturnType<WorkItemService['resolveWorkflowValidation']>>,
+    resolution: WorkflowResolutionPayload | undefined
+  ): ReturnType<typeof buildEscalationResolvedMeta> | null {
+    if (workflow.mode !== 'workflow') {
+      return null;
+    }
+    if (workflow.sourceState.id === workflow.destinationState.id) {
+      return null;
+    }
+
+    const requirement = getResolutionRequirement(
+      workflow.edge,
+      workflow.sourceState
+    );
+    if (!requirement.required) {
+      return null;
+    }
+
+    const resolutionRequiredMessage =
+      'This move needs a resolution form before you can save.';
+    if (!requirement.presetId || !resolution) {
+      throw new WorkItemValidationError(resolutionRequiredMessage);
+    }
+
+    const preset = findResolutionPreset(
+      workflow.workflow,
+      requirement.presetId
+    );
+    if (!preset) {
+      throw new WorkItemValidationError(resolutionRequiredMessage);
+    }
+
+    const validated = validateResolutionPayload(preset, resolution);
+    if (!validated.ok) {
+      throw new WorkItemValidationError(validated.message);
+    }
+
+    return buildEscalationResolvedMeta({
+      preset,
+      payload: resolution,
+      workflowId: workflow.workflow.id,
+      edgeId: workflow.edge?.id ?? null,
+      fromStateId: workflow.sourceState.id,
+      toStateId: workflow.destinationState.id,
     });
   }
 
@@ -595,12 +666,12 @@ export class WorkItemService {
     this.assertDoneIsReadOnlyExceptStatus(current, nextInput);
   }
 
-  private async resolveWorkflowValidation(
+  private resolveWorkflowValidation(
     current: DbWorkItem,
     input: WorkItemUpdateBody,
     workflowConfig: unknown,
     workflowConfigError: unknown
-  ): Promise<
+  ):
     | { mode: 'none' }
     | {
         mode: 'legacy';
@@ -616,8 +687,7 @@ export class WorkItemService {
         edge: WorkflowEdge | null;
         sourceState: WorkflowStateNode;
         destinationState: WorkflowStateNode;
-      }
-  > {
+      } {
     if (input.project_id !== current.project_id) {
       if (input.board_column_id !== null) {
         throw new WorkItemValidationError(
@@ -1206,25 +1276,23 @@ export class WorkItemService {
     childId: string,
     parentId: string
   ): Promise<void> {
-    let currentId: string | null = parentId;
     const seen = new Set<string>();
 
-    while (currentId) {
-      if (currentId === childId) {
-        throw new WorkItemValidationError(
-          'Cannot set parent: that would create a cycle in the work item hierarchy'
-        );
+    const walk = async (currentId: string | null): Promise<void> => {
+      if (!currentId) {
+        return;
       }
-      if (seen.has(currentId)) {
+      if (currentId === childId || seen.has(currentId)) {
         throw new WorkItemValidationError(
           'Cannot set parent: that would create a cycle in the work item hierarchy'
         );
       }
       seen.add(currentId);
-
       const ancestor = await this.workItems.getById(currentId);
-      currentId = ancestor?.parent_id ?? null;
-    }
+      await walk(ancestor?.parent_id ?? null);
+    };
+
+    await walk(parentId);
   }
 
   private async fetchGithubPRData(
@@ -1359,51 +1427,52 @@ export class WorkItemService {
       };
     }
 
-    const result = [];
-    for (const pr of prs) {
-      const details = await this.fetchGithubPRData(pr, headers);
+    const result = await Promise.all(
+      prs.map(async (pr) => {
+        const details = await this.fetchGithubPRData(pr, headers);
 
-      if (details.success) {
-        if (
-          details.status !== pr.status ||
-          details.title !== pr.pr_title ||
-          details.branchName !== pr.branch_name
-        ) {
-          await this.workItems.linkPR(workItemId, {
-            prNumber: pr.pr_number,
-            repoOwner: pr.repo_owner,
-            repoName: pr.repo_name,
-            prTitle: details.title,
-            prUrl: pr.pr_url,
-            branchName: details.branchName,
-            status: details.status,
-          });
+        if (details.success) {
+          const metadataChanged =
+            details.status !== pr.status ||
+            details.title !== pr.pr_title ||
+            details.branchName !== pr.branch_name;
+          if (metadataChanged) {
+            await this.workItems.linkPR(workItemId, {
+              prNumber: pr.pr_number,
+              repoOwner: pr.repo_owner,
+              repoName: pr.repo_name,
+              prTitle: details.title,
+              prUrl: pr.pr_url,
+              branchName: details.branchName,
+              status: details.status,
+            });
+          }
+        } else {
+          details.commits = [
+            {
+              sha: `f7a${pr.pr_number}c1`,
+              message: `feat: implement changes for work item`,
+              author: 'Carol Member',
+              date: new Date(Date.now() - 3600000 * 24).toISOString(),
+            },
+            {
+              sha: `9b1${pr.pr_number}e8`,
+              message: `test: add unit tests and validations`,
+              author: 'Carol Member',
+              date: new Date(Date.now() - 3600000 * 2).toISOString(),
+            },
+          ];
         }
-      } else {
-        details.commits = [
-          {
-            sha: `f7a${pr.pr_number}c1`,
-            message: `feat: implement changes for work item`,
-            author: 'Carol Member',
-            date: new Date(Date.now() - 3600000 * 24).toISOString(),
-          },
-          {
-            sha: `9b1${pr.pr_number}e8`,
-            message: `test: add unit tests and validations`,
-            author: 'Carol Member',
-            date: new Date(Date.now() - 3600000 * 2).toISOString(),
-          },
-        ];
-      }
 
-      result.push({
-        ...pr,
-        pr_title: details.title,
-        status: details.status,
-        branch_name: details.branchName,
-        commits: details.commits,
-      });
-    }
+        return {
+          ...pr,
+          pr_title: details.title,
+          status: details.status,
+          branch_name: details.branchName,
+          commits: details.commits,
+        };
+      })
+    );
 
     return {
       prs: result,

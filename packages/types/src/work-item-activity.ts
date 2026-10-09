@@ -20,6 +20,8 @@ export type WorkflowTransitionMeta = {
   edgeId: string | null;
 };
 
+export type { EscalationResolvedMeta } from './api/v1/workflow-resolution.js';
+
 export type AttachmentActivityMeta = {
   attachmentId: string;
   fileName: string;

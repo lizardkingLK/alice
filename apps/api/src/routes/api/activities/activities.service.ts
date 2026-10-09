@@ -1,6 +1,7 @@
 import type {
   ActivityAction,
   AttachmentActivityMeta,
+  EscalationResolvedMeta,
   Json,
   WorkflowTransitionMeta,
 } from '@repo/types';
@@ -64,6 +65,24 @@ export class ActivitiesService {
         actorId: params.actorId,
         action: 'workflow_transition',
         field: 'state',
+        oldValue: params.meta.fromStateId,
+        newValue: params.meta.toStateId,
+        meta: params.meta as unknown as Json,
+      },
+    ]);
+  }
+
+  async recordEscalationResolved(params: {
+    workItemId: string;
+    actorId: string;
+    meta: EscalationResolvedMeta;
+  }): Promise<void> {
+    await this.safeInsert([
+      {
+        workItemId: params.workItemId,
+        actorId: params.actorId,
+        action: 'escalation_resolved',
+        field: 'resolution',
         oldValue: params.meta.fromStateId,
         newValue: params.meta.toStateId,
         meta: params.meta as unknown as Json,
