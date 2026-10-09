@@ -18,7 +18,7 @@ export function createRandomUUID(): string {
     return cryptoApi.randomUUID();
   }
   if (typeof cryptoApi.getRandomValues !== 'function') {
-    throw new Error('Secure random UUID is unavailable in this runtime');
+    throw new TypeError('Secure random UUID is unavailable in this runtime');
   }
 
   const bytes = new Uint8Array(16);

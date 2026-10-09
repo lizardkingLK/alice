@@ -97,9 +97,10 @@ function locationFromUnexpectedToken(
   text: string,
   rawMessage: string
 ): JsonCursor | null {
-  const match = rawMessage.match(
-    /^Unexpected token '(.)', (?:\.\.\.)?"([\s\S]*?)"(?:\.\.\.)? is not valid JSON$/
-  );
+  const match =
+    /^Unexpected token '(.)', (?:\.\.\.)?"([\s\S]*?)"(?:\.\.\.)? is not valid JSON$/.exec(
+      rawMessage
+    );
   if (!match?.[1] || match[2] == null) {
     return null;
   }
@@ -111,7 +112,7 @@ function locationFromUnexpectedToken(
     return null;
   }
 
-  const colonWhitespace = snippet.match(/:\s*/);
+  const colonWhitespace = /:\s*/.exec(snippet);
   let tokenOffsetInSnippet = -1;
   if (colonWhitespace?.index != null) {
     const valueStart = colonWhitespace.index + colonWhitespace[0].length;
@@ -139,7 +140,7 @@ export function resolveJsonErrorLocation(
   text: string,
   rawMessage: string
 ): JsonCursor {
-  const positionMatch = rawMessage.match(/at position\s+(\d+)/i);
+  const positionMatch = /at position\s+(\d+)/i.exec(rawMessage);
   const position =
     positionMatch?.[1] != null
       ? Number.parseInt(positionMatch[1], 10)
@@ -161,7 +162,7 @@ export function resolveJsonErrorLocation(
     return fromUnexpected;
   }
 
-  const lineCol = rawMessage.match(/line\s+(\d+)\s+column\s+(\d+)/i);
+  const lineCol = /line\s+(\d+)\s+column\s+(\d+)/i.exec(rawMessage);
   if (lineCol?.[1] && lineCol[2]) {
     return {
       line: Number.parseInt(lineCol[1], 10),
