@@ -69,6 +69,9 @@ const nodeTypes = {
   [WORKFLOW_STATE_NODE_TYPE]: WorkflowStateFlowNode,
 };
 
+/** Success banner + toast auto-clear (ms). */
+const SUCCESS_FEEDBACK_MS = 6000;
+
 function resolveInitialEnvelope(workflowConfig: Project['workflow_config']): {
   readonly envelope: WorkflowConfigEnvelope;
   readonly usedFallback: boolean;
@@ -194,6 +197,16 @@ export function WorkflowDesignerWorkspace({
   const [messageIsError, setMessageIsError] = useState(false);
 
   useEffect(() => {
+    if (!message || messageIsError) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setMessage(null);
+    }, SUCCESS_FEEDBACK_MS);
+    return () => window.clearTimeout(timer);
+  }, [message, messageIsError]);
+
+  useEffect(() => {
     const next = resolveInitialEnvelope(project.workflow_config);
     setBaseline(cloneWorkflowEnvelope(next.envelope));
     setDraft(cloneWorkflowEnvelope(next.envelope));
@@ -287,7 +300,10 @@ export function WorkflowDesignerWorkspace({
       patch: Partial<
         Pick<
           WorkflowEdge,
-          'requireChildren' | 'allowAnyOf' | 'resolutionPresetId'
+          | 'requireChildren'
+          | 'allowAnyOf'
+          | 'requiresEscalation'
+          | 'resolutionPresetId'
         >
       >
     ) => {
@@ -342,7 +358,7 @@ export function WorkflowDesignerWorkspace({
       setCanvasEpoch((epoch) => epoch + 1);
       setMessage('Workflow saved.');
       setMessageIsError(false);
-      toast.success('Workflow saved.');
+      toast.success('Workflow saved.', { duration: SUCCESS_FEEDBACK_MS });
       router.refresh();
       return true;
     } catch (error) {

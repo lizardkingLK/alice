@@ -476,7 +476,7 @@ export function ChartsWidgetConfigDialog({
     <ChartsStatusPiePreview
       size="dialog"
       slices={analytics.series?.slices ?? null}
-      labelField={seriesLabelField ?? 'status'}
+      labelField={seriesLabelField ?? 'category'}
       loading={Boolean(open && seriesLabelField && analytics.seriesLoading)}
       emptyMessage={pieEmptyMessage({
         hasSeriesLabel: Boolean(seriesLabelField),
@@ -558,6 +558,7 @@ export function ChartsWidgetConfigDialog({
 
           {settingsOpen && onPieVariantChange ? (
             <ChartsWidgetSettingsSidebar
+              projectId={projectId}
               pieVariant={pieVariant}
               labelField={labelField}
               onPieVariantChange={onPieVariantChange}

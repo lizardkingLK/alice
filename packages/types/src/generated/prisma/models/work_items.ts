@@ -48,6 +48,9 @@ export type Work_itemsMinAggregateOutputType = {
   story_points: number | null
   status: $Enums.WorkItemStatus | null
   board_column_id: string | null
+  status_category: string | null
+  state_id: string | null
+  state_workflow_id: string | null
   record_status: $Enums.RecordStatus | null
   done_at: Date | null
   created_by: string | null
@@ -71,6 +74,9 @@ export type Work_itemsMaxAggregateOutputType = {
   story_points: number | null
   status: $Enums.WorkItemStatus | null
   board_column_id: string | null
+  status_category: string | null
+  state_id: string | null
+  state_workflow_id: string | null
   record_status: $Enums.RecordStatus | null
   done_at: Date | null
   created_by: string | null
@@ -97,6 +103,9 @@ export type Work_itemsCountAggregateOutputType = {
   status: number
   state: number
   board_column_id: number
+  status_category: number
+  state_id: number
+  state_workflow_id: number
   record_status: number
   done_at: number
   created_by: number
@@ -130,6 +139,9 @@ export type Work_itemsMinAggregateInputType = {
   story_points?: true
   status?: true
   board_column_id?: true
+  status_category?: true
+  state_id?: true
+  state_workflow_id?: true
   record_status?: true
   done_at?: true
   created_by?: true
@@ -153,6 +165,9 @@ export type Work_itemsMaxAggregateInputType = {
   story_points?: true
   status?: true
   board_column_id?: true
+  status_category?: true
+  state_id?: true
+  state_workflow_id?: true
   record_status?: true
   done_at?: true
   created_by?: true
@@ -179,6 +194,9 @@ export type Work_itemsCountAggregateInputType = {
   status?: true
   state?: true
   board_column_id?: true
+  status_category?: true
+  state_id?: true
+  state_workflow_id?: true
   record_status?: true
   done_at?: true
   created_by?: true
@@ -292,6 +310,9 @@ export type Work_itemsGroupByOutputType = {
   status: $Enums.WorkItemStatus
   state: runtime.JsonValue | null
   board_column_id: string | null
+  status_category: string
+  state_id: string
+  state_workflow_id: string
   record_status: $Enums.RecordStatus
   done_at: Date | null
   created_by: string | null
@@ -341,6 +362,9 @@ export type work_itemsWhereInput = {
   status?: Prisma.EnumWorkItemStatusFilter<"work_items"> | $Enums.WorkItemStatus
   state?: Prisma.JsonNullableFilter<"work_items">
   board_column_id?: Prisma.StringNullableFilter<"work_items"> | string | null
+  status_category?: Prisma.StringFilter<"work_items"> | string
+  state_id?: Prisma.StringFilter<"work_items"> | string
+  state_workflow_id?: Prisma.StringFilter<"work_items"> | string
   record_status?: Prisma.EnumRecordStatusFilter<"work_items"> | $Enums.RecordStatus
   done_at?: Prisma.DateTimeNullableFilter<"work_items"> | Date | string | null
   created_by?: Prisma.UuidNullableFilter<"work_items"> | string | null
@@ -380,6 +404,9 @@ export type work_itemsOrderByWithRelationInput = {
   status?: Prisma.SortOrder
   state?: Prisma.SortOrderInput | Prisma.SortOrder
   board_column_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  status_category?: Prisma.SortOrder
+  state_id?: Prisma.SortOrder
+  state_workflow_id?: Prisma.SortOrder
   record_status?: Prisma.SortOrder
   done_at?: Prisma.SortOrderInput | Prisma.SortOrder
   created_by?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -423,6 +450,9 @@ export type work_itemsWhereUniqueInput = Prisma.AtLeast<{
   status?: Prisma.EnumWorkItemStatusFilter<"work_items"> | $Enums.WorkItemStatus
   state?: Prisma.JsonNullableFilter<"work_items">
   board_column_id?: Prisma.StringNullableFilter<"work_items"> | string | null
+  status_category?: Prisma.StringFilter<"work_items"> | string
+  state_id?: Prisma.StringFilter<"work_items"> | string
+  state_workflow_id?: Prisma.StringFilter<"work_items"> | string
   record_status?: Prisma.EnumRecordStatusFilter<"work_items"> | $Enums.RecordStatus
   done_at?: Prisma.DateTimeNullableFilter<"work_items"> | Date | string | null
   created_by?: Prisma.UuidNullableFilter<"work_items"> | string | null
@@ -462,6 +492,9 @@ export type work_itemsOrderByWithAggregationInput = {
   status?: Prisma.SortOrder
   state?: Prisma.SortOrderInput | Prisma.SortOrder
   board_column_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  status_category?: Prisma.SortOrder
+  state_id?: Prisma.SortOrder
+  state_workflow_id?: Prisma.SortOrder
   record_status?: Prisma.SortOrder
   done_at?: Prisma.SortOrderInput | Prisma.SortOrder
   created_by?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -496,6 +529,9 @@ export type work_itemsScalarWhereWithAggregatesInput = {
   status?: Prisma.EnumWorkItemStatusWithAggregatesFilter<"work_items"> | $Enums.WorkItemStatus
   state?: Prisma.JsonNullableWithAggregatesFilter<"work_items">
   board_column_id?: Prisma.StringNullableWithAggregatesFilter<"work_items"> | string | null
+  status_category?: Prisma.StringWithAggregatesFilter<"work_items"> | string
+  state_id?: Prisma.StringWithAggregatesFilter<"work_items"> | string
+  state_workflow_id?: Prisma.StringWithAggregatesFilter<"work_items"> | string
   record_status?: Prisma.EnumRecordStatusWithAggregatesFilter<"work_items"> | $Enums.RecordStatus
   done_at?: Prisma.DateTimeNullableWithAggregatesFilter<"work_items"> | Date | string | null
   created_by?: Prisma.UuidNullableWithAggregatesFilter<"work_items"> | string | null
@@ -517,6 +553,9 @@ export type work_itemsCreateInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -554,6 +593,9 @@ export type work_itemsUncheckedCreateInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -581,6 +623,9 @@ export type work_itemsUpdateInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -618,6 +663,9 @@ export type work_itemsUncheckedUpdateInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -650,6 +698,9 @@ export type work_itemsCreateManyInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -671,6 +722,9 @@ export type work_itemsUpdateManyMutationInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -695,6 +749,9 @@ export type work_itemsUncheckedUpdateManyInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -741,6 +798,9 @@ export type work_itemsCountOrderByAggregateInput = {
   status?: Prisma.SortOrder
   state?: Prisma.SortOrder
   board_column_id?: Prisma.SortOrder
+  status_category?: Prisma.SortOrder
+  state_id?: Prisma.SortOrder
+  state_workflow_id?: Prisma.SortOrder
   record_status?: Prisma.SortOrder
   done_at?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
@@ -768,6 +828,9 @@ export type work_itemsMaxOrderByAggregateInput = {
   story_points?: Prisma.SortOrder
   status?: Prisma.SortOrder
   board_column_id?: Prisma.SortOrder
+  status_category?: Prisma.SortOrder
+  state_id?: Prisma.SortOrder
+  state_workflow_id?: Prisma.SortOrder
   record_status?: Prisma.SortOrder
   done_at?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
@@ -791,6 +854,9 @@ export type work_itemsMinOrderByAggregateInput = {
   story_points?: Prisma.SortOrder
   status?: Prisma.SortOrder
   board_column_id?: Prisma.SortOrder
+  status_category?: Prisma.SortOrder
+  state_id?: Prisma.SortOrder
+  state_workflow_id?: Prisma.SortOrder
   record_status?: Prisma.SortOrder
   done_at?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
@@ -1213,6 +1279,9 @@ export type work_itemsCreateWithoutAssigneeInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1248,6 +1317,9 @@ export type work_itemsUncheckedCreateWithoutAssigneeInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -1285,6 +1357,9 @@ export type work_itemsCreateWithoutReporterInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1320,6 +1395,9 @@ export type work_itemsUncheckedCreateWithoutReporterInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -1357,6 +1435,9 @@ export type work_itemsCreateWithoutCreated_by_userInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1393,6 +1474,9 @@ export type work_itemsUncheckedCreateWithoutCreated_by_userInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1429,6 +1513,9 @@ export type work_itemsCreateWithoutUpdated_by_userInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1465,6 +1552,9 @@ export type work_itemsUncheckedCreateWithoutUpdated_by_userInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -1525,6 +1615,9 @@ export type work_itemsScalarWhereInput = {
   status?: Prisma.EnumWorkItemStatusFilter<"work_items"> | $Enums.WorkItemStatus
   state?: Prisma.JsonNullableFilter<"work_items">
   board_column_id?: Prisma.StringNullableFilter<"work_items"> | string | null
+  status_category?: Prisma.StringFilter<"work_items"> | string
+  state_id?: Prisma.StringFilter<"work_items"> | string
+  state_workflow_id?: Prisma.StringFilter<"work_items"> | string
   record_status?: Prisma.EnumRecordStatusFilter<"work_items"> | $Enums.RecordStatus
   done_at?: Prisma.DateTimeNullableFilter<"work_items"> | Date | string | null
   created_by?: Prisma.UuidNullableFilter<"work_items"> | string | null
@@ -1594,6 +1687,9 @@ export type work_itemsCreateWithoutProjectInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1629,6 +1725,9 @@ export type work_itemsUncheckedCreateWithoutProjectInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -1682,6 +1781,9 @@ export type work_itemsCreateWithoutSprintInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1717,6 +1819,9 @@ export type work_itemsUncheckedCreateWithoutSprintInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -1770,6 +1875,9 @@ export type work_itemsCreateWithoutChildrenInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1806,6 +1914,9 @@ export type work_itemsUncheckedCreateWithoutChildrenInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -1837,6 +1948,9 @@ export type work_itemsCreateWithoutParentInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1872,6 +1986,9 @@ export type work_itemsUncheckedCreateWithoutParentInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -1920,6 +2037,9 @@ export type work_itemsUpdateWithoutChildrenInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1956,6 +2076,9 @@ export type work_itemsUncheckedUpdateWithoutChildrenInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1998,6 +2121,9 @@ export type work_itemsCreateWithoutActivitiesInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -2034,6 +2160,9 @@ export type work_itemsUncheckedCreateWithoutActivitiesInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -2076,6 +2205,9 @@ export type work_itemsUpdateWithoutActivitiesInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2112,6 +2244,9 @@ export type work_itemsUncheckedUpdateWithoutActivitiesInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2138,6 +2273,9 @@ export type work_itemsCreateWithoutWorklogsInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -2174,6 +2312,9 @@ export type work_itemsUncheckedCreateWithoutWorklogsInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -2216,6 +2357,9 @@ export type work_itemsUpdateWithoutWorklogsInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2252,6 +2396,9 @@ export type work_itemsUncheckedUpdateWithoutWorklogsInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2278,6 +2425,9 @@ export type work_itemsCreateWithoutCommentsInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -2314,6 +2464,9 @@ export type work_itemsUncheckedCreateWithoutCommentsInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -2356,6 +2509,9 @@ export type work_itemsUpdateWithoutCommentsInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2392,6 +2548,9 @@ export type work_itemsUncheckedUpdateWithoutCommentsInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2418,6 +2577,9 @@ export type work_itemsCreateWithoutAttachmentsInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -2454,6 +2616,9 @@ export type work_itemsUncheckedCreateWithoutAttachmentsInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -2496,6 +2661,9 @@ export type work_itemsUpdateWithoutAttachmentsInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2532,6 +2700,9 @@ export type work_itemsUncheckedUpdateWithoutAttachmentsInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2558,6 +2729,9 @@ export type work_itemsCreateWithoutGithub_pull_requestsInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -2594,6 +2768,9 @@ export type work_itemsUncheckedCreateWithoutGithub_pull_requestsInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -2636,6 +2813,9 @@ export type work_itemsUpdateWithoutGithub_pull_requestsInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2672,6 +2852,9 @@ export type work_itemsUncheckedUpdateWithoutGithub_pull_requestsInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2702,6 +2885,9 @@ export type work_itemsCreateManyAssigneeInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -2727,6 +2913,9 @@ export type work_itemsCreateManyReporterInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -2753,6 +2942,9 @@ export type work_itemsCreateManyCreated_by_userInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -2778,6 +2970,9 @@ export type work_itemsCreateManyUpdated_by_userInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -2798,6 +2993,9 @@ export type work_itemsUpdateWithoutAssigneeInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2833,6 +3031,9 @@ export type work_itemsUncheckedUpdateWithoutAssigneeInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2864,6 +3065,9 @@ export type work_itemsUncheckedUpdateManyWithoutAssigneeInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2885,6 +3089,9 @@ export type work_itemsUpdateWithoutReporterInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2920,6 +3127,9 @@ export type work_itemsUncheckedUpdateWithoutReporterInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2951,6 +3161,9 @@ export type work_itemsUncheckedUpdateManyWithoutReporterInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2972,6 +3185,9 @@ export type work_itemsUpdateWithoutCreated_by_userInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -3008,6 +3224,9 @@ export type work_itemsUncheckedUpdateWithoutCreated_by_userInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -3039,6 +3258,9 @@ export type work_itemsUncheckedUpdateManyWithoutCreated_by_userInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -3059,6 +3281,9 @@ export type work_itemsUpdateWithoutUpdated_by_userInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -3095,6 +3320,9 @@ export type work_itemsUncheckedUpdateWithoutUpdated_by_userInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3126,6 +3354,9 @@ export type work_itemsUncheckedUpdateManyWithoutUpdated_by_userInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3150,6 +3381,9 @@ export type work_itemsCreateManyProjectInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -3171,6 +3405,9 @@ export type work_itemsUpdateWithoutProjectInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -3206,6 +3443,9 @@ export type work_itemsUncheckedUpdateWithoutProjectInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3237,6 +3477,9 @@ export type work_itemsUncheckedUpdateManyWithoutProjectInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3262,6 +3505,9 @@ export type work_itemsCreateManySprintInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -3283,6 +3529,9 @@ export type work_itemsUpdateWithoutSprintInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -3318,6 +3567,9 @@ export type work_itemsUncheckedUpdateWithoutSprintInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3349,6 +3601,9 @@ export type work_itemsUncheckedUpdateManyWithoutSprintInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3374,6 +3629,9 @@ export type work_itemsCreateManyParentInput = {
   status?: $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -3395,6 +3653,9 @@ export type work_itemsUpdateWithoutParentInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -3430,6 +3691,9 @@ export type work_itemsUncheckedUpdateWithoutParentInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3461,6 +3725,9 @@ export type work_itemsUncheckedUpdateManyWithoutParentInput = {
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
   state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3563,6 +3830,9 @@ export type work_itemsSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   status?: boolean
   state?: boolean
   board_column_id?: boolean
+  status_category?: boolean
+  state_id?: boolean
+  state_workflow_id?: boolean
   record_status?: boolean
   done_at?: boolean
   created_by?: boolean
@@ -3603,6 +3873,9 @@ export type work_itemsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   status?: boolean
   state?: boolean
   board_column_id?: boolean
+  status_category?: boolean
+  state_id?: boolean
+  state_workflow_id?: boolean
   record_status?: boolean
   done_at?: boolean
   created_by?: boolean
@@ -3636,6 +3909,9 @@ export type work_itemsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   status?: boolean
   state?: boolean
   board_column_id?: boolean
+  status_category?: boolean
+  state_id?: boolean
+  state_workflow_id?: boolean
   record_status?: boolean
   done_at?: boolean
   created_by?: boolean
@@ -3669,6 +3945,9 @@ export type work_itemsSelectScalar = {
   status?: boolean
   state?: boolean
   board_column_id?: boolean
+  status_category?: boolean
+  state_id?: boolean
+  state_workflow_id?: boolean
   record_status?: boolean
   done_at?: boolean
   created_by?: boolean
@@ -3678,7 +3957,7 @@ export type work_itemsSelectScalar = {
   jira_issue_key?: boolean
 }
 
-export type work_itemsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "project_id" | "sprint_id" | "parent_id" | "title" | "type" | "priority" | "description" | "labels" | "assignee_id" | "reporter_id" | "due_date" | "story_points" | "status" | "state" | "board_column_id" | "record_status" | "done_at" | "created_by" | "created_at" | "updated_by" | "updated_at" | "jira_issue_key", ExtArgs["result"]["work_items"]>
+export type work_itemsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "project_id" | "sprint_id" | "parent_id" | "title" | "type" | "priority" | "description" | "labels" | "assignee_id" | "reporter_id" | "due_date" | "story_points" | "status" | "state" | "board_column_id" | "status_category" | "state_id" | "state_workflow_id" | "record_status" | "done_at" | "created_by" | "created_at" | "updated_by" | "updated_at" | "jira_issue_key", ExtArgs["result"]["work_items"]>
 export type work_itemsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.projectsDefaultArgs<ExtArgs>
   sprint?: boolean | Prisma.work_items$sprintArgs<ExtArgs>
@@ -3752,6 +4031,12 @@ export type $work_itemsPayload<ExtArgs extends runtime.Types.Extensions.Internal
      */
     state: runtime.JsonValue | null
     board_column_id: string | null
+    /**
+     * Trigger-maintained mirrors of resolved `state` (charts drilldown + indexes).
+     */
+    status_category: string
+    state_id: string
+    state_workflow_id: string
     record_status: $Enums.RecordStatus
     done_at: Date | null
     created_by: string | null
@@ -4211,6 +4496,9 @@ export interface work_itemsFieldRefs {
   readonly status: Prisma.FieldRef<"work_items", 'WorkItemStatus'>
   readonly state: Prisma.FieldRef<"work_items", 'Json'>
   readonly board_column_id: Prisma.FieldRef<"work_items", 'String'>
+  readonly status_category: Prisma.FieldRef<"work_items", 'String'>
+  readonly state_id: Prisma.FieldRef<"work_items", 'String'>
+  readonly state_workflow_id: Prisma.FieldRef<"work_items", 'String'>
   readonly record_status: Prisma.FieldRef<"work_items", 'RecordStatus'>
   readonly done_at: Prisma.FieldRef<"work_items", 'DateTime'>
   readonly created_by: Prisma.FieldRef<"work_items", 'String'>

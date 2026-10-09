@@ -257,7 +257,7 @@ function ChartsWidgetCardChartBody({
       <ChartsStatusPiePreview
         size="card"
         slices={analytics.series?.slices ?? null}
-        labelField={seriesLabelField ?? 'status'}
+        labelField={seriesLabelField ?? 'category'}
         loading={Boolean(seriesLabelField && analytics.seriesLoading)}
         emptyMessage={resolvePieEmptyMessage(
           seriesLabelField,

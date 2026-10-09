@@ -148,8 +148,9 @@ Pick another layout to clear the slice focus.
 2. Under **Chart type**, choose **Pie**, **Donut**, or **Bar**. Other chart
    types show **Coming soon**.
 3. Under **Labels** → **Columns**, choose how to group the chart: **Project**,
-   **Owner**, **Status**, **Type**, or **Priority**. The chart and legend update
-   from live work-item counts.
+   **Owner**, **Category**, **Type**, or **Priority**. When a single **project**
+   filter is selected, **State** is also available (workflow states for that
+   project). The chart and legend update from live work-item counts.
 4. Under **Values**, charts use **Count items** only (other calculations are
    coming later).
 5. Under **Customize**, choose **Value** or **%**, sort slices, and optionally

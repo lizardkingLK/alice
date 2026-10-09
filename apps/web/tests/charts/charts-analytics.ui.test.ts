@@ -29,6 +29,8 @@ const ALL_QUICK = {
 describe('charts analytics UI helpers', () => {
   it('detects live series label fields', () => {
     expect(isChartSeriesLabelField('status')).toBe(true);
+    expect(isChartSeriesLabelField('category')).toBe(true);
+    expect(isChartSeriesLabelField('state')).toBe(true);
     expect(isChartSeriesLabelField('owner')).toBe(true);
     expect(isChartSeriesLabelField('type')).toBe(true);
     expect(isChartSeriesLabelField('dueDate')).toBe(false);

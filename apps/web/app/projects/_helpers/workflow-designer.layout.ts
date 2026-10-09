@@ -199,7 +199,13 @@ export function patchEdgeInDocument(
   document: WorkflowDocument,
   edgeId: string,
   patch: Partial<
-    Pick<WorkflowEdge, 'requireChildren' | 'allowAnyOf' | 'resolutionPresetId'>
+    Pick<
+      WorkflowEdge,
+      | 'requireChildren'
+      | 'allowAnyOf'
+      | 'requiresEscalation'
+      | 'resolutionPresetId'
+    >
   >
 ): WorkflowDocument {
   return {

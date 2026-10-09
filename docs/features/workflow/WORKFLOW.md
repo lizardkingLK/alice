@@ -118,9 +118,11 @@ click popovers on every control.
 | ----------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Name / description            | —              | Display                                                                                                                                          |
 | Category                      | —              | `draft` \| `todo` \| `in_progress` \| `done`                                                                                                     |
-| Requires escalation           | —              | When true, every outbound edge must reference a resolution preset (Zod on save). Dialog runs **on exit**.                                        |
 | **Lock record in this state** | Locked copy    | While here, record is read-only except state transitions (reopen pattern).                                                                       |
 | **Terminal state**            | Locked copy    | No outbound edges. Checking it **blocks** until outbound edges are removed (confirm / “Remove all outbound and lock”). Never silent auto-delete. |
+
+Legacy: some older configs may still set `requiresEscalation` on the **state**
+(force every exit). Prefer the **edge** control below.
 
 **Reopen:** allow an outbound edge from a done-category state while
 **Lock record in this state** remains on (today’s Done behavior). Pure archive =
@@ -128,11 +130,12 @@ Lock record + Terminal.
 
 ### Edge
 
-| Control              | Label / options (locked)                               | Effect                                                                                                                            |
-| -------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| `allowAnyOf`         | Role / team / user matchers                            | Who may take the transition (default: all project members if empty — product default TBD at impl; document chosen default in Zod) |
-| Resolution preset    | Load / create named preset                             | Optional; required if source node requires escalation                                                                             |
-| **Require children** | **Off** \| **All complete** \| **Match parent target** | See below                                                                                                                         |
+| Control                 | Label / options (locked)                               | Effect                                                                                                                                                                                                                                                                             |
+| ----------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `allowAnyOf`            | Role / team / user matchers                            | Who may take the transition (default: all project members if empty — product default TBD at impl; document chosen default in Zod)                                                                                                                                                  |
+| **Requires escalation** | Checkbox + resolution form                             | When on, this exit must link a resolution preset before save. Dialog runs **on exit**.                                                                                                                                                                                             |
+| Resolution form         | Picker + **Edit form** dialog                          | Compact select in Settings; Form / Preview / JSON editor opens in a modal and upserts only on dialog **Save**. Select fields use per-option rows (+ Option). JSON commits on blur (format + dedupe ids); errors show Ln/Col. Required when escalation is on (or legacy from-state) |
+| **Require children**    | **Off** \| **All complete** \| **Match parent target** | See below                                                                                                                                                                                                                                                                          |
 
 **Require children**
 
@@ -246,8 +249,8 @@ Single-current placement (not a live map of every workflow):
 
 Compatibility window: keep deriving legacy `work_items.status` + `done_at` on
 transition where needed; thin callers toward `state` / category.
-Prefer trigger-maintained or generated columns (`state_workflow_id`,
-`state_id`, `status_category`) for indexes and chart rollups (**Step 7**).
+Trigger-maintained mirrors on `work_items` (`state_workflow_id`, `state_id`,
+`status_category`) plus matching rollup grain shipped in **Step 7**.
 Retire `board_column_id` in favor of `stateId`.
 
 ### As-built — `work_items.state` (Step 1)
@@ -272,9 +275,9 @@ Parallel boards do **not** mean two live states on one card.
 | Charts — no / multi project | **Category**                                                       |
 | Charts — single project     | **Category** + new **State** dimension (workflow state ids/labels) |
 
-Extend `work_item_chart_rollups` (or sibling grain) with category always and
-`workflow_id` + `state_id` for project-scoped state slices. Charts UI gains a
-**State** label when a project is selected.
+`work_item_chart_rollups` includes `status_category`, `workflow_id`, and
+`state_id`. Charts Labels → **Category** for all scopes; **State** appears when
+a single project is selected on the widget.
 
 ---
 

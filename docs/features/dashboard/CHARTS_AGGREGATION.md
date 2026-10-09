@@ -81,19 +81,24 @@ Tier 2 may add `reader` / `worker` without renaming `web` / `api`. Rename
 
 ### Table `work_item_chart_rollups`
 
-| Column        | Role                     |
-| ------------- | ------------------------ |
-| `bucket_date` | `date` from `created_at` |
-| `project_id`  | uuid                     |
-| `sprint_id`   | uuid nullable            |
-| `status`      | work item status         |
-| `type`        | work item type           |
-| `priority`    | work item priority       |
-| `assignee_id` | uuid nullable            |
-| `item_count`  | int                      |
+| Column            | Role                                     |
+| ----------------- | ---------------------------------------- |
+| `bucket_date`     | `date` from `created_at`                 |
+| `project_id`      | uuid                                     |
+| `sprint_id`       | uuid nullable                            |
+| `status`          | legacy work item status enum             |
+| `status_category` | workflow category (`draft` / `todo` / …) |
+| `workflow_id`     | current workflow id                      |
+| `state_id`        | current workflow state id                |
+| `type`            | work item type                           |
+| `priority`        | work item priority                       |
+| `assignee_id`     | uuid nullable                            |
+| `item_count`      | int                                      |
 
-- Unique / PK on full grain
-- Secondary index: `(project_id, bucket_date)`
+- Unique / PK on full grain (`grain_key` includes category + workflow + state)
+- Secondary indexes: `(project_id, bucket_date)`, `(project_id, status_category)`, `(project_id, state_id)`
+- Series label fields: `status`, `category`, `state` (State requires a single project), `owner`, `board`, `type`, `priority`
+- `work_items` mirrors `status_category` / `state_id` / `state_workflow_id` (BEFORE trigger) for drilldown
 
 ### Triggers
 

@@ -32,6 +32,7 @@ import type {
   ChartsSampleMember,
   ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
+import { resolveChartAnalyticsProjectId } from '@/app/charts/_helpers/charts-analytics.ui';
 import 'react-grid-layout/css/styles.css';
 import '@/app/dashboard/_components/dashboard-grid.css';
 
@@ -680,7 +681,7 @@ export function duplicateChartWidget(
       nextInstances
     );
   }
-  if (source.labelField && source.labelField !== 'status') {
+  if (source.labelField && source.labelField !== 'category') {
     nextInstances = updateChartWidgetLabelField(
       copiedId,
       source.labelField,
@@ -800,7 +801,7 @@ function withInstanceFields(
     patch.clearLabelField,
     'labelField',
     labelField,
-    labelField === 'status'
+    labelField === 'category'
   );
 
   const showValueAs = patch.showValueAs ?? item.showValueAs;
@@ -858,10 +859,31 @@ export function updateChartWidgetFilters(
     if (item.instanceId !== instanceId) {
       return item;
     }
-    if (!filters) {
-      return withInstanceFields(item, { clearFilters: true });
+    const nextFilters = filters ?? null;
+    const projectId = resolveChartAnalyticsProjectId(nextFilters);
+    const clearStateLabel = item.labelField === 'state' && projectId === null;
+    if (!nextFilters) {
+      return withInstanceFields(item, {
+        clearFilters: true,
+        ...(clearStateLabel
+          ? {
+              clearLabelField: true,
+              clearFocusedSliceKey: true,
+              clearSliceColors: true,
+            }
+          : {}),
+      });
     }
-    return withInstanceFields(item, { filters });
+    return withInstanceFields(item, {
+      filters: nextFilters,
+      ...(clearStateLabel
+        ? {
+            clearLabelField: true,
+            clearFocusedSliceKey: true,
+            clearSliceColors: true,
+          }
+        : {}),
+    });
   });
 }
 
@@ -908,7 +930,7 @@ export function updateChartWidgetLabelField(
     if (item.instanceId !== instanceId) {
       return item;
     }
-    if (labelField === 'status') {
+    if (labelField === 'category') {
       return withInstanceFields(item, {
         clearLabelField: true,
         clearFocusedSliceKey: true,

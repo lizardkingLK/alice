@@ -6,9 +6,9 @@ items, and optional checks before a move.
 **Audience:** Managers and admins
 
 **Shipping note:** The Workflow tab supports the **canvas** and **Settings**
-(name, category, lock record, terminal with outbound-edge confirm, escalation
-flag, require children, who can move, **resolution presets**). When a move uses
-a preset, work-item details asks for the form before changing status.
+(name, category, lock record, terminal with outbound-edge confirm, require
+children, who can move, **escalation + resolution forms** on transitions). When a
+move uses a form, work-item details asks for it before changing status.
 
 ---
 
@@ -45,7 +45,6 @@ Select a state, then open **Settings**:
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | **Name** / description        | Labels on the board and in pickers                                                                         |
 | **Category**                  | Groups states for filters and reports (`todo`, `in progress`, `done`, …)                                   |
-| **Requires escalation**       | Leaving this state requires a filled **resolution** form on each outbound transition                       |
 | **Lock record in this state** | While an item is here, most fields are read-only; changing state (for example reopen) can still be allowed |
 | **Terminal state**            | No outbound transitions. If edges already leave this state, remove them before you can turn this on        |
 
@@ -57,11 +56,12 @@ Use the info icons for short explanations of each option.
 
 Select an edge between two states:
 
-| Setting               | What it does                                                                                                                                                                                                           |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Who can move**      | Limit the transition to roles, teams, or people                                                                                                                                                                        |
-| **Resolution preset** | Optional named form to complete when taking this transition                                                                                                                                                            |
-| **Require children**  | **Off** — no check. **All complete** — all direct subtasks must be in a done category. **Match parent target** — all direct subtasks must already be in the parent’s target state (or same category when types differ) |
+| Setting                 | What it does                                                                                                                                                                                                           |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Who can move**        | Limit the transition to roles, teams, or people                                                                                                                                                                        |
+| **Requires escalation** | Turn on when this move needs a form. Then **Create new…** or pick a form, open **Edit form**, click **Save** in the dialog, and **Save** the workflow                                                                  |
+| **Resolution form**     | Named form people complete when taking this transition (required when escalation is on). Full editor opens in a dialog; changes apply only when you click **Save** there                                               |
+| **Require children**    | **Off** — no check. **All complete** — all direct subtasks must be in a done category. **Match parent target** — all direct subtasks must already be in the parent’s target state (or same category when types differ) |
 
 Edges into a typical **Done** category are seeded with **All complete** so
 parents cannot close while subtasks are still open.
@@ -70,9 +70,20 @@ parents cannot close while subtasks are still open.
 
 ## Resolution forms
 
-Create a **named** form (simple fields such as text, select, checkbox). You can
-edit it visually, preview it, or edit the JSON. Save it as a **preset** and
-reuse it on other transitions in the same workflow.
+Create a **named** form (simple fields such as text, select, checkbox). Open
+**Edit form** to configure it in a dialog:
+
+- **Fields** — questions people answer on the move (use **+ Option** on Select
+  fields for dropdown choices; checkboxes are on/off only).
+- **Outcomes** — labeled choices they pick when finishing the form (recorded with
+  the answers; routing by outcome comes later).
+- **Preview** — how the form will look.
+- **JSON** — advanced edit with line numbers and cursor **Ln / Col** readout.
+  Leaving the editor formats, validates, and saves into the draft (duplicate
+  field/outcome ids are re-issued). Parse errors show **Ln / Col** only. Click
+  **Save** in the dialog, then **Save** the workflow. Past resolutions on work
+  items keep a snapshot of answers/labels, so changing ids later does not break
+  history.
 
 ---
 

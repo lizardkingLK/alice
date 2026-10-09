@@ -27,6 +27,20 @@ describe('chart analytics query schemas', () => {
     expect(chartRollupGroupColumn('owner')).toBe('assignee_id');
     expect(chartRollupGroupColumn('board')).toBe('project_id');
     expect(chartRollupGroupColumn('status')).toBe('status');
+    expect(chartRollupGroupColumn('category')).toBe('status_category');
+    expect(chartRollupGroupColumn('state')).toBe('state_id');
+  });
+
+  it('accepts category and state label fields', () => {
+    expect(
+      chartSeriesQuerySchema.parse({ labelField: 'category' }).labelField
+    ).toBe('category');
+    expect(
+      chartSeriesQuerySchema.parse({
+        projectId: PROJECT_ID,
+        labelField: 'state',
+      }).labelField
+    ).toBe('state');
   });
 
   it('rejects unsupported label fields', () => {

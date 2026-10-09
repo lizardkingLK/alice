@@ -1406,8 +1406,11 @@ export type Database = {
           priority: Database["public"]["Enums"]["WorkItemPriority"]
           project_id: string
           sprint_id: string | null
+          state_id: string
           status: Database["public"]["Enums"]["WorkItemStatus"]
+          status_category: string
           type: Database["public"]["Enums"]["WorkItemType"]
+          workflow_id: string
         }
         Insert: {
           assignee_id?: string | null
@@ -1417,8 +1420,11 @@ export type Database = {
           priority: Database["public"]["Enums"]["WorkItemPriority"]
           project_id: string
           sprint_id?: string | null
+          state_id: string
           status: Database["public"]["Enums"]["WorkItemStatus"]
+          status_category: string
           type: Database["public"]["Enums"]["WorkItemType"]
+          workflow_id: string
         }
         Update: {
           assignee_id?: string | null
@@ -1428,8 +1434,11 @@ export type Database = {
           priority?: Database["public"]["Enums"]["WorkItemPriority"]
           project_id?: string
           sprint_id?: string | null
+          state_id?: string
           status?: Database["public"]["Enums"]["WorkItemStatus"]
+          status_category?: string
           type?: Database["public"]["Enums"]["WorkItemType"]
+          workflow_id?: string
         }
         Relationships: [
           {
@@ -1531,7 +1540,10 @@ export type Database = {
           reporter_id: string | null
           sprint_id: string | null
           state: Json | null
+          state_id: string
+          state_workflow_id: string
           status: Database["public"]["Enums"]["WorkItemStatus"]
+          status_category: string
           story_points: number | null
           title: string
           type: Database["public"]["Enums"]["WorkItemType"]
@@ -1556,7 +1568,10 @@ export type Database = {
           reporter_id?: string | null
           sprint_id?: string | null
           state?: Json | null
+          state_id?: string
+          state_workflow_id?: string
           status?: Database["public"]["Enums"]["WorkItemStatus"]
+          status_category?: string
           story_points?: number | null
           title: string
           type: Database["public"]["Enums"]["WorkItemType"]
@@ -1581,7 +1596,10 @@ export type Database = {
           reporter_id?: string | null
           sprint_id?: string | null
           state?: Json | null
+          state_id?: string
+          state_workflow_id?: string
           status?: Database["public"]["Enums"]["WorkItemStatus"]
+          status_category?: string
           story_points?: number | null
           title?: string
           type?: Database["public"]["Enums"]["WorkItemType"]
@@ -1673,6 +1691,22 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      work_item_chart_category_from_status: {
+        Args: { p_status: Database["public"]["Enums"]["WorkItemStatus"] }
+        Returns: string
+      }
+      work_item_chart_resolve_placement: {
+        Args: {
+          p_board_column_id: string
+          p_state: Json
+          p_status: Database["public"]["Enums"]["WorkItemStatus"]
+        }
+        Returns: {
+          state_id: string
+          status_category: string
+          workflow_id: string
+        }[]
+      }
       work_item_chart_rollup_apply_delta: {
         Args: {
           p_assignee_id: string
@@ -1681,8 +1715,11 @@ export type Database = {
           p_priority: Database["public"]["Enums"]["WorkItemPriority"]
           p_project_id: string
           p_sprint_id: string
+          p_state_id: string
           p_status: Database["public"]["Enums"]["WorkItemStatus"]
+          p_status_category: string
           p_type: Database["public"]["Enums"]["WorkItemType"]
+          p_workflow_id: string
         }
         Returns: undefined
       }
@@ -1693,8 +1730,11 @@ export type Database = {
           p_priority: Database["public"]["Enums"]["WorkItemPriority"]
           p_project_id: string
           p_sprint_id: string
+          p_state_id: string
           p_status: Database["public"]["Enums"]["WorkItemStatus"]
+          p_status_category: string
           p_type: Database["public"]["Enums"]["WorkItemType"]
+          p_workflow_id: string
         }
         Returns: string
       }

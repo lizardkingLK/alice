@@ -60,6 +60,40 @@ for doing work. Long how-to belongs in docs — not under titles or as panel pro
 <SettingsInfoTip text="Most fields become read-only here. Moving to another state can still be allowed." />
 ```
 
+## Dialog close → reset timing
+
+When a dialog closes, **do not** wipe form / preview / selection state in the
+same tick as `open = false`. Radix/`@repo/ui` DialogContent exits with
+`duration-200`; clearing content immediately makes the popup flash empty or
+“reset” during the leave animation — poor UX.
+
+**Rule:** keep dialog body state until the exit animation finishes, then reset
+to the initial state. Use the shared helper so the delay stays in sync with the
+UI package:
+
+```ts
+import {
+  afterDialogClose,
+  DIALOG_CLOSE_ANIMATION_MS,
+} from '@/lib/dialog-close';
+
+// Prefer effect + cleanup (cancels reset if the dialog re-opens quickly)
+useEffect(() => {
+  if (open) {
+    return;
+  }
+  return afterDialogClose(() => {
+    // reset query / draft / tabs / errors to initial
+  });
+}, [open]);
+```
+
+- Close handlers should only set `open` to `false` (and commit if the user
+  saved). Defer content resets to `afterDialogClose` / `DIALOG_CLOSE_ANIMATION_MS`.
+- Do not invent a one-off delay; match `duration-200` via `dialog-close.ts`.
+- Tests that assert post-close empty state should `advanceTimersByTimeAsync`
+  by `DIALOG_CLOSE_ANIMATION_MS` (see `docs-search-dialog.test.tsx`).
+
 ## Audit checklist (feature change)
 
 - [ ] No verbose muted block under the primary heading
@@ -67,3 +101,4 @@ for doing work. Long how-to belongs in docs — not under titles or as panel pro
 - [ ] Placeholders are product language, not “coming soon” engineering notes when avoidable
 - [ ] Tooltips help choice; no milestone/schema digressions
 - [ ] Longer explanation lives in user-guide or feature docs if still needed
+- [ ] Dialog content resets only after close animation (`afterDialogClose`)

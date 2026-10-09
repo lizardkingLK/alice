@@ -1,9 +1,11 @@
 import type { CreateChartBody, UpdateChartBody } from './charts.schemas';
 import {
+  chartCategoryDisplayLabel,
   chartDrilldownItemSelect,
   chartRollupGroupColumn,
   CHART_SERIES_NULL_SLICE_KEY,
   paginationMeta,
+  parseWorkflowConfigEnvelope,
   type ChartDrilldownItemRow,
   type ChartSeriesLabelField,
   type ChartSeriesSlice,
@@ -128,11 +130,37 @@ function sliceDimensionWhere(
       return { project_id: sliceKey };
     case 'status':
       return { status: sliceKey as WorkItemStatus };
+    case 'status_category':
+      return { status_category: sliceKey };
+    case 'state_id':
+      return { state_id: sliceKey };
     case 'type':
       return { type: sliceKey as WorkItemType };
     case 'priority':
       return { priority: sliceKey as WorkItemPriority };
   }
+}
+
+function humanizeStateId(stateId: string): string {
+  return stateId
+    .replaceAll(/[_-]+/g, ' ')
+    .replaceAll(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function workflowStateNameById(workflowConfig: unknown): Map<string, string> {
+  const envelope = parseWorkflowConfigEnvelope(workflowConfig);
+  const names = new Map<string, string>();
+  if (!envelope) {
+    return names;
+  }
+  for (const workflow of envelope.workflows) {
+    for (const state of workflow.graph.states) {
+      if (!names.has(state.id)) {
+        names.set(state.id, state.name);
+      }
+    }
+  }
+  return names;
 }
 
 function dimensionFiltersWhere(query: {
@@ -219,7 +247,11 @@ export class ChartsRepository {
       return { key, label: key || 'Unassigned', count };
     });
 
-    const labeled = await this.enrichSeriesLabels(query.labelField, rawSlices);
+    const labeled = await this.enrichSeriesLabels(
+      query.labelField,
+      rawSlices,
+      query.projectIds
+    );
     const totalCount = labeled.reduce((sum, slice) => sum + slice.count, 0);
     return { slices: labeled, totalCount };
   }
@@ -268,13 +300,43 @@ export class ChartsRepository {
 
   private async enrichSeriesLabels(
     labelField: ChartSeriesLabelField,
-    slices: ChartSeriesSlice[]
+    slices: ChartSeriesSlice[],
+    projectIds: readonly string[]
   ): Promise<ChartSeriesSlice[]> {
+    if (labelField === 'category') {
+      return slices.map((slice) => ({
+        ...slice,
+        label:
+          slice.key === CHART_SERIES_NULL_SLICE_KEY
+            ? 'Unknown'
+            : chartCategoryDisplayLabel(slice.key),
+      }));
+    }
+
+    if (labelField === 'state') {
+      const projectId = projectIds.length === 1 ? projectIds[0] : null;
+      let nameById = new Map<string, string>();
+      if (projectId) {
+        const project = await prisma.projects.findUnique({
+          where: { id: projectId },
+          select: { workflow_config: true },
+        });
+        nameById = workflowStateNameById(project?.workflow_config);
+      }
+      return slices.map((slice) => ({
+        ...slice,
+        label:
+          slice.key === CHART_SERIES_NULL_SLICE_KEY
+            ? 'Unknown'
+            : (nameById.get(slice.key) ?? humanizeStateId(slice.key)),
+      }));
+    }
+
     if (labelField === 'board') {
-      const projectIds = slices
+      const boardProjectIds = slices
         .map((slice) => slice.key)
         .filter((key) => key !== CHART_SERIES_NULL_SLICE_KEY);
-      if (projectIds.length === 0) {
+      if (boardProjectIds.length === 0) {
         return slices.map((slice) => ({
           ...slice,
           label: 'Unknown project',
@@ -282,7 +344,7 @@ export class ChartsRepository {
       }
 
       const projects = await prisma.projects.findMany({
-        where: { id: { in: projectIds } },
+        where: { id: { in: boardProjectIds } },
         select: { id: true, name: true, key: true },
       });
       const labelById = new Map(

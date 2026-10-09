@@ -27,6 +27,7 @@ export class ChartsService {
       actorId,
       query.projectId
     );
+    this.assertStateLabelScope(query.labelField, responseProjectId);
     const dimensionFilters = this.pickDimensionFilters(query);
     const { slices, totalCount } = await this.chartsRepository.sumSeries({
       projectIds,
@@ -55,6 +56,7 @@ export class ChartsService {
       actorId,
       query.projectId
     );
+    this.assertStateLabelScope(query.labelField, responseProjectId);
     const dimensionFilters = this.pickDimensionFilters(query);
     const page = await this.chartsRepository.listDrilldown({
       projectIds,
@@ -179,6 +181,15 @@ export class ChartsService {
       chartId,
       userId: actorId,
     });
+  }
+
+  private assertStateLabelScope(
+    labelField: ChartSeriesQuery['labelField'],
+    responseProjectId: string | null
+  ): void {
+    if (labelField === 'state' && !responseProjectId) {
+      throw new Error('State series requires a single project filter');
+    }
   }
 
   private pickDimensionFilters(query: ChartSeriesQuery | ChartDrilldownQuery): {

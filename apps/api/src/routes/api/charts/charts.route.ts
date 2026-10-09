@@ -23,7 +23,10 @@ function sendError(res: Response, error: unknown, fallback: string) {
     status = 403;
   } else if (message === 'Chart not found') {
     status = 404;
-  } else if (message === 'Only active charts can be shared') {
+  } else if (
+    message === 'Only active charts can be shared' ||
+    message === 'State series requires a single project filter'
+  ) {
     status = 400;
   }
   res.status(status).json({ error: message });

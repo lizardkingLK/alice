@@ -345,6 +345,10 @@ model work_items {
   /// Nullable while legacy rows rely on `status`; writers dual-fill via @repo/types helpers.
   state           Json?
   board_column_id String?
+  /// Trigger-maintained mirrors of resolved `state` (charts drilldown + indexes).
+  status_category    String @default("todo")
+  state_id           String @default("New")
+  state_workflow_id  String @default("wf-default")
   record_status   RecordStatus   @default(active)
   done_at         DateTime?      @db.Timestamptz(6)
   created_by      String?        @db.Uuid
@@ -373,6 +377,8 @@ model work_items {
   @@index([assignee_id])
   @@index([sprint_id])
   @@index([project_id, status])
+  @@index([project_id, status_category])
+  @@index([project_id, state_id])
   @@index([created_at])
 }
 
@@ -402,6 +408,10 @@ model work_item_chart_rollups {
   project_id   String           @db.Uuid
   sprint_id    String?          @db.Uuid
   status       WorkItemStatus
+  /// Workflow coarse bucket (draft | todo | in_progress | done).
+  status_category String
+  workflow_id     String
+  state_id        String
   type         WorkItemType
   priority     WorkItemPriority
   assignee_id  String?          @db.Uuid
@@ -412,6 +422,8 @@ model work_item_chart_rollups {
   assignee users?   @relation("WorkItemChartRollupAssignee", fields: [assignee_id], references: [id], onDelete: SetNull)
 
   @@index([project_id, bucket_date])
+  @@index([project_id, status_category])
+  @@index([project_id, state_id])
 }
 
 model work_item_worklogs {
