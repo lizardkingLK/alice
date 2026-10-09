@@ -16,6 +16,9 @@ const {
   applyWorkItemTypeRemovalStrategiesMock,
   listAccessibleProjectIdsMock,
   listAccessibleSummariesMock,
+  usersFindManyMock,
+  integrationFindFirstMock,
+  teamFindFirstMock,
 } = vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
   return {
@@ -34,6 +37,9 @@ const {
     applyWorkItemTypeRemovalStrategiesMock: vi.fn(),
     listAccessibleProjectIdsMock: vi.fn(),
     listAccessibleSummariesMock: vi.fn(),
+    usersFindManyMock: vi.fn(),
+    integrationFindFirstMock: vi.fn(),
+    teamFindFirstMock: vi.fn(),
   };
 });
 
@@ -49,8 +55,17 @@ vi.mock('../../src/lib/supabase', () => ({
   },
 }));
 
+vi.mock('../../src/lib/prisma', () => ({
+  prisma: {
+    users: { findMany: usersFindManyMock },
+    integrations: { findFirst: integrationFindFirstMock },
+    teams: { findFirst: teamFindFirstMock },
+  },
+}));
+
 import {
   CreateProjectInput,
+  ProjectTeamValidationError,
   ProjectsService,
 } from '../../src/routes/api/projects/projects.service';
 import type { ProjectsRepository } from '../../src/routes/api/projects/projects.repository';
@@ -206,6 +221,162 @@ describe('ProjectsService backend tests', () => {
         expect.objectContaining({ sprint }),
         'user-admin'
       );
+    });
+
+    it('validates and preserves initial team data', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      createMock.mockResolvedValue(mockProject);
+      usersFindManyMock.mockResolvedValue([
+        { id: 'team-manager', role: 'manager' },
+        { id: 'team-member', role: 'member' },
+      ]);
+      const team = {
+        name: 'Platform Team',
+        description: null,
+        manager_id: 'team-manager',
+        tech_stack: null,
+        status: 'active' as const,
+        member_ids: ['team-member', 'team-member'],
+      };
+
+      await service.createProject('user-admin', createProjectInput({ team }));
+
+      expect(usersFindManyMock).toHaveBeenCalledWith({
+        where: {
+          id: { in: ['team-manager', 'team-member'] },
+          active: true,
+          membership_status: 'active',
+        },
+        select: { id: true, role: true },
+      });
+      expect(createMock).toHaveBeenCalledWith(
+        expect.objectContaining({ team }),
+        'user-admin'
+      );
+    });
+
+    it('rejects an inactive initial team manager', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      usersFindManyMock.mockResolvedValue([]);
+
+      await expect(
+        service.createProject(
+          'user-admin',
+          createProjectInput({
+            team: {
+              name: 'Platform Team',
+              manager_id: 'inactive-manager',
+              status: 'active',
+              member_ids: [],
+            },
+          })
+        )
+      ).rejects.toThrow('Team manager and members must be active users.');
+
+      expect(createMock).not.toHaveBeenCalled();
+    });
+
+    it('rejects an inactive selected team member', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      usersFindManyMock.mockResolvedValue([
+        { id: 'team-manager', role: 'manager' },
+      ]);
+
+      const result = service.createProject(
+        'user-admin',
+        createProjectInput({
+          team: {
+            name: 'Platform Team',
+            manager_id: 'team-manager',
+            status: 'active',
+            member_ids: ['inactive-member'],
+          },
+        })
+      );
+
+      await expect(result).rejects.toBeInstanceOf(ProjectTeamValidationError);
+      await expect(result).rejects.toThrow(
+        'Team manager and members must be active users.'
+      );
+      expect(createMock).not.toHaveBeenCalled();
+    });
+
+    it('rejects a selected team member with inactive membership status', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      usersFindManyMock.mockResolvedValue([
+        { id: 'team-manager', role: 'manager' },
+      ]);
+
+      await expect(
+        service.createProject(
+          'user-admin',
+          createProjectInput({
+            team: {
+              name: 'Platform Team',
+              manager_id: 'team-manager',
+              status: 'active',
+              member_ids: ['membership-inactive-member'],
+            },
+          })
+        )
+      ).rejects.toBeInstanceOf(ProjectTeamValidationError);
+
+      expect(usersFindManyMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ membership_status: 'active' }),
+        })
+      );
+      expect(createMock).not.toHaveBeenCalled();
+    });
+
+    it('accepts an active administrator as the initial team manager', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      createMock.mockResolvedValue(mockProject);
+      usersFindManyMock.mockResolvedValue([
+        { id: 'team-admin', role: 'admin' },
+      ]);
+      const team = {
+        name: 'Platform Team',
+        manager_id: 'team-admin',
+        status: 'active' as const,
+        member_ids: [],
+      };
+
+      await service.createProject('user-admin', createProjectInput({ team }));
+
+      expect(createMock).toHaveBeenCalledWith(
+        expect.objectContaining({ team }),
+        'user-admin'
+      );
+    });
+
+    it('rejects an initial team manager without admin or manager role', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      usersFindManyMock.mockResolvedValue([
+        { id: 'member-manager', role: 'member' },
+      ]);
+
+      await expect(
+        service.createProject(
+          'user-admin',
+          createProjectInput({
+            team: {
+              name: 'Platform Team',
+              manager_id: 'member-manager',
+              status: 'active',
+              member_ids: [],
+            },
+          })
+        )
+      ).rejects.toThrow('Team manager must have an admin or manager role.');
+
+      expect(createMock).not.toHaveBeenCalled();
     });
 
     it('rejects creation for managers', async () => {

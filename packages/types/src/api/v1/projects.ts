@@ -16,6 +16,7 @@ import {
 } from './query-preprocess.js';
 import { ProjectFieldsConfigSchema } from './dynamic-fields.js';
 import { initialSprintSchema } from './sprints.js';
+import { initialProjectTeamSchema } from './teams.js';
 
 export * from './jira-import-types.js';
 export { projectWorkflowConfigSchema };
@@ -87,6 +88,7 @@ const baseCreateProjectSchema = z.object({
 export const createProjectSchema = baseCreateProjectSchema
   .extend({
     sprint: initialSprintSchema.optional(),
+    team: initialProjectTeamSchema.optional(),
   })
   .refine(
     (data) => {
@@ -130,6 +132,9 @@ export const createProjectSchema = baseCreateProjectSchema
       path: ['end_date'],
     }
   );
+
+/** Team details supplied when creating a project. */
+export type InitialProjectTeamInput = z.infer<typeof initialProjectTeamSchema>;
 
 /** Per removed type: permanently delete rows, or convert to a kept type. */
 export const workItemTypeRemovalStrategySchema = z

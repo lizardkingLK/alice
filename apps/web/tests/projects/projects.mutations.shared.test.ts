@@ -59,6 +59,37 @@ describe('createProjectsService frontend tests', () => {
     });
   });
 
+  it('includes initial team data in the project POST body', async () => {
+    const project = projectFactory.build();
+    const apiFetch = vi.fn().mockResolvedValue({ project });
+    const service = createProjectsService(apiFetch);
+    const input: CreateProjectInput = {
+      name: 'Project Alpha',
+      key: 'PAL',
+      description: null,
+      owner_id: '11111111-1111-4111-8111-111111111111',
+      status: 'active',
+      start_date: null,
+      end_date: null,
+      attributes_config: null,
+      team: {
+        name: 'Platform Team',
+        description: null,
+        manager_id: '22222222-2222-4222-8222-222222222222',
+        tech_stack: null,
+        status: 'active',
+        member_ids: ['33333333-3333-4333-8333-333333333333'],
+      },
+    };
+
+    await service.createProject(input);
+
+    expect(apiFetch).toHaveBeenCalledWith('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  });
+
   it('updates project via PUT', async () => {
     const project = projectFactory.build({ name: 'Updated name' });
     const apiFetch = vi.fn().mockResolvedValue({ project });

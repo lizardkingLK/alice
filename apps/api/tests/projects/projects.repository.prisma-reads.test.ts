@@ -19,6 +19,8 @@ const {
   transactionMock,
   projectCreateMock,
   memberCreateManyMock,
+  teamCreateMock,
+  teamMemberCreateManyMock,
   sprintCreateMock,
 } = vi.hoisted(() => ({
   findManyMock: vi.fn(),
@@ -30,6 +32,8 @@ const {
   transactionMock: vi.fn(),
   projectCreateMock: vi.fn(),
   memberCreateManyMock: vi.fn(),
+  teamCreateMock: vi.fn(),
+  teamMemberCreateManyMock: vi.fn(),
   sprintCreateMock: vi.fn(),
 }));
 
@@ -45,6 +49,10 @@ vi.mock('../../src/lib/prisma', () => ({
     },
     teams: {
       groupBy: groupByMock,
+      create: teamCreateMock,
+    },
+    team_members: {
+      createMany: teamMemberCreateManyMock,
     },
     project_members: {
       findMany: memberFindManyMock,
@@ -100,12 +108,16 @@ describe('ProjectsRepository Prisma reads', () => {
         callback: (tx: {
           projects: { create: typeof projectCreateMock };
           project_members: { createMany: typeof memberCreateManyMock };
+          teams: { create: typeof teamCreateMock };
+          team_members: { createMany: typeof teamMemberCreateManyMock };
           sprints: { create: typeof sprintCreateMock };
         }) => Promise<unknown>
       ) =>
         callback({
           projects: { create: projectCreateMock },
           project_members: { createMany: memberCreateManyMock },
+          teams: { create: teamCreateMock },
+          team_members: { createMany: teamMemberCreateManyMock },
           sprints: { create: sprintCreateMock },
         })
     );
@@ -341,6 +353,152 @@ describe('ProjectsRepository Prisma reads', () => {
 
     await repository.create(createProjectInput(), 'actor-1');
 
+    expect(sprintCreateMock).not.toHaveBeenCalled();
+    expect(teamCreateMock).not.toHaveBeenCalled();
+    expect(teamMemberCreateManyMock).not.toHaveBeenCalled();
+  });
+
+  it('creates an initial team and de-duplicates project and team memberships', async () => {
+    projectCreateMock.mockResolvedValue({ id: 'project-1' });
+    memberCreateManyMock.mockResolvedValue({ count: 4 });
+    teamCreateMock.mockResolvedValue({ id: 'team-1' });
+    teamMemberCreateManyMock.mockResolvedValue({ count: 2 });
+
+    await repository.create(
+      createProjectInput({
+        team: {
+          name: 'Platform Team',
+          description: 'Builds the platform',
+          manager_id: 'team-manager',
+          tech_stack: 'TypeScript',
+          status: 'active',
+          member_ids: ['team-member', 'team-member', 'team-manager'],
+        },
+      }),
+      'actor-1'
+    );
+
+    expect(memberCreateManyMock).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({ user_id: 'owner-1' }),
+        expect.objectContaining({ user_id: 'actor-1' }),
+        expect.objectContaining({ user_id: 'team-manager' }),
+        expect.objectContaining({ user_id: 'team-member' }),
+      ],
+    });
+    expect(teamCreateMock).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        name: 'Platform Team',
+        manager_id: 'team-manager',
+        project_id: 'project-1',
+        status: 'active',
+      }),
+    });
+    expect(teamMemberCreateManyMock).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          team_id: 'team-1',
+          user_id: 'team-member',
+        }),
+        expect.objectContaining({
+          team_id: 'team-1',
+          user_id: 'team-manager',
+        }),
+      ],
+    });
+    expect(sprintCreateMock).not.toHaveBeenCalled();
+  });
+
+  it('creates initial team and sprint inside the project transaction', async () => {
+    projectCreateMock.mockResolvedValue({ id: 'project-1' });
+    memberCreateManyMock.mockResolvedValue({ count: 4 });
+    teamCreateMock.mockResolvedValue({ id: 'team-1' });
+    teamMemberCreateManyMock.mockResolvedValue({ count: 1 });
+    sprintCreateMock.mockResolvedValue({ id: 'sprint-1' });
+
+    await repository.create(
+      createProjectInput({
+        team: {
+          name: 'Platform Team',
+          manager_id: 'team-manager',
+          status: 'active',
+          members: [{ user_id: 'team-member', capacity: 40, allocation: 100 }],
+        },
+        sprint: {
+          name: 'Sprint 1',
+          goal: null,
+          startDate: '2099-09-01',
+          endDate: '2099-09-14',
+        },
+      }),
+      'actor-1'
+    );
+
+    expect(teamCreateMock).toHaveBeenCalledOnce();
+    expect(teamMemberCreateManyMock).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          user_id: 'team-member',
+          capacity: 40,
+          allocation: 100,
+        }),
+      ],
+    });
+    expect(sprintCreateMock).toHaveBeenCalledOnce();
+    expect(teamMemberCreateManyMock.mock.invocationCallOrder[0]).toBeLessThan(
+      sprintCreateMock.mock.invocationCallOrder[0]!
+    );
+  });
+
+  it('rejects the project transaction when initial team insertion fails', async () => {
+    const teamError = new Error('Team insert failed');
+    projectCreateMock.mockResolvedValue({ id: 'project-1' });
+    memberCreateManyMock.mockResolvedValue({ count: 3 });
+    teamCreateMock.mockRejectedValue(teamError);
+
+    await expect(
+      repository.create(
+        createProjectInput({
+          team: {
+            name: 'Platform Team',
+            manager_id: 'team-manager',
+            status: 'active',
+            member_ids: [],
+          },
+        }),
+        'actor-1'
+      )
+    ).rejects.toBe(teamError);
+
+    expect(transactionMock).toHaveBeenCalledOnce();
+    expect(sprintCreateMock).not.toHaveBeenCalled();
+  });
+
+  it('propagates a team member insertion failure from the project transaction', async () => {
+    const teamMemberError = new Error('Team member insert failed');
+    projectCreateMock.mockResolvedValue({ id: 'project-1' });
+    memberCreateManyMock.mockResolvedValue({ count: 4 });
+    teamCreateMock.mockResolvedValue({ id: 'team-1' });
+    teamMemberCreateManyMock.mockRejectedValue(teamMemberError);
+
+    await expect(
+      repository.create(
+        createProjectInput({
+          team: {
+            name: 'Platform Team',
+            manager_id: 'team-manager',
+            status: 'active',
+            member_ids: ['team-member'],
+          },
+        }),
+        'actor-1'
+      )
+    ).rejects.toBe(teamMemberError);
+
+    expect(transactionMock).toHaveBeenCalledOnce();
+    expect(projectCreateMock).toHaveBeenCalledOnce();
+    expect(teamCreateMock).toHaveBeenCalledOnce();
+    expect(teamMemberCreateManyMock).toHaveBeenCalledOnce();
     expect(sprintCreateMock).not.toHaveBeenCalled();
   });
 
