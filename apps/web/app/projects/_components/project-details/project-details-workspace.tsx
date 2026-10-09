@@ -342,6 +342,7 @@ export function ProjectDetailsWorkspace({
     project,
     canEdit: canEditProject,
     currentUserId,
+    currentUserRole,
     teams: boardRuleTeams.map((team) => ({
       id: team.id,
       name: team.name,

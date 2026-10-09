@@ -18,7 +18,12 @@ import {
   type WorkItemPriority,
   type WorkItemType,
 } from '@repo/types';
-import { boardConfigSchema, type BoardConfig } from '@repo/types/api/v1';
+import {
+  boardConfigSchema,
+  type BoardConfig,
+  type ChatViewContext,
+  type WorkflowConfigEnvelope,
+} from '@repo/types/api/v1';
 import type { WorkItemService } from '../work-items/work-items.service';
 import type { SprintsService } from '../sprints/sprints.service';
 import type { ProjectsService } from '../projects/projects.service';
@@ -29,7 +34,7 @@ import type { ResolvedChatModelConfig } from '../integrations/chat-providers/cha
 import { resolveChatProvider } from '../integrations/chat-providers/resolve-chat-provider';
 import {
   systemInstruction,
-  aliceChatTools,
+  selectAliceChatTools,
   dynamicFieldsSystemPrompt,
 } from './chat.route.data';
 import type { ChatRepository } from './chat.repository';
@@ -38,6 +43,14 @@ import { fetchAndParseWorkItemAttachment } from './chat-attachment-parser';
 import { WorkItemDeduplicationAgent } from './work-item-deduplication.agent';
 import { sanitizeLog } from './chat.utils';
 import { buildBoardDraft } from './board-draft';
+import {
+  parseProposeWorkflowPatchInput,
+  summarizeWorkflowEnvelopeDiff,
+} from './workflow-patch';
+import {
+  createWorkflowPatchToken,
+  verifyWorkflowPatchToken,
+} from './workflow-patch-token';
 import { prisma } from '../../../lib/prisma';
 import { Prisma } from '@repo/types/prisma';
 import { prismaAuditUpdate } from '../../../lib/prisma-audit';
@@ -61,7 +74,11 @@ export type ChatServiceDeps = {
   sprintsService: Pick<SprintsService, 'createSprint'>;
   projectsService: Pick<
     ProjectsService,
-    'createProject' | 'getProjectDetail' | 'listProjectsForActor'
+    | 'createProject'
+    | 'getProjectDetail'
+    | 'listProjectsForActor'
+    | 'getWorkflowConfig'
+    | 'putWorkflowConfig'
   >;
   projectsRepository: Pick<
     ProjectsRepository,
@@ -927,7 +944,8 @@ export class ChatService {
   async callChatModelAPI(
     chatModel: ResolvedChatModelConfig,
     contents: ChatContentTurn[],
-    contextInstruction: string
+    contextInstruction: string,
+    viewContext?: ChatViewContext | null
   ): Promise<ChatLlmResponse> {
     const provider = resolveChatProvider(chatModel.provider);
     return provider.generateWithTools({
@@ -936,7 +954,7 @@ export class ChatService {
       model: chatModel.model,
       contents,
       systemInstruction: systemInstruction + '\n' + contextInstruction,
-      tools: aliceChatTools,
+      tools: selectAliceChatTools(viewContext),
     });
   }
 
@@ -944,7 +962,8 @@ export class ChatService {
     userId: string,
     functionCalls: ChatContentPart[],
     toolActionsPerformed: ToolAction[],
-    history: StoredChatMessage[] = []
+    history: StoredChatMessage[] = [],
+    viewContext?: ChatViewContext | null
   ): Promise<ChatContentPart[]> {
     const callable = functionCalls.filter(
       (
@@ -965,7 +984,8 @@ export class ChatService {
             name,
             args || {},
             toolActionsPerformed,
-            history
+            history,
+            viewContext
           );
         } catch (err: unknown) {
           console.error(`Error executing tool ${sanitizeLog(name)}`);
@@ -990,7 +1010,8 @@ export class ChatService {
     name: string,
     args: Record<string, unknown>,
     toolActionsPerformed: ToolAction[],
-    history: StoredChatMessage[]
+    history: StoredChatMessage[],
+    viewContext?: ChatViewContext | null
   ): Promise<unknown> {
     const toolHandlers: Record<string, () => Promise<unknown>> = {
       list_projects: () => this.handleListProjects(userId),
@@ -1003,6 +1024,15 @@ export class ChatService {
       list_board_entities: () => this.handleListBoardEntities(userId, args),
       configure_board_draft: () =>
         this.handleConfigureBoardDraft(userId, args, toolActionsPerformed),
+      get_workflow_config: () =>
+        this.handleGetWorkflowConfig(userId, args, viewContext),
+      propose_workflow_patch: () =>
+        this.handleProposeWorkflowPatch(
+          userId,
+          args,
+          toolActionsPerformed,
+          viewContext
+        ),
       create_work_item: () =>
         this.handleCreateWorkItem(userId, args, toolActionsPerformed),
       parse_work_item_attachment: () =>
@@ -1151,6 +1181,152 @@ export class ChatService {
       config,
       nextStep: 'Review and save this draft in Board Designer.',
     };
+  }
+
+  private resolveWorkflowEnvelopeForChat(
+    projectId: string,
+    serverConfig: WorkflowConfigEnvelope,
+    viewContext?: ChatViewContext | null
+  ): {
+    readonly config: WorkflowConfigEnvelope;
+    readonly source: 'designer_draft' | 'server';
+  } {
+    if (
+      viewContext?.surface === 'workflow_designer' &&
+      viewContext.projectId === projectId
+    ) {
+      return { config: viewContext.draftEnvelope, source: 'designer_draft' };
+    }
+    return { config: serverConfig, source: 'server' };
+  }
+
+  private async handleGetWorkflowConfig(
+    userId: string,
+    args: Record<string, unknown>,
+    viewContext?: ChatViewContext | null
+  ): Promise<unknown> {
+    const projectId = typeof args.projectId === 'string' ? args.projectId : '';
+    if (!projectId) {
+      throw new Error('projectId is required.');
+    }
+
+    const result = await this.deps.projectsService.getWorkflowConfig(
+      projectId,
+      userId
+    );
+    const resolved = this.resolveWorkflowEnvelopeForChat(
+      projectId,
+      result.config,
+      viewContext
+    );
+
+    return {
+      projectId,
+      config: resolved.config,
+      source: resolved.source,
+      usedFallback: result.usedFallback && resolved.source === 'server',
+      updatedAt: result.updatedAt,
+      dirty:
+        viewContext?.surface === 'workflow_designer' &&
+        viewContext.projectId === projectId
+          ? viewContext.dirty
+          : false,
+    };
+  }
+
+  private async handleProposeWorkflowPatch(
+    userId: string,
+    args: Record<string, unknown>,
+    toolActionsPerformed: ToolAction[],
+    viewContext?: ChatViewContext | null
+  ): Promise<unknown> {
+    const input = parseProposeWorkflowPatchInput(args);
+
+    await requireUserWithRole(
+      userId,
+      [UserRoleEnum.admin, UserRoleEnum.manager],
+      'Only admins and managers can propose workflow changes. You can still ask Alice for conversational suggestions.'
+    );
+
+    const project = await this.deps.projectsService.getProjectDetail(
+      input.projectId,
+      userId
+    );
+    if (!project) {
+      throw new Error('Project not found.');
+    }
+
+    const server = await this.deps.projectsService.getWorkflowConfig(
+      input.projectId,
+      userId
+    );
+    const baseline = this.resolveWorkflowEnvelopeForChat(
+      input.projectId,
+      server.config,
+      viewContext
+    );
+    const changeSummary = summarizeWorkflowEnvelopeDiff(
+      baseline.config,
+      input.config
+    );
+    const confirmationToken = createWorkflowPatchToken(
+      userId,
+      input.projectId,
+      input.config
+    );
+
+    const action: ToolAction = {
+      type: 'propose_workflow_patch',
+      entity: {
+        projectId: project.id,
+        projectName: project.name,
+        summary: input.summary,
+        confirmationToken,
+        proposedConfig: input.config,
+        changeSummary,
+      },
+    };
+    toolActionsPerformed.push(action);
+
+    return {
+      proposed: true,
+      saved: false,
+      projectId: project.id,
+      projectName: project.name,
+      summary: input.summary,
+      changeSummary,
+      nextStep:
+        'Show the Apply / Reject card. Do not claim the workflow was saved.',
+    };
+  }
+
+  async applyWorkflowPatch(
+    userId: string,
+    input: {
+      readonly projectId: string;
+      readonly confirmationToken: string;
+      readonly proposedConfig: WorkflowConfigEnvelope;
+      readonly expectedUpdatedAt: string;
+    }
+  ) {
+    await requireUserWithRole(
+      userId,
+      [UserRoleEnum.admin, UserRoleEnum.manager],
+      'Only admins and managers can apply workflow changes.'
+    );
+
+    verifyWorkflowPatchToken(input.confirmationToken, {
+      userId,
+      projectId: input.projectId,
+      config: input.proposedConfig,
+    });
+
+    return this.deps.projectsService.putWorkflowConfig(
+      userId,
+      input.projectId,
+      input.proposedConfig,
+      input.expectedUpdatedAt
+    );
   }
 
   private async handleCreateProject(
@@ -1796,10 +1972,28 @@ export class ChatService {
     return { users, activeSprints };
   }
 
+  private buildViewContextInstruction(
+    viewContext?: ChatViewContext | null
+  ): string {
+    if (!viewContext || viewContext.surface !== 'workflow_designer') {
+      return '';
+    }
+    return `
+Active UI View Context:
+- Surface: workflow_designer
+- Project ID: ${viewContext.projectId}
+- Designer dirty: ${viewContext.dirty}
+- Expected updatedAt (optimistic lock): ${viewContext.expectedUpdatedAt}
+- Live designer draft is available to get_workflow_config / propose_workflow_patch (prefer it over the last saved server copy).
+- Use WORKFLOW CONFIGURATION PROTOCOL. Do not call configure_board_draft.
+`;
+  }
+
   async generateChatResponse(
     userId: string,
     history: StoredChatMessage[],
-    chatModel: ResolvedChatModelConfig
+    chatModel: ResolvedChatModelConfig,
+    viewContext?: ChatViewContext | null
   ): Promise<{ responseText: string; toolActionsPerformed: ToolAction[] }> {
     const contents: ChatContentTurn[] = history.map((msg) => {
       const role = toChatTurnRole(msg.role);
@@ -1843,6 +2037,7 @@ Current Workspace State:
 - System Users: ${JSON.stringify(users.map((u) => ({ id: u.id, name: u.name, email: u.email })))}
 - Ongoing Sprints (Active Status Only): ${JSON.stringify(sprints.map((s) => ({ id: s.id, name: s.name, projectId: s.project_id })))}
 ${attachmentsInstruction}
+${this.buildViewContextInstruction(viewContext)}
 `;
 
     const toolActionsPerformed: ToolAction[] = [];
@@ -1856,7 +2051,8 @@ ${attachmentsInstruction}
       const llmResponse = await this.callChatModelAPI(
         chatModel,
         contents,
-        contextInstruction
+        contextInstruction,
+        viewContext
       );
       const candidate = llmResponse.candidates?.[0];
       const modelContent = candidate?.content;
@@ -1882,7 +2078,8 @@ ${attachmentsInstruction}
         userId,
         functionCalls,
         toolActionsPerformed,
-        history
+        history,
+        viewContext
       );
       contents.push({
         role: ChatTurnRoles.User,
@@ -1900,11 +2097,17 @@ ${attachmentsInstruction}
     userId: string,
     conversationId: string,
     history: StoredChatMessage[],
-    chatModel: ResolvedChatModelConfig
+    chatModel: ResolvedChatModelConfig,
+    viewContext?: ChatViewContext | null
   ): Promise<void> {
     try {
       const { responseText, toolActionsPerformed } =
-        await this.generateChatResponse(userId, history, chatModel);
+        await this.generateChatResponse(
+          userId,
+          history,
+          chatModel,
+          viewContext
+        );
 
       const newAssistantMessage: StoredChatMessage = {
         id: `msg-${Date.now()}`,

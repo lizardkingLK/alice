@@ -8,14 +8,13 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Button } from '@repo/ui/components/ui/button';
 import { Sparkles } from '@repo/ui/lib/icons';
-import type { ChatConversation, ChatMessage } from './chat-client.types';
-import type { ChatModelOption } from '@repo/types';
-import { bootstrapLatestChat } from './chat-client-bootstrap';
 import { FloatingChatDrawer } from './floating-chat-widget';
 import type { AppRole } from '@/lib/rbac';
+import { isWorkflowDesignerPath } from '@/app/chat/_helpers/chat-workflow-dock-path';
+import { useChatBootstrap } from '@/app/chat/_helpers/use-chat-bootstrap';
 
 type ChatLauncherContextValue = {
   openLauncher: () => Promise<void>;
@@ -47,65 +46,44 @@ export function ChatLauncherProvider({
   currentUserRole,
 }: Readonly<ChatLauncherProviderProps>) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const hideForWorkflowDock = isWorkflowDesignerPath(pathname, (key) =>
+    searchParams.get(key)
+  );
   const [isOpen, setIsOpen] = useState(false);
-  const [isBootstrapLoading, setIsBootstrapLoading] = useState(false);
-  const [bootstrapConversations, setBootstrapConversations] = useState<
-    ChatConversation[] | null
-  >(null);
-  const [bootstrapActiveConversationId, setBootstrapActiveConversationId] =
-    useState<string | undefined>(undefined);
-  const [bootstrapMessages, setBootstrapMessages] = useState<
-    ChatMessage[] | null
-  >(null);
-  const [bootstrapChatModels, setBootstrapChatModels] = useState<
-    ChatModelOption[] | null
-  >(null);
-
-  const ensureBootstrapLoaded = useCallback(async () => {
-    if (bootstrapConversations && bootstrapChatModels) return;
-    if (isBootstrapLoading) return;
-
-    setIsBootstrapLoading(true);
-    try {
-      const bootstrap = await bootstrapLatestChat();
-      setBootstrapConversations(bootstrap.conversations);
-      setBootstrapActiveConversationId(bootstrap.activeConversationId);
-      setBootstrapMessages(bootstrap.messages);
-      setBootstrapChatModels(bootstrap.chatModels);
-    } catch (err) {
-      console.error('Failed to bootstrap floating chat drawer:', err);
-      setBootstrapConversations([]);
-      setBootstrapActiveConversationId(undefined);
-      setBootstrapMessages([]);
-      setBootstrapChatModels([]);
-    } finally {
-      setIsBootstrapLoading(false);
-    }
-  }, [bootstrapChatModels, bootstrapConversations, isBootstrapLoading]);
+  const {
+    ensureLoaded,
+    conversations,
+    activeConversationId,
+    messages,
+    chatModels,
+  } = useChatBootstrap({
+    logLabel: 'bootstrap floating chat drawer',
+  });
 
   const openLauncher = useCallback(async () => {
-    await ensureBootstrapLoaded();
+    await ensureLoaded();
     setIsOpen(true);
-  }, [ensureBootstrapLoaded]);
+  }, [ensureLoaded]);
 
   const value = useMemo(() => ({ openLauncher }), [openLauncher]);
 
-  const hideOnChatPage = pathname === '/chat';
+  const hideFloating = pathname === '/chat' || hideForWorkflowDock;
 
   return (
     <ChatLauncherContext.Provider value={value}>
       {children}
-      {hideOnChatPage ? null : (
+      {hideFloating ? null : (
         <FloatingChatDrawer
           isOpen={isOpen}
           onClose={() => setIsOpen(false)}
           currentUserName={currentUserName}
           currentUserImageUrl={currentUserImageUrl}
           currentUserRole={currentUserRole}
-          bootstrapConversations={bootstrapConversations}
-          bootstrapActiveConversationId={bootstrapActiveConversationId}
-          bootstrapMessages={bootstrapMessages}
-          bootstrapChatModels={bootstrapChatModels ?? undefined}
+          bootstrapConversations={conversations}
+          bootstrapActiveConversationId={activeConversationId}
+          bootstrapMessages={messages}
+          bootstrapChatModels={chatModels ?? undefined}
         />
       )}
     </ChatLauncherContext.Provider>
@@ -114,9 +92,13 @@ export function ChatLauncherProvider({
 
 export function ChatLauncherButton() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { openLauncher } = useChatLauncher();
+  const hideForWorkflowDock = isWorkflowDesignerPath(pathname, (key) =>
+    searchParams.get(key)
+  );
 
-  if (pathname === '/chat') {
+  if (pathname === '/chat' || hideForWorkflowDock) {
     return null;
   }
 

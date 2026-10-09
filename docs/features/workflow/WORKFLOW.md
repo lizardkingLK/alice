@@ -300,10 +300,11 @@ transition PATCH.
 
 - Replace floating **drawer** with a **docked** right sidebar that consumes
   layout width (designer + chat side-by-side).
-- Inject **view context**: page, `projectId`, `surface: 'workflow-designer'`,
-  `workflowId`, `isDirty`, schema version.
-- Tools (function calls): read config, **propose** patch (no write),
-  **apply** only after confirm, validate with Zod.
+- Inject **view context**: `surface: 'workflow_designer'`, `projectId`,
+  live `draftEnvelope`, `expectedUpdatedAt`, `dirty`.
+- Tools (function calls): `get_workflow_config`, `propose_workflow_patch`
+  (no write; HMAC confirmation token), **apply** via
+  `POST /api/v1/chat/workflow-patch/apply` after client Apply.
 - Confirm UX: **inline Apply / Reject card** (no modal for apply). Destructive
   ops may still use existing confirm dialogs elsewhere.
 - If canvas **dirty**: save current designer state first (same save path),

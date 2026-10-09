@@ -3,6 +3,7 @@ import type {
   ChatMessageWire,
   ChatToolActionWire,
   ChatModelOption,
+  ChatViewContext,
 } from '@repo/types';
 import type { AppRole } from '@/lib/rbac';
 
@@ -11,8 +12,10 @@ export type ChatMessage = ChatMessageWire;
 export type ChatConversation = ChatConversationSummaryWire;
 
 export type ChatClientProps = {
-  readonly variant?: 'page' | 'drawer';
+  readonly variant?: 'page' | 'drawer' | 'docked';
   readonly onClose?: () => void;
+  /** Page-aware context (e.g. workflow designer draft) sent with each turn. */
+  readonly viewContext?: ChatViewContext | null;
   readonly currentUserName?: string | null;
   readonly currentUserEmail?: string | null;
   readonly currentUserImageUrl?: string | null;

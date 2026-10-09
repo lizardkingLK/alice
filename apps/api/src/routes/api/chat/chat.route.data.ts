@@ -1,4 +1,5 @@
 import { WORK_ITEM_PRIORITIES } from '@repo/types';
+import type { ChatViewContext } from '@repo/types/api/v1';
 import type { AliceChatTools } from './chat.route.types';
 
 export const systemInstruction = `You are Alice Assistant, an AI assistant built into the Alice monorepo.
@@ -129,6 +130,16 @@ BOARD CONFIGURATION DRAFT PROTOCOL:
 - Never claim that a board draft was saved, never save it automatically, and never bypass Board Designer review, save, deletion confirmation, or permission checks.
 - After creating a draft, say "Board draft created. Review it in Board Designer." Never say "Board updated", "Board saved", or "Configuration applied" for a draft.
 - Members may receive conversational suggestions, but must not receive a structured \`configure_board_draft\` action. Admins and managers may receive drafts.
+- When the user is on the Workflow designer (view context surface \`workflow_designer\`), prefer the WORKFLOW CONFIGURATION PROTOCOL below and do not call \`configure_board_draft\` or \`list_board_entities\`.
+
+WORKFLOW CONFIGURATION PROTOCOL:
+1. When the user asks to change a project's workflow graph (states, transitions, lock/terminal flags, resolution presets, require-children), resolve the project via context or \`list_projects\`.
+2. Call \`get_workflow_config\` with the project UUID first. Prefer the draft returned when the designer view context is present.
+3. Build the **complete** next workflow envelope that incorporates the requested edits (preserve unrelated workflows, states, edges, and presets).
+4. Call \`propose_workflow_patch\` with \`projectId\`, a short \`summary\`, and the full \`config\` envelope.
+5. Tell the user an Apply / Reject card is available. Never claim the workflow was saved or applied.
+6. Never call a tool that writes workflow config. Only the user's **Apply** button persists changes.
+7. Members may receive conversational suggestions only. Admins and managers may receive structured proposals.
 
 PROJECT LISTING & ACCESS CONTROL PROTOCOL:
 - When the user asks to "show all projects", "list all projects", "list down all the projects", or similar queries:
@@ -294,6 +305,39 @@ export const aliceChatTools: AliceChatTools = [
         },
       },
       required: ['projectId', 'columns'],
+    },
+  },
+  {
+    name: 'get_workflow_config',
+    description:
+      "Return the project's current workflow configuration envelope. When the user is on the Workflow designer, the live draft is preferred over the last saved server copy. Call before propose_workflow_patch.",
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'string', description: 'UUID of the project.' },
+      },
+      required: ['projectId'],
+    },
+  },
+  {
+    name: 'propose_workflow_patch',
+    description:
+      'Create a reviewable workflow proposal for Apply/Reject. Supply the complete next workflow envelope after edits. This never saves the project; the user must click Apply.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'string', description: 'UUID of the project.' },
+        summary: {
+          type: 'string',
+          description: 'Short human-readable summary of the proposed change.',
+        },
+        config: {
+          type: 'object',
+          description:
+            'Complete next WorkflowConfigEnvelope (schemaVersion, defaultWorkflowId, workflows).',
+        },
+      },
+      required: ['projectId', 'summary', 'config'],
     },
   },
   {
@@ -485,3 +529,20 @@ Constraints:
 - Root "additionalProperties": true
 If a Current Schema is provided with existing fields in "properties", you MUST preserve all existing fields and add or update the newly requested fields to "properties". Do not omit or delete existing fields unless explicitly requested.
 Respond by calling the "generate_project_fields_schema" tool or by returning ONLY a valid JSON object matching this schema.`;
+
+const BOARD_DRAFT_TOOL_NAMES = new Set([
+  'list_board_entities',
+  'configure_board_draft',
+]);
+
+/** Prefer workflow tools when docked on the workflow designer. */
+export function selectAliceChatTools(
+  viewContext?: ChatViewContext | null
+): AliceChatTools {
+  if (viewContext?.surface === 'workflow_designer') {
+    return aliceChatTools.filter(
+      (tool) => !BOARD_DRAFT_TOOL_NAMES.has(tool.name)
+    );
+  }
+  return aliceChatTools;
+}

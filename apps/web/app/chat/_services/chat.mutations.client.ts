@@ -1,12 +1,16 @@
 import {
+  applyWorkflowPatchBodySchema,
   postChatMessageBodySchema,
   renameChatConversationBodySchema,
+  type ApplyWorkflowPatchBody,
   type ChatDeleteResponse,
   type ChatHistoryResponse,
   type ChatMessageWire,
   type ChatPostResponse,
   type ChatToolActionWire,
+  type ChatViewContext,
   type RenameChatConversationResponse,
+  type WorkflowConfigEnvelope,
 } from '@repo/types/api/v1';
 import type { ChatAttachmentWire } from '@repo/types';
 import { formatZodError } from '@/lib/zod/format-zod-error';
@@ -21,17 +25,25 @@ export type ActionItem = ChatToolActionWire;
 export type ChatMessage = ChatMessageWire;
 export type { ChatConversationSummaryWire as ChatConversation } from '@repo/types/api/v1';
 
+export type ApplyWorkflowPatchResponse = {
+  readonly config: WorkflowConfigEnvelope;
+  readonly usedFallback: boolean;
+  readonly updatedAt: string;
+};
+
 export async function sendChatMessage(
   history: ChatMessage[],
   conversationId: string | undefined,
   integrationId: string | undefined,
-  attachments?: ChatAttachmentWire[]
+  attachments?: ChatAttachmentWire[],
+  viewContext?: ChatViewContext | null
 ): Promise<ChatPostResponse> {
   const parsed = postChatMessageBodySchema.safeParse({
     messages: history,
     conversationId,
     integrationId,
     attachments,
+    viewContext: viewContext ?? undefined,
   });
   if (!parsed.success) {
     throw new Error(formatZodError(parsed.error));
@@ -45,6 +57,27 @@ export async function sendChatMessage(
     body: JSON.stringify(parsed.data),
     timeoutMs: CHAT_FETCH_TIMEOUT_MS,
   });
+}
+
+export async function applyWorkflowPatch(
+  body: ApplyWorkflowPatchBody
+): Promise<ApplyWorkflowPatchResponse> {
+  const parsed = applyWorkflowPatchBodySchema.safeParse(body);
+  if (!parsed.success) {
+    throw new Error(formatZodError(parsed.error));
+  }
+
+  return apiFetch<ApplyWorkflowPatchResponse>(
+    `${chatPath}/workflow-patch/apply`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(parsed.data),
+      timeoutMs: CHAT_FETCH_TIMEOUT_MS,
+    }
+  );
 }
 
 export async function getChatHistory(

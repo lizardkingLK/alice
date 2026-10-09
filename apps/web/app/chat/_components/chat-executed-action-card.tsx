@@ -11,6 +11,7 @@ import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
 import type { ActionItem } from '@/app/chat/_components/chat-client.types';
 import { boardConfigSchema } from '@repo/types/api/v1';
+import { ChatProposeWorkflowPatchCard } from '@/app/chat/_components/chat-propose-workflow-patch-card';
 
 type ActionCardTone = 'emerald' | 'blue' | 'indigo';
 
@@ -222,6 +223,8 @@ export function ChatExecutedActionCard({
         </ActionCardFrame>
       );
     }
+    case 'propose_workflow_patch':
+      return <ChatProposeWorkflowPatchCard action={action} />;
     default:
       return null;
   }

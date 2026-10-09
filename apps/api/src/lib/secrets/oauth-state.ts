@@ -1,6 +1,6 @@
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { utcNow } from '@repo/types';
-import { resolveIntegrationEncryptionKey } from './token-crypto';
+import { signJsonHmac, verifyJsonHmac } from './hmac-payload';
 
 export const DEFAULT_STATE_TTL_MS = 10 * 60 * 1000;
 
@@ -10,28 +10,11 @@ export type OAuthStatePayload = {
   exp: number;
 };
 
-function resolveHmacKey(purpose: string): Buffer {
-  return resolveIntegrationEncryptionKey(purpose);
-}
-
-function base64UrlEncode(value: string | Buffer): string {
-  const buf = typeof value === 'string' ? Buffer.from(value, 'utf8') : value;
-  return buf.toString('base64url');
-}
-
-function base64UrlDecode(value: string): Buffer {
-  return Buffer.from(value, 'base64url');
-}
-
 export function signOAuthState(
   payload: OAuthStatePayload,
   purpose = 'sign OAuth state (HMAC)'
 ): string {
-  const body = base64UrlEncode(JSON.stringify(payload));
-  const sig = createHmac('sha256', resolveHmacKey(purpose))
-    .update(body)
-    .digest();
-  return `${body}.${base64UrlEncode(sig)}`;
+  return signJsonHmac(payload, purpose);
 }
 
 export function createOAuthState(
@@ -53,35 +36,23 @@ export function verifyOAuthState(
   state: string,
   purpose = 'verify OAuth state (HMAC)'
 ): OAuthStatePayload {
-  const [body, sigPart] = state.split('.');
-  if (!body || !sigPart) {
-    throw new Error('Invalid OAuth state.');
-  }
-
-  const expected = createHmac('sha256', resolveHmacKey(purpose))
-    .update(body)
-    .digest();
-  const actual = base64UrlDecode(sigPart);
-  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
-    throw new Error('Invalid OAuth state signature.');
-  }
-
-  let payload: OAuthStatePayload;
-  try {
-    payload = JSON.parse(
-      base64UrlDecode(body).toString('utf8')
-    ) as OAuthStatePayload;
-  } catch {
-    throw new Error('Invalid OAuth state payload.');
-  }
+  const parsed = verifyJsonHmac(state, purpose, {
+    format: 'Invalid OAuth state.',
+    signature: 'Invalid OAuth state signature.',
+    payload: 'Invalid OAuth state payload.',
+  });
 
   if (
-    typeof payload.userId !== 'string' ||
-    typeof payload.nonce !== 'string' ||
-    typeof payload.exp !== 'number'
+    typeof parsed !== 'object' ||
+    parsed === null ||
+    typeof (parsed as OAuthStatePayload).userId !== 'string' ||
+    typeof (parsed as OAuthStatePayload).nonce !== 'string' ||
+    typeof (parsed as OAuthStatePayload).exp !== 'number'
   ) {
     throw new TypeError('Invalid OAuth state payload.');
   }
+
+  const payload = parsed as OAuthStatePayload;
 
   if (utcNow().getTime() > payload.exp) {
     throw new Error('OAuth state has expired. Please try connecting again.');

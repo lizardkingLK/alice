@@ -53,6 +53,7 @@ import {
 export function ChatClient({
   variant = 'page',
   onClose,
+  viewContext = null,
   currentUserName,
   currentUserEmail = null,
   currentUserImageUrl,
@@ -355,7 +356,8 @@ export function ChatClient({
         history,
         activeConversationId,
         selectedIntegrationId,
-        attachmentsToSend.length > 0 ? attachmentsToSend : undefined
+        attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
+        viewContext
       );
 
       applySuccessfulChatResponse({
@@ -374,7 +376,8 @@ export function ChatClient({
         const mutationActionTypes = response.actions
           .map((action: ActionItem) => action.type)
           .filter(
-            (type): type is ChatMutationActionType => type !== 'configure_board'
+            (type): type is ChatMutationActionType =>
+              type !== 'configure_board' && type !== 'propose_workflow_patch'
           );
         await revalidateAfterChatActions(mutationActionTypes);
         router.refresh();

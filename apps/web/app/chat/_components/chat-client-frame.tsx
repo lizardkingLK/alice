@@ -153,7 +153,7 @@ function ChatFrameHistoryToggle({
 
 type ChatClientFrameProps = {
   readonly isPage: boolean;
-  readonly variant: 'page' | 'drawer';
+  readonly variant: 'page' | 'drawer' | 'docked';
   readonly chatBreadcrumbTrail: readonly DashboardBreadcrumbOverride[] | null;
   readonly isLoadingConversations: boolean;
   readonly isLoadingHistory: boolean;
