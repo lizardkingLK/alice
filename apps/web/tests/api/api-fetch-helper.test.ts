@@ -35,4 +35,74 @@ describe('getResponse', () => {
       code: BOARD_MOVE_FORBIDDEN_CODE,
     });
   });
+
+  it('surfaces Zod treeify messages nested under array items', async () => {
+    vi.stubEnv('INTERNAL_API_URL', 'http://api.test');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: {
+              errors: [],
+              properties: {
+                config: {
+                  errors: [],
+                  properties: {
+                    workflows: {
+                      errors: [],
+                      items: [
+                        {
+                          errors: [],
+                          properties: {
+                            graph: {
+                              errors: [],
+                              properties: {
+                                edges: {
+                                  errors: [],
+                                  items: [
+                                    null,
+                                    {
+                                      errors: [],
+                                      properties: {
+                                        resolutionPresetId: {
+                                          errors: [
+                                            'State "todo" requires escalation — outbound edge must reference a resolution preset',
+                                          ],
+                                        },
+                                      },
+                                    },
+                                  ],
+                                },
+                              },
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      )
+    );
+
+    await expect(
+      getResponse('/api/projects/p1/workflow-config', 'token', {
+        method: 'PUT',
+        body: '{}',
+      })
+    ).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 400,
+      message:
+        'State "todo" requires escalation — outbound edge must reference a resolution preset',
+    });
+  });
 });

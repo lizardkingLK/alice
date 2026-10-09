@@ -64,6 +64,8 @@ export const workflowEdgeSchema = z
     from: z.string().trim().min(1),
     to: z.string().trim().min(1),
     allowAnyOf: z.array(boardRuleMatcherSchema).default([]),
+    /** When true, this transition must link a resolution preset before save. */
+    requiresEscalation: z.boolean().default(false),
     resolutionPresetId: z.string().trim().min(1).nullable().default(null),
     requireChildren: z.enum(WORKFLOW_REQUIRE_CHILDREN).default('off'),
   })
@@ -260,9 +262,20 @@ function validateWorkflowStateFlags(
           edgeIndexById.get(edge.id) ?? 0,
           'resolutionPresetId',
         ],
-        `State "${state.id}" requires escalation — outbound edge must reference a resolution preset`
+        `State "${state.name}" requires escalation — select that exit and link a resolution form`
       );
     }
+  }
+
+  for (const [edgeIndex, edge] of workflow.graph.edges.entries()) {
+    if (!edge.requiresEscalation || edge.resolutionPresetId) {
+      continue;
+    }
+    addCustomIssue(
+      context,
+      [...pathPrefix, 'graph', 'edges', edgeIndex, 'resolutionPresetId'],
+      'This exit requires escalation — pick or create a resolution form before you save'
+    );
   }
 }
 
@@ -356,7 +369,7 @@ export const workflowConfigEnvelopeSchema = z
       .array(workflowDocumentSchema)
       .min(1, 'At least one workflow is required'),
   })
-  .passthrough()
+  .loose()
   .superRefine((envelope, context) => {
     const byId = validateEnvelopeWorkflowIds(envelope, context);
     validateForkParents(envelope.workflows, byId, context);
@@ -406,6 +419,7 @@ function seededDefaultEdges(): WorkflowEdge[] {
       from,
       to,
       allowAnyOf: [],
+      requiresEscalation: false,
       resolutionPresetId: null,
       requireChildren: to === WorkItemStatusEnum.Done ? 'all_complete' : 'off',
     });
@@ -417,6 +431,7 @@ function seededDefaultEdges(): WorkflowEdge[] {
     from: WorkItemStatusEnum.Testing,
     to: WorkItemStatusEnum.InProgress,
     allowAnyOf: [],
+    requiresEscalation: false,
     resolutionPresetId: null,
     requireChildren: 'off',
   });

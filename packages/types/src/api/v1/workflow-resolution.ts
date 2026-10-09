@@ -1,7 +1,7 @@
 import { z } from 'zod';
+import { createPrefixedId } from '../../crypto-id.js';
 import {
   workflowResolutionFieldSchema,
-  workflowResolutionOutcomeSchema,
   workflowResolutionPresetSchema,
   type WorkflowDocument,
   type WorkflowEdge,
@@ -43,7 +43,7 @@ export function getResolutionRequirement(
   if (edge.resolutionPresetId) {
     return { required: true, presetId: edge.resolutionPresetId };
   }
-  if (sourceState.requiresEscalation) {
+  if (edge.requiresEscalation || sourceState.requiresEscalation) {
     return { required: true, presetId: null };
   }
   return { required: false };
@@ -82,12 +82,52 @@ export function cloneResolutionPreset(
   });
 }
 
+function newResolutionEntityId(prefix: 'field' | 'outcome'): string {
+  return createPrefixedId(prefix);
+}
+
+/**
+ * Keep the first occurrence of each field/outcome id; regenerate duplicates
+ * (e.g. after a blind JSON copy-paste). Safe for Apply / upsert.
+ */
+export function ensureUniqueResolutionEntityIds(
+  preset: WorkflowResolutionPreset
+): WorkflowResolutionPreset {
+  const seenFieldIds = new Set<string>();
+  const fields = preset.fields.map((field) => {
+    const trimmed = field.id.trim();
+    if (trimmed && !seenFieldIds.has(trimmed)) {
+      seenFieldIds.add(trimmed);
+      return trimmed === field.id ? field : { ...field, id: trimmed };
+    }
+    const id = newResolutionEntityId('field');
+    seenFieldIds.add(id);
+    return { ...field, id };
+  });
+
+  const seenOutcomeIds = new Set<string>();
+  const outcomes = preset.outcomes.map((outcome) => {
+    const trimmed = outcome.id.trim();
+    if (trimmed && !seenOutcomeIds.has(trimmed)) {
+      seenOutcomeIds.add(trimmed);
+      return trimmed === outcome.id ? outcome : { ...outcome, id: trimmed };
+    }
+    const id = newResolutionEntityId('outcome');
+    seenOutcomeIds.add(id);
+    return { ...outcome, id };
+  });
+
+  return { ...preset, fields, outcomes };
+}
+
 /** Replace or append a preset on the workflow document. */
 export function upsertResolutionPreset(
   workflow: WorkflowDocument,
   preset: WorkflowResolutionPreset
 ): WorkflowDocument {
-  const parsed = workflowResolutionPresetSchema.parse(preset);
+  const parsed = ensureUniqueResolutionEntityIds(
+    workflowResolutionPresetSchema.parse(preset)
+  );
   const index = workflow.resolutionPresets.findIndex(
     (candidate) => candidate.id === parsed.id
   );
@@ -300,4 +340,4 @@ export {
   workflowResolutionFieldSchema,
   workflowResolutionOutcomeSchema,
   workflowResolutionPresetSchema,
-};
+} from './workflow-config.js';

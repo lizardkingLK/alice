@@ -9,6 +9,7 @@ const {
   findManyWorkItemsMock,
   countWorkItemsMock,
   findManyProjectsMock,
+  findUniqueProjectMock,
   findManyUsersMock,
   listAccessibleProjectIdsMock,
 } = vi.hoisted(() => ({
@@ -16,6 +17,7 @@ const {
   findManyWorkItemsMock: vi.fn(),
   countWorkItemsMock: vi.fn(),
   findManyProjectsMock: vi.fn(),
+  findUniqueProjectMock: vi.fn(),
   findManyUsersMock: vi.fn(),
   listAccessibleProjectIdsMock: vi.fn(),
 }));
@@ -31,6 +33,7 @@ vi.mock('../../src/lib/prisma', () => ({
     },
     projects: {
       findMany: findManyProjectsMock,
+      findUnique: findUniqueProjectMock,
     },
     users: {
       findMany: findManyUsersMock,
@@ -89,6 +92,54 @@ describe('ChartsRepository analytics', () => {
         { key: 'New', label: 'New', count: 2 },
       ],
     });
+  });
+
+  it('groups by status_category with friendly labels', async () => {
+    groupByMock.mockResolvedValue([
+      { status_category: 'done', _sum: { item_count: 4 } },
+      { status_category: 'in_progress', _sum: { item_count: 2 } },
+    ]);
+
+    const result = await repository.sumSeries({
+      projectIds: [PROJECT_ID],
+      labelField: 'category',
+    });
+
+    expect(groupByMock).toHaveBeenCalledWith(
+      expect.objectContaining({ by: ['status_category'] })
+    );
+    expect(result).toEqual({
+      totalCount: 6,
+      slices: [
+        { key: 'done', label: 'Done', count: 4 },
+        { key: 'in_progress', label: 'In progress', count: 2 },
+      ],
+    });
+  });
+
+  it('groups by state_id and humanizes labels when workflow_config is absent', async () => {
+    groupByMock.mockResolvedValue([
+      { state_id: 'todo', _sum: { item_count: 3 } },
+      { state_id: 'custom_qa', _sum: { item_count: 1 } },
+    ]);
+    findUniqueProjectMock.mockResolvedValue({ workflow_config: null });
+
+    const result = await repository.sumSeries({
+      projectIds: [PROJECT_ID],
+      labelField: 'state',
+    });
+
+    expect(groupByMock).toHaveBeenCalledWith(
+      expect.objectContaining({ by: ['state_id'] })
+    );
+    expect(findUniqueProjectMock).toHaveBeenCalledWith({
+      where: { id: PROJECT_ID },
+      select: { workflow_config: true },
+    });
+    expect(result.slices).toEqual([
+      { key: 'todo', label: 'Todo', count: 3 },
+      { key: 'custom_qa', label: 'Custom Qa', count: 1 },
+    ]);
   });
 
   it('resolves owner labels and maps null assignee to empty slice key', async () => {

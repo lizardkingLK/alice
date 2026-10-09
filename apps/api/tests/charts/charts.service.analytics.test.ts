@@ -86,6 +86,37 @@ describe('ChartsService analytics', () => {
     expect(sumSeriesMock).not.toHaveBeenCalled();
   });
 
+  it('rejects state series without a single project filter', async () => {
+    listAccessibleProjectIdsMock.mockResolvedValue([PROJECT_ID]);
+
+    await expect(
+      service.getSeries('user-1', { labelField: 'state' })
+    ).rejects.toThrow('State series requires a single project filter');
+    expect(sumSeriesMock).not.toHaveBeenCalled();
+  });
+
+  it('allows state series for a single project', async () => {
+    sumSeriesMock.mockResolvedValue({
+      slices: [{ key: 'todo', label: 'To Do', count: 3 }],
+      totalCount: 3,
+    });
+
+    await expect(
+      service.getSeries('user-1', {
+        projectId: PROJECT_ID,
+        labelField: 'state',
+      })
+    ).resolves.toMatchObject({
+      projectId: PROJECT_ID,
+      labelField: 'state',
+      totalCount: 3,
+    });
+    expect(sumSeriesMock).toHaveBeenCalledWith({
+      projectIds: [PROJECT_ID],
+      labelField: 'state',
+    });
+  });
+
   it('returns drilldown after project ACL check', async () => {
     const row = createWorkItemListRow();
     listDrilldownMock.mockResolvedValue({

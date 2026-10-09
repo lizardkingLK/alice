@@ -42,6 +42,8 @@ export class ApiError extends Error {
 type TreeifiedError = {
   errors?: string[];
   properties?: Record<string, TreeifiedError | undefined>;
+  /** Zod 4 `z.treeifyError` nests array element issues under `items`. */
+  items?: ReadonlyArray<TreeifiedError | null | undefined>;
 };
 
 export function getAPIUrl() {
@@ -62,27 +64,45 @@ function isTreeifiedError(value: unknown): value is TreeifiedError {
     return false;
   }
 
-  return 'errors' in value || 'properties' in value;
+  return 'errors' in value || 'properties' in value || 'items' in value;
 }
 
-function collectTreeifyMessages(node: TreeifiedError, path = ''): string[] {
+function treeifyChildPath(path: string, segment: string): string {
+  return path ? `${path}.${segment}` : segment;
+}
+
+function collectTreeifyChildMessages(
+  children: Iterable<readonly [string, TreeifiedError | null | undefined]>,
+  path: string
+): string[] {
   const messages: string[] = [];
-
-  for (const error of node.errors ?? []) {
-    messages.push(error);
-  }
-
-  if (!node.properties) {
-    return messages;
-  }
-
-  for (const [key, child] of Object.entries(node.properties)) {
+  for (const [segment, child] of children) {
     if (!child) {
       continue;
     }
+    messages.push(
+      ...collectTreeifyMessages(child, treeifyChildPath(path, segment))
+    );
+  }
+  return messages;
+}
 
-    const nextPath = path ? `${path}.${key}` : key;
-    messages.push(...collectTreeifyMessages(child, nextPath));
+function collectTreeifyMessages(node: TreeifiedError, path = ''): string[] {
+  const messages = [...(node.errors ?? [])];
+
+  if (node.properties) {
+    messages.push(
+      ...collectTreeifyChildMessages(Object.entries(node.properties), path)
+    );
+  }
+
+  if (node.items) {
+    messages.push(
+      ...collectTreeifyChildMessages(
+        node.items.map((child, index) => [String(index), child] as const),
+        path
+      )
+    );
   }
 
   return messages;

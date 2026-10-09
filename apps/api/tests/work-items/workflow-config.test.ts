@@ -25,6 +25,7 @@ describe('workflowConfigEnvelopeSchema', () => {
       from: WorkItemStatusEnum.ToDo,
       to: WorkItemStatusEnum.ToDo,
       allowAnyOf: [],
+      requiresEscalation: false,
       resolutionPresetId: null,
       requireChildren: 'off',
     });
@@ -84,6 +85,7 @@ describe('workflowConfigEnvelopeSchema', () => {
       from: WorkItemStatusEnum.Done,
       to: WorkItemStatusEnum.ToDo,
       allowAnyOf: [],
+      requiresEscalation: false,
       resolutionPresetId: null,
       requireChildren: 'off',
     });

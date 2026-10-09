@@ -3,6 +3,7 @@ import {
   buildEscalationResolvedMeta,
   createEmptyResolutionPreset,
   createSeededDefaultWorkflowConfig,
+  ensureUniqueResolutionEntityIds,
   getResolutionRequirement,
   upsertResolutionPreset,
   validateResolutionPayload,
@@ -35,6 +36,7 @@ describe('workflow-resolution', () => {
       from: 'a',
       to: 'b',
       allowAnyOf: [],
+      requiresEscalation: false,
       resolutionPresetId: 'preset-1',
       requireChildren: 'off' as const,
     };
@@ -74,6 +76,50 @@ describe('workflow-resolution', () => {
     const next = upsertResolutionPreset(workflow, withFields);
     expect(next.resolutionPresets).toHaveLength(1);
     expect(next.resolutionPresets[0]?.title).toBe('Close reason');
+  });
+
+  it('regenerates duplicate field and outcome ids', () => {
+    const duplicated = ensureUniqueResolutionEntityIds({
+      ...withFields,
+      fields: [
+        ...withFields.fields,
+        {
+          id: 'reason',
+          type: 'text' as const,
+          label: 'Copied reason',
+          required: false,
+        },
+      ],
+      outcomes: [
+        { id: 'fixed', label: 'Fixed' },
+        { id: 'fixed', label: "Won't Fix" },
+        { id: 'moved', label: 'Moved' },
+      ],
+    });
+
+    const fieldIds = duplicated.fields.map((field) => field.id);
+    const outcomeIds = duplicated.outcomes.map((outcome) => outcome.id);
+    expect(new Set(fieldIds).size).toBe(fieldIds.length);
+    expect(new Set(outcomeIds).size).toBe(outcomeIds.length);
+    expect(duplicated.fields[0]?.id).toBe('reason');
+    expect(duplicated.outcomes[0]?.id).toBe('fixed');
+    expect(duplicated.outcomes[1]?.id).not.toBe('fixed');
+    expect(duplicated.outcomes[2]?.id).toBe('moved');
+  });
+
+  it('dedupes entity ids when upserting a pasted preset', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const next = upsertResolutionPreset(workflow, {
+      ...withFields,
+      outcomes: [
+        { id: 'fixed', label: 'Fixed' },
+        { id: 'fixed', label: "Won't Fix" },
+      ],
+    });
+    const outcomeIds = next.resolutionPresets[0]!.outcomes.map(
+      (outcome) => outcome.id
+    );
+    expect(new Set(outcomeIds).size).toBe(2);
   });
 
   it('builds an activity snapshot', () => {

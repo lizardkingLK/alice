@@ -1,14 +1,16 @@
 import type { ChartConfig } from '@repo/ui/components/ui/chart';
 import {
+  BOARD_WORK_ITEM_STATUSES,
   CHART_SERIES_LABEL_FIELDS,
   CHART_SERIES_NULL_SLICE_KEY,
+  WORKFLOW_STATE_CATEGORIES,
+  chartCategoryDisplayLabel,
   type ChartSeriesLabelField,
   type ChartSeriesQuery,
   type ChartSeriesSlice,
   type WorkItemListRow,
   type WorkItemStatus,
 } from '@repo/types';
-import { BOARD_WORK_ITEM_STATUSES } from '@repo/types';
 import { STATUS_META } from '@/app/work-items/_helpers/work-item-status';
 import type {
   ChartsLabelFieldId,
@@ -26,10 +28,22 @@ export const CHARTS_LIVE_LABEL_COLUMNS: readonly {
 }[] = [
   { id: 'board', label: 'Project' },
   { id: 'owner', label: 'Owner' },
-  { id: 'status', label: 'Status' },
+  { id: 'category', label: 'Category' },
+  { id: 'state', label: 'State' },
   { id: 'type', label: 'Type' },
   { id: 'priority', label: 'Priority' },
 ] as const;
+
+/** Live columns for the Labels picker; State only when a project is selected. */
+export function liveLabelColumnsForProject(projectId: string | null): readonly {
+  readonly id: ChartSeriesLabelField;
+  readonly label: string;
+}[] {
+  if (projectId) {
+    return CHARTS_LIVE_LABEL_COLUMNS;
+  }
+  return CHARTS_LIVE_LABEL_COLUMNS.filter((column) => column.id !== 'state');
+}
 
 export function isChartSeriesLabelField(
   value: ChartsLabelFieldId
@@ -167,6 +181,9 @@ function displayLabel(
   if (labelField === 'status') {
     return STATUS_META[slice.key as WorkItemStatus]?.label ?? slice.label;
   }
+  if (labelField === 'category') {
+    return chartCategoryDisplayLabel(slice.key);
+  }
   return slice.label || slice.key;
 }
 
@@ -180,39 +197,81 @@ export type BuildChartsPieOptions = {
   readonly sliceColors?: Readonly<Record<string, string>> | null;
 };
 
-function expandEmptyStatusSlices(
-  slices: readonly ChartSeriesSlice[]
+/** Fill missing canonical keys with zero-count slices; append unknown keys. */
+function expandEmptyCanonicalSlices(
+  slices: readonly ChartSeriesSlice[],
+  canonicalKeys: readonly string[],
+  // eslint-disable-next-line no-unused-vars -- label resolver
+  labelForKey: (key: string) => string
 ): ChartSeriesSlice[] {
   const byKey = new Map(slices.map((slice) => [slice.key, slice]));
-  const working = BOARD_WORK_ITEM_STATUSES.map(
-    (status) =>
-      byKey.get(status) ?? {
-        key: status,
-        label: STATUS_META[status]?.label ?? status,
+  const canonicalSet = new Set(canonicalKeys);
+  const working = canonicalKeys.map(
+    (key) =>
+      byKey.get(key) ?? {
+        key,
+        label: labelForKey(key),
         count: 0,
       }
   );
   for (const slice of slices) {
-    if (!(BOARD_WORK_ITEM_STATUSES as readonly string[]).includes(slice.key)) {
+    if (!canonicalSet.has(slice.key)) {
       working.push(slice);
     }
   }
   return working;
 }
 
-function orderStatusSlicesBoardFirst(
-  slices: readonly ChartSeriesSlice[]
+/** Prefer canonical key order; append any remaining slices. */
+function orderCanonicalSlicesFirst(
+  slices: readonly ChartSeriesSlice[],
+  canonicalKeys: readonly string[]
 ): ChartSeriesSlice[] {
   const byKey = new Map(slices.map((slice) => [slice.key, slice]));
-  const ordered = BOARD_WORK_ITEM_STATUSES.map((status) =>
-    byKey.get(status)
-  ).filter((slice): slice is ChartSeriesSlice => Boolean(slice));
+  const canonicalSet = new Set(canonicalKeys);
+  const ordered = canonicalKeys
+    .map((key) => byKey.get(key))
+    .filter((slice): slice is ChartSeriesSlice => Boolean(slice));
   for (const slice of slices) {
-    if (!(BOARD_WORK_ITEM_STATUSES as readonly string[]).includes(slice.key)) {
+    if (!canonicalSet.has(slice.key)) {
       ordered.push(slice);
     }
   }
   return ordered;
+}
+
+function expandEmptySlicesForLabelField(
+  labelField: ChartSeriesLabelField,
+  slices: readonly ChartSeriesSlice[]
+): ChartSeriesSlice[] {
+  if (labelField === 'status') {
+    return expandEmptyCanonicalSlices(
+      slices,
+      BOARD_WORK_ITEM_STATUSES,
+      (key) => STATUS_META[key as WorkItemStatus]?.label ?? key
+    );
+  }
+  if (labelField === 'category') {
+    return expandEmptyCanonicalSlices(
+      slices,
+      WORKFLOW_STATE_CATEGORIES,
+      chartCategoryDisplayLabel
+    );
+  }
+  return [...slices];
+}
+
+function orderSlicesForLabelField(
+  labelField: ChartSeriesLabelField,
+  slices: readonly ChartSeriesSlice[]
+): ChartSeriesSlice[] {
+  if (labelField === 'status') {
+    return orderCanonicalSlicesFirst(slices, BOARD_WORK_ITEM_STATUSES);
+  }
+  if (labelField === 'category') {
+    return orderCanonicalSlicesFirst(slices, WORKFLOW_STATE_CATEGORIES);
+  }
+  return [...slices];
 }
 
 function sortSeriesSlices(
@@ -245,7 +304,7 @@ function toPieSliceEntries(
   return ordered.map((slice, index) => {
     const label = displayLabel(labelField, slice);
     const chartKey =
-      labelField === 'status' && slice.key
+      (labelField === 'status' || labelField === 'category') && slice.key
         ? slice.key
         : chartSafeKey(slice.key || 'null', index);
     const swatch = swatchForBucket(labelField, slice.key, index, sliceColors);
@@ -275,10 +334,9 @@ export function buildChartsPieFromSeries(
   const showEmpty = options.showEmptySlices === true;
   const sortBy = options.sortSlicesBy ?? 'value_desc';
 
-  let working =
-    labelField === 'status' && showEmpty
-      ? expandEmptyStatusSlices(slices)
-      : [...slices];
+  let working = showEmpty
+    ? expandEmptySlicesForLabelField(labelField, slices)
+    : [...slices];
 
   if (!showEmpty) {
     working = working.filter((slice) => slice.count > 0);
@@ -286,10 +344,9 @@ export function buildChartsPieFromSeries(
 
   const total = working.reduce((sum, slice) => sum + slice.count, 0);
 
-  const useBoardOrder =
-    labelField === 'status' && sortBy === 'value_desc' && !showEmpty;
-  const ordered = useBoardOrder
-    ? orderStatusSlicesBoardFirst(working)
+  const useCanonicalOrder = sortBy === 'value_desc' && !showEmpty;
+  const ordered = useCanonicalOrder
+    ? orderSlicesForLabelField(labelField, working)
     : sortSeriesSlices(working, sortBy);
 
   const data = toPieSliceEntries(

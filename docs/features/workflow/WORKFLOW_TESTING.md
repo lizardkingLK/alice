@@ -29,7 +29,7 @@ schemas in `packages/types`, API tests under `apps/api/tests`, web under
 | Fork             | `forkedFromId` depth > 1 rejected                                        |
 | Type bindings    | Overlap across workflows rejected (or documented first-wins — match Zod) |
 | Terminal         | State with outbound edges invalid when `terminal: true`                  |
-| Escalation       | `requiresEscalation` without preset on an outbound edge rejected         |
+| Escalation       | Edge (or legacy state) `requiresEscalation` without linked form rejected |
 | Require children | Enum `off` \| `all_complete` \| `match_parent_target`                    |
 | Fallback         | `null` / garbage / wrong shape → seeded default helper                   |
 | State bridge     | category from state; legacy status sync; history map optional            |

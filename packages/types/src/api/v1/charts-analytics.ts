@@ -7,6 +7,10 @@ import {
 import { WORK_ITEM_PRIORITIES } from '../../work-item-priorities.js';
 import { WORK_ITEM_STATUSES } from '../../work-item-status.js';
 import { WORK_ITEM_TYPES } from '../../work-item-types.js';
+import {
+  WORKFLOW_STATE_CATEGORIES,
+  type WorkflowStateCategory,
+} from '../../work-item-state.js';
 import type { work_itemsGetPayload } from '../../generated/prisma/models/work_items.js';
 import {
   workItemListSelect,
@@ -17,10 +21,14 @@ import {
 /**
  * Labels → Columns group-by fields backed by `work_item_chart_rollups`.
  * UI ids `board` / `owner` map to rollup `project_id` / `assignee_id`.
+ * `category` / `state` are workflow placement dimensions (Step 7).
+ * `state` requires a concrete single-project scope.
  * Unsupported UI fields (`group`, `name`, `dueDate`) are not accepted here.
  */
 export const CHART_SERIES_LABEL_FIELDS = [
   'status',
+  'category',
+  'state',
   'owner',
   'board',
   'type',
@@ -31,7 +39,13 @@ export type ChartSeriesLabelField = (typeof CHART_SERIES_LABEL_FIELDS)[number];
 
 /** Rollup / work_items column used for a series label field. */
 export type ChartRollupGroupColumn =
-  'status' | 'assignee_id' | 'project_id' | 'type' | 'priority';
+  | 'status'
+  | 'status_category'
+  | 'state_id'
+  | 'assignee_id'
+  | 'project_id'
+  | 'type'
+  | 'priority';
 
 export function chartRollupGroupColumn(
   labelField: ChartSeriesLabelField
@@ -43,11 +57,37 @@ export function chartRollupGroupColumn(
       return 'project_id';
     case 'status':
       return 'status';
+    case 'category':
+      return 'status_category';
+    case 'state':
+      return 'state_id';
     case 'type':
       return 'type';
     case 'priority':
       return 'priority';
   }
+}
+
+/** Display label for a workflow status category slice. */
+export function chartCategoryDisplayLabel(category: string): string {
+  switch (category as WorkflowStateCategory) {
+    case 'draft':
+      return 'Draft';
+    case 'todo':
+      return 'To do';
+    case 'in_progress':
+      return 'In progress';
+    case 'done':
+      return 'Done';
+    default:
+      return category;
+  }
+}
+
+export function isWorkflowStateCategory(
+  value: string
+): value is WorkflowStateCategory {
+  return (WORKFLOW_STATE_CATEGORIES as readonly string[]).includes(value);
 }
 
 /** Empty slice key means SQL NULL (e.g. unassigned owner). */

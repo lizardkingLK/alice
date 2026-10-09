@@ -64,7 +64,7 @@ import {
 } from '@/app/charts/_components/charts.types';
 import { DEFAULT_CHARTS_LABEL_FIELD } from '@/app/charts/_components/charts-sample.data';
 import {
-  CHARTS_LIVE_LABEL_COLUMNS,
+  liveLabelColumnsForProject,
   isChartSeriesLabelField,
 } from '@/app/charts/_helpers/charts-analytics.ui';
 import {
@@ -80,6 +80,8 @@ type ChartsSliceColorOption = {
 };
 
 type ChartsWidgetSettingsSidebarProps = {
+  /** Concrete project filter; null/undefined hides the State label column. */
+  readonly projectId?: string | null;
   readonly pieVariant: ChartPieVariant;
   // eslint-disable-next-line no-unused-vars -- pie subtype change
   readonly onPieVariantChange: (variant: ChartPieVariant) => void;
@@ -471,18 +473,19 @@ function ChartTypeSection({
 
 function LabelsColumnSelect({
   labelField,
+  projectId,
   onLabelFieldChange,
 }: Readonly<{
   labelField: ChartsLabelFieldId;
+  projectId: string | null;
   // eslint-disable-next-line no-unused-vars
   onLabelFieldChange: (field: ChartsLabelFieldId) => void;
 }>) {
   const [open, setOpen] = useState(false);
+  const columns = liveLabelColumnsForProject(projectId);
   const selected =
-    CHARTS_LIVE_LABEL_COLUMNS.find((column) => column.id === labelField) ??
-    CHARTS_LIVE_LABEL_COLUMNS.find(
-      (column) => column.id === DEFAULT_CHARTS_LABEL_FIELD
-    );
+    columns.find((column) => column.id === labelField) ??
+    columns.find((column) => column.id === DEFAULT_CHARTS_LABEL_FIELD);
 
   return (
     <div>
@@ -498,8 +501,8 @@ function LabelsColumnSelect({
             className="border-input bg-background h-auto min-h-9 w-full justify-between gap-2 px-2 py-1.5 font-normal"
           >
             <span className="bg-muted text-foreground inline-flex min-w-0 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium">
-              <LabelFieldIcon fieldId={selected?.id ?? 'status'} />
-              <span className="truncate">{selected?.label ?? 'Status'}</span>
+              <LabelFieldIcon fieldId={selected?.id ?? 'category'} />
+              <span className="truncate">{selected?.label ?? 'Category'}</span>
             </span>
             <ChevronDown className="size-3.5 shrink-0 opacity-60" />
           </Button>
@@ -513,7 +516,7 @@ function LabelsColumnSelect({
             <CommandList>
               <CommandEmpty>No column found.</CommandEmpty>
               <CommandGroup>
-                {CHARTS_LIVE_LABEL_COLUMNS.map((column) => (
+                {columns.map((column) => (
                   <CommandItem
                     key={column.id}
                     value={column.label}
@@ -555,6 +558,8 @@ function LabelFieldIcon({ fieldId }: Readonly<{ fieldId: string }>) {
     case 'owner':
       return <User className={className} aria-hidden />;
     case 'status':
+    case 'category':
+    case 'state':
       return (
         <span
           className="size-2.5 shrink-0 rounded-sm"
@@ -575,9 +580,11 @@ function LabelFieldIcon({ fieldId }: Readonly<{ fieldId: string }>) {
 
 function LabelsSection({
   labelField,
+  projectId,
   onLabelFieldChange,
 }: Readonly<{
   labelField: ChartsLabelFieldId;
+  projectId: string | null;
   // eslint-disable-next-line no-unused-vars
   onLabelFieldChange: (field: ChartsLabelFieldId) => void;
 }>) {
@@ -585,6 +592,7 @@ function LabelsSection({
     <div className="flex flex-col gap-3">
       <LabelsColumnSelect
         labelField={labelField}
+        projectId={projectId}
         onLabelFieldChange={onLabelFieldChange}
       />
     </div>
@@ -877,6 +885,7 @@ function ColumnsSection({
 }
 
 export function ChartsWidgetSettingsSidebar({
+  projectId = null,
   pieVariant,
   onPieVariantChange,
   labelField = DEFAULT_CHARTS_LABEL_FIELD,
@@ -919,6 +928,7 @@ export function ChartsWidgetSettingsSidebar({
           <SettingsSection title="Labels">
             <LabelsSection
               labelField={labelField}
+              projectId={projectId ?? null}
               onLabelFieldChange={(field) => onLabelFieldChange?.(field)}
             />
           </SettingsSection>

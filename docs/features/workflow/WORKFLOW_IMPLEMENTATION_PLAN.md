@@ -61,7 +61,7 @@ board JSON in MVP).
 | Types / helpers   | `packages/types/src/work-item-state.ts` (exported from `@repo/types`)         |
 | Dual-write        | `WorkItemsRepository.create` / `.update` sync `state` + `done_at` from status |
 | Tests             | `apps/api/tests/work-items/work-item-state.test.ts`                           |
-| Generated columns | **Deferred to Step 7** (chart rollups)                                        |
+| Placement mirrors | **Step 7** — `status_category` / `state_id` / `state_workflow_id` + rollups   |
 
 Legacy `status` + `board_column_id` remain authoritative for callers that ignore
 `state`. `resolveWorkItemState` derives placement when `state` is null/invalid.
@@ -299,6 +299,8 @@ Guide: [DATABASE_BUSY_RETRY.md](../../guides/DATABASE_BUSY_RETRY.md).
 
 ## Step 7 — Charts category + state
 
+**Status: Done (as-built)**
+
 **Goal:** Rollups and Charts UI match filter strategy.
 
 1. Extend rollup grain: always `status_category`; add `workflow_id` + `state_id`
@@ -306,6 +308,16 @@ Guide: [DATABASE_BUSY_RETRY.md](../../guides/DATABASE_BUSY_RETRY.md).
 2. Charts API: multi-project → category; single project → category + **State**.
 3. Charts UI: **State** label/dimension when project selected.
 4. Repository / API / UI tests for both scopes.
+
+### As-built
+
+| Piece                            | Location                                                                                                                                                         |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Placement mirrors + rollup grain | migration `chart_rollups_category_state`; `work_items.status_category` / `state_id` / `state_workflow_id`; rollup `status_category` / `workflow_id` / `state_id` |
+| Resolve helper (SQL)             | `work_item_chart_resolve_placement` (+ BEFORE trigger sync)                                                                                                      |
+| Label fields                     | `category` / `state` in `charts-analytics.ts` (legacy `status` kept)                                                                                             |
+| API gate                         | `state` requires single `projectId` (`ChartsService`)                                                                                                            |
+| UI Labels                        | Category always; State when project filter set                                                                                                                   |
 
 **Exit:** Status wheel / charts correct for category and per-project state.
 

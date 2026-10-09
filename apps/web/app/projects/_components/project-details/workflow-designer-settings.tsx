@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Info, PanelRightClose, Settings } from '@repo/ui/lib/icons';
+import { PanelRightClose, Settings } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import {
@@ -21,12 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/ui/select';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@repo/ui/components/ui/tooltip';
+import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
 import {
   WORKFLOW_REQUIRE_CHILDREN,
   type WorkflowDocument,
@@ -47,6 +42,7 @@ import {
 import type { MemberCheckboxOption } from '@/components/member-checkbox-list';
 import { WORK_ITEM_STATUS_BADGE_STYLES } from '@/app/work-items/_helpers/work-item-status';
 import { WorkflowResolutionPresetEditor } from '@/app/projects/_components/project-details/workflow-resolution-preset-editor';
+import { WorkflowSettingsInfoTip } from '@/app/projects/_components/project-details/workflow-settings-info-tip';
 import { cn } from '@repo/ui/lib/utils';
 
 export type WorkflowDesignerSelection =
@@ -69,7 +65,13 @@ type WorkflowStateChangeHandler = (
 type WorkflowEdgeChangeHandler = (
   edgeId: string,
   patch: Partial<
-    Pick<WorkflowEdge, 'requireChildren' | 'allowAnyOf' | 'resolutionPresetId'>
+    Pick<
+      WorkflowEdge,
+      | 'requireChildren'
+      | 'allowAnyOf'
+      | 'requiresEscalation'
+      | 'resolutionPresetId'
+    >
   >
 ) => void;
 type WorkflowMakeTerminalHandler = (stateId: string) => void;
@@ -116,25 +118,6 @@ const REQUIRE_CHILDREN_LABELS: Record<WorkflowRequireChildren, string> = {
   match_parent_target: 'Match parent target',
 };
 
-function SettingsInfoTip({ text }: { readonly text: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          className="text-muted-foreground hover:text-foreground inline-flex size-4 items-center justify-center"
-          aria-label="More information"
-        >
-          <Info className="size-3.5" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-xs text-xs leading-relaxed">
-        {text}
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
 function FieldLabel({
   htmlFor,
   label,
@@ -147,7 +130,7 @@ function FieldLabel({
   return (
     <div className="flex items-center gap-1.5">
       <Label htmlFor={htmlFor}>{label}</Label>
-      <SettingsInfoTip text={tip} />
+      <WorkflowSettingsInfoTip text={tip} />
     </div>
   );
 }
@@ -184,7 +167,7 @@ function StateFlagRow({
           <Label htmlFor={id} className="leading-snug">
             {label}
           </Label>
-          <SettingsInfoTip text={tip} />
+          <WorkflowSettingsInfoTip text={tip} />
         </div>
       </div>
     </div>
@@ -297,21 +280,6 @@ function StateSettingsForm({
           disabled={!canEdit}
           onCheckedChange={requestTerminal}
         />
-        <StateFlagRow
-          id="workflow-state-requires-escalation"
-          label="Requires escalation"
-          tip="Leaving this state needs a resolution form on each exit."
-          checked={state.requiresEscalation}
-          disabled={!canEdit}
-          onCheckedChange={(checked) =>
-            onStateChange(state.id, { requiresEscalation: checked })
-          }
-        />
-        {state.requiresEscalation && outboundCount > 0 ? (
-          <p className="text-muted-foreground text-xs leading-relaxed">
-            Each exit needs a resolution form before you can save.
-          </p>
-        ) : null}
       </div>
 
       <Dialog open={terminalConfirmOpen} onOpenChange={setTerminalConfirmOpen}>
@@ -374,7 +342,8 @@ function EdgeSettingsForm({
   const toName =
     workflow.graph.states.find((state) => state.id === edge.to)?.name ??
     edge.to;
-  const fromRequiresEscalation = fromState?.requiresEscalation === true;
+  const escalationRequired =
+    edge.requiresEscalation === true || fromState?.requiresEscalation === true;
 
   const accessMode: TransitionRulePermissionsValue['accessMode'] =
     edge.allowAnyOf.length > 0 ? 'restricted' : 'everyone';
@@ -419,29 +388,55 @@ function EdgeSettingsForm({
         </Select>
       </div>
 
-      <div className="space-y-2">
-        <FieldLabel
-          htmlFor="workflow-edge-resolution-preset"
-          label="Resolution preset"
-          tip="Optional form filled when taking this move. Required when the from-state needs escalation."
-        />
-        <WorkflowResolutionPresetEditor
-          workflow={workflow}
-          edgeId={edge.id}
-          presetId={edge.resolutionPresetId}
-          canEdit={canEdit}
-          required={fromRequiresEscalation}
-          onBindPreset={(nextPresetId) =>
-            onEdgeChange(edge.id, { resolutionPresetId: nextPresetId })
+      <div className="border-border space-y-3 border-t pt-3">
+        <StateFlagRow
+          id="workflow-edge-requires-escalation"
+          label="Requires escalation"
+          tip="Turn this on when this move needs a form. Then Create new… or pick a form below, Edit form → Save in the dialog, and Save the workflow — otherwise Save is rejected."
+          checked={escalationRequired}
+          disabled={!canEdit || fromState?.requiresEscalation === true}
+          onCheckedChange={(checked) =>
+            onEdgeChange(edge.id, {
+              requiresEscalation: checked,
+              ...(checked ? {} : { resolutionPresetId: null }),
+            })
           }
-          onUpsertPreset={onUpsertResolutionPreset}
         />
+        {fromState?.requiresEscalation === true ? (
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            The from-state still marks every exit as escalation — link a form
+            below, then save.
+          </p>
+        ) : null}
+        <div className="space-y-2">
+          <FieldLabel
+            htmlFor="workflow-edge-resolution-preset"
+            label="Resolution form"
+            tip="People complete this form when taking this move. Create new… or choose an existing form, then Save the workflow."
+          />
+          <WorkflowResolutionPresetEditor
+            workflow={workflow}
+            edgeId={edge.id}
+            presetId={edge.resolutionPresetId}
+            canEdit={canEdit}
+            required={escalationRequired}
+            onBindPreset={(nextPresetId) =>
+              onEdgeChange(edge.id, {
+                resolutionPresetId: nextPresetId,
+                ...(nextPresetId
+                  ? { requiresEscalation: true }
+                  : { requiresEscalation: false }),
+              })
+            }
+            onUpsertPreset={onUpsertResolutionPreset}
+          />
+        </div>
       </div>
 
       <div className="space-y-2">
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-medium">Who can move</p>
-          <SettingsInfoTip text="Everyone allows any member. Restricted limits who can take this move." />
+          <WorkflowSettingsInfoTip text="Everyone allows any member. Restricted limits who can take this move." />
         </div>
         <TransitionRulePermissions
           idPrefix={`workflow-edge-${edge.id}`}

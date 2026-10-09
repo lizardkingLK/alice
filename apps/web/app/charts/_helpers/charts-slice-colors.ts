@@ -1,5 +1,16 @@
-import type { ChartSeriesLabelField, WorkItemStatus } from '@repo/types';
+import type {
+  ChartSeriesLabelField,
+  WorkItemStatus,
+  WorkflowStateCategory,
+} from '@repo/types';
 import { STATUS_CHART_COLORS } from '@/components/status-distribution-wheel';
+
+const CATEGORY_CHART_COLORS: Readonly<Record<WorkflowStateCategory, string>> = {
+  draft: 'var(--chart-5)',
+  todo: 'var(--chart-2)',
+  in_progress: 'var(--chart-1)',
+  done: 'var(--chart-3)',
+};
 
 /**
  * Curated theme swatch ids for per-widget slice color overrides.
@@ -76,6 +87,13 @@ export function resolveSliceSwatch(
       Record<WorkItemStatus, string>
     >;
     return statusColors[sliceKey as WorkItemStatus] ?? FALLBACK_STATUS_COLOR;
+  }
+
+  if (labelField === 'category') {
+    return (
+      CATEGORY_CHART_COLORS[sliceKey as WorkflowStateCategory] ??
+      FALLBACK_STATUS_COLOR
+    );
   }
 
   return CHARTS_DEFAULT_TOKEN_COLORS[
