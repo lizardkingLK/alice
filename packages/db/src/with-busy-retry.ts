@@ -15,6 +15,35 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
+async function runBusyAttempt<T>(
+  operation: () => Promise<T>,
+  attempt: number,
+  maxAttempts: number,
+  baseDelayMs: number,
+  onRetry: WithBusyRetryOptions['onRetry']
+): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    const canRetry = isDatabaseBusyError(error) && attempt < maxAttempts;
+    if (!canRetry) {
+      if (isDatabaseBusyError(error)) {
+        throw new Error(DATABASE_BUSY_USER_MESSAGE, { cause: error });
+      }
+      throw error;
+    }
+    onRetry?.(attempt, error);
+    await sleep(baseDelayMs * 2 ** (attempt - 1));
+    return runBusyAttempt(
+      operation,
+      attempt + 1,
+      maxAttempts,
+      baseDelayMs,
+      onRetry
+    );
+  }
+}
+
 /**
  * Retry a Prisma (or other) operation when the connection pool cannot start
  * a transaction in time. Aligns with alice#562.
@@ -23,26 +52,11 @@ export async function withBusyRetry<T>(
   operation: () => Promise<T>,
   options: WithBusyRetryOptions = {}
 ): Promise<T> {
-  const maxAttempts = options.maxAttempts ?? 3;
-  const baseDelayMs = options.baseDelayMs ?? 250;
-  let lastError: unknown;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    try {
-      return await operation();
-    } catch (error) {
-      lastError = error;
-      const canRetry = isDatabaseBusyError(error) && attempt < maxAttempts;
-      if (!canRetry) {
-        break;
-      }
-      options.onRetry?.(attempt, error);
-      await sleep(baseDelayMs * 2 ** (attempt - 1));
-    }
-  }
-
-  if (isDatabaseBusyError(lastError)) {
-    throw new Error(DATABASE_BUSY_USER_MESSAGE, { cause: lastError });
-  }
-  throw lastError;
+  return runBusyAttempt(
+    operation,
+    1,
+    options.maxAttempts ?? 3,
+    options.baseDelayMs ?? 250,
+    options.onRetry
+  );
 }

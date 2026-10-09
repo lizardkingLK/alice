@@ -2,9 +2,10 @@ import {
   DATABASE_BUSY_CODE,
   DATABASE_BUSY_HTTP_STATUS,
   DATABASE_BUSY_USER_MESSAGE,
-  isDatabaseBusyError,
 } from '@repo/types';
 import { Prisma } from '@repo/types/prisma';
+
+export { isDatabaseBusyError } from '@repo/types';
 
 /** True when Postgres rejected an INSERT/UPDATE as a unique-index conflict. */
 export function isPrismaUniqueConflict(error: unknown): boolean {
@@ -26,5 +27,3 @@ export function databaseBusyJsonError(): {
     code: DATABASE_BUSY_CODE,
   };
 }
-
-export { isDatabaseBusyError };

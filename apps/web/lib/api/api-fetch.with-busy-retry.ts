@@ -1,7 +1,6 @@
 import {
   DATABASE_BUSY_CODE,
   DATABASE_BUSY_HTTP_STATUS,
-  DATABASE_BUSY_RETRY_TOAST,
   isDatabaseBusyError,
   isDatabaseBusyMessage,
 } from '@repo/types';
@@ -36,6 +35,32 @@ export function isDatabaseBusyApiError(error: unknown): boolean {
   return isDatabaseBusyError(error);
 }
 
+async function runApiBusyAttempt<T>(
+  operation: () => Promise<T>,
+  attempt: number,
+  maxRetries: number,
+  baseDelayMs: number,
+  onRetry: WithApiBusyRetryOptions['onRetry']
+): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (!isDatabaseBusyApiError(error) || attempt >= maxRetries) {
+      throw error;
+    }
+    const nextAttempt = attempt + 1;
+    onRetry?.(nextAttempt);
+    await sleep(baseDelayMs * 2 ** (nextAttempt - 1));
+    return runApiBusyAttempt(
+      operation,
+      nextAttempt,
+      maxRetries,
+      baseDelayMs,
+      onRetry
+    );
+  }
+}
+
 /**
  * Retry wrapper for client (and shared) API calls when the backend reports
  * pool / transaction-start pressure (alice#562).
@@ -44,22 +69,11 @@ export async function withApiBusyRetry<T>(
   operation: () => Promise<T>,
   options: WithApiBusyRetryOptions = {}
 ): Promise<T> {
-  const maxRetries = options.maxRetries ?? 2;
-  const baseDelayMs = options.baseDelayMs ?? 400;
-  let attempt = 0;
-
-  for (;;) {
-    try {
-      return await operation();
-    } catch (error) {
-      if (!isDatabaseBusyApiError(error) || attempt >= maxRetries) {
-        throw error;
-      }
-      attempt += 1;
-      options.onRetry?.(attempt);
-      await sleep(baseDelayMs * 2 ** (attempt - 1));
-    }
-  }
+  return runApiBusyAttempt(
+    operation,
+    0,
+    options.maxRetries ?? 2,
+    options.baseDelayMs ?? 400,
+    options.onRetry
+  );
 }
-
-export { DATABASE_BUSY_RETRY_TOAST };
