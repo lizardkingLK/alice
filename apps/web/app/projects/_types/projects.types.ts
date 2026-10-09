@@ -1,5 +1,6 @@
 import type { Tables } from '@repo/types';
 import type {
+  InitialProjectTeamInput,
   InitialSprintInput,
   ProjectWorkflowConfig,
   WorkItemTypeRemovalStrategy,
@@ -65,6 +66,7 @@ type ProjectMutationInput = Omit<
 
 export type CreateProjectInput = ProjectMutationInput & {
   sprint?: InitialSprintInput;
+  team?: InitialProjectTeamInput;
 };
 
 export type UpdateProjectInput = Partial<ProjectMutationInput> & {

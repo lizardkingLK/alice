@@ -1,4 +1,5 @@
 import type {
+  InitialProjectTeamInput,
   InitialSprintInput,
   ProjectWorkflowConfig,
   WorkItemTypeRemovalStrategy,
@@ -69,9 +70,10 @@ type ProjectMutationInput = Omit<
   workflow_config?: ProjectWorkflowConfig | null;
 };
 
-/** Input for creating a project (logo/cover and initial sprint are optional). */
+/** Input for creating a project with optional logo, cover, sprint, and team. */
 export type CreateProjectInput = ProjectMutationInput & {
   sprint?: InitialSprintInput;
+  team?: InitialProjectTeamInput;
 };
 
 export type UpdateProjectInput = Partial<ProjectMutationInput> & {

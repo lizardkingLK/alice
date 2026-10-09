@@ -606,7 +606,36 @@ export class ProjectsRepository {
             // Owner (manager) is always a project member so ACL and Members UI stay
             // consistent. The creating admin is also a member when they are not the
             // owner, so they keep workspace access under membership-scoped ACL.
-            const memberUserIds = [...new Set([data.owner_id, actorId])];
+            type InitialTeamMember = {
+              user_id: string;
+              capacity?: number | null;
+              allocation?: number | null;
+            };
+
+            const initialTeamMembers: InitialTeamMember[] =
+              data.team?.members ??
+              data.team?.member_ids?.map((user_id: string) => ({
+                user_id,
+                capacity: null,
+                allocation: null,
+              })) ??
+              [];
+
+            const uniqueTeamMembers = [
+              ...new Map<string, InitialTeamMember>(
+                initialTeamMembers.map((member) => [member.user_id, member])
+              ).values(),
+            ];
+
+            const memberUserIds: string[] = [
+              ...new Set<string>([
+                data.owner_id,
+                actorId,
+                ...(data.team ? [data.team.manager_id] : []),
+                ...uniqueTeamMembers.map((member) => member.user_id),
+              ]),
+            ];
+
             await tx.project_members.createMany({
               data: memberUserIds.map((userId) => ({
                 project_id: project.id,
@@ -614,6 +643,34 @@ export class ProjectsRepository {
                 ...prismaAuditCreate(actorId),
               })),
             });
+
+            if (data.team) {
+              const team = await tx.teams.create({
+                data: {
+                  name: data.team.name,
+                  description: data.team.description ?? null,
+                  manager_id: data.team.manager_id,
+                  project_id: project.id,
+                  tech_stack: data.team.tech_stack ?? null,
+                  status: data.team.status ?? RecordStatus.active,
+                  ...prismaAuditCreateWithoutStatus(actorId),
+                },
+              });
+
+              if (uniqueTeamMembers.length > 0) {
+                await tx.team_members.createMany({
+                  data: uniqueTeamMembers.map((member) => ({
+                    team_id: team.id,
+                    user_id: member.user_id,
+                    capacity: member.capacity ?? null,
+                    allocation: member.allocation ?? null,
+                    status: RecordStatus.active,
+                    created_by: actorId,
+                    updated_by: actorId,
+                  })),
+                });
+              }
+            }
 
             if (data.sprint) {
               await insertSprint(tx, {

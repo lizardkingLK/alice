@@ -14,7 +14,10 @@ import {
   registerLockedStatusPatch,
 } from '../../../lib/optimistic-lock';
 import { jsonErrorFromCaught } from '../../../lib/http-error-status';
-import { ProjectsService } from './projects.service';
+import {
+  ProjectsService,
+  ProjectTeamValidationError,
+} from './projects.service';
 import {
   createProjectSchema,
   projectLockActionSchema,
@@ -526,9 +529,13 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
           attributes_config: parsed.data.attributes_config ?? null,
           workflow_config: parsed.data.workflow_config ?? null,
           ...(parsed.data.sprint ? { sprint: parsed.data.sprint } : {}),
+          ...(parsed.data.team ? { team: parsed.data.team } : {}),
         });
         res.status(201).json({ project: withoutIntegrationSecrets(project) });
       } catch (error) {
+        if (error instanceof ProjectTeamValidationError) {
+          return res.status(400).json({ error: error.message });
+        }
         const {
           status,
           error: message,

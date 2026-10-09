@@ -204,6 +204,12 @@ async function advanceCreateFormToSprintStep() {
   await screen.findByRole('checkbox', { name: /Create an initial sprint/i });
 }
 
+async function advanceCreateFormToTeamStep() {
+  await advanceCreateFormToSprintStep();
+  fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+  await screen.findByRole('checkbox', { name: /Create an initial team/i });
+}
+
 describe('ProjectForm Component', () => {
   beforeEach(() => {
     clearGithubCache();
@@ -277,7 +283,7 @@ describe('ProjectForm Component', () => {
       target: { value: endDateStr },
     });
 
-    await advanceCreateFormToSprintStep();
+    await advanceCreateFormToTeamStep();
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -345,6 +351,8 @@ describe('ProjectForm Component', () => {
     });
 
     expect(createProject).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await screen.findByRole('checkbox', { name: /Create an initial team/i });
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -383,12 +391,155 @@ describe('ProjectForm Component', () => {
     fireEvent.change(screen.getByLabelText(/Sprint End Date/i), {
       target: { value: '2099-09-01' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
 
     expect(
       await screen.findByText('End date must be on or after the start date')
     ).toBeInTheDocument();
     expect(createProject).not.toHaveBeenCalled();
+  });
+
+  it('includes a trimmed optional team in the project create payload', async () => {
+    vi.mocked(createProject).mockResolvedValue(mockProject);
+    render(<ProjectForm users={mockUsers} />);
+
+    await fillStep1Basics();
+    await advanceCreateFormToTeamStep();
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: /Create an initial team/i })
+    );
+    fireEvent.change(screen.getByLabelText(/Team Name/i), {
+      target: { value: '  Platform Team  ' },
+    });
+    fireEvent.change(screen.getByLabelText(/^Description$/i), {
+      target: { value: '  Builds the platform  ' },
+    });
+    fireEvent.change(screen.getByLabelText(/Technology Stack/i), {
+      target: { value: '  TypeScript  ' },
+    });
+    await pickComboboxOption(/Team Manager/i, 'Manager One (mgr1@alice.dev)');
+    fireEvent.click(screen.getByRole('checkbox', { name: /Member User/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
+
+    await waitFor(() => {
+      expect(createProject).toHaveBeenCalledWith(
+        expect.objectContaining({
+          team: {
+            name: 'Platform Team',
+            description: 'Builds the platform',
+            manager_id: 'user-mgr-1',
+            tech_stack: 'TypeScript',
+            status: 'active',
+            member_ids: ['user-member'],
+          },
+        })
+      );
+    });
+  });
+
+  it('includes both optional team and sprint data in one create payload', async () => {
+    vi.mocked(createProject).mockResolvedValue(mockProject);
+    render(<ProjectForm users={mockUsers} />);
+
+    await fillStep1Basics();
+    await advanceCreateFormToSprintStep();
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: /Create an initial sprint/i })
+    );
+    fireEvent.change(screen.getByLabelText(/Sprint Name/i), {
+      target: { value: 'Sprint 1' },
+    });
+    fireEvent.change(screen.getByLabelText(/Sprint Start Date/i), {
+      target: { value: '2099-09-01' },
+    });
+    fireEvent.change(screen.getByLabelText(/Sprint End Date/i), {
+      target: { value: '2099-09-14' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await screen.findByRole('checkbox', { name: /Create an initial team/i });
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: /Create an initial team/i })
+    );
+    fireEvent.change(screen.getByLabelText(/Team Name/i), {
+      target: { value: 'Platform Team' },
+    });
+    await pickComboboxOption(/Team Manager/i, 'Manager One (mgr1@alice.dev)');
+    fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
+
+    await waitFor(() => {
+      expect(createProject).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sprint: expect.objectContaining({ name: 'Sprint 1' }),
+          team: expect.objectContaining({
+            name: 'Platform Team',
+            manager_id: 'user-mgr-1',
+          }),
+        })
+      );
+    });
+  });
+
+  it.each(['', 'A'])(
+    'blocks team creation for invalid team name %j',
+    async (invalidName) => {
+      render(<ProjectForm users={mockUsers} />);
+
+      await fillStep1Basics();
+      await advanceCreateFormToTeamStep();
+      fireEvent.click(
+        screen.getByRole('checkbox', { name: /Create an initial team/i })
+      );
+      fireEvent.change(screen.getByLabelText(/Team Name/i), {
+        target: { value: invalidName },
+      });
+      await pickComboboxOption(/Team Manager/i, 'Manager One (mgr1@alice.dev)');
+      fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
+
+      expect(
+        await screen.findByText('Team name must be at least 2 characters.')
+      ).toBeInTheDocument();
+      expect(createProject).not.toHaveBeenCalled();
+    }
+  );
+
+  it('blocks team creation when no manager is selected', async () => {
+    render(<ProjectForm users={mockUsers} />);
+
+    await fillStep1Basics();
+    await advanceCreateFormToTeamStep();
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: /Create an initial team/i })
+    );
+    fireEvent.change(screen.getByLabelText(/Team Name/i), {
+      target: { value: 'Platform Team' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
+
+    expect(
+      await screen.findByText('Please select a team manager.')
+    ).toBeInTheDocument();
+    expect(createProject).not.toHaveBeenCalled();
+  });
+
+  it('does not offer inactive users in the initial team step', async () => {
+    const inactiveManager: User = {
+      ...mockUsers[1]!,
+      id: 'inactive-manager',
+      name: 'Inactive Manager',
+      email: 'inactive@alice.dev',
+      active: false,
+    };
+    render(<ProjectForm users={[...mockUsers, inactiveManager]} />);
+
+    await fillStep1Basics();
+    await advanceCreateFormToTeamStep();
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: /Create an initial team/i })
+    );
+
+    const options = await getComboboxOptions(/Team Manager/i);
+    expect(options).toHaveLength(3);
+    expect(screen.queryByText(/Inactive Manager/)).not.toBeInTheDocument();
   });
 
   it('keeps creation successful when cache invalidation fails', async () => {
@@ -411,7 +562,7 @@ describe('ProjectForm Component', () => {
       );
 
       await fillStep1Basics();
-      await advanceCreateFormToSprintStep();
+      await advanceCreateFormToTeamStep();
       fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
       expect(
@@ -448,7 +599,7 @@ describe('ProjectForm Component', () => {
     );
 
     await fillStep1Basics();
-    await advanceCreateFormToSprintStep();
+    await advanceCreateFormToTeamStep();
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     expect(
@@ -625,6 +776,8 @@ describe('ProjectForm Component', () => {
     await screen.findByRole('checkbox', { name: /^GitHub$/i });
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     await screen.findByRole('checkbox', { name: /Create an initial sprint/i });
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await screen.findByRole('checkbox', { name: /Create an initial team/i });
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -667,6 +820,8 @@ describe('ProjectForm Component', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     await screen.findByRole('checkbox', { name: /Create an initial sprint/i });
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await screen.findByRole('checkbox', { name: /Create an initial team/i });
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -740,6 +895,8 @@ describe('ProjectForm Component', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     await screen.findByRole('checkbox', { name: /Create an initial sprint/i });
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await screen.findByRole('checkbox', { name: /Create an initial team/i });
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
