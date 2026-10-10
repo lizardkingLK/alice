@@ -29,7 +29,8 @@ Kanban board, calendar, backlog, and sprints for delivery planning.
 | Manage sprint records          | Project → **Sprints** tab (managers/admins)  |
 
 All platform roles can open Board and Backlog. Sprint administration and the
-**Workflow designer** require **manager** or **admin**.
+**Workflow designer** require **manager** or **admin**. Workflow configuration
+lives only on the **Workflow** tab (the Board column designer is retired).
 
 ---
 

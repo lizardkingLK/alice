@@ -1,17 +1,17 @@
 # Workflow feature documentation
 
-Status: **In progress** (Steps 1–9 **Done** / shipping; Step 10 polish next)
+Status: **MVP docs complete** (Steps 1–10 **Done**; Step 11 async create next)
 
 Jira-like **workflow graphs** replace the custom board column designer.
 Projects store one or more workflow documents in `projects.workflow_config`.
 The kanban board becomes a **per-workflow** view (type / workflow switcher).
 Work items carry a single-current **`state`** JSONB placement.
 
-| Document                                                             | Description                                                             | Status                        |
-| -------------------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------- |
-| [WORKFLOW.md](./WORKFLOW.md)                                         | Product rules, JSON shape, Settings, locks, escalation, data model      | Living (Steps 1–9 as-built)   |
-| [WORKFLOW_IMPLEMENTATION_PLAN.md](./WORKFLOW_IMPLEMENTATION_PLAN.md) | Atomic development steps (Step 3 split 3a/3b/3c), deferred-next backlog | Steps 1–9 Done; 10–11 planned |
-| [WORKFLOW_TESTING.md](./WORKFLOW_TESTING.md)                         | Unit / API / UI test matrix and manual QA                               | Living                        |
+| Document                                                             | Description                                                             | Status                       |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------- |
+| [WORKFLOW.md](./WORKFLOW.md)                                         | Product rules, JSON shape, Settings, locks, escalation, data model      | Living (Steps 1–10 as-built) |
+| [WORKFLOW_IMPLEMENTATION_PLAN.md](./WORKFLOW_IMPLEMENTATION_PLAN.md) | Atomic development steps (Step 3 split 3a/3b/3c), deferred-next backlog | Steps 1–10 Done; 11 planned  |
+| [WORKFLOW_TESTING.md](./WORKFLOW_TESTING.md)                         | Unit / API / UI test matrix and manual QA                               | Living                       |
 
 ## Related
 
