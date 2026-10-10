@@ -36,16 +36,17 @@ switcher** on the board to view one workflow at a time (for example Default vs
 Bug). Each work-item type follows the workflow it is bound to; cards only appear
 on the matching board.
 
-Without a custom workflow (or if configuration is invalid), the board uses a
-safe **default** set of columns:
+If workflow configuration is missing or invalid, the board uses a safe
+**default** set of columns:
 
 **New** → **To Do** → **In Progress** → **Testing** → **Done**
 
-**Draft** items do not appear on the board unless a designer adds an equivalent
-state.
+**Draft** items do not appear on the board unless the workflow includes an
+equivalent state.
 
-Managers configure paths, who may move cards, and subtask checks in the project
-[Workflow designer](./workflow-designer.md).
+Managers configure paths, who may move cards, locks, resolution forms, and
+subtask checks in the project [Workflow designer](./workflow-designer.md)
+(**Workflow** tab — not a separate Board designer).
 
 ---
 

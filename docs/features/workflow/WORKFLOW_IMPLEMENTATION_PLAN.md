@@ -17,21 +17,21 @@ MVP). Runtime still parses legacy column docs when present.
 
 ## Phase map
 
-| Step | Name                          | Delivers                                                   |
-| ---- | ----------------------------- | ---------------------------------------------------------- |
-| 1    | Schema + `state` bridge       | DB columns, types, dual-write helpers                      |
-| 2    | Workflow Zod + project API    | Envelope schema, CRUD/save, fallback                       |
-| 3a   | Flow canvas + load/save       | XYFlow canvas, layout persist, Save/Discard                |
-| 3b   | Settings sidebar              | Node/edge forms, tooltips / popovers                       |
-| 3c   | Designer rules + dirty flag   | Lock/terminal/children/escalation stub, chat dirty         |
-| 4    | Board switcher + transitions  | Parallel boards, DnD/API gates, pickers                    |
-| 5    | Activity table                | `activities` + transition writers + UI (**Done**)          |
-| 6    | Resolution presets            | Form / Preview / JSON designer + runtime dialog (**Done**) |
-| 7    | Charts category + state       | Rollups + Charts UI **State** label                        |
-| 8    | Docked Alice + workflow tools | Sidebar, view context, propose/apply confirm               |
-| 9    | Retire board designer         | Remove board config UI; update board feature docs          |
-| 10   | User-guide polish             | Living guides synced with shipped UI                       |
-| 11   | Async project create          | Non-blocking create + notify (busy-retry hidden)           |
+| Step | Name                          | Delivers                                                     |
+| ---- | ----------------------------- | ------------------------------------------------------------ |
+| 1    | Schema + `state` bridge       | DB columns, types, dual-write helpers                        |
+| 2    | Workflow Zod + project API    | Envelope schema, CRUD/save, fallback                         |
+| 3a   | Flow canvas + load/save       | XYFlow canvas, layout persist, Save/Discard                  |
+| 3b   | Settings sidebar              | Node/edge forms, tooltips / popovers                         |
+| 3c   | Designer rules + dirty flag   | Lock/terminal/children/escalation stub, chat dirty           |
+| 4    | Board switcher + transitions  | Parallel boards, DnD/API gates, pickers                      |
+| 5    | Activity table                | `activities` + transition writers + UI (**Done**)            |
+| 6    | Resolution presets            | Form / Preview / JSON designer + runtime dialog (**Done**)   |
+| 7    | Charts category + state       | Rollups + Charts UI **State** label                          |
+| 8    | Docked Alice + workflow tools | Sidebar, view context, propose/apply confirm                 |
+| 9    | Retire board designer         | Remove board config UI; update board feature docs (**Done**) |
+| 10   | User-guide polish             | Living guides synced with shipped UI (**Done**)              |
+| 11   | Async project create          | Non-blocking create + notify (busy-retry hidden)             |
 
 **Deferred (next)** after MVP: see [§ Deferred (next)](#deferred-next).
 
@@ -375,6 +375,8 @@ Guide: [DATABASE_BUSY_RETRY.md](../../guides/DATABASE_BUSY_RETRY.md).
 
 ## Step 10 — User-guide polish
 
+**Status:** **Done** (as-built below)
+
 **Goal:** Living user docs match shipped UI.
 
 1. Finalize workflow designer, kanban, assign-and-status, chat pages.
@@ -384,6 +386,17 @@ Guide: [DATABASE_BUSY_RETRY.md](../../guides/DATABASE_BUSY_RETRY.md).
 4. Smoke read-through as manager vs member (designer hidden for members).
 
 **Exit:** In-app `/docs` shows accurate guides.
+
+### As-built (Step 10)
+
+| Piece             | Location / change                                                                                             |
+| ----------------- | ------------------------------------------------------------------------------------------------------------- |
+| Workflow designer | `docs/user-guide/board-and-planning/workflow-designer.md` — living copy; Save/Discard; Board designer retired |
+| Kanban            | `kanban-board.md` — Workflow tab only for config; fallback default columns                                    |
+| Assign and status | `assign-and-status.md` — Require children / lock / terminal / resolution form labels                          |
+| Alice chat        | `use-ai-assistant.md` — Apply/Reject, designer required for Apply, undo/cancel dismiss; no board drafts       |
+| Topic index       | `board-and-planning/README.md` — Workflow-only config note                                                    |
+| Publish manifest  | `docs/docs-publish.json` — designer page already `minimumRole: manager`                                       |
 
 ---
 

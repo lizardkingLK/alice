@@ -27,6 +27,8 @@ Typical default states (projects may rename or add their own):
 Change state from the work-item sidebar, the board (drag cards), or bulk actions
 where available. Only **allowed transitions** appear or succeed — including
 moves back (for example Testing → In Progress) when the workflow defines them.
+If the transition **Requires escalation**, you complete the **resolution form**
+(fields + **Outcome**) before the move finishes.
 
 **Draft** items are hidden from the kanban board unless the project workflow
 exposes a matching state.
@@ -45,12 +47,13 @@ items where you are assignee.
 
 ## Completion and locks
 
-Workflow edges can require that **direct subtasks** are finished (**All
-complete**) or already in the parent’s target state (**Match parent target**)
-before you move the parent. If blocked, a dialog explains what to fix.
+Workflow edges can set **Require children** to **Off**, **All complete** (direct
+subtasks must be in a done category), or **Match parent target** (direct
+subtasks must already be in the parent’s target state, or the same category when
+types differ). If blocked, a dialog explains what to fix.
 
 When a state has **Lock record in this state**, most fields stay read-only until
-you move the item (for example reopen from Done). **Terminal** states have no
+you move the item (for example reopen from Done). **Terminal state** means no
 outbound moves.
 
 Managers configure these rules in the

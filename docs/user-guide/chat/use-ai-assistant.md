@@ -50,18 +50,25 @@ On any dashboard page (except `/chat`):
 When the project **Workflow** designer is open (managers/admins), Alice is
 **aware of that designer** (project, live draft, unsaved changes). You can ask
 in natural language to change the graph — for example add a state, connect Dev
-to QA, or restrict who may take a transition.
+to QA, or turn on **Lock record in this state**, **Terminal state**, or
+**Require children** on a transition.
+
+Board column drafts are no longer offered; workflow proposals are the only
+structured configuration path.
 
 ### Apply or reject suggestions
 
 1. Alice proposes a change and shows an **action card** with a short summary
-   (and optional details of the patch).
+   (and optional change list).
 2. Choose **Apply** or **Reject**. Changes are **not** written until you Apply.
-3. If the canvas has **unsaved** edits, Alice **saves** them first, then
-   applies the suggestion, then refreshes the designer data — without a full
-   page reload.
+   **Reject** dismisses the card without changing the canvas.
+3. Keep the **Workflow** designer open for that project when you Apply. If the
+   canvas has **unsaved** edits, Alice **saves** them first, then applies, then
+   refreshes the designer — without a full page reload.
 4. If validation fails, the card explains the problem; your saved graph stays
    put.
+5. To undo a proposal you have not Applied yet, ask Alice to cancel or discard
+   it — she dismisses the pending card; the canvas stays unchanged.
 
 Alice still cannot bypass project roles: only managers/admins can persist
 workflow configuration. See

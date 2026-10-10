@@ -1,14 +1,10 @@
 # Workflow designer
 
 Design how work moves between states for a project — paths, who can move
-items, and optional checks before a move.
+items, and optional checks before a move. This is the **only** place to edit
+workflow configuration (the old Board column designer is retired).
 
 **Audience:** Managers and admins
-
-**Shipping note:** The Workflow tab supports the **canvas** and **Settings**
-(name, category, lock record, terminal with outbound-edge confirm, require
-children, who can move, **escalation + resolution forms** on transitions). When a
-move uses a form, work-item details asks for it before changing status.
 
 ---
 
@@ -18,8 +14,9 @@ move uses a form, work-item details asks for it before changing status.
 2. Open the **Workflow** tab (project details).
 3. Pick a workflow from the list (Default, or a team fork if present).
 
-Members can use the board and change states according to the published
-workflow; they cannot edit the graph.
+Use **Save** to persist canvas layout and Settings together, or **Discard** to
+revert unsaved edits. Members can use the board and change states according to
+the published workflow; they cannot open or edit the graph.
 
 ---
 
@@ -30,10 +27,10 @@ workflow; they cannot edit the graph.
 | **States**              | Columns on that workflow’s board (for example To Do, In Progress, Done)                                                                                        |
 | **Transitions (edges)** | Allowed moves from one state to another. Cycles need both directions as edges; a missing reverse edge blocks that move as not allowed (not a permission error) |
 | **Type bindings**       | Which work-item types use this workflow                                                                                                                        |
-| **Settings**            | Options for the selected state or transition                                                                                                                   |
+| **Settings**            | Options for the selected state or transition (right-hand panel)                                                                                                |
 
-Layout on the canvas is saved separately from the rules — moving boxes does not
-change what transitions are allowed.
+Layout on the canvas is saved with the rules — moving boxes does not by itself
+change what transitions are allowed until you **Save**.
 
 ---
 
@@ -58,7 +55,7 @@ Select an edge between two states:
 
 | Setting                 | What it does                                                                                                                                                                                                           |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Who can move**        | Limit the transition to roles, teams, or people                                                                                                                                                                        |
+| **Who can move**        | **Everyone**, or **Restricted** to roles, teams, or people                                                                                                                                                             |
 | **Requires escalation** | Turn on when this move needs a form. Then **Create new…** or pick a form, open **Edit form**, click **Save** in the dialog, and **Save** the workflow                                                                  |
 | **Resolution form**     | Named form people complete when taking this transition (required when escalation is on). Full editor opens in a dialog; changes apply only when you click **Save** there                                               |
 | **Require children**    | **Off** — no check. **All complete** — all direct subtasks must be in a done category. **Match parent target** — all direct subtasks must already be in the parent’s target state (or same category when types differ) |
@@ -85,6 +82,9 @@ Create a **named** form (simple fields such as text, select, checkbox). Open
   items keep a snapshot of answers/labels, so changing ids later does not break
   history.
 
+When someone takes a transition that needs a form, work-item details (or the
+board move) asks for **fields** and an **Outcome** before the status changes.
+
 ---
 
 ## Default and forks
@@ -104,10 +104,12 @@ default** workflow so the board keeps working.
 
 - On the **Board**, use the workflow / type switcher to view one workflow’s
   columns at a time. See [Kanban board](./kanban-board.md).
-- Open **Alice** from the header while the designer is open — she shares the
-  page as a right sidebar and can propose graph changes. Use **Apply** or
-  **Reject** on the suggestion card. If you have unsaved canvas edits, Alice
-  saves them first, then applies. See
+- Open **Alice** from the header while the designer is open — she docks as a
+  right sidebar and can propose graph changes. Use **Apply** or **Reject** on
+  the suggestion card. Apply needs the Workflow designer open on that project.
+  If you have unsaved canvas edits, Alice saves them first, then applies. Ask
+  Alice to undo or cancel a proposal you have not Applied yet to dismiss it
+  without changing the canvas. See
   [Use the AI assistant](../chat/use-ai-assistant.md).
 
 ---
