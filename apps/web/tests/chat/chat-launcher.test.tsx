@@ -6,9 +6,15 @@ import {
 } from '@/app/chat/_components/chat-launcher';
 
 const usePathnameMock = vi.fn(() => '/dashboard');
+const useSearchParamsMock = vi.fn(
+  () => new URLSearchParams() as unknown as ReturnType<
+    typeof import('next/navigation').useSearchParams
+  >
+);
 
 vi.mock('next/navigation', () => ({
   usePathname: () => usePathnameMock(),
+  useSearchParams: () => useSearchParamsMock(),
 }));
 
 vi.mock('@/app/chat/_components/chat-client-bootstrap', () => ({
@@ -28,6 +34,11 @@ describe('ChatLauncherButton', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     usePathnameMock.mockReturnValue('/dashboard');
+    useSearchParamsMock.mockReturnValue(
+      new URLSearchParams() as unknown as ReturnType<
+        typeof import('next/navigation').useSearchParams
+      >
+    );
   });
 
   it('opens the Alice drawer from the navbar control', async () => {
@@ -44,6 +55,25 @@ describe('ChatLauncherButton', () => {
 
   it('hides the navbar control on the full /chat page', () => {
     usePathnameMock.mockReturnValue('/chat');
+
+    render(
+      <ChatLauncherProvider>
+        <ChatLauncherButton />
+      </ChatLauncherProvider>
+    );
+
+    expect(
+      screen.queryByRole('button', { name: /Open Alice/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it('hides the navbar control on the workflow designer tab', () => {
+    usePathnameMock.mockReturnValue('/projects/project-1');
+    useSearchParamsMock.mockReturnValue(
+      new URLSearchParams('tab=workflow') as unknown as ReturnType<
+        typeof import('next/navigation').useSearchParams
+      >
+    );
 
     render(
       <ChatLauncherProvider>
