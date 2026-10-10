@@ -1769,6 +1769,8 @@ export type Database = {
         | "chat_processed"
         | "access_request"
         | "chart_shared"
+        | "project_created"
+        | "project_create_failed"
       ProjectStatus: "active" | "archived"
       RecordStatus: "active" | "inactive" | "archived" | "deleted"
       SavedViewResourceKind: "page" | "chart"
@@ -1942,6 +1944,8 @@ export const Constants = {
         "chat_processed",
         "access_request",
         "chart_shared",
+        "project_created",
+        "project_create_failed",
       ],
       ProjectStatus: ["active", "archived"],
       RecordStatus: ["active", "inactive", "archived", "deleted"],

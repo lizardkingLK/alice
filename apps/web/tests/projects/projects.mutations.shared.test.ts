@@ -4,9 +4,13 @@ import { projectFactory } from '../factories/project.factory';
 import type { CreateProjectInput } from '@/app/projects/_services/projects.mutations.client';
 
 describe('createProjectsService frontend tests', () => {
-  it('creates project via POST', async () => {
-    const project = projectFactory.build();
-    const apiFetch = vi.fn().mockResolvedValue({ project });
+  it('accepts project create via POST (202)', async () => {
+    const accepted = {
+      accepted: true as const,
+      message: 'Project creation started. You’ll be notified when it’s ready.',
+      correlationId: 'corr-1',
+    };
+    const apiFetch = vi.fn().mockResolvedValue(accepted);
     const service = createProjectsService(apiFetch);
     const input: CreateProjectInput = {
       name: 'Project Alpha',
@@ -26,13 +30,18 @@ describe('createProjectsService frontend tests', () => {
     expect(apiFetch).toHaveBeenCalledWith('/api/projects', {
       method: 'POST',
       body: JSON.stringify(input),
+      skipDatabaseBusyRetry: true,
     });
-    expect(result).toEqual(project);
+    expect(result).toEqual(accepted);
   });
 
   it('includes initial sprint data in the project POST body', async () => {
-    const project = projectFactory.build();
-    const apiFetch = vi.fn().mockResolvedValue({ project });
+    const accepted = {
+      accepted: true as const,
+      message: 'ok',
+      correlationId: 'corr-1',
+    };
+    const apiFetch = vi.fn().mockResolvedValue(accepted);
     const service = createProjectsService(apiFetch);
     const input: CreateProjectInput = {
       name: 'Project Alpha',
@@ -56,12 +65,16 @@ describe('createProjectsService frontend tests', () => {
     expect(apiFetch).toHaveBeenCalledWith('/api/projects', {
       method: 'POST',
       body: JSON.stringify(input),
+      skipDatabaseBusyRetry: true,
     });
   });
 
   it('includes initial team data in the project POST body', async () => {
-    const project = projectFactory.build();
-    const apiFetch = vi.fn().mockResolvedValue({ project });
+    const apiFetch = vi.fn().mockResolvedValue({
+      accepted: true,
+      message: 'ok',
+      correlationId: 'corr-1',
+    });
     const service = createProjectsService(apiFetch);
     const input: CreateProjectInput = {
       name: 'Project Alpha',
@@ -87,6 +100,7 @@ describe('createProjectsService frontend tests', () => {
     expect(apiFetch).toHaveBeenCalledWith('/api/projects', {
       method: 'POST',
       body: JSON.stringify(input),
+      skipDatabaseBusyRetry: true,
     });
   });
 

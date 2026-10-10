@@ -514,24 +514,32 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
       }
 
       try {
-        const project = await projectsService.createProject(req.userId!, {
-          name: parsed.data.name,
-          key: parsed.data.key,
-          description: parsed.data.description ?? null,
-          owner_id: parsed.data.owner_id,
-          start_date: parsed.data.start_date ?? null,
-          end_date: parsed.data.end_date ?? null,
-          status: parsed.data.status ?? ProjectStatusEnum.active,
-          jira_project_key: parsed.data.jira_project_key ?? null,
-          jira_connection_id: parsed.data.jira_connection_id ?? null,
-          github_repo: parsed.data.github_repo ?? null,
-          github_token: parsed.data.github_token ?? null,
-          attributes_config: parsed.data.attributes_config ?? null,
-          workflow_config: parsed.data.workflow_config ?? null,
-          ...(parsed.data.sprint ? { sprint: parsed.data.sprint } : {}),
-          ...(parsed.data.team ? { team: parsed.data.team } : {}),
+        const accepted = await projectsService.enqueueCreateProject(
+          req.userId!,
+          {
+            name: parsed.data.name,
+            key: parsed.data.key,
+            description: parsed.data.description ?? null,
+            owner_id: parsed.data.owner_id,
+            start_date: parsed.data.start_date ?? null,
+            end_date: parsed.data.end_date ?? null,
+            status: parsed.data.status ?? ProjectStatusEnum.active,
+            jira_project_key: parsed.data.jira_project_key ?? null,
+            jira_connection_id: parsed.data.jira_connection_id ?? null,
+            github_repo: parsed.data.github_repo ?? null,
+            github_token: parsed.data.github_token ?? null,
+            attributes_config: parsed.data.attributes_config ?? null,
+            workflow_config: parsed.data.workflow_config ?? null,
+            ...(parsed.data.sprint ? { sprint: parsed.data.sprint } : {}),
+            ...(parsed.data.team ? { team: parsed.data.team } : {}),
+          }
+        );
+        // 202 — create finishes in the background; inbox notifies on success/failure.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
         });
-        res.status(201).json({ project: withoutIntegrationSecrets(project) });
       } catch (error) {
         if (error instanceof ProjectTeamValidationError) {
           return res.status(400).json({ error: error.message });
