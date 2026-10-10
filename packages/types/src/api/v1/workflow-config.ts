@@ -496,7 +496,8 @@ export function resolveWorkflowConfig(value: unknown): {
 
 /**
  * Overlay envelope keys onto an existing project `workflow_config` blob so
- * `work_item_types` / hierarchy / legacy board fields survive until Step 9.
+ * `work_item_types` / hierarchy merge via project PUT; legacy board column
+ * fields may still exist on disk (runtime fallback). Board designer retired Step 9.
  */
 export function mergeWorkflowEnvelopeIntoProjectConfig(
   current: unknown,

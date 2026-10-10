@@ -116,7 +116,6 @@ const MANAGER_ONLY_PROJECT_TABS = new Set([
   'sprints',
   'integrations',
   'fields',
-  'board',
   'workflow',
   'types',
 ] as const);
@@ -567,7 +566,7 @@ export async function getProjectWorkspace(
       projectId,
     }),
     fetchBoardRuleTeams(
-      (activeTab === 'board' || activeTab === 'workflow') && isManagerOrAdmin,
+      activeTab === 'workflow' && isManagerOrAdmin,
       projectId
     ),
   ]);

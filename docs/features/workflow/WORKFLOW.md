@@ -7,10 +7,10 @@ Replaces the custom **board column** designer with a directed **workflow graph**
 Transition rules live on **edges**. Node and edge options live in a **Settings**
 sidebar with info tooltips / click popovers.
 
-When this feature ships, remove the board-specific designer UI and stop writing
-board v1/v2 column documents. Until then,
-[CUSTOM_BOARD_DESIGNER.md](../board/CUSTOM_BOARD_DESIGNER.md) remains the
-implemented board config.
+Board designer UI and Alice board-draft tools are **retired** (Step 9).
+Workflow is the only configuration surface. Legacy v1/v2 column JSON may still
+exist on disk; runtime reads fall back safely. Historical notes:
+[CUSTOM_BOARD_DESIGNER.md](../board/CUSTOM_BOARD_DESIGNER.md).
 
 ---
 
@@ -319,8 +319,9 @@ transition PATCH.
 - Transparency: human summary + optional expandable JSON patch/diff.
 - Domain services still enforce manager/admin and fork-depth rules.
 
-Evolve / replace `configure_board_draft` with workflow-aware tools when
-implemented. See [AI_CHATBOT.md](../chat/AI_CHATBOT.md).
+Board draft tools (`list_board_entities`, `configure_board_draft`) were removed
+in Step 9. Use `get_workflow_config` / `propose_workflow_patch` /
+`dismiss_workflow_proposal`. See [AI_CHATBOT.md](../chat/AI_CHATBOT.md).
 
 ---
 

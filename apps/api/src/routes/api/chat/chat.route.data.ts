@@ -1,13 +1,12 @@
 import { WORK_ITEM_PRIORITIES } from '@repo/types';
-import type { ChatViewContext } from '@repo/types/api/v1';
 import type { AliceChatTools } from './chat.route.types';
 
 export const systemInstruction = `You are Alice Assistant, an AI assistant built into the Alice monorepo.
-Your main task is to help users manage Alice projects, sprints, work items, and reviewable board-configuration drafts.
+Your main task is to help users manage Alice projects, sprints, work items, and reviewable workflow proposals.
 
 CRITICAL SCOPE BOUNDARY:
 - You must ONLY assist with project management, sprints, work items, and users within Alice.
-- In-Scope: Managing projects, sprints, work items, and board-configuration drafts in Alice; summarizing workspace projects, sprints, and users; explaining Alice's supported work item types (epic, feature, story, task, bug) and priorities (low, medium, high, highest); providing work-item JSON/CSV templates for import; and parsing/importing attached backlog files.
+- In-Scope: Managing projects, sprints, work items, and workflow proposals in Alice; summarizing workspace projects, sprints, and users; explaining Alice's supported work item types (epic, feature, story, task, bug) and priorities (low, medium, high, highest); providing work-item JSON/CSV templates for import; and parsing/importing attached backlog files.
 - Out-of-Scope: Requests completely unrelated to project and sprint management in Alice (such as cooking recipes like "how to make a rice", general life advice, weather, unrelated coding help, or general knowledge topics outside Alice's project scope). You MUST politely refuse such off-topic requests.
 - When refusing, state clearly that your scope is limited to assisting with project and sprint management in Alice, and suggest relevant actions (such as listing projects, managing sprints, or importing work items).
 - IMPORTANT: When refusing, do NOT reference, suggest, or mention details of any specific project, project names (such as "EasyPass"), or project descriptions (such as "C# .NET CLI password generator app") from the user's ongoing work. Keep the refusal message clean, general, and focused strictly on the Alice chat service capabilities.
@@ -117,21 +116,6 @@ PROJECT DYNAMIC FIELDS & SCHEMA GENERATION PROTOCOL:
   2. Output the schema in a formatted JSON block or tool response.
   3. SECURITY GUARDRAIL: You MUST NOT write directly to the database. Instruct the user to review, validate, and save the schema in the Project Fields workspace editor.
 
-BOARD CONFIGURATION DRAFT PROTOCOL:
-1. Resolve the project through the existing project context and \`list_projects\`.
-2. Call \`list_board_entities\` with the resolved project UUID before proposing a structured draft. Use its current board, active teams, and active project members.
-3. If a requested person or team name has more than one match, ask the user to clarify and do not call \`configure_board_draft\` yet.
-4. Call \`configure_board_draft\` to create a reviewable draft, then tell the user to open it in Board Designer, review it, and explicitly save it there.
-- Never invent team IDs or user IDs. Use only IDs returned by \`list_board_entities\`.
-- Existing columns are identified only by their current stable IDs. Never match or merge an existing column by name.
-- Never invent persistent column UUIDs. Give each new column a temporaryKey; the application replaces it with a UUID.
-- Preserve existing column IDs, order, statuses, and transition rules unless the user's request changes them.
-- Use column-only version 1 behavior when no transition rules exist. Transition rules require version 2; editing an existing version 2 board remains version 2.
-- Never claim that a board draft was saved, never save it automatically, and never bypass Board Designer review, save, deletion confirmation, or permission checks.
-- After creating a draft, say "Board draft created. Review it in Board Designer." Never say "Board updated", "Board saved", or "Configuration applied" for a draft.
-- Members may receive conversational suggestions, but must not receive a structured \`configure_board_draft\` action. Admins and managers may receive drafts.
-- When the user is on the Workflow designer (view context surface \`workflow_designer\`), prefer the WORKFLOW CONFIGURATION PROTOCOL below and do not call \`configure_board_draft\` or \`list_board_entities\`.
-
 WORKFLOW CONFIGURATION PROTOCOL:
 1. When the user asks to change a project's workflow graph (states, transitions, lock/terminal flags, resolution presets, require-children), resolve the project via context or \`list_projects\`.
 2. Call \`get_workflow_config\` with the project UUID first. Prefer the draft returned when the designer view context is present.
@@ -219,97 +203,6 @@ export const aliceChatTools: AliceChatTools = [
   {
     name: 'list_users',
     description: 'Retrieve list of all users in the system to find assignees.',
-  },
-  {
-    name: 'list_board_entities',
-    description:
-      "Return the accessible project's current valid board config, active project teams, active project members, and project information. Call before configure_board_draft.",
-    parameters: {
-      type: 'object',
-      properties: {
-        projectId: { type: 'string', description: 'UUID of the project.' },
-      },
-      required: ['projectId'],
-    },
-  },
-  {
-    name: 'configure_board_draft',
-    description:
-      'Create a validated board draft for review only. Supply the complete desired ordered columns. Existing columns require existingColumnId; new columns require temporaryKey. Omit transitions to preserve existing rules, or supply the complete desired rules when changing them. This never saves the project.',
-    parameters: {
-      type: 'object',
-      properties: {
-        projectId: { type: 'string', description: 'UUID of the project.' },
-        columns: {
-          type: 'array',
-          description:
-            'Complete desired ordered board columns. Omission of an existing column means deletion.',
-          items: {
-            type: 'object',
-            properties: {
-              existingColumnId: {
-                type: 'string',
-                description:
-                  'Stored ID for an existing column. Never resolve this by name.',
-              },
-              temporaryKey: {
-                type: 'string',
-                description:
-                  'Draft-local reference for a new column; never a UUID.',
-              },
-              name: { type: 'string', description: 'Column display name.' },
-              status: {
-                type: 'string',
-                enum: ['New', 'ToDo', 'InProgress', 'Testing', 'Done'],
-                description: 'Canonical work-item status.',
-              },
-            },
-            required: ['name', 'status'],
-          },
-        },
-        transitions: {
-          type: 'array',
-          description:
-            'Complete desired transitions when rules are being changed. Omit this property to preserve existing rules.',
-          items: {
-            type: 'object',
-            properties: {
-              fromColumnRef: {
-                type: 'string',
-                description: 'Existing column ID or new-column temporaryKey.',
-              },
-              toColumnRef: {
-                type: 'string',
-                description: 'Existing column ID or new-column temporaryKey.',
-              },
-              allowAnyOf: {
-                type: 'array',
-                description:
-                  'OR matchers. Roles are exact; team/user UUIDs must come from list_board_entities.',
-                items: {
-                  type: 'object',
-                  properties: {
-                    scope: {
-                      type: 'string',
-                      enum: ['role', 'team', 'user'],
-                    },
-                    role: {
-                      type: 'string',
-                      enum: ['admin', 'manager', 'member'],
-                    },
-                    teamId: { type: 'string' },
-                    userId: { type: 'string' },
-                  },
-                  required: ['scope'],
-                },
-              },
-            },
-            required: ['fromColumnRef', 'toColumnRef', 'allowAnyOf'],
-          },
-        },
-      },
-      required: ['projectId', 'columns'],
-    },
   },
   {
     name: 'get_workflow_config',
@@ -549,20 +442,3 @@ Constraints:
 - Root "additionalProperties": true
 If a Current Schema is provided with existing fields in "properties", you MUST preserve all existing fields and add or update the newly requested fields to "properties". Do not omit or delete existing fields unless explicitly requested.
 Respond by calling the "generate_project_fields_schema" tool or by returning ONLY a valid JSON object matching this schema.`;
-
-const BOARD_DRAFT_TOOL_NAMES = new Set([
-  'list_board_entities',
-  'configure_board_draft',
-]);
-
-/** Prefer workflow tools when docked on the workflow designer. */
-export function selectAliceChatTools(
-  viewContext?: ChatViewContext | null
-): AliceChatTools {
-  if (viewContext?.surface === 'workflow_designer') {
-    return aliceChatTools.filter(
-      (tool) => !BOARD_DRAFT_TOOL_NAMES.has(tool.name)
-    );
-  }
-  return aliceChatTools;
-}

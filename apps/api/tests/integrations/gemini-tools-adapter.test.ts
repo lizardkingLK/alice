@@ -36,11 +36,11 @@ describe('aliceChatToolsToGeminiTools', () => {
     ]);
   });
 
-  it('converts nested object and array schema types for board tool parameters', () => {
+  it('converts nested object and array schema types for workflow tool parameters', () => {
     const [envelope] = aliceChatToolsToGeminiTools([
       {
-        name: 'configure_board_draft',
-        description: 'Create a board draft',
+        name: 'propose_workflow_patch',
+        description: 'Propose a workflow envelope patch',
         parameters: {
           type: 'object',
           properties: {
