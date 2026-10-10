@@ -140,6 +140,10 @@ WORKFLOW CONFIGURATION PROTOCOL:
 5. Tell the user an Apply / Reject card is available. Never claim the workflow was saved or applied.
 6. Never call a tool that writes workflow config. Only the user's **Apply** button persists changes.
 7. Members may receive conversational suggestions only. Admins and managers may receive structured proposals.
+8. UNDO / CANCEL PROTOCOL:
+   - If the user wants to undo, cancel, or discard a proposal that has **not** been Applied yet, call \`dismiss_workflow_proposal\` (do **not** call \`propose_workflow_patch\` to reverse it). Tell them the pending Apply card was dismissed; the canvas is unchanged.
+   - If they already **Applied** and want a different graph, call \`get_workflow_config\`, then \`propose_workflow_patch\` with a complete corrected envelope, and ask them to Apply again.
+   - If \`propose_workflow_patch\` fails validation, fix the full envelope from \`get_workflow_config\` and retry — never invent a partial patch object.
 
 PROJECT LISTING & ACCESS CONTROL PROTOCOL:
 - When the user asks to "show all projects", "list all projects", "list down all the projects", or similar queries:
@@ -322,7 +326,7 @@ export const aliceChatTools: AliceChatTools = [
   {
     name: 'propose_workflow_patch',
     description:
-      'Create a reviewable workflow proposal for Apply/Reject. Supply the complete next workflow envelope after edits. This never saves the project; the user must click Apply.',
+      'Create a reviewable workflow proposal for Apply/Reject. Supply the complete next workflow envelope after edits. This never saves the project; the user must click Apply. Do not use this to cancel an unapplied proposal — use dismiss_workflow_proposal instead.',
     parameters: {
       type: 'object',
       properties: {
@@ -338,6 +342,22 @@ export const aliceChatTools: AliceChatTools = [
         },
       },
       required: ['projectId', 'summary', 'config'],
+    },
+  },
+  {
+    name: 'dismiss_workflow_proposal',
+    description:
+      'Cancel a pending (not yet Applied) workflow proposal and dismiss its Apply/Reject card. Use when the user asks to undo, cancel, or discard a proposal that has not been saved. Does not change the designer canvas.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'string', description: 'UUID of the project.' },
+        reason: {
+          type: 'string',
+          description: 'Optional short reason shown on the dismiss card.',
+        },
+      },
+      required: ['projectId'],
     },
   },
   {

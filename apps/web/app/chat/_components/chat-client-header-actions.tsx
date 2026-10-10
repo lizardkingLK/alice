@@ -310,44 +310,55 @@ export default function ChatClientHeaderActions({
 
   if (isOverlayVariant && onClose) {
     return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label="Chat actions"
-          >
-            <MoreHorizontal className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-60">
-          <DropdownMenuItem onClick={onNewChat} disabled={isPending}>
-            <Plus className="size-4" />
-            New chat
-          </DropdownMenuItem>
-          {canManageChatModels ? (
-            <DropdownMenuItem asChild>
-              <Link href={chatAiAgentsIntegrationsHref()}>
-                <Settings2 className="size-4" />
-                Configure AI models
-              </Link>
+      <>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Chat actions"
+            >
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-60">
+            <DropdownMenuItem onClick={onNewChat} disabled={isPending}>
+              <Plus className="size-4" />
+              New chat
             </DropdownMenuItem>
-          ) : null}
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel>Model</DropdownMenuLabel>
-          <ChatModelProviderSubmenus
-            chatModels={chatModels}
-            selectedIntegrationId={selectedIntegrationId}
-            onSelectedIntegrationIdChange={onSelectedIntegrationIdChange}
-          />
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onClose}>
-            <X className="size-4" />
-            Close
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            {canManageChatModels ? (
+              <DropdownMenuItem asChild>
+                <Link href={chatAiAgentsIntegrationsHref()}>
+                  <Settings2 className="size-4" />
+                  Configure AI models
+                </Link>
+              </DropdownMenuItem>
+            ) : null}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Model</DropdownMenuLabel>
+            <ChatModelProviderSubmenus
+              chatModels={chatModels}
+              selectedIntegrationId={selectedIntegrationId}
+              onSelectedIntegrationIdChange={onSelectedIntegrationIdChange}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              aria-label="Close chat"
+            >
+              <X className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Close</TooltipContent>
+        </Tooltip>
+      </>
     );
   }
 

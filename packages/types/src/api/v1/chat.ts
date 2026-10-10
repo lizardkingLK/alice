@@ -178,6 +178,14 @@ export const chatToolActionSchema = z.discriminatedUnion('type', [
       changeSummary: z.array(z.string()).optional(),
     }),
   }),
+  z.object({
+    type: z.literal('dismiss_workflow_patch'),
+    entity: z.object({
+      projectId: z.string(),
+      projectName: z.string(),
+      reason: z.string().optional(),
+    }),
+  }),
 ]);
 
 export type ChatToolActionWire = z.infer<typeof chatToolActionSchema>;

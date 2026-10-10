@@ -1,10 +1,11 @@
 'use client';
 
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import type {
   ChatWorkflowViewContext,
   WorkflowConfigEnvelope,
 } from '@repo/types/api/v1';
+import { useChatLauncherOptional } from '@/app/chat/_components/chat-launcher';
 
 export type WorkflowAliceBridgeValue = {
   readonly projectId: string;
@@ -21,11 +22,39 @@ export type WorkflowAliceBridgeValue = {
   ) => void;
 };
 
-const WorkflowAliceBridgeContext =
-  createContext<WorkflowAliceBridgeValue | null>(null);
+/**
+ * Register the workflow designer with the app-shell Alice dock so chat tools
+ * receive live draft context and Apply can save/reload the canvas.
+ */
+export function useRegisterWorkflowAliceBridge(
+  bridge: WorkflowAliceBridgeValue | null
+): void {
+  const launcher = useChatLauncherOptional();
+  const setSurfaceBridge = launcher?.setSurfaceBridge;
+  const setViewContext = launcher?.setViewContext;
 
+  useEffect(() => {
+    if (!setSurfaceBridge || !setViewContext) return;
+
+    if (!bridge) {
+      setSurfaceBridge(null);
+      setViewContext(null);
+      return;
+    }
+
+    setSurfaceBridge(bridge);
+    setViewContext(bridge.getViewContext());
+
+    return () => {
+      setSurfaceBridge(null);
+      setViewContext(null);
+    };
+  }, [bridge, setSurfaceBridge, setViewContext]);
+}
+
+/** Apply/Reject cards read the registered designer bridge from the launcher. */
 export function useWorkflowAliceBridge(): WorkflowAliceBridgeValue | null {
-  return useContext(WorkflowAliceBridgeContext);
+  return useChatLauncherOptional()?.surfaceBridge ?? null;
 }
 
 type WorkflowAliceBridgeProviderProps = {
@@ -44,6 +73,10 @@ type WorkflowAliceBridgeProviderProps = {
   ) => void;
 };
 
+/**
+ * Test helper: registers a bridge for the duration of the subtree.
+ * Production uses {@link useRegisterWorkflowAliceBridge} from the designer.
+ */
 export function WorkflowAliceBridgeProvider({
   children,
   projectId,
@@ -51,7 +84,7 @@ export function WorkflowAliceBridgeProvider({
   saveIfDirty,
   applyEnvelope,
 }: Readonly<WorkflowAliceBridgeProviderProps>) {
-  const value = useMemo<WorkflowAliceBridgeValue>(
+  const bridge = useMemo<WorkflowAliceBridgeValue>(
     () => ({
       projectId,
       getViewContext,
@@ -61,9 +94,7 @@ export function WorkflowAliceBridgeProvider({
     [projectId, getViewContext, saveIfDirty, applyEnvelope]
   );
 
-  return (
-    <WorkflowAliceBridgeContext.Provider value={value}>
-      {children}
-    </WorkflowAliceBridgeContext.Provider>
-  );
+  useRegisterWorkflowAliceBridge(bridge);
+
+  return children;
 }

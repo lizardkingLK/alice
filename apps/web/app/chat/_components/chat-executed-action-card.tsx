@@ -47,8 +47,8 @@ function ActionCardFrame({
   tone: ActionCardTone;
   icon: LucideIcon;
   children: ReactNode;
-  href: string;
-  linkLabel: string;
+  href?: string;
+  linkLabel?: string;
   onLinkClick?: () => void;
 }>) {
   const toneClass = ACTION_CARD_TONE_CLASS[tone];
@@ -64,16 +64,18 @@ function ActionCardFrame({
         <Icon className={cn('h-4 w-4', toneClass.icon)} />
         <span className="text-xs">{children}</span>
       </div>
-      <Link
-        href={href}
-        onClick={onLinkClick}
-        className={cn(
-          'text-[11px] underline transition-colors',
-          toneClass.link
-        )}
-      >
-        {linkLabel}
-      </Link>
+      {href && linkLabel ? (
+        <Link
+          href={href}
+          onClick={onLinkClick}
+          className={cn(
+            'text-[11px] underline transition-colors',
+            toneClass.link
+          )}
+        >
+          {linkLabel}
+        </Link>
+      ) : null}
     </div>
   );
 }
@@ -225,6 +227,19 @@ export function ChatExecutedActionCard({
     }
     case 'propose_workflow_patch':
       return <ChatProposeWorkflowPatchCard action={action} />;
+    case 'dismiss_workflow_patch':
+      return (
+        <ActionCardFrame tone="indigo" icon={FolderKanban}>
+          Workflow proposal dismissed for{' '}
+          <strong>{action.entity.projectName}</strong>
+          {action.entity.reason ? (
+            <>
+              {': '}
+              {action.entity.reason}
+            </>
+          ) : null}
+        </ActionCardFrame>
+      );
     default:
       return null;
   }

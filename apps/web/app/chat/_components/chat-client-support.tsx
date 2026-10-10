@@ -16,6 +16,10 @@ import { useDashboardTrailBreadcrumb } from '@/app/dashboard/_components/dashboa
 import type { DashboardBreadcrumbOverride } from '@/app/dashboard/_components/dashboard-breadcrumb';
 import { isChatFavoritesReady } from '../_helpers/is-chat-favorites-ready';
 import { buildChatHref } from '../_helpers/chat-url';
+import {
+  revalidateAfterChatActions,
+  type ChatMutationActionType,
+} from '@/lib/cache/revalidate-after-chat';
 
 export function ChatPageTrailBreadcrumb({
   trail,
@@ -242,6 +246,8 @@ export function applySuccessfulChatResponse(params: {
   setConversations: Dispatch<SetStateAction<ChatConversation[]>>;
   hydratedRef: RefObject<string | null>;
   router: ChatResponseRouter;
+  /** When false (docked Alice), stay on the current page URL. */
+  readonly syncUrl?: boolean;
 }) {
   const {
     response,
@@ -252,6 +258,7 @@ export function applySuccessfulChatResponse(params: {
     setConversations,
     hydratedRef,
     router,
+    syncUrl = true,
   } = params;
 
   if (response.history) {
@@ -262,13 +269,15 @@ export function applySuccessfulChatResponse(params: {
     if (!response.is_processing) {
       hydratedRef.current = response.conversationId;
     }
-    // Keep Next searchParams in sync so favorites / breadcrumbs use the new id.
-    router.replace(
-      buildChatHref({
-        conversationId: response.conversationId,
-        agentId,
-      })
-    );
+    // Full-page chat keeps searchParams in sync for favorites / breadcrumbs.
+    if (syncUrl) {
+      router.replace(
+        buildChatHref({
+          conversationId: response.conversationId,
+          agentId,
+        })
+      );
+    }
     setActiveConversationId(response.conversationId);
     setConversations((prev) => [
       {
@@ -306,4 +315,35 @@ export function applySuccessfulChatResponse(params: {
       ...others,
     ];
   });
+}
+
+/* eslint-disable no-unused-vars -- callback param names document the API */
+export async function syncChatMutationSideEffects(params: {
+  readonly actions: readonly ActionItem[] | undefined;
+  readonly dismissProject: (projectId: string) => void;
+  readonly router: { refresh: () => void };
+}): Promise<void> {
+  /* eslint-enable no-unused-vars */
+  const { actions, dismissProject, router } = params;
+  if (!actions || actions.length === 0) {
+    return;
+  }
+
+  for (const action of actions) {
+    if (action.type === 'dismiss_workflow_patch') {
+      dismissProject(action.entity.projectId);
+    }
+  }
+
+  const mutationActionTypes = actions
+    .map((action) => action.type)
+    .filter(
+      (type): type is ChatMutationActionType =>
+        type !== 'configure_board' &&
+        type !== 'propose_workflow_patch' &&
+        type !== 'dismiss_workflow_patch'
+    );
+
+  await revalidateAfterChatActions(mutationActionTypes);
+  router.refresh();
 }

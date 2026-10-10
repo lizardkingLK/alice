@@ -112,8 +112,9 @@ schemas in `packages/types`, API tests under `apps/api/tests`, web under
 ### After Step 8 (Alice)
 
 1. Clean designer → ask Alice to add a state → Apply / Reject cards work.
-2. Dirty canvas → ask for change → observe save then apply without full reload.
-3. Member cannot apply manager-only save (403 / clear message).
+2. Before Apply, ask Alice to undo/cancel → pending card dismisses; canvas unchanged.
+3. Dirty canvas → ask for change → observe save then apply without full reload.
+4. Member cannot apply manager-only save (403 / clear message).
 
 ### After Step 9 (retire board designer)
 

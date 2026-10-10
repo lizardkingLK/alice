@@ -44,6 +44,7 @@ import { WorkItemDeduplicationAgent } from './work-item-deduplication.agent';
 import { sanitizeLog } from './chat.utils';
 import { buildBoardDraft } from './board-draft';
 import {
+  parseDismissWorkflowProposalInput,
   parseProposeWorkflowPatchInput,
   summarizeWorkflowEnvelopeDiff,
 } from './workflow-patch';
@@ -988,10 +989,12 @@ export class ChatService {
             viewContext
           );
         } catch (err: unknown) {
-          console.error(`Error executing tool ${sanitizeLog(name)}`);
-          result = {
-            error: err instanceof Error ? err.message : 'Unknown error',
-          };
+          const message = err instanceof Error ? err.message : 'Unknown error';
+          console.error(
+            `Error executing tool ${sanitizeLog(name)}:`,
+            sanitizeLog(message)
+          );
+          result = { error: message };
         }
 
         const part: ChatContentPart = {
@@ -1033,6 +1036,8 @@ export class ChatService {
           toolActionsPerformed,
           viewContext
         ),
+      dismiss_workflow_proposal: () =>
+        this.handleDismissWorkflowProposal(userId, args, toolActionsPerformed),
       create_work_item: () =>
         this.handleCreateWorkItem(userId, args, toolActionsPerformed),
       parse_work_item_attachment: () =>
@@ -1234,6 +1239,28 @@ export class ChatService {
     };
   }
 
+  private async requireManagerWorkflowProject(
+    userId: string,
+    projectId: string,
+    deniedMessage: string
+  ) {
+    await requireUserWithRole(
+      userId,
+      [UserRoleEnum.admin, UserRoleEnum.manager],
+      deniedMessage
+    );
+
+    const project = await this.deps.projectsService.getProjectDetail(
+      projectId,
+      userId
+    );
+    if (!project) {
+      throw new Error('Project not found.');
+    }
+
+    return project;
+  }
+
   private async handleProposeWorkflowPatch(
     userId: string,
     args: Record<string, unknown>,
@@ -1242,19 +1269,11 @@ export class ChatService {
   ): Promise<unknown> {
     const input = parseProposeWorkflowPatchInput(args);
 
-    await requireUserWithRole(
+    const project = await this.requireManagerWorkflowProject(
       userId,
-      [UserRoleEnum.admin, UserRoleEnum.manager],
+      input.projectId,
       'Only admins and managers can propose workflow changes. You can still ask Alice for conversational suggestions.'
     );
-
-    const project = await this.deps.projectsService.getProjectDetail(
-      input.projectId,
-      userId
-    );
-    if (!project) {
-      throw new Error('Project not found.');
-    }
 
     const server = await this.deps.projectsService.getWorkflowConfig(
       input.projectId,
@@ -1297,6 +1316,40 @@ export class ChatService {
       changeSummary,
       nextStep:
         'Show the Apply / Reject card. Do not claim the workflow was saved.',
+    };
+  }
+
+  private async handleDismissWorkflowProposal(
+    userId: string,
+    args: Record<string, unknown>,
+    toolActionsPerformed: ToolAction[]
+  ): Promise<unknown> {
+    const input = parseDismissWorkflowProposalInput(args);
+
+    const project = await this.requireManagerWorkflowProject(
+      userId,
+      input.projectId,
+      'Only admins and managers can dismiss workflow proposals.'
+    );
+
+    const action: ToolAction = {
+      type: 'dismiss_workflow_patch',
+      entity: {
+        projectId: project.id,
+        projectName: project.name,
+        reason: input.reason,
+      },
+    };
+    toolActionsPerformed.push(action);
+
+    return {
+      dismissed: true,
+      saved: false,
+      projectId: project.id,
+      projectName: project.name,
+      reason: input.reason ?? null,
+      nextStep:
+        'Pending Apply/Reject cards for this project were dismissed. Canvas unchanged. Do not claim the workflow was saved.',
     };
   }
 

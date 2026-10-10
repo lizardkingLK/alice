@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { GitBranch, Loader2 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import type { ChatToolActionWire } from '@repo/types/api/v1';
 import { applyWorkflowPatch } from '@/app/chat/_services/chat.mutations.client';
 import { useWorkflowAliceBridge } from '@/app/projects/_components/project-details/workflow-alice-bridge';
+import { useWorkflowProposalDismiss } from '@/app/chat/_components/workflow-proposal-dismiss-context';
 
 type ProposeAction = Extract<
   ChatToolActionWire,
@@ -21,10 +22,22 @@ export function ChatProposeWorkflowPatchCard({
   action,
 }: Readonly<ChatProposeWorkflowPatchCardProps>) {
   const bridge = useWorkflowAliceBridge();
+  const { versions } = useWorkflowProposalDismiss();
+  const dismissVersion = versions[action.entity.projectId] ?? 0;
+  const seenDismissVersion = useRef(dismissVersion);
   const [status, setStatus] = useState<
     'pending' | 'applying' | 'applied' | 'rejected' | 'error'
   >('pending');
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (dismissVersion <= seenDismissVersion.current) return;
+    seenDismissVersion.current = dismissVersion;
+    if (status === 'pending' || status === 'error') {
+      setStatus('rejected');
+      setError(null);
+    }
+  }, [dismissVersion, status]);
 
   const handleReject = () => {
     setStatus('rejected');
@@ -36,7 +49,7 @@ export function ChatProposeWorkflowPatchCard({
     if (!bridge) {
       setStatus('error');
       setError(
-        'Open this project’s Workflow designer to Apply the proposal beside the canvas.'
+        'Open this project’s Workflow designer so Alice can Apply against the live canvas.'
       );
       return;
     }

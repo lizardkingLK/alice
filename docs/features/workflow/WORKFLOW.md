@@ -298,13 +298,17 @@ transition PATCH.
 
 ## Alice chat (designer)
 
-- Replace floating **drawer** with a **docked** right sidebar that consumes
-  layout width (designer + chat side-by-side).
-- Inject **view context**: `surface: 'workflow_designer'`, `projectId`,
-  live `draftEnvelope`, `expectedUpdatedAt`, `dirty`.
+- App-shell **docked** right sidebar (flex sibling of main content; no backdrop
+  blur / absolute overlay). Navbar Alice toggle opens/closes it.
+- Inject **view context** when the workflow designer is mounted:
+  `surface: 'workflow_designer'`, `projectId`, live `draftEnvelope`,
+  `expectedUpdatedAt`, `dirty`.
 - Tools (function calls): `get_workflow_config`, `propose_workflow_patch`
-  (no write; HMAC confirmation token), **apply** via
+  (no write; HMAC confirmation token), `dismiss_workflow_proposal` (cancel an
+  unapplied proposal / auto-reject its Apply card), **apply** via
   `POST /api/v1/chat/workflow-patch/apply` after client Apply.
+- Undo before Apply: call `dismiss_workflow_proposal` (do not reverse-propose).
+  After Apply: `get_workflow_config` + a new corrected `propose_workflow_patch`.
 - Confirm UX: **inline Apply / Reject card** (no modal for apply). Destructive
   ops may still use existing confirm dialogs elsewhere.
 - If canvas **dirty**: save current designer state first (same save path),

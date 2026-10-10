@@ -55,9 +55,7 @@ import {
   workflowDocumentToFlowElements,
 } from '@/app/projects/_helpers/workflow-designer.layout';
 import { persistWorkflowDesignerSettingsOpen } from '@/app/projects/_helpers/workflow-designer-settings-storage';
-import { WorkflowAliceBridgeProvider } from '@/app/projects/_components/project-details/workflow-alice-bridge';
-import { DockedChatPanel } from '@/app/chat/_components/docked-chat-panel';
-import { isAppRole } from '@/lib/rbac/roles';
+import { useRegisterWorkflowAliceBridge } from '@/app/projects/_components/project-details/workflow-alice-bridge';
 
 type WorkflowDesignerWorkspaceProps = {
   readonly project: Project;
@@ -169,15 +167,12 @@ export function WorkflowDesignerWorkspace({
   project,
   canEdit,
   currentUserId = null,
-  currentUserRole = null,
   teams = [],
   members = [],
   initialSettingsOpen = true,
 }: WorkflowDesignerWorkspaceProps) {
   const router = useRouter();
   const { handleMutationError } = useOptimisticLock();
-  const appRole = isAppRole(currentUserRole) ? currentUserRole : null;
-  const [aliceDockOpen, setAliceDockOpen] = useState(true);
 
   const initialResolved = useMemo(
     () => resolveInitialEnvelope(project.workflow_config),
@@ -435,146 +430,140 @@ export function WorkflowDesignerWorkspace({
     [router]
   );
 
-  const liveViewContext = useMemo(() => getViewContext(), [getViewContext]);
+  const surfaceBridge = useMemo(
+    () =>
+      canEdit
+        ? {
+            projectId: project.id,
+            getViewContext,
+            saveIfDirty,
+            applyEnvelope,
+          }
+        : null,
+    [canEdit, project.id, getViewContext, saveIfDirty, applyEnvelope]
+  );
+
+  useRegisterWorkflowAliceBridge(surfaceBridge);
 
   return (
-    <WorkflowAliceBridgeProvider
-      projectId={project.id}
-      getViewContext={getViewContext}
-      saveIfDirty={saveIfDirty}
-      applyEnvelope={applyEnvelope}
+    <div
+      className="space-y-4"
+      data-testid="workflow-designer-workspace"
+      data-dirty={dirty ? 'true' : 'false'}
+      data-workflow-id={activeWorkflow.id}
     >
-      <div className="flex gap-0" data-testid="workflow-designer-with-alice">
-        <div
-          className="min-w-0 flex-1 space-y-4"
-          data-testid="workflow-designer-workspace"
-          data-dirty={dirty ? 'true' : 'false'}
-          data-workflow-id={activeWorkflow.id}
-        >
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <GitBranch className="text-primary size-5" />
-                <h2 className="text-foreground text-xl font-semibold tracking-tight">
-                  Workflow designer
-                </h2>
-              </div>
-            </div>
-            {canEdit ? (
-              <div className="flex items-center gap-1.5">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={!dirty || isSaving}
-                  onClick={discardChanges}
-                >
-                  <RotateCcw data-icon="inline-start" className="size-4" />
-                  Discard
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={!dirty || isSaving}
-                  onClick={handleSaveClick}
-                >
-                  <Save data-icon="inline-start" className="size-4" />
-                  {isSaving ? 'Saving…' : 'Save'}
-                </Button>
-              </div>
-            ) : null}
-          </div>
-
-          {!canEdit ? (
-            <div className="border-border bg-muted/40 text-muted-foreground flex items-center gap-3 rounded-lg border p-3 text-sm">
-              <Lock className="size-4 shrink-0 text-amber-500" />
-              <span>View only — managers and admins can edit.</span>
-            </div>
-          ) : null}
-
-          {usedFallback ? (
-            <div className="border-border bg-muted/40 text-muted-foreground rounded-lg border p-3 text-sm">
-              Using the default workflow. Save to keep it on this project.
-            </div>
-          ) : null}
-
-          <FormAlertMessage message={message} isError={messageIsError} />
-
-          <div className="flex flex-wrap items-center gap-3">
-            <label
-              className="text-muted-foreground text-sm font-medium"
-              htmlFor="workflow-designer-switcher"
-            >
-              Workflow
-            </label>
-            <Select
-              value={activeWorkflow.id}
-              onValueChange={(value) => {
-                if (!value) {
-                  return;
-                }
-                setActiveWorkflowId(value);
-                setSelection(null);
-                setCanvasEpoch((epoch) => epoch + 1);
-              }}
-            >
-              <SelectTrigger id="workflow-designer-switcher" className="w-55">
-                <SelectValue placeholder="Select workflow" />
-              </SelectTrigger>
-              <SelectContent>
-                {draft.workflows.map((workflow) => (
-                  <SelectItem key={workflow.id} value={workflow.id}>
-                    {workflow.title}
-                    {workflow.id === draft.defaultWorkflowId
-                      ? ' (default)'
-                      : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span className="text-muted-foreground text-xs">
-              {activeWorkflow.graph.states.length} states ·{' '}
-              {activeWorkflow.graph.edges.length} transitions
-            </span>
-          </div>
-
-          <div className="flex h-[min(560px,calc(100dvh-16rem))] min-h-80 gap-4 pb-2">
-            <div className="min-h-0 min-w-0 flex-1">
-              <ReactFlowProvider>
-                <WorkflowDesignerCanvas
-                  key={`${activeWorkflow.id}:${canvasEpoch}`}
-                  activeWorkflow={activeWorkflow}
-                  canEdit={canEdit}
-                  onNodesSettled={handleNodesSettled}
-                  onSelectionChange={setSelection}
-                  onOpenSettings={handleOpenSettings}
-                />
-              </ReactFlowProvider>
-            </div>
-            <WorkflowDesignerSettings
-              selection={selection}
-              workflow={activeWorkflow}
-              canEdit={canEdit}
-              teams={teams}
-              members={members}
-              onStateChange={handleStateChange}
-              onEdgeChange={handleEdgeChange}
-              onMakeStateTerminal={handleMakeStateTerminal}
-              onUpsertResolutionPreset={handleUpsertResolutionPreset}
-              open={settingsOpen}
-              onOpenChange={handleSettingsOpenChange}
-            />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <GitBranch className="text-primary size-5" />
+            <h2 className="text-foreground text-xl font-semibold tracking-tight">
+              Workflow designer
+            </h2>
           </div>
         </div>
         {canEdit ? (
-          <DockedChatPanel
-            open={aliceDockOpen}
-            onOpenChange={setAliceDockOpen}
-            viewContext={liveViewContext}
-            currentUserRole={appRole}
-          />
+          <div className="flex items-center gap-1.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!dirty || isSaving}
+              onClick={discardChanges}
+            >
+              <RotateCcw data-icon="inline-start" className="size-4" />
+              Discard
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={!dirty || isSaving}
+              onClick={handleSaveClick}
+            >
+              <Save data-icon="inline-start" className="size-4" />
+              {isSaving ? 'Saving…' : 'Save'}
+            </Button>
+          </div>
         ) : null}
       </div>
-    </WorkflowAliceBridgeProvider>
+
+      {!canEdit ? (
+        <div className="border-border bg-muted/40 text-muted-foreground flex items-center gap-3 rounded-lg border p-3 text-sm">
+          <Lock className="size-4 shrink-0 text-amber-500" />
+          <span>View only — managers and admins can edit.</span>
+        </div>
+      ) : null}
+
+      {usedFallback ? (
+        <div className="border-border bg-muted/40 text-muted-foreground rounded-lg border p-3 text-sm">
+          Using the default workflow. Save to keep it on this project.
+        </div>
+      ) : null}
+
+      <FormAlertMessage message={message} isError={messageIsError} />
+
+      <div className="flex flex-wrap items-center gap-3">
+        <label
+          className="text-muted-foreground text-sm font-medium"
+          htmlFor="workflow-designer-switcher"
+        >
+          Workflow
+        </label>
+        <Select
+          value={activeWorkflow.id}
+          onValueChange={(value) => {
+            if (!value) {
+              return;
+            }
+            setActiveWorkflowId(value);
+            setSelection(null);
+            setCanvasEpoch((epoch) => epoch + 1);
+          }}
+        >
+          <SelectTrigger id="workflow-designer-switcher" className="w-55">
+            <SelectValue placeholder="Select workflow" />
+          </SelectTrigger>
+          <SelectContent>
+            {draft.workflows.map((workflow) => (
+              <SelectItem key={workflow.id} value={workflow.id}>
+                {workflow.title}
+                {workflow.id === draft.defaultWorkflowId ? ' (default)' : ''}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="text-muted-foreground text-xs">
+          {activeWorkflow.graph.states.length} states ·{' '}
+          {activeWorkflow.graph.edges.length} transitions
+        </span>
+      </div>
+
+      <div className="flex h-[min(560px,calc(100dvh-16rem))] min-h-80 gap-4 pb-2">
+        <div className="min-h-0 min-w-0 flex-1">
+          <ReactFlowProvider>
+            <WorkflowDesignerCanvas
+              key={`${activeWorkflow.id}:${canvasEpoch}`}
+              activeWorkflow={activeWorkflow}
+              canEdit={canEdit}
+              onNodesSettled={handleNodesSettled}
+              onSelectionChange={setSelection}
+              onOpenSettings={handleOpenSettings}
+            />
+          </ReactFlowProvider>
+        </div>
+        <WorkflowDesignerSettings
+          selection={selection}
+          workflow={activeWorkflow}
+          canEdit={canEdit}
+          teams={teams}
+          members={members}
+          onStateChange={handleStateChange}
+          onEdgeChange={handleEdgeChange}
+          onMakeStateTerminal={handleMakeStateTerminal}
+          onUpsertResolutionPreset={handleUpsertResolutionPreset}
+          open={settingsOpen}
+          onOpenChange={handleSettingsOpenChange}
+        />
+      </div>
+    </div>
   );
 }

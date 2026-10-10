@@ -180,8 +180,33 @@ export function parseProposeWorkflowPatchInput(
 ): ProposeWorkflowPatchInput {
   const parsed = proposeWorkflowPatchInputSchema.safeParse(rawInput);
   if (!parsed.success) {
+    const details = parsed.error.issues
+      .slice(0, 8)
+      .map((issue) => `${issue.path.join('.') || 'config'}: ${issue.message}`)
+      .join('; ');
     throw new Error(
-      `Invalid propose_workflow_patch input: ${parsed.error.issues[0]?.message ?? 'validation failed'}`
+      `Invalid propose_workflow_patch input. Supply the complete WorkflowConfigEnvelope from get_workflow_config with your edits applied. ${details}`
+    );
+  }
+  return parsed.data;
+}
+
+export const dismissWorkflowProposalInputSchema = z.object({
+  projectId: z.uuid(),
+  reason: z.string().trim().max(500).optional(),
+});
+
+export type DismissWorkflowProposalInput = z.infer<
+  typeof dismissWorkflowProposalInputSchema
+>;
+
+export function parseDismissWorkflowProposalInput(
+  rawInput: unknown
+): DismissWorkflowProposalInput {
+  const parsed = dismissWorkflowProposalInputSchema.safeParse(rawInput);
+  if (!parsed.success) {
+    throw new Error(
+      `Invalid dismiss_workflow_proposal input: ${parsed.error.issues[0]?.message ?? 'validation failed'}`
     );
   }
   return parsed.data;

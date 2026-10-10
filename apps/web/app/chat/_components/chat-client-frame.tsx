@@ -1,13 +1,13 @@
 'use client';
 
-import type {
-  ComponentType,
-  FormEvent,
-  KeyboardEvent,
-  ClipboardEvent,
-  RefObject,
+import {
+  useState,
+  type ClipboardEvent,
+  type ComponentType,
+  type FormEvent,
+  type KeyboardEvent,
+  type RefObject,
 } from 'react';
-import { useState } from 'react';
 import { cn } from '@repo/ui/lib/utils';
 import { Textarea } from '@repo/ui/components/ui/textarea';
 import { Button } from '@repo/ui/components/ui/button';
@@ -45,6 +45,10 @@ import type { AppRole } from '@/lib/rbac';
 
 const CHAT_PANEL_HEADER_CLASS =
   'border-border flex h-14 shrink-0 items-center border-b px-3';
+
+/** Match dashboard navbar (`h-16`) when Alice is docked beside the shell. */
+const CHAT_DOCKED_HEADER_CLASS =
+  'border-border flex h-16 shrink-0 items-center border-b px-3';
 
 const HEADER_IDENTITY_BUTTON_CLASS =
   'hover:bg-muted/60 flex min-w-0 items-center justify-start gap-2 rounded-lg px-1.5 py-1 text-left sm:gap-3';
@@ -148,6 +152,205 @@ function ChatFrameHistoryToggle({
         {showHistory ? 'Hide history' : 'Show history'}
       </TooltipContent>
     </Tooltip>
+  );
+}
+
+type ChatFramePanelHeaderProps = {
+  readonly isPage: boolean;
+  readonly variant: 'page' | 'drawer' | 'docked';
+  readonly showHistory: boolean;
+  readonly assistantIdentity: ReturnType<typeof useBoundChatAgent>;
+  readonly chatModels: readonly ChatModelOption[];
+  readonly selectedIntegrationId: string | undefined;
+  readonly canManageChatModels: boolean;
+  readonly isInputDisabled: boolean;
+  readonly isMarkingDefault: boolean;
+  readonly onToggleHistory: () => void;
+  readonly onOpenGallery: () => void;
+  // eslint-disable-next-line no-unused-vars -- callback prop types
+  readonly onOpenDetail: (agentId: string) => void;
+  readonly onNewChat: () => void;
+  readonly onMarkSelectedAsDefault: () => Promise<void>;
+  // eslint-disable-next-line no-unused-vars -- callback prop types
+  readonly onSelectedIntegrationIdChange: (value: string) => void;
+  readonly onClose?: () => void;
+};
+
+function ChatFramePanelHeader({
+  isPage,
+  variant,
+  showHistory,
+  assistantIdentity,
+  chatModels,
+  selectedIntegrationId,
+  canManageChatModels,
+  isInputDisabled,
+  isMarkingDefault,
+  onToggleHistory,
+  onOpenGallery,
+  onOpenDetail,
+  onNewChat,
+  onMarkSelectedAsDefault,
+  onSelectedIntegrationIdChange,
+  onClose,
+}: Readonly<ChatFramePanelHeaderProps>) {
+  const isDocked = variant === 'docked';
+
+  return (
+    <header
+      className={cn(
+        isDocked ? CHAT_DOCKED_HEADER_CLASS : CHAT_PANEL_HEADER_CLASS,
+        'justify-between gap-3',
+        isDocked ? 'px-3' : 'sm:px-6'
+      )}
+    >
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+        {isPage ? (
+          <ChatFrameHistoryToggle
+            showHistory={showHistory}
+            onToggleHistory={onToggleHistory}
+          />
+        ) : null}
+        <ChatFrameHeaderIdentity
+          isPage={isPage}
+          identity={assistantIdentity}
+          onOpenGallery={onOpenGallery}
+          onOpenDetail={onOpenDetail}
+        />
+      </div>
+      <div className="flex shrink-0 items-center gap-1">
+        <ChatClientHeaderActions
+          variant={variant}
+          isPending={isInputDisabled}
+          chatModels={chatModels}
+          selectedIntegrationId={selectedIntegrationId}
+          canManageChatModels={canManageChatModels}
+          isMarkingDefault={isMarkingDefault}
+          onSelectedIntegrationIdChange={onSelectedIntegrationIdChange}
+          onMarkSelectedAsDefault={onMarkSelectedAsDefault}
+          onNewChat={onNewChat}
+          onOpenAgentsGallery={isPage ? onOpenGallery : undefined}
+          onClose={onClose}
+        />
+      </div>
+    </header>
+  );
+}
+
+type ChatFrameComposerProps = {
+  readonly variant: 'page' | 'drawer' | 'docked';
+  readonly pendingAttachments: PendingChatAttachment[];
+  readonly inputValue: string;
+  readonly isInputDisabled: boolean;
+  readonly fileInputRef: RefObject<HTMLInputElement | null>;
+  // eslint-disable-next-line no-unused-vars -- callback prop types
+  readonly onRemoveAttachment: (id: string) => void;
+  // eslint-disable-next-line no-unused-vars -- callback prop types
+  readonly onFormSubmit: (event: FormEvent) => void;
+  // eslint-disable-next-line no-unused-vars -- callback prop types
+  readonly onFileSelect: (files: FileList) => void;
+  readonly onComposerKeyDown: (
+    // eslint-disable-next-line no-unused-vars -- callback prop types
+    event: KeyboardEvent<HTMLTextAreaElement>
+  ) => void;
+  // eslint-disable-next-line no-unused-vars -- callback prop types
+  readonly onPaste: (event: ClipboardEvent<HTMLTextAreaElement>) => void;
+  // eslint-disable-next-line no-unused-vars -- callback prop types
+  readonly onInputChange: (value: string) => void;
+};
+
+function ChatFrameComposer({
+  variant,
+  pendingAttachments,
+  inputValue,
+  isInputDisabled,
+  fileInputRef,
+  onRemoveAttachment,
+  onFormSubmit,
+  onFileSelect,
+  onComposerKeyDown,
+  onPaste,
+  onInputChange,
+}: Readonly<ChatFrameComposerProps>) {
+  const isDocked = variant === 'docked';
+  const isUploading = pendingAttachments.some((a) => a.isUploading);
+  const canSend =
+    (Boolean(inputValue.trim()) || pendingAttachments.length > 0) &&
+    !isInputDisabled &&
+    !isUploading;
+
+  return (
+    <div
+      className={cn('bg-muted/20 shrink-0', isDocked ? 'p-2.5' : 'p-3 sm:p-4')}
+    >
+      <div className="mx-auto max-w-3xl">
+        <ChatAttachmentTiles
+          attachments={pendingAttachments}
+          onRemove={onRemoveAttachment}
+          disabled={isInputDisabled}
+        />
+        <form
+          onSubmit={onFormSubmit}
+          className={cn(
+            'flex items-end',
+            isDocked ? 'gap-1.5' : 'gap-2 sm:gap-3'
+          )}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0) {
+                onFileSelect(e.target.files);
+              }
+            }}
+          />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size={isDocked ? 'icon' : 'icon-lg'}
+                disabled={isInputDisabled}
+                onClick={() => fileInputRef.current?.click()}
+                aria-label="Attach files (JSON, CSV, etc.)"
+              >
+                <Paperclip className={isDocked ? 'size-4' : 'size-5'} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              Attach files (or paste with Ctrl+V)
+            </TooltipContent>
+          </Tooltip>
+
+          <Textarea
+            value={inputValue}
+            onChange={(e) => onInputChange(e.target.value)}
+            onKeyDown={onComposerKeyDown}
+            onPaste={onPaste}
+            disabled={isInputDisabled}
+            rows={1}
+            placeholder="Enter your message..."
+            className={cn(
+              'bg-background flex-1 resize-none',
+              isDocked
+                ? 'max-h-28 min-h-8 px-2.5 py-1.5 text-sm'
+                : 'max-h-40 min-h-10 px-3 py-2.5 sm:px-4'
+            )}
+          />
+          <Button
+            type="submit"
+            size={isDocked ? 'icon' : 'icon-lg'}
+            disabled={!canSend}
+            aria-label="Send message"
+          >
+            <Send />
+          </Button>
+        </form>
+      </div>
+    </div>
   );
 }
 
@@ -319,65 +522,47 @@ export function ChatClientFrame({
       )}
     >
       {isPage ? (
-        <TrailBreadcrumb
-          trail={chatBreadcrumbTrail}
-          isLoadingConversations={isLoadingConversations}
-          isLoadingHistory={isLoadingHistory}
-          activeConversationId={activeConversationId}
-        />
-      ) : null}
-      {isPage ? (
-        <ChatClientSidebar
-          showHistory={showHistory}
-          conversationSearch={conversationSearch}
-          onConversationSearchChange={onConversationSearchChange}
-          isLoadingConversations={isLoadingConversations}
-          conversations={conversations}
-          activeConversationId={activeConversationId}
-          onSelectConversation={onSelectConversation}
-          onNewChat={onNewChat}
-          onRenameConversationClick={onRenameConversationClick}
-          onDeleteConversationClick={onDeleteConversationClick}
-        />
+        <>
+          <TrailBreadcrumb
+            trail={chatBreadcrumbTrail}
+            isLoadingConversations={isLoadingConversations}
+            isLoadingHistory={isLoadingHistory}
+            activeConversationId={activeConversationId}
+          />
+          <ChatClientSidebar
+            showHistory={showHistory}
+            conversationSearch={conversationSearch}
+            onConversationSearchChange={onConversationSearchChange}
+            isLoadingConversations={isLoadingConversations}
+            conversations={conversations}
+            activeConversationId={activeConversationId}
+            onSelectConversation={onSelectConversation}
+            onNewChat={onNewChat}
+            onRenameConversationClick={onRenameConversationClick}
+            onDeleteConversationClick={onDeleteConversationClick}
+          />
+        </>
       ) : null}
 
       <div className="bg-background flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header
-          className={cn(
-            CHAT_PANEL_HEADER_CLASS,
-            'justify-between gap-3 sm:px-6'
-          )}
-        >
-          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            {isPage ? (
-              <ChatFrameHistoryToggle
-                showHistory={showHistory}
-                onToggleHistory={onToggleHistory}
-              />
-            ) : null}
-            <ChatFrameHeaderIdentity
-              isPage={isPage}
-              identity={assistantIdentity}
-              onOpenGallery={openAgentsGallery}
-              onOpenDetail={openAgentDetail}
-            />
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
-            <ChatClientHeaderActions
-              variant={variant}
-              isPending={isInputDisabled}
-              chatModels={chatModels}
-              selectedIntegrationId={selectedIntegrationId}
-              canManageChatModels={canManageChatModels}
-              isMarkingDefault={isMarkingDefault}
-              onSelectedIntegrationIdChange={onSelectedIntegrationIdChange}
-              onMarkSelectedAsDefault={onMarkSelectedAsDefault}
-              onNewChat={onNewChat}
-              onOpenAgentsGallery={isPage ? openAgentsGallery : undefined}
-              onClose={onClose}
-            />
-          </div>
-        </header>
+        <ChatFramePanelHeader
+          isPage={isPage}
+          variant={variant}
+          showHistory={showHistory}
+          assistantIdentity={assistantIdentity}
+          chatModels={chatModels}
+          selectedIntegrationId={selectedIntegrationId}
+          canManageChatModels={canManageChatModels}
+          isInputDisabled={isInputDisabled}
+          isMarkingDefault={isMarkingDefault}
+          onToggleHistory={onToggleHistory}
+          onOpenGallery={openAgentsGallery}
+          onOpenDetail={openAgentDetail}
+          onNewChat={onNewChat}
+          onMarkSelectedAsDefault={onMarkSelectedAsDefault}
+          onSelectedIntegrationIdChange={onSelectedIntegrationIdChange}
+          onClose={onClose}
+        />
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <ChatClientMain
@@ -396,71 +581,19 @@ export function ChatClientFrame({
           />
 
           <Separator />
-          <div className="bg-muted/20 shrink-0 p-3 sm:p-4">
-            <div className="mx-auto max-w-3xl">
-              <ChatAttachmentTiles
-                attachments={pendingAttachments}
-                onRemove={onRemoveAttachment}
-                disabled={isInputDisabled}
-              />
-              <form
-                onSubmit={onFormSubmit}
-                className="flex items-end gap-2 sm:gap-3"
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files.length > 0) {
-                      onFileSelect(e.target.files);
-                    }
-                  }}
-                />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-lg"
-                      disabled={isInputDisabled}
-                      onClick={() => fileInputRef.current?.click()}
-                      aria-label="Attach files (JSON, CSV, etc.)"
-                    >
-                      <Paperclip className="size-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    Attach files (or paste with Ctrl+V)
-                  </TooltipContent>
-                </Tooltip>
-
-                <Textarea
-                  value={inputValue}
-                  onChange={(e) => onInputChange(e.target.value)}
-                  onKeyDown={onComposerKeyDown}
-                  onPaste={onPaste}
-                  disabled={isInputDisabled}
-                  rows={1}
-                  placeholder="Type your message, attach files, or paste with Ctrl+V…"
-                  className="bg-background max-h-40 min-h-10 flex-1 resize-none px-3 py-2.5 sm:px-4"
-                />
-                <Button
-                  type="submit"
-                  size="icon-lg"
-                  disabled={
-                    (!inputValue.trim() && pendingAttachments.length === 0) ||
-                    isInputDisabled ||
-                    pendingAttachments.some((a) => a.isUploading)
-                  }
-                  aria-label="Send message"
-                >
-                  <Send />
-                </Button>
-              </form>
-            </div>
-          </div>
+          <ChatFrameComposer
+            variant={variant}
+            pendingAttachments={pendingAttachments}
+            inputValue={inputValue}
+            isInputDisabled={isInputDisabled}
+            fileInputRef={fileInputRef}
+            onRemoveAttachment={onRemoveAttachment}
+            onFormSubmit={onFormSubmit}
+            onFileSelect={onFileSelect}
+            onComposerKeyDown={onComposerKeyDown}
+            onPaste={onPaste}
+            onInputChange={onInputChange}
+          />
         </div>
       </div>
       {conversationToDelete ? (

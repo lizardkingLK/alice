@@ -8,16 +8,30 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Button } from '@repo/ui/components/ui/button';
 import { Sparkles } from '@repo/ui/lib/icons';
-import { FloatingChatDrawer } from './floating-chat-widget';
+import type { ChatViewContext } from '@repo/types/api/v1';
 import type { AppRole } from '@/lib/rbac';
-import { isWorkflowDesignerPath } from '@/app/chat/_helpers/chat-workflow-dock-path';
 import { useChatBootstrap } from '@/app/chat/_helpers/use-chat-bootstrap';
+import { DockedChatPanel } from '@/app/chat/_components/docked-chat-panel';
+import type { WorkflowAliceBridgeValue } from '@/app/projects/_components/project-details/workflow-alice-bridge';
 
 type ChatLauncherContextValue = {
-  openLauncher: () => Promise<void>;
+  readonly isOpen: boolean;
+  readonly openLauncher: () => Promise<void>;
+  readonly closeLauncher: () => void;
+  readonly toggleLauncher: () => Promise<void>;
+  readonly viewContext: ChatViewContext | null;
+  readonly setViewContext: (
+    // eslint-disable-next-line no-unused-vars -- documents payload
+    context: ChatViewContext | null
+  ) => void;
+  readonly surfaceBridge: WorkflowAliceBridgeValue | null;
+  readonly setSurfaceBridge: (
+    // eslint-disable-next-line no-unused-vars -- documents payload
+    bridge: WorkflowAliceBridgeValue | null
+  ) => void;
 };
 
 const ChatLauncherContext = createContext<ChatLauncherContextValue | null>(
@@ -30,6 +44,11 @@ export function useChatLauncher(): ChatLauncherContextValue {
     throw new Error('useChatLauncher must be used within ChatLauncherProvider');
   }
   return context;
+}
+
+/** Null-safe read for surfaces that may render outside the launcher. */
+export function useChatLauncherOptional(): ChatLauncherContextValue | null {
+  return useContext(ChatLauncherContext);
 }
 
 type ChatLauncherProviderProps = {
@@ -46,11 +65,12 @@ export function ChatLauncherProvider({
   currentUserRole,
 }: Readonly<ChatLauncherProviderProps>) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const hideForWorkflowDock = isWorkflowDesignerPath(pathname, (key) =>
-    searchParams.get(key)
-  );
+  const hideOnChatPage = pathname === '/chat';
   const [isOpen, setIsOpen] = useState(false);
+  const [viewContext, setViewContext] = useState<ChatViewContext | null>(null);
+  const [surfaceBridge, setSurfaceBridge] =
+    useState<WorkflowAliceBridgeValue | null>(null);
+
   const {
     ensureLoaded,
     conversations,
@@ -58,7 +78,8 @@ export function ChatLauncherProvider({
     messages,
     chatModels,
   } = useChatBootstrap({
-    logLabel: 'bootstrap floating chat drawer',
+    enabled: isOpen && !hideOnChatPage,
+    logLabel: 'bootstrap docked Alice sidebar',
   });
 
   const openLauncher = useCallback(async () => {
@@ -66,51 +87,84 @@ export function ChatLauncherProvider({
     setIsOpen(true);
   }, [ensureLoaded]);
 
-  const value = useMemo(() => ({ openLauncher }), [openLauncher]);
+  const closeLauncher = useCallback(() => {
+    setIsOpen(false);
+  }, []);
 
-  const hideFloating = pathname === '/chat' || hideForWorkflowDock;
+  const toggleLauncher = useCallback(async () => {
+    if (isOpen) {
+      setIsOpen(false);
+      return;
+    }
+    await ensureLoaded();
+    setIsOpen(true);
+  }, [ensureLoaded, isOpen]);
+
+  const value = useMemo(
+    () => ({
+      isOpen,
+      openLauncher,
+      closeLauncher,
+      toggleLauncher,
+      viewContext,
+      setViewContext,
+      surfaceBridge,
+      setSurfaceBridge,
+    }),
+    [
+      isOpen,
+      openLauncher,
+      closeLauncher,
+      toggleLauncher,
+      viewContext,
+      surfaceBridge,
+    ]
+  );
+
+  const showDock = isOpen && !hideOnChatPage;
 
   return (
     <ChatLauncherContext.Provider value={value}>
-      {children}
-      {hideFloating ? null : (
-        <FloatingChatDrawer
-          isOpen={isOpen}
-          onClose={() => setIsOpen(false)}
-          currentUserName={currentUserName}
-          currentUserImageUrl={currentUserImageUrl}
-          currentUserRole={currentUserRole}
-          bootstrapConversations={conversations}
-          bootstrapActiveConversationId={activeConversationId}
-          bootstrapMessages={messages}
-          bootstrapChatModels={chatModels ?? undefined}
-        />
-      )}
+      <div className="flex min-h-0 flex-1 flex-row overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          {children}
+        </div>
+        {showDock ? (
+          <DockedChatPanel
+            onClose={closeLauncher}
+            viewContext={viewContext}
+            currentUserName={currentUserName}
+            currentUserImageUrl={currentUserImageUrl}
+            currentUserRole={currentUserRole}
+            bootstrapConversations={conversations}
+            bootstrapActiveConversationId={activeConversationId}
+            bootstrapMessages={messages}
+            bootstrapChatModels={chatModels}
+          />
+        ) : null}
+      </div>
     </ChatLauncherContext.Provider>
   );
 }
 
 export function ChatLauncherButton() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const { openLauncher } = useChatLauncher();
-  const hideForWorkflowDock = isWorkflowDesignerPath(pathname, (key) =>
-    searchParams.get(key)
-  );
+  const { isOpen, toggleLauncher } = useChatLauncher();
 
-  if (pathname === '/chat' || hideForWorkflowDock) {
+  if (pathname === '/chat') {
     return null;
   }
 
   return (
     <Button
       type="button"
-      variant="outline"
+      variant={isOpen ? 'default' : 'outline'}
       size="icon"
-      aria-label="Open Alice"
+      aria-label={isOpen ? 'Close Alice' : 'Open Alice'}
+      aria-pressed={isOpen}
       className="cursor-pointer"
       onClick={() => {
-        void openLauncher();
+        void toggleLauncher();
       }}
     >
       <Sparkles className="size-4" />

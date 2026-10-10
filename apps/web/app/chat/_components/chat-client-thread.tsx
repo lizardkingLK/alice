@@ -34,6 +34,9 @@ function actionKey(
   if (action.type === 'propose_workflow_patch') {
     return `${action.type}-${action.entity.projectId}-${action.entity.summary}`;
   }
+  if (action.type === 'dismiss_workflow_patch') {
+    return `${action.type}-${action.entity.projectId}-${action.entity.reason ?? ''}`;
+  }
   return `${action.type}-${action.entity.id}`;
 }
 

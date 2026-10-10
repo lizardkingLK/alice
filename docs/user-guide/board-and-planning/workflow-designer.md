@@ -104,9 +104,10 @@ default** workflow so the board keeps working.
 
 - On the **Board**, use the workflow / type switcher to view one workflow’s
   columns at a time. See [Kanban board](./kanban-board.md).
-- With the designer open, **Alice** can sit in a side panel and propose graph
-  changes. Use **Apply** or **Reject** on the suggestion card. If you have
-  unsaved canvas edits, Alice saves them first, then applies. See
+- Open **Alice** from the header while the designer is open — she shares the
+  page as a right sidebar and can propose graph changes. Use **Apply** or
+  **Reject** on the suggestion card. If you have unsaved canvas edits, Alice
+  saves them first, then applies. See
   [Use the AI assistant](../chat/use-ai-assistant.md).
 
 ---

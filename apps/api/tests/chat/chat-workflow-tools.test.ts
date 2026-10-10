@@ -202,6 +202,31 @@ describe('Alice workflow tools', () => {
     expect(actions).toEqual([]);
   });
 
+  it('emits dismiss_workflow_patch without mutating the canvas', async () => {
+    const harness = createHarness();
+    const { result, actions } = await callTool(
+      harness.service,
+      'dismiss_workflow_proposal',
+      {
+        projectId: PROJECT_ID,
+        reason: 'Testing state already exists',
+      }
+    );
+
+    expect(result.dismissed).toBe(true);
+    expect(result.saved).toBe(false);
+    expect(harness.putWorkflowConfig).not.toHaveBeenCalled();
+    expect(actions).toHaveLength(1);
+    expect(actions[0]).toMatchObject({
+      type: 'dismiss_workflow_patch',
+      entity: {
+        projectId: PROJECT_ID,
+        projectName: 'Alpha Project',
+        reason: 'Testing state already exists',
+      },
+    });
+  });
+
   it('applies a verified workflow patch via putWorkflowConfig', async () => {
     const harness = createHarness();
     const next = createSeededDefaultWorkflowConfig();

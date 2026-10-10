@@ -6,15 +6,9 @@ import {
 } from '@/app/chat/_components/chat-launcher';
 
 const usePathnameMock = vi.fn(() => '/dashboard');
-const useSearchParamsMock = vi.fn(
-  () => new URLSearchParams() as unknown as ReturnType<
-    typeof import('next/navigation').useSearchParams
-  >
-);
 
 vi.mock('next/navigation', () => ({
   usePathname: () => usePathnameMock(),
-  useSearchParams: () => useSearchParamsMock(),
 }));
 
 vi.mock('@/app/chat/_components/chat-client-bootstrap', () => ({
@@ -27,21 +21,16 @@ vi.mock('@/app/chat/_components/chat-client-bootstrap', () => ({
 }));
 
 vi.mock('@/app/chat/_components/chat-client', () => ({
-  ChatClient: () => <div data-testid="chat-drawer-client">Chat</div>,
+  ChatClient: () => <div data-testid="alice-dock-client">Chat</div>,
 }));
 
 describe('ChatLauncherButton', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     usePathnameMock.mockReturnValue('/dashboard');
-    useSearchParamsMock.mockReturnValue(
-      new URLSearchParams() as unknown as ReturnType<
-        typeof import('next/navigation').useSearchParams
-      >
-    );
   });
 
-  it('opens the Alice drawer from the navbar control', async () => {
+  it('opens the Alice dock sidebar from the navbar control', async () => {
     render(
       <ChatLauncherProvider>
         <ChatLauncherButton />
@@ -50,30 +39,26 @@ describe('ChatLauncherButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Open Alice/i }));
 
-    expect(await screen.findByTestId('chat-drawer-client')).toBeInTheDocument();
+    expect(await screen.findByTestId('alice-dock')).toBeInTheDocument();
+    expect(await screen.findByTestId('alice-dock-client')).toBeInTheDocument();
   });
 
-  it('hides the navbar control on the full /chat page', () => {
-    usePathnameMock.mockReturnValue('/chat');
-
+  it('toggles the dock closed from the navbar control', async () => {
     render(
       <ChatLauncherProvider>
         <ChatLauncherButton />
       </ChatLauncherProvider>
     );
 
-    expect(
-      screen.queryByRole('button', { name: /Open Alice/i })
-    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Open Alice/i }));
+    expect(await screen.findByTestId('alice-dock')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Close Alice/i }));
+    expect(screen.queryByTestId('alice-dock')).not.toBeInTheDocument();
   });
 
-  it('hides the navbar control on the workflow designer tab', () => {
-    usePathnameMock.mockReturnValue('/projects/project-1');
-    useSearchParamsMock.mockReturnValue(
-      new URLSearchParams('tab=workflow') as unknown as ReturnType<
-        typeof import('next/navigation').useSearchParams
-      >
-    );
+  it('hides the navbar control on the full /chat page', () => {
+    usePathnameMock.mockReturnValue('/chat');
 
     render(
       <ChatLauncherProvider>
