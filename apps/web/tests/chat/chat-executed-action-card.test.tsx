@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 import { ChatExecutedActionCard } from '@/app/chat/_components/chat-executed-action-card';
 
 const config = {
@@ -14,9 +14,7 @@ const config = {
 };
 
 describe('configure board chat action card', () => {
-  beforeEach(() => sessionStorage.clear());
-
-  it('renders the draft and stores it before opening the project board tab', () => {
+  it('renders a retired board draft and links to the Workflow designer', () => {
     render(
       <ChatExecutedActionCard
         action={{
@@ -30,18 +28,13 @@ describe('configure board chat action card', () => {
       />
     );
 
-    expect(screen.getByText(/Board Draft Created:/)).toHaveTextContent(
-      'Board Draft Created: Alpha Project'
+    expect(screen.getByText(/Board draft \(retired\):/)).toHaveTextContent(
+      'Board draft (retired): Alpha Project'
     );
     const link = screen.getByRole('link', {
-      name: 'Open in Board Designer',
+      name: 'Open Workflow designer',
     });
-    expect(link).toHaveAttribute('href', '/projects/project-1?tab=board');
-
-    fireEvent.click(link);
-    expect(sessionStorage.getItem('board_draft_project-1')).toBe(
-      JSON.stringify(config)
-    );
+    expect(link).toHaveAttribute('href', '/projects/project-1?tab=workflow');
   });
 });
 

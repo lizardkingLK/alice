@@ -179,7 +179,6 @@ export type ProjectDetailsTab =
   | 'sprints'
   | 'integrations'
   | 'fields'
-  | 'board'
   | 'workflow'
   | 'types';
 
@@ -188,6 +187,10 @@ export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
   if (tab === 'settings' || tab === 'types') {
     return 'types';
   }
+  // Legacy Board designer bookmarks resolve to the Workflow designer.
+  if (tab === 'board') {
+    return 'workflow';
+  }
   if (
     tab === 'members' ||
     tab === 'teams' ||
@@ -195,7 +198,6 @@ export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
     tab === 'sprints' ||
     tab === 'integrations' ||
     tab === 'fields' ||
-    tab === 'board' ||
     tab === 'workflow'
   ) {
     return tab;
@@ -209,14 +211,6 @@ export function parseTeamStatusFilter(
   if (value === 'archived') return 'archived';
   if (value === 'inactive') return 'inactive';
   return 'active';
-}
-
-export type BoardDesignerSection = 'columns' | 'rules';
-
-export function parseBoardDesignerSection(
-  value?: string | null
-): BoardDesignerSection {
-  return value === 'rules' ? 'rules' : 'columns';
 }
 
 export function parseManagerTabStatus(

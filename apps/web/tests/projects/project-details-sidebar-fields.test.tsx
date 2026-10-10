@@ -97,15 +97,6 @@ vi.mock(
 );
 
 vi.mock(
-  '@/app/projects/_components/project-details/board-designer-workspace',
-  () => ({
-    BoardDesignerWorkspace: () => (
-      <div data-testid="board-designer-workspace">Board Designer</div>
-    ),
-  })
-);
-
-vi.mock(
   '@/app/projects/_components/project-details/workflow-designer-workspace',
   () => ({
     WorkflowDesignerWorkspace: () => (
@@ -178,7 +169,7 @@ describe('parseProjectDetailsTab', () => {
     expect(parseProjectDetailsTab('work-items')).toBe('work-items');
     expect(parseProjectDetailsTab('sprints')).toBe('sprints');
     expect(parseProjectDetailsTab('integrations')).toBe('integrations');
-    expect(parseProjectDetailsTab('board')).toBe('board');
+    expect(parseProjectDetailsTab('board')).toBe('workflow');
     expect(parseProjectDetailsTab('workflow')).toBe('workflow');
     expect(parseProjectDetailsTab('types')).toBe('types');
     expect(parseProjectDetailsTab('settings')).toBe('types');
@@ -197,7 +188,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
     mockPush.mockClear();
   });
 
-  it('renders the board designer for ?tab=board', () => {
+  it('redirects legacy ?tab=board bookmarks to the Workflow designer', async () => {
     searchParamsValue = new URLSearchParams('tab=board');
 
     render(
@@ -238,7 +229,9 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       />
     );
 
-    expect(screen.getByTestId('board-designer-workspace')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('workflow-designer-workspace')
+    ).toBeInTheDocument();
   });
 
   it('renders the workflow designer for ?tab=workflow', async () => {
@@ -287,7 +280,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders all navigation options including role-gated Sprints and Board', () => {
+  it('renders all navigation options including role-gated Sprints and Workflow', () => {
     render(
       <ProjectDetailsWorkspace
         project={mockProject}
@@ -339,10 +332,12 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       screen.getByRole('link', { name: /integrations/i })
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /fields/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /^board$/i })).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: /^workflow$/i })
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /^board$/i })
+    ).not.toBeInTheDocument();
   });
 
   it('hides manager-only nav for members', () => {

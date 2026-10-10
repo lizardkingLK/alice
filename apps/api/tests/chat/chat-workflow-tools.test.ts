@@ -70,9 +70,7 @@ function createHarness(
     projectsRepository: {
       listAll: vi.fn(),
       findById: vi.fn(),
-      listActiveBoardMembers: vi.fn(),
     } as never,
-    teamsRepository: { listActiveByProject: vi.fn() } as never,
     integrationsService: { resolveChatModelForChat: vi.fn() } as never,
   });
 

@@ -8,7 +8,6 @@ import {
   ClipboardPenLine,
   GitBranch,
   Info,
-  Kanban,
   Network,
   PanelLeft,
   PanelLeftClose,
@@ -38,7 +37,6 @@ import { ProjectDetailsTab } from '@/app/projects/_components/project-details/pr
 import { ProjectMembersTab } from '@/app/projects/_components/project-details/project-members-tab';
 import { ProjectIntegrationsTab } from '@/app/projects/_components/project-details/project-integrations-tab';
 import { ProjectFieldsWorkspace } from '@/app/projects/_components/project-details/project-fields-workspace';
-import { BoardDesignerWorkspace } from '@/app/projects/_components/project-details/board-designer-workspace';
 import { ProjectSettingsTab } from '@/app/projects/_components/project-details/project-settings-tab';
 import { projectDetailHref } from '@/app/projects/_helpers/project-links';
 import { persistProjectDetailsSidebarOpen } from '@/app/projects/_helpers/project-details-sidebar-storage';
@@ -138,7 +136,6 @@ const MANAGER_ONLY_TABS = new Set<ProjectDetailsTabId>([
   'sprints',
   'integrations',
   'fields',
-  'board',
   'workflow',
   'types',
 ]);
@@ -186,12 +183,6 @@ const PROJECT_NAV_ITEMS: ReadonlyArray<{
     id: 'fields',
     label: 'Fields',
     Icon: SlidersHorizontal,
-    managerOrAdminOnly: true,
-  },
-  {
-    id: 'board',
-    label: 'Board',
-    Icon: Kanban,
     managerOrAdminOnly: true,
   },
   {
@@ -338,7 +329,7 @@ export function ProjectDetailsWorkspace({
     });
   };
 
-  const boardDesignerSharedProps = {
+  const workflowDesignerSharedProps = {
     project,
     canEdit: canEditProject,
     currentUserId,
@@ -567,16 +558,10 @@ export function ProjectDetailsWorkspace({
           </div>
         )}
 
-        {activeTab === 'board' && canEditProject && (
-          <div className="p-6">
-            <BoardDesignerWorkspace {...boardDesignerSharedProps} />
-          </div>
-        )}
-
         {activeTab === 'workflow' && canEditProject && (
           <div className="p-6 pb-8">
             <WorkflowDesignerWorkspace
-              {...boardDesignerSharedProps}
+              {...workflowDesignerSharedProps}
               initialSettingsOpen={initialWorkflowSettingsOpen}
             />
           </div>

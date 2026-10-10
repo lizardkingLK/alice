@@ -19,8 +19,6 @@ import {
   type WorkItemType,
 } from '@repo/types';
 import {
-  boardConfigSchema,
-  type BoardConfig,
   type ChatViewContext,
   type WorkflowConfigEnvelope,
 } from '@repo/types/api/v1';
@@ -28,13 +26,12 @@ import type { WorkItemService } from '../work-items/work-items.service';
 import type { SprintsService } from '../sprints/sprints.service';
 import type { ProjectsService } from '../projects/projects.service';
 import type { ProjectsRepository } from '../projects/projects.repository';
-import type { TeamsRepository } from '../teams/teams.repository';
 import type { IntegrationsService } from '../integrations/integrations.service';
 import type { ResolvedChatModelConfig } from '../integrations/chat-providers/chat-provider.types';
 import { resolveChatProvider } from '../integrations/chat-providers/resolve-chat-provider';
 import {
   systemInstruction,
-  selectAliceChatTools,
+  aliceChatTools,
   dynamicFieldsSystemPrompt,
 } from './chat.route.data';
 import type { ChatRepository } from './chat.repository';
@@ -42,7 +39,6 @@ import { ChatAttachmentsRepository } from './chat-attachments.repository';
 import { fetchAndParseWorkItemAttachment } from './chat-attachment-parser';
 import { WorkItemDeduplicationAgent } from './work-item-deduplication.agent';
 import { sanitizeLog } from './chat.utils';
-import { buildBoardDraft } from './board-draft';
 import {
   parseDismissWorkflowProposalInput,
   parseProposeWorkflowPatchInput,
@@ -81,11 +77,7 @@ export type ChatServiceDeps = {
     | 'getWorkflowConfig'
     | 'putWorkflowConfig'
   >;
-  projectsRepository: Pick<
-    ProjectsRepository,
-    'listAll' | 'findById' | 'listActiveBoardMembers'
-  >;
-  teamsRepository: Pick<TeamsRepository, 'listActiveByProject'>;
+  projectsRepository: Pick<ProjectsRepository, 'listAll' | 'findById'>;
   integrationsService: Pick<IntegrationsService, 'resolveChatModelForChat'>;
 };
 
@@ -945,8 +937,7 @@ export class ChatService {
   async callChatModelAPI(
     chatModel: ResolvedChatModelConfig,
     contents: ChatContentTurn[],
-    contextInstruction: string,
-    viewContext?: ChatViewContext | null
+    contextInstruction: string
   ): Promise<ChatLlmResponse> {
     const provider = resolveChatProvider(chatModel.provider);
     return provider.generateWithTools({
@@ -955,7 +946,7 @@ export class ChatService {
       model: chatModel.model,
       contents,
       systemInstruction: systemInstruction + '\n' + contextInstruction,
-      tools: selectAliceChatTools(viewContext),
+      tools: aliceChatTools,
     });
   }
 
@@ -1024,9 +1015,6 @@ export class ChatService {
       create_sprint: () =>
         this.handleCreateSprint(userId, args, toolActionsPerformed),
       list_users: () => this.chat.listUsersSnapshot(),
-      list_board_entities: () => this.handleListBoardEntities(userId, args),
-      configure_board_draft: () =>
-        this.handleConfigureBoardDraft(userId, args, toolActionsPerformed),
       get_workflow_config: () =>
         this.handleGetWorkflowConfig(userId, args, viewContext),
       propose_workflow_patch: () =>
@@ -1076,115 +1064,6 @@ export class ChatService {
         description: p.description,
         status: p.status,
       })),
-    };
-  }
-
-  private async loadBoardEntities(userId: string, projectId: string) {
-    if (!projectId) {
-      throw new Error('projectId is required.');
-    }
-
-    const project = await this.deps.projectsService.getProjectDetail(
-      projectId,
-      userId
-    );
-    if (!project) {
-      throw new Error('Project not found.');
-    }
-
-    const [teams, members] = await Promise.all([
-      this.deps.teamsRepository.listActiveByProject(projectId),
-      this.deps.projectsRepository.listActiveBoardMembers(projectId),
-    ]);
-    const currentConfig = boardConfigSchema.safeParse(project.workflow_config);
-
-    return {
-      project: {
-        id: project.id,
-        name: project.name,
-        key: project.key,
-        description: project.description,
-        status: project.status,
-      },
-      boardConfig: currentConfig.success ? currentConfig.data : null,
-      teams,
-      members,
-    };
-  }
-
-  private async handleListBoardEntities(
-    userId: string,
-    args: Record<string, unknown>
-  ): Promise<unknown> {
-    const projectId = typeof args.projectId === 'string' ? args.projectId : '';
-    return this.loadBoardEntities(userId, projectId);
-  }
-
-  private validateDraftEntityReferences(
-    config: BoardConfig,
-    teams: readonly { readonly id: string }[],
-    members: readonly { readonly id: string }[]
-  ): void {
-    if (config.version !== '2') return;
-
-    const activeTeamIds = new Set(teams.map((team) => team.id));
-    const activeMemberIds = new Set(members.map((member) => member.id));
-    for (const transition of config.transitions) {
-      for (const matcher of transition.allowAnyOf) {
-        if (matcher.scope === 'team' && !activeTeamIds.has(matcher.teamId)) {
-          throw new Error(
-            `Team ${matcher.teamId} is not an active team in this project.`
-          );
-        }
-        if (matcher.scope === 'user' && !activeMemberIds.has(matcher.userId)) {
-          throw new Error(
-            `User ${matcher.userId} is not an active member of this project.`
-          );
-        }
-      }
-    }
-  }
-
-  private async handleConfigureBoardDraft(
-    userId: string,
-    args: Record<string, unknown>,
-    toolActionsPerformed: ToolAction[]
-  ): Promise<unknown> {
-    const projectId = typeof args.projectId === 'string' ? args.projectId : '';
-    const entities = await this.loadBoardEntities(userId, projectId);
-
-    await requireUserWithRole(
-      userId,
-      [UserRoleEnum.admin, UserRoleEnum.manager],
-      'Only admins and managers can create a structured board draft. You can still ask Alice for conversational board suggestions.'
-    );
-
-    const { config, input } = buildBoardDraft(entities.boardConfig, args);
-    if (input.transitions !== undefined) {
-      this.validateDraftEntityReferences(
-        config,
-        entities.teams,
-        entities.members
-      );
-    }
-
-    const action: ToolAction = {
-      type: 'configure_board',
-      entity: {
-        projectId: entities.project.id,
-        projectName: entities.project.name,
-        config,
-      },
-    };
-    toolActionsPerformed.push(action);
-
-    return {
-      draftCreated: true,
-      saved: false,
-      projectId: entities.project.id,
-      projectName: entities.project.name,
-      config,
-      nextStep: 'Review and save this draft in Board Designer.',
     };
   }
 
@@ -2038,7 +1917,7 @@ Active UI View Context:
 - Designer dirty: ${viewContext.dirty}
 - Expected updatedAt (optimistic lock): ${viewContext.expectedUpdatedAt}
 - Live designer draft is available to get_workflow_config / propose_workflow_patch (prefer it over the last saved server copy).
-- Use WORKFLOW CONFIGURATION PROTOCOL. Do not call configure_board_draft.
+- Use WORKFLOW CONFIGURATION PROTOCOL.
 `;
   }
 
@@ -2104,8 +1983,7 @@ ${this.buildViewContextInstruction(viewContext)}
       const llmResponse = await this.callChatModelAPI(
         chatModel,
         contents,
-        contextInstruction,
-        viewContext
+        contextInstruction
       );
       const candidate = llmResponse.candidates?.[0];
       const modelContent = candidate?.content;

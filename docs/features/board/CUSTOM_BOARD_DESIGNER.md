@@ -1,11 +1,12 @@
 # Custom Board Designer
 
-Status: **Implemented through Stage 5**
+Status: **Retired / historical** (workflow Step 9)
 
-> **Successor (planned):** Graph-based [Workflow](../workflow/) will replace this
-> column designer. Until workflow implementation **Step 9**, this document remains
-> authoritative for the shipped board config. Do not remove this file when
-> starting workflow work — update status to historical at retirement.
+> **Successor:** Graph-based [Workflow](../workflow/) is the only configuration
+> surface. This document is kept for historical context on v1/v2 column JSON and
+> legacy runtime fallback. Do not implement new Board designer UI or Alice
+> `configure_board_draft` tools — use the Workflow designer and
+> `propose_workflow_patch` instead.
 
 Design document for a **Custom Board Designer** that lets managers define named
 kanban columns, map each column to a `WorkItemStatus` value, and attach

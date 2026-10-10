@@ -1,25 +1,25 @@
 # Workflow feature documentation
 
-Status: **Plan** (Steps 1–5 **Done**; 6–10 not started)
+Status: **In progress** (Steps 1–9 **Done** / shipping; Step 10 polish next)
 
 Jira-like **workflow graphs** replace the custom board column designer.
 Projects store one or more workflow documents in `projects.workflow_config`.
 The kanban board becomes a **per-workflow** view (type / workflow switcher).
 Work items carry a single-current **`state`** JSONB placement.
 
-| Document                                                             | Description                                                             | Status                    |
-| -------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------- |
-| [WORKFLOW.md](./WORKFLOW.md)                                         | Product rules, JSON shape, Settings, locks, escalation, data model      | Plan (Steps 1–2 as-built) |
-| [WORKFLOW_IMPLEMENTATION_PLAN.md](./WORKFLOW_IMPLEMENTATION_PLAN.md) | Atomic development steps (Step 3 split 3a/3b/3c), deferred-next backlog | Plan (Steps 1–5 Done)     |
-| [WORKFLOW_TESTING.md](./WORKFLOW_TESTING.md)                         | Unit / API / UI test matrix and manual QA                               | Plan                      |
+| Document                                                             | Description                                                             | Status                        |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------- |
+| [WORKFLOW.md](./WORKFLOW.md)                                         | Product rules, JSON shape, Settings, locks, escalation, data model      | Living (Steps 1–9 as-built)   |
+| [WORKFLOW_IMPLEMENTATION_PLAN.md](./WORKFLOW_IMPLEMENTATION_PLAN.md) | Atomic development steps (Step 3 split 3a/3b/3c), deferred-next backlog | Steps 1–9 Done; 10–11 planned |
+| [WORKFLOW_TESTING.md](./WORKFLOW_TESTING.md)                         | Unit / API / UI test matrix and manual QA                               | Living                        |
 
 ## Related
 
-- Board (current columns designer — retire UI when workflow ships):
-  [../board/](../board/), [CUSTOM_BOARD_DESIGNER.md](../board/CUSTOM_BOARD_DESIGNER.md)
+- Board (Kanban runtime; column designer **retired**):
+  [../board/](../board/), [CUSTOM_BOARD_DESIGNER.md](../board/CUSTOM_BOARD_DESIGNER.md) (historical)
 - Work-item activity (extended for transitions / resolutions):
   [../work-items/ACTIVITY.md](../work-items/ACTIVITY.md)
-- Alice chat tools (board draft → workflow tools):
+- Alice chat tools (workflow propose/apply; board draft removed):
   [../chat/AI_CHATBOT.md](../chat/AI_CHATBOT.md)
 - User guide:
   [Workflow designer](../../user-guide/board-and-planning/workflow-designer.md),

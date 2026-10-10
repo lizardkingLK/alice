@@ -9,9 +9,9 @@ updated when user-visible behavior lands in that step.
 Authoritative product rules: [WORKFLOW.md](./WORKFLOW.md).  
 Test expectations: [WORKFLOW_TESTING.md](./WORKFLOW_TESTING.md).
 
-**Legacy board config:** do not delete board designer code until **Step 9**.
-On read errors, always **fallback to seeded default** (no auto-migrate of v1/v2
-board JSON in MVP).
+**Legacy board config:** Board designer UI retired in **Step 9**. On read errors,
+always **fallback to seeded default** (no auto-migrate of v1/v2 board JSON in
+MVP). Runtime still parses legacy column docs when present.
 
 ---
 
@@ -335,7 +335,7 @@ Guide: [DATABASE_BUSY_RETRY.md](../../guides/DATABASE_BUSY_RETRY.md).
 4. Inline **Apply / Reject** card (summary + optional JSON diff); no apply modal.
 5. Dirty path: save designer → Apply → reload into canvas without full page refresh.
 6. Progress states; validation errors on card.
-7. Retire or gate `configure_board_draft` once workflow tools cover it.
+7. Retire or gate `configure_board_draft` once workflow tools cover it. (**Done** in Step 9)
 8. Chat service tests + UI tests for confirm gate.
 9. Append [user-guide chat](../../user-guide/chat/use-ai-assistant.md).
 
@@ -344,6 +344,8 @@ Guide: [DATABASE_BUSY_RETRY.md](../../guides/DATABASE_BUSY_RETRY.md).
 ---
 
 ## Step 9 — Retire board designer
+
+**Status:** **Done** (as-built below)
 
 **Goal:** Single configuration story.
 
@@ -357,6 +359,17 @@ Guide: [DATABASE_BUSY_RETRY.md](../../guides/DATABASE_BUSY_RETRY.md).
 5. Delete or archive obsolete board-config unit tests; keep fallback tests.
 
 **Exit:** No UI path to edit legacy board JSON; reads still fallback safely.
+
+### As-built (Step 9)
+
+| Piece               | Location / change                                                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Board designer UI   | Removed `board-designer-workspace`, movement/status rules dialogs; **Board** nav tab gone                                       |
+| Legacy `?tab=board` | `parseProjectDetailsTab` → `workflow`                                                                                           |
+| Alice board draft   | Removed `list_board_entities` / `configure_board_draft` / `board-draft.ts`; historical `configure_board` cards link to Workflow |
+| Runtime fallback    | Kept: `boardConfigSchema`, `resolveProjectBoardRuntime`, kanban / DnD guards                                                    |
+| Docs                | Board feature + `CUSTOM_BOARD_DESIGNER.md` → Retired / historical; feature index updated                                        |
+| Tests               | Removed `project-board-designer` + `chat-board-tools`; sidebar/chat cards updated                                               |
 
 ---
 

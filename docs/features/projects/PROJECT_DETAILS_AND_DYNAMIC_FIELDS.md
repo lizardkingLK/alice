@@ -88,9 +88,10 @@ The active tab is tracked using the `tab` URL query parameter, preserving bookma
 | `sprints`      | `/projects/[id]?tab=sprints`                     | Manager+             | Sprint registry for this project                    |
 | `integrations` | `/projects/[id]?tab=integrations`                | Manager+ (view/edit) | Jira Cloud & GitHub repository links                |
 | `fields`       | `/projects/[id]?tab=fields`                      | Manager+             | Dynamic fields JSON Schema configuration            |
-| `board`        | `/projects/[id]?tab=board`                       | Manager+             | Board column designer                               |
-| `workflow`     | `/projects/[id]?tab=workflow`                    | Manager+             | Status transition rules (locked rules section)      |
+| `workflow`     | `/projects/[id]?tab=workflow`                    | Manager+             | Workflow graph designer (states / transitions)      |
 | `types`        | `/projects/[id]?tab=types`                       | Manager+             | Allowed work-item types                             |
+
+Legacy `?tab=board` bookmarks resolve to **Workflow** (Board designer retired).
 
 The secondary project sidebar is **collapsible** on desktop. Open/collapsed state
 persists with cookie `project_details_sidebar_state` (SSR seed) and localStorage
@@ -98,7 +99,7 @@ key prefix `alice:project-details-sidebar-open:v1:` (per user). Collapsed chrome
 shows the project logo or key initials only.
 
 The helper `parseProjectDetailsTab` in `apps/web/lib/search-params.ts` recognizes
-all tab ids above (legacy `settings` → `types`).
+all tab ids above (legacy `settings` → `types`, legacy `board` → `workflow`).
 
 ### 2.3 UI & Responsive Design Patterns
 
@@ -585,7 +586,7 @@ The AI bot **does not write directly to the database**. All AI-generated schemas
 | **Member**  | Yes (Read-only summary)  | No (Hidden/Locked) |  No (Hidden / Locked)  |     Yes (Optional input)      |
 
 - **Client side**: When viewed by a Member, action buttons (`Load Template`, `Beautify`, `Generate with Alice`, `Save Changes`) are disabled or hidden, and an amber view-only banner is displayed (`Lock` icon).
-- **Members sidebar**: Only Details, Members, and Work Items. Teams, Integrations, Fields, Board, Workflow, Sprints, and Types are hidden (deep links fall back to Details). Active/Archived on project Work Items and `/work-items` is hidden; use My Work (`/member`) for archived items. Nav uses Next.js `Link`s with tab-scoped RSC loads.
+- **Members sidebar**: Only Details, Members, and Work Items. Teams, Integrations, Fields, Workflow, Sprints, and Types are hidden (deep links fall back to Details). Active/Archived on project Work Items and `/work-items` is hidden; use My Work (`/member`) for archived items. Nav uses Next.js `Link`s with tab-scoped RSC loads.
 - **Server side**: Server actions and PUT endpoints verify `isManagerOrAdmin(currentUserRole)` and check project membership before updating `projects.attributes_config`.
 
 ---
