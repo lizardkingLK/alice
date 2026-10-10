@@ -28,9 +28,16 @@ type ChatClientThreadProps = {
 function actionKey(
   action: NonNullable<ChatMessage['actions']>[number]
 ): string {
-  return action.type === 'configure_board'
-    ? `${action.type}-${action.entity.projectId}`
-    : `${action.type}-${action.entity.id}`;
+  if (action.type === 'configure_board') {
+    return `${action.type}-${action.entity.projectId}`;
+  }
+  if (action.type === 'propose_workflow_patch') {
+    return `${action.type}-${action.entity.projectId}-${action.entity.summary}`;
+  }
+  if (action.type === 'dismiss_workflow_patch') {
+    return `${action.type}-${action.entity.projectId}-${action.entity.reason ?? ''}`;
+  }
+  return `${action.type}-${action.entity.id}`;
 }
 
 export default function ChatClientThread({

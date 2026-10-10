@@ -9,12 +9,13 @@ import { ChatRoles, parseChatRole } from '@repo/types';
 import { ChatProviderError } from '../integrations/chat-providers/chat-provider.error';
 import { type ChatService, sanitizeLog } from './chat.service';
 import {
+  applyWorkflowPatchBodySchema,
   chatConversationIdParamSchema,
   createChatAttachmentUploadSessionSchema,
   finalizeChatAttachmentUploadSchema,
   postChatMessageBodySchema,
   renameChatConversationBodySchema,
-} from './chat.schemas';
+} from '@repo/types/api/v1';
 import type { StoredChatMessage } from './chat.route.types';
 
 const chatUpload: Multer = multer({
@@ -72,6 +73,27 @@ function parseConversationIdParam(
     return undefined;
   }
   return parsed.data;
+}
+
+function statusFromWorkflowPatchError(error: unknown, message: string): number {
+  if (
+    error instanceof Error &&
+    'status' in error &&
+    typeof (error as { status?: unknown }).status === 'number'
+  ) {
+    return (error as { status: number }).status;
+  }
+  if (message.includes('Only admins and managers')) {
+    return 403;
+  }
+  if (
+    message.includes('expired') ||
+    message.includes('confirmation token') ||
+    message.includes('does not match')
+  ) {
+    return 400;
+  }
+  return 500;
 }
 
 async function resolveOwnedConversationId(
@@ -409,6 +431,7 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
         modelId,
         integrationId,
         attachments: requestAttachments,
+        viewContext,
       } = validation.data;
 
       let chatModelConfig;
@@ -452,7 +475,8 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
             await chatService.generateChatResponse(
               req.userId!,
               sanitizedInputMessages,
-              chatModelConfig
+              chatModelConfig,
+              viewContext
             );
 
           const firstMsgText =
@@ -521,7 +545,8 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
               req.userId!,
               conversationId,
               sanitizedInputMessages,
-              chatModelConfig
+              chatModelConfig,
+              viewContext
             )
             .catch((err) => {
               console.error('Error starting async process:', err);
@@ -568,6 +593,38 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
           'Failed to generate fields schema',
           'error. generate-fields-schema failed'
         );
+      }
+    }
+  );
+
+  chatRouter.post(
+    '/workflow-patch/apply',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const validation = applyWorkflowPatchBodySchema.safeParse(req.body);
+      if (!validation.success) {
+        return res
+          .status(400)
+          .json({ error: z.treeifyError(validation.error) });
+      }
+
+      try {
+        const result = await chatService.applyWorkflowPatch(
+          req.userId!,
+          validation.data
+        );
+        return res.json(result);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Failed to apply workflow patch';
+        const statusCode = statusFromWorkflowPatchError(error, message);
+        console.error(
+          'error. workflow-patch apply failed:',
+          sanitizeLog(message)
+        );
+        return res.status(statusCode).json({ error: message });
       }
     }
   );

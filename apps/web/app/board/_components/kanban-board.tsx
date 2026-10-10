@@ -784,6 +784,14 @@ export function KanbanBoard({
           );
           return;
         }
+        if (error instanceof ApiError && error.status === 400) {
+          toast.error(
+            error.message.startsWith('Move blocked')
+              ? error.message
+              : `Move blocked: ${error.message}`
+          );
+          return;
+        }
         if (
           await tryHandleLockedMutationError({
             error,

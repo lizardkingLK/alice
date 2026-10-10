@@ -25,12 +25,12 @@ workflow; they cannot edit the graph.
 
 ## What you design
 
-| Piece                   | Meaning                                                                                                       |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **States**              | Columns on that workflow’s board (for example To Do, In Progress, Done)                                       |
-| **Transitions (edges)** | Allowed moves from one state to another. Cycles are allowed (for example Dev ↔ QA) when both directions exist |
-| **Type bindings**       | Which work-item types use this workflow                                                                       |
-| **Settings**            | Options for the selected state or transition                                                                  |
+| Piece                   | Meaning                                                                                                                                                        |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **States**              | Columns on that workflow’s board (for example To Do, In Progress, Done)                                                                                        |
+| **Transitions (edges)** | Allowed moves from one state to another. Cycles need both directions as edges; a missing reverse edge blocks that move as not allowed (not a permission error) |
+| **Type bindings**       | Which work-item types use this workflow                                                                                                                        |
+| **Settings**            | Options for the selected state or transition                                                                                                                   |
 
 Layout on the canvas is saved separately from the rules — moving boxes does not
 change what transitions are allowed.
@@ -104,9 +104,10 @@ default** workflow so the board keeps working.
 
 - On the **Board**, use the workflow / type switcher to view one workflow’s
   columns at a time. See [Kanban board](./kanban-board.md).
-- With the designer open, **Alice** can sit in a side panel and propose graph
-  changes. Use **Apply** or **Reject** on the suggestion card. If you have
-  unsaved canvas edits, Alice saves them first, then applies. See
+- Open **Alice** from the header while the designer is open — she shares the
+  page as a right sidebar and can propose graph changes. Use **Apply** or
+  **Reject** on the suggestion card. If you have unsaved canvas edits, Alice
+  saves them first, then applies. See
   [Use the AI assistant](../chat/use-ai-assistant.md).
 
 ---

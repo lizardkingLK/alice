@@ -3,6 +3,7 @@ import { ChatRoles } from '../../chat.js';
 import { ChatAttachmentFileTypeEnum } from '../../chat-attachments.js';
 import { boardConfigSchema } from './board-config.js';
 import { emptyToUndefined } from './query-preprocess.js';
+import { workflowConfigEnvelopeSchema } from './workflow-config.js';
 
 export {
   WorkItemDeduplicationActionEnum,
@@ -166,9 +167,59 @@ export const chatToolActionSchema = z.discriminatedUnion('type', [
       config: boardConfigSchema,
     }),
   }),
+  z.object({
+    type: z.literal('propose_workflow_patch'),
+    entity: z.object({
+      projectId: z.string(),
+      projectName: z.string(),
+      summary: z.string(),
+      confirmationToken: z.string(),
+      proposedConfig: workflowConfigEnvelopeSchema,
+      changeSummary: z.array(z.string()).optional(),
+    }),
+  }),
+  z.object({
+    type: z.literal('dismiss_workflow_patch'),
+    entity: z.object({
+      projectId: z.string(),
+      projectName: z.string(),
+      reason: z.string().optional(),
+    }),
+  }),
 ]);
 
 export type ChatToolActionWire = z.infer<typeof chatToolActionSchema>;
+
+/** Client view context when chat is docked on the workflow designer. */
+export const chatWorkflowViewContextSchema = z.object({
+  surface: z.literal('workflow_designer'),
+  projectId: z.uuid(),
+  draftEnvelope: workflowConfigEnvelopeSchema,
+  expectedUpdatedAt: z.string().min(1),
+  dirty: z.boolean(),
+});
+
+export type ChatWorkflowViewContext = z.infer<
+  typeof chatWorkflowViewContextSchema
+>;
+
+export const chatViewContextSchema = z.discriminatedUnion('surface', [
+  chatWorkflowViewContextSchema,
+]);
+
+export type ChatViewContext = z.infer<typeof chatViewContextSchema>;
+
+/** Confirmed apply of a proposed workflow patch (client Apply button). */
+export const applyWorkflowPatchBodySchema = z.object({
+  projectId: z.uuid(),
+  confirmationToken: z.string().min(1),
+  proposedConfig: workflowConfigEnvelopeSchema,
+  expectedUpdatedAt: z.string().min(1),
+});
+
+export type ApplyWorkflowPatchBody = z.infer<
+  typeof applyWorkflowPatchBodySchema
+>;
 
 /** Wire shape for stored chat messages (Storage / API responses). */
 export const chatMessageWireSchema = z.object({
@@ -212,6 +263,7 @@ export const postChatMessageBodySchema = z.object({
   integrationId: z.preprocess(emptyToUndefined, z.uuid().optional()),
   modelId: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   attachments: z.array(chatAttachmentWireSchema).optional(),
+  viewContext: chatViewContextSchema.optional(),
 });
 
 export type PostChatMessageBody = z.infer<typeof postChatMessageBodySchema>;

@@ -31,26 +31,26 @@ models exist but you have no conversations yet, use **Create conversation**.
 
 ---
 
-## Header drawer
+## Header sidebar (Alice dock)
 
 On any dashboard page (except `/chat`):
 
 1. Select the **Alice** control in the header (between notifications and your
    profile).
-2. The same chat UI opens in a right-hand drawer.
-3. Continue the conversation without leaving your current page.
+2. Alice opens as a **right-hand sidebar** that shares the page width — it does
+   **not** cover the page with a blur overlay.
+3. Select the control again (or the **Close** control in Alice’s header) to
+   hide the sidebar and give the page full width.
+4. Continue the conversation without leaving your current page.
 
 ---
 
-## Docked sidebar on the workflow designer
+## Workflow designer context
 
-When you open a project **Workflow** designer (managers/admins), Alice can open
-as a **side panel** that shares the screen with the canvas (not only a floating
-drawer). That keeps the graph visible while you chat.
-
-Alice is **aware of the designer context** (which project and workflow you are
-editing). You can ask in natural language to change the graph — for example add
-a state, connect Dev to QA, or restrict who may take a transition.
+When the project **Workflow** designer is open (managers/admins), Alice is
+**aware of that designer** (project, live draft, unsaved changes). You can ask
+in natural language to change the graph — for example add a state, connect Dev
+to QA, or restrict who may take a transition.
 
 ### Apply or reject suggestions
 
@@ -76,7 +76,8 @@ Examples:
 - **List accessible projects**: Ask _"show all projects"_ or _"list down all the projects"_. Alice enforces your role permissions and project memberships, responding with _"Here are all the projects that are available to you:"_ followed by a clean Markdown table (`| Project Name | Key | Description |`). Unassigned projects are strictly hidden
 - **Create** projects, sprints, and work items through guided prompts
 - **Propose workflow designer changes** (managers) with Apply / Reject cards when
-  the workflow side panel is open
+  the workflow side panel is open. Ask Alice to undo or cancel before you Apply
+  to dismiss a pending proposal without changing the canvas
 - **Attach and inspect documents**: Click the paperclip icon (📎) to attach JSON, CSV, TSV, Markdown tables, Indented text outlines, YAML, or image files
 - **Universal file parsing**: Ask Alice to extract work items, estimates, priorities, parent links, and custom dynamic fields from any supported document format
 - **Check duplicates**: Ask Alice to compare parsed items against existing project items to spot duplicates before creating

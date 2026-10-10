@@ -7,6 +7,7 @@ import type {
 } from '@repo/types/api/v1';
 
 export const WORKFLOW_STATE_NODE_TYPE = 'workflowState' as const;
+export const WORKFLOW_TRANSITION_EDGE_TYPE = 'workflowTransition' as const;
 
 export type WorkflowNodePosition = {
   readonly x: number;
@@ -31,12 +32,13 @@ export type WorkflowFlowEdge = {
   readonly id: string;
   readonly source: string;
   readonly target: string;
-  readonly type: 'smoothstep';
+  readonly type: typeof WORKFLOW_TRANSITION_EDGE_TYPE;
   readonly animated: false;
   readonly markerEnd: {
     readonly type: 'arrowclosed';
     readonly width: number;
     readonly height: number;
+    readonly color: string;
   };
 };
 
@@ -98,12 +100,13 @@ export function workflowDocumentToFlowElements(document: WorkflowDocument): {
     id: edge.id,
     source: edge.from,
     target: edge.to,
-    type: 'smoothstep',
+    type: WORKFLOW_TRANSITION_EDGE_TYPE,
     animated: false,
     markerEnd: {
       type: 'arrowclosed',
       width: 20,
       height: 20,
+      color: 'var(--muted-foreground)',
     },
   }));
 

@@ -10,6 +10,7 @@ import {
   WorkItemValidationError,
 } from '../../src/routes/api/work-items/work-items.errors';
 import { WorkItemService } from '../../src/routes/api/work-items/work-items.service';
+import type { WorkflowConfigEnvelope } from '@repo/types/api/v1';
 
 vi.mock('../../src/lib/auth-helpers', () => ({
   requireUserWithRole: vi.fn(),
@@ -134,9 +135,10 @@ describe('WorkItemService workflow graph transitions', () => {
     });
   });
 
-  it('rejects moves without an edge', async () => {
-    await expect(
-      service.updateWorkItem(
+  it('rejects moves without an edge as not allowed (not a permission error)', async () => {
+    let caught: unknown;
+    try {
+      await service.updateWorkItem(
         ACTOR_ID,
         WORK_ITEM_ID,
         updateInput({
@@ -144,7 +146,32 @@ describe('WorkItemService workflow graph transitions', () => {
           board_column_id: WorkItemStatusEnum.Done,
         }),
         LOCK
-      )
+      );
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(WorkItemValidationError);
+    expect(caught).not.toBeInstanceOf(BoardMoveForbiddenError);
+    expect((caught as Error).message).toMatch(/not allowed in the workflow/i);
+  });
+
+  it('rejects restricted edges with BoardMoveForbiddenError', async () => {
+    const envelope = createSeededDefaultWorkflowConfig();
+    const workflow = envelope.workflows[0]!;
+    const edge = workflow.graph.edges.find(
+      (item) =>
+        item.from === WorkItemStatusEnum.New &&
+        item.to === WorkItemStatusEnum.ToDo
+    );
+    expect(edge).toBeDefined();
+    edge!.allowAnyOf = [{ scope: 'role', role: 'manager' }];
+    getProjectWorkflowConfigMock.mockResolvedValue(
+      envelope as WorkflowConfigEnvelope
+    );
+
+    await expect(
+      service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
     ).rejects.toBeInstanceOf(BoardMoveForbiddenError);
   });
 

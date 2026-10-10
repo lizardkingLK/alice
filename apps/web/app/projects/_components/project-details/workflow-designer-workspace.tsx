@@ -6,6 +6,7 @@ import {
   findWorkflowById,
   resolveWorkflowConfig,
   upsertResolutionPreset,
+  type ChatWorkflowViewContext,
   type WorkflowConfigEnvelope,
   type WorkflowDocument,
   type WorkflowEdge,
@@ -36,6 +37,7 @@ import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutat
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 import { putProjectWorkflowConfig } from '@/app/projects/_services/projects.workflow-config.client';
 import { WorkflowStateFlowNode } from '@/app/projects/_components/project-details/workflow-state-flow-node';
+import { WorkflowTransitionEdge } from '@/app/projects/_components/project-details/workflow-transition-edge';
 import {
   WorkflowDesignerSettings,
   type WorkflowDesignerSelection,
@@ -44,6 +46,7 @@ import type { TransitionRuleTeamOption } from '@/app/projects/_components/projec
 import type { MemberCheckboxOption } from '@/components/member-checkbox-list';
 import {
   WORKFLOW_STATE_NODE_TYPE,
+  WORKFLOW_TRANSITION_EDGE_TYPE,
   applyNodePositionsToDocument,
   cloneWorkflowEnvelope,
   envelopesEqualForDesigner,
@@ -54,6 +57,7 @@ import {
   workflowDocumentToFlowElements,
 } from '@/app/projects/_helpers/workflow-designer.layout';
 import { persistWorkflowDesignerSettingsOpen } from '@/app/projects/_helpers/workflow-designer-settings-storage';
+import { useRegisterWorkflowAliceBridge } from '@/app/projects/_components/project-details/workflow-alice-bridge';
 
 type WorkflowDesignerWorkspaceProps = {
   readonly project: Project;
@@ -67,6 +71,10 @@ type WorkflowDesignerWorkspaceProps = {
 
 const nodeTypes = {
   [WORKFLOW_STATE_NODE_TYPE]: WorkflowStateFlowNode,
+};
+
+const edgeTypes = {
+  [WORKFLOW_TRANSITION_EDGE_TYPE]: WorkflowTransitionEdge,
 };
 
 /** Success banner + toast auto-clear (ms). */
@@ -91,12 +99,15 @@ type WorkflowSelectionHandler = (selection: WorkflowDesignerSelection) => void;
 function WorkflowDesignerCanvas({
   activeWorkflow,
   canEdit,
+  selection,
   onNodesSettled,
   onSelectionChange,
   onOpenSettings,
 }: {
   readonly activeWorkflow: WorkflowDocument;
   readonly canEdit: boolean;
+  /** Settings-panel selection — also drives marching-ants visuals on the canvas. */
+  readonly selection: WorkflowDesignerSelection;
   readonly onNodesSettled: WorkflowNodesSettledHandler;
   readonly onSelectionChange: WorkflowSelectionHandler;
   readonly onOpenSettings: () => void;
@@ -104,6 +115,25 @@ function WorkflowDesignerCanvas({
   const initial = workflowDocumentToFlowElements(activeWorkflow);
   const [nodes, , onNodesChange] = useNodesState(initial.nodes as Node[]);
   const [edges, , onEdgesChange] = useEdgesState(initial.edges as Edge[]);
+
+  // App selection (Settings) is the source of truth. XYFlow's internal
+  // `selected` can lag or disagree after clicks; sync explicitly.
+  const nodesForCanvas = useMemo(
+    () =>
+      nodes.map((node) => ({
+        ...node,
+        selected: selection?.kind === 'state' && selection.stateId === node.id,
+      })),
+    [nodes, selection]
+  );
+  const edgesForCanvas = useMemo(
+    () =>
+      edges.map((edge) => ({
+        ...edge,
+        selected: selection?.kind === 'edge' && selection.edgeId === edge.id,
+      })),
+    [edges, selection]
+  );
 
   const handleNodeDragStop = useCallback(
     (_event: unknown, _node: Node, nextNodes: Node[]) => {
@@ -115,9 +145,10 @@ function WorkflowDesignerCanvas({
   return (
     <FlowCanvas
       className="rounded-lg border"
-      nodes={nodes}
-      edges={edges}
+      nodes={nodesForCanvas}
+      edges={edgesForCanvas}
       nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
       onNodesChange={canEdit ? onNodesChange : undefined}
       onEdgesChange={onEdgesChange}
       onNodeDragStop={canEdit ? handleNodeDragStop : undefined}
@@ -331,9 +362,12 @@ export function WorkflowDesignerWorkspace({
     setCanvasEpoch((epoch) => epoch + 1);
   };
 
-  const performSave = async (): Promise<boolean> => {
+  const performSave = async (): Promise<{
+    readonly ok: boolean;
+    readonly updatedAt: string;
+  }> => {
     if (!canEdit || isSaving) {
-      return false;
+      return { ok: false, updatedAt };
     }
     setIsSaving(true);
     setMessage(null);
@@ -348,7 +382,7 @@ export function WorkflowDesignerWorkspace({
         currentUserId,
       });
       if (!result) {
-        return false;
+        return { ok: false, updatedAt };
       }
       const saved = cloneWorkflowEnvelope(result.config);
       setDraft(saved);
@@ -360,14 +394,14 @@ export function WorkflowDesignerWorkspace({
       setMessageIsError(false);
       toast.success('Workflow saved.', { duration: SUCCESS_FEEDBACK_MS });
       router.refresh();
-      return true;
+      return { ok: true, updatedAt: result.updatedAt };
     } catch (error) {
       const detail =
         error instanceof Error ? error.message : 'Could not save the workflow.';
       setMessage(detail);
       setMessageIsError(true);
       toast.error(detail);
-      return false;
+      return { ok: false, updatedAt };
     } finally {
       setIsSaving(false);
     }
@@ -382,6 +416,62 @@ export function WorkflowDesignerWorkspace({
       toast.error(detail);
     });
   };
+
+  const getViewContext = useCallback((): ChatWorkflowViewContext => {
+    return {
+      surface: 'workflow_designer',
+      projectId: project.id,
+      draftEnvelope: draft,
+      expectedUpdatedAt: updatedAt,
+      dirty,
+    };
+  }, [project.id, draft, updatedAt, dirty]);
+
+  const saveIfDirty = useCallback(async () => {
+    if (!dirty) {
+      return { ok: true, expectedUpdatedAt: updatedAt };
+    }
+    const result = await performSave();
+    return {
+      ok: result.ok,
+      expectedUpdatedAt: result.updatedAt,
+    };
+    // performSave closes over current draft/updatedAt; intentional per-click.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- save uses latest draft state
+  }, [dirty, updatedAt, draft, canEdit, isSaving, project.id, currentUserId]);
+
+  const applyEnvelope = useCallback(
+    (envelope: WorkflowConfigEnvelope, nextUpdatedAt: string) => {
+      const saved = cloneWorkflowEnvelope(envelope);
+      setDraft(saved);
+      setBaseline(cloneWorkflowEnvelope(saved));
+      setUsedFallback(false);
+      setUpdatedAt(nextUpdatedAt);
+      setCanvasEpoch((epoch) => epoch + 1);
+      setMessage('Workflow proposal applied.');
+      setMessageIsError(false);
+      toast.success('Workflow proposal applied.', {
+        duration: SUCCESS_FEEDBACK_MS,
+      });
+      router.refresh();
+    },
+    [router]
+  );
+
+  const surfaceBridge = useMemo(
+    () =>
+      canEdit
+        ? {
+            projectId: project.id,
+            getViewContext,
+            saveIfDirty,
+            applyEnvelope,
+          }
+        : null,
+    [canEdit, project.id, getViewContext, saveIfDirty, applyEnvelope]
+  );
+
+  useRegisterWorkflowAliceBridge(surfaceBridge);
 
   return (
     <div
@@ -482,6 +572,7 @@ export function WorkflowDesignerWorkspace({
               key={`${activeWorkflow.id}:${canvasEpoch}`}
               activeWorkflow={activeWorkflow}
               canEdit={canEdit}
+              selection={selection}
               onNodesSettled={handleNodesSettled}
               onSelectionChange={setSelection}
               onOpenSettings={handleOpenSettings}

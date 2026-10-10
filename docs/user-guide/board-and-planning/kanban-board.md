@@ -52,8 +52,10 @@ Managers configure paths, who may move cards, and subtask checks in the project
 ## Update status
 
 Drag a card from one column to another when that move is allowed. The change
-saves automatically. Some moves may ask for a short form, require permission, or
-block until subtasks are ready — those rules come from the project workflow.
+saves automatically. A move with no matching transition in the workflow is
+blocked as **not allowed**. If the transition exists but **Who can move**
+restricts you, you see a **permission** message instead. Some moves may also ask
+for a short form or block until subtasks are ready.
 
 You can also change state from the work-item detail sidebar or the Work Items
 registry.

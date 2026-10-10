@@ -44,3 +44,26 @@ describe('configure board chat action card', () => {
     );
   });
 });
+
+describe('dismiss workflow chat action card', () => {
+  it('renders dismiss confirmation with reason', () => {
+    render(
+      <ChatExecutedActionCard
+        action={{
+          type: 'dismiss_workflow_patch',
+          entity: {
+            projectId: 'project-1',
+            projectName: 'Alpha Project',
+            reason: 'Testing state already exists',
+          },
+        }}
+      />
+    );
+
+    expect(
+      screen.getByText(/Workflow proposal dismissed for/)
+    ).toHaveTextContent(
+      'Workflow proposal dismissed for Alpha Project: Testing state already exists'
+    );
+  });
+});

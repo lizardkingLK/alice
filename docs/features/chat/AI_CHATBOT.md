@@ -150,7 +150,7 @@ Mounted in `apps/api/src/config/routing.ts` as `/api/chat` and `/api/v1/chat`.
 | Client Mutation  | `apps/web/app/chat/_services/chat.mutations.client.ts`                                            |
 | Server reads     | `apps/web/app/chat/_services/chat.reads.server.ts`                                                |
 | Launcher         | `apps/web/app/chat/_components/chat-launcher.tsx`                                                 |
-| Drawer           | `apps/web/app/chat/_components/floating-chat-widget.tsx`                                          |
+| App-shell dock   | `apps/web/app/chat/_components/docked-chat-panel.tsx` (via `chat-launcher.tsx`)                   |
 | Routes           | `createChatRouter` in `chat.route.ts` (mounted as `chat.router`)                                  |
 | Service          | `ChatService` in `chat.service.ts`                                                                |
 | Chat Repo        | `ChatRepository` in `chat.repository.ts` (`db` injected)                                          |
