@@ -106,7 +106,9 @@ export const NotificationType = {
   view_shared: 'view_shared',
   chart_shared: 'chart_shared',
   chat_processed: 'chat_processed',
-  access_request: 'access_request'
+  access_request: 'access_request',
+  project_created: 'project_created',
+  project_create_failed: 'project_create_failed'
 } as const
 
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType]

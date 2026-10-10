@@ -248,7 +248,11 @@ describe('ProjectForm Component', () => {
   it('submits correctly in create mode and calls onSuccess', async () => {
     const onSuccess = vi.fn();
     const onProjectUpdated = vi.fn();
-    vi.mocked(createProject).mockResolvedValue(mockProject);
+    vi.mocked(createProject).mockResolvedValue({
+      accepted: true,
+      message: "Project creation started. You'll be notified when it's ready.",
+      correlationId: 'corr-1',
+    });
 
     render(
       <ProjectForm
@@ -307,27 +311,22 @@ describe('ProjectForm Component', () => {
     });
 
     expect(
-      await screen.findByText(/Project "Project Alice" created/i)
+      await screen.findByText(/Project creation started/i)
     ).toBeInTheDocument();
-    expect(onProjectUpdated).toHaveBeenCalledWith(mockProject);
-    expect(invalidateProjectDropdownCache).toHaveBeenCalledOnce();
-    expect(vi.mocked(createProject).mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(invalidateProjectDropdownCache).mock.invocationCallOrder[0]!
-    );
-    expect(
-      vi.mocked(invalidateProjectDropdownCache).mock.invocationCallOrder[0]
-    ).toBeLessThan(onProjectUpdated.mock.invocationCallOrder[0]!);
+    expect(onProjectUpdated).not.toHaveBeenCalled();
+    expect(invalidateProjectDropdownCache).not.toHaveBeenCalled();
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalled(), {
       timeout: 2_000,
     });
-    expect(
-      vi.mocked(invalidateProjectDropdownCache).mock.invocationCallOrder[0]
-    ).toBeLessThan(onSuccess.mock.invocationCallOrder[0]!);
   });
 
   it('keeps sprint state local and includes it in the project create payload', async () => {
-    vi.mocked(createProject).mockResolvedValue(mockProject);
+    vi.mocked(createProject).mockResolvedValue({
+      accepted: true,
+      message: "Project creation started. You'll be notified when it's ready.",
+      correlationId: 'corr-1',
+    });
     render(<ProjectForm users={mockUsers} />);
 
     await fillStep1Basics();
@@ -367,7 +366,7 @@ describe('ProjectForm Component', () => {
         })
       );
     });
-    expect(invalidateProjectDropdownCache).toHaveBeenCalledOnce();
+    expect(invalidateProjectDropdownCache).not.toHaveBeenCalled();
     expect(apiFetch).not.toHaveBeenCalledWith(
       '/api/sprints',
       expect.anything()
@@ -400,7 +399,11 @@ describe('ProjectForm Component', () => {
   });
 
   it('includes a trimmed optional team in the project create payload', async () => {
-    vi.mocked(createProject).mockResolvedValue(mockProject);
+    vi.mocked(createProject).mockResolvedValue({
+      accepted: true,
+      message: "Project creation started. You'll be notified when it's ready.",
+      correlationId: 'corr-1',
+    });
     render(<ProjectForm users={mockUsers} />);
 
     await fillStep1Basics();
@@ -438,7 +441,11 @@ describe('ProjectForm Component', () => {
   });
 
   it('includes both optional team and sprint data in one create payload', async () => {
-    vi.mocked(createProject).mockResolvedValue(mockProject);
+    vi.mocked(createProject).mockResolvedValue({
+      accepted: true,
+      message: "Project creation started. You'll be notified when it's ready.",
+      correlationId: 'corr-1',
+    });
     render(<ProjectForm users={mockUsers} />);
 
     await fillStep1Basics();
@@ -540,47 +547,6 @@ describe('ProjectForm Component', () => {
     const options = await getComboboxOptions(/Team Manager/i);
     expect(options).toHaveLength(3);
     expect(screen.queryByText(/Inactive Manager/)).not.toBeInTheDocument();
-  });
-
-  it('keeps creation successful when cache invalidation fails', async () => {
-    const onSuccess = vi.fn();
-    const onProjectUpdated = vi.fn();
-    const cacheError = new Error('Cache invalidation failed.');
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined);
-    vi.mocked(createProject).mockResolvedValue(mockProject);
-    vi.mocked(invalidateProjectDropdownCache).mockRejectedValue(cacheError);
-
-    try {
-      render(
-        <ProjectForm
-          users={mockUsers}
-          onSuccess={onSuccess}
-          onProjectUpdated={onProjectUpdated}
-        />
-      );
-
-      await fillStep1Basics();
-      await advanceCreateFormToTeamStep();
-      fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
-
-      expect(
-        await screen.findByText(/Project "Project Alice" created/i)
-      ).toBeInTheDocument();
-      expect(invalidateProjectDropdownCache).toHaveBeenCalledOnce();
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Failed to invalidate project dropdown cache after project creation:',
-        cacheError
-      );
-      expect(onProjectUpdated).toHaveBeenCalledWith(mockProject);
-      expect(screen.queryByText(cacheError.message)).not.toBeInTheDocument();
-      await waitFor(() => expect(onSuccess).toHaveBeenCalled(), {
-        timeout: 2_000,
-      });
-    } finally {
-      consoleErrorSpy.mockRestore();
-    }
   });
 
   it('does not invalidate the project cache when creation fails', async () => {
@@ -721,7 +687,11 @@ describe('ProjectForm Component', () => {
 
   it('advances from Imports to Source Control without creating the project', async () => {
     mockJiraApiFetch();
-    vi.mocked(createProject).mockResolvedValue(mockProject);
+    vi.mocked(createProject).mockResolvedValue({
+      accepted: true,
+      message: "Project creation started. You'll be notified when it's ready.",
+      correlationId: 'corr-1',
+    });
 
     render(<ProjectForm users={mockUsers} />);
     await fillStep1Basics();
@@ -748,9 +718,13 @@ describe('ProjectForm Component', () => {
     expect(createProject).not.toHaveBeenCalled();
   });
 
-  it('submits project creation and calls Jira import endpoint when checkbox is checked', async () => {
+  it('accepts project creation with Jira linked and defers import to Integrations', async () => {
     mockJiraApiFetch({ importedCount: 2 });
-    vi.mocked(createProject).mockResolvedValue(mockProject);
+    vi.mocked(createProject).mockResolvedValue({
+      accepted: true,
+      message: "Project creation started. You'll be notified when it's ready.",
+      correlationId: 'corr-1',
+    });
 
     const onSuccess = vi.fn();
     render(<ProjectForm users={mockUsers} onSuccess={onSuccess} />);
@@ -787,24 +761,21 @@ describe('ProjectForm Component', () => {
           jira_project_key: 'TEST',
         })
       );
-      expect(apiFetch).toHaveBeenCalledWith(
-        '/api/projects/proj-123/jira/import',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: '{}',
-          timeoutMs: 90_000,
-        }
-      );
     });
 
-    expect(
-      await screen.findByText(/tasks successfully imported from Jira/i)
-    ).toBeInTheDocument();
+    expect(apiFetch).not.toHaveBeenCalledWith(
+      '/api/projects/proj-123/jira/import',
+      expect.anything()
+    );
+    expect(await screen.findByText(/Integrations tab/i)).toBeInTheDocument();
   });
 
   it('submits project creation with GitHub Repository URL when GitHub is enabled', async () => {
-    vi.mocked(createProject).mockResolvedValue(mockProject);
+    vi.mocked(createProject).mockResolvedValue({
+      accepted: true,
+      message: "Project creation started. You'll be notified when it's ready.",
+      correlationId: 'corr-1',
+    });
 
     render(<ProjectForm users={mockUsers} />);
 
@@ -879,7 +850,11 @@ describe('ProjectForm Component', () => {
   });
 
   it('automatically splits GitHub Repository URL into owner and repository name', async () => {
-    vi.mocked(createProject).mockResolvedValue(mockProject);
+    vi.mocked(createProject).mockResolvedValue({
+      accepted: true,
+      message: "Project creation started. You'll be notified when it's ready.",
+      correlationId: 'corr-1',
+    });
 
     render(<ProjectForm users={mockUsers} />);
 

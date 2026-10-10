@@ -81,6 +81,10 @@ export async function apiFetch<T>(
 
   const token = session.access_token;
 
+  if (init?.skipDatabaseBusyRetry) {
+    return fetchWithAuthToken<T>(path, token, init);
+  }
+
   return withApiBusyRetry(() => fetchWithAuthToken<T>(path, token, init), {
     onRetry: () => {
       notifyDatabaseBusyRetry();

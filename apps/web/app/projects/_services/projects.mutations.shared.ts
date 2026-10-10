@@ -15,18 +15,30 @@ export type {
   ProjectMembersByProjectId,
 } from '@/app/projects/_types/projects.types';
 
+export type CreateProjectAccepted = {
+  readonly accepted: true;
+  readonly message: string;
+  readonly correlationId: string;
+};
+
 export function createProjectsService(
-  apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>
+  apiFetch: <T>(
+    path: string,
+    init?: RequestInit & { skipDatabaseBusyRetry?: boolean }
+  ) => Promise<T>
 ) {
   const apiProjects = '/api/projects';
 
   return {
-    async createProject(input: CreateProjectInput): Promise<Project> {
-      const data = await apiFetch<{ project: Project }>(apiProjects, {
+    /** Fire-and-forget create — API returns 202; inbox notifies when ready. */
+    async createProject(
+      input: CreateProjectInput
+    ): Promise<CreateProjectAccepted> {
+      return await apiFetch<CreateProjectAccepted>(apiProjects, {
         method: 'POST',
         body: JSON.stringify(input),
+        skipDatabaseBusyRetry: true,
       });
-      return data.project;
     },
 
     async updateProject(
