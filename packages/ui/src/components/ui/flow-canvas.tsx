@@ -14,6 +14,7 @@ import { cn } from '@repo/ui/lib/utils';
 
 export {
   Background,
+  BaseEdge,
   Controls,
   Handle,
   MarkerType,
@@ -25,6 +26,7 @@ export {
   addEdge,
   applyEdgeChanges,
   applyNodeChanges,
+  getSmoothStepPath,
   useEdgesState,
   useNodesState,
   useReactFlow,

@@ -173,3 +173,33 @@
     }
   }
 }
+
+/*
+ * Workflow designer selection — Excel-style “cut cell” marching ants.
+ * Applied when canvas selection matches Settings (see WorkflowDesignerCanvas).
+ * Kept outside @layer so it is not reordered/dropped by Tailwind layer merges.
+ */
+.workflow-marching-ants-stroke {
+  stroke: color-mix(in oklab, var(--muted-foreground) 85%, var(--foreground));
+  stroke-width: 1.25px;
+  stroke-dasharray: 4 3;
+  fill: none;
+  animation: workflow-marching-ants-stroke 0.75s linear infinite;
+}
+
+.workflow-edge-marching {
+  animation: workflow-marching-ants-stroke 0.75s linear infinite;
+}
+
+@keyframes workflow-marching-ants-stroke {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workflow-marching-ants-stroke,
+  .workflow-edge-marching {
+    animation: none;
+  }
+}

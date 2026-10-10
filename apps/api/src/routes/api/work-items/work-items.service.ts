@@ -845,7 +845,9 @@ export class WorkItemService {
     }
 
     if (!workflow.edge) {
-      throw new BoardMoveForbiddenError();
+      throw new WorkItemValidationError(
+        `This transition is not allowed in the workflow (${workflow.sourceState.name} → ${workflow.destinationState.name}).`
+      );
     }
 
     if (workflow.edge.allowAnyOf.length === 0) {

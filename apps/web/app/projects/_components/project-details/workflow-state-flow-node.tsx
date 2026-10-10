@@ -58,6 +58,40 @@ function nodeCaption(stateId: string, category: WorkflowStateCategory): string {
   return CATEGORY_CAPTION[category];
 }
 
+/** Excel-style cut-cell outline (moving dashes). Uses SMIL so it does not depend on CSS layers. */
+function MarchingAntsOutline() {
+  return (
+    <svg
+      aria-hidden
+      className="pointer-events-none absolute inset-0 z-10 h-full w-full overflow-visible"
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+    >
+      <rect
+        x="0.75"
+        y="0.75"
+        width="98.5"
+        height="98.5"
+        rx="4"
+        ry="4"
+        fill="none"
+        stroke="var(--muted-foreground)"
+        strokeWidth="1.5"
+        strokeDasharray="4 3"
+        pathLength={100}
+        vectorEffect="non-scaling-stroke"
+      >
+        <animate
+          attributeName="stroke-dashoffset"
+          values="0;-14"
+          dur="0.75s"
+          repeatCount="indefinite"
+        />
+      </rect>
+    </svg>
+  );
+}
+
 function WorkflowStateFlowNodeComponent({
   id,
   data,
@@ -66,13 +100,13 @@ function WorkflowStateFlowNodeComponent({
   return (
     <div
       className={cn(
-        'min-w-37 rounded-md border px-3 py-2 shadow-sm',
+        'relative min-w-37 rounded-md border px-3 py-2 shadow-sm',
         nodeSurfaceClass(id, data.category),
         // Board badges tint label color; designer nodes keep dark body text.
-        'text-foreground!',
-        selected && 'ring-ring ring-2 ring-offset-1'
+        'text-foreground!'
       )}
     >
+      {selected ? <MarchingAntsOutline /> : null}
       <Handle
         type="target"
         position={Position.Left}

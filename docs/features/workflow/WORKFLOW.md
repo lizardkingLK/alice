@@ -79,7 +79,8 @@ requires project scope) — same constraint as custom boards today.
 
 | Rule                     | Detail                                                                        |
 | ------------------------ | ----------------------------------------------------------------------------- |
-| Closed graph             | No edge ⇒ transition forbidden                                                |
+| Closed graph             | No edge ⇒ transition **not allowed** (400 validation; not a permission error) |
+| Edge auth                | Non-empty `allowAnyOf` mismatch ⇒ 403 `BOARD_MOVE_FORBIDDEN`                  |
 | Cycles                   | Allowed when both directions are explicit edges                               |
 | Self-loops               | Banned                                                                        |
 | Duplicate directed edges | Banned (`A→B` at most once); `A→B` and `B→A` are fine                         |

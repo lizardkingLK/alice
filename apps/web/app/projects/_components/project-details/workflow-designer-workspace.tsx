@@ -37,6 +37,7 @@ import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutat
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 import { putProjectWorkflowConfig } from '@/app/projects/_services/projects.workflow-config.client';
 import { WorkflowStateFlowNode } from '@/app/projects/_components/project-details/workflow-state-flow-node';
+import { WorkflowTransitionEdge } from '@/app/projects/_components/project-details/workflow-transition-edge';
 import {
   WorkflowDesignerSettings,
   type WorkflowDesignerSelection,
@@ -45,6 +46,7 @@ import type { TransitionRuleTeamOption } from '@/app/projects/_components/projec
 import type { MemberCheckboxOption } from '@/components/member-checkbox-list';
 import {
   WORKFLOW_STATE_NODE_TYPE,
+  WORKFLOW_TRANSITION_EDGE_TYPE,
   applyNodePositionsToDocument,
   cloneWorkflowEnvelope,
   envelopesEqualForDesigner,
@@ -61,7 +63,6 @@ type WorkflowDesignerWorkspaceProps = {
   readonly project: Project;
   readonly canEdit: boolean;
   readonly currentUserId?: string | null;
-  readonly currentUserRole?: string | null;
   readonly teams?: readonly TransitionRuleTeamOption[];
   readonly members?: readonly MemberCheckboxOption[];
   /** SSR cookie seed for Settings panel — expanded by default. */
@@ -70,6 +71,10 @@ type WorkflowDesignerWorkspaceProps = {
 
 const nodeTypes = {
   [WORKFLOW_STATE_NODE_TYPE]: WorkflowStateFlowNode,
+};
+
+const edgeTypes = {
+  [WORKFLOW_TRANSITION_EDGE_TYPE]: WorkflowTransitionEdge,
 };
 
 /** Success banner + toast auto-clear (ms). */
@@ -94,12 +99,15 @@ type WorkflowSelectionHandler = (selection: WorkflowDesignerSelection) => void;
 function WorkflowDesignerCanvas({
   activeWorkflow,
   canEdit,
+  selection,
   onNodesSettled,
   onSelectionChange,
   onOpenSettings,
 }: {
   readonly activeWorkflow: WorkflowDocument;
   readonly canEdit: boolean;
+  /** Settings-panel selection — also drives marching-ants visuals on the canvas. */
+  readonly selection: WorkflowDesignerSelection;
   readonly onNodesSettled: WorkflowNodesSettledHandler;
   readonly onSelectionChange: WorkflowSelectionHandler;
   readonly onOpenSettings: () => void;
@@ -107,6 +115,25 @@ function WorkflowDesignerCanvas({
   const initial = workflowDocumentToFlowElements(activeWorkflow);
   const [nodes, , onNodesChange] = useNodesState(initial.nodes as Node[]);
   const [edges, , onEdgesChange] = useEdgesState(initial.edges as Edge[]);
+
+  // App selection (Settings) is the source of truth. XYFlow's internal
+  // `selected` can lag or disagree after clicks; sync explicitly.
+  const nodesForCanvas = useMemo(
+    () =>
+      nodes.map((node) => ({
+        ...node,
+        selected: selection?.kind === 'state' && selection.stateId === node.id,
+      })),
+    [nodes, selection]
+  );
+  const edgesForCanvas = useMemo(
+    () =>
+      edges.map((edge) => ({
+        ...edge,
+        selected: selection?.kind === 'edge' && selection.edgeId === edge.id,
+      })),
+    [edges, selection]
+  );
 
   const handleNodeDragStop = useCallback(
     (_event: unknown, _node: Node, nextNodes: Node[]) => {
@@ -118,9 +145,10 @@ function WorkflowDesignerCanvas({
   return (
     <FlowCanvas
       className="rounded-lg border"
-      nodes={nodes}
-      edges={edges}
+      nodes={nodesForCanvas}
+      edges={edgesForCanvas}
       nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
       onNodesChange={canEdit ? onNodesChange : undefined}
       onEdgesChange={onEdgesChange}
       onNodeDragStop={canEdit ? handleNodeDragStop : undefined}
@@ -544,6 +572,7 @@ export function WorkflowDesignerWorkspace({
               key={`${activeWorkflow.id}:${canvasEpoch}`}
               activeWorkflow={activeWorkflow}
               canEdit={canEdit}
+              selection={selection}
               onNodesSettled={handleNodesSettled}
               onSelectionChange={setSelection}
               onOpenSettings={handleOpenSettings}

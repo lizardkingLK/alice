@@ -136,8 +136,10 @@ function diffSingleWorkflow(
   if (before.title !== after.title) {
     lines.push(`Renamed workflow to “${after.title}”.`);
   }
-  lines.push(...diffStates(before, after, label));
-  lines.push(...diffEdges(before, after, label));
+  lines.push(
+    ...diffStates(before, after, label),
+    ...diffEdges(before, after, label)
+  );
 
   if (before.resolutionPresets.length !== after.resolutionPresets.length) {
     lines.push(

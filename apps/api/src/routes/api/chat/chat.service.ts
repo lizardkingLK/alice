@@ -2028,7 +2028,7 @@ export class ChatService {
   private buildViewContextInstruction(
     viewContext?: ChatViewContext | null
   ): string {
-    if (!viewContext || viewContext.surface !== 'workflow_designer') {
+    if (viewContext?.surface !== 'workflow_designer') {
       return '';
     }
     return `
