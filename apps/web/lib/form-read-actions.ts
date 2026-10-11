@@ -4,7 +4,9 @@ import { getUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { throwIfError } from '@/lib/db/query';
 import { getProjectMembers } from '@/app/projects/_services/projects.reads.server';
+import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
 import type { WorkItemMemberLike } from '@/app/work-items/_helpers/work-item-member';
+import type { WorkItemSprintOption } from '@/app/work-items/_helpers/work-item-sprint';
 
 export type ShareViewMemberOption = {
   readonly userId: string;
@@ -51,6 +53,28 @@ export async function fetchProjectMembersForForm(
   }
 
   return mapProjectMembersToWorkItemUsers(await getProjectMembers(projectId));
+}
+
+/**
+ * Active-tab sprints for the selected project (planned / active / closed).
+ * Direct Supabase — not Express — per PERFORMANCE.md §6.
+ */
+export async function fetchProjectSprintsForForm(
+  projectId: string
+): Promise<WorkItemSprintOption[]> {
+  const user = await getUser();
+  if (!user || !projectId) {
+    return [];
+  }
+
+  const result = await getSprintsPaginatedServer('active', 1, 100, undefined, {
+    projectId,
+  });
+  return result.sprints.map((sprint) => ({
+    id: sprint.id,
+    name: sprint.name,
+    status: sprint.status,
+  }));
 }
 
 /**

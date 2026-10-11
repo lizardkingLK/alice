@@ -4,6 +4,7 @@ import {
   DEFAULT_WORK_ITEM_PRIORITY,
   WorkItemStatusEnum,
   type Database,
+  doneAtForCategoryChange,
   resolveWorkItemState,
   syncWorkItemStateForStatusChange,
   workItemStateToJson,
@@ -14,6 +15,7 @@ import {
   type WorkItemListRow,
   type WorkItemListRowWithDescription,
   type WorkItemPrismaListFilters,
+  type WorkItemState,
   paginationMeta,
   type UserRole,
 } from '@repo/types';
@@ -66,6 +68,12 @@ export type UpdateWorkItemRecord = WorkItemUpdateBody & {
   id: string;
   updatedBy: string;
   expectedUpdatedAt: string;
+  /**
+   * When set (graph workflow moves), persist this state instead of bridging
+   * category from status alone — required for draft destinations with null
+   * `board_column_id`.
+   */
+  stateOverride?: WorkItemState;
 };
 
 const ASSIGNEE_SELECT = userRelationSelect('assignee', 'assignee_id');
@@ -388,11 +396,20 @@ export class WorkItemRepository {
         })
       : null;
 
-    const synced = syncWorkItemStateForStatusChange({
-      nextStatus: input.status,
-      previousState,
-      boardColumnId: input.board_column_id,
-    });
+    const synced = input.stateOverride
+      ? {
+          state: input.stateOverride,
+          status: input.status,
+          doneAt: doneAtForCategoryChange({
+            previousCategory: previousState?.category,
+            nextCategory: input.stateOverride.category,
+          }),
+        }
+      : syncWorkItemStateForStatusChange({
+          nextStatus: input.status,
+          previousState,
+          boardColumnId: input.board_column_id,
+        });
 
     let descriptionUpdate:
       Prisma.InputJsonValue | typeof Prisma.DbNull | undefined;

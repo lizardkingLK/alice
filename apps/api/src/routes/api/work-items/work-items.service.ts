@@ -4,16 +4,19 @@ import {
   findStatusTransition,
   buildEscalationResolvedMeta,
   findResolutionPreset,
+  boardColumnIdForWorkflowState,
   findWorkflowEdge,
   findWorkflowState,
   getAllowedChildType,
   getAllowedParentType,
   getResolutionRequirement,
+  legacyStatusFromWorkItemState,
   normalizeBoardConfig,
   parseWorkflowConfigEnvelope,
   resolveWorkItemState,
+  resolveWorkflowGraphState,
+  resolveWorkflowPlacementState,
   validateResolutionPayload,
-  workflowStatesToBoardColumns,
   type BoardRuleMatcher,
   type RuntimeBoardConfig,
   type WorkItemType,
@@ -311,7 +314,7 @@ export class WorkItemService {
       );
     }
 
-    const nextInput = await this.resolveInputAfterTypeChange({
+    let nextInput = await this.resolveInputAfterTypeChange({
       workItemId,
       current,
       input,
@@ -326,6 +329,14 @@ export class WorkItemService {
       workflowConfig,
       workflowConfigError
     );
+
+    const graphPlacement =
+      workflow.mode === 'workflow'
+        ? this.normalizeGraphWorkflowPlacement(current, nextInput, workflow)
+        : null;
+    if (graphPlacement) {
+      nextInput = graphPlacement.nextInput;
+    }
 
     const resolutionMeta = this.assertWorkflowResolution(
       workflow,
@@ -387,6 +398,9 @@ export class WorkItemService {
       id: workItemId,
       updatedBy: userId,
       expectedUpdatedAt,
+      ...(graphPlacement?.stateOverride
+        ? { stateOverride: graphPlacement.stateOverride }
+        : {}),
     });
 
     await this.recordUpdateActivities({
@@ -762,6 +776,7 @@ export class WorkItemService {
     const currentState = resolveWorkItemState({
       state: current.state,
       status: current.status,
+      boardColumnId: current.board_column_id,
     });
     const workflow =
       envelope.workflows.find(
@@ -772,20 +787,25 @@ export class WorkItemService {
       ) ??
       envelope.workflows[0]!;
 
-    const columns = workflowStatesToBoardColumns(workflow);
-    const { source: sourceColumn, destination: destinationColumn } =
-      resolveValidatedBoardMove(current, input, columns);
-    const fromStateId = sourceColumn?.id ?? currentState.stateId;
-    const toStateId = destinationColumn.id;
-
     const sourceState =
-      findWorkflowState(workflow, fromStateId) ??
-      findWorkflowState(workflow, currentState.stateId);
-    const destinationState = findWorkflowState(workflow, toStateId);
+      findWorkflowState(workflow, currentState.stateId) ??
+      resolveWorkflowGraphState({
+        workflow,
+        status: current.status,
+        board_column_id: current.board_column_id,
+      });
+
+    // Prefer an explicit state id; do not silently fall back when the id is unknown.
+    const destinationState = input.board_column_id
+      ? findWorkflowState(workflow, input.board_column_id)
+      : resolveWorkflowGraphState({
+          workflow,
+          status: input.status,
+          board_column_id: null,
+        });
+
     if (!sourceState || !destinationState) {
-      throw new WorkItemValidationError(
-        'Workflow state does not exist in this project'
-      );
+      throw new WorkItemValidationError('That state is not on this workflow.');
     }
 
     const edge =
@@ -799,6 +819,55 @@ export class WorkItemService {
       edge,
       sourceState,
       destinationState,
+    };
+  }
+
+  /**
+   * Bridge status + null board_column_id for draft destinations, and build the
+   * state JSONB override so category stays correct when the column is cleared.
+   */
+  private normalizeGraphWorkflowPlacement(
+    current: DbWorkItem,
+    input: WorkItemUpdateBody,
+    workflow: {
+      mode: 'workflow';
+      workflow: WorkflowDocument;
+      destinationState: WorkflowStateNode;
+    }
+  ): {
+    nextInput: WorkItemUpdateBody;
+    stateOverride: NonNullable<
+      ReturnType<typeof resolveWorkflowPlacementState>
+    >;
+  } {
+    const previousState = resolveWorkItemState({
+      state: current.state,
+      status: current.status,
+      boardColumnId: current.board_column_id,
+    });
+    const destination = workflow.destinationState;
+    const status = legacyStatusFromWorkItemState({
+      workflowId: workflow.workflow.id,
+      stateId: destination.id,
+      category: destination.category,
+    });
+    const stateOverride = resolveWorkflowPlacementState({
+      workflow: workflow.workflow,
+      previousState,
+      targetStateId: destination.id,
+      updatedAt: new Date().toISOString(),
+    });
+    if (!stateOverride) {
+      throw new WorkItemValidationError('That state is not on this workflow.');
+    }
+
+    return {
+      nextInput: {
+        ...input,
+        status,
+        board_column_id: boardColumnIdForWorkflowState(destination),
+      },
+      stateOverride,
     };
   }
 

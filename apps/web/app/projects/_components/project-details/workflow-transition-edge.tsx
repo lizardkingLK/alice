@@ -7,8 +7,15 @@ import {
   type Edge,
   type EdgeProps,
 } from '@repo/ui/components/ui/flow-canvas';
+import {
+  WORKFLOW_EDGE_STROKE,
+  type WorkflowEdgeDirection,
+} from '@/app/projects/_helpers/workflow-designer.edges';
 
-const EDGE_STROKE = 'var(--muted-foreground)';
+type TransitionEdgeData = {
+  readonly direction?: WorkflowEdgeDirection;
+  readonly pathOffset?: number;
+};
 
 function WorkflowTransitionEdgeComponent({
   id,
@@ -21,7 +28,12 @@ function WorkflowTransitionEdgeComponent({
   selected,
   style,
   markerEnd,
-}: EdgeProps<Edge>) {
+  data,
+}: EdgeProps<Edge<TransitionEdgeData>>) {
+  const direction = data?.direction ?? 'forward';
+  const pathOffset = data?.pathOffset ?? 18;
+  const stroke = WORKFLOW_EDGE_STROKE[direction];
+
   const [edgePath] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -29,6 +41,7 @@ function WorkflowTransitionEdgeComponent({
     targetX,
     targetY,
     targetPosition,
+    offset: pathOffset,
   });
 
   return (
@@ -38,7 +51,7 @@ function WorkflowTransitionEdgeComponent({
       markerEnd={markerEnd}
       style={{
         ...style,
-        stroke: EDGE_STROKE,
+        stroke,
         strokeWidth: 1.5,
         ...(selected
           ? {

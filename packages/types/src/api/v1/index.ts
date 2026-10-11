@@ -76,11 +76,13 @@ export {
   type WorkflowResolutionPayload,
 } from './workflow-resolution.js';
 export {
+  boardColumnIdForWorkflowState,
   findWorkflowEdge,
   findWorkflowState,
   listBoardWorkflowTabs,
   resolveActiveWorkflow,
   resolveProjectBoardRuntime,
+  resolveWorkflowGraphState,
   resolveWorkflowPlacementState,
   workItemBelongsToActiveWorkflow,
   workflowStateToBoardColumn,

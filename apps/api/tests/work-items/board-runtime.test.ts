@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { WorkItemStatusEnum } from '@repo/types';
 import {
+  boardColumnIdForWorkflowState,
   createSeededDefaultWorkflowConfig,
   findWorkflowEdge,
   resolveProjectBoardRuntime,
+  resolveWorkflowGraphState,
   workflowStatesToBoardColumns,
 } from '@repo/types/api/v1';
 
@@ -69,5 +71,34 @@ describe('board-runtime', () => {
         WorkItemStatusEnum.New
       )
     ).toBeNull();
+  });
+
+  it('resolves draft-category states omitted from board columns', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const draftState = workflow.graph.states.find(
+      (state) => state.id === WorkItemStatusEnum.New
+    )!;
+    draftState.category = 'draft';
+    draftState.name = 'Draft';
+
+    expect(
+      workflowStatesToBoardColumns(workflow).map((column) => column.id)
+    ).not.toContain(WorkItemStatusEnum.New);
+
+    expect(
+      resolveWorkflowGraphState({
+        workflow,
+        status: WorkItemStatusEnum.Draft,
+        board_column_id: WorkItemStatusEnum.New,
+      })?.id
+    ).toBe(WorkItemStatusEnum.New);
+
+    expect(boardColumnIdForWorkflowState(draftState)).toBeNull();
+    expect(
+      boardColumnIdForWorkflowState({
+        id: WorkItemStatusEnum.ToDo,
+        category: 'todo',
+      })
+    ).toBe(WorkItemStatusEnum.ToDo);
   });
 });

@@ -387,7 +387,6 @@ export function ProjectDetailsWorkspace({
                     className={linkClassName}
                     aria-current={isActive ? 'page' : undefined}
                     aria-label={label}
-                    title={!sidebarOpen ? label : undefined}
                   >
                     <Icon className="size-4 shrink-0" />
                     <span

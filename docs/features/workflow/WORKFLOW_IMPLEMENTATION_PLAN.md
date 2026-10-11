@@ -17,21 +17,23 @@ MVP). Runtime still parses legacy column docs when present.
 
 ## Phase map
 
-| Step | Name                          | Delivers                                                     |
-| ---- | ----------------------------- | ------------------------------------------------------------ |
-| 1    | Schema + `state` bridge       | DB columns, types, dual-write helpers                        |
-| 2    | Workflow Zod + project API    | Envelope schema, CRUD/save, fallback                         |
-| 3a   | Flow canvas + load/save       | XYFlow canvas, layout persist, Save/Discard                  |
-| 3b   | Settings sidebar              | Node/edge forms, tooltips / popovers                         |
-| 3c   | Designer rules + dirty flag   | Lock/terminal/children/escalation stub, chat dirty           |
-| 4    | Board switcher + transitions  | Parallel boards, DnD/API gates, pickers                      |
-| 5    | Activity table                | `activities` + transition writers + UI (**Done**)            |
-| 6    | Resolution presets            | Form / Preview / JSON designer + runtime dialog (**Done**)   |
-| 7    | Charts category + state       | Rollups + Charts UI **State** label                          |
-| 8    | Docked Alice + workflow tools | Sidebar, view context, propose/apply confirm                 |
-| 9    | Retire board designer         | Remove board config UI; update board feature docs (**Done**) |
-| 10   | User-guide polish             | Living guides synced with shipped UI (**Done**)              |
-| 11   | Async project create          | Non-blocking create + notify (busy-retry hidden) (**Done**)  |
+| Step | Name                           | Delivers                                                        |
+| ---- | ------------------------------ | --------------------------------------------------------------- |
+| 1    | Schema + `state` bridge        | DB columns, types, dual-write helpers                           |
+| 2    | Workflow Zod + project API     | Envelope schema, CRUD/save, fallback                            |
+| 3a   | Flow canvas + load/save        | XYFlow canvas, layout persist, Save/Discard                     |
+| 3b   | Settings sidebar               | Node/edge forms, tooltips / popovers                            |
+| 3c   | Designer rules + dirty flag    | Lock/terminal/children/escalation stub, chat dirty              |
+| 4    | Board switcher + transitions   | Parallel boards, DnD/API gates, pickers                         |
+| 5    | Activity table                 | `activities` + transition writers + UI (**Done**)               |
+| 6    | Resolution presets             | Form / Preview / JSON designer + runtime dialog (**Done**)      |
+| 7    | Charts category + state        | Rollups + Charts UI **State** label                             |
+| 8    | Docked Alice + workflow tools  | Sidebar, view context, propose/apply confirm                    |
+| 9    | Retire board designer          | Remove board config UI; update board feature docs (**Done**)    |
+| 10   | User-guide polish              | Living guides synced with shipped UI (**Done**)                 |
+| 11   | Async project create           | Non-blocking create + notify (busy-retry hidden) (**Done**)     |
+| 12   | Designer graph + multi-wf UI   | Add state, connect edges, Fork/default/delete/rename (**Done**) |
+| 13   | State pickers + details banner | Graph destinations incl. draft; details State UI (**Done**)     |
 
 **Deferred (next)** after MVP: see [§ Deferred (next)](#deferred-next).
 
@@ -197,7 +199,7 @@ Lock / Terminal / escalation checkboxes and outbound-edge confirm are **Step 3c*
 
 ## Step 4 — Board switcher + transitions
 
-**Status:** **Done** (as-built below; details/backlog pickers still enum-based)
+**Status:** **Done** (as-built below; details state pickers closed in Step 13; backlog deferred)
 
 **Goal:** Runtime uses workflows instead of board columns for scoped projects.
 
@@ -222,7 +224,7 @@ Lock / Terminal / escalation checkboxes and outbound-edge confirm are **Step 3c*
 | Type-binding filter | Active workflow bindings filter cards                                                       |
 | API graph gates     | `WorkItemService` edge / allowAnyOf / require-children / lock / terminal                    |
 | Legacy board        | Still supported when blob is v1/v2 board config                                             |
-| Pickers             | Create-from-column uses column status; details/backlog enum pickers deferred                |
+| Pickers             | Create-from-column uses column status; details state pickers → Step 13; backlog deferred    |
 | Tests               | `board-runtime.test.ts`, `work-items.workflow-transition.test.ts`, board-data envelope case |
 
 ---
@@ -483,6 +485,96 @@ work-item `activities` for project create.
 | Client             | `skipDatabaseBusyRetry` on create; form shows accept message (Jira import deferred to Integrations)   |
 | Inbox href         | `project_created` → `/projects/{id}`; failure → no link                                               |
 | Docs               | create-project, dashboard-inbox, `DATABASE_BUSY_RETRY.md`                                             |
+
+---
+
+## Step 12 — Designer graph edit + multi-workflow UI
+
+**Status:** **Done** (as-built below)
+
+**Goal:** Managers can add states and connect transitions on the canvas (not
+Alice-only), and manage multiple workflows (Fork / Mark default / Delete /
+Rename) against existing workflow-config APIs. Designer UX includes keyboard
+shortcuts, undo, cut/paste states, live Settings→node sync, Help, and Go to
+Board.
+
+### Product behavior
+
+1. **Add state** — **Ctrl/Cmd+N** appends a `st-{uuid}` state (`New state`,
+   category `todo`) to the local draft, selects it, and opens Settings (no
+   wide Plus toolbar).
+2. **Connect edges** — Drag from a state’s handle to another’s (handles on all
+   four sides). Chosen handles persist in `layout.edges`; otherwise the canvas
+   picks short sides (return edges use free top/bottom ports). Reverse edges
+   use the same smooth-step path with a warmer stroke.
+   Rejects self-loops, duplicates, and exits from terminal states. New edges
+   default to everyone / no escalation / require children off.
+3. **Delete** — Settings can delete the selected state (confirm when edges
+   exist) or transition. **Delete/Backspace** deletes the selection without
+   confirm. Draft stays dirty until Save.
+4. **Selection** — **Escape** clears the selected state/edge.
+5. **Undo** — **Ctrl/Cmd+Z** restores the previous draft snapshot (cap 50;
+   cleared on Save / Discard / manage refresh).
+6. **Cut / paste** — **Ctrl/Cmd+X** / **V** for states only (no edges in
+   clipboard); paste creates a new state id at an offset.
+7. **Live Settings** — Name / category / flags update the canvas node without
+   remounting.
+8. **Rename** — Inline title next to the workflow switcher (dirty → Save).
+9. **Fork / Mark default / Delete workflow** — Call existing APIs (save dirty
+   draft first). Switch to the new fork or remaining default after delete.
+   Cannot delete the only or default workflow without promoting another first.
+10. **Go to Board** — Toolbar Kanban link → `/board?project={id}`.
+11. **Workflow Help** — Help icon opens a dialog with a Keyboard shortcuts
+    section.
+
+### As-built (Step 12)
+
+| Piece          | Location / change                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------- |
+| Layout helpers | `addStateToDocument`, `addEdgeToDocument`, `remove*`, `canConnectWorkflowStates`, rename envelope |
+| Undo helper    | `workflow-designer.undo.ts` — envelope snapshot stack                                             |
+| Designer UI    | `nodesConnectable` + `onConnect`, manage chrome, delete in Settings, keyboard, Help, Go to Board  |
+| Client         | `forkProjectWorkflow`, `setDefaultProjectWorkflow`, `deleteProjectWorkflow`                       |
+| Docs           | User-guide workflow designer + this plan                                                          |
+
+---
+
+## Step 13 — Workflow state pickers + details banner
+
+**Status:** **Done** (as-built below)
+
+**Goal:** Details page uses workflow **state** names/ids (including draft),
+API accepts draft destinations from the full graph, and the details header
+shows a sprint-report-style summary banner with a colorized state control.
+
+### Product behavior
+
+1. **API** — Graph moves resolve destinations from full `graph.states` (not
+   board columns only). Draft category → persist `board_column_id: null` and
+   write `state` from the destination node. Unknown id →
+   **“That state is not on this workflow.”**
+2. **Details picker** — Options = states on the item’s workflow; labels =
+   `state.name`; values = `state.id`; payload
+   `board_column_id = state.id` (or `null` if draft) + bridged `status`.
+3. **Labels** — Workflow projects: **State** / **Change state**; legacy:
+   **Status**.
+4. **Banner** — Soft tinted strip with state badge (icon + color), title
+   editor, type / key / project / assignee.
+5. **Dropdown** — Colorized trigger + menu items (reuse status meta /
+   category map).
+
+### As-built (Step 13)
+
+| Piece             | Location                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------- |
+| Graph destination | `resolveWorkflowGraphState`, `boardColumnIdForWorkflowState` in `board-runtime.ts`                |
+| API normalize     | `WorkItemService.normalizeGraphWorkflowPlacement` + `stateOverride` on repository update          |
+| Picker helper     | `apps/web/.../workflow-state-options.ts`                                                          |
+| Banner            | `work-item-summary-banner.tsx`                                                                    |
+| Sidebar / patch   | Colorized `StatusDropdown` + field patch `stateOptions`                                           |
+| Tests             | workflow-transition draft move; board-runtime draft resolve; web `workflow-state-options.test.ts` |
+
+**Still deferred:** backlog / registry state pickers (reuse the helper later).
 
 ---
 

@@ -15,7 +15,10 @@ import { Button } from '@repo/ui/components/ui/button';
 import { DialogFooter } from '@repo/ui/components/ui/dialog';
 import { Loader2 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { HIERARCHY_TYPE_CHANGE_CODE } from '@repo/types/api/v1';
+import {
+  HIERARCHY_TYPE_CHANGE_CODE,
+  type ProjectWorkflowConfig,
+} from '@repo/types/api/v1';
 import { User as DbUser } from '@/app/users/_services/users.mutations.client';
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import {
@@ -30,9 +33,10 @@ import { WorkItemTypeChangeDetachDialog } from '@/app/work-items/_components/wor
 import type { WorkItemCreateFormMode } from '@/app/work-items/_helpers/work-item-create-form-preference';
 import { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import { useProjectMembers } from '@/app/work-items/_hooks/use-project-members';
+import { useProjectSprints } from '@/app/work-items/_hooks/use-project-sprints';
+import type { WorkItemSprintOption } from '@/app/work-items/_helpers/work-item-sprint';
 import { delay, toShortId } from '@/app/_shared/utility';
 import { ResponseDTO } from '@repo/types/connection';
-import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import type { SearchableSelectOption } from '@/components/searchable-select';
@@ -85,6 +89,8 @@ export interface WorkItemFormProps {
   lockStatus?: boolean;
   /** Optional sprint for create (e.g. board sprint filter). */
   defaultSprintId?: string | null;
+  /** Optional sprint list when skipping network fetch (charts mocks). */
+  projectSprints?: readonly WorkItemSprintOption[];
   /** Pre-filled due date for create (YYYY-MM-DD). */
   defaultDueDate?: string;
   /** When true, due date is fixed on create (value still submitted). */
@@ -109,6 +115,11 @@ export interface WorkItemFormProps {
    * selected project (charts sample projects are not real API ids).
    */
   preferProvidedMembers?: boolean;
+  /**
+   * Keep the provided `projectSprints` list and skip fetching sprints for the
+   * selected project (charts sample projects are not real API ids).
+   */
+  preferProvidedSprints?: boolean;
   /**
    * Pin form actions to the bottom (calendar day-sheet create). Scrolls fields
    * above a sticky footer with equal top/bottom/right padding. Status alerts
@@ -222,11 +233,13 @@ export function WorkItemForm({
   defaultStatus,
   lockStatus = false,
   defaultSprintId = null,
+  projectSprints = [],
   defaultDueDate,
   lockDueDate = false,
   createFormMode = 'classic',
   localMutate,
   preferProvidedMembers = false,
+  preferProvidedSprints = false,
   stickyActions = false,
 }: Readonly<WorkItemFormProps>) {
   const { handleMutationError } = useOptimisticLock();
@@ -257,6 +270,9 @@ export function WorkItemForm({
 
   const [assigneeId, setAssigneeId] = useState(
     itemToEdit?.assignee_id ?? lockAssigneeId ?? ''
+  );
+  const [sprintId, setSprintId] = useState(
+    itemToEdit?.sprint_id ?? defaultSprintId ?? ''
   );
   const [type, setType] = useState(
     itemToEdit?.type ?? (typeLocked ? (availableTypes[0] ?? '') : '')
@@ -308,6 +324,14 @@ export function WorkItemForm({
     lockAssignee,
     preferProvidedMembers,
     onAssigneeChange: (val) => setAssigneeId(val ?? ''),
+  });
+
+  const currentSprints = useProjectSprints({
+    projectId,
+    providedSprints: projectSprints,
+    sprintId,
+    preferProvidedSprints: preferProvidedSprints || preferProvidedMembers,
+    onSprintChange: (val) => setSprintId(val ?? ''),
   });
 
   const allowedParentType = resolveAllowedParentType(
@@ -528,6 +552,8 @@ export function WorkItemForm({
     availableTypes,
     projectId,
     assigneeId,
+    sprintId,
+    sprintOptions: currentSprints,
     type,
     priority,
     parentId: parentLocked ? (lockedParentId ?? parentId) : parentId,
@@ -542,6 +568,7 @@ export function WorkItemForm({
     status: statusValue,
     onProjectIdChange: setProjectId,
     onAssigneeIdChange: setAssigneeId,
+    onSprintIdChange: setSprintId,
     onTypeChange: handleTypeChange,
     onPriorityChange: setPriority,
     onParentIdChange: setParentId,
@@ -555,9 +582,6 @@ export function WorkItemForm({
         stickyActions ? 'h-full' : 'justify-between space-y-4'
       )}
     >
-      {!isEditMode && defaultSprintId ? (
-        <input type="hidden" name="sprint_id" value={defaultSprintId} />
-      ) : null}
       <LockedDueDateInput
         isEditMode={isEditMode}
         lockDueDate={lockDueDate}

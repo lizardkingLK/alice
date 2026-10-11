@@ -2,12 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { WorkItemStatusEnum } from '@repo/types';
 import { createSeededDefaultWorkflowConfig } from '@repo/types/api/v1';
 import {
+  addEdgeToDocument,
+  addStateToDocument,
   applyNodePositionsToDocument,
+  canConnectWorkflowStates,
+  captureStateClipboard,
   defaultStatePosition,
   makeStateTerminalInDocument,
+  pasteStateFromClipboard,
   patchEdgeInDocument,
   patchStateInDocument,
   readLayoutPosition,
+  removeEdgeFromDocument,
+  removeStateFromDocument,
+  renameWorkflowInEnvelope,
   replaceWorkflowInEnvelope,
   workflowDocumentToFlowElements,
 } from '@/app/projects/_helpers/workflow-designer.layout';
@@ -29,6 +37,12 @@ describe('workflow-designer.layout', () => {
     expect(edges[0]?.source).toBe(workflow.graph.edges[0]?.from);
     expect(edges[0]?.target).toBe(workflow.graph.edges[0]?.to);
     expect(edges[0]?.type).toBe('workflowTransition');
+    expect(edges[0]?.sourceHandle).toBe('source-right');
+    expect(edges[0]?.targetHandle).toBe('target-left');
+    expect(edges[0]?.data).toEqual({
+      direction: 'forward',
+      pathOffset: 18,
+    });
     expect(edges[0]?.markerEnd).toEqual({
       type: 'arrowclosed',
       width: 20,
@@ -115,5 +129,134 @@ describe('workflow-designer.layout', () => {
     expect(
       next.graph.edges.filter((edge) => edge.from === WorkItemStatusEnum.New)
     ).toHaveLength(0);
+  });
+
+  it('adds a unique state id with default todo flags and layout', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const first = addStateToDocument(workflow);
+    const second = addStateToDocument(first.document);
+
+    expect(first.stateId).toMatch(/^st-/);
+    expect(second.stateId).not.toBe(first.stateId);
+    const created = second.document.graph.states.find(
+      (state) => state.id === second.stateId
+    );
+    expect(created).toMatchObject({
+      name: 'New state',
+      category: 'todo',
+      lockRecord: false,
+      terminal: false,
+      requiresEscalation: false,
+    });
+    expect(second.document.layout.nodes[second.stateId]).toEqual(
+      defaultStatePosition(workflow.graph.states.length + 1)
+    );
+  });
+
+  it('rejects self-loops and duplicate directed edges', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    expect(
+      canConnectWorkflowStates(
+        workflow,
+        WorkItemStatusEnum.New,
+        WorkItemStatusEnum.New
+      )
+    ).toEqual({ ok: false, reason: 'Self-loop edges are not allowed.' });
+    expect(
+      canConnectWorkflowStates(
+        workflow,
+        WorkItemStatusEnum.New,
+        WorkItemStatusEnum.ToDo
+      )
+    ).toEqual({ ok: false, reason: 'That transition already exists.' });
+  });
+
+  it('adds an edge with open defaults when the pair is allowed', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const result = addEdgeToDocument(
+      workflow,
+      WorkItemStatusEnum.Done,
+      WorkItemStatusEnum.New
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+    const edge = result.document.graph.edges.find(
+      (candidate) => candidate.id === result.edgeId
+    );
+    expect(edge).toMatchObject({
+      from: WorkItemStatusEnum.Done,
+      to: WorkItemStatusEnum.New,
+      allowAnyOf: [],
+      requiresEscalation: false,
+      resolutionPresetId: null,
+      requireChildren: 'off',
+    });
+  });
+
+  it('removes a state and its incident edges', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const removed = removeStateFromDocument(
+      workflow,
+      WorkItemStatusEnum.Testing
+    );
+    expect(removed.ok).toBe(true);
+    if (!removed.ok) {
+      return;
+    }
+    expect(
+      removed.document.graph.states.some(
+        (state) => state.id === WorkItemStatusEnum.Testing
+      )
+    ).toBe(false);
+    expect(
+      removed.document.graph.edges.some(
+        (edge) =>
+          edge.from === WorkItemStatusEnum.Testing ||
+          edge.to === WorkItemStatusEnum.Testing
+      )
+    ).toBe(false);
+  });
+
+  it('removes a single edge by id', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const edgeId = workflow.graph.edges[0]!.id;
+    const next = removeEdgeFromDocument(workflow, edgeId);
+    expect(next.graph.edges.some((edge) => edge.id === edgeId)).toBe(false);
+  });
+
+  it('renames a workflow title in the envelope', () => {
+    const envelope = createSeededDefaultWorkflowConfig();
+    const next = renameWorkflowInEnvelope(
+      envelope,
+      envelope.defaultWorkflowId,
+      'Delivery'
+    );
+    expect(next.workflows[0]?.title).toBe('Delivery');
+  });
+
+  it('pastes a cut state with a new id and no edges', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const clipboard = captureStateClipboard(
+      workflow,
+      WorkItemStatusEnum.Testing
+    );
+    expect(clipboard).not.toBeNull();
+    const pasted = pasteStateFromClipboard(workflow, clipboard!);
+    expect(pasted.stateId).toMatch(/^st-/);
+    expect(pasted.stateId).not.toBe(WorkItemStatusEnum.Testing);
+    const state = pasted.document.graph.states.find(
+      (candidate) => candidate.id === pasted.stateId
+    );
+    expect(state?.name).toBe(
+      workflow.graph.states.find((s) => s.id === WorkItemStatusEnum.Testing)
+        ?.name
+    );
+    expect(
+      pasted.document.graph.edges.some(
+        (edge) => edge.from === pasted.stateId || edge.to === pasted.stateId
+      )
+    ).toBe(false);
   });
 });

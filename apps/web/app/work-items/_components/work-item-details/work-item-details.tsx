@@ -15,7 +15,10 @@ import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
 import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form/work-item-form-dialog';
 import { WorkItemLinkSubtaskDialog } from '@/app/work-items/_components/work-item-subtasks/work-item-link-subtask-dialog';
-import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import {
+  DbWorkItem,
+  type WorkItemAncestor,
+} from '@/app/work-items/_services/work-items.reads.server';
 import { AttachmentsSection } from '@/app/work-items/_components/work-item-attachments/work-item-attachments-section';
 import {
   WorkItemActivityTabs,
@@ -49,7 +52,7 @@ import { updateWorkItem } from '@/app/work-items/_services/work-items.mutations.
 import { createWorkItemWorkLog } from '@/app/worklogs/_services/worklogs.mutations.client';
 import { useWorkItemLifecycleActions } from '@/app/work-items/_hooks/use-work-item-lifecycle-actions';
 import WorkItemSidebar from '@/app/work-items/_components/work-item-details/work-item-details-sidebar';
-import { WorkItemTitleEditor } from '@/app/work-items/_components/work-item-details/work-item-title-editor';
+import { WorkItemSummaryBanner } from '@/app/work-items/_components/work-item-details/work-item-summary-banner';
 import { WorkItemPathBreadcrumb } from '@/app/work-items/_components/work-item-path-breadcrumb';
 import { SubtaskOrderByMenu } from '@/app/work-items/_components/work-item-subtasks/subtask-order-by-menu';
 import {
@@ -57,6 +60,8 @@ import {
   WorkItemUnlinkSubtaskDialog,
 } from '@/app/work-items/_components/work-item-subtasks/work-item-unlink-subtask-dialog';
 import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog';
+import type { WorkItemSprintOption } from '@/app/work-items/_helpers/work-item-sprint';
+import { formatWorkItemKey } from '@/app/work-items/_helpers/work-item-key';
 import { averageStatusCompletionPercent } from '@/app/work-items/_helpers/work-item-status';
 import {
   sortSubtasks,
@@ -71,7 +76,6 @@ import { toast } from '@repo/ui/components/ui/sonner';
 import { CommentItem } from '@/app/comments/_services/comments.mutations.client';
 import type { CommentWorkItemOption } from '@/app/comments/_services/comments.mutations.shared';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
-import type { WorkItemAncestor } from '@/app/work-items/_services/work-items.reads.server';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import { useRealtime } from '@/components/realtime/realtime-provider';
 import { UserAvatar } from '@/components/user-avatar';
@@ -80,8 +84,50 @@ import { useOptimisticPending } from '@/lib/optimistic-lock/use-optimistic-pendi
 import { useOptimisticPendingHydrate } from '@/lib/optimistic-lock/use-optimistic-pending-hydrate';
 import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
 
-function childWorkItemKey(child: DbWorkItem): string {
-  return child.jira_issue_key?.trim() || child.id.slice(0, 8).toUpperCase();
+function WorkItemDetailsActionStrip({
+  readOnly,
+  canCreateSubtask,
+  onAttach,
+  onCreateSubtask,
+}: Readonly<{
+  readonly readOnly: boolean;
+  readonly canCreateSubtask: boolean;
+  readonly onAttach: () => void;
+  readonly onCreateSubtask: () => void;
+}>) {
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {readOnly ? null : (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="cursor-pointer"
+          onClick={onAttach}
+        >
+          <Paperclip data-icon="inline-start" />
+          Attach
+        </Button>
+      )}
+      {canCreateSubtask ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="cursor-pointer"
+          onClick={onCreateSubtask}
+        >
+          <Plus data-icon="inline-start" />
+          Create subtask
+        </Button>
+      ) : null}
+      {readOnly ? null : (
+        <Button variant="ghost" size="sm" className="cursor-pointer">
+          <Link2 data-icon="inline-start" />
+          Link issue
+          <ChevronDown data-icon="inline-end" />
+        </Button>
+      )}
+    </div>
+  );
 }
 
 export default function WorkItemDetails({
@@ -98,6 +144,7 @@ export default function WorkItemDetails({
   currentUserId,
   currentUserRole,
   projectMembers = [],
+  projectSprints = [],
   discussionWorkItems: discussionWorkItemsProp = [],
 }: Readonly<{
   workItemDetails: DbWorkItem;
@@ -117,6 +164,7 @@ export default function WorkItemDetails({
   currentUserId?: string;
   currentUserRole?: string | null;
   projectMembers?: readonly WorkItemPatchMemberOption[];
+  projectSprints?: readonly WorkItemSprintOption[];
   discussionWorkItems?: CommentWorkItemOption[];
 }>) {
   const router = useRouter();
@@ -225,7 +273,7 @@ export default function WorkItemDetails({
       {
         id: workItem.id,
         title: workItem.title,
-        key: childWorkItemKey(workItem),
+        key: formatWorkItemKey(workItem),
         type: workItem.type,
         project_id: workItem.project_id || '',
       },
@@ -360,53 +408,24 @@ export default function WorkItemDetails({
         />
       ) : null}
 
-      {/* Title + actions — same 3∶2 column ratio as the body so the
-          title pencil lines up above the description pencil. */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="space-y-3 lg:col-span-3">
-          <div className="min-w-0 space-y-1">
-            <WorkItemPathBreadcrumb workItem={workItem} ancestors={ancestors} />
-            <WorkItemTitleEditor
-              workItemId={workItem.id}
-              title={workItem.title}
-              expectedUpdatedAt={workItem.updated_at}
-              onPatched={handleWorkItemPatched}
-              readOnly={isRecordReadOnly}
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1">
-            {isRecordReadOnly ? null : (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="cursor-pointer"
-                onClick={() => setAttachmentUploadOpen(true)}
-              >
-                <Paperclip data-icon="inline-start" />
-                Attach
-              </Button>
-            )}
-            {canCreateSubtask ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="cursor-pointer"
-                onClick={() => setSubtaskDialogOpen(true)}
-              >
-                <Plus data-icon="inline-start" />
-                Create subtask
-              </Button>
-            ) : null}
-            {isRecordReadOnly ? null : (
-              <Button variant="ghost" size="sm" className="cursor-pointer">
-                <Link2 data-icon="inline-start" />
-                Link issue
-                <ChevronDown data-icon="inline-end" />
-              </Button>
-            )}
-          </div>
-        </div>
+      <div className="space-y-3">
+        <WorkItemPathBreadcrumb workItem={workItem} ancestors={ancestors} />
+        <WorkItemSummaryBanner
+          workItem={workItem}
+          project={project}
+          workflowConfig={project?.workflow_config}
+          assigneeOnline={Boolean(
+            workItem.assignee_id && isUserOnline(workItem.assignee_id)
+          )}
+          readOnly={isRecordReadOnly}
+          onPatched={handleWorkItemPatched}
+        />
+        <WorkItemDetailsActionStrip
+          readOnly={isRecordReadOnly}
+          canCreateSubtask={canCreateSubtask}
+          onAttach={() => setAttachmentUploadOpen(true)}
+          onCreateSubtask={() => setSubtaskDialogOpen(true)}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
@@ -517,7 +536,7 @@ export default function WorkItemDetails({
                             variant="outline"
                             className="font-mono text-[10px]"
                           >
-                            {childWorkItemKey(child)}
+                            {formatWorkItemKey(child)}
                           </Badge>
                         </TableCell>
                         <TableCell className="max-w-0 p-0 whitespace-normal">
@@ -631,6 +650,7 @@ export default function WorkItemDetails({
           workItem={workItem}
           childStatuses={childWorkItems.map((child) => child.status)}
           projectMembers={projectMembers}
+          projectSprints={projectSprints}
           project={project}
           workLogs={workLogs}
           detailsOpen={detailsOpen}

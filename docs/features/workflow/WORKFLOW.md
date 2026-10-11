@@ -25,6 +25,9 @@ exist on disk; runtime reads fall back safely. Historical notes:
 - Single-current work-item **`state`** JSONB + optional per-workflow history.
 - Safe fallback: null / unparsable / schema conflict → **seeded default**
   workflow (and default board behavior) so the project never hard-crashes.
+- Designer UI supports add/connect/delete, multi-workflow manage (Fork / Mark
+  default / Delete / Rename), keyboard shortcuts, undo, cut/paste states, live
+  Settings→node sync, Help, and Go to Board — Step 12.
 - Alice docked chat can propose designer changes with **Apply / Reject**.
 
 ## Non-goals (MVP)
@@ -327,9 +330,13 @@ in Step 9. Use `get_workflow_config` / `propose_workflow_patch` /
 
 ## Status / state pickers (app-wide)
 
-Replace global `WORK_ITEM_STATUSES` menus with **workflow states** for the
-item’s resolved workflow (details, backlog sheet, create-from-column, etc.),
-using the same allowed-transition helpers and auth as the board.
+**Details (Step 13):** work-item details lists **workflow states** (including
+draft-category) with state names/ids, a colorized sidebar control, and a
+summary banner. Graph PATCH resolves destinations from full `graph.states`
+(draft → `board_column_id: null`).
+
+**Still open:** backlog sheet and other surfaces — reuse
+`workflow-state-options` helpers; same transition helpers and auth as the board.
 
 ---
 

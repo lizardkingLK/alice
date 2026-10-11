@@ -124,6 +124,51 @@ export function findWorkflowState(
   return workflow.graph.states.find((state) => state.id === stateId) ?? null;
 }
 
+/**
+ * Resolve a work-item placement against the full workflow graph (including
+ * draft-category states omitted from board columns).
+ *
+ * Preference: exact `board_column_id` → state id matching `status` → first
+ * state whose bridged legacy status matches `status`.
+ */
+export function resolveWorkflowGraphState(params: {
+  readonly workflow: WorkflowDocument;
+  readonly status: WorkItemStatus;
+  readonly board_column_id?: string | null;
+}): WorkflowStateNode | null {
+  const { workflow, status, board_column_id: boardColumnId } = params;
+
+  if (boardColumnId) {
+    const byId = findWorkflowState(workflow, boardColumnId);
+    if (byId) {
+      return byId;
+    }
+  }
+
+  const byStatusId = findWorkflowState(workflow, status);
+  if (byStatusId) {
+    return byStatusId;
+  }
+
+  return (
+    workflow.graph.states.find((state) => {
+      const bridged = legacyStatusFromWorkItemState({
+        workflowId: workflow.id,
+        stateId: state.id,
+        category: state.category,
+      });
+      return bridged === status;
+    }) ?? null
+  );
+}
+
+/** Persist `null` for draft-category states (off-board); otherwise the state id. */
+export function boardColumnIdForWorkflowState(
+  state: Pick<WorkflowStateNode, 'id' | 'category'>
+): string | null {
+  return state.category === 'draft' ? null : state.id;
+}
+
 export function resolveActiveWorkflow(
   envelope: WorkflowConfigEnvelope,
   workflowId: string | null | undefined

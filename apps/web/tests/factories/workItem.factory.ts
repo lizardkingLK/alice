@@ -14,6 +14,7 @@ export const workItemFactory = {
       title: 'Implement dashboard filters',
       type: 'Task',
       status: 'ToDo',
+      state: null,
       board_column_id: null,
       priority: 'medium',
       project_id: 'proj-1',

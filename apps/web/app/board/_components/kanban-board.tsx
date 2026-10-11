@@ -94,7 +94,7 @@ import {
 } from '@/hooks/use-query-filter';
 import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
 import { ApiError } from '@/lib/api/api-fetch.helper';
-import { toast } from '@repo/ui/components/ui/sonner';
+import { toastWorkflowMoveBlocked } from '@/app/board/_helpers/workflow-move-blocked-toast';
 import {
   BOARD_MOVE_FORBIDDEN_CODE,
   type BoardColumn,
@@ -779,17 +779,13 @@ export function KanbanBoard({
           error instanceof ApiError &&
           error.code === BOARD_MOVE_FORBIDDEN_CODE
         ) {
-          toast.error(
-            `Move blocked: you do not have permission to move this item from ${sourceColumnName} to ${targetColumn.name}.`
+          toastWorkflowMoveBlocked(
+            `You do not have permission to move this item from ${sourceColumnName} to ${targetColumn.name}.`
           );
           return;
         }
         if (error instanceof ApiError && error.status === 400) {
-          toast.error(
-            error.message.startsWith('Move blocked')
-              ? error.message
-              : `Move blocked: ${error.message}`
-          );
+          toastWorkflowMoveBlocked(error.message);
           return;
         }
         if (

@@ -18,6 +18,7 @@ export function createWorkItemListRow(
     due_date: null,
     story_points: 3,
     status: 'New',
+    state: null,
     board_column_id: null,
     done_at: null,
     created_by: TEST_USER.id,

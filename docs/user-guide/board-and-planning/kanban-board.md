@@ -53,10 +53,10 @@ subtask checks in the project [Workflow designer](./workflow-designer.md)
 ## Update status
 
 Drag a card from one column to another when that move is allowed. The change
-saves automatically. A move with no matching transition in the workflow is
-blocked as **not allowed**. If the transition exists but **Who can move**
-restricts you, you see a **permission** message instead. Some moves may also ask
-for a short form or block until subtasks are ready.
+saves automatically. Blocked moves show a toast titled **Move blocked** with the
+reason underneath — for example a missing transition, a **Who can move**
+permission rule, or a subtask / children check. Some moves may also ask for a
+short form before the status changes.
 
 You can also change state from the work-item detail sidebar or the Work Items
 registry.
