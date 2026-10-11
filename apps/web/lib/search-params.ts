@@ -15,7 +15,7 @@ export interface RawSearchParams {
   requestId?: string;
   project?: string;
   sprint?: string;
-  /** Board workflow switcher (`/board?workflow=`). */
+  /** Active board workflow (`/board?workflow=`). */
   workflow?: string;
   type?: string;
   assignee?: string;

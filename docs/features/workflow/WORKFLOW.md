@@ -19,8 +19,8 @@ exist on disk; runtime reads fall back safely. Historical notes:
 - Design paths between states (not only columns + optional transition pairs).
 - Support **cycles** (e.g. Dev ↔ QA) via explicit edges; ban self-loops and
   duplicate directed edges.
-- Map **work-item types** to workflows; board uses a **workflow / type switcher**
-  (parallel boards — model **C**).
+- Map **work-item types** to workflows; board is a **per-workflow** view
+  (parallel boards — model **C**; active workflow from URL / default).
 - Auth on edges (`allowAnyOf`), escalation / resolution **presets**, child gates.
 - Single-current work-item **`state`** JSONB + optional per-workflow history.
 - Safe fallback: null / unparsable / schema conflict → **seeded default**
@@ -62,12 +62,12 @@ exist on disk; runtime reads fall back safely. Historical notes:
 1. Resolve work item **type** → workflow via `typeBindings`, else
    `defaultWorkflowId`.
 2. Item has **one** current `{ workflowId, stateId, category }`.
-3. Board chrome: **workflow / type switcher** — one tab (or select entry) per
-   workflow that is default or has bindings.
-4. Active switcher → columns = that workflow’s states; cards = types bound to
+3. Active workflow comes from **`?workflow=`** when present and valid, else the
+   project **default** (workflows that are default or have type bindings).
+4. Active workflow → columns = that workflow’s states; cards = types bound to
    that workflow (default also owns unbound types).
 5. Wrong board ⇒ card filtered out (not shown in a foreign lane).
-6. Persist switcher in URL / board defaults (same spirit as today’s filters).
+6. Deep-link via URL (`?workflow=`); no board toolbar dropdown for switching.
 7. Work-item details show **Workflow: {title}** and state from the item’s graph.
 8. Mid-drag / PATCH validate against the **item’s** workflow + edge rules, not
    merely visible columns.

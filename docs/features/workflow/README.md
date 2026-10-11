@@ -4,7 +4,8 @@ Status: **MVP complete** (Steps 1–13 **Done**; deferred N1–N11 next)
 
 Jira-like **workflow graphs** replace the custom board column designer.
 Projects store one or more workflow documents in `projects.workflow_config`.
-The kanban board becomes a **per-workflow** view (type / workflow switcher).
+The kanban board becomes a **per-workflow** view (active workflow from URL /
+project default).
 Work items carry a single-current **`state`** JSONB placement.
 
 | Document                                                             | Description                                                             | Status                       |

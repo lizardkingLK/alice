@@ -118,9 +118,6 @@ function assigneeName(item: DbWorkItem) {
   return item.assignee?.name?.trim() || 'Unassigned';
 }
 
-// eslint-disable-next-line no-unused-vars -- callback parameter name documents the payload
-type BoardWorkflowChangeHandler = (workflowId: string) => void;
-
 function resolveActiveWorkflowBindings(
   boardMode: 'workflow' | 'legacy' | 'default',
   activeWorkflowId: string | null,
@@ -133,41 +130,6 @@ function resolveActiveWorkflowBindings(
     (candidate) => candidate.id === activeWorkflowId
   );
   return tab ? new Set(tab.typeBindings) : null;
-}
-
-function BoardWorkflowSwitcher({
-  boardMode,
-  workflowTabs,
-  activeWorkflowId,
-  onWorkflowChange,
-}: {
-  readonly boardMode: 'workflow' | 'legacy' | 'default';
-  readonly workflowTabs: readonly BoardWorkflowTab[];
-  readonly activeWorkflowId: string | null;
-  readonly onWorkflowChange: BoardWorkflowChangeHandler;
-}) {
-  if (boardMode !== 'workflow' || workflowTabs.length <= 1) {
-    return null;
-  }
-
-  return (
-    <label className="text-muted-foreground flex shrink-0 items-center gap-2 text-sm">
-      <span className="font-medium">Workflow</span>
-      <select
-        className="border-input bg-background h-8 rounded-md border px-2 text-sm"
-        data-testid="board-workflow-switcher"
-        value={activeWorkflowId ?? workflowTabs[0]?.id ?? ''}
-        onChange={(event) => onWorkflowChange(event.target.value)}
-      >
-        {workflowTabs.map((tab) => (
-          <option key={tab.id} value={tab.id}>
-            {tab.title}
-            {tab.isDefault ? ' (default)' : ''}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
 }
 
 function itemMatchesBoardFilters(
@@ -628,21 +590,6 @@ export function KanbanBoard({
     activeWorkflowBindings,
   ]);
 
-  const handleWorkflowChange = (workflowId: string | null) => {
-    if (!workflowId) {
-      return;
-    }
-    const params = new URLSearchParams(searchParams.toString());
-    const defaultTab = workflowTabs.find((tab) => tab.isDefault);
-    if (workflowId === defaultTab?.id) {
-      params.delete('workflow');
-    } else {
-      params.set('workflow', workflowId);
-    }
-    const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname);
-  };
-
   const columnItemsMap = useMemo(() => {
     return assignItemsToColumns(filteredItems, boardColumns);
   }, [filteredItems, boardColumns]);
@@ -854,13 +801,6 @@ export function KanbanBoard({
 
       <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-3">
-          <BoardWorkflowSwitcher
-            boardMode={boardMode}
-            workflowTabs={workflowTabs}
-            activeWorkflowId={activeWorkflowId}
-            onWorkflowChange={handleWorkflowChange}
-          />
-
           <SearchInput
             value={search}
             onValueChange={setSearch}

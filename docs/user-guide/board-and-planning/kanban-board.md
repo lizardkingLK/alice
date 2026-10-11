@@ -28,13 +28,13 @@ dragging cards on the board.
 
 ---
 
-## Columns and workflow switcher
+## Columns and workflows
 
-When a **project** is selected, columns come from that project’s **workflow**
-(states such as To Do, In Progress, Testing, Done). Use the **workflow / type
-switcher** on the board to view one workflow at a time (for example Default vs
-Bug). Each work-item type follows the workflow it is bound to; cards only appear
-on the matching board.
+When a **project** is selected, columns come from that project’s active
+**workflow** (states such as To Do, In Progress, Testing, Done). The board
+shows one workflow at a time — the project default, or another workflow when
+the URL includes `?workflow=<id>`. Each work-item type follows the workflow it
+is bound to; cards only appear on the matching board.
 
 If workflow configuration is missing or invalid, the board uses a safe
 **default** set of columns:

@@ -13,10 +13,12 @@ import {
   patchEdgeInDocument,
   patchStateInDocument,
   readLayoutPosition,
+  readLayoutEdgeHandles,
   removeEdgeFromDocument,
   removeStateFromDocument,
   renameWorkflowInEnvelope,
   replaceWorkflowInEnvelope,
+  updateEdgeHandlesInDocument,
   workflowDocumentToFlowElements,
 } from '@/app/projects/_helpers/workflow-designer.layout';
 
@@ -112,6 +114,35 @@ describe('workflow-designer.layout', () => {
     const patched = next.graph.edges.find((edge) => edge.id === edgeId);
     expect(patched?.requireChildren).toBe('match_parent_target');
     expect(patched?.allowAnyOf).toEqual([{ scope: 'role', role: 'manager' }]);
+  });
+
+  it('updates layout handles on reconnect without changing graph edges', () => {
+    // Arrange
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const edge = workflow.graph.edges[0]!;
+    const edgeCount = workflow.graph.edges.length;
+    const requireChildren = edge.requireChildren;
+
+    // Act
+    const result = updateEdgeHandlesInDocument(workflow, edge.id, {
+      sourceHandle: 'source-bottom',
+      targetHandle: 'target-left',
+    });
+
+    // Assert
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+    expect(result.document.graph.edges).toHaveLength(edgeCount);
+    expect(
+      result.document.graph.edges.find((item) => item.id === edge.id)
+        ?.requireChildren
+    ).toBe(requireChildren);
+    expect(readLayoutEdgeHandles(result.document.layout, edge.id)).toEqual({
+      sourceHandle: 'source-bottom',
+      targetHandle: 'target-left',
+    });
   });
 
   it('makes a state terminal by removing outbound edges', () => {

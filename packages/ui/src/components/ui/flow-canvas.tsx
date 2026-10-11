@@ -28,6 +28,7 @@ export {
   applyNodeChanges,
   getBezierPath,
   getSmoothStepPath,
+  reconnectEdge,
   useConnection,
   useEdgesState,
   useNodesState,

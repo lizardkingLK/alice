@@ -6,7 +6,15 @@ import type { CommentsSortOrder } from '@/app/comments/_components/comments-feed
 import type { CommentItem } from '@/app/comments/_services/comments.mutations.client';
 import type { CommentWorkItemOption } from '@/app/comments/_services/comments.mutations.shared';
 import { WorkItemActivityFeed } from '@/app/work-items/_components/work-item-details/work-item-activity-feed';
+import { WorkItemActivityLayoutMenu } from '@/app/work-items/_components/work-item-details/work-item-activity-layout-menu';
 import { WorkItemWorkLogPanel } from '@/app/work-items/_components/work-item-work-logs/work-item-work-log-panel';
+import type { ActivityValueLookups } from '@/app/work-items/_helpers/work-item-activity-format';
+import {
+  DEFAULT_WORK_ITEM_ACTIVITY_LAYOUT,
+  readWorkItemActivityLayout,
+  writeWorkItemActivityLayout,
+  type WorkItemActivityLayout,
+} from '@/app/work-items/_helpers/work-item-activity-layout-preference';
 import type { WorkItemActivity, WorkItemWorkLog } from '@repo/types';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { Button } from '@repo/ui/components/ui/button';
@@ -16,20 +24,16 @@ import {
   TabsList,
   TabsTrigger,
 } from '@repo/ui/components/ui/tabs';
-import { Maximize2, Minimize2 } from '@repo/ui/lib/icons';
+import { Maximize2, Minimize2, Plus } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type FormEvent,
-} from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export type WorkItemActivityTab = 'discussion' | 'activity' | 'work-log';
 
 const ACTIVITY_TAB_TRIGGER_CLASS =
   'data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:bg-transparent data-[state=active]:shadow-none';
+
+const ACTIVITY_TAB_CONTENT_CLASS = 'mt-4 pb-6';
 
 type WorkItemActivityTabsProps = {
   activeTab: WorkItemActivityTab;
@@ -37,23 +41,14 @@ type WorkItemActivityTabsProps = {
   onActiveTabChange: (tab: WorkItemActivityTab) => void;
   initialComments: CommentItem[];
   initialActivities?: WorkItemActivity[];
+  /** Resolve assignee/reporter/sprint ids in activity lines. */
+  activityLookups?: ActivityValueLookups;
   workItem: DbWorkItem;
   discussionWorkItems: CommentWorkItemOption[];
   currentUserId?: string;
   workLogs: WorkItemWorkLog[];
-  loggedHoursInput: string;
-  loggedAtInput: string;
-  workLogCommentInput: string;
-  isLoggingWork: boolean;
-  // eslint-disable-next-line no-unused-vars -- callback signature
-  onLoggedHoursChange: (value: string) => void;
-  // eslint-disable-next-line no-unused-vars -- callback signature
-  onLoggedAtChange: (value: string) => void;
-  // eslint-disable-next-line no-unused-vars -- callback signature
-  onWorkLogCommentChange: (value: string) => void;
-  // eslint-disable-next-line no-unused-vars -- callback signature
-  onWorkLogSubmit: (event: FormEvent) => void;
-  /** When true, hide work-log form (Done work items). Discussion stays available. */
+  onAddWorkLogClick?: () => void;
+  /** When true, hide work-log add control (Done work items). Discussion stays available. */
   readOnly?: boolean;
 };
 
@@ -92,24 +87,25 @@ export function WorkItemActivityTabs({
   onActiveTabChange,
   initialComments,
   initialActivities = [],
+  activityLookups,
   workItem,
   discussionWorkItems,
   currentUserId,
   workLogs,
-  loggedHoursInput,
-  loggedAtInput,
-  workLogCommentInput,
-  isLoggingWork,
-  onLoggedHoursChange,
-  onLoggedAtChange,
-  onWorkLogCommentChange,
-  onWorkLogSubmit,
+  onAddWorkLogClick,
   readOnly = false,
 }: Readonly<WorkItemActivityTabsProps>) {
   const captureScrollBeforeTabChange = usePreserveScrollOnTabChange(activeTab);
   const [commentsSortOrder, setCommentsSortOrder] =
     useState<CommentsSortOrder>('newest');
   const [isMaximized, setIsMaximized] = useState(false);
+  const [activityLayout, setActivityLayout] = useState<WorkItemActivityLayout>(
+    DEFAULT_WORK_ITEM_ACTIVITY_LAYOUT
+  );
+
+  useEffect(() => {
+    setActivityLayout(readWorkItemActivityLayout(workItem.id));
+  }, [workItem.id]);
 
   useEffect(() => {
     if (!isMaximized) {
@@ -123,10 +119,20 @@ export function WorkItemActivityTabs({
     };
   }, [isMaximized]);
 
+  const handleActivityLayoutChange = (layout: WorkItemActivityLayout) => {
+    setActivityLayout(layout);
+    writeWorkItemActivityLayout(workItem.id, layout);
+  };
+
   const handleTabChange = (value: string) => {
     captureScrollBeforeTabChange();
     onActiveTabChange(value as WorkItemActivityTab);
   };
+
+  const tabPanelClassName = cn(
+    ACTIVITY_TAB_CONTENT_CLASS,
+    isMaximized && 'min-h-0 flex-1'
+  );
 
   return (
     <section
@@ -170,6 +176,26 @@ export function WorkItemActivityTabs({
             />
           ) : null}
 
+          {activeTab === 'activity' ? (
+            <WorkItemActivityLayoutMenu
+              layout={activityLayout}
+              onLayoutChange={handleActivityLayoutChange}
+            />
+          ) : null}
+
+          {activeTab === 'work-log' && !readOnly && onAddWorkLogClick ? (
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="cursor-pointer"
+              aria-label="Log work"
+              onClick={onAddWorkLogClick}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          ) : null}
+
           <Button
             type="button"
             size="icon"
@@ -187,10 +213,7 @@ export function WorkItemActivityTabs({
           </Button>
         </div>
 
-        <TabsContent
-          value="discussion"
-          className={cn('mt-4 pb-6', isMaximized && 'min-h-0 flex-1')}
-        >
+        <TabsContent value="discussion" className={tabPanelClassName}>
           <CommentsFeed
             embedded
             hideSortControl
@@ -203,29 +226,18 @@ export function WorkItemActivityTabs({
           />
         </TabsContent>
 
-        <TabsContent
-          value="activity"
-          className={cn('mt-4 pb-6', isMaximized && 'min-h-0 flex-1')}
-        >
-          <WorkItemActivityFeed activities={initialActivities} />
+        <TabsContent value="activity" className={tabPanelClassName}>
+          <WorkItemActivityFeed
+            activities={initialActivities}
+            lookups={activityLookups}
+            layout={activityLayout}
+          />
         </TabsContent>
 
-        <TabsContent
-          value="work-log"
-          className={cn('mt-4 pb-6', isMaximized && 'min-h-0 flex-1')}
-        >
+        <TabsContent value="work-log" className={tabPanelClassName}>
           <WorkItemWorkLogPanel
             workLogs={workLogs}
             currentUserId={currentUserId}
-            loggedHoursInput={loggedHoursInput}
-            loggedAtInput={loggedAtInput}
-            workLogCommentInput={workLogCommentInput}
-            isLoggingWork={isLoggingWork}
-            onLoggedHoursChange={onLoggedHoursChange}
-            onLoggedAtChange={onLoggedAtChange}
-            onWorkLogCommentChange={onWorkLogCommentChange}
-            onSubmit={onWorkLogSubmit}
-            readOnly={readOnly}
           />
         </TabsContent>
       </Tabs>

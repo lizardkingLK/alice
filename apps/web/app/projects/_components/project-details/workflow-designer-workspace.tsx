@@ -97,6 +97,7 @@ import {
   removeStateFromDocument,
   renameWorkflowInEnvelope,
   replaceWorkflowInEnvelope,
+  updateEdgeHandlesInDocument,
   workflowDocumentToFlowElements,
   workflowFlowEdgePresentation,
   type WorkflowStateClipboard,
@@ -149,6 +150,9 @@ type WorkflowNodesSettledHandler = (settledNodes: Node[]) => void;
 type WorkflowSelectionHandler = (selection: WorkflowDesignerSelection) => void;
 // eslint-disable-next-line no-unused-vars -- callback parameter name documents the payload
 type WorkflowConnectHandler = (connection: Connection) => void;
+/* eslint-disable no-unused-vars -- callback parameter names document the payload */
+type WorkflowReconnectHandler = (edge: Edge, connection: Connection) => void;
+/* eslint-enable no-unused-vars */
 
 type WorkflowManageResult = {
   readonly config: WorkflowConfigEnvelope;
@@ -188,6 +192,7 @@ function WorkflowDesignerCanvas({
   onSelectionChange,
   onOpenSettings,
   onConnect,
+  onReconnect,
 }: {
   readonly activeWorkflow: WorkflowDocument;
   readonly canEdit: boolean;
@@ -197,6 +202,7 @@ function WorkflowDesignerCanvas({
   readonly onSelectionChange: WorkflowSelectionHandler;
   readonly onOpenSettings: () => void;
   readonly onConnect: WorkflowConnectHandler;
+  readonly onReconnect: WorkflowReconnectHandler;
 }) {
   const initial = workflowDocumentToFlowElements(activeWorkflow);
   const [nodes, , onNodesChange] = useNodesState(initial.nodes as Node[]);
@@ -247,9 +253,10 @@ function WorkflowDesignerCanvas({
         sourceHandle: edge.sourceHandle,
         targetHandle: edge.targetHandle,
       }),
+      reconnectable: canEdit,
       selected: selection?.kind === 'edge' && selection.edgeId === edge.id,
     }));
-  }, [activeWorkflow.layout, edges, nodes, selection]);
+  }, [activeWorkflow.layout, canEdit, edges, nodes, selection]);
 
   const handleNodeDragStop = useCallback(
     (_event: unknown, _node: Node, nextNodes: Node[]) => {
@@ -269,6 +276,9 @@ function WorkflowDesignerCanvas({
       onEdgesChange={onEdgesChange}
       onNodeDragStop={canEdit ? handleNodeDragStop : undefined}
       onConnect={canEdit ? onConnect : undefined}
+      onReconnect={canEdit ? onReconnect : undefined}
+      edgesReconnectable={canEdit}
+      reconnectRadius={24}
       onNodeClick={(_event, node) => {
         onSelectionChange({ kind: 'state', stateId: node.id });
       }}
@@ -568,6 +578,45 @@ export function WorkflowDesignerWorkspace({
         setSelection({ kind: 'edge', edgeId });
         setCanvasEpoch((epoch) => epoch + 1);
       }
+    },
+    [canEdit, pushUndo, updateActiveWorkflow]
+  );
+
+  const handleReconnect = useCallback(
+    (edge: Edge, connection: Connection) => {
+      if (!canEdit) {
+        return;
+      }
+      const from = connection.source;
+      const to = connection.target;
+      const sourceHandle = connection.sourceHandle;
+      const targetHandle = connection.targetHandle;
+      if (!from || !to || !sourceHandle || !targetHandle) {
+        return;
+      }
+      const graphEdge = activeWorkflowRef.current.graph.edges.find(
+        (item) => item.id === edge.id
+      );
+      if (!graphEdge) {
+        toast.error('Transition not found.');
+        return;
+      }
+      if (graphEdge.from !== from || graphEdge.to !== to) {
+        toast.error(
+          'Reconnect only moves connection points on the same transition. Delete and create a new one to change states.'
+        );
+        return;
+      }
+      pushUndo();
+      updateActiveWorkflow((workflow) => {
+        const result = updateEdgeHandlesInDocument(workflow, edge.id, {
+          sourceHandle,
+          targetHandle,
+        });
+        return result.ok ? result.document : workflow;
+      });
+      setSelection({ kind: 'edge', edgeId: edge.id });
+      setCanvasEpoch((epoch) => epoch + 1);
     },
     [canEdit, pushUndo, updateActiveWorkflow]
   );
@@ -1182,6 +1231,7 @@ export function WorkflowDesignerWorkspace({
               onSelectionChange={setSelection}
               onOpenSettings={handleOpenSettings}
               onConnect={handleConnect}
+              onReconnect={handleReconnect}
             />
           </ReactFlowProvider>
         </div>

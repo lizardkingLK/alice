@@ -203,7 +203,7 @@ Lock / Terminal / escalation checkboxes and outbound-edge confirm are **Step 3c*
 
 **Goal:** Runtime uses workflows instead of board columns for scoped projects.
 
-1. Board data loader: parse envelope → active workflow from URL/default switcher.
+1. Board data loader: parse envelope → active workflow from URL/default.
 2. Columns = states of active workflow; filter cards by type bindings.
 3. DnD + PATCH: edge existence, `allowAnyOf`, require-children, lock-record,
    terminal; optimistic + conflict handling.
@@ -220,7 +220,7 @@ Lock / Terminal / escalation checkboxes and outbound-edge confirm are **Step 3c*
 | ------------------- | ------------------------------------------------------------------------------------------- |
 | Runtime helpers     | `packages/types/.../board-runtime.ts`                                                       |
 | Board loader        | `board-data.tsx` via `resolveProjectBoardRuntime`                                           |
-| Workflow switcher   | `?workflow=` + kanban select when multiple tabs                                             |
+| Active workflow     | `?workflow=` URL (or project default); no board chrome select                               |
 | Type-binding filter | Active workflow bindings filter cards                                                       |
 | API graph gates     | `WorkItemService` edge / allowAnyOf / require-children / lock / terminal                    |
 | Legacy board        | Still supported when blob is v1/v2 board config                                             |
@@ -506,7 +506,9 @@ Board.
 2. **Connect edges** — Drag from a state’s handle to another’s (handles on all
    four sides). Chosen handles persist in `layout.edges`; otherwise the canvas
    picks short sides (return edges use free top/bottom ports). Reverse edges
-   use the same smooth-step path with a warmer stroke.
+   use the same smooth-step path with a warmer stroke. **Reconnect** an existing
+   edge by dragging an endpoint to another handle on the same `from`/`to` pair
+   (Settings on the edge are preserved).
    Rejects self-loops, duplicates, and exits from terminal states. New edges
    default to everyone / no escalation / require children off.
 3. **Delete** — Settings can delete the selected state (confirm when edges

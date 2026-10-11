@@ -143,6 +143,29 @@ function withLayoutEdgeHandles(
   };
 }
 
+/**
+ * Persist connect/reconnect handles for an existing edge without changing
+ * graph `from`/`to` or transition rules.
+ */
+export function updateEdgeHandlesInDocument(
+  document: WorkflowDocument,
+  edgeId: string,
+  handles: WorkflowEdgeHandlePreference
+):
+  | { readonly ok: true; readonly document: WorkflowDocument }
+  | { readonly ok: false; readonly reason: string } {
+  if (!document.graph.edges.some((edge) => edge.id === edgeId)) {
+    return { ok: false, reason: 'Transition not found.' };
+  }
+  if (!handles.sourceHandle || !handles.targetHandle) {
+    return { ok: false, reason: 'Both connection points are required.' };
+  }
+  return {
+    ok: true,
+    document: withLayoutEdgeHandles(document, edgeId, handles),
+  };
+}
+
 export function workflowStateToFlowNode(
   state: WorkflowStateNode,
   position: WorkflowNodePosition

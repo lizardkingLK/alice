@@ -19,6 +19,11 @@ vi.mock(
   })
 );
 
+vi.mock(
+  '@repo/ui/components/ui/dropdown-menu',
+  () => import('../mocks/dropdown-menu')
+);
+
 const actor = {
   id: 'user-1',
   name: 'Alex',
@@ -63,6 +68,29 @@ describe('WorkItemActivityFeed', () => {
     ).toBeInTheDocument();
   });
 
+  it('resolves assignee ids via member lookups', () => {
+    // Arrange + Act
+    render(
+      <WorkItemActivityFeed
+        activities={[
+          buildActivity({
+            field: 'assignee_id',
+            old_value: null,
+            new_value: 'user-bob',
+          }),
+        ]}
+        lookups={{
+          memberNamesById: new Map([['user-bob', 'Bob Manager']]),
+        }}
+      />
+    );
+
+    // Assert
+    expect(
+      screen.getByText('Alex changed assignee from Unassigned to Bob Manager')
+    ).toBeInTheDocument();
+  });
+
   it('renders workflow transition lines from meta', () => {
     // Arrange + Act
     render(
@@ -89,6 +117,32 @@ describe('WorkItemActivityFeed', () => {
       screen.getByText('Alex moved from st-new to st-done')
     ).toBeInTheDocument();
   });
+
+  it('renders timeline and table layouts with the same description', () => {
+    const activity = buildActivity();
+
+    const { rerender } = render(
+      <WorkItemActivityFeed activities={[activity]} layout="timeline" />
+    );
+    expect(
+      screen.getByText('Alex changed status from New to Done')
+    ).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="timeline"]')).not.toBeNull();
+
+    rerender(<WorkItemActivityFeed activities={[activity]} layout="table" />);
+    expect(
+      screen.getByRole('columnheader', { name: 'When' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', { name: 'Actor' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', { name: 'Details' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Alex changed status from New to Done')
+    ).toBeInTheDocument();
+  });
 });
 
 describe('WorkItemActivityTabs maximize', () => {
@@ -108,14 +162,6 @@ describe('WorkItemActivityTabs maximize', () => {
         }
         discussionWorkItems={[]}
         workLogs={[]}
-        loggedHoursInput=""
-        loggedAtInput=""
-        workLogCommentInput=""
-        isLoggingWork={false}
-        onLoggedHoursChange={() => {}}
-        onLoggedAtChange={() => {}}
-        onWorkLogCommentChange={() => {}}
-        onWorkLogSubmit={() => {}}
       />
     );
 
@@ -124,6 +170,41 @@ describe('WorkItemActivityTabs maximize', () => {
 
     // Assert
     expect(screen.getByLabelText('Minimize section')).toBeInTheDocument();
+    expect(
+      screen.getByText('Alex changed status from New to Done')
+    ).toBeInTheDocument();
+  });
+
+  it('switches activity layout via the layout menu', () => {
+    render(
+      <WorkItemActivityTabs
+        activeTab="activity"
+        onActiveTabChange={() => {}}
+        initialComments={[]}
+        initialActivities={[buildActivity()]}
+        workItem={
+          {
+            id: 'wi-1',
+            updated_at: '2026-10-08T10:00:00.000Z',
+          } as never
+        }
+        discussionWorkItems={[]}
+        workLogs={[]}
+      />
+    );
+
+    expect(screen.getByLabelText('Change activity layout')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Timeline'));
+    expect(document.querySelector('[data-slot="timeline"]')).not.toBeNull();
+
+    fireEvent.click(screen.getByText('Table'));
+    expect(
+      screen.getByRole('columnheader', { name: 'Details' })
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Cards'));
+    expect(document.querySelector('[data-slot="timeline"]')).toBeNull();
     expect(
       screen.getByText('Alex changed status from New to Done')
     ).toBeInTheDocument();

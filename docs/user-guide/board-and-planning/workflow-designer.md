@@ -47,10 +47,13 @@ optional alternate path):
    uses the free top/bottom ports for a return edge when both directions
    exist). Reverse (right-to-left) links use the same stepped path style with a
    warmer stroke. Self-loops and duplicate pairs are rejected.
-3. Select a state or transition and use **Delete state** / **Delete
+3. To move a transition’s connection points without losing Settings, select the
+   edge and drag either end to another handle on the **same** two states
+   (reconnect). Changing which states are linked still requires delete + create.
+4. Select a state or transition and use **Delete state** / **Delete
    transition** in Settings, or press **Delete** / **Backspace** (no confirm).
-4. Name and category changes in Settings update the canvas node immediately.
-5. Click **Save** to publish graph and Settings together, or **Discard** to
+5. Name and category changes in Settings update the canvas node immediately.
+6. Click **Save** to publish graph and Settings together, or **Discard** to
    revert unsaved edits.
 
 Use the **Kanban** icon in the toolbar to open this project’s **Board**. Open
@@ -145,8 +148,8 @@ default** workflow so the board keeps working.
 
 ## Board and Alice
 
-- On the **Board**, use the workflow / type switcher to view one workflow’s
-  columns at a time. See [Kanban board](./kanban-board.md).
+- On the **Board**, columns follow the project default workflow, or
+  `?workflow=<id>` when set. See [Kanban board](./kanban-board.md).
 - Open **Alice** from the header while the designer is open — she docks as a
   right sidebar and can propose graph changes. Use **Apply** or **Reject** on
   the suggestion card. Apply needs the Workflow designer open on that project.
