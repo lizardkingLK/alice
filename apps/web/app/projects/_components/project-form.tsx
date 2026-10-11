@@ -49,13 +49,11 @@ import {
   type Project,
   type CreateProjectInput,
 } from '@/app/projects/_services/projects.mutations.client';
-import { invalidateProjectDropdownCache } from '@/app/projects/_services/projects.cache.actions.server';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import { cn } from '@repo/ui/lib/utils';
 import { FormAlertMessage } from '@/components/form-alert-message';
 import { toLocalYYYYMMDD } from '@/app/_shared/utility';
-import { importJiraIssues } from '@/app/projects/_services/projects.jira.mutations.client';
 import {
   formatGithubRepoPath,
   parseGithubRepoPath,
@@ -1056,28 +1054,6 @@ export function ProjectForm({
     setGithubToken('');
   }, [projectToEdit]);
 
-  const handleJiraImport = async (projectId: string, projectName: string) => {
-    try {
-      const importRes = await importJiraIssues(projectId);
-      setMessage(
-        `Project "${projectName}" created and ${importRes.importedCount} tasks successfully imported from Jira!`
-      );
-    } catch (err) {
-      // Log message only — passing an Error to console.error triggers Next's
-      // "Console Error" overlay in development.
-      console.error(
-        'Jira import failed:',
-        err instanceof Error ? err.message : err
-      );
-      setMessage(
-        `Project created, but task import failed: ${
-          err instanceof Error ? err.message : 'Unknown error'
-        }`
-      );
-      setIsError(true);
-    }
-  };
-
   const handleProjectUpdate = async (projectData: CreateProjectInput) => {
     if (!projectToEdit) return;
     const expectedUpdatedAt = projectToEdit.updated_at;
@@ -1112,23 +1088,13 @@ export function ProjectForm({
   };
 
   const handleProjectCreate = async (projectData: CreateProjectInput) => {
-    const result = await createProject(projectData);
-    try {
-      await invalidateProjectDropdownCache();
-    } catch (error) {
-      console.error(
-        'Failed to invalidate project dropdown cache after project creation:',
-        error
-      );
-    }
-    setMessage(`Project "${result.name}" created.`);
-
-    const hasJiraConfig = jiraConnectionId && jiraProjectKey;
-    if (importFromJira && hasJiraConfig) {
-      setMessage(`Project created. Importing tasks from Jira...`);
-      await handleJiraImport(result.id, result.name);
-    }
-    onProjectUpdated?.(result as Project);
+    const accepted = await createProject(projectData);
+    const hasJiraConfig = Boolean(jiraConnectionId && jiraProjectKey);
+    const jiraHint =
+      importFromJira && hasJiraConfig
+        ? ' After it appears in your inbox, open the project and import from the Integrations tab.'
+        : '';
+    setMessage(`${accepted.message}${jiraHint}`);
   };
 
   const resolveGithubToken = (): string | null | undefined => {

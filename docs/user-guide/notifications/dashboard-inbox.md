@@ -45,8 +45,11 @@ Examples you may see:
 | **due_date**                   | Work item detail          |
 | **sprint**                     | Sprint or work context    |
 | **view_shared**                | Saved view                |
+| **chart_shared**               | Charts workspace          |
 | **chat_processed**             | Alice chat conversation   |
 | **access_request**             | Users → Requests (admins) |
+| **project_created**            | New project details       |
+| **project_create_failed**      | Message only (no link)    |
 
 Unread count shows on the bell badge. Counts of **1–9** show the number; **10
 or more** show a star.

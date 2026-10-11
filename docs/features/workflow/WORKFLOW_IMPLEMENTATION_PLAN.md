@@ -31,7 +31,7 @@ MVP). Runtime still parses legacy column docs when present.
 | 8    | Docked Alice + workflow tools | Sidebar, view context, propose/apply confirm                 |
 | 9    | Retire board designer         | Remove board config UI; update board feature docs (**Done**) |
 | 10   | User-guide polish             | Living guides synced with shipped UI (**Done**)              |
-| 11   | Async project create          | Non-blocking create + notify (busy-retry hidden)             |
+| 11   | Async project create          | Non-blocking create + notify (busy-retry hidden) (**Done**)  |
 
 **Deferred (next)** after MVP: see [§ Deferred (next)](#deferred-next).
 
@@ -402,6 +402,8 @@ Guide: [DATABASE_BUSY_RETRY.md](../../guides/DATABASE_BUSY_RETRY.md).
 
 ## Step 11 — Async project create (busy-safe)
 
+**Status:** **Done** (as-built below)
+
 **Goal:** Creating a project must not block the admin UI on pool / transaction
 pressure. Mirror the **chat async** pattern: accept the request, return quickly,
 finish work in the background with existing `withBusyRetry`, then notify the
@@ -471,6 +473,16 @@ work-item `activities` for project create.
 - Success notification opens the new project details page.
 - Failure notifies the admin with actionable context (and correlation id).
 - Busy-retry toast is suppressed only for this create path.
+
+### As-built (Step 11)
+
+| Piece              | Location / change                                                                                     |
+| ------------------ | ----------------------------------------------------------------------------------------------------- |
+| Notification types | Prisma `project_created` / `project_create_failed` + migration `add_project_create_notifications`     |
+| API                | `POST /api/projects` → **202** via `enqueueCreateProject`; background `withBusyRetry` create + notify |
+| Client             | `skipDatabaseBusyRetry` on create; form shows accept message (Jira import deferred to Integrations)   |
+| Inbox href         | `project_created` → `/projects/{id}`; failure → no link                                               |
+| Docs               | create-project, dashboard-inbox, `DATABASE_BUSY_RETRY.md`                                             |
 
 ---
 

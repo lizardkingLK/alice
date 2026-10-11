@@ -30,12 +30,12 @@ const {
   listProjectsPaginatedMock,
   getProjectDetailMock,
   listProjectMembersPrismaMock,
-  createProjectMock,
+  enqueueCreateProjectMock,
 } = vi.hoisted(() => ({
   listProjectsPaginatedMock: vi.fn(),
   getProjectDetailMock: vi.fn(),
   listProjectMembersPrismaMock: vi.fn(),
-  createProjectMock: vi.fn(),
+  enqueueCreateProjectMock: vi.fn(),
 }));
 
 vi.mock('../../src/middlewares/auth', () => ({
@@ -53,7 +53,7 @@ const projectsService = {
   listProjectsPaginated: listProjectsPaginatedMock,
   getProjectDetail: getProjectDetailMock,
   listProjectMembersPrisma: listProjectMembersPrismaMock,
-  createProject: createProjectMock,
+  enqueueCreateProject: enqueueCreateProjectMock,
 } as unknown as ProjectsService;
 
 const workItemService = {
@@ -222,7 +222,11 @@ describe('projects unused Prisma GET routes', () => {
   });
 
   it('passes nested sprint configuration to project creation', async () => {
-    createProjectMock.mockResolvedValue(mockProjectDetail);
+    enqueueCreateProjectMock.mockResolvedValue({
+      accepted: true,
+      message: 'Project creation started.',
+      correlationId: 'corr-1',
+    });
     const sprint = {
       name: 'Sprint Alpha',
       goal: 'Deliver the first increment',
@@ -237,8 +241,8 @@ describe('projects unused Prisma GET routes', () => {
         body: JSON.stringify({ ...validCreateBody, sprint }),
       });
 
-      expect(response.status).toBe(201);
-      expect(createProjectMock).toHaveBeenCalledWith(
+      expect(response.status).toBe(202);
+      expect(enqueueCreateProjectMock).toHaveBeenCalledWith(
         '11111111-1111-4111-8111-111111111111',
         expect.objectContaining({ sprint })
       );
@@ -246,7 +250,11 @@ describe('projects unused Prisma GET routes', () => {
   });
 
   it('passes nested team configuration to project creation', async () => {
-    createProjectMock.mockResolvedValue(mockProjectDetail);
+    enqueueCreateProjectMock.mockResolvedValue({
+      accepted: true,
+      message: 'Project creation started.',
+      correlationId: 'corr-1',
+    });
     const team = {
       name: 'Platform Team',
       description: null,
@@ -263,8 +271,8 @@ describe('projects unused Prisma GET routes', () => {
         body: JSON.stringify({ ...validCreateBody, team }),
       });
 
-      expect(response.status).toBe(201);
-      expect(createProjectMock).toHaveBeenCalledWith(
+      expect(response.status).toBe(202);
+      expect(enqueueCreateProjectMock).toHaveBeenCalledWith(
         '11111111-1111-4111-8111-111111111111',
         expect.objectContaining({ team })
       );
@@ -286,7 +294,7 @@ describe('projects unused Prisma GET routes', () => {
       });
 
       expect(response.status).toBe(400);
-      expect(createProjectMock).not.toHaveBeenCalled();
+      expect(enqueueCreateProjectMock).not.toHaveBeenCalled();
     });
   });
 
@@ -307,7 +315,7 @@ describe('projects unused Prisma GET routes', () => {
       });
 
       expect(response.status).toBe(400);
-      expect(createProjectMock).not.toHaveBeenCalled();
+      expect(enqueueCreateProjectMock).not.toHaveBeenCalled();
     });
   });
 
@@ -317,7 +325,7 @@ describe('projects unused Prisma GET routes', () => {
   ])(
     'returns HTTP 400 for initial team validation error: %s',
     async (message) => {
-      createProjectMock.mockRejectedValue(
+      enqueueCreateProjectMock.mockRejectedValue(
         new ProjectTeamValidationError(message)
       );
 
@@ -337,13 +345,15 @@ describe('projects unused Prisma GET routes', () => {
 
         expect(response.status).toBe(400);
         expect(body).toEqual({ error: message });
-        expect(createProjectMock).toHaveBeenCalledOnce();
+        expect(enqueueCreateProjectMock).toHaveBeenCalledOnce();
       });
     }
   );
 
   it('keeps unexpected project creation failures as HTTP 500', async () => {
-    createProjectMock.mockRejectedValue(new Error('Database unavailable'));
+    enqueueCreateProjectMock.mockRejectedValue(
+      new Error('Database unavailable')
+    );
 
     await withApp(async (baseUrl) => {
       const response = await fetch(`${baseUrl}/api/projects`, {
@@ -357,7 +367,11 @@ describe('projects unused Prisma GET routes', () => {
   });
 
   it('keeps project creation without sprint backward compatible', async () => {
-    createProjectMock.mockResolvedValue(mockProjectDetail);
+    enqueueCreateProjectMock.mockResolvedValue({
+      accepted: true,
+      message: 'Project creation started.',
+      correlationId: 'corr-1',
+    });
 
     await withApp(async (baseUrl) => {
       const response = await fetch(`${baseUrl}/api/projects`, {
@@ -366,8 +380,8 @@ describe('projects unused Prisma GET routes', () => {
         body: JSON.stringify(validCreateBody),
       });
 
-      expect(response.status).toBe(201);
-      const [actorId, input] = createProjectMock.mock.calls[0]!;
+      expect(response.status).toBe(202);
+      const [actorId, input] = enqueueCreateProjectMock.mock.calls[0]!;
       expect(actorId).toBe('11111111-1111-4111-8111-111111111111');
       expect(input).not.toHaveProperty('sprint');
       expect(input).not.toHaveProperty('team');
@@ -390,7 +404,7 @@ describe('projects unused Prisma GET routes', () => {
       });
 
       expect(response.status).toBe(400);
-      expect(createProjectMock).not.toHaveBeenCalled();
+      expect(enqueueCreateProjectMock).not.toHaveBeenCalled();
     });
   });
 });

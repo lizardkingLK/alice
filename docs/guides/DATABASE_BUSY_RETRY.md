@@ -18,6 +18,12 @@ Tracked in [alice#562](https://github.com/lizardkingLK/alice/issues/562).
    `code: DATABASE_BUSY` and a friendly message.
 4. **Client** — `apiFetch` (browser) wraps requests in `withApiBusyRetry` and
    shows a Sonner toast: “Database is busy. Retrying…”.
+5. **Exception — async project create** — `POST /api/projects` returns **202**
+   after sync validation; the busy `$transaction` runs in the background. The
+   create mutation passes `skipDatabaseBusyRetry: true` so the global busy-retry
+   toast is **not** shown for that call. Server-side `withBusyRetry` still runs;
+   success / failure is delivered via inbox notifications
+   (`project_created` / `project_create_failed`).
 
 ## Related
 

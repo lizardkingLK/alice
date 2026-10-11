@@ -45,5 +45,13 @@ export function resolveNotificationHref(
     return `/chat?conversationId=${notif.related_item_id}`;
   }
 
+  if (notif.type === 'project_created') {
+    return `/projects/${notif.related_item_id}`;
+  }
+
+  if (notif.type === 'project_create_failed') {
+    return null;
+  }
+
   return `/work-items/${notif.related_item_id}`;
 }

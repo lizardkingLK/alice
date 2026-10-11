@@ -19,6 +19,7 @@ const {
   usersFindManyMock,
   integrationFindFirstMock,
   teamFindFirstMock,
+  notificationsCreateMock,
 } = vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
   return {
@@ -40,6 +41,7 @@ const {
     usersFindManyMock: vi.fn(),
     integrationFindFirstMock: vi.fn(),
     teamFindFirstMock: vi.fn(),
+    notificationsCreateMock: vi.fn(),
   };
 });
 
@@ -60,6 +62,7 @@ vi.mock('../../src/lib/prisma', () => ({
     users: { findMany: usersFindManyMock },
     integrations: { findFirst: integrationFindFirstMock },
     teams: { findFirst: teamFindFirstMock },
+    notifications: { create: notificationsCreateMock },
   },
 }));
 
@@ -154,6 +157,36 @@ describe('ProjectsService backend tests', () => {
       selectSingleMock.mockResolvedValue({ data: { role }, error: null });
     }
   }
+
+  describe('enqueueCreateProject', () => {
+    it('accepts create and notifies when background create succeeds', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      createMock.mockResolvedValue(mockProject);
+      notificationsCreateMock.mockResolvedValue({});
+
+      const accepted = await service.enqueueCreateProject(
+        'user-admin',
+        createProjectInput()
+      );
+
+      expect(accepted.correlationId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      );
+      expect(accepted.message).toMatch(/notified/i);
+
+      await vi.waitFor(() => {
+        expect(createMock).toHaveBeenCalled();
+        expect(notificationsCreateMock).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            user_id: 'user-admin',
+            type: 'project_created',
+            related_item_id: mockProject.id,
+          }),
+        });
+      });
+    });
+  });
 
   describe('createProject', () => {
     it('creates project successfully as administrator', async () => {

@@ -24,9 +24,19 @@ during setup.
 4. Optionally connect **Jira** or **GitHub** in the same flow if prompted.
 5. Submit **Create Project**.
 
+Creation is accepted quickly — you are not left waiting on the form while the
+database finishes. Watch the [dashboard inbox](../notifications/dashboard-inbox.md)
+for a **project ready** notification with a link to the new project, or a
+**failure** notice if something went wrong (includes a short reference id for
+support).
+
 You become a **project member** (so the project stays in your accessible list).
 The manager you pick as **Project Owner** becomes the owner and is also added as
 a member.
+
+If you checked **import from Jira** during create, import after the project
+appears: open it from the inbox link (or Projects list), then use the
+**Integrations** tab.
 
 ---
 
@@ -45,3 +55,4 @@ from membership (see [Project members](./project-members.md)).
 
 - [Browse projects](./browse-projects.md)
 - [Project integrations](./project-integrations.md)
+- [Dashboard inbox](../notifications/dashboard-inbox.md)

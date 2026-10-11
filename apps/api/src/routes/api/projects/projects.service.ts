@@ -249,10 +249,14 @@ export class ProjectsService {
     await this.projectsRepository.removeMember(projectId, userId);
   }
 
-  async createProject(
+  /**
+   * Validate + normalize create input (sync). Used before accepting async create
+   * and by the synchronous create helper.
+   */
+  private async prepareCreateProjectInput(
     actorId: string,
     input: CreateProjectInput
-  ): Promise<ProjectRow> {
+  ): Promise<CreateProjectInput> {
     await requireAdmin(actorId);
 
     const duplicate = await this.projectsRepository.findByKey(input.key);
@@ -331,15 +335,102 @@ export class ProjectsService {
         ? workflowConfig.work_item_types
         : [...CANONICAL_HIERARCHY_ORDER];
 
-    const preparedWithWorkflow: CreateProjectInput = {
+    return {
       ...prepared,
       workflow_config: {
         ...workflowConfig,
         work_item_types: workItemTypes,
       },
     };
+  }
 
-    return await this.projectsRepository.create(preparedWithWorkflow, actorId);
+  private async notifyProjectCreateResult(options: {
+    readonly userId: string;
+    readonly type: 'project_created' | 'project_create_failed';
+    readonly message: string;
+    readonly relatedItemId: string | null;
+  }): Promise<void> {
+    await prisma.notifications.create({
+      data: {
+        user_id: options.userId,
+        type: options.type,
+        message: options.message,
+        related_item_id: options.relatedItemId,
+        created_by: options.userId,
+      },
+    });
+  }
+
+  private async runCreateProjectInBackground(
+    actorId: string,
+    prepared: CreateProjectInput,
+    correlationId: string
+  ): Promise<void> {
+    try {
+      const project = await this.projectsRepository.create(prepared, actorId);
+      await this.notifyProjectCreateResult({
+        userId: actorId,
+        type: 'project_created',
+        message: `**${project.name}** is ready`,
+        relatedItemId: project.id,
+      });
+    } catch (error: unknown) {
+      const reason =
+        error instanceof Error ? error.message : 'Unknown create failure';
+      console.error(
+        `error. project create failed correlationId=${correlationId} key=${prepared.key}: ${reason}`
+      );
+      try {
+        await this.notifyProjectCreateResult({
+          userId: actorId,
+          type: 'project_create_failed',
+          message: `Could not create **${prepared.name}** (${prepared.key}). ${reason} (ref ${correlationId})`,
+          relatedItemId: null,
+        });
+      } catch (notifyError: unknown) {
+        console.error(
+          `error. project create failure notification failed correlationId=${correlationId}:`,
+          notifyError
+        );
+      }
+    }
+  }
+
+  /**
+   * Validate sync, accept create, finish in the background with busy-retry,
+   * then inbox-notify the actor (workflow Step 11).
+   */
+  async enqueueCreateProject(
+    actorId: string,
+    input: CreateProjectInput
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    const prepared = await this.prepareCreateProjectInput(actorId, input);
+    const correlationId = randomUUID();
+
+    void this.runCreateProjectInBackground(
+      actorId,
+      prepared,
+      correlationId
+    ).catch((error: unknown) => {
+      console.error(
+        `error. project create background task crashed correlationId=${correlationId}:`,
+        error
+      );
+    });
+
+    return {
+      correlationId,
+      message: "Project creation started. You'll be notified when it's ready.",
+    };
+  }
+
+  /** Synchronous create (tests / internal). Prefer `enqueueCreateProject` for HTTP. */
+  async createProject(
+    actorId: string,
+    input: CreateProjectInput
+  ): Promise<ProjectRow> {
+    const prepared = await this.prepareCreateProjectInput(actorId, input);
+    return await this.projectsRepository.create(prepared, actorId);
   }
 
   async updateProject(

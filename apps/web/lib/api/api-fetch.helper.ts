@@ -165,6 +165,12 @@ export type GetResponseInit = RequestInit & {
    * loops, Jira import) pass a higher `timeoutMs`.
    */
   timeoutMs?: number;
+  /**
+   * Skip client `withApiBusyRetry` and the “Database is busy. Retrying…” toast.
+   * Use for fire-and-forget accepts (e.g. async project create) where the HTTP
+   * call returns before the busy `$transaction` runs.
+   */
+  skipDatabaseBusyRetry?: boolean;
 };
 
 function mergeAbortSignals(

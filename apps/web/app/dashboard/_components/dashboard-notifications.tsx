@@ -19,6 +19,8 @@ import {
   Layers,
   Inbox,
   Star,
+  FolderKanban,
+  AlertTriangle,
 } from '@repo/ui/lib/icons';
 import {
   DropdownMenu,
@@ -50,6 +52,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   view_shared: Layers,
   chat_processed: MessageSquare,
   access_request: Inbox,
+  project_created: FolderKanban,
+  project_create_failed: AlertTriangle,
   default: Bell,
 };
 
@@ -70,6 +74,10 @@ const iconColorMap: Record<string, string> = {
     'text-indigo-500 bg-indigo-500/10 border-indigo-500/20 dark:bg-indigo-500/20',
   access_request:
     'text-orange-500 bg-orange-500/10 border-orange-500/20 dark:bg-orange-500/20',
+  project_created:
+    'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 dark:bg-emerald-500/20',
+  project_create_failed:
+    'text-rose-500 bg-rose-500/10 border-rose-500/20 dark:bg-rose-500/20',
   default: 'text-muted-foreground bg-muted border-border',
 };
 
