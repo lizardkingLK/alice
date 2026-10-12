@@ -31,6 +31,19 @@ vi.mock('@/lib/cache/load-projects-for-forms', () => ({
   loadProjectsForSprintForm: vi.fn(() => new Promise(() => {})),
 }));
 
+vi.mock('@/lib/supabase/client', () => ({
+  createClient: () => {
+    const result = Promise.resolve({ count: 0, error: null });
+    const query = {
+      eq: () => query,
+      then: result.then.bind(result),
+    };
+    return {
+      from: () => ({ select: () => query }),
+    };
+  },
+}));
+
 const mockProjects: Project[] = [
   projectFactory.build({
     id: 'proj-1',

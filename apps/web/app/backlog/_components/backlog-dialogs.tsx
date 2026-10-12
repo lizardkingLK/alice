@@ -113,6 +113,44 @@ export function BacklogCreateSprintDialog({
 }
 
 /* eslint-disable no-unused-vars */
+type EditSprintDialogProps = {
+  readonly sprint: Sprint | null;
+  readonly projects: DbProject[];
+  readonly currentUserId?: string | null;
+  readonly onClose: () => void;
+  readonly onUpdated: (sprint: Sprint) => void;
+};
+/* eslint-enable no-unused-vars */
+
+export function BacklogEditSprintDialog({
+  sprint,
+  projects,
+  currentUserId,
+  onClose,
+  onUpdated,
+}: Readonly<EditSprintDialogProps>) {
+  if (!sprint) {
+    return null;
+  }
+
+  return (
+    <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
+      <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
+        <SprintForm
+          projects={projects}
+          sprintToEdit={sprint}
+          onSprintUpdated={onUpdated}
+          onClose={onClose}
+          onSuccess={onClose}
+          currentUserId={currentUserId}
+          lockProject
+        />
+      </div>
+    </div>
+  );
+}
+
+/* eslint-disable no-unused-vars */
 type CreateIssueDialogProps = {
   readonly open: boolean;
   readonly projects: DbProject[];
