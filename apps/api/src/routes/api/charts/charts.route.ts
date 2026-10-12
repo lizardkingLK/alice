@@ -25,7 +25,8 @@ function sendError(res: Response, error: unknown, fallback: string) {
     status = 404;
   } else if (
     message === 'Only active charts can be shared' ||
-    message === 'State series requires a single project filter'
+    message === 'State series requires a single project filter' ||
+    message === 'Cannot fork your own chart'
   ) {
     status = 400;
   }
@@ -41,17 +42,26 @@ export function createChartsRouter(deps: ChartsRouterDeps) {
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const scope = req.query.scope === 'shared' ? 'shared' : 'owned';
+        let scope: 'owned' | 'shared' | 'dashboard' = 'owned';
+        if (req.query.scope === 'shared') {
+          scope = 'shared';
+        } else if (req.query.scope === 'dashboard') {
+          scope = 'dashboard';
+        }
         let status: 'active' | 'archived' | undefined;
         if (req.query.status === 'archived') {
           status = 'archived';
         } else if (req.query.status === 'active') {
           status = 'active';
         }
-        const data =
-          scope === 'shared'
-            ? await chartsService.listSharedWithMe(req.userId!)
-            : await chartsService.listOwned(req.userId!, status);
+        let data;
+        if (scope === 'shared') {
+          data = await chartsService.listSharedWithMe(req.userId!);
+        } else if (scope === 'dashboard') {
+          data = await chartsService.listDashboardSlides(req.userId!);
+        } else {
+          data = await chartsService.listOwned(req.userId!, status);
+        }
         res.json({ data });
       } catch (error) {
         sendError(res, error, 'Failed to list charts');
@@ -233,6 +243,19 @@ export function createChartsRouter(deps: ChartsRouterDeps) {
         res.json({ success: true });
       } catch (error) {
         sendError(res, error, 'Failed to leave shared chart');
+      }
+    }
+  );
+
+  chartsRouter.post(
+    '/:id/fork',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const chart = await chartsService.fork(req.userId!, req.params.id!);
+        res.status(201).json({ data: chart });
+      } catch (error) {
+        sendError(res, error, 'Failed to fork chart');
       }
     }
   );

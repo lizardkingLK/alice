@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
-import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +20,6 @@ import {
 export type ChartsSaveWorkspacePayload = {
   readonly title: string;
   readonly description: string | null;
-  readonly isOverview: boolean;
 };
 
 type ChartsSaveWorkspaceDialogProps = {
@@ -30,7 +28,6 @@ type ChartsSaveWorkspaceDialogProps = {
   readonly onOpenChange: (open: boolean) => void;
   readonly defaultTitle: string;
   readonly defaultDescription?: string | null;
-  readonly initialIsOverview?: boolean;
   /** Create a new workspace vs rename/save the current one. */
   readonly mode?: 'create' | 'save';
   /** Optional board summary for Alice suggest (widget list, etc.). */
@@ -46,14 +43,12 @@ export function ChartsSaveWorkspaceDialog({
   onOpenChange,
   defaultTitle,
   defaultDescription = null,
-  initialIsOverview = false,
   mode = 'save',
   aliceContext,
   onSave,
 }: Readonly<ChartsSaveWorkspaceDialogProps>) {
   const [title, setTitle] = useState(defaultTitle);
   const [description, setDescription] = useState(defaultDescription ?? '');
-  const [isOverview, setIsOverview] = useState(initialIsOverview);
   const [pending, setPending] = useState(false);
   const { suggesting, suggestError, suggest, resetSuggestError } =
     useChartsAliceDescriptionSuggest({
@@ -77,16 +72,9 @@ export function ChartsSaveWorkspaceDialog({
     }
     setTitle(defaultTitle);
     setDescription(defaultDescription ?? '');
-    setIsOverview(initialIsOverview);
     setPending(false);
     resetSuggestError();
-  }, [
-    open,
-    defaultTitle,
-    defaultDescription,
-    initialIsOverview,
-    resetSuggestError,
-  ]);
+  }, [open, defaultTitle, defaultDescription, resetSuggestError]);
 
   return (
     <Dialog
@@ -128,18 +116,12 @@ export function ChartsSaveWorkspaceDialog({
             title={title}
             suggesting={suggesting}
             suggestError={suggestError}
-            onSuggest={() => void suggest()}
+            onSuggest={() => {
+              suggest().catch(() => {});
+            }}
             placeholder="What this workspace is for…"
             disabled={pending}
           />
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox
-              checked={isOverview}
-              disabled={pending || suggesting}
-              onCheckedChange={(checked) => setIsOverview(checked === true)}
-            />
-            Mark as overview
-          </label>
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
           <Button
@@ -156,19 +138,19 @@ export function ChartsSaveWorkspaceDialog({
             className="cursor-pointer"
             disabled={!title.trim() || pending || suggesting}
             onClick={() => {
-              void (async () => {
-                setPending(true);
-                try {
-                  await onSave({
-                    title: title.trim(),
-                    description: description.trim() || null,
-                    isOverview,
-                  });
+              setPending(true);
+              Promise.resolve(
+                onSave({
+                  title: title.trim(),
+                  description: description.trim() || null,
+                })
+              )
+                .then(() => {
                   onOpenChange(false);
-                } catch {
+                })
+                .catch(() => {
                   setPending(false);
-                }
-              })();
+                });
             }}
           >
             {confirmLabel}

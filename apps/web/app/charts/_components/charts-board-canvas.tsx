@@ -121,6 +121,9 @@ type ChartsBoardCanvasProps = {
   readonly assigneeMembers?: readonly ChartsSampleMember[];
   /** False until localStorage board JSON has been read on the client. */
   readonly hydrated?: boolean;
+  /** Dashboard Overview: hide mutate chrome; optionally lock layout. */
+  readonly overviewChrome?: boolean;
+  readonly layoutLocked?: boolean;
   readonly className?: string;
 };
 
@@ -142,6 +145,8 @@ export function ChartsBoardCanvas({
   accessibleSprints = [],
   assigneeMembers = [],
   hydrated = true,
+  overviewChrome = false,
+  layoutLocked = false,
   className,
 }: Readonly<ChartsBoardCanvasProps>) {
   const { stableWidth, containerRef, mounted, isSidebarSettling } =
@@ -230,6 +235,8 @@ export function ChartsBoardCanvas({
           accessibleProjects={accessibleProjects}
           accessibleSprints={accessibleSprints}
           assigneeMembers={assigneeMembers}
+          overviewChrome={overviewChrome}
+          layoutLocked={layoutLocked}
         />
       </div>
     </div>
@@ -256,6 +263,8 @@ function BoardCanvasBody({
   accessibleProjects = [],
   accessibleSprints = [],
   assigneeMembers = [],
+  overviewChrome = false,
+  layoutLocked = false,
 }: Readonly<{
   isEmpty: boolean;
   mounted: boolean;
@@ -321,6 +330,8 @@ function BoardCanvasBody({
     readonly projectId: string;
   }>;
   assigneeMembers?: readonly ChartsSampleMember[];
+  overviewChrome?: boolean;
+  layoutLocked?: boolean;
 }>) {
   const { dragSessionKey, onDragStart, onDragStop } =
     useCancelGridDragOnEscape(onLayoutChange);
@@ -361,8 +372,14 @@ function BoardCanvasBody({
       width={stableWidth}
       layout={layout}
       gridConfig={DASHBOARD_GRID_CONFIG}
-      dragConfig={DASHBOARD_DRAG_CONFIG}
-      resizeConfig={DASHBOARD_RESIZE_CONFIG}
+      dragConfig={{
+        ...DASHBOARD_DRAG_CONFIG,
+        enabled: !layoutLocked && DASHBOARD_DRAG_CONFIG.enabled,
+      }}
+      resizeConfig={{
+        ...DASHBOARD_RESIZE_CONFIG,
+        enabled: !layoutLocked && DASHBOARD_RESIZE_CONFIG.enabled,
+      }}
       onLayoutChange={onLayoutChange}
       onDragStart={onDragStart}
       onDragStop={onDragStop}
@@ -421,6 +438,7 @@ function BoardCanvasBody({
                   onFocusWidgetDismiss?.();
                 }
               }}
+              overviewChrome={overviewChrome}
             />
           </div>
         );

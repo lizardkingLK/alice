@@ -94,7 +94,7 @@ export function ChartsDescriptionField({
           size="sm"
           className="h-7 cursor-pointer gap-1.5 px-2 text-xs"
           disabled={!title.trim() || busy}
-          onClick={() => void onSuggest()}
+          onClick={onSuggest}
         >
           {suggesting ? (
             <Loader2 className="size-3.5 animate-spin" aria-hidden />

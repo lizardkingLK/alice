@@ -1,7 +1,7 @@
 # Dashboard overview
 
-Your home screen under **Overview**. Alice is moving this page from a fixed
-mock widget grid to a **slider of chart workspaces** you pin from Charts.
+Your home screen under **Overview** — a **slider of chart workspaces** you pin
+from Charts.
 
 **Audience:** All users
 
@@ -16,45 +16,39 @@ You'll land on `/dashboard`.
 
 ---
 
-## What you see today
+## Chart workspace slider
 
-Overview currently shows a **widget grid** you can rearrange:
+Overview shows chart workspaces marked **Show on dashboard** (with a sort
+order) in the Charts registry. Use the slide tabs or arrows to switch boards.
 
-- Drag widgets to reorder
-- Resize from widget corners where supported
-- **Reset layout** restores the default arrangement
+On each slide you can:
 
-Widget examples include open issues, work by status, sprint burndown, team
-velocity, and recent activity. Exact widgets depend on your workspace data.
+- Drag and resize widgets on **your** boards (shared slides stay layout-locked)
+- Drill into chart slices and open work items
+- Use **Fullscreen** and **Export**
+- Open **Customize** to edit the full board on `/charts/[id]`
 
-**Sprint burndown** uses your board defaults (project / sprint) when set.
-The widget header shows the **Project** and **Sprint** names on the top right
-so you can see the scope at a glance.
+Filters, widget settings, Save option, duplicate, and delete stay on the Charts
+board — Overview keeps a read-focused chrome.
 
-Your layout is saved in the browser for your account on this device.
+If nothing is pinned yet, Overview shows a short empty state with a link to
+**Charts**.
 
----
+### Pin and order boards
 
-## Coming soon: chart workspace slider
+1. Open **Charts**.
+2. On an **Active** row, open **⋯ → Edit**.
+3. Turn on **Show on dashboard**.
+4. Set **Dashboard order** (lower numbers appear earlier).
 
-Overview will show a **slider** of chart workspaces you marked **Show on
-dashboard** (with a sort order) in the Charts registry. Each slide is a
-read-focused board:
-
-- Drill into slices and open work items
-- Fullscreen and export stay available
-- Filters and widget settings stay on `/charts/[id]` for editing
-
-Pin and order boards from **Charts** → row **Edit**. Share boards via
-**Views** (same as today); recipients can **Fork** a shared board into their
-own copy when that control ships.
+You can pin multiple workspaces. Sharing stays on **Views**; recipients can
+**Fork** a shared board into their own copy from the board header.
 
 ### Design reference (mock grid)
 
-While the slider rolls out, the old mock overview remains available only when
-you open `/dashboard?mockOverview=1`. That URL is for design reference and will
-be removed once Numbers / velocity / activity chart widgets replace those
-mocks.
+The older mock overview (KPI cards, velocity, activity list) remains available
+only at `/dashboard?mockOverview=1` for design reference. That URL will go away
+once Numbers / velocity / activity chart widgets replace those mocks.
 
 ---
 

@@ -682,17 +682,20 @@ model saved_view_shares {
 
 /// Per-user chart workspace (board JSON: widgets + layout).
 model charts {
-  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  owner_id    String       @db.Uuid
-  title       String
-  description String?
-  board_json  Json         @default("{}")
-  is_overview Boolean      @default(false)
-  status      RecordStatus @default(active)
-  created_by  String?      @db.Uuid
-  created_at  DateTime     @default(now()) @db.Timestamptz(6)
-  updated_by  String?      @db.Uuid
-  updated_at  DateTime     @updatedAt @db.Timestamptz(6)
+  id                   String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_id             String       @db.Uuid
+  title                String
+  description          String?
+  board_json           Json         @default("{}")
+  /// Pin to Dashboard Overview slider (many per owner; replaces is_overview).
+  show_on_dashboard    Boolean      @default(false)
+  /// Lower values appear earlier in the Overview slider.
+  dashboard_sort_order Int          @default(0)
+  status               RecordStatus @default(active)
+  created_by           String?      @db.Uuid
+  created_at           DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by           String?      @db.Uuid
+  updated_at           DateTime     @updatedAt @db.Timestamptz(6)
 
   owner           users          @relation("ChartOwner", fields: [owner_id], references: [id], onDelete: Cascade)
   created_by_user users?         @relation("ChartCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
@@ -701,6 +704,7 @@ model charts {
   saved_views     saved_views[]  @relation("ChartSavedViewBookmark")
 
   @@index([owner_id, status])
+  @@index([show_on_dashboard, dashboard_sort_order, title])
 }
 
 model chart_shares {

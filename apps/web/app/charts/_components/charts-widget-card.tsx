@@ -224,6 +224,8 @@ type ChartsWidgetCardProps = {
     // eslint-disable-next-line no-unused-vars
     open: boolean
   ) => void;
+  /** Dashboard Overview: hide filters / settings / mutate actions. */
+  readonly overviewChrome?: boolean;
   readonly className?: string;
 };
 
@@ -460,6 +462,7 @@ export function ChartsWidgetCard({
   onDisplaySettingsChange,
   initialConfigOpen = false,
   onConfigOpenChange,
+  overviewChrome = false,
   className,
 }: Readonly<ChartsWidgetCardProps>) {
   const isChart = typeId === 'chart';
@@ -647,31 +650,34 @@ export function ChartsWidgetCard({
             />
           ) : null}
 
-          <ChartsWidgetCardFilterControl
-            isChart={isChart}
-            isBurndown={isBurndown}
-            title={displayTitle}
-            filters={filters}
-            burndownFiltersOpen={burndownFiltersOpen}
-            onBurndownFiltersOpenChange={setBurndownFiltersOpen}
-            accessibleProjects={accessibleProjects}
-            accessibleSprints={accessibleSprints}
-            assigneeMembers={assigneeMembers}
-            onFiltersChange={onFiltersChange}
-            onOpenChartFilters={() => {
-              openConfig({ withFilters: true });
-            }}
-          />
+          {overviewChrome ? null : (
+            <ChartsWidgetCardFilterControl
+              isChart={isChart}
+              isBurndown={isBurndown}
+              title={displayTitle}
+              filters={filters}
+              burndownFiltersOpen={burndownFiltersOpen}
+              onBurndownFiltersOpenChange={setBurndownFiltersOpen}
+              accessibleProjects={accessibleProjects}
+              accessibleSprints={accessibleSprints}
+              assigneeMembers={assigneeMembers}
+              onFiltersChange={onFiltersChange}
+              onOpenChartFilters={() => {
+                openConfig({ withFilters: true });
+              }}
+            />
+          )}
 
           <ChartsWidgetActionsMenu
             open={menuOpen}
             onOpenChange={setMenuOpen}
             showExport={isChart}
-            showDock
+            showDock={!overviewChrome}
+            overviewChrome={overviewChrome}
             onRename={openRename}
             onDuplicate={onDuplicate}
             onDelete={onRemove}
-            onSettings={onSettings}
+            onSettings={overviewChrome ? undefined : onSettings}
             leadingItem={
               <DropdownMenuItem
                 className="cursor-pointer gap-2"
@@ -748,7 +754,9 @@ export function ChartsWidgetCard({
               title={renameDraft}
               suggesting={suggesting}
               suggestError={suggestError}
-              onSuggest={() => void suggest()}
+              onSuggest={() => {
+                suggest().catch(() => {});
+              }}
               placeholder="What this widget shows…"
             />
           </div>

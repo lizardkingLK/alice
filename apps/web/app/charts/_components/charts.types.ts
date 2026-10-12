@@ -175,7 +175,10 @@ export type ChartWorkspaceRecord = {
   readonly title: string;
   readonly description: string | null;
   readonly status: 'active' | 'archived';
-  readonly isOverview: boolean;
+  /** Pin on Dashboard Overview slider. */
+  readonly showOnDashboard: boolean;
+  /** Lower values appear earlier on the Overview slider. */
+  readonly dashboardSortOrder: number;
   readonly updatedAt: string;
   /** Owner vs shared ACL; defaults to mine. */
   readonly ownership?: 'mine' | 'shared';

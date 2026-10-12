@@ -2,10 +2,9 @@
 
 Build personal **chart workspaces** — drag-and-drop widget boards. The sidebar
 opens the Charts registry. You can save multiple workspaces, pin any of them to
-**Overview** (dashboard slider — rolling out), share via **Views**, and
-deep-link into a widget’s configuration. Workspaces sync to your account.
-Boards are stored on the server — this device does not keep a local copy of
-workspace layout.
+**Overview**, share via **Views**, and deep-link into a widget’s configuration.
+Workspaces sync to your account. Boards are stored on the server — this device
+does not keep a local copy of workspace layout.
 
 **Audience:** All users
 
@@ -42,26 +41,25 @@ shell).
 ### Create a workspace
 
 1. Select **Create Workspace** (toolbar or empty-state CTA).
-2. Enter a **name** (and soon a **description**), then create — Alice opens
+2. Enter a **name** and optional **description**, then create — Alice opens
    the new empty board.
 
 ### Save option (name and description)
 
 1. Open a workspace board, then open the board **⋯** menu and choose
-   **Save option** (today may still say **Rename / Save** until the rename
-   ships).
+   **Save option**.
 2. Confirm or edit the **name** (for example `Charts` or `Charts (2)`).
-3. Optionally add a **description** (info tooltip on the title). Alice can
-   suggest a description from the board’s widgets (**coming soon**).
+3. Optionally add a **description** (info tooltip on the title). Use
+   **Suggest with Alice** to draft a description from the board’s widgets.
 
 Last-opened (which board you opened last) stays separate from Overview pins.
 
-### Pin to Overview (coming soon)
+### Pin to Overview
 
 From the Charts registry row **⋯ → Edit**:
 
 1. Set **Show on dashboard** so the workspace appears on **Overview**.
-2. Set a positive **order** number (lower numbers appear earlier in the
+2. Set a **Dashboard order** number (lower numbers appear earlier in the
    Overview slider).
 
 You can pin **multiple** workspaces. There is no Shared tab on Charts —
@@ -77,7 +75,7 @@ Charts does **not** have a native Share action. To share a board:
 
 Recipients open the board from **Views → Shared with me** (or the inbox link).
 Alice grants board access (`chart_shares`) when you share a chart-backed view.
-On a shared board, **Fork** (**coming soon**, next to **+**) creates your own
+On a shared board, **Fork** (next to **+**) creates your own
 editable copy.
 
 ### Archive, restore, or delete a workspace

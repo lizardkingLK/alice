@@ -4,14 +4,15 @@ import type {
   ChartWorkspaceRecord,
 } from '@/app/charts/_components/charts.types';
 
-/** Wire row from `GET /api/charts` (owned or shared). */
+/** Wire row from `GET /api/charts` (owned, shared, or dashboard). */
 export type ChartApiRow = {
   readonly id: string;
   readonly owner_id: string;
   readonly title: string;
   readonly description: string | null;
   readonly board_json: unknown;
-  readonly is_overview: boolean;
+  readonly show_on_dashboard: boolean;
+  readonly dashboard_sort_order: number;
   readonly status: string;
   readonly updated_at: string;
 };
@@ -44,7 +45,8 @@ export function chartWorkspaceFromApiRow(
     title: row.title,
     description: row.description,
     status,
-    isOverview: row.is_overview,
+    showOnDashboard: row.show_on_dashboard,
+    dashboardSortOrder: row.dashboard_sort_order,
     updatedAt: row.updated_at,
     ownership,
     instances: board.instances,

@@ -1,7 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import {
   type ColumnDef,
@@ -28,6 +35,7 @@ import {
   Archive,
   BarChart3,
   MoreHorizontal,
+  Pencil,
   Plus,
   RefreshCw,
   Trash2,
@@ -44,6 +52,10 @@ import { SearchInput } from '@/components/search-input';
 import { formatDate, formatDateTime } from '@/app/_shared/utility';
 import { afterDialogClose } from '@/lib/dialog-close';
 import { isSessionExpiredError } from '@/lib/errors/session-expired';
+import {
+  ChartsEditWorkspaceDialog,
+  type ChartsEditWorkspacePayload,
+} from '@/app/charts/_components/charts-edit-workspace-dialog';
 import {
   ChartsSaveWorkspaceDialog,
   type ChartsSaveWorkspacePayload,
@@ -64,6 +76,7 @@ import {
   createChartWorkspaceOnApi,
   deleteChartWorkspace,
   restoreChartWorkspace,
+  updateChartWorkspaceMetaOnApi,
 } from '@/app/charts/_services/charts.mutations.client';
 import {
   chartOwnershipForViewer,
@@ -138,13 +151,20 @@ function ChartsTitleCell({
   );
 }
 
-function ChartsOverviewCell({
+function ChartsDashboardCell({
   workspace,
 }: Readonly<{ workspace: ChartWorkspaceRecord }>) {
-  if (!workspace.isOverview) {
+  if (!workspace.showOnDashboard) {
     return <span className="text-muted-foreground">—</span>;
   }
-  return <Badge variant="secondary">Overview</Badge>;
+  return (
+    <div className="flex items-center gap-2">
+      <Badge variant="secondary">Dashboard</Badge>
+      <span className="text-muted-foreground text-xs">
+        #{workspace.dashboardSortOrder}
+      </span>
+    </div>
+  );
 }
 
 function ChartsUpdatedAtCell({
@@ -161,6 +181,8 @@ type ChartsActionsCellProps = {
   readonly workspace: ChartWorkspaceRecord;
   readonly tab: ChartsRegistryListTab;
   readonly pendingId: string | null;
+  // eslint-disable-next-line no-unused-vars -- edit callback
+  readonly onEdit: (workspace: ChartWorkspaceRecord) => void;
   // eslint-disable-next-line no-unused-vars -- archive callback
   readonly onArchive: (workspace: ChartWorkspaceRecord) => void;
   // eslint-disable-next-line no-unused-vars -- restore callback
@@ -173,6 +195,7 @@ function ChartsActionsCell({
   workspace,
   tab,
   pendingId,
+  onEdit,
   onArchive,
   onRestore,
   onRequestDelete,
@@ -192,6 +215,12 @@ function ChartsActionsCell({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {tab === 'mine' ? (
+          <DropdownMenuItem onSelect={() => onEdit(workspace)}>
+            <Pencil className="size-4" />
+            Edit
+          </DropdownMenuItem>
+        ) : null}
         {tab === 'mine' ? (
           <DropdownMenuItem onSelect={() => onArchive(workspace)}>
             <Archive className="size-4" />
@@ -233,12 +262,12 @@ function createChartsTableColumns(
   }) {
     return <ChartsTitleCell workspace={row.original} />;
   }
-  function renderOverview({
+  function renderDashboard({
     row,
   }: {
     readonly row: { readonly original: ChartWorkspaceRecord };
   }) {
-    return <ChartsOverviewCell workspace={row.original} />;
+    return <ChartsDashboardCell workspace={row.original} />;
   }
   function renderUpdated({
     row,
@@ -263,9 +292,9 @@ function createChartsTableColumns(
       cell: renderTitle,
     },
     {
-      id: 'overview',
-      header: 'Overview',
-      cell: renderOverview,
+      id: 'dashboard',
+      header: 'Dashboard',
+      cell: renderDashboard,
     },
     {
       id: 'updated_at',
@@ -369,6 +398,9 @@ export function ChartsRegistry({
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<ChartWorkspaceRecord | null>(
+    null
+  );
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deletePending, setDeletePending] = useState(false);
 
@@ -431,7 +463,6 @@ export function ChartsRegistry({
         const created = await createChartWorkspaceOnApi({
           title: payload.title,
           description: payload.description,
-          isOverview: payload.isOverview,
           viewerId: currentUserId,
         });
         setWorkspaces((previous) => [created, ...previous]);
@@ -449,11 +480,54 @@ export function ChartsRegistry({
     [currentUserId, router]
   );
 
+  const handleEdit = useCallback(
+    async (payload: ChartsEditWorkspacePayload) => {
+      if (!editTarget) {
+        return;
+      }
+      setError(null);
+      try {
+        const updated = await updateChartWorkspaceMetaOnApi({
+          chartId: editTarget.id,
+          title: payload.title,
+          description: payload.description,
+          showOnDashboard: payload.showOnDashboard,
+          dashboardSortOrder: payload.dashboardSortOrder,
+          viewerId: currentUserId,
+        });
+        setWorkspaces((previous) =>
+          previous.map((item) =>
+            item.id === updated.id
+              ? {
+                  ...item,
+                  title: updated.title,
+                  description: updated.description,
+                  showOnDashboard: updated.showOnDashboard,
+                  dashboardSortOrder: updated.dashboardSortOrder,
+                  updatedAt: updated.updatedAt,
+                }
+              : item
+          )
+        );
+      } catch (err) {
+        if (isSessionExpiredError(err)) {
+          return;
+        }
+        const message =
+          err instanceof Error ? err.message : 'Failed to update workspace';
+        setError(message);
+        throw err instanceof Error ? err : new Error(message);
+      }
+    },
+    [currentUserId, editTarget]
+  );
+
   const columns = useMemo(
     () =>
       createChartsTableColumns({
         tab,
         pendingId,
+        onEdit: setEditTarget,
         onArchive: (workspace) => {
           runStatusAction(workspace, 'archive').catch(() => {});
         },
@@ -505,6 +579,13 @@ export function ChartsRegistry({
       onCreateOpenChange={setCreateOpen}
       createDefaultTitle={createDefaultTitle}
       onCreate={handleCreate}
+      editTarget={editTarget}
+      onEditOpenChange={(open) => {
+        if (!open) {
+          setEditTarget(null);
+        }
+      }}
+      onEdit={handleEdit}
       deleteTarget={deleteTarget}
       deletePending={deletePending}
       onCancelDelete={() => setDeleteTarget(null)}
@@ -548,6 +629,13 @@ function ChartsRegistryLoadedView(props: {
   readonly onCreate: (
     // eslint-disable-next-line no-unused-vars -- create payload
     payload: ChartsSaveWorkspacePayload
+  ) => Promise<void>;
+  readonly editTarget: ChartWorkspaceRecord | null;
+  // eslint-disable-next-line no-unused-vars -- edit dialog
+  readonly onEditOpenChange: (open: boolean) => void;
+  readonly onEdit: (
+    // eslint-disable-next-line no-unused-vars -- edit payload
+    payload: ChartsEditWorkspacePayload
   ) => Promise<void>;
   readonly deleteTarget: DeleteTarget | null;
   readonly deletePending: boolean;
@@ -646,8 +734,16 @@ function ChartsRegistryLoadedView(props: {
         onOpenChange={props.onCreateOpenChange}
         mode="create"
         defaultTitle={props.createDefaultTitle}
-        initialIsOverview={false}
         onSave={props.onCreate}
+      />
+      <ChartsEditWorkspaceDialog
+        open={props.editTarget != null}
+        onOpenChange={props.onEditOpenChange}
+        defaultTitle={props.editTarget?.title ?? ''}
+        defaultDescription={props.editTarget?.description ?? null}
+        initialShowOnDashboard={props.editTarget?.showOnDashboard ?? false}
+        initialDashboardSortOrder={props.editTarget?.dashboardSortOrder ?? 0}
+        onSave={props.onEdit}
       />
       {props.deleteTarget ? (
         <RegistryConfirmDialog

@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { LayoutItem } from 'react-grid-layout';
 import {
@@ -17,7 +16,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
-import { BarChart3, Info, Layers, Loader2 } from '@repo/ui/lib/icons';
+import { BarChart3, Info, Loader2, GitFork } from '@repo/ui/lib/icons';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
@@ -76,6 +75,7 @@ import {
   archiveChartWorkspace,
   createChartWorkspaceOnApi,
   deleteChartWorkspace,
+  forkChartWorkspaceOnApi,
   leaveSharedChartWorkspace,
   restoreChartWorkspace,
   syncChartWorkspaceToApi,
@@ -243,6 +243,24 @@ export function ChartsWorkspace({
     setCreateDialogOpen(true);
   }, []);
 
+  const handleForkWorkspace = useCallback(async () => {
+    setActionError(null);
+    try {
+      const forked = await forkChartWorkspaceOnApi({
+        chartId: workspaceId,
+        viewerId: currentUserId,
+      });
+      router.push(`/charts/${forked.id}`);
+    } catch (err) {
+      if (isSessionExpiredError(err)) {
+        return;
+      }
+      setActionError(
+        err instanceof Error ? err.message : 'Failed to fork workspace'
+      );
+    }
+  }, [currentUserId, router, workspaceId]);
+
   const handleCreateWorkspace = useCallback(
     async (payload: ChartsSaveWorkspacePayload) => {
       setActionError(null);
@@ -250,7 +268,6 @@ export function ChartsWorkspace({
         const created = await createChartWorkspaceOnApi({
           title: payload.title,
           description: payload.description,
-          isOverview: payload.isOverview,
           viewerId: currentUserId,
         });
         router.push(`/charts/${created.id}`);
@@ -277,7 +294,6 @@ export function ChartsWorkspace({
           ...previous,
           title: payload.title.trim() || previous.title,
           description: payload.description,
-          isOverview: payload.isOverview,
           updatedAt: new Date().toISOString(),
         };
         runWorkspaceSync(updated).catch(() => {});
@@ -488,12 +504,6 @@ export function ChartsWorkspace({
       ) : null}
       <div className="flex shrink-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          <Button asChild variant="outline" size="sm" className="h-9 gap-2">
-            <Link href="/charts">
-              <Layers className="size-3.5" data-icon="inline-start" />
-              All workspaces
-            </Link>
-          </Button>
           <ChartsWorkspaceFilterDialog
             projects={projects}
             sprints={sprints}
@@ -512,6 +522,18 @@ export function ChartsWorkspace({
               <Loader2 className="size-4 animate-spin" aria-hidden />
               <span>Saving…</span>
             </div>
+          ) : null}
+          {(workspace?.ownership ?? 'mine') === 'shared' ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 cursor-pointer gap-2"
+              onClick={() => void handleForkWorkspace()}
+            >
+              <GitFork className="size-3.5" data-icon="inline-start" />
+              Fork
+            </Button>
           ) : null}
           <ChartsAddMenu
             onSelectWidget={handleSelectWidget}
@@ -608,7 +630,6 @@ export function ChartsWorkspace({
         onOpenChange={setCreateDialogOpen}
         mode="create"
         defaultTitle={createDefaultTitle}
-        initialIsOverview={false}
         aliceContext={{ widgetCount: instances.length }}
         onSave={handleCreateWorkspace}
       />
@@ -618,7 +639,6 @@ export function ChartsWorkspace({
         mode="save"
         defaultTitle={saveDefaultTitle}
         defaultDescription={workspace?.description ?? null}
-        initialIsOverview={workspace?.isOverview ?? false}
         aliceContext={{
           widgets: instances.map((item) => ({
             typeId: item.typeId,

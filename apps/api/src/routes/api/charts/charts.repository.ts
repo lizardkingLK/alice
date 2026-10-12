@@ -40,7 +40,8 @@ export type ChartRow = {
   title: string;
   description: string | null;
   board_json: unknown;
-  is_overview: boolean;
+  show_on_dashboard: boolean;
+  dashboard_sort_order: number;
   status: 'active' | 'archived' | 'inactive' | 'deleted';
   created_by: string | null;
   created_at: string;
@@ -54,7 +55,8 @@ function toChartRow(row: {
   title: string;
   description: string | null;
   board_json: unknown;
-  is_overview: boolean;
+  show_on_dashboard: boolean;
+  dashboard_sort_order: number;
   status: ChartRow['status'];
   created_by: string | null;
   created_at: Date;
@@ -67,7 +69,8 @@ function toChartRow(row: {
     title: row.title,
     description: row.description,
     board_json: row.board_json,
-    is_overview: row.is_overview,
+    show_on_dashboard: row.show_on_dashboard,
+    dashboard_sort_order: row.dashboard_sort_order,
     status: row.status,
     created_by: row.created_by,
     created_at: row.created_at.toISOString(),
@@ -398,10 +401,6 @@ export class ChartsRepository {
   }
 
   async create(ownerId: string, input: CreateChartBody): Promise<ChartRow> {
-    if (input.is_overview) {
-      await this.clearOverviewFlag(ownerId);
-    }
-
     const created = await prisma.charts.create({
       data: {
         ...(input.id ? { id: input.id } : {}),
@@ -409,7 +408,8 @@ export class ChartsRepository {
         title: input.title,
         description: input.description ?? null,
         board_json: toPrismaBoardJson(input.board_json),
-        is_overview: input.is_overview ?? false,
+        show_on_dashboard: input.show_on_dashboard ?? false,
+        dashboard_sort_order: input.dashboard_sort_order ?? 0,
         ...prismaAuditCreate(ownerId),
       },
     });
@@ -446,18 +446,50 @@ export class ChartsRepository {
       .map((share) => toChartRow(share.chart));
   }
 
+  /**
+   * Owned ∪ shared-accessible active charts pinned to the Dashboard slider.
+   */
+  async listDashboardSlides(userId: string): Promise<ChartRow[]> {
+    const [owned, shared] = await Promise.all([
+      prisma.charts.findMany({
+        where: {
+          owner_id: userId,
+          status: RecordStatus.active,
+          show_on_dashboard: true,
+        },
+      }),
+      prisma.chart_shares.findMany({
+        where: { user_id: userId, status: RecordStatus.active },
+        include: { chart: true },
+      }),
+    ]);
+
+    const byId = new Map<string, ChartRow>();
+    for (const row of owned) {
+      byId.set(row.id, toChartRow(row));
+    }
+    for (const share of shared) {
+      if (
+        share.chart.status === RecordStatus.active &&
+        share.chart.show_on_dashboard
+      ) {
+        byId.set(share.chart.id, toChartRow(share.chart));
+      }
+    }
+
+    return [...byId.values()].sort((left, right) => {
+      if (left.dashboard_sort_order !== right.dashboard_sort_order) {
+        return left.dashboard_sort_order - right.dashboard_sort_order;
+      }
+      return left.title.localeCompare(right.title);
+    });
+  }
+
   async update(
     chartId: string,
     actorId: string,
     input: UpdateChartBody
   ): Promise<ChartRow> {
-    if (input.is_overview === true) {
-      const existing = await this.getById(chartId);
-      if (existing) {
-        await this.clearOverviewFlag(existing.owner_id, chartId);
-      }
-    }
-
     const updated = await prisma.charts.update({
       where: { id: chartId },
       data: {
@@ -468,8 +500,11 @@ export class ChartsRepository {
         ...(input.board_json !== undefined
           ? { board_json: toPrismaBoardJson(input.board_json) }
           : {}),
-        ...(input.is_overview !== undefined
-          ? { is_overview: input.is_overview }
+        ...(input.show_on_dashboard !== undefined
+          ? { show_on_dashboard: input.show_on_dashboard }
+          : {}),
+        ...(input.dashboard_sort_order !== undefined
+          ? { dashboard_sort_order: input.dashboard_sort_order }
           : {}),
         ...(input.status !== undefined ? { status: input.status } : {}),
         ...prismaAuditUpdate(actorId),
@@ -487,11 +522,36 @@ export class ChartsRepository {
       where: { id: chartId },
       data: {
         status,
-        ...(status === 'archived' ? { is_overview: false } : {}),
+        ...(status === 'archived' ? { show_on_dashboard: false } : {}),
         ...prismaAuditUpdate(actorId),
       },
     });
     return toChartRow(updated);
+  }
+
+  async fork(params: {
+    readonly sourceChartId: string;
+    readonly actorId: string;
+    readonly title?: string;
+  }): Promise<ChartRow> {
+    const source = await this.getById(params.sourceChartId);
+    if (!source) {
+      throw new Error('Chart not found');
+    }
+    const created = await prisma.charts.create({
+      data: {
+        owner_id: params.actorId,
+        title: params.title?.trim() || `${source.title} (copy)`,
+        description: source.description,
+        board_json: toPrismaBoardJson(
+          source.board_json as CreateChartBody['board_json']
+        ),
+        show_on_dashboard: false,
+        dashboard_sort_order: 0,
+        ...prismaAuditCreate(params.actorId),
+      },
+    });
+    return toChartRow(created);
   }
 
   async hardDelete(chartId: string): Promise<void> {
@@ -511,25 +571,27 @@ export class ChartsRepository {
     readonly actorId: string;
     readonly userIds: readonly string[];
   }): Promise<void> {
-    for (const userId of params.userIds) {
-      await prisma.chart_shares.upsert({
-        where: {
-          chart_id_user_id: {
+    await Promise.all(
+      params.userIds.map((userId) =>
+        prisma.chart_shares.upsert({
+          where: {
+            chart_id_user_id: {
+              chart_id: params.chartId,
+              user_id: userId,
+            },
+          },
+          create: {
             chart_id: params.chartId,
             user_id: userId,
+            ...prismaAuditCreate(params.actorId),
           },
-        },
-        create: {
-          chart_id: params.chartId,
-          user_id: userId,
-          ...prismaAuditCreate(params.actorId),
-        },
-        update: {
-          status: RecordStatus.active,
-          ...prismaAuditUpdate(params.actorId),
-        },
-      });
-    }
+          update: {
+            status: RecordStatus.active,
+            ...prismaAuditUpdate(params.actorId),
+          },
+        })
+      )
+    );
   }
 
   async deleteShare(params: {
@@ -538,20 +600,6 @@ export class ChartsRepository {
   }): Promise<void> {
     await prisma.chart_shares.deleteMany({
       where: { chart_id: params.chartId, user_id: params.userId },
-    });
-  }
-
-  private async clearOverviewFlag(
-    ownerId: string,
-    exceptChartId?: string
-  ): Promise<void> {
-    await prisma.charts.updateMany({
-      where: {
-        owner_id: ownerId,
-        is_overview: true,
-        ...(exceptChartId ? { id: { not: exceptChartId } } : {}),
-      },
-      data: { is_overview: false },
     });
   }
 }
