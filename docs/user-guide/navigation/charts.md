@@ -1,10 +1,11 @@
 # Charts
 
 Build personal **chart workspaces** — drag-and-drop widget boards. The sidebar
-opens the Charts registry. You can save multiple workspaces, mark one for
-Overview, and deep-link into a widget’s configuration. Workspaces sync to your
-account. Boards are stored on the server — this device does not keep a local
-copy of workspace layout.
+opens the Charts registry. You can save multiple workspaces, pin any of them to
+**Overview** (dashboard slider — rolling out), share via **Views**, and
+deep-link into a widget’s configuration. Workspaces sync to your account.
+Boards are stored on the server — this device does not keep a local copy of
+workspace layout.
 
 **Audience:** All users
 
@@ -41,17 +42,30 @@ shell).
 ### Create a workspace
 
 1. Select **Create Workspace** (toolbar or empty-state CTA).
-2. Enter a name and optional overview mark, then create — Alice opens the new
-   empty board.
+2. Enter a **name** (and soon a **description**), then create — Alice opens
+   the new empty board.
 
-### Save or rename a workspace
+### Save option (name and description)
 
 1. Open a workspace board, then open the board **⋯** menu and choose
-   **Rename / Save**.
-2. Confirm or edit the name (for example `Charts` or `Charts (2)`).
-3. Optionally **Mark as overview** — only one overview workspace at a time;
-   Overview will use it when that binding ships. Last-opened stays separate
-   from the overview mark.
+   **Save option** (today may still say **Rename / Save** until the rename
+   ships).
+2. Confirm or edit the **name** (for example `Charts` or `Charts (2)`).
+3. Optionally add a **description** (info tooltip on the title). Alice can
+   suggest a description from the board’s widgets (**coming soon**).
+
+Last-opened (which board you opened last) stays separate from Overview pins.
+
+### Pin to Overview (coming soon)
+
+From the Charts registry row **⋯ → Edit**:
+
+1. Set **Show on dashboard** so the workspace appears on **Overview**.
+2. Set a positive **order** number (lower numbers appear earlier in the
+   Overview slider).
+
+You can pin **multiple** workspaces. There is no Shared tab on Charts —
+sharing stays on **Views**.
 
 ### Share a workspace
 
@@ -63,6 +77,8 @@ Charts does **not** have a native Share action. To share a board:
 
 Recipients open the board from **Views → Shared with me** (or the inbox link).
 Alice grants board access (`chart_shares`) when you share a chart-backed view.
+On a shared board, **Fork** (**coming soon**, next to **+**) creates your own
+editable copy.
 
 ### Archive, restore, or delete a workspace
 
@@ -86,10 +102,13 @@ After delete or leave from a board, Alice returns to the registry. Empty
 
 On `/charts/[id]`:
 
-- **All workspaces** returns to the registry
+- Breadcrumb **Charts** returns to the registry (the old **All workspaces**
+  button is being removed)
 - **Filter** (**Shift+F**) sets project / sprint defaults that seed filters for
   new Chart widgets (check **Set as default** on Project or Sprint, then Okay)
 - **+** adds a widget or creates another workspace
+- A **Saving…** indicator (**coming soon**) appears top-right while the board
+  syncs to your account
 
 ---
 
@@ -114,8 +133,9 @@ widgets when set).
 
 - Hold the **grip** on a widget to **drag** it
 - Resize from the **bottom-right** corner
-- Open the **⋯** menu for **Full screen**, **Rename**, **Duplicate**, or
-  **Delete** (**Dock this widget** is disabled for now)
+- Open the **⋯** menu for **Full screen**, **Save option** (name +
+  description), **Duplicate**, or **Delete** (**Dock this widget** is disabled
+  for now). On **Overview** slides, only fullscreen / export stay available.
 
 Chart widgets show a pie, donut, horizontal bar, or vertical column chart.
 Layout modes (Chart / Table / Split) apply only inside the fullscreen

@@ -11,11 +11,13 @@ are wired — see [Persistence](#persistence) and
 
 ## Routes
 
-| Path                             | Behavior                                                           |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `/charts`                        | Workspace registry (Active / Archived + search + create)           |
-| `/charts/[id]`                   | Workspace canvas (widgets + layout); **All workspaces** → registry |
-| `/charts/[id]/widget/[widgetId]` | Same workspace; auto-opens that widget’s config dialog             |
+| Path                             | Behavior                                                               |
+| -------------------------------- | ---------------------------------------------------------------------- |
+| `/charts`                        | Workspace registry (Active / Archived + search + create)               |
+| `/charts/[id]`                   | Workspace canvas (widgets + layout); breadcrumb **Charts** → registry  |
+| `/charts/[id]/widget/[widgetId]` | Same workspace; auto-opens that widget’s config dialog                 |
+| `/dashboard`                     | Overview — **planned:** slider of pinned chart workspaces (see below)  |
+| `/dashboard?mockOverview=1`      | **Planned escape hatch:** legacy mock KPI grid (design reference only) |
 
 Loading UI: `/charts` uses `RegistrySuspensePage` (no segment `loading.tsx`).
 Tab / page / limit / search come from the page `searchParams` promise (same as
@@ -31,14 +33,17 @@ single-board keys are cleared on visit.
 Shell: registry uses `DashboardShell` + `Suspense`; board uses `DashboardShell`
 with `contentScrollable={false}`.
 
-## Last-opened vs overview
+## Last-opened vs dashboard pin
 
-| Concern       | Storage                                           | Used by                         |
-| ------------- | ------------------------------------------------- | ------------------------------- |
-| Last opened   | Cookie `alice_charts_last_opened_v1` (chart uuid) | Preference when opening a board |
-| Overview mark | `isOverview` on one workspace per user            | Overview page (later bind)      |
+| Concern           | Storage / field                                                         | Used by                                |
+| ----------------- | ----------------------------------------------------------------------- | -------------------------------------- |
+| Last opened       | Cookie `alice_charts_last_opened_v1` (chart uuid)                       | Preference when opening a board        |
+| Show on dashboard | `charts.show_on_dashboard` (**planned**; replaces `is_overview`)        | Which boards appear in Overview slider |
+| Dashboard order   | `charts.dashboard_sort_order` (**planned**, positive ints, lower first) | Slide order                            |
 
-Do not conflate these flags.
+Do not conflate last-opened with dashboard pin. **`is_overview` is deprecated** —
+migrate pins to `show_on_dashboard`, then drop the unique-per-owner overview
+column (it cannot represent multiple Overview slides).
 
 ## Client auth
 
@@ -49,16 +54,20 @@ board) instead of calling Next `redirect()` from the browser.
 
 ## Current UI
 
-| Control      | Behavior                                                                         |
-| ------------ | -------------------------------------------------------------------------------- |
-| Search       | Debounced `?search=` via `router.push` (same as Views)                           |
-| Tabs         | **Active** / **Archived** (no Shared tab)                                        |
-| **+** menu   | **Add workspace** (opens name dialog, then creates) · **Add widget** (catalog)   |
-| Workspace ⋯  | **Rename / Save** · Archive / Restore · Delete (Leave when opened via chart ACL) |
-| Board canvas | Grip drag, resize, filter / ⋯ on widgets. Dock disabled                          |
+| Control      | Behavior                                                                                        |
+| ------------ | ----------------------------------------------------------------------------------------------- |
+| Search       | Debounced `?search=` via `router.push` (same as Views)                                          |
+| Tabs         | **Active** / **Archived** only (no Shared tab — Views share is enough)                          |
+| **+** menu   | **Add workspace** · **Add widget** (catalog)                                                    |
+| Registry ⋯   | Archive / Restore / Delete; **Edit** (**planned**: name, description, order, show on dashboard) |
+| Workspace ⋯  | **Save option** (**planned**; was Rename / Save) · Archive / Restore · Delete / Leave           |
+| Board canvas | Grip drag, resize, filter / ⋯ on widgets. Dock disabled                                         |
+| Fork         | **Planned:** icon left of **+** on shared boards → owned copy                                   |
 
 **Share path:** header **Save view** → `/views` **Share**. Charts UI has no
-native Share dialog. Sharing a chart-backed view grants **`chart_shares`**.
+native Share dialog and **no Shared registry tab**. Sharing a chart-backed view
+grants **`chart_shares`**; recipients open from Views / inbox, then **Fork**
+(**planned**) if they want an owned editable copy.
 
 **Availability:** Only the **Chart** catalog template can be added. Other quick
 picks / Browse cards are **Coming soon**.
@@ -109,7 +118,10 @@ Table **`charts`**:
 
 - `id`, `owner_id`, `title`, `description?`
 - `board_json` (widgets + layout) — **source of truth for board data**
-- `is_overview` (at most one active overview per owner)
+  - Widget instances may carry per-instance `title?` and **`description?`**
+    (**planned** on `ChartBoardWidgetInstance`)
+- `show_on_dashboard` + `dashboard_sort_order` (**planned**; migrate from
+  `is_overview`, then drop `is_overview`)
 - `status`, audit columns
 
 Sharing:
@@ -119,8 +131,11 @@ Sharing:
   stamps `resource_kind=chart` + `resource_id`. Sharing that view from
   `/views` upserts `saved_view_shares` **and** `chart_shares`. Leaving the
   view share also deletes the matching chart share.
-- Chart CRUD does **not** auto-upsert Views bookmarks.
+- Chart meta save should ideally call **`upsertChartBookmark`** so Views
+  bookmarks stay titled/described (**planned**).
 - Do **not** store board JSON inside `saved_views.search`.
+- **Fork** (**planned**): `POST /api/charts/:id/fork` clones `board_json` +
+  title/description under the viewer as owner (requires share access).
 
 Notification type: `view_shared` for Views shares (inbox). Low-level
 `chart_shared` remains available if the charts share API is called directly.
@@ -188,19 +203,114 @@ Checklist:
 
 Tier 2/3 (Neon read model, apps rename): [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md).
 
+## Planned: Save option, descriptions, Alice suggest
+
+Target UX (not fully shipped yet):
+
+1. **Save option** dialogs (workspace create/save + widget ⋯): **Name** +
+   **Description**. Menu label **Save option** (replaces Rename / Save).
+2. Title row: info tooltip next to workspace / widget name. Empty description
+   falls back to the default name (`Tasks by status`, `Sprint burndown`, or
+   workspace title).
+3. Top-right **Saving…** (spinner then text) for **every** board sync
+   (`syncChartWorkspaceToApi`), including drag, filters, and Save option.
+4. Alice **one-shot** suggest (no chat conversation): button beside description
+   → `POST /api/v1/chat/generate-chart-description` with compact widget or
+   workspace context → fills the draft for review before Save. Same pattern as
+   project dynamic-fields `generate-fields-schema`.
+
+## Planned: Dashboard Overview = chart workspace slider
+
+Replace today’s mock `/dashboard` grid with a **horizontal slider** of chart
+workspaces the viewer can access where `show_on_dashboard` is true, ordered by
+`dashboard_sort_order`.
+
+### Registry Edit (owned)
+
+Row **Edit** opens: Name, Description (+ Alice), Order (positive), **Show on
+dashboard**. No Shared registry tab — Views share remains the ACL path.
+
+### Overview slide chrome (readonly-enhanced)
+
+| Allowed                        | Hidden / disabled                                  |
+| ------------------------------ | -------------------------------------------------- |
+| Drag / resize (owned slides)   | Filters on Chart + Burndown widgets                |
+| Fullscreen + Export            | Widget settings, Save option, duplicate, delete    |
+| Drilldown + open `/work-items` | Shared slides: layout locked (sync already no-ops) |
+
+Cache visited slides (keep-alive) so sliding back does not refetch. Empty pin
+list → CTA to `/charts`. Full customization only on `/charts/[id]`.
+
+### Workspace chrome
+
+- Remove **All workspaces** button; breadcrumb **Charts** → `/charts`.
+- **Fork** icon left of **+** on shared boards.
+
+### Delivery order
+
+1. Descriptions / Save option / Saving… / Alice
+2. Schema flags + registry Edit + drop `is_overview`
+3. Dashboard slider + readonly chrome
+4. Fork + chrome cleanup
+5. Tests + user-guide sync
+
+## Preserved overview mock → future widgets
+
+**Default Overview** becomes the workspace slider. Keep the legacy mock grid
+behind an explicit query flag for design reference:
+
+| URL                         | Renders                                      |
+| --------------------------- | -------------------------------------------- |
+| `/dashboard`                | Chart workspace slider (**planned** default) |
+| `/dashboard?mockOverview=1` | Existing mock KPI / charts grid              |
+
+When Numbers/KPI, velocity, and activity catalog widgets ship, **delete** the
+`mockOverview` branch and mock sources in one cleanup PR.
+
+### Mock inventory (what `mockOverview=1` preserves)
+
+Sources: `apps/web/app/dashboard/_components/dashboard-mock-data.ts`,
+`dashboard-widgets.tsx`, layout key `alice.dashboard.overview.layout.v1`.
+
+| Widget id                                                 | Live today? | UI to preserve for future catalog                          |
+| --------------------------------------------------------- | ----------- | ---------------------------------------------------------- |
+| `open-issues`, `in-progress`, `completed`, `team-members` | Mock        | Stat card: subtitle + large value + delta (`+2 this week`) |
+| `status-mix`                                              | Mock        | Donut (live Chart widget already covers this)              |
+| `sprint-burndown`                                         | **Live**    | Burndown + scope labels (already on Charts)                |
+| `velocity`                                                | Mock        | Team velocity bar (`ChartViewport`)                        |
+| `recent-activity`                                         | Mock        | Scrollable **list** feed (not a data table)                |
+
+Default mock grid: row0 = 4× KPI; row1 = status-mix + burndown; row2 = velocity
+
+- activity. Only burndown is live on the mock overview today.
+
+### Future catalog mapping (Tier-next; not blocking slider)
+
+| Future widget           | Reuse chrome from                       |
+| ----------------------- | --------------------------------------- |
+| Numbers / KPI           | `StatWidget` (subtitle + value + delta) |
+| Column / Bar (velocity) | `VelocityWidget`                        |
+| List (activity)         | `ActivityWidget` list rows              |
+| Chart / Burndown        | Already live on `/charts`               |
+
+Until those ship, users pin Chart + Burndown workspaces with **Show on
+dashboard**.
+
 ## Non-goals (near term)
 
 - Public/anonymous chart links
 - Putting layout into `saved_views.search`
 - Nested widget route as the only configuration UI
 - Sharing Favorites
-- Native Charts Share dialog / Shared-with-me registry tab
+- Native Charts Share dialog / Shared-with-me registry tab (Views share is enough)
 - Neon / Render / Upstash wiring (Tier 2+)
 - Nested donut / other Coming soon types in the same burndown delivery
+- Keeping both `is_overview` and `show_on_dashboard` long-term
 
 ## Related
 
 - Aggregation + burndown rollup plan: [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md)
 - Sprint burndown domain: [BURNDOWN_CHART.md](../sprints/BURNDOWN_CHART.md)
-- User guide: `docs/user-guide/navigation/charts.md`
+- User guide: `docs/user-guide/navigation/charts.md`,
+  `docs/user-guide/navigation/dashboard-overview.md`
 - Views sharing model: `docs/features/views/FAVORITES_AND_VIEWS.md`
