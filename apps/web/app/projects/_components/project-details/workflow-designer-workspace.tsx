@@ -463,7 +463,9 @@ export function WorkflowDesignerWorkspace({
       const coalesceKey =
         'name' in patch
           ? `state-name:${stateId}`
-          : `state-patch:${stateId}:${Object.keys(patch).sort().join(',')}`;
+          : `state-patch:${stateId}:${Object.keys(patch)
+              .sort((a, b) => a.localeCompare(b))
+              .join(',')}`;
       pushUndo(coalesceKey);
       updateActiveWorkflow((workflow) =>
         patchStateInDocument(workflow, stateId, patch)
@@ -508,7 +510,11 @@ export function WorkflowDesignerWorkspace({
         >
       >
     ) => {
-      pushUndo(`edge-patch:${edgeId}:${Object.keys(patch).sort().join(',')}`);
+      pushUndo(
+        `edge-patch:${edgeId}:${Object.keys(patch)
+          .sort((a, b) => a.localeCompare(b))
+          .join(',')}`
+      );
       updateActiveWorkflow((workflow) =>
         patchEdgeInDocument(workflow, edgeId, patch)
       );

@@ -38,17 +38,17 @@ type WorkItemActivityFeedProps = {
 };
 
 type ActivityLayoutProps = {
-  activities: WorkItemActivity[];
-  lookups: ActivityValueLookups;
+  readonly activities: WorkItemActivity[];
+  readonly lookups: ActivityValueLookups;
 };
 
 function ActivityActorAvatar({
   activity,
   className,
-}: {
+}: Readonly<{
   activity: WorkItemActivity;
   className?: string;
-}) {
+}>) {
   return (
     <UserAvatar
       name={activityActorName(activity)}
@@ -76,7 +76,10 @@ function ActivityEmptyState() {
   );
 }
 
-function CardsLayout({ activities, lookups }: ActivityLayoutProps) {
+function CardsLayout({
+  activities,
+  lookups,
+}: Readonly<ActivityLayoutProps>) {
   return (
     <ul className="space-y-3">
       {activities.map((activity) => (
@@ -102,7 +105,10 @@ function CardsLayout({ activities, lookups }: ActivityLayoutProps) {
   );
 }
 
-function TimelineLayout({ activities, lookups }: ActivityLayoutProps) {
+function TimelineLayout({
+  activities,
+  lookups,
+}: Readonly<ActivityLayoutProps>) {
   return (
     <Timeline>
       {activities.map((activity) => (
@@ -128,7 +134,10 @@ function TimelineLayout({ activities, lookups }: ActivityLayoutProps) {
   );
 }
 
-function TableLayout({ activities, lookups }: ActivityLayoutProps) {
+function TableLayout({
+  activities,
+  lookups,
+}: Readonly<ActivityLayoutProps>) {
   return (
     <Table>
       <TableHeader>
