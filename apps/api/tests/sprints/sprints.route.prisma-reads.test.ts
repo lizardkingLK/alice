@@ -314,6 +314,33 @@ describe('sprints versioned POST and PATCH mutation routes', () => {
     });
   });
 
+  it('returns 403 when sprint detail update project access is denied', async () => {
+    updateSprintMock.mockRejectedValue(new SprintAccessError());
+
+    const body = {
+      name: 'Updated name',
+      projectId: '33333333-3333-4333-8333-333333333333',
+      startDate: '2026-09-01',
+      endDate: '2026-09-14',
+      expectedUpdatedAt: '2026-08-01T00:00:00.000Z',
+    };
+
+    await withApp(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/sprints/sprint-1`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const json = await response.json();
+
+      expect(response.status).toBe(403);
+      expect(json).toEqual({
+        data: null,
+        error: "You're not a member of this project.",
+      });
+    });
+  });
+
   describe('DELETE /api/sprints/:id', () => {
     it('deletes sprint with move_out option successfully', async () => {
       hardDeleteSprintMock.mockResolvedValue(undefined);
