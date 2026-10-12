@@ -684,9 +684,7 @@ export function BacklogWorkspace({
 
     const targetItem = workItems.find((item) => item.id === itemId);
     const sprintCascadeIds =
-      targetItem &&
-      !targetItem.parent_id &&
-      Object.hasOwn(updates, 'sprint_id')
+      targetItem && !targetItem.parent_id && Object.hasOwn(updates, 'sprint_id')
         ? collectLocalDescendantIds(itemId, workItems)
         : [];
     const sprintAffectedIds = new Set([itemId, ...sprintCascadeIds]);

@@ -1,10 +1,11 @@
 'use client';
 
-import type { Dispatch, SetStateAction } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { Textarea } from '@repo/ui/components/ui/textarea';
+import { Search } from '@repo/ui/lib/icons';
 import { SearchableSelect } from '@/components/searchable-select';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import { isProductUsableUser } from '@repo/types';
@@ -25,6 +26,59 @@ export type Step5TeamProps = {
   users: User[];
 };
 
+function matchesMemberSearch(user: User, query: string): boolean {
+  const needle = query.trim().toLowerCase();
+  if (!needle) {
+    return true;
+  }
+  return (
+    user.name.toLowerCase().includes(needle) ||
+    user.email.toLowerCase().includes(needle)
+  );
+}
+
+function TeamMembersChecklist({
+  eligibleUsers,
+  filteredMembers,
+  teamMemberIds,
+  setTeamMemberIds,
+}: Readonly<{
+  eligibleUsers: User[];
+  filteredMembers: User[];
+  teamMemberIds: string[];
+  setTeamMemberIds: Dispatch<SetStateAction<string[]>>;
+}>) {
+  if (eligibleUsers.length === 0) {
+    return <p className="text-muted-foreground text-sm">No users available.</p>;
+  }
+
+  if (filteredMembers.length === 0) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        No members match your search.
+      </p>
+    );
+  }
+
+  return filteredMembers.map((user) => (
+    <label key={user.id} className="flex cursor-pointer items-center gap-3">
+      <Checkbox
+        checked={teamMemberIds.includes(user.id)}
+        onCheckedChange={(checked) => {
+          setTeamMemberIds(
+            checked === true
+              ? [...new Set([...teamMemberIds, user.id])]
+              : teamMemberIds.filter((id) => id !== user.id)
+          );
+        }}
+      />
+      <span className="text-sm">
+        {user.name} ({user.email})
+      </span>
+    </label>
+  ));
+}
+
 export function Step5Team({
   createInitialTeam,
   setCreateInitialTeam,
@@ -40,7 +94,11 @@ export function Step5Team({
   setTeamMemberIds,
   users,
 }: Readonly<Step5TeamProps>) {
+  const [memberSearch, setMemberSearch] = useState('');
   const eligibleUsers = users.filter(isProductUsableUser);
+  const filteredMembers = eligibleUsers.filter((user) =>
+    matchesMemberSearch(user, memberSearch)
+  );
 
   return (
     <div className="animate-in fade-in slide-in-from-left-2 space-y-4 duration-300">
@@ -114,38 +172,31 @@ export function Step5Team({
           </div>
 
           <div className="space-y-2">
-            <Label>Team Members</Label>
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="team_members_search">Team Members</Label>
+              <div className="relative max-w-[14rem] min-w-0 flex-1">
+                <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
+                <Input
+                  id="team_members_search"
+                  value={memberSearch}
+                  onChange={(event) => setMemberSearch(event.target.value)}
+                  placeholder="Search members…"
+                  className="h-8 pl-8 text-sm"
+                  aria-label="Search team members"
+                />
+              </div>
+            </div>
             <p className="text-muted-foreground text-xs">
               Select users to add to the new team.
             </p>
 
             <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border p-3">
-              {eligibleUsers.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  No users available.
-                </p>
-              ) : (
-                eligibleUsers.map((user) => (
-                  <label
-                    key={user.id}
-                    className="flex cursor-pointer items-center gap-3"
-                  >
-                    <Checkbox
-                      checked={teamMemberIds.includes(user.id)}
-                      onCheckedChange={(checked) => {
-                        setTeamMemberIds(
-                          checked === true
-                            ? [...new Set([...teamMemberIds, user.id])]
-                            : teamMemberIds.filter((id) => id !== user.id)
-                        );
-                      }}
-                    />
-                    <span className="text-sm">
-                      {user.name} ({user.email})
-                    </span>
-                  </label>
-                ))
-              )}
+              <TeamMembersChecklist
+                eligibleUsers={eligibleUsers}
+                filteredMembers={filteredMembers}
+                teamMemberIds={teamMemberIds}
+                setTeamMemberIds={setTeamMemberIds}
+              />
             </div>
           </div>
         </div>

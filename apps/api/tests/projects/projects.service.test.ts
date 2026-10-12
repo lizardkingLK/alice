@@ -182,9 +182,40 @@ describe('ProjectsService backend tests', () => {
             user_id: 'user-admin',
             type: 'project_created',
             related_item_id: mockProject.id,
+            message: `Project [**${mockProject.name}**](/projects/${mockProject.id}) is ready`,
           }),
         });
       });
+    });
+
+    it('does not send create_failed when create succeeds but notify fails', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      createMock.mockResolvedValue(mockProject);
+      notificationsCreateMock.mockRejectedValue(
+        new Error('invalid enum value')
+      );
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      await service.enqueueCreateProject('user-admin', createProjectInput());
+
+      await vi.waitFor(() => {
+        expect(createMock).toHaveBeenCalled();
+        expect(notificationsCreateMock).toHaveBeenCalledTimes(1);
+        expect(errorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('success notification failed'),
+          expect.any(Error)
+        );
+      });
+
+      expect(notificationsCreateMock).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          type: 'project_created',
+          related_item_id: mockProject.id,
+        }),
+      });
+
+      errorSpy.mockRestore();
     });
   });
 
