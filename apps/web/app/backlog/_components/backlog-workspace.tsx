@@ -135,6 +135,8 @@ export function BacklogWorkspace({
 
   // Dialogs State
   const [isCreateSprintOpen, setIsCreateSprintOpen] = useState(false);
+  // The edit dialog added in Subtask 3 will consume the selected sprint.
+  const [, setEditingSprint] = useState<Sprint | null>(null);
   const [isCreateIssueOpen, setIsCreateIssueOpen] = useState(false);
   const [createIssueSprintId, setCreateIssueSprintId] = useState<string | null>(
     null
@@ -839,6 +841,7 @@ export function BacklogWorkspace({
                   teamCapacities={teamCapacities}
                   onToggle={toggleSprint}
                   onCreateIssue={openCreateIssue}
+                  onEditSprint={setEditingSprint}
                   onStartSprint={handleStartSprint}
                   onCompleteSprint={handleCompleteSprint}
                   onSelectItem={setSelectedItem}

@@ -14,6 +14,12 @@ import { SprintStatusEnum } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card } from '@repo/ui/components/ui/card';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@repo/ui/components/ui/dropdown-menu';
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -23,6 +29,8 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  MoreHorizontal,
+  Pencil,
   Play,
   Plus,
 } from '@repo/ui/lib/icons';
@@ -41,6 +49,7 @@ type BacklogSprintCardProps = {
   readonly teamCapacities: readonly ProjectTeamMemberCapacity[];
   readonly onToggle: (sprintId: string) => void;
   readonly onCreateIssue: (sprintId: string) => void;
+  readonly onEditSprint: (sprint: Sprint) => void;
   readonly onStartSprint: (sprintId: string) => void;
   readonly onCompleteSprint: (sprintId: string) => void;
   readonly onSelectItem: (item: DbWorkItem) => void;
@@ -69,6 +78,8 @@ type SprintCardActionsProps = {
   // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onCreateIssue: (sprintId: string) => void;
   // eslint-disable-next-line no-unused-vars -- callback signature
+  readonly onEditSprint: (sprint: Sprint) => void;
+  // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onStartSprint: (sprintId: string) => void;
   // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onCompleteSprint: (sprintId: string) => void;
@@ -79,6 +90,7 @@ function SprintCardActions({
   issueCount,
   isManagerOrAdmin,
   onCreateIssue,
+  onEditSprint,
   onStartSprint,
   onCompleteSprint,
 }: Readonly<SprintCardActionsProps>) {
@@ -174,6 +186,33 @@ function SprintCardActions({
           <TooltipContent side="bottom">Complete sprint</TooltipContent>
         </Tooltip>
       ) : null}
+
+      {isManagerOrAdmin ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="size-8 cursor-pointer"
+              aria-label="Open Actions Menu"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <MoreHorizontal className="size-4" />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              aria-label="Edit Sprint"
+              onClick={() => onEditSprint(sprint)}
+            >
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit Sprint
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
     </>
   );
 }
@@ -190,6 +229,7 @@ export function BacklogSprintCard({
   teamCapacities,
   onToggle,
   onCreateIssue,
+  onEditSprint,
   onStartSprint,
   onCompleteSprint,
   onSelectItem,
@@ -230,6 +270,7 @@ export function BacklogSprintCard({
             issueCount={issueCount}
             isManagerOrAdmin={isManagerOrAdmin}
             onCreateIssue={onCreateIssue}
+            onEditSprint={onEditSprint}
             onStartSprint={onStartSprint}
             onCompleteSprint={onCompleteSprint}
           />
