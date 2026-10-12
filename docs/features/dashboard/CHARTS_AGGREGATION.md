@@ -277,9 +277,44 @@ architecture doc when that program starts.
 
 ---
 
+## Hierarchy and future chart types
+
+### Today (Tier 1)
+
+Rollup grain is one row per work item (`item_count` += 1). Filters include
+`sprint_id`, `type`, `status`, etc. Charts do **not** collapse children under
+parents or exclude subtasks when a parent is in the same sprint.
+
+That is intentional for parity with backlog/sprint planning: children inherit the
+parent sprint (see work-items sprint inheritance). A sprint pie can show both an
+Epic and its Tasks as separate slices when grouped by **status** or **type**.
+
+### Multilevel / nested donut (proposal)
+
+A sunburst-style chart (inner ring + outer ring), as in product explorations,
+could show:
+
+| Ring  | Example grouping                          |
+| ----- | ----------------------------------------- |
+| Inner | Root work items in scope (e.g. Epics)     |
+| Outer | Direct children per inner slice (Stories) |
+
+**Requirements before shipping:**
+
+- New analytics dimension (`hierarchy_level` or paired parent/child series), not
+  the flat rollup alone
+- Documented measure rules (count items vs sum story points; no double count)
+- Drilldown that respects parent–child links
+- UI behind chart type **Nested donut** with depth cap (likely 2 levels)
+
+Until then, use **Type** / **State** labels on the existing pie or donut.
+
+---
+
 ## Non-goals (Tier 1)
 
 - Neon / Render / Upstash / apps rename
+- Multilevel / nested donut series (proposal above)
 - Story points on the rollup
 - Postgres `REFRESH MATERIALIZED VIEW`
 - Per-chart-type duplicate rollup tables

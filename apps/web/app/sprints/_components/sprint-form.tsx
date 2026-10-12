@@ -33,6 +33,7 @@ import { loadProjectsForSprintForm } from '@/lib/cache/load-projects-for-forms';
 import { createClient } from '@/lib/supabase/client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
+import { isReservedSprintName } from '@repo/types';
 
 type SprintFormProps = {
   className?: string;
@@ -63,6 +64,9 @@ function validateSprintForm(
   }
   if (!selectedProjectId) {
     return 'A project must be selected.';
+  }
+  if (isReservedSprintName(name)) {
+    return 'Sprint name cannot be "Backlog" — that label is reserved for unscheduled work items.';
   }
   return null;
 }

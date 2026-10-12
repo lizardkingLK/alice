@@ -18,6 +18,7 @@ import {
   type WorkItemState,
   paginationMeta,
   type UserRole,
+  RecordStatusEnum,
 } from '@repo/types';
 import { Prisma, RecordStatus, UserMembershipStatus } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -282,6 +283,31 @@ export class WorkItemRepository {
       data: { parent_id: null },
     });
     return result.count;
+  }
+
+  /** Align sprint_id for descendant work items (excludes `rootId`). */
+  async updateSprintForDescendants(
+    rootId: string,
+    sprintId: string | null,
+    updatedBy: string
+  ): Promise<number> {
+    const ids = await this.collectDescendantIds(rootId);
+    const descendantIds = ids.filter((id) => id !== rootId);
+    if (descendantIds.length === 0) {
+      return 0;
+    }
+
+    const { count } = await prisma.work_items.updateMany({
+      where: {
+        id: { in: descendantIds },
+        record_status: RecordStatusEnum.active,
+      },
+      data: {
+        sprint_id: sprintId,
+        ...prismaAuditUpdate(updatedBy),
+      },
+    });
+    return count;
   }
 
   /** Count direct children that are not yet Done (for Done-gate validation). */

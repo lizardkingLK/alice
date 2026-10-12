@@ -13,6 +13,7 @@ import {
   fetchProjectMembersForForm,
   fetchProjectSprintsForForm,
 } from '@/lib/form-read-actions';
+import { getWorkItemById } from '@/app/work-items/_services/work-items.reads.client';
 
 vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
   createWorkItem: vi.fn(),
@@ -21,6 +22,7 @@ vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
 
 vi.mock('@/app/work-items/_services/work-items.reads.client', () => ({
   listParentCandidateWorkItems: vi.fn().mockResolvedValue([]),
+  getWorkItemById: vi.fn(),
 }));
 
 vi.mock('@/lib/form-read-actions', () => ({
@@ -63,6 +65,9 @@ describe('WorkItemForm', () => {
       }))
     );
     vi.mocked(fetchProjectSprintsForForm).mockResolvedValue([]);
+    vi.mocked(getWorkItemById).mockImplementation(async (id: string) =>
+      workItemFactory.build({ id, sprint_id: null })
+    );
   });
 
   it('renders fields and lists projects and members in selects', async () => {

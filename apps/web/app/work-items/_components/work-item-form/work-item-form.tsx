@@ -25,7 +25,10 @@ import {
   createWorkItem,
   updateWorkItem,
 } from '@/app/work-items/_services/work-items.mutations.client';
-import { listParentCandidateWorkItems } from '@/app/work-items/_services/work-items.reads.client';
+import {
+  getWorkItemById,
+  listParentCandidateWorkItems,
+} from '@/app/work-items/_services/work-items.reads.client';
 import { FormStatusAlerts } from '@/app/work-items/_components/work-item-form/work-item-form-alerts';
 import { WorkItemFormClassicFields } from '@/app/work-items/_components/work-item-form/work-item-form-classic';
 import { WorkItemFormModernFields } from '@/app/work-items/_components/work-item-form/work-item-form-modern';
@@ -341,6 +344,13 @@ export function WorkItemForm({
     projectWorkflowConfig?.hierarchy
   );
 
+  const effectiveParentId = parentLocked
+    ? (lockedParentId ?? parentId)
+    : parentId;
+  const lockSprintFromParent = Boolean(
+    effectiveParentId || itemToEdit?.parent_id
+  );
+
   useEffect(() => {
     if (parentLocked) {
       return;
@@ -387,6 +397,23 @@ export function WorkItemForm({
       cancelled = true;
     };
   }, [allowedParentType, itemToEdit?.id, parentLocked, projectId, type]);
+
+  useEffect(() => {
+    if (!effectiveParentId) {
+      return;
+    }
+    let cancelled = false;
+    getWorkItemById(effectiveParentId)
+      .then((parent) => {
+        if (!cancelled) {
+          setSprintId(parent.sprint_id ?? '');
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [effectiveParentId]);
 
   useEffect(() => {
     if (!useModernLayout || !state?.error) {
@@ -556,11 +583,12 @@ export function WorkItemForm({
     sprintOptions: currentSprints,
     type,
     priority,
-    parentId: parentLocked ? (lockedParentId ?? parentId) : parentId,
+    parentId: effectiveParentId,
     parentOptions,
     parentOptionsLoading,
     parentTypeLabel: allowedParentType,
     lockParent: parentLocked,
+    lockSprintFromParent,
     lockProject,
     lockAssignee,
     typeLocked,

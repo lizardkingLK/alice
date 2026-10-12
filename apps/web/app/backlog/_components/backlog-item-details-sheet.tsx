@@ -33,6 +33,7 @@ import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import type { User as DbUser } from '@/app/users/_services/users.mutations.client';
 import { SprintStatusEnum } from '@repo/types';
 import { ExternalLink } from '@repo/ui/lib/icons';
+import { resolveSprintDisplayName } from '@/app/work-items/_helpers/work-item-sprint';
 
 /* eslint-disable no-unused-vars */
 type BacklogItemDetailsSheetProps = {
@@ -219,46 +220,52 @@ export function BacklogItemDetailsSheet({
 
               <span className="text-muted-foreground self-center">Sprint</span>
               <div className="min-w-0">
-                <SearchableSelect
-                  value={
-                    draft.sprint_id !== undefined
-                      ? draft.sprint_id || 'backlog'
-                      : item.sprint_id || 'backlog'
-                  }
-                  onValueChange={(val) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      sprint_id: val === 'backlog' ? null : val,
-                    }))
-                  }
-                  placeholder="Search sprints…"
-                  className="bg-background/50 border-border/80 h-9 w-full"
-                  options={[
-                    { value: 'backlog', label: 'Backlog' },
-                    ...sprints
-                      .filter((s) => {
-                        const sprintProjectId =
-                          s.project?.id ??
-                          (s as { project_id?: string }).project_id;
-                        const isMatchingProject =
-                          !projectId ||
-                          (sprintProjectId
-                            ? sprintProjectId === projectId
-                            : true);
-                        const isAllowedStatusOrCurrent =
-                          s.status === SprintStatusEnum.Planned ||
-                          s.status === SprintStatusEnum.Active ||
-                          s.id === item?.sprint_id;
-                        return isMatchingProject && isAllowedStatusOrCurrent;
-                      })
-                      .map((s) => ({
-                        value: s.id,
-                        label: [s.name, s.status ? `(${s.status})` : '']
-                          .filter(Boolean)
-                          .join(' '),
-                      })),
-                  ]}
-                />
+                {item.parent_id ? (
+                  <p className="text-sm font-medium">
+                    {resolveSprintDisplayName(item.sprint_id, sprints)}
+                  </p>
+                ) : (
+                  <SearchableSelect
+                    value={
+                      draft.sprint_id !== undefined
+                        ? draft.sprint_id || 'backlog'
+                        : item.sprint_id || 'backlog'
+                    }
+                    onValueChange={(val) =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        sprint_id: val === 'backlog' ? null : val,
+                      }))
+                    }
+                    placeholder="Search sprints…"
+                    className="bg-background/50 border-border/80 h-9 w-full"
+                    options={[
+                      { value: 'backlog', label: 'Backlog' },
+                      ...sprints
+                        .filter((s) => {
+                          const sprintProjectId =
+                            s.project?.id ??
+                            (s as { project_id?: string }).project_id;
+                          const isMatchingProject =
+                            !projectId ||
+                            (sprintProjectId
+                              ? sprintProjectId === projectId
+                              : true);
+                          const isAllowedStatusOrCurrent =
+                            s.status === SprintStatusEnum.Planned ||
+                            s.status === SprintStatusEnum.Active ||
+                            s.id === item?.sprint_id;
+                          return isMatchingProject && isAllowedStatusOrCurrent;
+                        })
+                        .map((s) => ({
+                          value: s.id,
+                          label: [s.name, s.status ? `(${s.status})` : '']
+                            .filter(Boolean)
+                            .join(' '),
+                        })),
+                    ]}
+                  />
+                )}
               </div>
 
               <span className="text-muted-foreground self-center">

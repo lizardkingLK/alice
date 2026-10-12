@@ -54,6 +54,7 @@ import {
   resolveValidatedBoardMove,
   sameNullable,
 } from './work-items.patch-utils';
+import { assertChildSprintMatchesParent } from './work-items-sprint-hierarchy';
 import { WorkItemBody, WorkItemUpdateBody } from './work-items.schemas';
 import type { ActivitiesService } from '../activities/activities.service';
 import {
@@ -241,15 +242,17 @@ export class WorkItemService {
       hierarchy,
     });
 
+    const createInput = await this.applySprintInheritanceForCreate(input);
+
     await this.validateAllocation(
-      input.project_id,
-      input.sprint_id,
-      input.assignee_id,
-      input.story_points
+      createInput.project_id,
+      createInput.sprint_id,
+      createInput.assignee_id,
+      createInput.story_points
     );
 
     const created = await this.workItems.create({
-      ...input,
+      ...createInput,
       createdBy: userId,
     });
 
@@ -258,24 +261,28 @@ export class WorkItemService {
       actorId: userId,
     });
 
-    if (input.sprint_id || input.assignee_id || input.story_points) {
+    if (
+      createInput.sprint_id ||
+      createInput.assignee_id ||
+      createInput.story_points
+    ) {
       let sprintName: string = WorkItemDefaults.BACKLOG;
-      if (input.sprint_id) {
+      if (createInput.sprint_id) {
         const sprint = await prisma.sprints.findUnique({
-          where: { id: input.sprint_id },
+          where: { id: createInput.sprint_id },
           select: { name: true },
         });
         sprintName = sprint?.name || WorkItemDefaults.SPRINT;
       }
       let assigneeName: string = WorkItemDefaults.UNASSIGNED;
-      if (input.assignee_id) {
+      if (createInput.assignee_id) {
         const assignee = await prisma.users.findUnique({
-          where: { id: input.assignee_id },
+          where: { id: createInput.assignee_id },
           select: { name: true },
         });
         assigneeName = assignee?.name || WorkItemDefaults.USER;
       }
-      const comment = `Allocation changed: Assigned to sprint ${sprintName}, Assignee set to ${assigneeName}, Story points set to ${input.story_points || 0}.`;
+      const comment = `Allocation changed: Assigned to sprint ${sprintName}, Assignee set to ${assigneeName}, Story points set to ${createInput.story_points || 0}.`;
       await prisma.work_item_worklogs.create({
         data: {
           work_item_id: created.id,
@@ -359,6 +366,8 @@ export class WorkItemService {
       hierarchy,
     });
 
+    nextInput = await this.applySprintHierarchyRules(current, nextInput);
+
     await this.assertResolvedLockAndDoneGates(
       current,
       nextInput,
@@ -426,7 +435,66 @@ export class WorkItemService {
       });
     }
 
+    const effectiveParentId =
+      nextInput.parent_id !== undefined
+        ? nextInput.parent_id
+        : current.parent_id;
+    if (sprintChanged && !effectiveParentId) {
+      await this.workItems.updateSprintForDescendants(
+        workItemId,
+        sprintId ?? null,
+        userId
+      );
+    }
+
     return updated;
+  }
+
+  private async applySprintInheritanceForCreate(
+    input: WorkItemBody
+  ): Promise<WorkItemBody> {
+    if (!input.parent_id) {
+      return input;
+    }
+
+    const parent = await this.workItems.getById(input.parent_id);
+    const parentSprintId = parent.sprint_id ?? null;
+    if (input.sprint_id !== undefined) {
+      assertChildSprintMatchesParent(parentSprintId, input.sprint_id);
+    }
+
+    return { ...input, sprint_id: parentSprintId };
+  }
+
+  private async applySprintHierarchyRules(
+    current: DbWorkItem,
+    input: WorkItemUpdateBody
+  ): Promise<WorkItemUpdateBody> {
+    const nextParentId =
+      input.parent_id !== undefined ? input.parent_id : current.parent_id;
+
+    if (!nextParentId) {
+      return input;
+    }
+
+    const parent = await this.workItems.getById(nextParentId);
+    const parentSprintId = parent.sprint_id ?? null;
+
+    if ('sprint_id' in input) {
+      assertChildSprintMatchesParent(parentSprintId, input.sprint_id ?? null);
+    }
+
+    const parentLinkChanged =
+      'parent_id' in input &&
+      !sameNullable(input.parent_id ?? null, current.parent_id ?? null);
+    const needsInherit =
+      parentLinkChanged || !sameNullable(current.sprint_id, parentSprintId);
+
+    if (!needsInherit) {
+      return input;
+    }
+
+    return { ...input, sprint_id: parentSprintId };
   }
 
   private async recordUpdateActivities(params: {
