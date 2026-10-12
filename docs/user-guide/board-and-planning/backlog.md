@@ -20,9 +20,22 @@ Typical layout:
 - **Sprint cards** — active sprints with room for planned items
 
 The toolbar matches other registries: **Search**, **Filter** (**Shift+F**), and
-applied-filter badges (when active) on the left; **Layout** (icon), **Active** /
-**Completed** tabs, and a **+** menu (**Create Sprint** / **Create Work-Item**)
-on the right.
+applied-filter badges (when active) on the left; **Layout** (icon), **Capacity
+display** (gauge icon), **Active** / **Completed** tabs, and a **+** menu
+(**Create Sprint** / **Create Work-Item**) on the right.
+
+**Capacity display** (saved per user in the browser) controls how sprint capacity
+appears on each sprint card header:
+
+| Mode                       | What you see                                                              |
+| -------------------------- | ------------------------------------------------------------------------- |
+| **Progress bar** (default) | Thin bar plus `planned / capacity` in the sprint header                   |
+| **Numbers**                | Compact `planned / capacity` (or planned pts) in the sprint header        |
+| **Percentage**             | Rounded percent of capacity used (for example `33%`) in the sprint header |
+
+Hover the **info** icon next to the sprint name for dates, status, project, and
+the full capacity breakdown. Over-capacity values use a rose accent; near-full
+(≥90%) uses amber on the bar.
 
 **Workspace defaults** (project and optional sprint) are set from the Filter
 dialog with **Set as default** on the Project or Sprint pane. With no saved
@@ -50,10 +63,10 @@ already assigned to that sprint (project locked when the sprint has one). Hover
 the numeric count next to **+** to see how many work items are in that list.
 
 Sprint cards keep a compact header: click the sprint name or hover the info icon
-for dates, status, and project; hover the **gauge** icon for sprint capacity
-(planned story points vs configured team capacity). Manager/admin actions
-(**Summary report**, **Start sprint**, **Complete sprint**) are icon buttons
-with tooltips.
+for dates, status, project, and capacity details; use **Capacity display**
+(above) for the compact header layout (progress bar, numbers, or percentage).
+Manager/admin actions (**Summary report**, **Start sprint**, **Complete sprint**)
+are icon buttons with tooltips.
 
 ---
 

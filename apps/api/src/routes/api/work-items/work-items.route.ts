@@ -468,16 +468,18 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
 
         const payload = buildWorkItemPayload(parsed.data, existingWorkItem);
         const { expectedUpdatedAt, ...domainFields } = payload;
-        const workItem = await workItemService.updateWorkItem(
-          req.userId!,
-          req.params.id!,
-          domainFields,
-          expectedUpdatedAt,
-          {
-            detachChildren: parsed.data.detachChildren === true,
-            resolution: parsed.data.resolution,
-          }
-        );
+        const { workItem, cascadedSprintDescendantIds } =
+          await workItemService.updateWorkItem(
+            req.userId!,
+            req.params.id!,
+            domainFields,
+            expectedUpdatedAt,
+            {
+              detachChildren: parsed.data.detachChildren === true,
+              resolution: parsed.data.resolution,
+              cascadeSprint: Object.hasOwn(parsed.data, 'sprint_id'),
+            }
+          );
 
         await notifyAssigneeAfterCommit(
           workItem,
@@ -485,7 +487,11 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
           shouldNotifyAssigneeChange(existingWorkItem, workItem, req.userId)
         );
 
-        res.status(200).json({ data: workItem, error: null });
+        res.status(200).json({
+          data: workItem,
+          error: null,
+          cascadedSprintDescendantIds,
+        });
       } catch (error) {
         sendWorkItemMutationError(res, error, 'Failed to update work-item');
       }

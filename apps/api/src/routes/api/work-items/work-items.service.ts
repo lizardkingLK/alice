@@ -306,8 +306,17 @@ export class WorkItemService {
     options?: {
       detachChildren?: boolean;
       resolution?: WorkflowResolutionPayload;
+      /**
+       * True when the PATCH body explicitly included `sprint_id` (before
+       * coalesce). Re-saving the same sprint still cascades so divergent
+       * children heal — `sprintChanged` alone misses that case.
+       */
+      cascadeSprint?: boolean;
     }
-  ): Promise<DbWorkItem> {
+  ): Promise<{
+    workItem: DbWorkItem;
+    cascadedSprintDescendantIds: readonly string[];
+  }> {
     await this.workItems.requireProjectMember(workItemId, userId);
     await this.workItems.assertCanAccessProject(userId, input.project_id);
 
@@ -412,6 +421,24 @@ export class WorkItemService {
         : {}),
     });
 
+    const effectiveParentId =
+      nextInput.parent_id !== undefined
+        ? nextInput.parent_id
+        : current.parent_id;
+    const shouldCascadeSprint =
+      !effectiveParentId && (sprintChanged || options?.cascadeSprint === true);
+    let cascadedSprintDescendantIds: readonly string[] = [];
+    if (shouldCascadeSprint) {
+      // Cascade immediately after the parent write so activity/worklog
+      // side-effects cannot leave children on the old sprint.
+      cascadedSprintDescendantIds =
+        await this.workItems.updateSprintForDescendants(
+          workItemId,
+          sprintId ?? null,
+          userId
+        );
+    }
+
     await this.recordUpdateActivities({
       userId,
       workItemId,
@@ -435,19 +462,7 @@ export class WorkItemService {
       });
     }
 
-    const effectiveParentId =
-      nextInput.parent_id !== undefined
-        ? nextInput.parent_id
-        : current.parent_id;
-    if (sprintChanged && !effectiveParentId) {
-      await this.workItems.updateSprintForDescendants(
-        workItemId,
-        sprintId ?? null,
-        userId
-      );
-    }
-
-    return updated;
+    return { workItem: updated, cascadedSprintDescendantIds };
   }
 
   private async applySprintInheritanceForCreate(

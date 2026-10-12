@@ -1,6 +1,8 @@
 'use client';
 
 import { CheckCircle2, CircleDot, Layers, Plus } from '@repo/ui/lib/icons';
+import { BacklogCapacityDisplayMenu } from '@/app/backlog/_components/backlog-capacity-display-menu';
+import type { BacklogCapacityDisplayId } from '@/app/backlog/_helpers/backlog-capacity-display-storage';
 import {
   AppliedFilterBadges,
   type AppliedFilterBadgeItem,
@@ -37,6 +39,8 @@ type BacklogToolbarProps = {
   readonly onTabChange: (tab: BacklogActiveTab) => void;
   readonly preferredLayout: BacklogLayoutId;
   readonly onLayoutChange: (layout: BacklogLayoutId) => void;
+  readonly capacityDisplay: BacklogCapacityDisplayId;
+  readonly onCapacityDisplayChange: (display: BacklogCapacityDisplayId) => void;
   readonly onCreateSprint: () => void;
   readonly onCreateIssue: () => void;
   readonly searchQuery: string;
@@ -73,6 +77,8 @@ export function BacklogToolbar({
   onTabChange,
   preferredLayout,
   onLayoutChange,
+  capacityDisplay,
+  onCapacityDisplayChange,
   onCreateSprint,
   onCreateIssue,
   searchQuery,
@@ -137,6 +143,11 @@ export function BacklogToolbar({
         <BacklogLayoutMenu
           preferredLayout={preferredLayout}
           onLayoutChange={onLayoutChange}
+        />
+
+        <BacklogCapacityDisplayMenu
+          capacityDisplay={capacityDisplay}
+          onCapacityDisplayChange={onCapacityDisplayChange}
         />
 
         <RegistryTabSwitcher

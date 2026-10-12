@@ -19,10 +19,11 @@ import {
   resolveWorkflowConfig,
   workflowConfigEnvelopeSchema,
 } from '@repo/types';
-import type {
-  ProjectStatus,
-  IntegrationStatus,
-  UserRole,
+import {
+  NotificationType as NotificationTypeEnum,
+  type ProjectStatus,
+  type IntegrationStatus,
+  type UserRole,
 } from '@repo/types/prisma';
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../../../lib/prisma';
@@ -346,7 +347,9 @@ export class ProjectsService {
 
   private async notifyProjectCreateResult(options: {
     readonly userId: string;
-    readonly type: 'project_created' | 'project_create_failed';
+    readonly type:
+      | typeof NotificationTypeEnum.project_created
+      | typeof NotificationTypeEnum.project_create_failed;
     readonly message: string;
     readonly relatedItemId: string | null;
   }): Promise<void> {
@@ -366,14 +369,9 @@ export class ProjectsService {
     prepared: CreateProjectInput,
     correlationId: string
   ): Promise<void> {
+    let project: ProjectRow;
     try {
-      const project = await this.projectsRepository.create(prepared, actorId);
-      await this.notifyProjectCreateResult({
-        userId: actorId,
-        type: 'project_created',
-        message: `**${project.name}** is ready`,
-        relatedItemId: project.id,
-      });
+      project = await this.projectsRepository.create(prepared, actorId);
     } catch (error: unknown) {
       const reason =
         error instanceof Error ? error.message : 'Unknown create failure';
@@ -383,8 +381,8 @@ export class ProjectsService {
       try {
         await this.notifyProjectCreateResult({
           userId: actorId,
-          type: 'project_create_failed',
-          message: `Could not create **${prepared.name}** (${prepared.key}). ${reason} (ref ${correlationId})`,
+          type: NotificationTypeEnum.project_create_failed,
+          message: `Could not create Project **${prepared.name}** (${prepared.key}). ${reason} (ref ${correlationId})`,
           relatedItemId: null,
         });
       } catch (notifyError: unknown) {
@@ -393,6 +391,21 @@ export class ProjectsService {
           notifyError
         );
       }
+      return;
+    }
+
+    try {
+      await this.notifyProjectCreateResult({
+        userId: actorId,
+        type: NotificationTypeEnum.project_created,
+        message: `Project [**${project.name}**](/projects/${project.id}) is ready`,
+        relatedItemId: project.id,
+      });
+    } catch (notifyError: unknown) {
+      console.error(
+        `error. project create success notification failed correlationId=${correlationId} projectId=${project.id}:`,
+        notifyError
+      );
     }
   }
 

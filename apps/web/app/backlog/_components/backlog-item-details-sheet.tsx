@@ -33,6 +33,10 @@ import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import type { User as DbUser } from '@/app/users/_services/users.mutations.client';
 import { SprintStatusEnum } from '@repo/types';
 import { ExternalLink } from '@repo/ui/lib/icons';
+import {
+  isOptionsLoadingEmpty,
+  loadingAwarePlaceholder,
+} from '@/app/work-items/_helpers/work-item-form-loading-placeholder';
 import { resolveSprintDisplayName } from '@/app/work-items/_helpers/work-item-sprint';
 
 /* eslint-disable no-unused-vars */
@@ -69,13 +73,14 @@ export function BacklogItemDetailsSheet({
   const assigneeId =
     draft.assignee_id !== undefined ? draft.assignee_id : item?.assignee_id;
 
-  const currentMembers = useProjectMembers({
-    projectId,
-    projectMembers,
-    assigneeId,
-    onAssigneeChange: (val) =>
-      setDraft((prev) => ({ ...prev, assignee_id: val })),
-  });
+  const { members: currentMembers, isLoading: assigneeOptionsLoading } =
+    useProjectMembers({
+      projectId,
+      projectMembers,
+      assigneeId,
+      onAssigneeChange: (val) =>
+        setDraft((prev) => ({ ...prev, assignee_id: val })),
+    });
 
   const handleSave = () => {
     if (item && Object.keys(draft).length > 0) {
@@ -210,11 +215,23 @@ export function BacklogItemDetailsSheet({
                       assignee_id: val === 'unassigned' ? null : val,
                     }))
                   }
-                  placeholder="Search assignees…"
+                  placeholder={loadingAwarePlaceholder(
+                    isOptionsLoadingEmpty(
+                      assigneeOptionsLoading,
+                      currentMembers.length
+                    ),
+                    'Loading assignees…',
+                    'Search assignees…'
+                  )}
                   className="bg-background/50 border-border/80 h-9 w-full"
                   options={buildMemberSelectOptions({
                     members: currentMembers,
                   })}
+                  isLoading={isOptionsLoadingEmpty(
+                    assigneeOptionsLoading,
+                    currentMembers.length
+                  )}
+                  emptyText="No matching assignees."
                 />
               </div>
 

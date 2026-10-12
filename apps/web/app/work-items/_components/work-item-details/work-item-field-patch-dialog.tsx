@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { parseWorkItemLabels } from '@repo/types';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
@@ -194,6 +195,7 @@ export function WorkItemFieldPatchDialog({
   currentLabels = EMPTY_PATCH_LABELS,
   onPatched,
 }: Readonly<WorkItemFieldPatchDialogProps>) {
+  const router = useRouter();
   const { handleMutationError } = useOptimisticLock();
   const isTextField = fieldConfig.kind === 'text';
   const isStatusField = fieldConfig.kind === 'status';
@@ -345,19 +347,26 @@ export function WorkItemFieldPatchDialog({
     );
     const selectedSprint =
       sprintOptions.find((sprint) => sprint.id === nextSprintId) ?? null;
+    const cascadedCount = response.cascadedSprintDescendantIds?.length ?? 0;
+    let successMessage = `${fieldConfig.label} updated successfully.`;
+    if (cascadedCount > 0) {
+      const subtaskLabel = cascadedCount === 1 ? 'subtask' : 'subtasks';
+      successMessage = `${fieldConfig.label} updated for this item and ${cascadedCount} ${subtaskLabel}.`;
+    }
 
-    await finishWithInDialogSuccess(
-      `${fieldConfig.label} updated successfully.`,
-      {
-        sprint_id: response.data?.sprint_id ?? nextSprintId,
-        sprint:
-          response.data?.sprint ??
-          (selectedSprint
-            ? { id: selectedSprint.id, name: selectedSprint.name }
-            : null),
-        updated_at: response.data?.updated_at,
-      }
-    );
+    await finishWithInDialogSuccess(successMessage, {
+      sprint_id: response.data?.sprint_id ?? nextSprintId,
+      sprint:
+        response.data?.sprint ??
+        (selectedSprint
+          ? { id: selectedSprint.id, name: selectedSprint.name }
+          : null),
+      updated_at: response.data?.updated_at,
+    });
+
+    if (cascadedCount > 0) {
+      router.refresh();
+    }
   };
 
   const saveByKind = async () => {

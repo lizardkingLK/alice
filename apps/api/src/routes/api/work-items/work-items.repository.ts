@@ -290,14 +290,14 @@ export class WorkItemRepository {
     rootId: string,
     sprintId: string | null,
     updatedBy: string
-  ): Promise<number> {
+  ): Promise<string[]> {
     const ids = await this.collectDescendantIds(rootId);
     const descendantIds = ids.filter((id) => id !== rootId);
     if (descendantIds.length === 0) {
-      return 0;
+      return [];
     }
 
-    const { count } = await prisma.work_items.updateMany({
+    await prisma.work_items.updateMany({
       where: {
         id: { in: descendantIds },
         record_status: RecordStatusEnum.active,
@@ -307,7 +307,7 @@ export class WorkItemRepository {
         ...prismaAuditUpdate(updatedBy),
       },
     });
-    return count;
+    return descendantIds;
   }
 
   /** Count direct children that are not yet Done (for Done-gate validation). */

@@ -35,6 +35,7 @@ const {
   getProjectWorkflowConfigMock,
   requireProjectMemberMock,
   updateMock,
+  updateSprintForDescendantsMock,
   createMock,
   countIncompleteChildrenMock,
   countChildrenNotInTargetStateMock,
@@ -48,6 +49,7 @@ const {
   getProjectWorkflowConfigMock: vi.fn(),
   requireProjectMemberMock: vi.fn(),
   updateMock: vi.fn(),
+  updateSprintForDescendantsMock: vi.fn(),
   createMock: vi.fn(),
   countIncompleteChildrenMock: vi.fn(),
   countChildrenNotInTargetStateMock: vi.fn(),
@@ -63,6 +65,7 @@ const repository = {
   getProjectWorkflowConfig: getProjectWorkflowConfigMock,
   requireProjectMember: requireProjectMemberMock,
   update: updateMock,
+  updateSprintForDescendants: updateSprintForDescendantsMock,
   create: createMock,
   countIncompleteChildren: countIncompleteChildrenMock,
   countChildrenNotInTargetState: countChildrenNotInTargetStateMock,
@@ -135,6 +138,7 @@ function baseUpdate(
 describe('WorkItemService activity writers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    updateSprintForDescendantsMock.mockResolvedValue([]);
     requireProjectMemberMock.mockResolvedValue(undefined);
     assertCanAccessProjectMock.mockResolvedValue(undefined);
     getByIdMock.mockResolvedValue(currentWorkItem);

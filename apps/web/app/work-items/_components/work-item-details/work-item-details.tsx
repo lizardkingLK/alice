@@ -805,6 +805,7 @@ export default function WorkItemDetails({
               projects={[project]}
               projectMembers={projectMembers}
               parentId={workItem.id}
+              defaultSprintId={workItem.sprint_id}
               allowedTypes={[allowedChildType]}
               lockProject
               lockType

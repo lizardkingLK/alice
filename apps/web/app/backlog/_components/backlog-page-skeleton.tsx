@@ -6,7 +6,7 @@ function SprintColumnSkeleton({ id }: Readonly<{ id: string }>) {
   const itemKeys = skeletonKeys(`${id}-item`, 3);
 
   return (
-    <Card className="border-border/70 overflow-hidden">
+    <Card className="border-border/70 overflow-hidden ring-0">
       <div className="border-border/50 flex items-center gap-3 border-b px-4 py-3">
         <Skeleton className="size-8 shrink-0 rounded-md" />
         <div className="flex flex-1 flex-col gap-1.5">
@@ -15,7 +15,7 @@ function SprintColumnSkeleton({ id }: Readonly<{ id: string }>) {
         </div>
         <Skeleton className="h-6 w-16 rounded-full" />
       </div>
-      <div className="space-y-2 p-3">
+      <div className="bg-muted/25 space-y-2 p-3">
         {itemKeys.map((key) => (
           <Skeleton key={key} className="h-16 w-full rounded-lg" />
         ))}
@@ -50,12 +50,12 @@ export function BacklogPageSkeleton() {
         {sprintKeys.map((key) => (
           <SprintColumnSkeleton key={key} id={key} />
         ))}
-        <Card className="border-border/70 overflow-hidden">
+        <Card className="border-border/70 overflow-hidden ring-0">
           <div className="border-border/50 flex items-center justify-between border-b px-4 py-3">
             <Skeleton className="h-5 w-24" />
             <Skeleton className="h-4 w-16" />
           </div>
-          <div className="space-y-2 p-3">
+          <div className="bg-muted/25 space-y-2 p-3">
             {skeletonKeys('backlog-item', 4).map((key) => (
               <Skeleton key={key} className="h-16 w-full rounded-lg" />
             ))}

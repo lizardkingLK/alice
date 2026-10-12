@@ -38,18 +38,21 @@ older than **30 days** are removed automatically.
 
 Examples you may see:
 
-| Type                           | Usually opens             |
-| ------------------------------ | ------------------------- |
-| **mention** / **comment**      | Work item discussion      |
-| **assign** / **status_change** | Work item detail          |
-| **due_date**                   | Work item detail          |
-| **sprint**                     | Sprint or work context    |
-| **view_shared**                | Saved view                |
-| **chart_shared**               | Charts workspace          |
-| **chat_processed**             | Alice chat conversation   |
-| **access_request**             | Users → Requests (admins) |
-| **project_created**            | New project details       |
-| **project_create_failed**      | Message only (no link)    |
+| Type                           | Usually opens                                          |
+| ------------------------------ | ------------------------------------------------------ |
+| **mention** / **comment**      | Work item discussion                                   |
+| **assign** / **status_change** | Work item detail                                       |
+| **due_date**                   | Work item detail                                       |
+| **sprint**                     | Sprint or work context                                 |
+| **view_shared**                | Saved view                                             |
+| **chart_shared**               | Charts workspace                                       |
+| **chat_processed**             | Alice chat conversation                                |
+| **access_request**             | Users → Requests (admins)                              |
+| **project_created**            | New project details (e.g. “Project **Acme** is ready”) |
+| **project_create_failed**      | Message only (no link)                                 |
+
+Project-ready alerts bold the project name and link it to the project page.
+Other types usually open from the whole row using the related item.
 
 Unread count shows on the bell badge. Counts of **1–9** show the number; **10
 or more** show a star.

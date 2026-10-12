@@ -1,11 +1,16 @@
 'use client';
 
 import type React from 'react';
+import { useMemo } from 'react';
 import { BacklogDropZone } from '@/app/backlog/_components/backlog-drop-zone';
 import { BacklogItemCount } from '@/app/backlog/_components/backlog-item-count';
-import { BacklogSprintCapacityPopover } from '@/app/backlog/_components/backlog-sprint-capacity-popover';
+import { BacklogSprintCapacitySummary } from '@/app/backlog/_components/backlog-sprint-capacity-summary';
 import { BacklogSprintDetailsPopover } from '@/app/backlog/_components/backlog-sprint-details-popover';
-import type { ProjectTeamMemberCapacity } from '@/app/backlog/_helpers/backlog-sprint-capacity';
+import type { BacklogCapacityDisplayId } from '@/app/backlog/_helpers/backlog-capacity-display-storage';
+import {
+  computeSprintCapacity,
+  type ProjectTeamMemberCapacity,
+} from '@/app/backlog/_helpers/backlog-sprint-capacity';
 import type { BacklogAssignee } from '@/app/backlog/_helpers/backlog-item-utils';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
@@ -39,6 +44,7 @@ type BacklogSprintCardProps = {
   readonly projects: DbProject[];
   readonly projectMembers: readonly BacklogAssignee[];
   readonly teamCapacities: readonly ProjectTeamMemberCapacity[];
+  readonly capacityDisplay?: BacklogCapacityDisplayId;
   readonly onToggle: (sprintId: string) => void;
   readonly onCreateIssue: (sprintId: string) => void;
   readonly onStartSprint: (sprintId: string) => void;
@@ -188,6 +194,7 @@ export function BacklogSprintCard({
   projects,
   projectMembers,
   teamCapacities,
+  capacityDisplay = 'bar',
   onToggle,
   onCreateIssue,
   onStartSprint,
@@ -198,8 +205,18 @@ export function BacklogSprintCard({
   onDragLeave,
   onDrop,
 }: Readonly<BacklogSprintCardProps>) {
+  const capacitySnapshot = useMemo(
+    () =>
+      computeSprintCapacity({
+        projectId: sprint.project?.id,
+        storyPoints: items.map((item) => item.story_points),
+        teamMembers: teamCapacities,
+      }),
+    [items, sprint.project?.id, teamCapacities]
+  );
+
   return (
-    <Card className="border-border/70 gap-0 overflow-visible py-0 shadow-sm transition-all duration-200">
+    <Card className="border-border/70 gap-0 overflow-visible py-0 shadow-sm ring-0 transition-all duration-200">
       <div className="bg-muted/30 hover:bg-muted/50 border-border/50 flex flex-row items-center justify-between gap-2 rounded-t-xl border-b px-4 py-3 transition-colors">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <Button
@@ -215,12 +232,13 @@ export function BacklogSprintCard({
             )}
           </Button>
 
-          <BacklogSprintDetailsPopover sprint={sprint} />
-          <BacklogSprintCapacityPopover
-            sprintName={sprint.name}
-            projectId={sprint.project?.id}
-            items={items}
-            teamMembers={teamCapacities}
+          <BacklogSprintDetailsPopover
+            sprint={sprint}
+            capacitySnapshot={capacitySnapshot}
+          />
+          <BacklogSprintCapacitySummary
+            snapshot={capacitySnapshot}
+            mode={capacityDisplay}
           />
         </div>
 
