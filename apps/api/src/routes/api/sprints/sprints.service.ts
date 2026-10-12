@@ -144,6 +144,7 @@ export class SprintsService {
     input: UpdateSprintBody
   ): Promise<SprintResponse> {
     await requireManagerOrAdmin(userId);
+    await this.sprints.requireProjectMember(sprintId, userId);
     const goal = normalizeSprintGoal(input.goal);
 
     const currentSprint = await this.sprints.findById(sprintId);
@@ -155,6 +156,7 @@ export class SprintsService {
     }
 
     if (input.projectId !== currentSprint.project_id) {
+      await this.sprints.assertCanAccessProject(userId, input.projectId);
       const count = await this.sprints.getWorkItemCount(sprintId);
       if (count > 0) {
         throw new Error(

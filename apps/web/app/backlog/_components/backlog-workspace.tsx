@@ -19,6 +19,7 @@ import {
   BacklogCompleteSprintDialog,
   BacklogCreateIssueDialog,
   BacklogCreateSprintDialog,
+  BacklogEditSprintDialog,
   BacklogMismatchDialog,
   BacklogStartSprintDialog,
   BacklogErrorDialog,
@@ -170,6 +171,7 @@ export function BacklogWorkspace({
 
   // Dialogs State
   const [isCreateSprintOpen, setIsCreateSprintOpen] = useState(false);
+  const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
   const [isCreateIssueOpen, setIsCreateIssueOpen] = useState(false);
   const [createIssueSprintId, setCreateIssueSprintId] = useState<string | null>(
     null
@@ -542,6 +544,16 @@ export function BacklogWorkspace({
     if (!isManagerOrAdmin) return;
     setSprintList((prev) => [newSprint, ...prev]);
     setIsCreateSprintOpen(false);
+  };
+
+  const handleEditSprintSuccess = (updatedSprint: Sprint) => {
+    if (!isManagerOrAdmin) return;
+    setSprintList((prev) =>
+      prev.map((sprint) =>
+        sprint.id === updatedSprint.id ? updatedSprint : sprint
+      )
+    );
+    setEditingSprint(null);
   };
 
   const openCreateIssue = (sprintId: string | null = null) => {
@@ -969,6 +981,7 @@ export function BacklogWorkspace({
                   capacityDisplay={capacityDisplay}
                   onToggle={toggleSprint}
                   onCreateIssue={openCreateIssue}
+                  onEditSprint={setEditingSprint}
                   onStartSprint={handleStartSprint}
                   onCompleteSprint={handleCompleteSprint}
                   onSelectItem={setSelectedItem}
@@ -1022,6 +1035,17 @@ export function BacklogWorkspace({
             defaultProjectId={createSprintDefaultProjectId}
             onClose={() => setIsCreateSprintOpen(false)}
             onCreated={handleCreateSprintSuccess}
+          />
+        )}
+
+        {/* Dialog: Edit Sprint */}
+        {isManagerOrAdmin && (
+          <BacklogEditSprintDialog
+            sprint={editingSprint}
+            projects={projects}
+            currentUserId={currentUserId}
+            onClose={() => setEditingSprint(null)}
+            onUpdated={handleEditSprintSuccess}
           />
         )}
 

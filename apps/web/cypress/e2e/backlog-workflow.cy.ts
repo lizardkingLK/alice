@@ -4,11 +4,12 @@ Cypress.on('uncaught:exception', (err) => {
 });
 
 function createSprintFromBacklog(sprintName: string, goal: string) {
-  // Click "Create Sprint" button
-  cy.contains('button', 'Create Sprint').click();
+  // Open the Backlog create menu and select Sprint.
+  cy.get('button[aria-label="Create"]').click();
+  cy.contains('[role="menuitem"]', 'Create Sprint').click();
 
-  // Wait for the select trigger to be visible and click it
-  cy.get('button#sprint-project').should('be.visible').click();
+  // Wait for the project combobox to be visible and open it.
+  cy.get('input#sprint-project').should('be.visible').click();
 
   // Select the AlicePlatform project explicitly to align with the work item project
   cy.get('[role="option"]')
@@ -39,13 +40,14 @@ function createSprintFromBacklog(sprintName: string, goal: string) {
 }
 
 function createWorkItemFromBacklog(title: string) {
-  cy.contains('button', 'Create Item').click();
+  cy.get('button[aria-label="Create"]').click();
+  cy.contains('[role="menuitem"]', 'Create Work-Item').click();
 
   // Enter title
   cy.get('input#title').first().type(title, { delay: 30 });
 
   // Select AlicePlatform project explicitly
-  cy.get('button#project_id').first().click();
+  cy.get('input#project_id').first().click();
   cy.get('[role="option"]')
     .contains('AlicePlatform')
     .should('be.visible')
@@ -63,7 +65,7 @@ function createWorkItemFromBacklog(title: string) {
   cy.get('input#due_date').first().type(today, { delay: 30 });
 
   // Select assignee (click trigger and select first enabled option)
-  cy.get('button#assignee_id').first().click();
+  cy.get('input#assignee_id').first().click();
   cy.get('[role="option"]:not([data-disabled])')
     .should('be.visible')
     .first()
@@ -77,6 +79,13 @@ function createWorkItemFromBacklog(title: string) {
 
   // Wait for modal to close
   cy.get('input#title').should('not.exist');
+}
+
+function getSprintCard(sprintName: string) {
+  return cy
+    .contains('button', sprintName)
+    .closest('[data-slot="card"]')
+    .should('exist');
 }
 
 describe('Backlog and Sprint E2E Workflow', () => {
@@ -98,6 +107,7 @@ describe('Backlog and Sprint E2E Workflow', () => {
     cy.intercept('POST', '**/api/sprints').as('createSprint');
     cy.intercept('POST', '**/api/work-items').as('createWorkItem');
     cy.intercept('PATCH', '**/api/work-items/*').as('updateWorkItem');
+    cy.intercept('PATCH', '**/api/sprints/*').as('updateSprint');
     cy.intercept('PATCH', '**/api/sprints/*/status').as('updateSprintStatus');
   });
 
@@ -115,22 +125,37 @@ describe('Backlog and Sprint E2E Workflow', () => {
     createSprintFromBacklog(sprintName, sprintGoal);
 
     // Verify it appears in the sprint list on the backlog page
-    cy.contains('span', sprintName).should('exist');
+    getSprintCard(sprintName).should('exist');
 
-    // 3. Create a Work Item from the Backlog page
+    // 3. Edit the sprint from its Backlog action menu.
+    const renamedSprintName = `${sprintName} Updated`;
+    getSprintCard(sprintName)
+      .find('button[aria-label="Open Actions Menu"]')
+      .click();
+    cy.get('[aria-label="Edit Sprint"]').click();
+
+    cy.get('input#sprint-project').should('be.disabled');
+    cy.get('input#sprint-name').clear().type(renamedSprintName, { delay: 30 });
+    cy.get('textarea#sprint-goal')
+      .clear()
+      .type('Updated E2E workflow goal', { delay: 30 });
+    cy.contains('button', 'Save Changes').click();
+
+    cy.wait('@updateSprint').its('response.statusCode').should('eq', 200);
+    cy.get('input#sprint-name').should('not.exist');
+    getSprintCard(renamedSprintName).should('exist');
+    cy.get(`button[title="${sprintName}"]`).should('not.exist');
+
+    // 4. Create a Work Item from the Backlog page
     const issueTitle = `Issue E2E ${Date.now()}`;
     createWorkItemFromBacklog(issueTitle);
 
     // Verify it appears under the Backlog section
     cy.contains('span', issueTitle).should('exist');
 
-    // 4. Assign the Work Item to the Sprint using Drag & Drop
+    // 5. Assign the Work Item to the Sprint using Drag & Drop
     cy.contains('button', issueTitle).as('draggableItem');
-    cy.contains('span', sprintName)
-      .closest('.overflow-hidden.shadow-sm')
-      .children()
-      .eq(1)
-      .as('dropZone');
+    getSprintCard(renamedSprintName).children().eq(1).as('dropZone');
 
     cy.get('@draggableItem').then(($el) => {
       const dataTransfer = new DataTransfer();
@@ -143,15 +168,13 @@ describe('Backlog and Sprint E2E Workflow', () => {
     cy.wait('@updateWorkItem');
 
     // Verify it is assigned to the sprint (appears in the sprint container)
-    cy.contains('span', sprintName)
-      .closest('.overflow-hidden.shadow-sm')
+    getSprintCard(renamedSprintName)
       .contains('button', issueTitle)
       .should('exist');
 
-    // 5. Start the Sprint
-    cy.contains('span', sprintName)
-      .closest('.overflow-hidden.shadow-sm')
-      .contains('button', 'Start Sprint')
+    // 6. Start the Sprint
+    getSprintCard(renamedSprintName)
+      .find('button[aria-label="Start sprint"]')
       .click();
 
     // Confirm starting the sprint
@@ -165,17 +188,13 @@ describe('Backlog and Sprint E2E Workflow', () => {
     cy.get('[role="dialog"]').should('not.exist');
 
     // Verify status updated and Start button is replaced by Complete Sprint button
-    cy.contains('span', sprintName)
-      .closest('.overflow-hidden.shadow-sm')
-      .contains('button', 'Complete Sprint')
+    getSprintCard(renamedSprintName)
+      .find('button[aria-label="Complete sprint"]')
       .should('exist');
 
-    // 6. Complete the Sprint
+    // 7. Complete the Sprint
     // First, mark the work item as "Done" so we are allowed to complete the sprint
-    cy.contains('span', sprintName)
-      .closest('.overflow-hidden.shadow-sm')
-      .contains('button', issueTitle)
-      .click();
+    getSprintCard(renamedSprintName).contains('button', issueTitle).click();
 
     // The detail panel sheet should be open. Update status to Done.
     cy.contains('span', 'Status').next().find('button').click();
@@ -189,17 +208,15 @@ describe('Backlog and Sprint E2E Workflow', () => {
     cy.get('button:contains("Save Changes")').should('not.exist');
 
     // Verify status badge in the sprint list displays Done
-    cy.contains('span', sprintName)
-      .closest('.overflow-hidden.shadow-sm')
+    getSprintCard(renamedSprintName)
       .contains('button', issueTitle)
       .within(() => {
         cy.contains('span', 'Done').should('exist');
       });
 
     // Complete the sprint
-    cy.contains('span', sprintName)
-      .closest('.overflow-hidden.shadow-sm')
-      .contains('button', 'Complete Sprint')
+    getSprintCard(renamedSprintName)
+      .find('button[aria-label="Complete sprint"]')
       .click();
 
     // Confirm completion
@@ -213,10 +230,10 @@ describe('Backlog and Sprint E2E Workflow', () => {
     cy.get('[role="dialog"]').should('not.exist');
 
     // Verify the sprint is no longer visible under the Active tab
-    cy.contains('span', sprintName).should('not.exist');
+    cy.get(`button[title="${renamedSprintName}"]`).should('not.exist');
 
     // Switch to Completed tab and verify it's listed there
     cy.contains('button', 'Completed').click();
-    cy.contains('span', sprintName).should('exist');
+    getSprintCard(renamedSprintName).should('exist');
   });
 });
