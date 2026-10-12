@@ -24,11 +24,13 @@ import {
   CHARTS_TABLE_COLUMN_LABELS,
   DEFAULT_CHARTS_VISIBLE_TABLE_COLUMNS,
 } from '@/app/charts/_components/charts.types';
+import type { ChartsProjectOption } from '@/app/charts/_components/charts-sample.data';
 import type { ChartDrilldownTableItem } from '@/app/charts/_helpers/charts-analytics.ui';
 import { ChartsEmptyState } from '@/app/charts/_components/charts-empty-state';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
+import { resolveWorkItemStateColumnModel } from '@/app/work-items/_helpers/work-item-state-column';
 import { STATUS_META } from '@/app/work-items/_helpers/work-item-status';
 import { GroupedItemsPaginatedTable } from '@/components/grouped-items/grouped-items-paginated-table';
 import { GroupedItemsSection } from '@/components/grouped-items/grouped-items-section';
@@ -44,6 +46,8 @@ type ChartsStatusGroupedTableProps = {
   readonly emptyMessage?: string;
   readonly className?: string;
   readonly visibleColumns?: readonly ChartsTableColumnId[];
+  /** Projects with workflow config for State column labels. */
+  readonly projects?: readonly ChartsProjectOption[];
   // eslint-disable-next-line no-unused-vars -- edit opener
   readonly onEditWorkItem?: (item: ChartDrilldownTableItem) => void;
 };
@@ -75,6 +79,7 @@ function buildColumns(
   visibleColumns: readonly ChartsTableColumnId[],
   // eslint-disable-next-line no-unused-vars
   isUserOnline: (userId: string) => boolean,
+  projects: readonly ChartsProjectOption[],
   // eslint-disable-next-line no-unused-vars
   onEditWorkItem?: (item: ChartDrilldownTableItem) => void
 ): ColumnDef<ChartDrilldownTableItem>[] {
@@ -82,6 +87,9 @@ function buildColumns(
     visibleColumns.length > 0
       ? visibleColumns
       : DEFAULT_CHARTS_VISIBLE_TABLE_COLUMNS
+  );
+  const workflowByProjectId = new Map(
+    projects.map((project) => [project.id, project.workflowConfig] as const)
   );
   const columns: ColumnDef<ChartDrilldownTableItem>[] = [];
 
@@ -130,6 +138,26 @@ function buildColumns(
       accessorKey: 'status',
       header: CHARTS_TABLE_COLUMN_LABELS.status,
       cell: ({ row }) => <WorkItemStatusBadge status={row.original.status} />,
+    });
+  }
+  if (allowed.has('state')) {
+    columns.push({
+      id: 'state',
+      header: CHARTS_TABLE_COLUMN_LABELS.state,
+      cell: ({ row }) => {
+        const item = row.original;
+        const workItem = item.workItem;
+        const model = resolveWorkItemStateColumnModel({
+          status: item.status,
+          type: item.type,
+          state: workItem?.state,
+          boardColumnId: workItem?.board_column_id,
+          workflowConfig: workflowByProjectId.get(item.projectId),
+        });
+        return (
+          <WorkItemStatusBadge status={model.status} label={model.label} />
+        );
+      },
     });
   }
   if (allowed.has('type')) {
@@ -218,6 +246,7 @@ export function ChartsStatusGroupedTable({
   emptyMessage = 'No work items match the current filters.',
   className,
   visibleColumns = DEFAULT_CHARTS_VISIBLE_TABLE_COLUMNS,
+  projects = [],
   onEditWorkItem,
 }: Readonly<ChartsStatusGroupedTableProps>) {
   const { isUserOnline } = useRealtime();
@@ -227,8 +256,8 @@ export function ChartsStatusGroupedTable({
   );
 
   const columns = useMemo(
-    () => buildColumns(visibleColumns, isUserOnline, onEditWorkItem),
-    [isUserOnline, onEditWorkItem, visibleColumns]
+    () => buildColumns(visibleColumns, isUserOnline, projects, onEditWorkItem),
+    [isUserOnline, onEditWorkItem, projects, visibleColumns]
   );
 
   if (loading) {

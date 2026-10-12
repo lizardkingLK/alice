@@ -49,6 +49,7 @@ import {
   type ChartsSampleMember,
   type ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
+import { ChartsAdvancedFiltersPopover } from '@/app/charts/_components/charts-advanced-filters-popover';
 import { ChartsFullscreenDialogShell } from '@/app/charts/_components/charts-fullscreen-dialog-shell';
 import { ChartsStatusPiePreview } from '@/app/charts/_components/charts-status-pie-preview';
 import { ChartsWidgetActionsMenu } from '@/app/charts/_components/charts-widget-actions-menu';
@@ -59,7 +60,15 @@ import {
   resolveChartAnalyticsProjectId,
   resolveChartAnalyticsSprintId,
 } from '@/app/charts/_helpers/charts-analytics.ui';
+import {
+  CHARTS_BURNDOWN_DEFAULT_TITLE,
+  isBurndownWidgetType,
+} from '@/app/charts/_helpers/charts-burndown-widget';
 import { useChartWidgetAnalytics } from '@/app/charts/_hooks/use-chart-widget-analytics';
+import { useChartWidgetBurndown } from '@/app/charts/_hooks/use-chart-widget-burndown';
+import { BurndownLineChart } from '@/components/burndown-line-chart';
+import { BurndownScopeLabels } from '@/components/burndown-scope-labels';
+import { SIDEBAR_LAYOUT_SETTLE_MS } from '@/hooks/use-sidebar-layout-settling';
 
 function resolvePieEmptyMessage(
   seriesLabelField: string | null,
@@ -206,12 +215,38 @@ type ChartsWidgetCardProps = {
   readonly className?: string;
 };
 
+function ChartsWidgetCardBurndownBody({
+  burndown,
+}: Readonly<{
+  burndown: ReturnType<typeof useChartWidgetBurndown>;
+}>) {
+  if (burndown.loading) {
+    return (
+      <div className="text-muted-foreground flex flex-1 items-center justify-center text-sm">
+        Loading burndown…
+      </div>
+    );
+  }
+
+  return (
+    <BurndownLineChart
+      series={burndown.series}
+      estimatedTotal={burndown.estimatedTotal}
+      axisRange={burndown.axisRange}
+      emptyHint={burndown.emptyHint}
+      settleMs={SIDEBAR_LAYOUT_SETTLE_MS}
+    />
+  );
+}
+
 function ChartsWidgetCardChartBody({
   isChart,
+  isBurndown,
   Icon,
   description,
   seriesLabelField,
   analytics,
+  burndown,
   pieVariant,
   showValueAs,
   sortSlicesBy,
@@ -223,10 +258,12 @@ function ChartsWidgetCardChartBody({
   onBoardSliceClick,
 }: Readonly<{
   isChart: boolean;
+  isBurndown: boolean;
   Icon?: ChartWidgetDefinition['icon'];
   description?: string;
   seriesLabelField: ChartSeriesLabelField | null;
   analytics: ReturnType<typeof useChartWidgetAnalytics>;
+  burndown: ReturnType<typeof useChartWidgetBurndown>;
   pieVariant?: ChartPieVariant;
   showValueAs: 'value' | 'percent';
   sortSlicesBy: 'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
@@ -238,6 +275,10 @@ function ChartsWidgetCardChartBody({
   // eslint-disable-next-line no-unused-vars -- slice click
   onBoardSliceClick: (sliceKey: string) => void;
 }>) {
+  if (isBurndown) {
+    return <ChartsWidgetCardBurndownBody burndown={burndown} />;
+  }
+
   if (!isChart) {
     return (
       <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
@@ -277,6 +318,107 @@ function ChartsWidgetCardChartBody({
   );
 }
 
+function ChartsWidgetCardFilterControl({
+  isChart,
+  isBurndown,
+  title,
+  filters,
+  burndownFiltersOpen,
+  onBurndownFiltersOpenChange,
+  accessibleProjects,
+  accessibleSprints,
+  assigneeMembers,
+  onFiltersChange,
+  onOpenChartFilters,
+}: Readonly<{
+  isChart: boolean;
+  isBurndown: boolean;
+  title: string;
+  filters?: ChartsWidgetFilterDraft;
+  burndownFiltersOpen: boolean;
+  // eslint-disable-next-line no-unused-vars -- controlled open
+  onBurndownFiltersOpenChange: (open: boolean) => void;
+  accessibleProjects: readonly ChartsProjectOption[];
+  accessibleSprints: readonly ChartsSprintOption[];
+  assigneeMembers: readonly ChartsSampleMember[];
+  onFiltersChange?: ChartsWidgetFiltersChangeHandler;
+  onOpenChartFilters: () => void;
+}>) {
+  const filterButtonClassName = cn(
+    'text-muted-foreground hover:text-foreground shrink-0 cursor-pointer',
+    filters && 'text-primary hover:text-primary'
+  );
+
+  if (isBurndown) {
+    return (
+      <ChartsAdvancedFiltersPopover
+        open={burndownFiltersOpen}
+        onOpenChange={onBurndownFiltersOpenChange}
+        onApply={(draft) => onFiltersChange?.(draft)}
+        appliedFilters={filters ?? null}
+        projects={accessibleProjects}
+        sprints={accessibleSprints}
+        members={assigneeMembers}
+        trigger={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Filter ${title}`}
+            aria-expanded={burndownFiltersOpen}
+            title="Project and sprint filters"
+            className={filterButtonClassName}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <Filter className="size-4" />
+          </Button>
+        }
+      />
+    );
+  }
+
+  return (
+    <Tooltip delayDuration={400}>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`Filter ${title}`}
+          className={filterButtonClassName}
+          onClick={() => {
+            if (isChart) {
+              onOpenChartFilters();
+            }
+          }}
+          onMouseDown={(event) => event.stopPropagation()}
+          disabled={!isChart}
+        >
+          <Filter className="size-4" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        {isChart ? 'Filters' : 'Filters (chart widgets only for now)'}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function resolveWidgetSettingsHandler(params: {
+  readonly isChart: boolean;
+  readonly isBurndown: boolean;
+  readonly openChartSettings: () => void;
+  readonly openBurndownFilters: () => void;
+}): (() => void) | undefined {
+  if (params.isChart) {
+    return params.openChartSettings;
+  }
+  if (params.isBurndown) {
+    return params.openBurndownFilters;
+  }
+  return undefined;
+}
+
 export function ChartsWidgetCard({
   title,
   typeId,
@@ -308,9 +450,11 @@ export function ChartsWidgetCard({
   className,
 }: Readonly<ChartsWidgetCardProps>) {
   const isChart = typeId === 'chart';
+  const isBurndown = isBurndownWidgetType(typeId);
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
+  const [burndownFiltersOpen, setBurndownFiltersOpen] = useState(false);
   const [renameDraft, setRenameDraft] = useState(title);
   const {
     configOpen,
@@ -322,12 +466,18 @@ export function ChartsWidgetCard({
     handleBoardSliceClick,
     handleConfigViewModeChange,
   } = useChartsWidgetCardConfig({
-    initialConfigOpen,
+    initialConfigOpen: isChart ? initialConfigOpen : false,
     focusedSliceKey,
     viewMode,
     onViewModeChange,
     onConfigOpenChange,
   });
+
+  useEffect(() => {
+    if (isBurndown && initialConfigOpen) {
+      setBurndownFiltersOpen(true);
+    }
+  }, [isBurndown, initialConfigOpen]);
 
   const projectId = resolveChartAnalyticsProjectId(filters ?? null);
   const sprintId = resolveChartAnalyticsSprintId(filters ?? null);
@@ -344,6 +494,15 @@ export function ChartsWidgetCard({
     ...(sprintId ? { sprintId } : {}),
     dimensionFilters,
   });
+  const burndown = useChartWidgetBurndown(isBurndown ? sprintId : undefined);
+
+  const scopeProjectName =
+    accessibleProjects.find((project) => project.id === projectId)?.name ??
+    null;
+  const scopeSprintName =
+    burndown.sprintName ??
+    accessibleSprints.find((sprint) => sprint.id === sprintId)?.name ??
+    null;
 
   const openRename = () => {
     setRenameDraft(title);
@@ -358,13 +517,29 @@ export function ChartsWidgetCard({
     setRenameOpen(false);
   };
 
+  const displayTitle =
+    title.trim() || (isBurndown ? CHARTS_BURNDOWN_DEFAULT_TITLE : 'Widget');
+
+  const onSettings = resolveWidgetSettingsHandler({
+    isChart,
+    isBurndown,
+    openChartSettings: () => {
+      openConfig({ withSettings: true });
+    },
+    openBurndownFilters: () => {
+      setBurndownFiltersOpen(true);
+    },
+  });
+
   const body = (
     <ChartsWidgetCardChartBody
       isChart={isChart}
+      isBurndown={isBurndown}
       Icon={Icon}
       description={description}
       seriesLabelField={seriesLabelField}
       analytics={analytics}
+      burndown={burndown}
       pieVariant={pieVariant}
       showValueAs={showValueAs}
       sortSlicesBy={sortSlicesBy}
@@ -392,7 +567,7 @@ export function ChartsWidgetCard({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                aria-label={`Drag ${title}`}
+                aria-label={`Drag ${displayTitle}`}
                 className="widget-drag-handle text-muted-foreground hover:text-foreground shrink-0 cursor-grab active:cursor-grabbing"
               >
                 <GripVertical className="size-4" />
@@ -402,35 +577,32 @@ export function ChartsWidgetCard({
           </Tooltip>
 
           <TruncatedText className="min-w-0 flex-1 px-1 text-sm font-semibold tracking-tight">
-            {title}
+            {displayTitle}
           </TruncatedText>
 
-          <Tooltip delayDuration={400}>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={`Filter ${title}`}
-                className={cn(
-                  'text-muted-foreground hover:text-foreground shrink-0 cursor-pointer',
-                  filters && 'text-primary hover:text-primary'
-                )}
-                onClick={() => {
-                  if (isChart) {
-                    openConfig({ withFilters: true });
-                  }
-                }}
-                onMouseDown={(event) => event.stopPropagation()}
-                disabled={!isChart}
-              >
-                <Filter className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              {isChart ? 'Filters' : 'Filters (chart widgets only for now)'}
-            </TooltipContent>
-          </Tooltip>
+          {isBurndown ? (
+            <BurndownScopeLabels
+              projectName={scopeProjectName}
+              sprintName={scopeSprintName}
+              className="mr-1 hidden sm:flex"
+            />
+          ) : null}
+
+          <ChartsWidgetCardFilterControl
+            isChart={isChart}
+            isBurndown={isBurndown}
+            title={displayTitle}
+            filters={filters}
+            burndownFiltersOpen={burndownFiltersOpen}
+            onBurndownFiltersOpenChange={setBurndownFiltersOpen}
+            accessibleProjects={accessibleProjects}
+            accessibleSprints={accessibleSprints}
+            assigneeMembers={assigneeMembers}
+            onFiltersChange={onFiltersChange}
+            onOpenChartFilters={() => {
+              openConfig({ withFilters: true });
+            }}
+          />
 
           <ChartsWidgetActionsMenu
             open={menuOpen}
@@ -440,13 +612,7 @@ export function ChartsWidgetCard({
             onRename={openRename}
             onDuplicate={onDuplicate}
             onDelete={onRemove}
-            onSettings={
-              isChart
-                ? () => {
-                    openConfig({ withSettings: true });
-                  }
-                : undefined
-            }
+            onSettings={onSettings}
             leadingItem={
               <DropdownMenuItem
                 className="cursor-pointer gap-2"
@@ -467,7 +633,7 @@ export function ChartsWidgetCard({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                aria-label={`${title} options`}
+                aria-label={`${displayTitle} options`}
                 className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
                 onMouseDown={(event) => event.stopPropagation()}
               >
@@ -558,8 +724,12 @@ export function ChartsWidgetCard({
         <ChartsFullscreenDialogShell
           open={fullscreenOpen}
           onOpenChange={setFullscreenOpen}
-          title={title}
-          description={description ?? 'Widget preview'}
+          title={displayTitle}
+          description={
+            isBurndown
+              ? 'Sprint remaining work versus the ideal line'
+              : (description ?? 'Widget preview')
+          }
           sizeClassName="h-[min(90vh,800px)] w-[min(96vw,1100px)]"
         >
           {body}

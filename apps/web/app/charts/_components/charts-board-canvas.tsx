@@ -29,10 +29,15 @@ import type {
   ChartWidgetViewMode,
 } from '@/app/charts/_components/charts.types';
 import type {
+  ChartsProjectOption,
   ChartsSampleMember,
   ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
 import { resolveChartAnalyticsProjectId } from '@/app/charts/_helpers/charts-analytics.ui';
+import {
+  defaultTitleForChartWidgetType,
+  isBurndownWidgetType,
+} from '@/app/charts/_helpers/charts-burndown-widget';
 import 'react-grid-layout/css/styles.css';
 import '@/app/dashboard/_components/dashboard-grid.css';
 
@@ -68,7 +73,7 @@ export function layoutSizeForWidgetType(typeId: ChartWidgetTypeId): {
   readonly minW: number;
   readonly minH: number;
 } {
-  if (typeId === 'chart') {
+  if (typeId === 'chart' || isBurndownWidgetType(typeId)) {
     return CHART_TYPE_SIZE;
   }
   return DEFAULT_SIZE;
@@ -256,11 +261,8 @@ type ChartsBoardCanvasProps = {
   ) => void;
   readonly focusWidgetId?: string;
   readonly onFocusWidgetDismiss?: () => void;
-  /** Accessible projects for Chart widget filters / series. */
-  readonly accessibleProjects?: ReadonlyArray<{
-    readonly id: string;
-    readonly name: string;
-  }>;
+  /** Accessible projects for Chart widget filters / series / State labels. */
+  readonly accessibleProjects?: readonly ChartsProjectOption[];
   /** Active sprints for Chart widget sprint filter (project-scoped). */
   readonly accessibleSprints?: ReadonlyArray<{
     readonly id: string;
@@ -459,10 +461,7 @@ function BoardCanvasBody({
   ) => void;
   focusWidgetId?: string;
   onFocusWidgetDismiss?: () => void;
-  accessibleProjects?: ReadonlyArray<{
-    readonly id: string;
-    readonly name: string;
-  }>;
+  accessibleProjects?: readonly ChartsProjectOption[];
   accessibleSprints?: ReadonlyArray<{
     readonly id: string;
     readonly name: string;
@@ -521,8 +520,8 @@ function BoardCanvasBody({
         const catalogTitle = meta?.title || 'Widget';
         const displayTitle =
           entry?.instance.title?.trim() ||
-          (entry?.instance.typeId === 'chart'
-            ? 'Tasks by status'
+          (entry?.instance.typeId
+            ? defaultTitleForChartWidgetType(entry.instance.typeId)
             : catalogTitle);
         return (
           <div key={item.i} className="dashboard-widget-root">

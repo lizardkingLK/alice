@@ -109,7 +109,7 @@ export type ChartBoardWidgetInstance = {
   readonly showEmptySlices?: boolean;
   /**
    * Drilldown table columns to show.
-   * When unset, defaults to Task / Owner / Status / Type / Priority
+   * When unset, defaults to Task / Owner / Status / State / Type / Priority
    * (Project and Sprint stay optional / off).
    */
   readonly visibleTableColumns?: readonly ChartsTableColumnId[];
@@ -129,6 +129,7 @@ export const CHARTS_TABLE_COLUMN_IDS = [
   'task',
   'owner',
   'status',
+  'state',
   'type',
   'priority',
   'project',
@@ -140,12 +141,13 @@ export type ChartsTableColumnId = (typeof CHARTS_TABLE_COLUMN_IDS)[number];
 
 /** Columns checked by default in widget settings (and when unset on a widget). */
 export const DEFAULT_CHARTS_VISIBLE_TABLE_COLUMNS: readonly ChartsTableColumnId[] =
-  ['task', 'owner', 'status', 'type', 'priority', 'actions'];
+  ['task', 'owner', 'status', 'state', 'type', 'priority', 'actions'];
 
 export const CHARTS_TABLE_COLUMN_LABELS: Record<ChartsTableColumnId, string> = {
   task: 'Task',
   owner: 'Owner',
   status: 'Status',
+  state: 'State',
   type: 'Type',
   priority: 'Priority',
   project: 'Project',

@@ -29,7 +29,7 @@ export type ChartWidgetDefinition = ChartWidgetCatalogItem & {
   readonly quickAdd?: boolean;
   /**
    * When false/undefined, Add Widget menus show the option as disabled
-   * with a “Coming soon” label. Only Chart is enabled for now.
+   * with a “Coming soon” label. Chart + burndown (incl. Data over time) are live.
    */
   readonly available?: boolean;
 };
@@ -61,10 +61,11 @@ export const CHART_WIDGET_CATALOG: readonly ChartWidgetDefinition[] = [
   {
     id: 'data-over-time',
     title: 'Data over time',
-    description: 'Show how data changes over time',
+    description: 'Sprint remaining work over the timeline (burndown)',
     icon: ChartLine,
     category: 'staying-on-top',
     quickAdd: true,
+    available: true,
   },
   {
     id: 'numbers',
@@ -141,6 +142,7 @@ export const CHART_WIDGET_CATALOG: readonly ChartWidgetDefinition[] = [
     description: 'Sprint remaining work over the timeline',
     icon: Timer,
     category: 'delivery',
+    available: true,
   },
 ] as const;
 

@@ -422,36 +422,41 @@ be filled in the service from dates + estimated total if not stored.
 
 ### Implementation steps (burndown only)
 
-#### Step B1 — Schema: burndown rollup + triggers + backfill
+#### Step B0 — Web live widget (non-rollup) ✅
 
-1. Prisma model + migration under `packages/db/prisma/migrations/`
-2. Trigger/SQL rebuild helpers; backfill existing sprints
-3. `pnpm db migrate:deploy` / generate clients
-4. Verify: log hours / move item between sprints → rollup days update
+1. Mark `burndown` + `data-over-time` `available: true`; shared renderer via
+   `isBurndownWidgetType`
+2. Widget card: `GET /api/sprints/:id/burndown`; **Project · Sprint** labels;
+   filters popover for project/sprint; seed from board defaults
+3. Shared `BurndownLineChart` + `BurndownScopeLabels` (Overview + Charts)
+4. User guide + [CHARTS.md](./CHARTS.md); web tests for catalog/layout helpers
 
-#### Step B2 — API: charts burndown series from rollup
+#### Step B1 — Schema: burndown rollup + triggers + backfill ✅ (migrate pending in each env)
 
-1. `GET /api/v1/charts/analytics/burndown` (register before `/:id`)
-2. Types in `@repo/types` (extend charts-analytics or burndown exports)
-3. ACL via `listAccessibleProjectIds` (sprint’s project must be accessible)
-4. API tests under `apps/api/tests/charts/`
+1. Prisma model `sprint_burndown_rollups` + migration
+   `packages/db/prisma/migrations/add_sprint_burndown_rollups/`
+2. SQL `rebuild_sprint_burndown_rollups(uuid)` + triggers on work_items,
+   work_item_worklogs, sprints; backfill planned/active/closed
+3. Run `pnpm --filter @repo/db migrate:deploy` and `generate` / `generate:client`
+   per environment
 
-#### Step B3 — Web: catalog + widget + context labels
+#### Step B2 — API: prefer rollup on existing burndown route ✅
 
-1. Mark `burndown` + `data-over-time` `available: true`; both append the same
-   instance config (`typeId` canonical `burndown`, or map both in renderer)
-2. Widget card: load series from charts burndown API; **Project** + **Sprint**
-   labels top-right
-3. Filters: require sprint; project from filter or sprint’s project
-4. Reuse board_json persistence / settings shell; hide Labels columns that only
-   apply to categorical Chart widgets
-5. Web tests for catalog gate + empty states (no sprint / empty series)
-6. User guide + [CHARTS.md](./CHARTS.md) widget section; `docs:sync`
+1. `GET /api/sprints/:id/burndown` reads rollup when rows exist; else live
+   `computeBurndown` and best-effort rebuild
+2. Shared helpers: `seriesFromBurndownRollupRows` / `computeBurndownIdeal` in
+   `@repo/types`
+3. Charts widgets already call this route via `fetchSprintBurndown`
+4. Optional later: dedicated `GET /api/v1/charts/analytics/burndown` alias
+
+#### Step B3 — Web: living widget already on burndown route ✅
+
+1. Charts burndown / data-over-time widgets use `fetchSprintBurndown`
+2. Empty states unchanged; Overview can adopt rollup via same service later
 
 #### Step B4 — Optional convergence
 
-1. Extract shared `BurndownChart` presentational component (overview + Charts)
-2. Point dashboard reader at rollup **or** keep live compute for overview
+1. Point dashboard reader at rollup **or** keep live compute for overview
    (document choice when implementing)
 
 ### Out of scope for Steps B1–B4

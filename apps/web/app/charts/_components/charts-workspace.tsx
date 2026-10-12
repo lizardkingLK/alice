@@ -34,6 +34,7 @@ import { ChartsSaveWorkspaceDialog } from '@/app/charts/_components/charts-save-
 import { ChartsWorkspaceActionsMenu } from '@/app/charts/_components/charts-workspace-actions-menu';
 import { ChartsWorkspaceFilterDialog } from '@/app/charts/_components/charts-workspace-filter-dialog';
 import { isChartWidgetAvailable } from '@/app/charts/_components/charts-widget-catalog';
+import { isBurndownWidgetType } from '@/app/charts/_helpers/charts-burndown-widget';
 import type {
   ChartBoardWidgetInstance,
   ChartPieVariant,
@@ -206,7 +207,7 @@ export function ChartsWorkspace({
         return;
       }
       const filters =
-        typeId === 'chart'
+        typeId === 'chart' || isBurndownWidgetType(typeId)
           ? createChartWidgetFiltersFromDefaults(insertPreference)
           : undefined;
       commitBoard(

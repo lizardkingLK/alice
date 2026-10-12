@@ -39,10 +39,14 @@ Left side (filters and columns):
 | Columns               | Columns icon → show or hide table columns                                                                                                                                                                                                   |
 | Applied filters       | Badges inline with toolbar controls (dismiss one or clear all). Overflowing chips scroll horizontally; scrollbar is hidden. Rapid chip dismissals are batched into one update after a short pause — use the filter dialog for bulk changes. |
 
-In the table, **Project** cells are badges that open project details in a new
-tab. **Sprint** cells are the same style of badge; for managers and admins they
-link to the sprint summary report in a new tab. Members see the sprint name as
-a plain badge (sprint reports require manager access).
+In the table, **Status** is the legacy board category; **State** (on by
+default, next to Status) shows the project workflow state name when the
+project has a workflow, or the same label as Status on legacy projects. Use
+**Columns** to hide either. **Project** cells are badges that open project
+details in a new tab. **Sprint** cells are the same style of badge; for
+managers and admins they link to the sprint summary report in a new tab.
+Members see the sprint name as a plain badge (sprint reports require manager
+access).
 
 Right side (views and actions):
 

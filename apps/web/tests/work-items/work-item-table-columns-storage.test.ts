@@ -120,13 +120,14 @@ describe('work-item-table-columns-storage', () => {
       countVisibleWorkItemTableColumns(
         DEFAULT_WORK_ITEM_TABLE_COLUMN_VISIBILITY
       )
-    ).toBe(7);
+    ).toBe(8);
     expect(
       countVisibleWorkItemTableColumns({
         title: true,
         actions: true,
         type: false,
         status: false,
+        state: false,
         priority: false,
         assignee: false,
         due_date: false,

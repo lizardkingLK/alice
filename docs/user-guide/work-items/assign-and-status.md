@@ -27,8 +27,9 @@ Typical default states (projects may rename or add their own):
 On the work-item details page, the header banner shows the current **state**
 (icon + color) with the title, type, key, project, and assignee. Change state
 from the colorized **State** control in the sidebar (or **Status** on projects
-that still use a legacy board). The board (drag cards) and bulk actions also
-move items where available.
+that still use a legacy board). The work-items list and Charts drilldown table
+also show a **State** column (next to **Status**) with the same workflow label.
+The board (drag cards) and bulk actions also move items where available.
 
 Only **allowed transitions** succeed — including moves back (for example
 Testing → In Progress) when the workflow defines them. If the transition

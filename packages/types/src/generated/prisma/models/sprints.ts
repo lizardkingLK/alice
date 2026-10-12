@@ -239,6 +239,7 @@ export type sprintsWhereInput = {
   updated_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   work_items?: Prisma.Work_itemsListRelationFilter
   chart_rollups?: Prisma.Work_item_chart_rollupsListRelationFilter
+  burndown_rollups?: Prisma.Sprint_burndown_rollupsListRelationFilter
 }
 
 export type sprintsOrderByWithRelationInput = {
@@ -259,6 +260,7 @@ export type sprintsOrderByWithRelationInput = {
   updated_by_user?: Prisma.usersOrderByWithRelationInput
   work_items?: Prisma.work_itemsOrderByRelationAggregateInput
   chart_rollups?: Prisma.work_item_chart_rollupsOrderByRelationAggregateInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsOrderByRelationAggregateInput
 }
 
 export type sprintsWhereUniqueInput = Prisma.AtLeast<{
@@ -283,6 +285,7 @@ export type sprintsWhereUniqueInput = Prisma.AtLeast<{
   updated_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   work_items?: Prisma.Work_itemsListRelationFilter
   chart_rollups?: Prisma.Work_item_chart_rollupsListRelationFilter
+  burndown_rollups?: Prisma.Sprint_burndown_rollupsListRelationFilter
 }, "id" | "project_id_name">
 
 export type sprintsOrderByWithAggregationInput = {
@@ -336,6 +339,7 @@ export type sprintsCreateInput = {
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_sprintsInput
   work_items?: Prisma.work_itemsCreateNestedManyWithoutSprintInput
   chart_rollups?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutSprintInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutSprintInput
 }
 
 export type sprintsUncheckedCreateInput = {
@@ -353,6 +357,7 @@ export type sprintsUncheckedCreateInput = {
   updated_at?: Date | string
   work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutSprintInput
   chart_rollups?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutSprintInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutSprintInput
 }
 
 export type sprintsUpdateInput = {
@@ -370,6 +375,7 @@ export type sprintsUpdateInput = {
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_sprintsNestedInput
   work_items?: Prisma.work_itemsUpdateManyWithoutSprintNestedInput
   chart_rollups?: Prisma.work_item_chart_rollupsUpdateManyWithoutSprintNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutSprintNestedInput
 }
 
 export type sprintsUncheckedUpdateInput = {
@@ -387,6 +393,7 @@ export type sprintsUncheckedUpdateInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutSprintNestedInput
   chart_rollups?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutSprintNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutSprintNestedInput
 }
 
 export type sprintsCreateManyInput = {
@@ -492,6 +499,11 @@ export type sprintsMinOrderByAggregateInput = {
 export type SprintsNullableScalarRelationFilter = {
   is?: Prisma.sprintsWhereInput | null
   isNot?: Prisma.sprintsWhereInput | null
+}
+
+export type SprintsScalarRelationFilter = {
+  is?: Prisma.sprintsWhereInput
+  isNot?: Prisma.sprintsWhereInput
 }
 
 export type sprintsCreateNestedManyWithoutCreated_by_userInput = {
@@ -640,6 +652,20 @@ export type sprintsUpdateOneWithoutWork_itemsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.sprintsUpdateToOneWithWhereWithoutWork_itemsInput, Prisma.sprintsUpdateWithoutWork_itemsInput>, Prisma.sprintsUncheckedUpdateWithoutWork_itemsInput>
 }
 
+export type sprintsCreateNestedOneWithoutBurndown_rollupsInput = {
+  create?: Prisma.XOR<Prisma.sprintsCreateWithoutBurndown_rollupsInput, Prisma.sprintsUncheckedCreateWithoutBurndown_rollupsInput>
+  connectOrCreate?: Prisma.sprintsCreateOrConnectWithoutBurndown_rollupsInput
+  connect?: Prisma.sprintsWhereUniqueInput
+}
+
+export type sprintsUpdateOneRequiredWithoutBurndown_rollupsNestedInput = {
+  create?: Prisma.XOR<Prisma.sprintsCreateWithoutBurndown_rollupsInput, Prisma.sprintsUncheckedCreateWithoutBurndown_rollupsInput>
+  connectOrCreate?: Prisma.sprintsCreateOrConnectWithoutBurndown_rollupsInput
+  upsert?: Prisma.sprintsUpsertWithoutBurndown_rollupsInput
+  connect?: Prisma.sprintsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.sprintsUpdateToOneWithWhereWithoutBurndown_rollupsInput, Prisma.sprintsUpdateWithoutBurndown_rollupsInput>, Prisma.sprintsUncheckedUpdateWithoutBurndown_rollupsInput>
+}
+
 export type sprintsCreateNestedOneWithoutChart_rollupsInput = {
   create?: Prisma.XOR<Prisma.sprintsCreateWithoutChart_rollupsInput, Prisma.sprintsUncheckedCreateWithoutChart_rollupsInput>
   connectOrCreate?: Prisma.sprintsCreateOrConnectWithoutChart_rollupsInput
@@ -670,6 +696,7 @@ export type sprintsCreateWithoutCreated_by_userInput = {
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_sprintsInput
   work_items?: Prisma.work_itemsCreateNestedManyWithoutSprintInput
   chart_rollups?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutSprintInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutSprintInput
 }
 
 export type sprintsUncheckedCreateWithoutCreated_by_userInput = {
@@ -686,6 +713,7 @@ export type sprintsUncheckedCreateWithoutCreated_by_userInput = {
   updated_at?: Date | string
   work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutSprintInput
   chart_rollups?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutSprintInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutSprintInput
 }
 
 export type sprintsCreateOrConnectWithoutCreated_by_userInput = {
@@ -712,6 +740,7 @@ export type sprintsCreateWithoutUpdated_by_userInput = {
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_sprintsInput
   work_items?: Prisma.work_itemsCreateNestedManyWithoutSprintInput
   chart_rollups?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutSprintInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutSprintInput
 }
 
 export type sprintsUncheckedCreateWithoutUpdated_by_userInput = {
@@ -728,6 +757,7 @@ export type sprintsUncheckedCreateWithoutUpdated_by_userInput = {
   updated_at?: Date | string
   work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutSprintInput
   chart_rollups?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutSprintInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutSprintInput
 }
 
 export type sprintsCreateOrConnectWithoutUpdated_by_userInput = {
@@ -804,6 +834,7 @@ export type sprintsCreateWithoutProjectInput = {
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_sprintsInput
   work_items?: Prisma.work_itemsCreateNestedManyWithoutSprintInput
   chart_rollups?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutSprintInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutSprintInput
 }
 
 export type sprintsUncheckedCreateWithoutProjectInput = {
@@ -820,6 +851,7 @@ export type sprintsUncheckedCreateWithoutProjectInput = {
   updated_at?: Date | string
   work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutSprintInput
   chart_rollups?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutSprintInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutSprintInput
 }
 
 export type sprintsCreateOrConnectWithoutProjectInput = {
@@ -862,6 +894,7 @@ export type sprintsCreateWithoutWork_itemsInput = {
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_sprintsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_sprintsInput
   chart_rollups?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutSprintInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutSprintInput
 }
 
 export type sprintsUncheckedCreateWithoutWork_itemsInput = {
@@ -878,6 +911,7 @@ export type sprintsUncheckedCreateWithoutWork_itemsInput = {
   updated_by?: string | null
   updated_at?: Date | string
   chart_rollups?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutSprintInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutSprintInput
 }
 
 export type sprintsCreateOrConnectWithoutWork_itemsInput = {
@@ -910,6 +944,7 @@ export type sprintsUpdateWithoutWork_itemsInput = {
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_sprintsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_sprintsNestedInput
   chart_rollups?: Prisma.work_item_chart_rollupsUpdateManyWithoutSprintNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutSprintNestedInput
 }
 
 export type sprintsUncheckedUpdateWithoutWork_itemsInput = {
@@ -925,6 +960,91 @@ export type sprintsUncheckedUpdateWithoutWork_itemsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  chart_rollups?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutSprintNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutSprintNestedInput
+}
+
+export type sprintsCreateWithoutBurndown_rollupsInput = {
+  id?: string
+  name: string
+  goal?: string | null
+  start_date: Date | string
+  end_date: Date | string
+  status?: $Enums.SprintStatus
+  summary_report?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  created_at?: Date | string
+  updated_at?: Date | string
+  project: Prisma.projectsCreateNestedOneWithoutSprintsInput
+  created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_sprintsInput
+  updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_sprintsInput
+  work_items?: Prisma.work_itemsCreateNestedManyWithoutSprintInput
+  chart_rollups?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutSprintInput
+}
+
+export type sprintsUncheckedCreateWithoutBurndown_rollupsInput = {
+  id?: string
+  project_id: string
+  name: string
+  goal?: string | null
+  start_date: Date | string
+  end_date: Date | string
+  status?: $Enums.SprintStatus
+  summary_report?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutSprintInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutSprintInput
+}
+
+export type sprintsCreateOrConnectWithoutBurndown_rollupsInput = {
+  where: Prisma.sprintsWhereUniqueInput
+  create: Prisma.XOR<Prisma.sprintsCreateWithoutBurndown_rollupsInput, Prisma.sprintsUncheckedCreateWithoutBurndown_rollupsInput>
+}
+
+export type sprintsUpsertWithoutBurndown_rollupsInput = {
+  update: Prisma.XOR<Prisma.sprintsUpdateWithoutBurndown_rollupsInput, Prisma.sprintsUncheckedUpdateWithoutBurndown_rollupsInput>
+  create: Prisma.XOR<Prisma.sprintsCreateWithoutBurndown_rollupsInput, Prisma.sprintsUncheckedCreateWithoutBurndown_rollupsInput>
+  where?: Prisma.sprintsWhereInput
+}
+
+export type sprintsUpdateToOneWithWhereWithoutBurndown_rollupsInput = {
+  where?: Prisma.sprintsWhereInput
+  data: Prisma.XOR<Prisma.sprintsUpdateWithoutBurndown_rollupsInput, Prisma.sprintsUncheckedUpdateWithoutBurndown_rollupsInput>
+}
+
+export type sprintsUpdateWithoutBurndown_rollupsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  goal?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  start_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  end_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.EnumSprintStatusFieldUpdateOperationsInput | $Enums.SprintStatus
+  summary_report?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  project?: Prisma.projectsUpdateOneRequiredWithoutSprintsNestedInput
+  created_by_user?: Prisma.usersUpdateOneWithoutCreated_sprintsNestedInput
+  updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_sprintsNestedInput
+  work_items?: Prisma.work_itemsUpdateManyWithoutSprintNestedInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUpdateManyWithoutSprintNestedInput
+}
+
+export type sprintsUncheckedUpdateWithoutBurndown_rollupsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  goal?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  start_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  end_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.EnumSprintStatusFieldUpdateOperationsInput | $Enums.SprintStatus
+  summary_report?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutSprintNestedInput
   chart_rollups?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutSprintNestedInput
 }
 
@@ -942,6 +1062,7 @@ export type sprintsCreateWithoutChart_rollupsInput = {
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_sprintsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_sprintsInput
   work_items?: Prisma.work_itemsCreateNestedManyWithoutSprintInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutSprintInput
 }
 
 export type sprintsUncheckedCreateWithoutChart_rollupsInput = {
@@ -958,6 +1079,7 @@ export type sprintsUncheckedCreateWithoutChart_rollupsInput = {
   updated_by?: string | null
   updated_at?: Date | string
   work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutSprintInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutSprintInput
 }
 
 export type sprintsCreateOrConnectWithoutChart_rollupsInput = {
@@ -990,6 +1112,7 @@ export type sprintsUpdateWithoutChart_rollupsInput = {
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_sprintsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_sprintsNestedInput
   work_items?: Prisma.work_itemsUpdateManyWithoutSprintNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutSprintNestedInput
 }
 
 export type sprintsUncheckedUpdateWithoutChart_rollupsInput = {
@@ -1006,6 +1129,7 @@ export type sprintsUncheckedUpdateWithoutChart_rollupsInput = {
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutSprintNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutSprintNestedInput
 }
 
 export type sprintsCreateManyCreated_by_userInput = {
@@ -1050,6 +1174,7 @@ export type sprintsUpdateWithoutCreated_by_userInput = {
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_sprintsNestedInput
   work_items?: Prisma.work_itemsUpdateManyWithoutSprintNestedInput
   chart_rollups?: Prisma.work_item_chart_rollupsUpdateManyWithoutSprintNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutSprintNestedInput
 }
 
 export type sprintsUncheckedUpdateWithoutCreated_by_userInput = {
@@ -1066,6 +1191,7 @@ export type sprintsUncheckedUpdateWithoutCreated_by_userInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutSprintNestedInput
   chart_rollups?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutSprintNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutSprintNestedInput
 }
 
 export type sprintsUncheckedUpdateManyWithoutCreated_by_userInput = {
@@ -1096,6 +1222,7 @@ export type sprintsUpdateWithoutUpdated_by_userInput = {
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_sprintsNestedInput
   work_items?: Prisma.work_itemsUpdateManyWithoutSprintNestedInput
   chart_rollups?: Prisma.work_item_chart_rollupsUpdateManyWithoutSprintNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutSprintNestedInput
 }
 
 export type sprintsUncheckedUpdateWithoutUpdated_by_userInput = {
@@ -1112,6 +1239,7 @@ export type sprintsUncheckedUpdateWithoutUpdated_by_userInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutSprintNestedInput
   chart_rollups?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutSprintNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutSprintNestedInput
 }
 
 export type sprintsUncheckedUpdateManyWithoutUpdated_by_userInput = {
@@ -1156,6 +1284,7 @@ export type sprintsUpdateWithoutProjectInput = {
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_sprintsNestedInput
   work_items?: Prisma.work_itemsUpdateManyWithoutSprintNestedInput
   chart_rollups?: Prisma.work_item_chart_rollupsUpdateManyWithoutSprintNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutSprintNestedInput
 }
 
 export type sprintsUncheckedUpdateWithoutProjectInput = {
@@ -1172,6 +1301,7 @@ export type sprintsUncheckedUpdateWithoutProjectInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutSprintNestedInput
   chart_rollups?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutSprintNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutSprintNestedInput
 }
 
 export type sprintsUncheckedUpdateManyWithoutProjectInput = {
@@ -1196,11 +1326,13 @@ export type sprintsUncheckedUpdateManyWithoutProjectInput = {
 export type SprintsCountOutputType = {
   work_items: number
   chart_rollups: number
+  burndown_rollups: number
 }
 
 export type SprintsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   work_items?: boolean | SprintsCountOutputTypeCountWork_itemsArgs
   chart_rollups?: boolean | SprintsCountOutputTypeCountChart_rollupsArgs
+  burndown_rollups?: boolean | SprintsCountOutputTypeCountBurndown_rollupsArgs
 }
 
 /**
@@ -1227,6 +1359,13 @@ export type SprintsCountOutputTypeCountChart_rollupsArgs<ExtArgs extends runtime
   where?: Prisma.work_item_chart_rollupsWhereInput
 }
 
+/**
+ * SprintsCountOutputType without action
+ */
+export type SprintsCountOutputTypeCountBurndown_rollupsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.sprint_burndown_rollupsWhereInput
+}
+
 
 export type sprintsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1246,6 +1385,7 @@ export type sprintsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   updated_by_user?: boolean | Prisma.sprints$updated_by_userArgs<ExtArgs>
   work_items?: boolean | Prisma.sprints$work_itemsArgs<ExtArgs>
   chart_rollups?: boolean | Prisma.sprints$chart_rollupsArgs<ExtArgs>
+  burndown_rollups?: boolean | Prisma.sprints$burndown_rollupsArgs<ExtArgs>
   _count?: boolean | Prisma.SprintsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["sprints"]>
 
@@ -1307,6 +1447,7 @@ export type sprintsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs
   updated_by_user?: boolean | Prisma.sprints$updated_by_userArgs<ExtArgs>
   work_items?: boolean | Prisma.sprints$work_itemsArgs<ExtArgs>
   chart_rollups?: boolean | Prisma.sprints$chart_rollupsArgs<ExtArgs>
+  burndown_rollups?: boolean | Prisma.sprints$burndown_rollupsArgs<ExtArgs>
   _count?: boolean | Prisma.SprintsCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type sprintsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1328,6 +1469,7 @@ export type $sprintsPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     updated_by_user: Prisma.$usersPayload<ExtArgs> | null
     work_items: Prisma.$work_itemsPayload<ExtArgs>[]
     chart_rollups: Prisma.$work_item_chart_rollupsPayload<ExtArgs>[]
+    burndown_rollups: Prisma.$sprint_burndown_rollupsPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1741,6 +1883,7 @@ export interface Prisma__sprintsClient<T, Null = never, ExtArgs extends runtime.
   updated_by_user<T extends Prisma.sprints$updated_by_userArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.sprints$updated_by_userArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   work_items<T extends Prisma.sprints$work_itemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.sprints$work_itemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$work_itemsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   chart_rollups<T extends Prisma.sprints$chart_rollupsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.sprints$chart_rollupsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$work_item_chart_rollupsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  burndown_rollups<T extends Prisma.sprints$burndown_rollupsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.sprints$burndown_rollupsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$sprint_burndown_rollupsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2266,6 +2409,30 @@ export type sprints$chart_rollupsArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.Work_item_chart_rollupsScalarFieldEnum | Prisma.Work_item_chart_rollupsScalarFieldEnum[]
+}
+
+/**
+ * sprints.burndown_rollups
+ */
+export type sprints$burndown_rollupsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the sprint_burndown_rollups
+   */
+  select?: Prisma.sprint_burndown_rollupsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the sprint_burndown_rollups
+   */
+  omit?: Prisma.sprint_burndown_rollupsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.sprint_burndown_rollupsInclude<ExtArgs> | null
+  where?: Prisma.sprint_burndown_rollupsWhereInput
+  orderBy?: Prisma.sprint_burndown_rollupsOrderByWithRelationInput | Prisma.sprint_burndown_rollupsOrderByWithRelationInput[]
+  cursor?: Prisma.sprint_burndown_rollupsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Sprint_burndown_rollupsScalarFieldEnum | Prisma.Sprint_burndown_rollupsScalarFieldEnum[]
 }
 
 /**

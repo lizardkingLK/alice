@@ -501,6 +501,7 @@ export function ChartsWidgetConfigDialog({
       )}
       emptyMessage={open ? (analytics.drilldownError ?? NO_MATCH_MESSAGE) : ''}
       visibleColumns={visibleTableColumns}
+      projects={accessibleProjects}
       onEditWorkItem={openEditWorkItem}
     />
   );

@@ -97,8 +97,16 @@ On `/charts/[id]`:
 
 1. On a board, select the **+** button.
 2. Choose **Add widget** for the catalog on the **current** workspace.
-3. Under Add widget, pick **Chart** (other types show **Coming soon**), or
-   **More widgets** to browse the full catalog.
+3. Under Add widget, pick **Chart**, **Data over time** (sprint burndown), or
+   **More widgets** to browse the full catalog (Delivery → **Burndown** is the
+   same burndown widget). Other types still show **Coming soon**.
+
+### Burndown widget
+
+**Data over time** and **Burndown** show remaining work versus the ideal line
+for a sprint (same math as Overview). The header shows **Project · Sprint**.
+Use the filter control to pick project and sprint (board defaults seed new
+widgets when set).
 
 ---
 
@@ -161,11 +169,12 @@ Pick another layout to clear the slice focus.
    changing **Labels → Columns** resets colors to the defaults. Use
    **Reset colors** to clear custom swatches without changing Labels.
 6. Under **Choose which columns to show**, pick which drilldown table columns
-   appear. **Task**, **Owner**, **Status**, **Type**, **Priority**, and
-   **Actions** are on by default; **Project** and **Sprint** are available but
-   off until you enable them. **Actions** → **Open** goes to the work item
-   page; **Edit** opens the same edit dialog used elsewhere. Saving an edit
-   refreshes the chart and table from live data.
+   appear. **Task**, **Owner**, **Status**, **State**, **Type**, **Priority**,
+   and **Actions** are on by default; **Project** and **Sprint** are available
+   but off until you enable them. **State** shows the project workflow state
+   name (or legacy status when the project has no workflow). **Actions** →
+   **Open** goes to the work item page; **Edit** opens the same edit dialog
+   used elsewhere. Saving an edit refreshes the chart and table from live data.
 7. **Groups** is **Coming soon** (empty status groups are already hidden in the
    table).
 

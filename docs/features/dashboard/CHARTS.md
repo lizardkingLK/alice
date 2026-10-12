@@ -78,14 +78,14 @@ No Boards section (use project filters).
 
 ### Widget settings sidebar
 
-| Section                      | Status today                                     | Notes                                                               |
-| ---------------------------- | ------------------------------------------------ | ------------------------------------------------------------------- |
-| Chart type                   | Pie / Donut / **Bar** live; others Coming soon   | Stacked/grouped bar deferred                                        |
-| Labels                       | Live API-backed columns                          | Group / Name / Due date hidden until rollup supports them           |
-| Values                       | Count items only                                 | Sum / Average / … deferred                                          |
-| Customize                    | % vs count, sort, empty slices, **slice colors** | Theme swatches (`chart-1`…`8`); reset on Labels change              |
-| Groups                       | Coming soon (deferred)                           | Table already hides empty status groups                             |
-| Choose which columns to show | Drilldown column visibility                      | Default: Task/Owner/Status/Type/Priority; Project + Sprint optional |
+| Section                      | Status today                                     | Notes                                                                     |
+| ---------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------- |
+| Chart type                   | Pie / Donut / **Bar** live; others Coming soon   | Stacked/grouped bar deferred                                              |
+| Labels                       | Live API-backed columns                          | Group / Name / Due date hidden until rollup supports them                 |
+| Values                       | Count items only                                 | Sum / Average / … deferred                                                |
+| Customize                    | % vs count, sort, empty slices, **slice colors** | Theme swatches (`chart-1`…`8`); reset on Labels change                    |
+| Groups                       | Coming soon (deferred)                           | Table already hides empty status groups                                   |
+| Choose which columns to show | Drilldown column visibility                      | Default: Task/Owner/Status/State/Type/Priority; Project + Sprint optional |
 
 Clicking a Labels slice on the board or in fullscreen opens Split and scopes
 the table (`focusedSliceKey`). Changing Labels clears the slice focus.
@@ -166,20 +166,24 @@ Saving defaults seeds **project** (and **sprint** when set) onto newly inserted
 Chart widgets.
 
 **Drilldown table:** Widget settings → **Choose which columns to show** includes
-an **Actions** column (on by default). Row **⋯** offers **Open** (`/work-items/[id]`)
-and **Edit** (preferred `WorkItemFormDialog`). After a successful edit, the client
-clears the in-memory series/drilldown caches (`invalidateChartAnalyticsCaches`)
-and calls `router.refresh()` so pie + table refetch without a full page reload.
+**State** and **Actions** (both on by default). **State** resolves the workflow
+state label from the work item’s `state` JSON + project `workflow_config`
+(legacy Status label when no workflow). Row **⋯** offers **Open**
+(`/work-items/[id]`) and **Edit** (preferred `WorkItemFormDialog`). After a
+successful edit, the client clears the in-memory series/drilldown caches
+(`invalidateChartAnalyticsCaches`) and calls `router.refresh()` so pie + table
+refetch without a full page reload.
 
-### Burndown widget (next)
+### Burndown widget (living)
 
 Catalog **Data over time** and Delivery **Burndown** both mean sprint burndown
-(alias → one renderer). Series come from a dedicated
-`sprint_burndown_rollups` table (not the categorical rollup), with the same
-semantics as dashboard `computeBurndown`. Widget shows **Project** and
-**Sprint** labels at the top-right for immediate context.
+(alias → one renderer). Series from `GET /api/sprints/:id/burndown`, which
+prefers `sprint_burndown_rollups` (trigger-maintained) and falls back to live
+`computeBurndown`. Widget shows **Project · Sprint** labels top-right and
+reuses board filter drafts for project/sprint. Shared UI:
+`BurndownLineChart` / `BurndownScopeLabels`.
 
-Implementation checklist:
+Checklist:
 [Charts Burndown widget](./CHARTS_AGGREGATION.md#charts-burndown-widget-next-implementation).
 
 Tier 2/3 (Neon read model, apps rename): [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md).
