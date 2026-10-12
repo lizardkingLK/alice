@@ -13,6 +13,7 @@ import {
 } from '@repo/ui/components/ui/dialog';
 import { DropdownMenuItem } from '@repo/ui/components/ui/dropdown-menu';
 import { Input } from '@repo/ui/components/ui/input';
+import { Label } from '@repo/ui/components/ui/label';
 import {
   Tooltip,
   TooltipContent,
@@ -22,6 +23,7 @@ import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import {
   Filter,
   GripVertical,
+  Info,
   Maximize2,
   MoreHorizontal,
 } from '@repo/ui/lib/icons';
@@ -29,6 +31,11 @@ import { cn } from '@repo/ui/lib/utils';
 import type { ChartSeriesLabelField } from '@repo/types';
 import { DIALOG_CLOSE_ANIMATION_MS } from '@/lib/dialog-close';
 import type { ChartWidgetDefinition } from '@/app/charts/_components/charts-widget-catalog';
+import {
+  ChartsDescriptionField,
+  useChartsAliceDescriptionSuggest,
+} from '@/app/charts/_components/charts-description-field';
+import { resolveChartsDescription } from '@/app/charts/_helpers/charts-description';
 import type {
   ChartPieVariant,
   ChartsLabelFieldId,
@@ -177,7 +184,10 @@ function useChartsWidgetCardConfig(params: {
 type ChartsWidgetCardProps = {
   readonly title: string;
   readonly typeId: ChartWidgetTypeId;
+  /** Persisted instance description (Save option / title tooltip). */
   readonly description?: string;
+  /** Catalog blurb for empty / coming-soon widget bodies. */
+  readonly catalogDescription?: string;
   readonly Icon?: ChartWidgetDefinition['icon'];
   readonly filters?: ChartsWidgetFilterDraft;
   /** Fullscreen-only layout; canvas always shows the chart. */
@@ -196,8 +206,10 @@ type ChartsWidgetCardProps = {
   readonly assigneeMembers?: readonly ChartsSampleMember[];
   readonly onRemove: () => void;
   readonly onDuplicate: () => void;
-  // eslint-disable-next-line no-unused-vars -- rename callback
-  readonly onRename: (title: string) => void;
+  readonly onRename: (
+    // eslint-disable-next-line no-unused-vars -- save option callback
+    meta: { readonly title: string; readonly description: string | null }
+  ) => void;
   readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
   readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
   readonly onPieVariantChange?: ChartsWidgetPieVariantChangeHandler;
@@ -423,6 +435,7 @@ export function ChartsWidgetCard({
   title,
   typeId,
   description,
+  catalogDescription,
   Icon,
   filters,
   viewMode,
@@ -456,6 +469,23 @@ export function ChartsWidgetCard({
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [burndownFiltersOpen, setBurndownFiltersOpen] = useState(false);
   const [renameDraft, setRenameDraft] = useState(title);
+  const [descriptionDraft, setDescriptionDraft] = useState(description ?? '');
+  const aliceContext = {
+    typeId,
+    labelField,
+    pieVariant: pieVariant ?? null,
+    filters: filters ?? null,
+    showValueAs,
+    sortSlicesBy,
+  };
+  const { suggesting, suggestError, suggest, resetSuggestError } =
+    useChartsAliceDescriptionSuggest({
+      scope: 'widget',
+      title: renameDraft,
+      description: descriptionDraft,
+      onDescriptionChange: setDescriptionDraft,
+      context: aliceContext,
+    });
   const {
     configOpen,
     configFiltersOpen,
@@ -506,13 +536,22 @@ export function ChartsWidgetCard({
 
   const openRename = () => {
     setRenameDraft(title);
+    setDescriptionDraft(description ?? '');
+    resetSuggestError();
     setRenameOpen(true);
   };
 
   const commitRename = () => {
-    const next = renameDraft.trim();
-    if (next && next !== title) {
-      onRename(next);
+    const nextTitle = renameDraft.trim();
+    if (!nextTitle) {
+      return;
+    }
+    const nextDescription = descriptionDraft.trim() || null;
+    const titleChanged = nextTitle !== title;
+    const descriptionChanged =
+      nextDescription !== (description?.trim() || null);
+    if (titleChanged || descriptionChanged) {
+      onRename({ title: nextTitle, description: nextDescription });
     }
     setRenameOpen(false);
   };
@@ -536,7 +575,7 @@ export function ChartsWidgetCard({
       isChart={isChart}
       isBurndown={isBurndown}
       Icon={Icon}
-      description={description}
+      description={catalogDescription}
       seriesLabelField={seriesLabelField}
       analytics={analytics}
       burndown={burndown}
@@ -576,9 +615,29 @@ export function ChartsWidgetCard({
             <TooltipContent side="bottom">Hold to drag</TooltipContent>
           </Tooltip>
 
-          <TruncatedText className="min-w-0 flex-1 px-1 text-sm font-semibold tracking-tight">
-            {displayTitle}
-          </TruncatedText>
+          <div className="flex min-w-0 flex-1 items-center gap-1 px-1">
+            <TruncatedText className="min-w-0 text-sm font-semibold tracking-tight">
+              {displayTitle}
+            </TruncatedText>
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground inline-flex shrink-0 cursor-pointer"
+                  aria-label={`${displayTitle} description`}
+                >
+                  <Info className="size-3.5" aria-hidden />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-left">
+                {resolveChartsDescription({
+                  description,
+                  title: displayTitle,
+                  typeId,
+                })}
+              </TooltipContent>
+            </Tooltip>
+          </div>
 
           {isBurndown ? (
             <BurndownScopeLabels
@@ -648,31 +707,57 @@ export function ChartsWidgetCard({
         </CardContent>
       </Card>
 
-      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+      <Dialog
+        open={renameOpen}
+        onOpenChange={(open) => {
+          if (suggesting) {
+            return;
+          }
+          setRenameOpen(open);
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Rename widget</DialogTitle>
+            <DialogTitle>Save option</DialogTitle>
             <DialogDescription>
-              Choose a label for this widget instance on the board.
+              Update the name and description for this widget on the board.
             </DialogDescription>
           </DialogHeader>
-          <Input
-            value={renameDraft}
-            onChange={(event) => setRenameDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                commitRename();
-              }
-            }}
-            aria-label="Widget name"
-            autoFocus
-          />
+          <div className="flex flex-col gap-4 py-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="chart-widget-title">Name</Label>
+              <Input
+                id="chart-widget-title"
+                value={renameDraft}
+                onChange={(event) => setRenameDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    commitRename();
+                  }
+                }}
+                aria-label="Widget name"
+                autoFocus
+                disabled={suggesting}
+              />
+            </div>
+            <ChartsDescriptionField
+              id="chart-widget-description"
+              value={descriptionDraft}
+              onChange={setDescriptionDraft}
+              title={renameDraft}
+              suggesting={suggesting}
+              suggestError={suggestError}
+              onSuggest={() => void suggest()}
+              placeholder="What this widget shows…"
+            />
+          </div>
           <DialogFooter className="gap-2">
             <Button
               type="button"
               variant="outline"
               className="cursor-pointer"
+              disabled={suggesting}
               onClick={() => setRenameOpen(false)}
             >
               Cancel
@@ -681,7 +766,7 @@ export function ChartsWidgetCard({
               type="button"
               className="cursor-pointer"
               onClick={commitRename}
-              disabled={!renameDraft.trim()}
+              disabled={!renameDraft.trim() || suggesting}
             >
               Save
             </Button>
@@ -725,11 +810,15 @@ export function ChartsWidgetCard({
           open={fullscreenOpen}
           onOpenChange={setFullscreenOpen}
           title={displayTitle}
-          description={
-            isBurndown
-              ? 'Sprint remaining work versus the ideal line'
-              : (description ?? 'Widget preview')
-          }
+          description={resolveChartsDescription({
+            description:
+              description ??
+              (isBurndown
+                ? 'Sprint remaining work versus the ideal line'
+                : catalogDescription),
+            title: displayTitle,
+            typeId,
+          })}
           sizeClassName="h-[min(90vh,800px)] w-[min(96vw,1100px)]"
         >
           {body}

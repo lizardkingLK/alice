@@ -55,6 +55,7 @@ export async function syncChartWorkspaceToApi(
 /** Create a new owned chart workspace on the server. */
 export async function createChartWorkspaceOnApi(params: {
   readonly title: string;
+  readonly description?: string | null;
   readonly isOverview?: boolean;
   readonly viewerId: string;
 }): Promise<ChartWorkspaceRecord> {
@@ -62,6 +63,7 @@ export async function createChartWorkspaceOnApi(params: {
     method: 'POST',
     body: JSON.stringify({
       title: params.title,
+      description: params.description ?? null,
       is_overview: params.isOverview ?? false,
       board_json: { instances: [], layout: [] },
     }),

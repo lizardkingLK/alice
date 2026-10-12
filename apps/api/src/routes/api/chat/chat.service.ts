@@ -32,6 +32,7 @@ import { resolveChatProvider } from '../integrations/chat-providers/resolve-chat
 import {
   systemInstruction,
   aliceChatTools,
+  chartDescriptionSystemPrompt,
   dynamicFieldsSystemPrompt,
 } from './chat.route.data';
 import type { ChatRepository } from './chat.repository';
@@ -223,6 +224,20 @@ function extractJsonFromText(text: string): unknown {
     );
   }
   return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
+}
+
+/** Strip leading/trailing quote characters without backtracking regex. */
+function stripWrappingQuotes(value: string): string {
+  const quotes = new Set(['"', "'", '`']);
+  let start = 0;
+  let end = value.length;
+  while (start < end && quotes.has(value[start] ?? '')) {
+    start += 1;
+  }
+  while (end > start && quotes.has(value[end - 1] ?? '')) {
+    end -= 1;
+  }
+  return value.slice(start, end);
 }
 
 function buildSchemaFromRawFields(rawFields: unknown[]): {
@@ -2096,6 +2111,51 @@ ${this.buildViewContextInstruction(viewContext)}
       success: true,
       schema,
     };
+  }
+
+  async generateChartDescription(params: {
+    readonly scope: 'widget' | 'workspace';
+    readonly title: string;
+    readonly currentDescription?: string | null;
+    readonly context?: unknown;
+  }): Promise<string> {
+    const chatModel = await this.resolveChatModelForChat({});
+    const contextJson =
+      params.context === undefined
+        ? ''
+        : `\nContext JSON:\n${JSON.stringify(params.context, null, 2)}`;
+    const current = params.currentDescription?.trim()
+      ? `\nCurrent description (improve or replace):\n${params.currentDescription.trim()}`
+      : '';
+    const userMessage = `Scope: ${params.scope}\nTitle: ${params.title}${current}${contextJson}`;
+
+    const contents: ChatContentTurn[] = [
+      {
+        role: ChatTurnRoleEnum.USER,
+        parts: [{ text: userMessage }],
+      },
+    ];
+
+    const response = await this.callChatModelAPI(
+      chatModel,
+      contents,
+      chartDescriptionSystemPrompt
+    );
+
+    const parts = response.candidates?.[0]?.content?.parts ?? [];
+    let text = '';
+    for (const part of parts) {
+      if (part.text) {
+        text += part.text;
+      }
+    }
+    const cleaned = stripWrappingQuotes(text.trim())
+      .replace(/\s+/g, ' ')
+      .slice(0, 280);
+    if (!cleaned) {
+      throw new Error('Alice returned an empty description');
+    }
+    return cleaned;
   }
 
   async generateProjectFieldsSchema(

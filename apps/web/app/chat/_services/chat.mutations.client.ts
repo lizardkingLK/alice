@@ -131,3 +131,22 @@ export async function generateFieldsSchemaWithAlice(
     timeoutMs: CHAT_FETCH_TIMEOUT_MS,
   });
 }
+
+export async function generateChartDescriptionWithAlice(params: {
+  readonly scope: 'widget' | 'workspace';
+  readonly title: string;
+  readonly currentDescription?: string | null;
+  readonly context?: unknown;
+}): Promise<{ description: string }> {
+  return apiFetch<{ description: string }>(
+    `${chatPath}/generate-chart-description`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+      timeoutMs: CHAT_FETCH_TIMEOUT_MS,
+    }
+  );
+}

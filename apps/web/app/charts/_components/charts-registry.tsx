@@ -44,7 +44,10 @@ import { SearchInput } from '@/components/search-input';
 import { formatDate, formatDateTime } from '@/app/_shared/utility';
 import { afterDialogClose } from '@/lib/dialog-close';
 import { isSessionExpiredError } from '@/lib/errors/session-expired';
-import { ChartsSaveWorkspaceDialog } from '@/app/charts/_components/charts-save-workspace-dialog';
+import {
+  ChartsSaveWorkspaceDialog,
+  type ChartsSaveWorkspacePayload,
+} from '@/app/charts/_components/charts-save-workspace-dialog';
 import { ChartsWorkspaceEmptyPanel } from '@/app/charts/_components/charts-workspace-empty-panel';
 import type { ChartWorkspaceRecord } from '@/app/charts/_components/charts.types';
 import { chartsWorkspaceHref } from '@/app/charts/_helpers/charts-links';
@@ -422,11 +425,12 @@ export function ChartsRegistry({
   );
 
   const handleCreate = useCallback(
-    async (payload: { title: string; isOverview: boolean }) => {
+    async (payload: ChartsSaveWorkspacePayload) => {
       setError(null);
       try {
         const created = await createChartWorkspaceOnApi({
           title: payload.title,
+          description: payload.description,
           isOverview: payload.isOverview,
           viewerId: currentUserId,
         });
@@ -543,7 +547,7 @@ function ChartsRegistryLoadedView(props: {
   readonly createDefaultTitle: string;
   readonly onCreate: (
     // eslint-disable-next-line no-unused-vars -- create payload
-    payload: { title: string; isOverview: boolean }
+    payload: ChartsSaveWorkspacePayload
   ) => Promise<void>;
   readonly deleteTarget: DeleteTarget | null;
   readonly deletePending: boolean;

@@ -62,7 +62,7 @@ export function ChartsWorkspaceActionsMenu({
             }}
           >
             <Pencil className="size-4" />
-            Rename / Save
+            Save option
           </DropdownMenuItem>
         ) : null}
         {isMine && isActive ? (

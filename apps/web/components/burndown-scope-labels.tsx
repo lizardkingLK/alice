@@ -28,11 +28,10 @@ export function BurndownScopeLabels({
     .join(': ');
 
   return (
-    <div
-      role="group"
+    <fieldset
       aria-label={ariaLabel}
       className={cn(
-        'flex max-w-[min(100%,16rem)] min-w-0 items-center justify-end gap-1.5',
+        'm-0 flex max-w-[min(100%,16rem)] min-w-0 items-center justify-end gap-1.5 border-0 p-0',
         className
       )}
     >
@@ -51,6 +50,6 @@ export function BurndownScopeLabels({
           {sprint}
         </TruncatedText>
       ) : null}
-    </div>
+    </fieldset>
   );
 }

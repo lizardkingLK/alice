@@ -65,7 +65,7 @@ export function ChartsWidgetActionsMenu({
         </DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer gap-2" onSelect={onRename}>
           <Pencil className="size-4" />
-          Rename
+          Save option
         </DropdownMenuItem>
         <DropdownMenuItem
           className="cursor-pointer gap-2"

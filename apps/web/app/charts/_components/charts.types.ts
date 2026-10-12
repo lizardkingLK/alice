@@ -81,6 +81,11 @@ export type ChartBoardWidgetInstance = {
   readonly typeId: ChartWidgetTypeId;
   /** User-renamed label; falls back to catalog title when unset. */
   readonly title?: string;
+  /**
+   * Optional blurb for the title tooltip / Save option dialog.
+   * When unset, UI falls back to the default display title.
+   */
+  readonly description?: string;
   /** Applied Advanced/Quick filters for chart widgets (local board JSON). */
   readonly filters?: ChartsWidgetFilterDraft;
   /** Chart / Table / Split — fullscreen preview only; canvas always shows the pie. */

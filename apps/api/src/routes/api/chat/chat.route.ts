@@ -598,6 +598,39 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
   );
 
   chatRouter.post(
+    '/generate-chart-description',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { scope, title, currentDescription, context } = req.body || {};
+        if (scope !== 'widget' && scope !== 'workspace') {
+          return res
+            .status(400)
+            .json({ error: 'scope must be widget or workspace' });
+        }
+        if (!title || typeof title !== 'string') {
+          return res.status(400).json({ error: 'title is required' });
+        }
+        const description = await chatService.generateChartDescription({
+          scope,
+          title,
+          currentDescription:
+            typeof currentDescription === 'string' ? currentDescription : null,
+          context,
+        });
+        return res.json({ description });
+      } catch (error: unknown) {
+        sendChatError(
+          res,
+          error,
+          'Failed to generate chart description',
+          'error. generate-chart-description failed'
+        );
+      }
+    }
+  );
+
+  chatRouter.post(
     '/workflow-patch/apply',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {

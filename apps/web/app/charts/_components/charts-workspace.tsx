@@ -12,7 +12,12 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { Button } from '@repo/ui/components/ui/button';
-import { BarChart3, Layers } from '@repo/ui/lib/icons';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@repo/ui/components/ui/tooltip';
+import { BarChart3, Info, Layers, Loader2 } from '@repo/ui/lib/icons';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
@@ -23,18 +28,22 @@ import {
   duplicateChartWidget,
   reconcileChartBoardLayout,
   removeChartWidget,
-  renameChartWidget,
+  saveChartWidgetMeta,
   updateChartWidgetFilters,
   updateChartWidgetLabelField,
   updateChartWidgetPieVariant,
   updateChartWidgetViewMode,
   updateChartWidgetDisplaySettings,
 } from '@/app/charts/_components/charts-board-canvas';
-import { ChartsSaveWorkspaceDialog } from '@/app/charts/_components/charts-save-workspace-dialog';
+import {
+  ChartsSaveWorkspaceDialog,
+  type ChartsSaveWorkspacePayload,
+} from '@/app/charts/_components/charts-save-workspace-dialog';
 import { ChartsWorkspaceActionsMenu } from '@/app/charts/_components/charts-workspace-actions-menu';
 import { ChartsWorkspaceFilterDialog } from '@/app/charts/_components/charts-workspace-filter-dialog';
 import { isChartWidgetAvailable } from '@/app/charts/_components/charts-widget-catalog';
 import { isBurndownWidgetType } from '@/app/charts/_helpers/charts-burndown-widget';
+import { resolveChartsDescription } from '@/app/charts/_helpers/charts-description';
 import type {
   ChartBoardWidgetInstance,
   ChartPieVariant,
@@ -118,7 +127,18 @@ export function ChartsWorkspace({
   const [deleteKind, setDeleteKind] = useState<'owned' | 'share' | null>(null);
   const [deletePending, setDeletePending] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [savingCount, setSavingCount] = useState(0);
   const deleteInFlightRef = useRef(false);
+  const isSaving = savingCount > 0;
+
+  const runWorkspaceSync = useCallback(async (next: ChartWorkspaceRecord) => {
+    setSavingCount((count) => count + 1);
+    try {
+      await syncChartWorkspaceToApi(next);
+    } finally {
+      setSavingCount((count) => Math.max(0, count - 1));
+    }
+  }, []);
 
   const { savedPreference, insertPreference, saveDefaults } =
     useChartsWorkspaceDefaults({
@@ -153,9 +173,9 @@ export function ChartsWorkspace({
         layout: reconciledLayout,
       };
       setWorkspace(repaired);
-      syncChartWorkspaceToApi(repaired).catch(() => {});
+      runWorkspaceSync(repaired).catch(() => {});
     }
-  }, [initialWorkspace]);
+  }, [initialWorkspace, runWorkspaceSync]);
 
   const persistBoard = useCallback(
     (nextInstances: ChartBoardWidgetInstance[], nextLayout: LayoutItem[]) => {
@@ -169,11 +189,11 @@ export function ChartsWorkspace({
           layout: nextLayout,
           updatedAt: new Date().toISOString(),
         };
-        syncChartWorkspaceToApi(updated).catch(() => {});
+        runWorkspaceSync(updated).catch(() => {});
         return updated;
       });
     },
-    []
+    [runWorkspaceSync]
   );
 
   const commitBoard = useCallback(
@@ -224,11 +244,12 @@ export function ChartsWorkspace({
   }, []);
 
   const handleCreateWorkspace = useCallback(
-    async (payload: { title: string; isOverview: boolean }) => {
+    async (payload: ChartsSaveWorkspacePayload) => {
       setActionError(null);
       try {
         const created = await createChartWorkspaceOnApi({
           title: payload.title,
+          description: payload.description,
           isOverview: payload.isOverview,
           viewerId: currentUserId,
         });
@@ -247,7 +268,7 @@ export function ChartsWorkspace({
   );
 
   const handleSaveWorkspace = useCallback(
-    (payload: { title: string; isOverview: boolean }) => {
+    (payload: ChartsSaveWorkspacePayload) => {
       setWorkspace((previous) => {
         if (!previous) {
           return previous;
@@ -255,14 +276,15 @@ export function ChartsWorkspace({
         const updated: ChartWorkspaceRecord = {
           ...previous,
           title: payload.title.trim() || previous.title,
+          description: payload.description,
           isOverview: payload.isOverview,
           updatedAt: new Date().toISOString(),
         };
-        syncChartWorkspaceToApi(updated).catch(() => {});
+        runWorkspaceSync(updated).catch(() => {});
         return updated;
       });
     },
-    []
+    [runWorkspaceSync]
   );
 
   const handleArchiveWorkspace = useCallback(async () => {
@@ -364,9 +386,12 @@ export function ChartsWorkspace({
     [commitBoard, instances, layout]
   );
 
-  const handleRenameWidget = useCallback(
-    (instanceId: string, title: string) => {
-      commitInstances(renameChartWidget(instanceId, title, instances));
+  const handleSaveWidgetMeta = useCallback(
+    (
+      instanceId: string,
+      meta: { readonly title: string; readonly description: string | null }
+    ) => {
+      commitInstances(saveChartWidgetMeta(instanceId, meta, instances));
     },
     [commitInstances, instances]
   );
@@ -478,6 +503,16 @@ export function ChartsWorkspace({
         </div>
 
         <div className="flex flex-wrap items-center gap-3 self-start">
+          {isSaving ? (
+            <div
+              className="text-muted-foreground flex items-center gap-2 text-sm"
+              role="status"
+              aria-live="polite"
+            >
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+              <span>Saving…</span>
+            </div>
+          ) : null}
           <ChartsAddMenu
             onSelectWidget={handleSelectWidget}
             onAddWorkspace={handleAddWorkspace}
@@ -494,6 +529,23 @@ export function ChartsWorkspace({
                 <TruncatedText className="min-w-0">
                   {workspace?.title ?? 'Charts'}
                 </TruncatedText>
+                <Tooltip delayDuration={300}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground inline-flex shrink-0 cursor-pointer"
+                      aria-label="Workspace description"
+                    >
+                      <Info className="size-4" aria-hidden />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs text-left">
+                    {resolveChartsDescription({
+                      description: workspace?.description,
+                      title: workspace?.title,
+                    })}
+                  </TooltipContent>
+                </Tooltip>
               </CardTitle>
               <CardDescription>
                 Customize your board by arranging widgets. Changes sync to your
@@ -540,7 +592,7 @@ export function ChartsWorkspace({
             onLayoutChange={handleLayoutChange}
             onRemoveWidget={handleRemoveWidget}
             onDuplicateWidget={handleDuplicateWidget}
-            onRenameWidget={handleRenameWidget}
+            onRenameWidget={handleSaveWidgetMeta}
             onFiltersChange={handleFiltersChange}
             onViewModeChange={handleViewModeChange}
             onPieVariantChange={handlePieVariantChange}
@@ -557,6 +609,7 @@ export function ChartsWorkspace({
         mode="create"
         defaultTitle={createDefaultTitle}
         initialIsOverview={false}
+        aliceContext={{ widgetCount: instances.length }}
         onSave={handleCreateWorkspace}
       />
       <ChartsSaveWorkspaceDialog
@@ -564,7 +617,16 @@ export function ChartsWorkspace({
         onOpenChange={setSaveDialogOpen}
         mode="save"
         defaultTitle={saveDefaultTitle}
+        defaultDescription={workspace?.description ?? null}
         initialIsOverview={workspace?.isOverview ?? false}
+        aliceContext={{
+          widgets: instances.map((item) => ({
+            typeId: item.typeId,
+            title: item.title ?? null,
+            labelField: item.labelField ?? null,
+            pieVariant: item.pieVariant ?? null,
+          })),
+        }}
         onSave={handleSaveWorkspace}
       />
       {deleteKind ? (
