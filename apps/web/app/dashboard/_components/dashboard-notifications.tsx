@@ -32,6 +32,10 @@ import { Button } from '@repo/ui/components/ui/button';
 import { resolveNotificationHref } from '@/lib/notifications/resolve-notification-href';
 import { extractEmailFromAccessRequestMessage } from '@/lib/notifications/access-request-message';
 import {
+  NotificationMessage,
+  stripNotificationMarkdown,
+} from '@/lib/notifications/notification-message';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -529,9 +533,16 @@ export function NotificationInbox({
             !notif.read_status && 'bg-primary/2 dark:bg-primary/1'
           )}
         >
-          <button
-            type="button"
+          <div
+            role="button"
+            tabIndex={0}
             onClick={() => handleNotificationClick(notif)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                void handleNotificationClick(notif);
+              }
+            }}
             className="flex flex-1 cursor-pointer items-start gap-3 text-left focus-visible:outline-hidden"
           >
             <div
@@ -543,8 +554,8 @@ export function NotificationInbox({
               <Icon className="size-4" />
             </div>
             <div className="min-w-0 flex-1 space-y-1 pr-2">
-              <p
-                title={notif.message}
+              <div
+                title={stripNotificationMarkdown(notif.message)}
                 className={cn(
                   'line-clamp-3 text-xs leading-relaxed wrap-break-word',
                   notif.read_status
@@ -552,13 +563,21 @@ export function NotificationInbox({
                     : 'text-foreground font-medium'
                 )}
               >
-                {notif.message}
-              </p>
+                <NotificationMessage
+                  message={notif.message}
+                  onInternalLinkClick={() => {
+                    setIsOpen(false);
+                    if (!notif.read_status) {
+                      void handleMarkAsRead(notif.id);
+                    }
+                  }}
+                />
+              </div>
               <span className="text-muted-foreground block text-[10px]">
                 {formatRelativeTime(notif.created_at)}
               </span>
             </div>
-          </button>
+          </div>
           <div className="flex shrink-0 items-center gap-1.5 self-center">
             {!notif.read_status && (
               <span className="bg-primary size-2 animate-pulse rounded-full" />

@@ -432,12 +432,12 @@ actor when done.
 
 ### Success notification shape
 
-| Field             | Value                                                                                                                                                 |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `type`            | New enum value e.g. `project_created`                                                                                                                 |
-| `related_item_id` | New `projects.id`                                                                                                                                     |
-| `message`         | Short copy (“**Acme** is ready”)                                                                                                                      |
-| Inbox click       | `resolveNotificationHref` → `/projects/{id}` (extend [`resolve-notification-href.ts`](../../apps/web/lib/notifications/resolve-notification-href.ts)) |
+| Field             | Value                                                                                                                                                                                                                                        |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`            | New enum value e.g. `project_created`                                                                                                                                                                                                        |
+| `related_item_id` | New `projects.id`                                                                                                                                                                                                                            |
+| `message`         | Short Markdown copy (`Project [**Acme**](/projects/{id}) is ready`) — bold + project link                                                                                                                                                    |
+| Inbox click       | Inline Markdown link **or** row click via `resolveNotificationHref` → `/projects/{id}` ([`resolve-notification-href.ts`](../../apps/web/lib/notifications/resolve-notification-href.ts)); inbox renders bold/links via `NotificationMessage` |
 
 ### Failure escalation (discussion → plan default)
 
