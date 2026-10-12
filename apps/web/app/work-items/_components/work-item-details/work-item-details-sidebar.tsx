@@ -786,7 +786,7 @@ export default function WorkItemSidebar({
           <EditableSprintField
             sprintName={sprintDisplayName}
             onEdit={() => setActiveField('sprint_id')}
-            readOnly={readOnly}
+            readOnly={readOnly || Boolean(workItem.parent_id)}
           />
         </DetailRow>
         <DetailRow label="Labels">

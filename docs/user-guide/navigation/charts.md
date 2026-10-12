@@ -150,7 +150,10 @@ Pick another layout to clear the slice focus.
 3. Under **Labels** → **Columns**, choose how to group the chart: **Project**,
    **Owner**, **Category**, **Type**, or **Priority**. When a single **project**
    filter is selected, **State** is also available (workflow states for that
-   project). The chart and legend update from live work-item counts.
+   project). The chart and legend update from live work-item counts. Each work
+   item counts once — a parent Epic and its subtasks in the same sprint both
+   appear when they match the filter. Use **Type** to focus on Epics or Tasks
+   only.
 4. Under **Values**, charts use **Count items** only (other calculations are
    coming later).
 5. Under **Customize**, choose **Value** or **%**, sort slices, and optionally

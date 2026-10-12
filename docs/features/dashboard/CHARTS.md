@@ -136,6 +136,22 @@ dialog); **Leave** when the board was opened with shared ACL. Empty store →
 `work_item_chart_rollups` (trigger-maintained counts). Slice → table uses
 **paginated** live `work_items` via drilldown. Measure: **`item_count` only**.
 
+### Hierarchy and sprint charts
+
+Categorical pies (Chart widgets, sprint report **Status Distribution**) count
+**each work item once** at its stored `sprint_id`. Parent and child in the same
+sprint both appear in totals — same as Jira-style flat sprint membership, not a
+nested epic rollup.
+
+Use **Labels → Type** (or sprint report status breakdown) when you want to
+separate Epics from Tasks. No parent–child ring is applied today.
+
+**Future (not Tier 1):** optional **multilevel / nested donut** (inner ring =
+roots or Epics, outer ring = direct children) for hierarchy-aware breakdowns.
+Would need a dedicated series API and explicit counting rules so story points
+and item counts are not double-counted. See
+[CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md#hierarchy-and-future-chart-types).
+
 **API:** `GET /api/v1/charts/analytics/series` and `…/analytics/drilldown` —
 see [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md#apis).
 

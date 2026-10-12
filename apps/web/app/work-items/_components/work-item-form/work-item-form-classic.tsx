@@ -15,6 +15,7 @@ import { WorkItemFormModernDescription } from '@/app/work-items/_components/work
 import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels/work-item-labels-input';
 import { WorkItemPrioritySelect } from '@/app/work-items/_components/work-item-priority-select';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
+import { resolveSprintDisplayName } from '@/app/work-items/_helpers/work-item-sprint';
 
 export type WorkItemFormClassicFieldsProps = WorkItemFormSharedFieldProps & {
   readonly titleDefault?: string;
@@ -58,6 +59,7 @@ export function WorkItemFormClassicFields({
   onProjectIdChange,
   onAssigneeIdChange,
   onSprintIdChange,
+  lockSprintFromParent,
   onTypeChange,
   onPriorityChange,
   onParentIdChange,
@@ -204,23 +206,39 @@ export function WorkItemFormClassicFields({
 
       <div className="space-y-2 sm:col-span-2">
         <Label htmlFor="sprint_id">Sprint</Label>
-        <SearchableSelect
-          id="sprint_id"
-          value={sprintId}
-          onValueChange={onSprintIdChange}
-          showClear
-          disabled={!projectId}
-          placeholder={projectId ? 'Search sprints…' : 'Select a project first'}
-          options={sprintOptions.map((sprint) => ({
-            value: sprint.id,
-            label: sprint.name,
-          }))}
-          emptyText="No matching sprints."
-        />
-        <input type="hidden" name="sprint_id" value={sprintId} />
-        <p className="text-muted-foreground text-xs">
-          Optional. Clear to keep the item on the backlog.
-        </p>
+        {lockSprintFromParent ? (
+          <>
+            <p className="text-sm font-medium">
+              {resolveSprintDisplayName(sprintId, sprintOptions)}
+            </p>
+            <input type="hidden" name="sprint_id" value={sprintId} />
+            <p className="text-muted-foreground text-xs">
+              Inherited from the parent work item.
+            </p>
+          </>
+        ) : (
+          <>
+            <SearchableSelect
+              id="sprint_id"
+              value={sprintId}
+              onValueChange={onSprintIdChange}
+              showClear
+              disabled={!projectId}
+              placeholder={
+                projectId ? 'Search sprints…' : 'Select a project first'
+              }
+              options={sprintOptions.map((sprint) => ({
+                value: sprint.id,
+                label: sprint.name,
+              }))}
+              emptyText="No matching sprints."
+            />
+            <input type="hidden" name="sprint_id" value={sprintId} />
+            <p className="text-muted-foreground text-xs">
+              Optional. Clear to keep the item on the backlog.
+            </p>
+          </>
+        )}
       </div>
 
       <div className="space-y-2 sm:col-span-2">

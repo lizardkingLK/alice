@@ -24,6 +24,7 @@ export * from './work-item-worklogs.js';
 export * from './work-item-activity.js';
 export * from './work-item-status.js';
 export * from './work-item-state.js';
+export * from './sprint-name.js';
 export * from './sprint-status.js';
 export * from './sprint-response.js';
 export * from './work-item-types.js';

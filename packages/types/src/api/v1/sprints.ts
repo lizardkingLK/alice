@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { sprintsGetPayload } from '../../generated/prisma/models/sprints.js';
+import { isReservedSprintName } from '../../sprint-name.js';
 import { type SprintStatus } from '../../sprint-status.js';
 import {
   emptyToUndefined,
@@ -11,8 +12,18 @@ const sprintDateStringSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
 
+const sprintNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Name is required')
+  .max(200)
+  .refine((name) => !isReservedSprintName(name), {
+    message:
+      'Sprint name cannot be "Backlog" — that label is reserved for unscheduled work items.',
+  });
+
 const sprintCreateFields = {
-  name: z.string().trim().min(1, 'Name is required').max(200),
+  name: sprintNameSchema,
   goal: z.string().trim().max(2000).nullable().optional(),
   startDate: sprintDateStringSchema,
   endDate: sprintDateStringSchema,

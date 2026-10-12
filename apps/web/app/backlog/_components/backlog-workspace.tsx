@@ -47,6 +47,13 @@ import { resolveWorkItemMember } from '@/app/work-items/_helpers/work-item-membe
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutation } from '@/lib/optimistic-lock/run-locked-mutation';
 
+function sameWorkItemSprintId(
+  a: string | null | undefined,
+  b: string | null | undefined
+): boolean {
+  return (a ?? null) === (b ?? null);
+}
+
 interface BacklogWorkspaceProps {
   projects: DbProject[];
   projectMembers: DbUser[];
@@ -150,17 +157,34 @@ export function BacklogWorkspace({
     itemId: string | null,
     targetSprintId: string | null
   ): boolean => {
-    if (!itemId || !targetSprintId) {
+    if (!itemId) {
       return false;
     }
     const draggedItem = workItems.find((item) => item.id === itemId);
+    if (!draggedItem) {
+      return false;
+    }
+
+    if (draggedItem.parent_id) {
+      const parent = workItems.find(
+        (item) => item.id === draggedItem.parent_id
+      );
+      const parentSprintId = parent?.sprint_id ?? null;
+      const nextSprintId = targetSprintId || null;
+      if (!sameWorkItemSprintId(parentSprintId, nextSprintId)) {
+        return true;
+      }
+    }
+
+    if (!targetSprintId) {
+      return false;
+    }
+
     const targetSprint = sprintList.find(
       (sprint) => sprint.id === targetSprintId
     );
     const sprintProjId = targetSprint?.project?.id;
-    return Boolean(
-      draggedItem && sprintProjId && draggedItem.project_id !== sprintProjId
-    );
+    return Boolean(sprintProjId && draggedItem.project_id !== sprintProjId);
   };
 
   const restoreWorkItemAfterFailedMutation = (

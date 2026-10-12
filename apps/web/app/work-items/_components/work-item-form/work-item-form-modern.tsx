@@ -52,6 +52,10 @@ import { WorkItemPrioritySelect } from '@/app/work-items/_components/work-item-p
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
 import { WORK_ITEM_TYPE_ICONS } from '@/app/work-items/_helpers/work-item-type';
 import { MODERN_BORDERLESS_FOCUS_CLASSES } from '@/lib/editor/compact-editor-attrs';
+import {
+  resolveSprintDisplayName,
+  type WorkItemSprintOption,
+} from '@/app/work-items/_helpers/work-item-sprint';
 
 export type WorkItemFormModernFieldsProps = WorkItemFormSharedFieldProps & {
   readonly titleDefault?: string;
@@ -168,6 +172,51 @@ function isWorkItemType(value: string): value is WorkItemType {
   return value in WORK_ITEM_TYPE_ICONS;
 }
 
+function ModernSprintField({
+  sprintId,
+  sprintOptions,
+  projectId,
+  lockSprintFromParent,
+  onSprintIdChange,
+}: Readonly<{
+  readonly sprintId: string;
+  readonly sprintOptions: readonly WorkItemSprintOption[];
+  readonly projectId: string;
+  readonly lockSprintFromParent: boolean;
+  // eslint-disable-next-line no-unused-vars -- controlled setter
+  readonly onSprintIdChange: (value: string) => void;
+}>) {
+  return (
+    <>
+      <FieldTooltip
+        label={lockSprintFromParent ? 'Sprint (from parent)' : 'Sprint'}
+      >
+        {lockSprintFromParent ? (
+          <span className="text-sm font-medium">
+            {resolveSprintDisplayName(sprintId, sprintOptions)}
+          </span>
+        ) : (
+          <IconSearchablePill
+            icon={<Layers />}
+            id="sprint_id"
+            value={sprintId}
+            onValueChange={onSprintIdChange}
+            disabled={!projectId}
+            showClear
+            placeholder="Sprint"
+            options={sprintOptions.map((sprint) => ({
+              value: sprint.id,
+              label: sprint.name,
+            }))}
+            emptyText="No matching sprints."
+          />
+        )}
+      </FieldTooltip>
+      <input type="hidden" name="sprint_id" value={sprintId} />
+    </>
+  );
+}
+
 /**
  * Linear/Jira-style create fields: title, description, property pills.
  * Shares the same FormData field names as the classic create form.
@@ -188,6 +237,7 @@ export function WorkItemFormModernFields({
   parentOptionsLoading,
   parentTypeLabel,
   lockParent,
+  lockSprintFromParent,
   lockProject,
   lockAssignee,
   typeLocked,
@@ -402,22 +452,13 @@ export function WorkItemFormModernFields({
             />
           </FieldTooltip>
 
-          <FieldTooltip label="Sprint">
-            <IconSearchablePill
-              icon={<Layers />}
-              id="sprint_id"
-              value={sprintId}
-              onValueChange={onSprintIdChange}
-              disabled={!projectId}
-              showClear
-              placeholder="Sprint"
-              options={sprintOptions.map((sprint) => ({
-                value: sprint.id,
-                label: sprint.name,
-              }))}
-              emptyText="No matching sprints."
-            />
-          </FieldTooltip>
+          <ModernSprintField
+            sprintId={sprintId}
+            sprintOptions={sprintOptions}
+            projectId={projectId}
+            lockSprintFromParent={lockSprintFromParent}
+            onSprintIdChange={onSprintIdChange}
+          />
         </div>
 
         <ModernOptionalFieldPills

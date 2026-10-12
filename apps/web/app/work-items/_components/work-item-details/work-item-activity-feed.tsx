@@ -76,10 +76,7 @@ function ActivityEmptyState() {
   );
 }
 
-function CardsLayout({
-  activities,
-  lookups,
-}: Readonly<ActivityLayoutProps>) {
+function CardsLayout({ activities, lookups }: Readonly<ActivityLayoutProps>) {
   return (
     <ul className="space-y-3">
       {activities.map((activity) => (
@@ -134,10 +131,7 @@ function TimelineLayout({
   );
 }
 
-function TableLayout({
-  activities,
-  lookups,
-}: Readonly<ActivityLayoutProps>) {
+function TableLayout({ activities, lookups }: Readonly<ActivityLayoutProps>) {
   return (
     <Table>
       <TableHeader>

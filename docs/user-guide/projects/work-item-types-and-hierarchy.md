@@ -115,7 +115,21 @@ Managers and Admins can update allowed work-item types at any time:
 
 ---
 
-## 5. Jira Import & Hierarchy Mapping
+## 5. Sprint planning and parent–child items
+
+Work items with a **parent** inherit that parent’s sprint (Jira-style):
+
+- On **work item details**, Sprint is read-only text: the sprint name or **Backlog**.
+- In **create/edit forms** and the **backlog** sheet, you cannot assign a different sprint while a parent is linked.
+- Moving the **parent** into or out of a sprint updates all descendants automatically.
+
+To plan a child in a different sprint, remove the parent link or use a separate top-level work item instead of a subtask.
+
+Sprint names cannot be **Backlog** (case-insensitive) — that label is reserved for unscheduled work.
+
+---
+
+## 6. Jira Import & Hierarchy Mapping
 
 When importing issues from Jira into ALICE:
 
@@ -136,7 +150,7 @@ When importing issues from Jira into ALICE:
 
 ---
 
-## Related Documentation
+## 7. Related Documentation
 
 - [User Testing Guide](./work-item-types-testing.md)
 - [Project types](./project-settings.md)

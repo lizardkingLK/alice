@@ -28,6 +28,8 @@ export type WorkItemFormSharedFieldProps = {
   readonly parentOptionsLoading: boolean;
   readonly parentTypeLabel: string | null;
   readonly lockParent: boolean;
+  /** Child work items inherit sprint from parent (Jira-style). */
+  readonly lockSprintFromParent: boolean;
   readonly lockProject: boolean;
   readonly lockAssignee: boolean;
   readonly typeLocked: boolean;

@@ -20,3 +20,14 @@ export function selectValueFromSprintId(
 ): string {
   return sprintId?.trim() || WORK_ITEM_SPRINT_BACKLOG_VALUE;
 }
+
+/** Display label for a sprint id, or Backlog when unset. */
+export function resolveSprintDisplayName(
+  sprintId: string | null | undefined,
+  sprints: readonly Pick<WorkItemSprintOption, 'id' | 'name'>[]
+): string {
+  if (!sprintId) {
+    return 'Backlog';
+  }
+  return sprints.find((sprint) => sprint.id === sprintId)?.name ?? 'Backlog';
+}
