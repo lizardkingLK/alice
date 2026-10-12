@@ -8,13 +8,13 @@ Kanban board, calendar, backlog, and sprints for delivery planning.
 
 ## In this topic
 
-| Page                                        | Who      | What you'll learn                         |
-| ------------------------------------------- | -------- | ----------------------------------------- |
-| [Kanban board](./kanban-board.md)           | Everyone | Drag-and-drop columns / workflow switcher |
-| [Workflow designer](./workflow-designer.md) | Manager+ | Paths, locks, subtask rules, presets      |
-| [Calendar view](./calendar-view.md)         | Everyone | Due dates on a month grid                 |
-| [Backlog](./backlog.md)                     | Everyone | Unscheduled work and sprint planning      |
-| [Sprints](./sprints.md)                     | Manager+ | Sprint registry and reports               |
+| Page                                        | Who      | What you'll learn                       |
+| ------------------------------------------- | -------- | --------------------------------------- |
+| [Kanban board](./kanban-board.md)           | Everyone | Drag-and-drop columns / workflow boards |
+| [Workflow designer](./workflow-designer.md) | Manager+ | Paths, locks, subtask rules, presets    |
+| [Calendar view](./calendar-view.md)         | Everyone | Due dates on a month grid               |
+| [Backlog](./backlog.md)                     | Everyone | Unscheduled work and sprint planning    |
+| [Sprints](./sprints.md)                     | Manager+ | Sprint registry and reports             |
 
 ---
 

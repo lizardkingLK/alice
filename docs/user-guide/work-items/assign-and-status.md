@@ -24,24 +24,31 @@ Typical default states (projects may rename or add their own):
 | **Testing**     | in progress    | In review or QA       |
 | **Done**        | done           | Complete              |
 
-Change state from the work-item sidebar, the board (drag cards), or bulk actions
-where available. Only **allowed transitions** appear or succeed — including
-moves back (for example Testing → In Progress) when the workflow defines them.
-If the transition **Requires escalation**, you complete the **resolution form**
-(fields + **Outcome**) before the move finishes.
+On the work-item details page, the header banner shows the current **state**
+(icon + color) with the title, type, key, project, and assignee. Change state
+from the colorized **State** control in the sidebar (or **Status** on projects
+that still use a legacy board). The board (drag cards) and bulk actions also
+move items where available.
 
-**Draft** items are hidden from the kanban board unless the project workflow
-exposes a matching state.
+Only **allowed transitions** succeed — including moves back (for example
+Testing → In Progress) when the workflow defines them. If the transition
+**Requires escalation**, you complete the **resolution form** (fields +
+**Outcome**) before the move finishes.
+
+**Draft**-category states stay off the kanban board. You can still move an item
+into a draft state from details; it leaves the board until it returns to a
+non-draft state.
 
 ---
 
-## Assignee and reporter
+## Assignee, reporter, and sprint
 
 - **Assignee** — who is responsible for delivery
 - **Reporter** — who reported or owns the request
+- **Sprint** — which sprint the item belongs to, or **Backlog** when cleared
 
-Use the searchable dropdowns in the sidebar. **My Work** filters the registry to
-items where you are assignee.
+Use the searchable controls in the create/edit dialogs and the details sidebar.
+**My Work** filters the registry to items where you are assignee.
 
 ---
 

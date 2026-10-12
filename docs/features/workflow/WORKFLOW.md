@@ -19,12 +19,15 @@ exist on disk; runtime reads fall back safely. Historical notes:
 - Design paths between states (not only columns + optional transition pairs).
 - Support **cycles** (e.g. Dev ↔ QA) via explicit edges; ban self-loops and
   duplicate directed edges.
-- Map **work-item types** to workflows; board uses a **workflow / type switcher**
-  (parallel boards — model **C**).
+- Map **work-item types** to workflows; board is a **per-workflow** view
+  (parallel boards — model **C**; active workflow from URL / default).
 - Auth on edges (`allowAnyOf`), escalation / resolution **presets**, child gates.
 - Single-current work-item **`state`** JSONB + optional per-workflow history.
 - Safe fallback: null / unparsable / schema conflict → **seeded default**
   workflow (and default board behavior) so the project never hard-crashes.
+- Designer UI supports add/connect/delete, multi-workflow manage (Fork / Mark
+  default / Delete / Rename), keyboard shortcuts, undo, cut/paste states, live
+  Settings→node sync, Help, and Go to Board — Step 12.
 - Alice docked chat can propose designer changes with **Apply / Reject**.
 
 ## Non-goals (MVP)
@@ -59,12 +62,12 @@ exist on disk; runtime reads fall back safely. Historical notes:
 1. Resolve work item **type** → workflow via `typeBindings`, else
    `defaultWorkflowId`.
 2. Item has **one** current `{ workflowId, stateId, category }`.
-3. Board chrome: **workflow / type switcher** — one tab (or select entry) per
-   workflow that is default or has bindings.
-4. Active switcher → columns = that workflow’s states; cards = types bound to
+3. Active workflow comes from **`?workflow=`** when present and valid, else the
+   project **default** (workflows that are default or have type bindings).
+4. Active workflow → columns = that workflow’s states; cards = types bound to
    that workflow (default also owns unbound types).
 5. Wrong board ⇒ card filtered out (not shown in a foreign lane).
-6. Persist switcher in URL / board defaults (same spirit as today’s filters).
+6. Deep-link via URL (`?workflow=`); no board toolbar dropdown for switching.
 7. Work-item details show **Workflow: {title}** and state from the item’s graph.
 8. Mid-drag / PATCH validate against the **item’s** workflow + edge rules, not
    merely visible columns.
@@ -327,9 +330,13 @@ in Step 9. Use `get_workflow_config` / `propose_workflow_patch` /
 
 ## Status / state pickers (app-wide)
 
-Replace global `WORK_ITEM_STATUSES` menus with **workflow states** for the
-item’s resolved workflow (details, backlog sheet, create-from-column, etc.),
-using the same allowed-transition helpers and auth as the board.
+**Details (Step 13):** work-item details lists **workflow states** (including
+draft-category) with state names/ids, a colorized sidebar control, and a
+summary banner. Graph PATCH resolves destinations from full `graph.states`
+(draft → `board_column_id: null`).
+
+**Still open:** backlog sheet and other surfaces — reuse
+`workflow-state-options` helpers; same transition helpers and auth as the board.
 
 ---
 

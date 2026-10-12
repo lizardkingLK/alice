@@ -34,14 +34,52 @@ change what transitions are allowed until you **Save**.
 
 ---
 
+## Edit the graph
+
+Managers and admins can change the graph on the canvas (Alice remains an
+optional alternate path):
+
+1. Press **Ctrl/Cmd+N** to add a state (opens Settings so you can rename it).
+2. Drag from a handle on one state to a handle on another to create a
+   transition (handles sit on all four sides; they stay hidden until you hover
+   or select a state, start a connection, or an edge already uses that port).
+   Your chosen handles are kept; otherwise the canvas picks short sides (and
+   uses the free top/bottom ports for a return edge when both directions
+   exist). Reverse (right-to-left) links use the same stepped path style with a
+   warmer stroke. Self-loops and duplicate pairs are rejected.
+3. To move a transition’s connection points without losing Settings, select the
+   edge and drag either end to another handle on the **same** two states
+   (reconnect). Changing which states are linked still requires delete + create.
+4. Select a state or transition and use **Delete state** / **Delete
+   transition** in Settings, or press **Delete** / **Backspace** (no confirm).
+5. Name and category changes in Settings update the canvas node immediately.
+6. Click **Save** to publish graph and Settings together, or **Discard** to
+   revert unsaved edits.
+
+Use the **Kanban** icon in the toolbar to open this project’s **Board**. Open
+**Help** (?) for the full keyboard list.
+
+### Keyboard
+
+| Shortcut                   | Action                                           |
+| -------------------------- | ------------------------------------------------ |
+| **Esc**                    | Clear selection                                  |
+| **Delete** / **Backspace** | Delete selected state or transition (no confirm) |
+| **Ctrl/Cmd+Z**             | Undo the last designer change                    |
+| **Ctrl/Cmd+X**             | Cut selected state (transitions are not kept)    |
+| **Ctrl/Cmd+V**             | Paste a cut state as a new state (no edges)      |
+| **Ctrl/Cmd+N**             | Add a new state                                  |
+
+---
+
 ## State settings
 
 Select a state, then open **Settings**:
 
 | Setting                       | What it does                                                                                               |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| **Name** / description        | Labels on the board and in pickers                                                                         |
-| **Category**                  | Groups states for filters and reports (`todo`, `in progress`, `done`, …)                                   |
+| **Name** / description        | Labels on the board and in pickers (updates the canvas node live)                                          |
+| **Category**                  | Groups states for filters and reports (`todo`, `in progress`, `done`, …); updates the node live            |
 | **Lock record in this state** | While an item is here, most fields are read-only; changing state (for example reopen) can still be allowed |
 | **Terminal state**            | No outbound transitions. If edges already leave this state, remove them before you can turn this on        |
 
@@ -89,11 +127,19 @@ board move) asks for **fields** and an **Outcome** before the status changes.
 
 ## Default and forks
 
-- Managers and admins mark one workflow as **default** and can delete others.
-- A **team manager** (set on the project team) may **fork** the default once,
-  edit the fork, and save a title/description. That fork cannot be forked
-  again.
-- Managers can review a fork, mark it default, and remove obsolete workflows.
+Next to the workflow switcher:
+
+| Action           | What it does                                                                                           |
+| ---------------- | ------------------------------------------------------------------------------------------------------ |
+| **Title**        | Rename the active workflow (saved with the envelope)                                                   |
+| **Fork**         | Copy the active workflow into a new editable fork (disabled on an existing fork)                       |
+| **Mark default** | Make the active workflow the project default (disabled when it already is)                             |
+| **Delete**       | Remove a non-default workflow when more than one exists (confirm first; promote another default first) |
+
+- A **team manager** (set on the project team) may **fork** once via the same
+  control; that fork cannot be forked again.
+- Unsaved canvas edits are saved before Fork / Mark default / Delete so the
+  server stays in sync.
 
 If configuration is missing or invalid, the project safely uses a **seeded
 default** workflow so the board keeps working.
@@ -102,8 +148,8 @@ default** workflow so the board keeps working.
 
 ## Board and Alice
 
-- On the **Board**, use the workflow / type switcher to view one workflow’s
-  columns at a time. See [Kanban board](./kanban-board.md).
+- On the **Board**, columns follow the project default workflow, or
+  `?workflow=<id>` when set. See [Kanban board](./kanban-board.md).
 - Open **Alice** from the header while the designer is open — she docks as a
   right sidebar and can propose graph changes. Use **Apply** or **Reject** on
   the suggestion card. Apply needs the Workflow designer open on that project.

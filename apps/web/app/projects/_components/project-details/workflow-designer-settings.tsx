@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { PanelRightClose, Settings } from '@repo/ui/lib/icons';
+import { useState, type ReactNode } from 'react';
+import { PanelRightClose, Settings, Trash2 } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import {
@@ -75,6 +75,8 @@ type WorkflowEdgeChangeHandler = (
   >
 ) => void;
 type WorkflowMakeTerminalHandler = (stateId: string) => void;
+type WorkflowDeleteStateHandler = (stateId: string) => void;
+type WorkflowDeleteEdgeHandler = (edgeId: string) => void;
 type WorkflowSettingsOpenChangeHandler = (open: boolean) => void;
 type WorkflowResolutionPresetUpsertHandler = (
   preset: WorkflowResolutionPreset
@@ -90,6 +92,8 @@ type WorkflowDesignerSettingsProps = {
   readonly onStateChange: WorkflowStateChangeHandler;
   readonly onEdgeChange: WorkflowEdgeChangeHandler;
   readonly onMakeStateTerminal: WorkflowMakeTerminalHandler;
+  readonly onDeleteState: WorkflowDeleteStateHandler;
+  readonly onDeleteEdge: WorkflowDeleteEdgeHandler;
   readonly onUpsertResolutionPreset: WorkflowResolutionPresetUpsertHandler;
   /** Controlled open state (workspace owns cookie/localStorage persist). */
   readonly open: boolean;
@@ -135,6 +139,57 @@ function FieldLabel({
   );
 }
 
+function WorkflowSettingsConfirmDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmLabel,
+  testId,
+  onConfirm,
+}: {
+  readonly open: boolean;
+  // eslint-disable-next-line no-unused-vars -- callback parameter name documents the payload
+  readonly onOpenChange: (open: boolean) => void;
+  readonly title: string;
+  readonly description: ReactNode;
+  readonly confirmLabel: string;
+  readonly testId: string;
+  readonly onConfirm: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent data-testid={testId}>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              onOpenChange(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => {
+              onConfirm();
+              onOpenChange(false);
+            }}
+          >
+            {confirmLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // eslint-disable-next-line no-unused-vars -- callback parameter name documents the payload
 type StateFlagCheckedHandler = (checked: boolean) => void;
 
@@ -177,17 +232,24 @@ function StateFlagRow({
 function StateSettingsForm({
   state,
   outboundCount,
+  connectedEdgeCount,
+  canDelete,
   canEdit,
   onStateChange,
   onMakeStateTerminal,
+  onDeleteState,
 }: {
   readonly state: WorkflowStateNode;
   readonly outboundCount: number;
+  readonly connectedEdgeCount: number;
+  readonly canDelete: boolean;
   readonly canEdit: boolean;
   readonly onStateChange: WorkflowDesignerSettingsProps['onStateChange'];
   readonly onMakeStateTerminal: WorkflowDesignerSettingsProps['onMakeStateTerminal'];
+  readonly onDeleteState: WorkflowDesignerSettingsProps['onDeleteState'];
 }) {
   const [terminalConfirmOpen, setTerminalConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const requestTerminal = (checked: boolean) => {
     if (!checked) {
@@ -282,38 +344,71 @@ function StateSettingsForm({
         />
       </div>
 
-      <Dialog open={terminalConfirmOpen} onOpenChange={setTerminalConfirmOpen}>
-        <DialogContent data-testid="workflow-terminal-confirm">
-          <DialogHeader>
-            <DialogTitle>Make this a terminal state?</DialogTitle>
-            <DialogDescription>
-              This removes {outboundCount} exit
-              {outboundCount === 1 ? '' : 's'} from{' '}
-              <span className="font-medium">{state.name}</span>
-              {'. '}A terminal state has nowhere left to go.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setTerminalConfirmOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => {
-                onMakeStateTerminal(state.id);
-                setTerminalConfirmOpen(false);
-              }}
-            >
-              Remove exits
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {canEdit ? (
+        <div className="border-border space-y-2 border-t pt-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:text-destructive w-full"
+            disabled={!canDelete}
+            data-testid="workflow-settings-delete-state"
+            onClick={() => {
+              if (connectedEdgeCount > 0) {
+                setDeleteConfirmOpen(true);
+                return;
+              }
+              onDeleteState(state.id);
+            }}
+          >
+            <Trash2 data-icon="inline-start" className="size-4" />
+            Delete state
+          </Button>
+          {!canDelete ? (
+            <p className="text-muted-foreground text-xs">
+              A workflow needs at least one state.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      <WorkflowSettingsConfirmDialog
+        open={terminalConfirmOpen}
+        onOpenChange={setTerminalConfirmOpen}
+        testId="workflow-terminal-confirm"
+        title="Make this a terminal state?"
+        description={
+          <>
+            This removes {outboundCount} exit
+            {outboundCount === 1 ? '' : 's'} from{' '}
+            <span className="font-medium">{state.name}</span>
+            {'. '}A terminal state has nowhere left to go.
+          </>
+        }
+        confirmLabel="Remove exits"
+        onConfirm={() => {
+          onMakeStateTerminal(state.id);
+        }}
+      />
+
+      <WorkflowSettingsConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        testId="workflow-delete-state-confirm"
+        title="Delete this state?"
+        description={
+          <>
+            This removes <span className="font-medium">{state.name}</span> and{' '}
+            {connectedEdgeCount} connected transition
+            {connectedEdgeCount === 1 ? '' : 's'}
+            {'.'}
+          </>
+        }
+        confirmLabel="Delete state"
+        onConfirm={() => {
+          onDeleteState(state.id);
+        }}
+      />
     </div>
   );
 }
@@ -325,6 +420,7 @@ function EdgeSettingsForm({
   teams,
   members,
   onEdgeChange,
+  onDeleteEdge,
   onUpsertResolutionPreset,
 }: {
   readonly edge: WorkflowEdge;
@@ -333,6 +429,7 @@ function EdgeSettingsForm({
   readonly teams: readonly TransitionRuleTeamOption[];
   readonly members: readonly MemberCheckboxOption[];
   readonly onEdgeChange: WorkflowDesignerSettingsProps['onEdgeChange'];
+  readonly onDeleteEdge: WorkflowDesignerSettingsProps['onDeleteEdge'];
   readonly onUpsertResolutionPreset: WorkflowDesignerSettingsProps['onUpsertResolutionPreset'];
 }) {
   const fromState = workflow.graph.states.find(
@@ -456,6 +553,24 @@ function EdgeSettingsForm({
           }}
         />
       </div>
+
+      {canEdit ? (
+        <div className="border-border border-t pt-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:text-destructive w-full"
+            data-testid="workflow-settings-delete-edge"
+            onClick={() => {
+              onDeleteEdge(edge.id);
+            }}
+          >
+            <Trash2 data-icon="inline-start" className="size-4" />
+            Delete transition
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -469,6 +584,8 @@ export function WorkflowDesignerSettings({
   onStateChange,
   onEdgeChange,
   onMakeStateTerminal,
+  onDeleteState,
+  onDeleteEdge,
   onUpsertResolutionPreset,
   open,
   onOpenChange,
@@ -487,6 +604,11 @@ export function WorkflowDesignerSettings({
   const outboundCount = selectedState
     ? workflow.graph.edges.filter((edge) => edge.from === selectedState.id)
         .length
+    : 0;
+  const connectedEdgeCount = selectedState
+    ? workflow.graph.edges.filter(
+        (edge) => edge.from === selectedState.id || edge.to === selectedState.id
+      ).length
     : 0;
 
   if (!open) {
@@ -541,9 +663,12 @@ export function WorkflowDesignerSettings({
             <StateSettingsForm
               state={selectedState}
               outboundCount={outboundCount}
+              connectedEdgeCount={connectedEdgeCount}
+              canDelete={workflow.graph.states.length > 1}
               canEdit={canEdit}
               onStateChange={onStateChange}
               onMakeStateTerminal={onMakeStateTerminal}
+              onDeleteState={onDeleteState}
             />
           ) : null}
           {selectedEdge ? (
@@ -554,6 +679,7 @@ export function WorkflowDesignerSettings({
               teams={teams}
               members={members}
               onEdgeChange={onEdgeChange}
+              onDeleteEdge={onDeleteEdge}
               onUpsertResolutionPreset={onUpsertResolutionPreset}
             />
           ) : null}

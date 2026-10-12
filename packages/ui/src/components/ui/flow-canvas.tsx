@@ -26,10 +26,14 @@ export {
   addEdge,
   applyEdgeChanges,
   applyNodeChanges,
+  getBezierPath,
   getSmoothStepPath,
+  reconnectEdge,
+  useConnection,
   useEdgesState,
   useNodesState,
   useReactFlow,
+  useStore,
 } from '@xyflow/react';
 
 export type {

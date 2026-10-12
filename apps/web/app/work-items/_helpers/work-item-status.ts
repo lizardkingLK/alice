@@ -100,6 +100,14 @@ export type StatusMeta = {
 };
 
 export const STATUS_META: Record<string, StatusMeta> = {
+  Draft: {
+    label: 'Draft',
+    color: 'oklch(0.55 0.02 264)',
+    bgClass: 'bg-muted',
+    textClass: 'text-muted-foreground',
+    borderClass: 'border-muted-foreground/20',
+    icon: Circle,
+  },
   New: {
     label: 'New',
     color: 'oklch(0.63 0.18 250)',
@@ -143,6 +151,7 @@ export const STATUS_META: Record<string, StatusMeta> = {
 };
 
 export const STATUS_INDICATOR_BG: Record<string, string> = {
+  Draft: 'bg-muted-foreground',
   New: 'bg-blue-500',
   ToDo: 'bg-slate-500',
   InProgress: 'bg-amber-500',

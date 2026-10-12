@@ -9,7 +9,10 @@ import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
 import { pickComboboxOption } from '../helpers/pick-combobox-option';
-import { fetchProjectMembersForForm } from '@/lib/form-read-actions';
+import {
+  fetchProjectMembersForForm,
+  fetchProjectSprintsForForm,
+} from '@/lib/form-read-actions';
 
 vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
   createWorkItem: vi.fn(),
@@ -22,6 +25,7 @@ vi.mock('@/app/work-items/_services/work-items.reads.client', () => ({
 
 vi.mock('@/lib/form-read-actions', () => ({
   fetchProjectMembersForForm: vi.fn(),
+  fetchProjectSprintsForForm: vi.fn(),
 }));
 
 vi.mock('@/app/_shared/utility', async (importOriginal) => {
@@ -58,6 +62,7 @@ describe('WorkItemForm', () => {
         profile_picture: member.profile_picture ?? null,
       }))
     );
+    vi.mocked(fetchProjectSprintsForForm).mockResolvedValue([]);
   });
 
   it('renders fields and lists projects and members in selects', async () => {

@@ -42,7 +42,7 @@ function PathTypeChip({
 }
 
 /**
- * In-page path above the title:
+ * In-page hierarchy path (rendered inside the summary banner):
  * `PROJECT_KEY > Sprint name > [Epic] … > [Type] Title`
  * Unassigned sprint renders an ellipsis segment.
  * Ancestors (when present) link to parent work-item details.

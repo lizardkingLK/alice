@@ -5,8 +5,10 @@ import { expectedUpdatedAtSchema } from '../../optimistic-lock.js';
 import { projectRelationSelect } from './projects.js';
 import { userRelationSelect } from '../../users.js';
 import { WORK_ITEM_PRIORITIES } from '../../work-item-priorities.js';
-import { WORK_ITEM_STATUSES } from '../../work-item-status.js';
-import type { WorkItemStatus } from '../../work-item-status.js';
+import {
+  WORK_ITEM_STATUSES,
+  type WorkItemStatus,
+} from '../../work-item-status.js';
 import { WORK_ITEM_TYPES, type WorkItemType } from '../../work-item-types.js';
 import {
   coerceLabelsFormField,
@@ -45,7 +47,7 @@ export const WORK_ITEM_REPORTER_POSTGREST_SELECT = userRelationSelect(
  * Field list must stay aligned with `workItemListSelect` keys.
  */
 export const WORK_ITEM_LIST_POSTGREST_COLUMNS =
-  'id, project_id, sprint_id, parent_id, title, type, priority, labels, assignee_id, reporter_id, due_date, story_points, status, board_column_id, record_status, done_at, created_by, created_at, updated_by, updated_at, jira_issue_key' as const;
+  'id, project_id, sprint_id, parent_id, title, type, priority, labels, assignee_id, reporter_id, due_date, story_points, status, state, board_column_id, record_status, done_at, created_by, created_at, updated_by, updated_at, jira_issue_key' as const;
 
 /** PostgREST select for list/board reads (optional TipTap description). */
 export function workItemListPostgrestSelect(
@@ -91,6 +93,7 @@ export const workItemListSelect = {
   due_date: true,
   story_points: true,
   status: true,
+  state: true,
   board_column_id: true,
   record_status: true,
   done_at: true,

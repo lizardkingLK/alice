@@ -24,6 +24,8 @@ function renderSettings(
         onStateChange={vi.fn()}
         onEdgeChange={vi.fn()}
         onMakeStateTerminal={vi.fn()}
+        onDeleteState={vi.fn()}
+        onDeleteEdge={vi.fn()}
         onUpsertResolutionPreset={vi.fn()}
         open
         onOpenChange={onOpenChange}
@@ -60,6 +62,8 @@ describe('WorkflowDesignerSettings', () => {
         onStateChange={vi.fn()}
         onEdgeChange={vi.fn()}
         onMakeStateTerminal={vi.fn()}
+        onDeleteState={vi.fn()}
+        onDeleteEdge={vi.fn()}
         onUpsertResolutionPreset={vi.fn()}
         open={false}
         onOpenChange={onOpenChange}
@@ -113,6 +117,33 @@ describe('WorkflowDesignerSettings', () => {
     expect(screen.getByTestId('workflow-terminal-confirm')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /remove exits/i }));
     expect(onMakeStateTerminal).toHaveBeenCalledWith(WorkItemStatusEnum.New);
+  });
+
+  it('confirms before deleting a state that has connected edges', () => {
+    const onDeleteState = vi.fn();
+    renderSettings({
+      selection: { kind: 'state', stateId: WorkItemStatusEnum.New },
+      onDeleteState,
+    });
+    fireEvent.click(screen.getByTestId('workflow-settings-delete-state'));
+    expect(
+      screen.getByTestId('workflow-delete-state-confirm')
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^delete state$/i }));
+    expect(onDeleteState).toHaveBeenCalledWith(WorkItemStatusEnum.New);
+  });
+
+  it('deletes a transition from edge settings', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const edge = workflow.graph.edges[0]!;
+    const onDeleteEdge = vi.fn();
+    renderSettings({
+      selection: { kind: 'edge', edgeId: edge.id },
+      workflow,
+      onDeleteEdge,
+    });
+    fireEvent.click(screen.getByTestId('workflow-settings-delete-edge'));
+    expect(onDeleteEdge).toHaveBeenCalledWith(edge.id);
   });
 
   it('exposes escalation and resolution form controls for a selected edge', () => {

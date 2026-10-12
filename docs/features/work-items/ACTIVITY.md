@@ -200,6 +200,12 @@ Today `CommentsFeed` renders a heading like `Discussion ({stats.active})`
    button).
 4. Active tab shows either the existing comments UI or the activity list.
 5. Empty states stay per tab (“No comments yet” / “No activity yet”).
+6. **Activity layouts:** when Activity is active, a layout dropdown (same pattern
+   as board layout) offers **Cards** (default bordered list), **Timeline**
+   (shared `@repo/ui` Timeline compound), and **Table** (When / Actor /
+   Details). Preference is stored per work item in `localStorage`
+   (`alice:work-item-activity-layout:v1:<workItemId>`). All layouts share
+   `describeActivity` copy and newest-first sort.
 
 Prefer shared tabs from `@repo/ui` if a Tabs primitive already exists; otherwise
 compose with existing button/toggle patterns without inventing a one-off chrome.
@@ -285,12 +291,12 @@ Realtime (optional v1):
 
 ## As-built (Step 5)
 
-| Piece          | Location                                                                                      |
-| -------------- | --------------------------------------------------------------------------------------------- |
-| Schema         | `activities` + `ActivityAction` — migration `add_activities`                                  |
-| Types / select | `packages/types/src/work-item-activity.ts`                                                    |
-| Writers        | `ActivitiesRepository` / `ActivitiesService`; injected into work-items + attachments services |
-| Events         | `created`, `field_changed`, `workflow_transition`, `attachment_added` / `_removed`            |
-| RSC reader     | `getWorkItemActivities` → details `Promise.all`                                               |
-| UI             | `WorkItemActivityFeed` behind Activity tab; section maximize on tab row                       |
-| Tests          | `apps/api/tests/activities/`, `work-items.activity.test.ts`, web feed/tabs tests              |
+| Piece          | Location                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------------ |
+| Schema         | `activities` + `ActivityAction` — migration `add_activities`                                     |
+| Types / select | `packages/types/src/work-item-activity.ts`                                                       |
+| Writers        | `ActivitiesRepository` / `ActivitiesService`; injected into work-items + attachments services    |
+| Events         | `created`, `field_changed`, `workflow_transition`, `attachment_added` / `_removed`               |
+| RSC reader     | `getWorkItemActivities` → details `Promise.all`                                                  |
+| UI             | `WorkItemActivityFeed` layouts (cards / timeline / table); `@repo/ui` Timeline; section maximize |
+| Tests          | `apps/api/tests/activities/`, `work-items.activity.test.ts`, web feed/tabs tests                 |

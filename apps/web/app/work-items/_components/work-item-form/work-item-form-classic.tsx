@@ -35,6 +35,8 @@ export function WorkItemFormClassicFields({
   availableTypes,
   projectId,
   assigneeId,
+  sprintId,
+  sprintOptions,
   type,
   priority,
   parentId,
@@ -55,6 +57,7 @@ export function WorkItemFormClassicFields({
   labelsDefault = [],
   onProjectIdChange,
   onAssigneeIdChange,
+  onSprintIdChange,
   onTypeChange,
   onPriorityChange,
   onParentIdChange,
@@ -197,6 +200,27 @@ export function WorkItemFormClassicFields({
           emptyText="No matching assignees."
         />
         <input type="hidden" name="assignee_id" value={assigneeId} />
+      </div>
+
+      <div className="space-y-2 sm:col-span-2">
+        <Label htmlFor="sprint_id">Sprint</Label>
+        <SearchableSelect
+          id="sprint_id"
+          value={sprintId}
+          onValueChange={onSprintIdChange}
+          showClear
+          disabled={!projectId}
+          placeholder={projectId ? 'Search sprints…' : 'Select a project first'}
+          options={sprintOptions.map((sprint) => ({
+            value: sprint.id,
+            label: sprint.name,
+          }))}
+          emptyText="No matching sprints."
+        />
+        <input type="hidden" name="sprint_id" value={sprintId} />
+        <p className="text-muted-foreground text-xs">
+          Optional. Clear to keep the item on the backlog.
+        </p>
       </div>
 
       <div className="space-y-2 sm:col-span-2">

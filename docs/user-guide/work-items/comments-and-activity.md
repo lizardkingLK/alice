@@ -38,6 +38,17 @@ The **Activity** tab shows who changed what on the work item over time:
 - Workflow state transitions
 - Attachments added or removed
 
+Entries are sorted newest first. On the Activity tab bar, open the **layout**
+menu (list icon) to switch how history is shown:
+
+| Layout       | What you see                                               |
+| ------------ | ---------------------------------------------------------- |
+| **Cards**    | Bordered list rows (default)                               |
+| **Timeline** | Vertical timeline with actor avatars and full descriptions |
+| **Table**    | Dense When / Actor / Details table                         |
+
+Your choice is remembered per work item in this browser.
+
 Use the maximize icon on the right of the Discussion \| Activity \| Work Log
 tab row to expand the whole section for long threads or history (same pattern
 as the description editor).
@@ -46,8 +57,9 @@ as the description editor).
 
 ## Work log tab
 
-The **Work log** tab tracks time or notes logged against the item (when enabled
-for your project). Done items may restrict new log entries.
+The **Work log** tab lists time logged against the item. Use the **+** on the
+Work Log tab bar (or **+** next to **Time Tracking** in the sidebar) to open the
+log-work dialog. Done or archived items may hide that control.
 
 ---
 

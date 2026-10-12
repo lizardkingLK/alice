@@ -129,9 +129,10 @@ describe('Kanban board policy denial', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Code Review' }));
 
     await waitFor(() =>
-      expect(toast.error).toHaveBeenCalledWith(
-        'Move blocked: you do not have permission to move this item from Development to Code Review.'
-      )
+      expect(toast.error).toHaveBeenCalledWith('Move blocked', {
+        description:
+          'You do not have permission to move this item from Development to Code Review.',
+      })
     );
     fireEvent.click(screen.getAllByRole('button', { name: 'Close' })[0]!);
 

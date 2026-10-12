@@ -14,7 +14,7 @@ schemas in `packages/types`, API tests under `apps/api/tests`, web under
 
 - Test **Zod / helpers** first (pure, fast).
 - API tests for auth, fork rules, transition gates, fallback.
-- UI tests for Settings confirms, board switcher, Apply/Reject card.
+- UI tests for Settings confirms, board active-workflow scoping, Apply/Reject card.
 - Manual QA checklist per step before marking the step done.
 - Do **not** regress worklogs (time-only) when adding activity.
 
@@ -58,18 +58,18 @@ schemas in `packages/types`, API tests under `apps/api/tests`, web under
 
 ## Web tests (`apps/web`)
 
-| Area              | Cases                                                            |
-| ----------------- | ---------------------------------------------------------------- |
-| Designer Settings | Terminal blocked until outbound removed; Lock record independent |
-| Require children  | Control persists on save/reload                                  |
-| Board switcher    | Columns/cards follow active workflow; foreign types hidden       |
-| DnD               | Optimistic success; API conflict reverts                         |
-| Details           | Workflow title shown; state list from item workflow              |
-| Resolution dialog | Renders preset; submit sends payload                             |
-| Activity tab      | Renders events; empty state                                      |
-| Alice card        | Apply calls apply tool only after click; Reject drops proposal   |
-| Dirty chat path   | Save then Apply without full navigation mock                     |
-| Charts UI         | State label visible only when project selected                   |
+| Area              | Cases                                                             |
+| ----------------- | ----------------------------------------------------------------- |
+| Designer Settings | Terminal blocked until outbound removed; Lock record independent  |
+| Require children  | Control persists on save/reload                                   |
+| Active workflow   | Columns/cards follow `?workflow=` / default; foreign types hidden |
+| DnD               | Optimistic success; API conflict reverts                          |
+| Details           | Workflow title shown; state list from item workflow               |
+| Resolution dialog | Renders preset; submit sends payload                              |
+| Activity tab      | Renders events; empty state                                       |
+| Alice card        | Apply calls apply tool only after click; Reject drops proposal    |
+| Dirty chat path   | Save then Apply without full navigation mock                      |
+| Charts UI         | State label visible only when project selected                    |
 
 ---
 

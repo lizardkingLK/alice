@@ -61,12 +61,12 @@ Select a row to open the item detail page.
 
 ## Types and hierarchy
 
-| Type      | Typical use                           |
-| --------- | ------------------------------------- |
-| **Epic**  | Large initiative                      |
-| **Story** | User-facing slice under an epic       |
-| **Task**  | Concrete work under a story           |
-| **Issue** | Bug or small fix (leaf — no subtasks) |
+| Type      | Typical use                                   |
+| --------- | --------------------------------------------- |
+| **Epic**  | Large initiative                              |
+| **Story** | User-facing slice under an epic               |
+| **Task**  | Concrete work under a story                   |
+| **Issue** | Bug or small fix (leaf — no Subtasks section) |
 
 Epics contain stories; stories contain tasks; tasks contain issues. Use
 **Create subtask** or **Link Subtask** on the detail page to build the tree.

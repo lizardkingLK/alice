@@ -291,6 +291,10 @@ describe('WorkItemDetails subtasks', () => {
     expect(
       screen.queryByRole('button', { name: /Link existing subtask/i })
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Subtasks' })
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('path-breadcrumb')).toBeInTheDocument();
   });
 
   it('renders Subtasks section with children and empty state', () => {

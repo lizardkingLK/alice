@@ -17,11 +17,14 @@ import {
   getProject,
   getProjectMembers,
 } from '@/app/projects/_services/projects.reads.server';
+import { EMPTY_ACTIVE_SPRINTS_PAGE } from '@/app/board/_services/board.reads.defaults.server';
+import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
 import { getWorkItemWorkLogs } from '@/app/worklogs/_services/worklogs.reads.supabase.server';
 import { getDbUser } from '@/lib/auth';
 import { zeroCountsById } from '@/lib/db/query';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog';
+import type { WorkItemSprintOption } from '@/app/work-items/_helpers/work-item-sprint';
 
 type WorkItemDetailsDataProps = {
   readonly workItemId: string;
@@ -98,30 +101,43 @@ export async function WorkItemDetailsData({
     (item) => item.id !== workItemId && !childIds.has(item.id)
   );
 
-  const [projectMembers, childCommentCounts, discussionWorkItems] =
-    await Promise.all([
-      workItem.project_id
-        ? safeServerFetch(
-            getProjectMembers(workItem.project_id),
-            [],
-            'fetch project members for work item details'
-          )
-        : Promise.resolve([]),
-      safeServerFetch(
-        getCommentCountsByWorkItemIds(childWorkItems.map((child) => child.id)),
-        zeroCountsById(childWorkItems.map((child) => child.id)),
-        'fetch subtask comment counts for work item details'
-      ),
-      workItem.project_id
-        ? safeServerFetch(
-            listCommentWorkItemOptions(100, {
-              projectId: workItem.project_id,
-            }),
-            [],
-            'fetch project work items for discussion mentions'
-          )
-        : Promise.resolve([]),
-    ]);
+  const [
+    projectMembers,
+    projectSprintsResult,
+    childCommentCounts,
+    discussionWorkItems,
+  ] = await Promise.all([
+    workItem.project_id
+      ? safeServerFetch(
+          getProjectMembers(workItem.project_id),
+          [],
+          'fetch project members for work item details'
+        )
+      : Promise.resolve([]),
+    workItem.project_id
+      ? safeServerFetch(
+          getSprintsPaginatedServer('active', 1, 100, undefined, {
+            projectId: workItem.project_id,
+          }),
+          EMPTY_ACTIVE_SPRINTS_PAGE,
+          'fetch project sprints for work item details'
+        )
+      : Promise.resolve(EMPTY_ACTIVE_SPRINTS_PAGE),
+    safeServerFetch(
+      getCommentCountsByWorkItemIds(childWorkItems.map((child) => child.id)),
+      zeroCountsById(childWorkItems.map((child) => child.id)),
+      'fetch subtask comment counts for work item details'
+    ),
+    workItem.project_id
+      ? safeServerFetch(
+          listCommentWorkItemOptions(100, {
+            projectId: workItem.project_id,
+          }),
+          [],
+          'fetch project work items for discussion mentions'
+        )
+      : Promise.resolve([]),
+  ]);
 
   const memberOptions: WorkItemPatchMemberOption[] = projectMembers
     .map((member) => member.user)
@@ -131,6 +147,13 @@ export async function WorkItemDetailsData({
       name: user.name,
       email: user.email,
       profile_picture: user.profile_picture ?? null,
+    }));
+
+  const sprintOptions: WorkItemSprintOption[] =
+    projectSprintsResult.sprints.map((sprint) => ({
+      id: sprint.id,
+      name: sprint.name,
+      status: sprint.status,
     }));
 
   const currentUserId = dbUser?.id ?? 'user-admin-1';
@@ -151,6 +174,7 @@ export async function WorkItemDetailsData({
       currentUserId={currentUserId}
       currentUserRole={currentUserRole}
       projectMembers={memberOptions}
+      projectSprints={sprintOptions}
       discussionWorkItems={discussionWorkItems}
     />
   );

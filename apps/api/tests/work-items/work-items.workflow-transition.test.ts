@@ -195,4 +195,82 @@ describe('WorkItemService workflow graph transitions', () => {
       )
     ).rejects.toBeInstanceOf(WorkItemValidationError);
   });
+
+  it('allows draft-category destinations via state id and clears board_column_id', async () => {
+    const envelope = createSeededDefaultWorkflowConfig();
+    const workflow = envelope.workflows[0]!;
+    const draftState = workflow.graph.states.find(
+      (state) => state.id === WorkItemStatusEnum.New
+    )!;
+    draftState.name = 'Draft';
+    draftState.category = 'draft';
+    workflow.graph.edges.push({
+      id: 'e-ToDo-to-New',
+      from: WorkItemStatusEnum.ToDo,
+      to: WorkItemStatusEnum.New,
+      allowAnyOf: [],
+      requiresEscalation: false,
+      resolutionPresetId: null,
+      requireChildren: 'off',
+    });
+    getProjectWorkflowConfigMock.mockResolvedValue(envelope);
+    getByIdMock.mockResolvedValue({
+      ...currentWorkItem,
+      status: WorkItemStatusEnum.ToDo,
+      board_column_id: WorkItemStatusEnum.ToDo,
+      state: {
+        workflowId: workflow.id,
+        stateId: WorkItemStatusEnum.ToDo,
+        category: 'todo',
+      },
+    });
+
+    await expect(
+      service.updateWorkItem(
+        ACTOR_ID,
+        WORK_ITEM_ID,
+        updateInput({
+          status: WorkItemStatusEnum.Draft,
+          board_column_id: WorkItemStatusEnum.New,
+        }),
+        LOCK
+      )
+    ).resolves.toMatchObject({
+      status: WorkItemStatusEnum.New,
+      board_column_id: null,
+    });
+
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: WorkItemStatusEnum.New,
+        board_column_id: null,
+        stateOverride: expect.objectContaining({
+          stateId: WorkItemStatusEnum.New,
+          category: 'draft',
+        }),
+      })
+    );
+  });
+
+  it('rejects unknown workflow state ids with a clear message', async () => {
+    let caught: unknown;
+    try {
+      await service.updateWorkItem(
+        ACTOR_ID,
+        WORK_ITEM_ID,
+        updateInput({
+          status: WorkItemStatusEnum.ToDo,
+          board_column_id: 'st-does-not-exist',
+        }),
+        LOCK
+      );
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(WorkItemValidationError);
+    expect((caught as Error).message).toBe(
+      'That state is not on this workflow.'
+    );
+  });
 });

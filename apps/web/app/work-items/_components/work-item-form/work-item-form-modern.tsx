@@ -179,6 +179,8 @@ export function WorkItemFormModernFields({
   availableTypes,
   projectId,
   assigneeId,
+  sprintId,
+  sprintOptions,
   type,
   priority,
   parentId,
@@ -193,6 +195,7 @@ export function WorkItemFormModernFields({
   status,
   onProjectIdChange,
   onAssigneeIdChange,
+  onSprintIdChange,
   onTypeChange,
   onPriorityChange,
   onParentIdChange,
@@ -396,6 +399,23 @@ export function WorkItemFormModernFields({
                 label: member.name,
               }))}
               emptyText="No matching assignees."
+            />
+          </FieldTooltip>
+
+          <FieldTooltip label="Sprint">
+            <IconSearchablePill
+              icon={<Layers />}
+              id="sprint_id"
+              value={sprintId}
+              onValueChange={onSprintIdChange}
+              disabled={!projectId}
+              showClear
+              placeholder="Sprint"
+              options={sprintOptions.map((sprint) => ({
+                value: sprint.id,
+                label: sprint.name,
+              }))}
+              emptyText="No matching sprints."
             />
           </FieldTooltip>
         </div>

@@ -12,11 +12,23 @@ import {
   SelectValue,
 } from '@repo/ui/components/ui/select';
 import { toast } from '@repo/ui/components/ui/sonner';
-import { delay, formatLabelWithSpace } from '@/app/_shared/utility';
+import { delay } from '@/app/_shared/utility';
 import { WorkItemActionDialog } from '@/app/work-items/_components/work-item-details/work-item-action-dialog';
 import { buildMemberSelectOptions } from '@/app/work-items/_components/member-select-items';
 import { resolveWorkItemMember } from '@/app/work-items/_helpers/work-item-member';
 import { WORK_ITEM_STATUSES } from '@/app/work-items/_helpers/work-item-status';
+import {
+  boardColumnIdForStateOption,
+  legacyWorkflowStateOptions,
+  resolveStatePresentation,
+  type WorkflowStateOption,
+} from '@/app/work-items/_helpers/workflow-state-options';
+import {
+  selectValueFromSprintId,
+  sprintIdFromSelectValue,
+  WORK_ITEM_SPRINT_BACKLOG_VALUE,
+  type WorkItemSprintOption,
+} from '@/app/work-items/_helpers/work-item-sprint';
 import { SearchableSelect } from '@/components/searchable-select';
 import {
   updateWorkItem,
@@ -25,13 +37,20 @@ import {
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
+import {
+  isWorkflowMoveBlockedError,
+  toastWorkflowMoveBlockedFromError,
+  workflowMoveBlockedDescription,
+} from '@/app/board/_helpers/workflow-move-blocked-toast';
 import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels/work-item-labels-input';
 import { FormStatusAlerts } from '@/app/work-items/_components/work-item-form/work-item-form-alerts';
+import { cn } from '@repo/ui/lib/utils';
 
 export type WorkItemPatchFieldId =
-  'assignee_id' | 'reporter_id' | 'title' | 'status' | 'labels';
+  'assignee_id' | 'reporter_id' | 'title' | 'status' | 'labels' | 'sprint_id';
 
-export type WorkItemPatchFieldKind = 'user' | 'text' | 'status' | 'labels';
+export type WorkItemPatchFieldKind =
+  'user' | 'text' | 'status' | 'labels' | 'sprint';
 
 export type WorkItemPatchFieldConfig = {
   readonly field: WorkItemPatchFieldId;
@@ -87,6 +106,15 @@ export const WORK_ITEM_PATCH_FIELD_CONFIG: Record<
       'Add or remove labels. Matching is exact and case-sensitive when searching.',
     label: 'Labels',
   },
+  sprint_id: {
+    field: 'sprint_id',
+    kind: 'sprint',
+    title: 'Change Sprint',
+    description:
+      'Move this work item into a sprint, or clear to keep it on the backlog.',
+    label: 'Sprint',
+    unassignedLabel: 'Backlog',
+  },
 };
 
 export type WorkItemPatchMemberOption = {
@@ -108,6 +136,10 @@ type WorkItemFieldPatchDialogProps = {
   readonly expectedUpdatedAt: string;
   readonly fieldConfig: WorkItemPatchFieldConfig;
   readonly options?: readonly WorkItemPatchMemberOption[];
+  /** When set, status field lists workflow states (value = state id). */
+  readonly stateOptions?: readonly WorkflowStateOption[];
+  /** Sprint options for the sprint_id patch field. */
+  readonly sprintOptions?: readonly WorkItemSprintOption[];
   readonly currentValue: string | null;
   readonly currentLabels?: readonly string[];
   readonly onPatched: (updated: Partial<DbWorkItem>) => void;
@@ -143,6 +175,9 @@ function initialSelectedValue(
   if (kind === 'user') {
     return currentValue ?? UNASSIGNED_VALUE;
   }
+  if (kind === 'sprint') {
+    return selectValueFromSprintId(currentValue);
+  }
   return currentValue ?? '';
 }
 
@@ -153,6 +188,8 @@ export function WorkItemFieldPatchDialog({
   expectedUpdatedAt,
   fieldConfig,
   options = [],
+  stateOptions,
+  sprintOptions = [],
   currentValue,
   currentLabels = EMPTY_PATCH_LABELS,
   onPatched,
@@ -161,6 +198,9 @@ export function WorkItemFieldPatchDialog({
   const isTextField = fieldConfig.kind === 'text';
   const isStatusField = fieldConfig.kind === 'status';
   const isLabelsField = fieldConfig.kind === 'labels';
+  const isSprintField = fieldConfig.kind === 'sprint';
+  const statusChoices: readonly WorkflowStateOption[] =
+    stateOptions ?? legacyWorkflowStateOptions();
   const [selectedValue, setSelectedValue] = useState(
     initialSelectedValue(fieldConfig.kind, currentValue)
   );
@@ -221,17 +261,29 @@ export function WorkItemFieldPatchDialog({
   };
 
   const saveStatusField = async () => {
-    const nextStatus = selectedValue as DbWorkItem['status'];
+    const selected =
+      statusChoices.find((option) => option.id === selectedValue) ?? null;
+    if (!selected) {
+      setAlert({
+        success: null,
+        error: `Select a ${fieldConfig.label.toLowerCase()}.`,
+      });
+      return;
+    }
+    const boardColumnId = boardColumnIdForStateOption(selected);
     const response = await updateWorkItemStatus(
       workItemId,
-      nextStatus,
-      expectedUpdatedAt
+      selected.status,
+      expectedUpdatedAt,
+      boardColumnId
     );
-    const status = response.data?.status ?? nextStatus;
+    const status = response.data?.status ?? selected.status;
 
-    toast.success(`Status updated to ${formatLabelWithSpace(status)}.`);
+    toast.success(`${fieldConfig.label} updated to ${selected.name}.`);
     onPatched({
       status,
+      board_column_id: response.data?.board_column_id ?? boardColumnId,
+      state: response.data?.state,
       updated_at: response.data?.updated_at,
     });
     onOpenChange(false);
@@ -282,6 +334,32 @@ export function WorkItemFieldPatchDialog({
     );
   };
 
+  const saveSprintField = async () => {
+    const nextSprintId = sprintIdFromSelectValue(selectedValue);
+    const formData = new FormData();
+    formData.set('sprint_id', nextSprintId ?? '');
+    const response = await updateWorkItem(
+      workItemId,
+      formData,
+      expectedUpdatedAt
+    );
+    const selectedSprint =
+      sprintOptions.find((sprint) => sprint.id === nextSprintId) ?? null;
+
+    await finishWithInDialogSuccess(
+      `${fieldConfig.label} updated successfully.`,
+      {
+        sprint_id: response.data?.sprint_id ?? nextSprintId,
+        sprint:
+          response.data?.sprint ??
+          (selectedSprint
+            ? { id: selectedSprint.id, name: selectedSprint.name }
+            : null),
+        updated_at: response.data?.updated_at,
+      }
+    );
+  };
+
   const saveByKind = async () => {
     switch (fieldConfig.kind) {
       case 'text':
@@ -292,6 +370,9 @@ export function WorkItemFieldPatchDialog({
         return;
       case 'labels':
         await saveLabelsField();
+        return;
+      case 'sprint':
+        await saveSprintField();
         return;
       default:
         await saveUserField();
@@ -306,6 +387,8 @@ export function WorkItemFieldPatchDialog({
         return { status: selectedValue };
       case 'labels':
         return { labels: labelsValue };
+      case 'sprint':
+        return { sprint_id: sprintIdFromSelectValue(selectedValue) };
       default:
         return {
           [fieldConfig.field]:
@@ -337,7 +420,15 @@ export function WorkItemFieldPatchDialog({
 
       const message =
         error instanceof Error ? error.message : 'Something went wrong.';
-      setAlert({ success: null, error: message });
+      if (fieldConfig.kind === 'status' && isWorkflowMoveBlockedError(error)) {
+        toastWorkflowMoveBlockedFromError(error);
+        setAlert({
+          success: null,
+          error: workflowMoveBlockedDescription(message),
+        });
+      } else {
+        setAlert({ success: null, error: message });
+      }
     } finally {
       setIsPending(false);
     }
@@ -369,14 +460,29 @@ export function WorkItemFieldPatchDialog({
         disabled={isPending}
       >
         <SelectTrigger id={`patch-${fieldConfig.field}`}>
-          <SelectValue placeholder="Select status" />
+          <SelectValue
+            placeholder={`Select ${fieldConfig.label.toLowerCase()}`}
+          />
         </SelectTrigger>
         <SelectContent>
-          {WORK_ITEM_STATUSES.map((status) => (
-            <SelectItem key={status} value={status}>
-              {formatLabelWithSpace(status)}
-            </SelectItem>
-          ))}
+          {statusChoices.map((option) => {
+            const presentation = resolveStatePresentation({
+              category: option.category,
+              status: option.status,
+              stateName: option.name,
+            });
+            const OptionIcon = presentation.icon;
+            return (
+              <SelectItem key={option.id} value={option.id}>
+                <span className="flex items-center gap-2">
+                  <OptionIcon
+                    className={cn('h-3.5 w-3.5', presentation.textClass)}
+                  />
+                  <span className={presentation.textClass}>{option.name}</span>
+                </span>
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
     );
@@ -388,6 +494,27 @@ export function WorkItemFieldPatchDialog({
         value={labelsValue}
         onChange={setLabelsValue}
         disabled={isPending}
+      />
+    );
+  } else if (isSprintField) {
+    fieldControl = (
+      <SearchableSelect
+        id={`patch-${fieldConfig.field}`}
+        value={selectedValue}
+        onValueChange={setSelectedValue}
+        disabled={isPending}
+        placeholder={fieldConfig.unassignedLabel ?? 'Backlog'}
+        options={[
+          {
+            value: WORK_ITEM_SPRINT_BACKLOG_VALUE,
+            label: fieldConfig.unassignedLabel ?? 'Backlog',
+          },
+          ...sprintOptions.map((sprint) => ({
+            value: sprint.id,
+            label: sprint.name,
+          })),
+        ]}
+        emptyText="No matching sprints."
       />
     );
   } else {

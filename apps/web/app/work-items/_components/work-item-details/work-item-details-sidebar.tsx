@@ -1,16 +1,23 @@
 'use client';
 
-import { formatLabelWithSpace, formatDate } from '@/app/_shared/utility';
+import { formatDate } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import {
   WORK_ITEM_PATCH_FIELD_CONFIG,
-  WORK_ITEM_STATUSES,
   WorkItemFieldPatchDialog,
+  type WorkItemPatchFieldId,
   type WorkItemPatchMemberOption,
 } from '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog';
+import type { WorkItemSprintOption } from '@/app/work-items/_helpers/work-item-sprint';
 import { IncompleteSubtasksDoneBlockedDialog } from '@/app/work-items/_components/work-item-subtasks/incomplete-subtasks-done-blocked-dialog';
 import { WorkItemResolutionDialog } from '@/app/work-items/_components/work-item-details/work-item-resolution-dialog';
 import { hasIncompleteStatuses } from '@/app/work-items/_helpers/work-item-status';
+import {
+  boardColumnIdForStateOption,
+  resolutionPresetForMove,
+  resolveStatePresentation,
+  resolveWorkItemStatePickerModel,
+} from '@/app/work-items/_helpers/workflow-state-options';
 import {
   extractDynamicFieldValues,
   patchWorkItemDynamicFields,
@@ -28,14 +35,6 @@ import {
   WORK_ITEM_GITHUB_STATUS_MESSAGES,
   type WorkItemGithubConfigStatus,
 } from '@repo/types';
-import {
-  findResolutionPreset,
-  findWorkflowEdge,
-  findWorkflowState,
-  getResolutionRequirement,
-  resolveWorkflowConfig,
-  resolveWorkflowForWorkItemType,
-} from '@repo/types/api/v1';
 import { isManagerOrAdmin, type AppRole } from '@/lib/rbac';
 import { Button } from '@repo/ui/components/ui/button';
 import { ButtonGroup } from '@repo/ui/components/ui/button-group';
@@ -113,12 +112,18 @@ import {
 } from '@repo/ui/components/ui/dialog';
 import { Input } from '@repo/ui/components/ui/input';
 import { toast } from '@repo/ui/components/ui/sonner';
+import {
+  isWorkflowMoveBlockedError,
+  toastWorkflowMoveBlockedFromError,
+} from '@/app/board/_helpers/workflow-move-blocked-toast';
 import { FormStatusAlerts } from '@/app/work-items/_components/work-item-form/work-item-form-alerts';
 
 function StatusDropdown({
   workItemId,
   expectedUpdatedAt,
   workItemStatus,
+  workItemState,
+  boardColumnId,
   childStatuses,
   workItemType,
   workflowConfig,
@@ -127,72 +132,102 @@ function StatusDropdown({
   workItemId: string;
   expectedUpdatedAt: string;
   workItemStatus: DbWorkItem['status'];
+  workItemState: DbWorkItem['state'];
+  boardColumnId: DbWorkItem['board_column_id'];
   childStatuses: readonly WorkItemStatus[];
   workItemType: DbWorkItem['type'];
   workflowConfig: unknown;
   // eslint-disable-next-line no-unused-vars -- callback signature
   onPatched: (updated: Partial<DbWorkItem>) => void;
 }>) {
+  const picker = useMemo(
+    () =>
+      resolveWorkItemStatePickerModel({
+        workflowConfig,
+        workItemType,
+        status: workItemStatus,
+        state: workItemState,
+        boardColumnId,
+      }),
+    [workflowConfig, workItemType, workItemStatus, workItemState, boardColumnId]
+  );
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [resolutionOpen, setResolutionOpen] = useState(false);
   const [blockedOpen, setBlockedOpen] = useState(false);
   const [isSavingResolution, setIsSavingResolution] = useState(false);
-  const [pendingStatus, setPendingStatus] =
-    useState<DbWorkItem['status']>(workItemStatus);
+  const [pendingStateId, setPendingStateId] = useState(picker.currentStateId);
+
+  useEffect(() => {
+    setPendingStateId(picker.currentStateId);
+  }, [picker.currentStateId]);
 
   const incompleteSubtaskCount = childStatuses.filter(
     (status) => status !== 'Done'
   ).length;
 
+  const pendingOption =
+    picker.options.find((option) => option.id === pendingStateId) ?? null;
+  const currentOption =
+    picker.options.find((option) => option.id === picker.currentStateId) ??
+    null;
+  const currentPresentation = resolveStatePresentation({
+    category: currentOption?.category,
+    status: currentOption?.status ?? workItemStatus,
+    stateName: picker.currentLabel,
+  });
+  const CurrentIcon = currentPresentation.icon;
+
+  const statusFieldConfig = useMemo(
+    () => ({
+      ...WORK_ITEM_PATCH_FIELD_CONFIG.status,
+      title: picker.usesWorkflow ? 'Change State' : 'Change Status',
+      description: picker.usesWorkflow
+        ? 'Confirm the new workflow state for this work item.'
+        : WORK_ITEM_PATCH_FIELD_CONFIG.status.description,
+      label: picker.fieldLabel,
+    }),
+    [picker.fieldLabel, picker.usesWorkflow]
+  );
+
   const resolutionPreset = useMemo(() => {
-    const resolved = resolveWorkflowConfig(workflowConfig);
-    const workflow = resolveWorkflowForWorkItemType(
-      resolved.config,
-      workItemType
+    if (!picker.workflow || !pendingOption) {
+      return null;
+    }
+    return resolutionPresetForMove(
+      picker.workflow,
+      picker.currentStateId,
+      pendingOption.id
     );
-    if (!workflow) {
-      return null;
-    }
-    const edge = findWorkflowEdge(workflow, workItemStatus, pendingStatus);
-    const source = findWorkflowState(workflow, workItemStatus);
-    if (!edge || !source) {
-      return null;
-    }
-    const requirement = getResolutionRequirement(edge, source);
-    if (!requirement.required || !requirement.presetId) {
-      return null;
-    }
-    return findResolutionPreset(workflow, requirement.presetId);
-  }, [workflowConfig, workItemType, workItemStatus, pendingStatus]);
+  }, [picker.workflow, picker.currentStateId, pendingOption]);
 
   const handleStatusSelect = (value: string) => {
-    const nextStatus = value as DbWorkItem['status'];
-    if (nextStatus === workItemStatus) {
+    if (value === picker.currentStateId) {
       return;
     }
-    if (nextStatus === 'Done' && hasIncompleteStatuses(childStatuses)) {
+    const nextOption = picker.options.find((option) => option.id === value);
+    if (!nextOption) {
+      return;
+    }
+    if (
+      nextOption.category === 'done' &&
+      hasIncompleteStatuses(childStatuses)
+    ) {
       setBlockedOpen(true);
       return;
     }
-    setPendingStatus(nextStatus);
+    setPendingStateId(nextOption.id);
 
-    const resolved = resolveWorkflowConfig(workflowConfig);
-    const workflow = resolveWorkflowForWorkItemType(
-      resolved.config,
-      workItemType
-    );
-    const edge = workflow
-      ? findWorkflowEdge(workflow, workItemStatus, nextStatus)
-      : null;
-    const source = workflow
-      ? findWorkflowState(workflow, workItemStatus)
-      : null;
-    if (edge && source) {
-      const requirement = getResolutionRequirement(edge, source);
-      if (requirement.required && requirement.presetId) {
-        setResolutionOpen(true);
-        return;
-      }
+    if (
+      picker.workflow &&
+      resolutionPresetForMove(
+        picker.workflow,
+        picker.currentStateId,
+        nextOption.id
+      )
+    ) {
+      setResolutionOpen(true);
+      return;
     }
     setDialogOpen(true);
   };
@@ -201,30 +236,62 @@ function StatusDropdown({
     <>
       <ButtonGroup className="w-full">
         <Button
-          variant="default"
-          className="bg-primary text-primary-foreground hover:bg-primary/90 flex-1 justify-start"
+          variant="outline"
+          className={cn(
+            'flex-1 justify-start gap-2 border font-semibold',
+            currentPresentation.borderClass,
+            currentPresentation.bgClass,
+            currentPresentation.textClass,
+            'hover:opacity-90'
+          )}
         >
-          {formatLabelWithSpace(workItemStatus)}
+          <CurrentIcon className="h-4 w-4 shrink-0" />
+          {picker.currentLabel}
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="default" className="cursor-pointer px-2">
+            <Button
+              variant="outline"
+              className={cn(
+                'cursor-pointer border px-2',
+                currentPresentation.borderClass,
+                currentPresentation.bgClass,
+                currentPresentation.textClass
+              )}
+            >
               <ChevronDown />
-              <span className="sr-only">Change status</span>
+              <span className="sr-only">{picker.changeLabel}</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuGroup>
-              <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+              <DropdownMenuLabel>{picker.changeLabel}</DropdownMenuLabel>
               <DropdownMenuRadioGroup
-                value={workItemStatus}
+                value={picker.currentStateId}
                 onValueChange={handleStatusSelect}
               >
-                {WORK_ITEM_STATUSES.map((item) => (
-                  <DropdownMenuRadioItem key={item} value={item}>
-                    {formatLabelWithSpace(item)}
-                  </DropdownMenuRadioItem>
-                ))}
+                {picker.options.map((option) => {
+                  const presentation = resolveStatePresentation({
+                    category: option.category,
+                    status: option.status,
+                    stateName: option.name,
+                  });
+                  const OptionIcon = presentation.icon;
+                  return (
+                    <DropdownMenuRadioItem
+                      key={option.id}
+                      value={option.id}
+                      className="gap-2"
+                    >
+                      <OptionIcon
+                        className={cn('h-3.5 w-3.5', presentation.textClass)}
+                      />
+                      <span className={presentation.textClass}>
+                        {option.name}
+                      </span>
+                    </DropdownMenuRadioItem>
+                  );
+                })}
               </DropdownMenuRadioGroup>
             </DropdownMenuGroup>
           </DropdownMenuContent>
@@ -236,42 +303,51 @@ function StatusDropdown({
         onOpenChange={setDialogOpen}
         workItemId={workItemId}
         expectedUpdatedAt={expectedUpdatedAt}
-        fieldConfig={WORK_ITEM_PATCH_FIELD_CONFIG.status}
-        currentValue={pendingStatus}
+        fieldConfig={statusFieldConfig}
+        currentValue={pendingStateId}
+        stateOptions={picker.options}
         onPatched={onPatched}
       />
 
-      {resolutionPreset ? (
+      {resolutionPreset && pendingOption ? (
         <WorkItemResolutionDialog
           open={resolutionOpen}
           onOpenChange={setResolutionOpen}
           preset={resolutionPreset}
-          targetStatusLabel={formatLabelWithSpace(pendingStatus)}
+          targetStatusLabel={pendingOption.name}
           isPending={isSavingResolution}
           onSubmit={async (payload) => {
             setIsSavingResolution(true);
             try {
               const response = await updateWorkItemStatus(
                 workItemId,
-                pendingStatus,
+                pendingOption.status,
                 expectedUpdatedAt,
-                undefined,
+                boardColumnIdForStateOption(pendingOption),
                 payload
               );
               toast.success(
-                `Status updated to ${formatLabelWithSpace(pendingStatus)}.`
+                `${picker.fieldLabel} updated to ${pendingOption.name}.`
               );
               onPatched({
-                status: response.data?.status ?? pendingStatus,
+                status: response.data?.status ?? pendingOption.status,
+                board_column_id:
+                  response.data?.board_column_id ??
+                  boardColumnIdForStateOption(pendingOption),
+                state: response.data?.state ?? workItemState,
                 updated_at: response.data?.updated_at,
               });
               setResolutionOpen(false);
             } catch (error) {
-              toast.error(
-                error instanceof Error
-                  ? error.message
-                  : 'Could not update status.'
-              );
+              if (isWorkflowMoveBlockedError(error)) {
+                toastWorkflowMoveBlockedFromError(error);
+              } else {
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : `Could not update ${picker.fieldLabel.toLowerCase()}.`
+                );
+              }
             } finally {
               setIsSavingResolution(false);
             }
@@ -497,10 +573,36 @@ function EditableLabelsField({
   );
 }
 
+function EditableSprintField({
+  sprintName,
+  onEdit,
+  readOnly = false,
+}: Readonly<{
+  readonly sprintName?: string | null;
+  readonly onEdit: () => void;
+  readonly readOnly?: boolean;
+}>) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-sm font-medium">
+        {sprintName?.trim() || 'Backlog'}
+      </span>
+      {readOnly ? null : (
+        <DetailFieldEditButton
+          ariaLabel="Edit sprint"
+          className="shrink-0"
+          onClick={onEdit}
+        />
+      )}
+    </div>
+  );
+}
+
 export default function WorkItemSidebar({
   workItem,
   childStatuses = [],
   projectMembers = [],
+  projectSprints = [],
   project,
   workLogs = [],
   detailsOpen,
@@ -515,6 +617,7 @@ export default function WorkItemSidebar({
   workItem: DbWorkItem;
   childStatuses?: readonly WorkItemStatus[];
   projectMembers?: readonly WorkItemPatchMemberOption[];
+  projectSprints?: readonly WorkItemSprintOption[];
   project?: DbProject | null;
   workLogs?: WorkItemWorkLog[];
   detailsOpen: boolean;
@@ -529,9 +632,9 @@ export default function WorkItemSidebar({
   currentUserRole?: string | null;
 }>) {
   const { isUserOnline } = useRealtime();
-  const [activeField, setActiveField] = useState<
-    'assignee_id' | 'reporter_id' | 'labels' | null
-  >(null);
+  const [activeField, setActiveField] = useState<WorkItemPatchFieldId | null>(
+    null
+  );
   const [developmentOpen, setDevelopmentOpen] = useState(true);
   const [additionalFieldsOpen, setAdditionalFieldsOpen] = useState(true);
   const labels = parseWorkItemLabels(workItem.labels);
@@ -628,7 +731,14 @@ export default function WorkItemSidebar({
     currentValue = workItem.assignee_id;
   } else if (activeField === 'reporter_id') {
     currentValue = workItem.reporter_id;
+  } else if (activeField === 'sprint_id') {
+    currentValue = workItem.sprint_id;
   }
+
+  const sprintDisplayName =
+    workItem.sprint?.name ??
+    projectSprints.find((sprint) => sprint.id === workItem.sprint_id)?.name ??
+    null;
 
   return (
     <aside className="space-y-4 lg:col-span-2">
@@ -636,6 +746,8 @@ export default function WorkItemSidebar({
         workItemId={workItem.id}
         expectedUpdatedAt={workItem.updated_at}
         workItemStatus={workItem.status}
+        workItemState={workItem.state}
+        boardColumnId={workItem.board_column_id}
         childStatuses={childStatuses}
         workItemType={workItem.type}
         workflowConfig={project?.workflow_config}
@@ -669,6 +781,13 @@ export default function WorkItemSidebar({
         </DetailRow>
         <DetailRow label="Priority">
           <PriorityBadge priority={workItem.priority} />
+        </DetailRow>
+        <DetailRow label="Sprint">
+          <EditableSprintField
+            sprintName={sprintDisplayName}
+            onEdit={() => setActiveField('sprint_id')}
+            readOnly={readOnly}
+          />
         </DetailRow>
         <DetailRow label="Labels">
           <EditableLabelsField
@@ -763,9 +882,6 @@ export default function WorkItemSidebar({
         <DetailRow label="Story points">
           <span>{workItem.story_points ?? '—'}</span>
         </DetailRow>
-        <DetailRow label="Sprint">
-          <span>{workItem.sprint_id ? 'Assigned' : 'Backlog'}</span>
-        </DetailRow>
       </SidebarCollapsibleSection>
 
       <div className="text-muted-foreground space-y-1 px-1 text-xs">
@@ -795,6 +911,7 @@ export default function WorkItemSidebar({
           expectedUpdatedAt={workItem.updated_at}
           fieldConfig={activeConfig}
           options={projectMembers}
+          sprintOptions={projectSprints}
           currentValue={currentValue}
           currentLabels={labels}
           onPatched={onWorkItemPatched}
