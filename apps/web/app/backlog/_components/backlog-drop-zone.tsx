@@ -56,7 +56,7 @@ export function BacklogDropZone({
         '@container/backlog-pane space-y-2 overflow-visible p-3 transition-all duration-200',
         isDragOver
           ? 'border-primary/30 bg-primary/5 rounded-lg border-2 border-dashed'
-          : 'bg-card'
+          : 'bg-muted/25'
       )}
     >
       {items.length === 0 ? (

@@ -53,9 +53,14 @@ import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badg
 import { WORK_ITEM_TYPE_ICONS } from '@/app/work-items/_helpers/work-item-type';
 import { MODERN_BORDERLESS_FOCUS_CLASSES } from '@/lib/editor/compact-editor-attrs';
 import {
+  isOptionsLoadingEmpty,
+  loadingAwarePlaceholder,
+} from '@/app/work-items/_helpers/work-item-form-loading-placeholder';
+import {
   resolveSprintDisplayName,
   type WorkItemSprintOption,
 } from '@/app/work-items/_helpers/work-item-sprint';
+import type { WorkItemFormMember } from '@/app/work-items/_components/work-item-form/work-item-form-field-props';
 
 export type WorkItemFormModernFieldsProps = WorkItemFormSharedFieldProps & {
   readonly titleDefault?: string;
@@ -133,6 +138,7 @@ function IconSearchablePill({
   placeholder,
   options,
   emptyText,
+  isLoading = false,
   showClear = false,
 }: Readonly<{
   icon: ReactNode;
@@ -144,6 +150,7 @@ function IconSearchablePill({
   placeholder: string;
   options: readonly SearchableSelectOption[];
   emptyText: string;
+  isLoading?: boolean;
   showClear?: boolean;
 }>) {
   return (
@@ -160,6 +167,7 @@ function IconSearchablePill({
         ariaLabel={placeholder}
         options={options}
         emptyText={emptyText}
+        isLoading={isLoading}
         showClear={showClear}
         className={cn(pillTriggerClassName(Boolean(value)), 'pl-8')}
       />
@@ -178,14 +186,20 @@ function ModernSprintField({
   projectId,
   lockSprintFromParent,
   onSprintIdChange,
+  sprintOptionsLoading,
 }: Readonly<{
   readonly sprintId: string;
   readonly sprintOptions: readonly WorkItemSprintOption[];
+  readonly sprintOptionsLoading: boolean;
   readonly projectId: string;
   readonly lockSprintFromParent: boolean;
   // eslint-disable-next-line no-unused-vars -- controlled setter
   readonly onSprintIdChange: (value: string) => void;
 }>) {
+  const loadingEmpty = isOptionsLoadingEmpty(
+    sprintOptionsLoading,
+    sprintOptions.length
+  );
   return (
     <>
       <FieldTooltip
@@ -203,17 +217,64 @@ function ModernSprintField({
             onValueChange={onSprintIdChange}
             disabled={!projectId}
             showClear
-            placeholder="Sprint"
+            placeholder={loadingAwarePlaceholder(
+              loadingEmpty,
+              'Loading…',
+              'Sprint'
+            )}
             options={sprintOptions.map((sprint) => ({
               value: sprint.id,
               label: sprint.name,
             }))}
             emptyText="No matching sprints."
+            isLoading={loadingEmpty}
           />
         )}
       </FieldTooltip>
       <input type="hidden" name="sprint_id" value={sprintId} />
     </>
+  );
+}
+
+function ModernAssigneeField({
+  assigneeId,
+  projectMembers,
+  lockAssignee,
+  assigneeOptionsLoading,
+  onAssigneeIdChange,
+}: Readonly<{
+  readonly assigneeId: string;
+  readonly projectMembers: readonly WorkItemFormMember[];
+  readonly lockAssignee: boolean;
+  readonly assigneeOptionsLoading: boolean;
+  // eslint-disable-next-line no-unused-vars -- controlled setter
+  readonly onAssigneeIdChange: (value: string) => void;
+}>) {
+  const loadingEmpty = isOptionsLoadingEmpty(
+    assigneeOptionsLoading,
+    projectMembers.length
+  );
+  return (
+    <FieldTooltip label="Assignee">
+      <IconSearchablePill
+        icon={<CircleUserRound />}
+        id="assignee_id"
+        value={assigneeId}
+        onValueChange={onAssigneeIdChange}
+        disabled={lockAssignee}
+        placeholder={loadingAwarePlaceholder(
+          loadingEmpty,
+          'Loading…',
+          'Assignee'
+        )}
+        options={projectMembers.map((member) => ({
+          value: member.id,
+          label: member.name,
+        }))}
+        emptyText="No matching assignees."
+        isLoading={loadingEmpty}
+      />
+    </FieldTooltip>
   );
 }
 
@@ -230,6 +291,8 @@ export function WorkItemFormModernFields({
   assigneeId,
   sprintId,
   sprintOptions,
+  sprintOptionsLoading,
+  assigneeOptionsLoading,
   type,
   priority,
   parentId,
@@ -436,25 +499,18 @@ export function WorkItemFormModernFields({
             }
           />
 
-          <FieldTooltip label="Assignee">
-            <IconSearchablePill
-              icon={<CircleUserRound />}
-              id="assignee_id"
-              value={assigneeId}
-              onValueChange={onAssigneeIdChange}
-              disabled={lockAssignee}
-              placeholder="Assignee"
-              options={projectMembers.map((member) => ({
-                value: member.id,
-                label: member.name,
-              }))}
-              emptyText="No matching assignees."
-            />
-          </FieldTooltip>
+          <ModernAssigneeField
+            assigneeId={assigneeId}
+            projectMembers={projectMembers}
+            lockAssignee={lockAssignee}
+            assigneeOptionsLoading={assigneeOptionsLoading}
+            onAssigneeIdChange={onAssigneeIdChange}
+          />
 
           <ModernSprintField
             sprintId={sprintId}
             sprintOptions={sprintOptions}
+            sprintOptionsLoading={sprintOptionsLoading}
             projectId={projectId}
             lockSprintFromParent={lockSprintFromParent}
             onSprintIdChange={onSprintIdChange}

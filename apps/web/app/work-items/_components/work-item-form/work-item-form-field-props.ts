@@ -21,6 +21,8 @@ export type WorkItemFormSharedFieldProps = {
   readonly assigneeId: string;
   readonly sprintId: string;
   readonly sprintOptions: readonly WorkItemSprintOption[];
+  readonly sprintOptionsLoading: boolean;
+  readonly assigneeOptionsLoading: boolean;
   readonly type: string;
   readonly priority: WorkItemPriority;
   readonly parentId: string;

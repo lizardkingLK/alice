@@ -320,22 +320,24 @@ export function WorkItemForm({
   const dueDateDefault =
     itemToEdit?.due_date?.split('T')[0] ?? defaultDueDate ?? '';
 
-  const currentMembers = useProjectMembers({
-    projectId,
-    projectMembers,
-    assigneeId,
-    lockAssignee,
-    preferProvidedMembers,
-    onAssigneeChange: (val) => setAssigneeId(val ?? ''),
-  });
+  const { members: currentMembers, isLoading: assigneeOptionsLoading } =
+    useProjectMembers({
+      projectId,
+      projectMembers,
+      assigneeId,
+      lockAssignee,
+      preferProvidedMembers,
+      onAssigneeChange: (val) => setAssigneeId(val ?? ''),
+    });
 
-  const currentSprints = useProjectSprints({
-    projectId,
-    providedSprints: projectSprints,
-    sprintId,
-    preferProvidedSprints: preferProvidedSprints || preferProvidedMembers,
-    onSprintChange: (val) => setSprintId(val ?? ''),
-  });
+  const { sprints: currentSprints, isLoading: sprintOptionsLoading } =
+    useProjectSprints({
+      projectId,
+      providedSprints: projectSprints,
+      sprintId,
+      preferProvidedSprints: preferProvidedSprints || preferProvidedMembers,
+      onSprintChange: (val) => setSprintId(val ?? ''),
+    });
 
   const allowedParentType = resolveAllowedParentType(
     type,
@@ -581,6 +583,8 @@ export function WorkItemForm({
     assigneeId,
     sprintId,
     sprintOptions: currentSprints,
+    sprintOptionsLoading,
+    assigneeOptionsLoading,
     type,
     priority,
     parentId: effectiveParentId,

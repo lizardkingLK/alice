@@ -5,6 +5,8 @@ import {
   WorkItemFieldPatchDialog,
 } from '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog';
 
+vi.mock('next/navigation', () => import('../mocks/next-navigation'));
+
 vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
   updateWorkItem: vi.fn(),
   updateWorkItemStatus: vi.fn(),

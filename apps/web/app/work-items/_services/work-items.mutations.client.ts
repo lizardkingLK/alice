@@ -28,13 +28,17 @@ export async function createWorkItem(
   });
 }
 
+export type WorkItemUpdateResponse = ResponseDTO<DbWorkItem> & {
+  readonly cascadedSprintDescendantIds?: readonly string[];
+};
+
 export async function updateWorkItem(
   id: string,
   formData: FormData,
   expectedUpdatedAt: string
-): Promise<ResponseDTO<DbWorkItem>> {
+): Promise<WorkItemUpdateResponse> {
   const body = parsePatchWorkItemFormData(formData, expectedUpdatedAt);
-  return await apiFetch<ResponseDTO<DbWorkItem>>(`${workItemsPath}/${id}`, {
+  return await apiFetch<WorkItemUpdateResponse>(`${workItemsPath}/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(body),
   });

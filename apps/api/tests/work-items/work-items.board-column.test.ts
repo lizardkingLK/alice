@@ -27,6 +27,7 @@ const {
   getProjectWorkflowConfigMock,
   requireProjectMemberMock,
   updateMock,
+  updateSprintForDescendantsMock,
 } = vi.hoisted(() => ({
   assertCanAccessProjectMock: vi.fn(),
   getByIdMock: vi.fn(),
@@ -34,6 +35,7 @@ const {
   getProjectWorkflowConfigMock: vi.fn(),
   requireProjectMemberMock: vi.fn(),
   updateMock: vi.fn(),
+  updateSprintForDescendantsMock: vi.fn(),
 }));
 
 const repository = {
@@ -43,6 +45,7 @@ const repository = {
   getProjectWorkflowConfig: getProjectWorkflowConfigMock,
   requireProjectMember: requireProjectMemberMock,
   update: updateMock,
+  updateSprintForDescendants: updateSprintForDescendantsMock,
 } as unknown as WorkItemRepository;
 
 const service = new WorkItemService(repository);
@@ -123,6 +126,7 @@ function updateInput(
 describe('WorkItemService board-column validation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    updateSprintForDescendantsMock.mockResolvedValue([]);
     requireProjectMemberMock.mockResolvedValue({ projectId: PROJECT_ID });
     assertCanAccessProjectMock.mockResolvedValue(undefined);
     getByIdMock.mockResolvedValue(currentWorkItem);
@@ -142,8 +146,8 @@ describe('WorkItemService board-column validation', () => {
     await expect(
       service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
     ).resolves.toMatchObject({
-      status: 'InProgress',
-      board_column_id: 'code-review',
+      workItem: { status: 'InProgress', board_column_id: 'code-review' },
+      cascadedSprintDescendantIds: [],
     });
 
     expect(getProjectWorkflowConfigMock).toHaveBeenCalledWith(PROJECT_ID);
@@ -220,7 +224,10 @@ describe('WorkItemService board-column validation', () => {
         updateInput({ board_column_id: null }),
         LOCK
       )
-    ).resolves.toMatchObject({ board_column_id: null });
+    ).resolves.toMatchObject({
+      workItem: { board_column_id: null },
+      cascadedSprintDescendantIds: [],
+    });
 
     expect(getProjectWorkflowConfigMock).toHaveBeenCalledWith(PROJECT_ID);
     expect(getBoardActorContextMock).not.toHaveBeenCalled();
@@ -235,7 +242,10 @@ describe('WorkItemService board-column validation', () => {
 
     await expect(
       service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
-    ).resolves.toMatchObject({ board_column_id: 'code-review' });
+    ).resolves.toMatchObject({
+      workItem: { board_column_id: 'code-review' },
+      cascadedSprintDescendantIds: [],
+    });
   });
 
   it('still enforces a same-status board move when status rules are configured', async () => {
@@ -270,7 +280,10 @@ describe('WorkItemService board-column validation', () => {
 
     await expect(
       service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
-    ).resolves.toMatchObject({ board_column_id: 'code-review' });
+    ).resolves.toMatchObject({
+      workItem: { board_column_id: 'code-review' },
+      cascadedSprintDescendantIds: [],
+    });
   });
 
   it('denies an incorrect role without an automatic admin bypass', async () => {
@@ -301,7 +314,10 @@ describe('WorkItemService board-column validation', () => {
 
     await expect(
       service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
-    ).resolves.toMatchObject({ board_column_id: 'code-review' });
+    ).resolves.toMatchObject({
+      workItem: { board_column_id: 'code-review' },
+      cascadedSprintDescendantIds: [],
+    });
     expect(getBoardActorContextMock).toHaveBeenCalledWith(ACTOR_ID, PROJECT_ID);
   });
 
@@ -322,7 +338,10 @@ describe('WorkItemService board-column validation', () => {
 
     await expect(
       service.updateWorkItem(ACTOR_UUID, WORK_ITEM_ID, updateInput(), LOCK)
-    ).resolves.toMatchObject({ board_column_id: 'code-review' });
+    ).resolves.toMatchObject({
+      workItem: { board_column_id: 'code-review' },
+      cascadedSprintDescendantIds: [],
+    });
   });
 
   it('denies a different, stale, inactive, or non-project user matcher', async () => {
@@ -352,7 +371,10 @@ describe('WorkItemService board-column validation', () => {
 
     await expect(
       service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
-    ).resolves.toMatchObject({ board_column_id: 'code-review' });
+    ).resolves.toMatchObject({
+      workItem: { board_column_id: 'code-review' },
+      cascadedSprintDescendantIds: [],
+    });
   });
 
   it('denies the transition when all configured references are stale', async () => {

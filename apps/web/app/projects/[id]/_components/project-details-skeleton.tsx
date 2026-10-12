@@ -1,28 +1,61 @@
 import { Card, CardContent, CardHeader } from '@repo/ui/components/ui/card';
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
 import { skeletonKeys } from '@/app/_shared/utility';
+import { cn } from '@repo/ui/lib/utils';
 
-export function ProjectDetailsSkeleton() {
+type ProjectDetailsSkeletonProps = {
+  /** SSR cookie seed — matches live sidebar so loading does not flash width. */
+  readonly sidebarOpen?: boolean;
+};
+
+export function ProjectDetailsSkeleton({
+  sidebarOpen = true,
+}: Readonly<ProjectDetailsSkeletonProps>) {
   return (
     <div
       className="flex h-full min-h-0 flex-1 flex-col md:flex-row"
       aria-busy="true"
       aria-label="Loading project details"
     >
-      {/* Sidebar Skeleton */}
-      <aside className="border-border shrink-0 border-b md:flex md:h-full md:w-56 md:flex-col md:border-r md:border-b-0">
-        <div className="space-y-2 px-4 py-4 sm:px-5">
-          <Skeleton className="h-3 w-16" />
-          <Skeleton className="h-4 w-32" />
+      <aside
+        className={cn(
+          'border-border shrink-0 border-b md:flex md:h-full md:flex-col md:border-r md:border-b-0',
+          sidebarOpen ? 'md:w-56' : 'md:w-14'
+        )}
+      >
+        <div
+          className={cn(
+            'space-y-2 py-4',
+            sidebarOpen ? 'px-4 sm:px-5' : 'flex flex-col items-center px-1.5'
+          )}
+        >
+          {sidebarOpen ? (
+            <>
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-4 w-32" />
+            </>
+          ) : (
+            <Skeleton className="size-8 rounded-lg" />
+          )}
         </div>
-        <div className="space-y-1 px-2 pb-4">
+        <div
+          className={cn(
+            'space-y-1 pb-4',
+            sidebarOpen ? 'px-2' : 'flex flex-col items-center px-1.5'
+          )}
+        >
           {skeletonKeys('nav', 6).map((key) => (
-            <Skeleton key={key} className="h-8 w-full rounded-lg" />
+            <Skeleton
+              key={key}
+              className={cn(
+                'rounded-lg',
+                sidebarOpen ? 'h-8 w-full' : 'size-10'
+              )}
+            />
           ))}
         </div>
       </aside>
 
-      {/* Content Area Skeleton */}
       <main className="flex min-h-0 flex-1 flex-col space-y-6 overflow-y-auto p-6">
         <div className="border-primary/15 from-primary/5 space-y-4 rounded-2xl border bg-linear-to-r via-transparent to-transparent px-6 py-4 md:px-8 md:py-5">
           <div className="flex flex-wrap items-center gap-2">

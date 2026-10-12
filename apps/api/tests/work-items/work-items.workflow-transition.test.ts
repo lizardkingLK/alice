@@ -31,6 +31,7 @@ const {
   getProjectWorkflowConfigMock,
   requireProjectMemberMock,
   updateMock,
+  updateSprintForDescendantsMock,
   countIncompleteChildrenMock,
   countChildrenNotInTargetStateMock,
 } = vi.hoisted(() => ({
@@ -40,6 +41,7 @@ const {
   getProjectWorkflowConfigMock: vi.fn(),
   requireProjectMemberMock: vi.fn(),
   updateMock: vi.fn(),
+  updateSprintForDescendantsMock: vi.fn(),
   countIncompleteChildrenMock: vi.fn(),
   countChildrenNotInTargetStateMock: vi.fn(),
 }));
@@ -51,6 +53,7 @@ const repository = {
   getProjectWorkflowConfig: getProjectWorkflowConfigMock,
   requireProjectMember: requireProjectMemberMock,
   update: updateMock,
+  updateSprintForDescendants: updateSprintForDescendantsMock,
   countIncompleteChildren: countIncompleteChildrenMock,
   countChildrenNotInTargetState: countChildrenNotInTargetStateMock,
 } as unknown as WorkItemRepository;
@@ -106,6 +109,7 @@ function updateInput(
 describe('WorkItemService workflow graph transitions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    updateSprintForDescendantsMock.mockResolvedValue([]);
     requireProjectMemberMock.mockResolvedValue(undefined);
     assertCanAccessProjectMock.mockResolvedValue(undefined);
     getByIdMock.mockResolvedValue(currentWorkItem);
@@ -130,8 +134,11 @@ describe('WorkItemService workflow graph transitions', () => {
     await expect(
       service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
     ).resolves.toMatchObject({
-      status: WorkItemStatusEnum.ToDo,
-      board_column_id: WorkItemStatusEnum.ToDo,
+      workItem: {
+        status: WorkItemStatusEnum.ToDo,
+        board_column_id: WorkItemStatusEnum.ToDo,
+      },
+      cascadedSprintDescendantIds: [],
     });
   });
 
@@ -236,8 +243,8 @@ describe('WorkItemService workflow graph transitions', () => {
         LOCK
       )
     ).resolves.toMatchObject({
-      status: WorkItemStatusEnum.New,
-      board_column_id: null,
+      workItem: { status: WorkItemStatusEnum.New, board_column_id: null },
+      cascadedSprintDescendantIds: [],
     });
 
     expect(updateMock).toHaveBeenCalledWith(

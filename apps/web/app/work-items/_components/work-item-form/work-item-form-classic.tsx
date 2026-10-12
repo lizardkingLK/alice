@@ -15,6 +15,11 @@ import { WorkItemFormModernDescription } from '@/app/work-items/_components/work
 import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels/work-item-labels-input';
 import { WorkItemPrioritySelect } from '@/app/work-items/_components/work-item-priority-select';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
+import {
+  classicSprintPlaceholder,
+  isOptionsLoadingEmpty,
+  loadingAwarePlaceholder,
+} from '@/app/work-items/_helpers/work-item-form-loading-placeholder';
 import { resolveSprintDisplayName } from '@/app/work-items/_helpers/work-item-sprint';
 
 export type WorkItemFormClassicFieldsProps = WorkItemFormSharedFieldProps & {
@@ -38,6 +43,8 @@ export function WorkItemFormClassicFields({
   assigneeId,
   sprintId,
   sprintOptions,
+  sprintOptionsLoading,
+  assigneeOptionsLoading,
   type,
   priority,
   parentId,
@@ -194,12 +201,23 @@ export function WorkItemFormClassicFields({
           value={assigneeId}
           onValueChange={onAssigneeIdChange}
           disabled={lockAssignee}
-          placeholder="Search assignees…"
+          placeholder={loadingAwarePlaceholder(
+            isOptionsLoadingEmpty(
+              assigneeOptionsLoading,
+              projectMembers.length
+            ),
+            'Loading assignees…',
+            'Search assignees…'
+          )}
           options={projectMembers.map((member) => ({
             value: member.id,
             label: `${member.name} (${member.email})`,
           }))}
           emptyText="No matching assignees."
+          isLoading={isOptionsLoadingEmpty(
+            assigneeOptionsLoading,
+            projectMembers.length
+          )}
         />
         <input type="hidden" name="assignee_id" value={assigneeId} />
       </div>
@@ -224,19 +242,22 @@ export function WorkItemFormClassicFields({
               onValueChange={onSprintIdChange}
               showClear
               disabled={!projectId}
-              placeholder={
-                projectId ? 'Search sprints…' : 'Select a project first'
-              }
+              placeholder={classicSprintPlaceholder(
+                projectId,
+                sprintOptionsLoading,
+                sprintOptions.length
+              )}
               options={sprintOptions.map((sprint) => ({
                 value: sprint.id,
                 label: sprint.name,
               }))}
               emptyText="No matching sprints."
+              isLoading={isOptionsLoadingEmpty(
+                sprintOptionsLoading,
+                sprintOptions.length
+              )}
             />
             <input type="hidden" name="sprint_id" value={sprintId} />
-            <p className="text-muted-foreground text-xs">
-              Optional. Clear to keep the item on the backlog.
-            </p>
           </>
         )}
       </div>

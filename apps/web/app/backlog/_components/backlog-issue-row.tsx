@@ -51,7 +51,7 @@ export function BacklogIssueRow({
       onDragStart={(e) => onDragStart(e, item.id)}
       onClick={() => onSelect(item)}
       className={cn(
-        'group border-border/60 relative flex w-full min-w-0 flex-col gap-2 rounded-lg border px-3 py-2 text-left font-normal',
+        'group border-border relative flex w-full min-w-0 flex-col gap-2 rounded-lg border px-3 py-2 text-left font-normal',
         'bg-card hover:bg-muted/30 hover:border-primary/30 cursor-grab active:cursor-grabbing',
         'shadow-sm transition-all duration-150',
         'focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-hidden',
