@@ -248,7 +248,8 @@ describe('WorkItemsTable', () => {
     // Assert
     expect(screen.getByText('Ship filters')).toBeInTheDocument();
     expect(screen.getByText('Story')).toBeInTheDocument();
-    expect(screen.getByText('In Progress')).toBeInTheDocument();
+    // Status + State both show the same legacy label when no workflow.
+    expect(screen.getAllByText('In Progress').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('High')).toBeInTheDocument();
     expect(screen.getByText('Gavin Belson')).toBeInTheDocument();
     expect(screen.getByText('GB')).toBeInTheDocument();

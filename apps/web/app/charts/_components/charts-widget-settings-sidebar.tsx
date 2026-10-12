@@ -29,12 +29,9 @@ import {
 } from '@repo/ui/components/ui/tooltip';
 import {
   Calendar,
-  ChartArea,
   ChartBar,
   ChartColumn,
-  ChartLine,
   ChartPie,
-  ChartScatter,
   Check,
   ChevronDown,
   Donut,
@@ -136,9 +133,13 @@ const MOST_POPULAR_OPTIONS: readonly ChartTypeOption[] = [
     enabled: true,
     variant: 'bar',
   },
-  { id: 'popular-line', label: 'Line', Icon: ChartLine },
-  { id: 'popular-column', label: 'Column', Icon: ChartColumn },
-  { id: 'popular-bubble', label: 'Bubble', Icon: ChartScatter },
+  {
+    id: 'popular-column',
+    label: 'Column',
+    Icon: ChartColumn,
+    enabled: true,
+    variant: 'column',
+  },
 ];
 
 const PIE_OPTIONS: readonly ChartTypeOption[] = [
@@ -168,45 +169,13 @@ const BAR_OPTIONS: readonly ChartTypeOption[] = [
   },
 ];
 
-const DISABLED_CHART_GROUPS: readonly {
-  readonly label: string;
-  readonly options: readonly ChartTypeOption[];
-}[] = [
+const COLUMN_OPTIONS: readonly ChartTypeOption[] = [
   {
-    label: 'Line',
-    options: [
-      { id: 'line-1', label: 'Line', Icon: ChartLine },
-      { id: 'line-2', label: 'Curved line', Icon: ChartLine },
-      { id: 'line-3', label: 'Stepped line', Icon: ChartLine },
-      { id: 'line-4', label: 'Spline', Icon: ChartLine },
-    ],
-  },
-  {
-    label: 'Bar',
-    options: [
-      { id: 'bar-2', label: 'Stacked bar', Icon: ChartBar },
-      { id: 'bar-3', label: 'Grouped bar', Icon: ChartBar },
-    ],
-  },
-  {
+    id: 'col-1',
     label: 'Column',
-    options: [
-      { id: 'col-1', label: 'Column', Icon: ChartColumn },
-      { id: 'col-2', label: 'Stacked column', Icon: ChartColumn },
-      { id: 'col-3', label: 'Grouped column', Icon: ChartColumn },
-    ],
-  },
-  {
-    label: 'Area',
-    options: [
-      { id: 'area-1', label: 'Area', Icon: ChartArea },
-      { id: 'area-2', label: 'Stacked area', Icon: ChartArea },
-      { id: 'area-3', label: 'Spline area', Icon: ChartArea },
-    ],
-  },
-  {
-    label: 'Bubble',
-    options: [{ id: 'bubble-1', label: 'Bubble', Icon: ChartScatter }],
+    Icon: ChartColumn,
+    enabled: true,
+    variant: 'column',
   },
 ];
 
@@ -455,18 +424,14 @@ function ChartTypeSection({
           onPieVariantChange={onPieVariantChange}
         />
       </div>
-      {DISABLED_CHART_GROUPS.map((group) => (
-        <div key={group.label} className="flex flex-col gap-1.5">
-          <p className="text-muted-foreground text-xs font-medium">
-            {group.label}
-          </p>
-          <ChartTypeIconRow
-            options={group.options}
-            pieVariant={pieVariant}
-            onPieVariantChange={onPieVariantChange}
-          />
-        </div>
-      ))}
+      <div className="flex flex-col gap-1.5">
+        <p className="text-muted-foreground text-xs font-medium">Column</p>
+        <ChartTypeIconRow
+          options={COLUMN_OPTIONS}
+          pieVariant={pieVariant}
+          onPieVariantChange={onPieVariantChange}
+        />
+      </div>
     </div>
   );
 }

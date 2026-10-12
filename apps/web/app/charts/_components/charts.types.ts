@@ -46,7 +46,7 @@ export type ChartWidgetCatalogItem = {
 export type ChartWidgetViewMode = 'chart' | 'table' | 'split';
 
 /** Chart family subtype for Chart widgets (default donut matches today’s wheel). */
-export type ChartPieVariant = 'pie' | 'donut' | 'bar';
+export type ChartPieVariant = 'pie' | 'donut' | 'bar' | 'column';
 
 /** Shared persist callbacks used by widget card + config dialog. */
 export type ChartsWidgetFiltersChangeHandler = (

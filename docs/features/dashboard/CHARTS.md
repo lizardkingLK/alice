@@ -65,11 +65,11 @@ picks / Browse cards are **Coming soon**.
 
 ### Chart widget (`typeId: chart`)
 
-Live pie/donut/**bar** from rollup series API. Fullscreen config: Advanced/Quick filters
+Live pie/donut/**bar**/column from rollup series API. Fullscreen config: Advanced/Quick filters
 (Quick opens on **Project**; **Sprint** after a concrete project; **Assignee**
 in the filter popover only; Advanced allows at most one row per column),
 settings gear → Widget settings sidebar, layout Chart/Table/Split,
-`pieVariant` (`pie` | `donut` | `bar`), and Labels `labelField`.
+`pieVariant` (`pie` | `donut` | `bar` | `column`), and Labels `labelField`.
 
 Status-grouped table uses board order (New → … → Done). Empty status groups are
 hidden; search remounts matching groups expanded.
@@ -80,7 +80,7 @@ No Boards section (use project filters).
 
 | Section                      | Status today                                     | Notes                                                                     |
 | ---------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------- |
-| Chart type                   | Pie / Donut / **Bar** live; others Coming soon   | Stacked/grouped bar deferred                                              |
+| Chart type                   | Pie / Donut / Bar / **Column** (unique only)     | Stacked/grouped / line / area / bubble removed from picker for now        |
 | Labels                       | Live API-backed columns                          | Group / Name / Due date hidden until rollup supports them                 |
 | Values                       | Count items only                                 | Sum / Average / … deferred                                                |
 | Customize                    | % vs count, sort, empty slices, **slice colors** | Theme swatches (`chart-1`…`8`); reset on Labels change                    |

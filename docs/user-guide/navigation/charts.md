@@ -117,8 +117,9 @@ widgets when set).
 - Open the **⋯** menu for **Full screen**, **Rename**, **Duplicate**, or
   **Delete** (**Dock this widget** is disabled for now)
 
-Chart widgets show a pie, donut, or bar chart. Layout modes (Chart / Table /
-Split) apply only inside the fullscreen configuration window.
+Chart widgets show a pie, donut, horizontal bar, or vertical column chart.
+Layout modes (Chart / Table / Split) apply only inside the fullscreen
+configuration window.
 
 ---
 
@@ -137,7 +138,7 @@ Use the **split view** button in the toolbar to choose:
 
 | Layout     | What you see                                           |
 | ---------- | ------------------------------------------------------ |
-| Chart      | Full pie, donut, or bar chart (default donut)          |
+| Chart      | Full pie, donut, bar, or column chart (default donut)  |
 | Table      | Collapsible groups of work items by status (paginated) |
 | Split mode | Chart on top and the status table underneath           |
 
@@ -153,8 +154,8 @@ Pick another layout to clear the slice focus.
 ### Widget settings
 
 1. Select the **settings** (gear) button in the fullscreen toolbar.
-2. Under **Chart type**, choose **Pie**, **Donut**, or **Bar**. Other chart
-   types show **Coming soon**.
+2. Under **Chart type**, choose **Pie**, **Donut**, **Bar** (horizontal), or
+   **Column** (vertical).
 3. Under **Labels** → **Columns**, choose how to group the chart: **Project**,
    **Owner**, **Category**, **Type**, or **Priority**. When a single **project**
    filter is selected, **State** is also available (workflow states for that
