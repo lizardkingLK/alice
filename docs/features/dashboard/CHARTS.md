@@ -146,11 +146,11 @@ nested epic rollup.
 Use **Labels → Type** (or sprint report status breakdown) when you want to
 separate Epics from Tasks. No parent–child ring is applied today.
 
-**Future (not Tier 1):** optional **multilevel / nested donut** (inner ring =
-roots or Epics, outer ring = direct children) for hierarchy-aware breakdowns.
-Would need a dedicated series API and explicit counting rules so story points
-and item counts are not double-counted. See
-[CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md#hierarchy-and-future-chart-types).
+**Future (after open questions):** optional **multilevel / nested donut** (inner
+ring = roots or Epics, outer ring = direct children). Needs a dedicated
+hierarchy rollup + counting rules. See
+[CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md#hierarchy-and-future-chart-types)
+and [open questions](./CHARTS_AGGREGATION.md#open-questions-before-nested--other-types).
 
 **API:** `GET /api/v1/charts/analytics/series` and `…/analytics/drilldown` —
 see [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md#apis).
@@ -171,8 +171,16 @@ and **Edit** (preferred `WorkItemFormDialog`). After a successful edit, the clie
 clears the in-memory series/drilldown caches (`invalidateChartAnalyticsCaches`)
 and calls `router.refresh()` so pie + table refetch without a full page reload.
 
-**Tier 1 product (incomplete):** workspace cloud + Views index + settings —
-[checklist](./CHARTS_AGGREGATION.md#tier-1-product-remaining).
+### Burndown widget (next)
+
+Catalog **Data over time** and Delivery **Burndown** both mean sprint burndown
+(alias → one renderer). Series come from a dedicated
+`sprint_burndown_rollups` table (not the categorical rollup), with the same
+semantics as dashboard `computeBurndown`. Widget shows **Project** and
+**Sprint** labels at the top-right for immediate context.
+
+Implementation checklist:
+[Charts Burndown widget](./CHARTS_AGGREGATION.md#charts-burndown-widget-next-implementation).
 
 Tier 2/3 (Neon read model, apps rename): [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md).
 
@@ -184,9 +192,11 @@ Tier 2/3 (Neon read model, apps rename): [CHARTS_AGGREGATION.md](./CHARTS_AGGREG
 - Sharing Favorites
 - Native Charts Share dialog / Shared-with-me registry tab
 - Neon / Render / Upstash wiring (Tier 2+)
+- Nested donut / other Coming soon types in the same burndown delivery
 
 ## Related
 
-- Aggregation design: [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md)
+- Aggregation + burndown rollup plan: [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md)
+- Sprint burndown domain: [BURNDOWN_CHART.md](../sprints/BURNDOWN_CHART.md)
 - User guide: `docs/user-guide/navigation/charts.md`
 - Views sharing model: `docs/features/views/FAVORITES_AND_VIEWS.md`

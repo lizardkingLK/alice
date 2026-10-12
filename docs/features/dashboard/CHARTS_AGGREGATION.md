@@ -1,16 +1,20 @@
 # Charts aggregation (work-item series)
 
-Status: **Tier 1 analytics + product shipped** — rollup + series/drilldown API +
-live Chart widget pie/table; cloud workspaces + Views `resource_kind` bookmarks +
-Widget settings (Values / Customize / columns). Groups remain deferred.
+Status: **Tier 1 analytics + product shipped** — categorical rollup + series/drilldown
+API + live Chart widget pie/table; cloud workspaces + Views `resource_kind`
+bookmarks + Widget settings. **Next:** Charts **Burndown** widget on a dedicated
+time-series rollup (implementation steps below). Nested donut and other catalog
+types stay design-only until open questions are locked.
 Tier 2/3 remain design-only (see below).
 
 Replaces in-memory chart mocks with precomputed **rollup** statistics and
-paginated drilldown. Heavy joins per pie slice are out of scope.
+paginated drilldown. Heavy joins per pie slice (or per burndown day) are out of
+scope for widget reads.
 
 Related:
 
 - Product UI: [CHARTS.md](./CHARTS.md)
+- Sprint burndown domain (algorithm, dashboard API): [BURNDOWN_CHART.md](../sprints/BURNDOWN_CHART.md)
 - DB access: [DATABASE.md](../../guides/DATABASE.md)
 - Performance: [PERFORMANCE.md](../../guides/PERFORMANCE.md)
 - User guide: [charts.md](../../user-guide/navigation/charts.md)
@@ -20,21 +24,23 @@ Related:
 
 ## Naming
 
-| Term                                       | Meaning                                                     |
-| ------------------------------------------ | ----------------------------------------------------------- |
-| Materialized statistics (product language) | Precomputed counts for cheap chart reads                    |
-| Postgres `MATERIALIZED VIEW`               | **Not used** — cannot be incrementally updated by triggers  |
-| **Rollup table**                           | Normal table maintained by `AFTER` triggers on `work_items` |
+| Term                                       | Meaning                                                                                          |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Materialized statistics (product language) | Precomputed counts / series for cheap chart reads                                                |
+| Postgres `MATERIALIZED VIEW`               | **Not used** — cannot be incrementally updated by triggers                                       |
+| **Rollup table**                           | Normal table maintained by `AFTER` triggers (work items, worklogs, …)                            |
+| **Categorical rollup**                     | `work_item_chart_rollups` — pie/bar `item_count` by dimensions                                   |
+| **Burndown rollup**                        | Dedicated time-series table (sprint × day) — remaining / spent for Charts + future read replicas |
 
 ---
 
 ## Tiers
 
-| Tier  | Scope                                                                                                                                                | Status                                 |
-| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| **1** | Same Supabase DB: rollup + indexes + series API + paginated drilldown; Chart widget on live data; **plus** cloud workspaces + Views index + settings | **Analytics done; product incomplete** |
-| **2** | Lean `work_items` read model on **Neon**; **Render `reader`**; **Upstash** queue; Express **post-commit** publisher; **Pusher** auth as streamer     | Later                                  |
-| **3** | Whole-app reads on Neon; **apps rename** first; separate architecture doc                                                                            | Later                                  |
+| Tier  | Scope                                                                                                                                                | Status                              |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| **1** | Same Supabase DB: categorical rollup + series/drilldown; Chart widget; cloud workspaces + Views; **Burndown widget + burndown rollup (in progress)** | **Categorical done; burndown next** |
+| **2** | Lean `work_items` read model on **Neon**; **Render `reader`**; **Upstash** queue; Express **post-commit** publisher; **Pusher** auth as streamer     | Later                               |
+| **3** | Whole-app reads on Neon; **apps rename** first; separate architecture doc                                                                            | Later                               |
 
 ### Tier 1 locks
 
@@ -302,22 +308,186 @@ could show:
 **Requirements before shipping:**
 
 - New analytics dimension (`hierarchy_level` or paired parent/child series), not
-  the flat rollup alone
+  the flat rollup alone — likely a **second** hierarchy rollup table (same
+  trigger-maintained pattern as categorical + burndown)
 - Documented measure rules (count items vs sum story points; no double count)
 - Drilldown that respects parent–child links
 - UI behind chart type **Nested donut** with depth cap (likely 2 levels)
 
 Until then, use **Type** / **State** labels on the existing pie or donut.
 
+**Do not implement nested donut until [open questions](#open-questions-before-nested--other-types) are answered.**
+
 ---
 
-## Non-goals (Tier 1)
+## Charts Burndown widget (next implementation)
 
-- Neon / Render / Upstash / apps rename
-- Multilevel / nested donut series (proposal above)
-- Story points on the rollup
+**Goal:** Unlock catalog **Data over time** and Delivery **Burndown** as the
+same burndown experience on `/charts` boards, backed by a **dedicated burndown
+rollup** (not `work_item_chart_rollups`), while reusing existing widget chrome
+and filter persistence on `charts.board_json`.
+
+Dashboard overview already ships a live burndown via `computeBurndown` + sprint
+embed / `GET /api/sprints/:id/burndown`
+([BURNDOWN_CHART.md](../sprints/BURNDOWN_CHART.md)). Charts should converge on
+the **same series semantics**, but **read from rollup** so widget loads stay
+cheap and syncable when we later move chart reads to a replica / reader service
+(Tier 2).
+
+### Why a rollup (scaling agreement)
+
+| Concern                        | Live join (overview today)                          | Burndown rollup                                         |
+| ------------------------------ | --------------------------------------------------- | ------------------------------------------------------- |
+| Widget fan-out                 | N widgets × sprint items × worklogs                 | One indexed read per sprint                             |
+| Future Neon / reader           | Must replicate WI + worklogs or recompute on writer | Sync **small** rollup rows only                         |
+| Function split (charts reader) | Couples reader to OLTP grain                        | Charts domain owns its statistics tables                |
+| Correctness                    | Always fresh                                        | Trigger-maintained; same algorithm as `computeBurndown` |
+
+**Agree:** purpose-built rollups (categorical today, burndown next, hierarchy
+later) are the scaling path. Do **not** overload `work_item_chart_rollups` with
+remaining/ideal — different grain and measure. Do **not** invent Postgres
+`MATERIALIZED VIEW` refresh for this.
+
+Ideal line can stay derived at read time from `estimated_total` + sprint dates
+(cheap). Remaining / spent by day should be precomputed (or spent cumulative
+stored so remaining = estimated − spent).
+
+### Catalog mapping
+
+| Catalog id       | Category       | Behavior                                            |
+| ---------------- | -------------- | --------------------------------------------------- |
+| `data-over-time` | Staying on Top | **Alias** → burndown widget (not created-over-time) |
+| `burndown`       | Delivery       | Canonical burndown widget                           |
+
+Both set `available: true` and insert the same renderer / config shape. Product
+copy may still say “Data over time” in quick-add; series meaning is sprint
+burndown.
+
+### Widget UX
+
+- Reuse Chart card shell (⋯ menu, layout, fullscreen, filter affordance).
+- **Context labels (required):** top-right of the widget header show **Project**
+  and **Sprint** names so scope is visible without opening filters. Dashboard
+  overview already ships this via shared `BurndownScopeLabels`
+  (`apps/web/components/burndown-scope-labels.tsx`) — Charts should reuse it.
+- Sprint selection via existing widget filters / settings (required for series).
+- Seed project + sprint from workspace board defaults when inserting a new
+  burndown widget (same pattern as Chart widgets).
+- Chart: remaining vs ideal over sprint dates (reuse Recharts pattern from
+  overview; prefer a shared presentational component later).
+
+### Proposed table `sprint_burndown_rollups`
+
+Working name — finalize in migration.
+
+| Column            | Role                                                                                                     |
+| ----------------- | -------------------------------------------------------------------------------------------------------- |
+| `sprint_id`       | uuid (PK with `bucket_date`)                                                                             |
+| `bucket_date`     | `date` — one row per calendar day in `[start_date, end_date]`                                            |
+| `project_id`      | uuid — denormalized for ACL / project filter / replica routing                                           |
+| `estimated_total` | numeric — Σ story points in sprint (current-scope semantics, same as `computeBurndown`)                  |
+| `spent`           | numeric — cumulative finished through that day (worklogs hours or done-points fallback)                  |
+| `remaining`       | numeric — `max(0, estimated_total − spent)` for past/closed days; null for future days on active sprints |
+
+**Indexes:** `(project_id, sprint_id)`, `(sprint_id, bucket_date)`.
+
+**Maintenance (triggers / functions):**
+
+- On `work_item_worklogs` insert/update/delete (active rows) → rebuild or delta
+  affected sprint days.
+- On `work_items` changes that affect scope or fallback remaining (`sprint_id`,
+  `story_points`, `done_at`, `record_status`) → rebuild that sprint’s series.
+- On `sprints` date/status changes → rebuild date range.
+
+Rebuild may re-run the shared TypeScript algorithm in a worker later; for Tier 1
+on Supabase, prefer **SQL functions** mirroring `computeBurndown` or a single
+“rebuild sprint” function invoked from triggers (keep one source of truth
+documented next to `packages/types/src/sprint-burndown.ts`).
+
+**Backfill:** for each active/closed sprint with dates, populate daily rows once
+at migration time.
+
+### APIs
+
+| Method | Path (proposal)                     | Source                                                                           |
+| ------ | ----------------------------------- | -------------------------------------------------------------------------------- |
+| `GET`  | `/api/v1/charts/analytics/burndown` | Read `sprint_burndown_rollups` + sprint meta                                     |
+| Keep   | `GET /api/sprints/:id/burndown`     | Live compute for dashboard / migration parity; optionally switch to rollup later |
+
+**Query:** `sprintId` (required), optional `projectId` for ACL check alignment.
+
+**Response:** reuse `SprintBurndownPayload` (`sprint`, `estimatedTotal`,
+`series[{ date, remaining, ideal }]`) so web clients share one type. Ideal may
+be filled in the service from dates + estimated total if not stored.
+
+### Implementation steps (burndown only)
+
+#### Step B1 — Schema: burndown rollup + triggers + backfill
+
+1. Prisma model + migration under `packages/db/prisma/migrations/`
+2. Trigger/SQL rebuild helpers; backfill existing sprints
+3. `pnpm db migrate:deploy` / generate clients
+4. Verify: log hours / move item between sprints → rollup days update
+
+#### Step B2 — API: charts burndown series from rollup
+
+1. `GET /api/v1/charts/analytics/burndown` (register before `/:id`)
+2. Types in `@repo/types` (extend charts-analytics or burndown exports)
+3. ACL via `listAccessibleProjectIds` (sprint’s project must be accessible)
+4. API tests under `apps/api/tests/charts/`
+
+#### Step B3 — Web: catalog + widget + context labels
+
+1. Mark `burndown` + `data-over-time` `available: true`; both append the same
+   instance config (`typeId` canonical `burndown`, or map both in renderer)
+2. Widget card: load series from charts burndown API; **Project** + **Sprint**
+   labels top-right
+3. Filters: require sprint; project from filter or sprint’s project
+4. Reuse board_json persistence / settings shell; hide Labels columns that only
+   apply to categorical Chart widgets
+5. Web tests for catalog gate + empty states (no sprint / empty series)
+6. User guide + [CHARTS.md](./CHARTS.md) widget section; `docs:sync`
+
+#### Step B4 — Optional convergence
+
+1. Extract shared `BurndownChart` presentational component (overview + Charts)
+2. Point dashboard reader at rollup **or** keep live compute for overview
+   (document choice when implementing)
+
+### Out of scope for Steps B1–B4
+
+- Nested donut / hierarchy rollup
+- Numbers, Battery, Gantt, and other Coming soon catalog entries
+- Capacity-aware ideal line (see BURNDOWN_CHART phase 5)
+- Story points measure on categorical rollup
+- Switching overview off live compute (only if B4 chooses it)
+
+---
+
+## Open questions (before nested / other types)
+
+Resolve before starting nested donut or non-burndown catalog types:
+
+1. **Nested as `pieVariant` on Chart vs new catalog `typeId`?**
+2. **Nested measure for v1:** `item_count` only (Tier 1 lock) or story points?
+3. **Counting rule:** count every node once vs leaves only; how do inner-ring
+   totals relate to outer (sum vs distinct parents)?
+4. **Hierarchy rollup grain:** parent_id + child dimensions vs
+   `hierarchy_level` rows — one table or two?
+5. **Data over time:** locked as burndown alias for this plan — confirm we will
+   **not** ship “created over time” under that catalog id without a rename.
+6. **Dashboard overview:** stay on live `computeBurndown` permanently, or move
+   to `sprint_burndown_rollups` after Charts ships?
+
+---
+
+## Non-goals (current Tier 1 window)
+
+- Neon / Render / Upstash / apps rename (Tier 2+)
+- Multilevel / nested donut series until open questions are locked
+- Story points on the **categorical** rollup
 - Postgres `REFRESH MATERIALIZED VIEW`
-- Per-chart-type duplicate rollup tables
-- Non-pie chart types in the UI (schema remains reusable)
+- Overloading `work_item_chart_rollups` with burndown remaining/ideal
+- Shipping Numbers / Battery / Gantt / nested in the same burndown steps
 - Storing board JSON inside `saved_views.search` (use `charts.board_json` +
   typed `resource_*` on Views instead)

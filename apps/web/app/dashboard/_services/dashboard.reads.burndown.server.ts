@@ -5,8 +5,8 @@ import { safeServerFetch } from '@/lib/safe-server-fetch';
 import { SprintStatusEnum } from '@repo/types';
 import type { SprintBurndownPayload } from '@repo/types';
 
-export type DashboardBurndownSprint = Pick<Sprint, 'id' | 'status'> & {
-  project?: { id: string } | null;
+export type DashboardBurndownSprint = Pick<Sprint, 'id' | 'name' | 'status'> & {
+  project?: { id: string; name: string } | null;
 };
 
 export type DashboardBurndownBootstrap = {
@@ -47,8 +47,11 @@ export async function getDashboardBurndownBootstrap(): Promise<DashboardBurndown
     )
     .map((sprint) => ({
       id: sprint.id,
+      name: sprint.name,
       status: sprint.status,
-      project: sprint.project ? { id: sprint.project.id } : null,
+      project: sprint.project
+        ? { id: sprint.project.id, name: sprint.project.name }
+        : null,
     }));
 
   const defaultSprint =

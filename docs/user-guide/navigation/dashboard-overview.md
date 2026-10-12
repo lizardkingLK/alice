@@ -26,6 +26,10 @@ Overview shows a **widget grid** you can rearrange:
 Widget examples include open issues, work by status, sprint burndown, team
 velocity, and recent activity. Exact widgets depend on your workspace data.
 
+**Sprint burndown** uses your board defaults (project / sprint) when set.
+The widget header shows the **Project** and **Sprint** names on the top right
+so you can see the scope at a glance.
+
 Your layout is saved in the browser for your account on this device.
 
 ---

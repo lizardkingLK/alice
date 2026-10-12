@@ -8,11 +8,12 @@ Sprints in ALICE are time-boxed iterations within a project that group work item
 
 ## 1. Documentation Index
 
-| Document                                 | Description                                                                                          | Status      |
-| :--------------------------------------- | :--------------------------------------------------------------------------------------------------- | :---------- |
-| [BURNDOWN_CHART.md](./BURNDOWN_CHART.md) | Burndown chart design, ideal line computation, work logs integration, and team capacity calculations | Implemented |
-| [ARD.md](../../product/ARD.md) (SPR-1)   | Product architecture decision records for sprint management                                          | Living      |
-| [TRD.md](../../architecture/TRD.md)      | Technical requirements document for sprints & work items                                             | Living      |
+| Document                                                                                               | Description                                                                       | Status                    |
+| :----------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------- | :------------------------ |
+| [BURNDOWN_CHART.md](./BURNDOWN_CHART.md)                                                               | Burndown chart design, ideal line, work logs, capacity; Charts widget rollup link | Implemented + Charts next |
+| [CHARTS_AGGREGATION.md](../dashboard/CHARTS_AGGREGATION.md#charts-burndown-widget-next-implementation) | Charts burndown rollup + widget implementation steps                              | Planned                   |
+| [ARD.md](../../product/ARD.md) (SPR-1)                                                                 | Product architecture decision records for sprint management                       | Living                    |
+| [TRD.md](../../architecture/TRD.md)                                                                    | Technical requirements document for sprints & work items                          | Living                    |
 
 ---
 
