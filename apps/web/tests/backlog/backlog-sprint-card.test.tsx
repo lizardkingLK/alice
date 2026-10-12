@@ -32,22 +32,25 @@ vi.mock('@/app/backlog/_components/backlog-sprint-capacity-popover', () => ({
 
 vi.mock('@/app/backlog/_components/backlog-sprint-details-popover', () => ({
   BacklogSprintDetailsPopover: ({ sprint }: { sprint: Sprint }) => (
-    <span>{sprint.name}</span>
+    <span data-testid="sprint-details">
+      {sprint.name}|{sprint.startDate}|{sprint.endDate}
+    </span>
   ),
 }));
 
 function renderSprintCard(options?: {
+  readonly sprint?: Sprint;
   readonly isManagerOrAdmin?: boolean;
   // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onEditSprint?: (sprint: Sprint) => void;
   // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onToggle?: (sprintId: string) => void;
 }) {
-  const sprint = sprintFactory.build();
+  const sprint = options?.sprint ?? sprintFactory.build();
   const onEditSprint = options?.onEditSprint ?? vi.fn();
   const onToggle = options?.onToggle ?? vi.fn();
 
-  render(
+  const view = render(
     <BacklogSprintCard
       sprint={sprint}
       items={[]}
@@ -71,7 +74,7 @@ function renderSprintCard(options?: {
     />
   );
 
-  return { sprint, onEditSprint, onToggle };
+  return { ...view, sprint, onEditSprint, onToggle };
 }
 
 describe('BacklogSprintCard sprint actions', () => {
@@ -105,5 +108,45 @@ describe('BacklogSprintCard sprint actions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit Sprint' }));
 
     expect(onToggle).not.toHaveBeenCalled();
+  });
+
+  it('passes updated sprint details to the details popover', () => {
+    const sprint = sprintFactory.build();
+    const { rerender } = renderSprintCard({ sprint });
+
+    const updatedSprint = {
+      ...sprint,
+      name: 'Renamed Sprint',
+      startDate: '2026-08-01',
+      endDate: '2026-08-14',
+    };
+
+    rerender(
+      <BacklogSprintCard
+        sprint={updatedSprint}
+        items={[]}
+        issueCount={0}
+        isCollapsed={false}
+        isDragOver={false}
+        isManagerOrAdmin
+        projects={[]}
+        projectMembers={[]}
+        teamCapacities={[]}
+        onToggle={vi.fn()}
+        onCreateIssue={vi.fn()}
+        onEditSprint={vi.fn()}
+        onStartSprint={vi.fn()}
+        onCompleteSprint={vi.fn()}
+        onSelectItem={vi.fn()}
+        onItemDragStart={vi.fn()}
+        onDragOver={vi.fn()}
+        onDragLeave={vi.fn()}
+        onDrop={vi.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('sprint-details')).toHaveTextContent(
+      'Renamed Sprint|2026-08-01|2026-08-14'
+    );
   });
 });
