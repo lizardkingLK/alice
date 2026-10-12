@@ -28,21 +28,21 @@ type UseBacklogCapacityDisplayResult = {
 export function useBacklogCapacityDisplay(
   userId: string | null | undefined
 ): UseBacklogCapacityDisplayResult {
-  const [capacityDisplay, setCapacityDisplayState] =
+  const [capacityDisplay, setCapacityDisplay] =
     useState<BacklogCapacityDisplayId>('bar');
 
   useEffect(() => {
-    setCapacityDisplayState(readBacklogCapacityDisplay(userId));
+    setCapacityDisplay(readBacklogCapacityDisplay(userId));
   }, [userId]);
 
-  const setCapacityDisplay = (display: BacklogCapacityDisplayId) => {
-    setCapacityDisplayState(display);
+  const persistCapacityDisplay = (display: BacklogCapacityDisplayId) => {
+    setCapacityDisplay(display);
     writeBacklogCapacityDisplay(userId, display);
   };
 
   return {
     capacityDisplay,
-    setCapacityDisplay,
+    setCapacityDisplay: persistCapacityDisplay,
   };
 }
 

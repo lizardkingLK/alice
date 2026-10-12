@@ -40,7 +40,10 @@ import {
   SearchableSelect,
   type SearchableSelectOption,
 } from '@/components/searchable-select';
-import type { WorkItemFormSharedFieldProps } from '@/app/work-items/_components/work-item-form/work-item-form-field-props';
+import type {
+  WorkItemFormMember,
+  WorkItemFormSharedFieldProps,
+} from '@/app/work-items/_components/work-item-form/work-item-form-field-props';
 import {
   resolveShowParentPicker,
   WorkItemFormParentStatusSection,
@@ -60,7 +63,6 @@ import {
   resolveSprintDisplayName,
   type WorkItemSprintOption,
 } from '@/app/work-items/_helpers/work-item-sprint';
-import type { WorkItemFormMember } from '@/app/work-items/_components/work-item-form/work-item-form-field-props';
 
 export type WorkItemFormModernFieldsProps = WorkItemFormSharedFieldProps & {
   readonly titleDefault?: string;
