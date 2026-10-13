@@ -180,7 +180,9 @@ function ChartsWidgetConfigToolbar(props: {
   readonly accessibleProjects: readonly ChartsProjectOption[];
   readonly accessibleSprints: readonly ChartsSprintOption[];
   readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
-  readonly onScopeChange?: ChartsWidgetConfigDialogProps['onScopeChange'];
+  readonly onScopeChange?: NonNullable<
+    ChartsWidgetConfigDialogProps['onScopeChange']
+  >;
   readonly members: readonly ChartsSampleMember[];
   readonly viewMode: ChartWidgetViewMode;
   // eslint-disable-next-line no-unused-vars

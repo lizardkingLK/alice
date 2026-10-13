@@ -367,7 +367,7 @@ function ChartsWidgetCardFilterControl({
   accessibleSprints: readonly ChartsSprintOption[];
   assigneeMembers: readonly ChartsSampleMember[];
   onFiltersChange?: ChartsWidgetFiltersChangeHandler;
-  onScopeChange?: ChartsWidgetCardProps['onScopeChange'];
+  onScopeChange?: NonNullable<ChartsWidgetCardProps['onScopeChange']>;
   onOpenChartFilters: () => void;
 }>) {
   const filterButtonClassName = cn(
