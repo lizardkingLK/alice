@@ -248,19 +248,31 @@ async function fillStep1Basics() {
 
 import { clearGithubCache } from '@/app/projects/_services/github-connection-cache';
 
+async function advanceCreateFormToStep(targetStep: 1 | 2 | 3 | 4 | 5) {
+  for (let nextStep = 2; nextStep <= targetStep; nextStep += 1) {
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    if (nextStep === 2) {
+      await screen.findByText('Import sources');
+    } else if (nextStep === 3) {
+      await screen.findByText('Source control');
+    } else if (nextStep === 4) {
+      await screen.findByRole('checkbox', {
+        name: /Create an initial sprint/i,
+      });
+    } else {
+      await screen.findByRole('checkbox', {
+        name: /Create an initial team/i,
+      });
+    }
+  }
+}
+
 async function advanceCreateFormToSprintStep() {
-  fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-  await screen.findByText('Import sources');
-  fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-  await screen.findByText('Source control');
-  fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-  await screen.findByRole('checkbox', { name: /Create an initial sprint/i });
+  await advanceCreateFormToStep(4);
 }
 
 async function advanceCreateFormToTeamStep() {
-  await advanceCreateFormToSprintStep();
-  fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-  await screen.findByRole('checkbox', { name: /Create an initial team/i });
+  await advanceCreateFormToStep(5);
 }
 
 describe('ProjectForm Component', () => {
@@ -977,6 +989,31 @@ describe('ProjectForm Component', () => {
     expect(screen.getByLabelText(/Project Name/i)).toHaveValue('Draft Project');
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it.each([1, 2, 3, 4] as const)(
+    'saves a draft from wizard step %i',
+    async (currentStep) => {
+      const onClose = vi.fn();
+      render(
+        <ProjectForm
+          users={mockUsers}
+          currentUserId="user-admin"
+          onClose={onClose}
+        />
+      );
+
+      await fillStep1Basics();
+      await advanceCreateFormToStep(currentStep);
+      fireEvent.click(screen.getByRole('button', { name: /Close modal/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'Save as Draft' }));
+
+      expect(saveProjectCreationDraft).toHaveBeenCalledWith(
+        'user-admin',
+        expect.objectContaining({ currentStep })
+      );
+      expect(onClose).toHaveBeenCalledOnce();
+    }
+  );
 
   it('saves all wizard sections and the current step before closing', async () => {
     const onClose = vi.fn();
