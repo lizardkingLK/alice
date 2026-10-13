@@ -102,8 +102,10 @@ On `/charts/[id]`:
 
 - Breadcrumb **Charts** returns to the registry (the old **All workspaces**
   button is being removed)
-- **Filter** (**Shift+F**) sets project / sprint defaults that seed filters for
-  new Chart widgets (check **Set as default** on Project or Sprint, then Okay)
+- **Filter** (**Shift+F**) sets project / sprint defaults that **prefill** the
+  create-scope dialog for new Chart / burndown widgets (check **Set as
+  default** on Project or Sprint, then Okay). Existing locked widgets are not
+  rewritten.
 - **+** adds a widget or creates another workspace
 - A **Saving…** indicator (**coming soon**) appears top-right while the board
   syncs to your account
@@ -117,13 +119,20 @@ On `/charts/[id]`:
 3. Under Add widget, pick **Chart**, **Data over time** (sprint burndown), or
    **More widgets** to browse the full catalog (Delivery → **Burndown** is the
    same burndown widget). Other types still show **Coming soon**.
+4. For **Chart** and burndown widgets, choose **project** (required) and
+   **sprint** (required for burndown; optional for Chart). Workspace **Filter**
+   defaults prefill when set. That scope stays **locked** on the widget.
+
+The card header shows **Project · Sprint** for Chart and burndown widgets.
+In filters, project and sprint are read-only; use **Change scope** to pick a
+new project/sprint (this resets status, assignee, type, and priority filters).
 
 ### Burndown widget
 
 **Data over time** and **Burndown** show remaining work versus the ideal line
 for a sprint (same math as Overview). The header shows **Project · Sprint**.
-Use the filter control to pick project and sprint (board defaults seed new
-widgets when set).
+Pick project and sprint when you add the widget; change them later via
+**Change scope** in filters.
 
 ---
 

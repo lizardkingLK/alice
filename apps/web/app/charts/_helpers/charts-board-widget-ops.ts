@@ -26,6 +26,7 @@ export function appendChartWidget(
     title?: string;
     sizeOverride?: Partial<Pick<LayoutItem, 'w' | 'h' | 'minW' | 'minH'>>;
     filters?: ChartsWidgetFilterDraft;
+    scopeLocked?: boolean;
   }
 ): {
   instances: ChartBoardWidgetInstance[];
@@ -39,6 +40,7 @@ export function appendChartWidget(
       typeId,
       ...(options?.title ? { title: options.title } : {}),
       ...(options?.filters ? { filters: options.filters } : {}),
+      ...(options?.scopeLocked ? { scopeLocked: true } : {}),
     },
   ];
   const nextLayout = [
@@ -104,6 +106,11 @@ export function duplicateChartWidget(
       copiedId,
       source.filters,
       nextInstances
+    );
+  }
+  if (source.scopeLocked) {
+    nextInstances = nextInstances.map((item) =>
+      item.instanceId === copiedId ? { ...item, scopeLocked: true } : item
     );
   }
   const sourceFocus = resolveFocusedSliceKey(source);

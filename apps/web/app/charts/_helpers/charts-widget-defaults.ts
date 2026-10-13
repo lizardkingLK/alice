@@ -5,7 +5,11 @@ import type {
   ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
 
-const DEFAULT_QUICK_SELECTIONS: Record<ChartsQuickFieldId, string> = {
+/** Shared Quick-filter defaults (`all` for every dimension). */
+export const CHARTS_DEFAULT_QUICK_SELECTIONS: Record<
+  ChartsQuickFieldId,
+  string
+> = {
   project: 'all',
   sprint: 'all',
   status: 'all',
@@ -31,7 +35,7 @@ export function createChartWidgetFiltersFromDefaults(
     projectId,
     rows: [],
     quickSelections: {
-      ...DEFAULT_QUICK_SELECTIONS,
+      ...CHARTS_DEFAULT_QUICK_SELECTIONS,
       project: projectId,
       sprint: sprintId ?? 'all',
     },

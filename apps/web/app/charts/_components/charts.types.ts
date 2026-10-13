@@ -88,6 +88,11 @@ export type ChartBoardWidgetInstance = {
   readonly description?: string;
   /** Applied Advanced/Quick filters for chart widgets (local board JSON). */
   readonly filters?: ChartsWidgetFilterDraft;
+  /**
+   * When true, project/sprint were chosen at create (or via Change scope) and
+   * stay locked in Quick/Advanced filters. Legacy widgets omit this flag.
+   */
+  readonly scopeLocked?: boolean;
   /** Chart / Table / Split — fullscreen preview only; canvas always shows the pie. */
   readonly viewMode?: ChartWidgetViewMode;
   /**

@@ -24,6 +24,7 @@ type ChartInstanceFieldPatch = Partial<
     | 'title'
     | 'description'
     | 'filters'
+    | 'scopeLocked'
     | 'viewMode'
     | 'focusedSliceKey'
     | 'pieVariant'
@@ -44,6 +45,7 @@ type ChartInstanceFieldPatch = Partial<
   readonly clearShowEmptySlices?: boolean;
   readonly clearVisibleTableColumns?: boolean;
   readonly clearSliceColors?: boolean;
+  readonly clearScopeLocked?: boolean;
 };
 
 /** Persist a field only when set and not the omitted default. */
@@ -97,6 +99,11 @@ function withInstanceFields(
     'filters',
     patch.filters ?? item.filters
   );
+
+  const scopeLocked = patch.scopeLocked ?? item.scopeLocked;
+  if (!patch.clearScopeLocked && scopeLocked) {
+    Object.assign(next, { scopeLocked: true });
+  }
 
   const viewMode = patch.viewMode ?? item.viewMode;
   assignNonDefaultField(next, 'viewMode', viewMode, viewMode === 'chart');
