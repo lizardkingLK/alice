@@ -190,6 +190,8 @@ type ChartsWidgetCardProps = {
   readonly catalogDescription?: string;
   readonly Icon?: ChartWidgetDefinition['icon'];
   readonly filters?: ChartsWidgetFilterDraft;
+  /** When true, project/sprint filters are locked (create-time scope). */
+  readonly scopeLocked?: boolean;
   /** Fullscreen-only layout; canvas always shows the chart. */
   readonly viewMode?: ChartWidgetViewMode;
   readonly pieVariant?: ChartPieVariant;
@@ -211,6 +213,10 @@ type ChartsWidgetCardProps = {
     meta: { readonly title: string; readonly description: string | null }
   ) => void;
   readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
+  readonly onScopeChange?: (
+    // eslint-disable-next-line no-unused-vars -- change locked scope
+    scope: { readonly projectId: string; readonly sprintId: string | null }
+  ) => void;
   readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
   readonly onPieVariantChange?: ChartsWidgetPieVariantChangeHandler;
   readonly onLabelFieldChange?: ChartsWidgetLabelFieldChangeHandler;
@@ -337,18 +343,23 @@ function ChartsWidgetCardFilterControl({
   isBurndown,
   title,
   filters,
+  scopeLocked,
+  typeId,
   burndownFiltersOpen,
   onBurndownFiltersOpenChange,
   accessibleProjects,
   accessibleSprints,
   assigneeMembers,
   onFiltersChange,
+  onScopeChange,
   onOpenChartFilters,
 }: Readonly<{
   isChart: boolean;
   isBurndown: boolean;
   title: string;
   filters?: ChartsWidgetFilterDraft;
+  scopeLocked?: boolean;
+  typeId: ChartWidgetTypeId;
   burndownFiltersOpen: boolean;
   // eslint-disable-next-line no-unused-vars -- controlled open
   onBurndownFiltersOpenChange: (open: boolean) => void;
@@ -356,6 +367,7 @@ function ChartsWidgetCardFilterControl({
   accessibleSprints: readonly ChartsSprintOption[];
   assigneeMembers: readonly ChartsSampleMember[];
   onFiltersChange?: ChartsWidgetFiltersChangeHandler;
+  onScopeChange?: ChartsWidgetCardProps['onScopeChange'];
   onOpenChartFilters: () => void;
 }>) {
   const filterButtonClassName = cn(
@@ -370,6 +382,9 @@ function ChartsWidgetCardFilterControl({
         onOpenChange={onBurndownFiltersOpenChange}
         onApply={(draft) => onFiltersChange?.(draft)}
         appliedFilters={filters ?? null}
+        scopeLocked={scopeLocked}
+        typeId={typeId}
+        onScopeChange={onScopeChange}
         projects={accessibleProjects}
         sprints={accessibleSprints}
         members={assigneeMembers}
@@ -440,6 +455,7 @@ export function ChartsWidgetCard({
   catalogDescription,
   Icon,
   filters,
+  scopeLocked = false,
   viewMode,
   pieVariant,
   labelField = DEFAULT_CHARTS_LABEL_FIELD,
@@ -456,6 +472,7 @@ export function ChartsWidgetCard({
   onDuplicate,
   onRename,
   onFiltersChange,
+  onScopeChange,
   onViewModeChange,
   onPieVariantChange,
   onLabelFieldChange,
@@ -642,7 +659,7 @@ export function ChartsWidgetCard({
             </Tooltip>
           </div>
 
-          {isBurndown ? (
+          {isBurndown || isChart ? (
             <BurndownScopeLabels
               projectName={scopeProjectName}
               sprintName={scopeSprintName}
@@ -656,12 +673,15 @@ export function ChartsWidgetCard({
               isBurndown={isBurndown}
               title={displayTitle}
               filters={filters}
+              scopeLocked={scopeLocked}
+              typeId={typeId}
               burndownFiltersOpen={burndownFiltersOpen}
               onBurndownFiltersOpenChange={setBurndownFiltersOpen}
               accessibleProjects={accessibleProjects}
               accessibleSprints={accessibleSprints}
               assigneeMembers={assigneeMembers}
               onFiltersChange={onFiltersChange}
+              onScopeChange={onScopeChange}
               onOpenChartFilters={() => {
                 openConfig({ withFilters: true });
               }}
@@ -790,6 +810,8 @@ export function ChartsWidgetCard({
           initialFiltersOpen={configFiltersOpen}
           initialSettingsOpen={configSettingsOpen}
           filters={filters ?? null}
+          scopeLocked={scopeLocked}
+          typeId={typeId}
           viewMode={viewMode}
           pieVariant={pieVariant}
           labelField={labelField}
@@ -803,6 +825,7 @@ export function ChartsWidgetCard({
           accessibleSprints={accessibleSprints}
           assigneeMembers={assigneeMembers}
           onFiltersChange={onFiltersChange}
+          onScopeChange={onScopeChange}
           onViewModeChange={handleConfigViewModeChange}
           onPieVariantChange={onPieVariantChange}
           onLabelFieldChange={onLabelFieldChange}

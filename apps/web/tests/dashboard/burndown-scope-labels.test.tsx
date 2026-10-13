@@ -8,7 +8,7 @@ describe('BurndownScopeLabels', () => {
 
     expect(
       screen.getByRole('group', {
-        name: 'Burndown scope: HAVIT2: Sprint 12',
+        name: 'Widget scope: HAVIT2: Sprint 12',
       })
     ).toBeInTheDocument();
     expect(screen.getByText('HAVIT2')).toBeInTheDocument();

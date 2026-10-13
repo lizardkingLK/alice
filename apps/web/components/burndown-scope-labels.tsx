@@ -8,8 +8,8 @@ export type BurndownScopeLabelsProps = {
 };
 
 /**
- * Compact Project · Sprint context for burndown widgets (dashboard overview
- * and Charts). Prefer placing in the card header top-right.
+ * Compact Project · Sprint context for chart / burndown widgets (dashboard
+ * overview and Charts). Prefer placing in the card header top-right.
  */
 export function BurndownScopeLabels({
   projectName,
@@ -23,7 +23,7 @@ export function BurndownScopeLabels({
     return null;
   }
 
-  const ariaLabel = ['Burndown scope', project, sprint]
+  const ariaLabel = ['Widget scope', project, sprint]
     .filter(Boolean)
     .join(': ');
 

@@ -19,6 +19,7 @@ import type {
   ChartsSliceColorToken,
   ChartsTableColumnId,
   ChartWidgetDisplaySettingsPatch,
+  ChartWidgetTypeId,
   ChartWidgetViewMode,
   ChartsWidgetFiltersChangeHandler,
   ChartsWidgetLabelFieldChangeHandler,
@@ -71,6 +72,8 @@ type ChartsWidgetConfigDialogProps = {
   /** Open with the widget settings sidebar visible (Settings menu / cog). */
   readonly initialSettingsOpen?: boolean;
   readonly filters?: ChartsWidgetFilterDraft | null;
+  readonly scopeLocked?: boolean;
+  readonly typeId?: ChartWidgetTypeId;
   readonly viewMode?: ChartWidgetViewMode;
   readonly pieVariant?: ChartPieVariant;
   readonly labelField?: ChartsLabelFieldId;
@@ -86,6 +89,10 @@ type ChartsWidgetConfigDialogProps = {
   /** Accessible project members for Assignee options in the filter popover. */
   readonly assigneeMembers?: readonly ChartsSampleMember[];
   readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
+  readonly onScopeChange?: (
+    // eslint-disable-next-line no-unused-vars -- change locked scope
+    scope: { readonly projectId: string; readonly sprintId: string | null }
+  ) => void;
   readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
   readonly onPieVariantChange?: ChartsWidgetPieVariantChangeHandler;
   readonly onLabelFieldChange?: ChartsWidgetLabelFieldChangeHandler;
@@ -168,9 +175,12 @@ function ChartsWidgetConfigToolbar(props: {
   // eslint-disable-next-line no-unused-vars
   readonly onFiltersOpenChange: (open: boolean) => void;
   readonly filters: ChartsWidgetFilterDraft | null;
+  readonly scopeLocked?: boolean;
+  readonly typeId?: ChartWidgetTypeId;
   readonly accessibleProjects: readonly ChartsProjectOption[];
   readonly accessibleSprints: readonly ChartsSprintOption[];
   readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
+  readonly onScopeChange?: ChartsWidgetConfigDialogProps['onScopeChange'];
   readonly members: readonly ChartsSampleMember[];
   readonly viewMode: ChartWidgetViewMode;
   // eslint-disable-next-line no-unused-vars
@@ -200,7 +210,10 @@ function ChartsWidgetConfigToolbar(props: {
         open={props.filtersOpen}
         onOpenChange={props.onFiltersOpenChange}
         appliedFilters={props.filters}
+        scopeLocked={props.scopeLocked}
+        typeId={props.typeId}
         onApply={(draft) => props.onFiltersChange?.(draft)}
+        onScopeChange={props.onScopeChange}
         projects={props.accessibleProjects}
         sprints={props.accessibleSprints}
         members={props.members}
@@ -316,6 +329,8 @@ export function ChartsWidgetConfigDialog({
   initialFiltersOpen = false,
   initialSettingsOpen = false,
   filters = null,
+  scopeLocked = false,
+  typeId = 'chart',
   viewMode = 'chart',
   pieVariant = 'donut',
   labelField = DEFAULT_CHARTS_LABEL_FIELD,
@@ -329,6 +344,7 @@ export function ChartsWidgetConfigDialog({
   accessibleSprints = [],
   assigneeMembers = [],
   onFiltersChange,
+  onScopeChange,
   onViewModeChange,
   onPieVariantChange,
   onLabelFieldChange,
@@ -527,9 +543,12 @@ export function ChartsWidgetConfigDialog({
           filtersOpen={filtersOpen}
           onFiltersOpenChange={setFiltersOpen}
           filters={filters}
+          scopeLocked={scopeLocked}
+          typeId={typeId}
           accessibleProjects={accessibleProjects}
           accessibleSprints={accessibleSprints}
           onFiltersChange={onFiltersChange}
+          onScopeChange={onScopeChange}
           members={assigneeMembers}
           viewMode={viewMode}
           onLayoutChange={(mode) => {

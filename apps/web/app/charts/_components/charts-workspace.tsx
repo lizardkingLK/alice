@@ -40,8 +40,11 @@ import {
 } from '@/app/charts/_components/charts-save-workspace-dialog';
 import { ChartsWorkspaceActionsMenu } from '@/app/charts/_components/charts-workspace-actions-menu';
 import { ChartsWorkspaceFilterDialog } from '@/app/charts/_components/charts-workspace-filter-dialog';
+import {
+  ChartsWidgetScopeDialog,
+  type ChartsWidgetScopeSelection,
+} from '@/app/charts/_components/charts-widget-scope-dialog';
 import { isChartWidgetAvailable } from '@/app/charts/_components/charts-widget-catalog';
-import { isBurndownWidgetType } from '@/app/charts/_helpers/charts-burndown-widget';
 import { resolveChartsDescription } from '@/app/charts/_helpers/charts-description';
 import type {
   ChartBoardWidgetInstance,
@@ -61,7 +64,11 @@ import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import { isSessionExpiredError } from '@/lib/errors/session-expired';
 import { writeChartsLastOpenedId } from '@/app/charts/_helpers/charts-last-opened';
 import { chartsWorkspaceHref } from '@/app/charts/_helpers/charts-links';
-import { createChartWidgetFiltersFromDefaults } from '@/app/charts/_helpers/charts-widget-defaults';
+import {
+  buildScopedFilters,
+  updateChartWidgetScope,
+  widgetTypeRequiresScope,
+} from '@/app/charts/_helpers/charts-widget-scope';
 import {
   clearLegacyChartsLocalStorage,
   suggestChartWorkspaceTitle,
@@ -147,6 +154,22 @@ export function ChartsWorkspace({
       sprints,
     });
 
+  const accessibleSprints = useMemo(
+    () =>
+      sprints.flatMap((sprint) =>
+        sprint.project?.id
+          ? [
+              {
+                id: sprint.id,
+                name: sprint.name,
+                projectId: sprint.project.id,
+              },
+            ]
+          : []
+      ),
+    [sprints]
+  );
+
   useEffect(() => {
     clearLegacyChartsLocalStorage(currentUserId);
   }, [currentUserId]);
@@ -221,22 +244,45 @@ export function ChartsWorkspace({
     [hydrated, layout, persistBoard]
   );
 
+  const [pendingScopeTypeId, setPendingScopeTypeId] =
+    useState<ChartWidgetTypeId | null>(null);
+
   const handleSelectWidget = useCallback(
     (typeId: ChartWidgetTypeId) => {
       if (!isChartWidgetAvailable(typeId)) {
         return;
       }
-      const filters =
-        typeId === 'chart' || isBurndownWidgetType(typeId)
-          ? createChartWidgetFiltersFromDefaults(insertPreference)
-          : undefined;
+      if (widgetTypeRequiresScope(typeId)) {
+        setPendingScopeTypeId(typeId);
+        return;
+      }
+      commitBoard(appendChartWidget(typeId, instances, layout));
+    },
+    [commitBoard, instances, layout]
+  );
+
+  const handleConfirmCreateScope = useCallback(
+    (scope: ChartsWidgetScopeSelection) => {
+      if (!pendingScopeTypeId) {
+        return;
+      }
+      const typeId = pendingScopeTypeId;
+      setPendingScopeTypeId(null);
       commitBoard(
         appendChartWidget(typeId, instances, layout, {
-          ...(filters ? { filters } : {}),
+          filters: buildScopedFilters(scope),
+          scopeLocked: true,
         })
       );
     },
-    [commitBoard, insertPreference, instances, layout]
+    [commitBoard, instances, layout, pendingScopeTypeId]
+  );
+
+  const handleWidgetScopeChange = useCallback(
+    (instanceId: string, scope: ChartsWidgetScopeSelection) => {
+      commitInstances(updateChartWidgetScope(instanceId, scope, instances));
+    },
+    [commitInstances, instances]
   );
 
   const handleAddWorkspace = useCallback(() => {
@@ -599,23 +645,14 @@ export function ChartsWorkspace({
             hydrated={hydrated}
             focusWidgetId={focusWidgetId}
             accessibleProjects={shareProjects}
-            accessibleSprints={sprints.flatMap((sprint) =>
-              sprint.project?.id
-                ? [
-                    {
-                      id: sprint.id,
-                      name: sprint.name,
-                      projectId: sprint.project.id,
-                    },
-                  ]
-                : []
-            )}
+            accessibleSprints={accessibleSprints}
             assigneeMembers={assigneeMembers}
             onLayoutChange={handleLayoutChange}
             onRemoveWidget={handleRemoveWidget}
             onDuplicateWidget={handleDuplicateWidget}
             onRenameWidget={handleSaveWidgetMeta}
             onFiltersChange={handleFiltersChange}
+            onScopeChange={handleWidgetScopeChange}
             onViewModeChange={handleViewModeChange}
             onPieVariantChange={handlePieVariantChange}
             onLabelFieldChange={handleLabelFieldChange}
@@ -624,6 +661,21 @@ export function ChartsWorkspace({
           />
         </CardContent>
       </Card>
+
+      <ChartsWidgetScopeDialog
+        open={pendingScopeTypeId != null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingScopeTypeId(null);
+          }
+        }}
+        mode="create"
+        typeId={pendingScopeTypeId ?? 'chart'}
+        projects={shareProjects}
+        sprints={accessibleSprints}
+        insertPreference={insertPreference}
+        onConfirm={handleConfirmCreateScope}
+      />
 
       <ChartsSaveWorkspaceDialog
         open={createDialogOpen}
