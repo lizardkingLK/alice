@@ -1,8 +1,15 @@
 import { z } from 'zod';
 
+const chartWorkspaceScopeSchema = z.object({
+  projectId: z.uuid(),
+  sprintId: z.uuid(),
+});
+
 export const chartBoardJsonSchema = z.object({
   instances: z.array(z.unknown()).default([]),
   layout: z.array(z.unknown()).default([]),
+  /** When set, the board is locked to this project + sprint. */
+  scope: chartWorkspaceScopeSchema.nullable().optional(),
 });
 
 export const createChartSchema = z.object({

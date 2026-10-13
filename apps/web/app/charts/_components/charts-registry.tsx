@@ -105,6 +105,15 @@ type DeleteTarget = {
 type ChartsRegistryProps = {
   readonly currentUserId: string;
   readonly initialWorkspaces: readonly ChartWorkspaceRecord[];
+  readonly projects?: ReadonlyArray<{
+    readonly id: string;
+    readonly name: string;
+  }>;
+  readonly sprints?: ReadonlyArray<{
+    readonly id: string;
+    readonly name: string;
+    readonly projectId: string;
+  }>;
   readonly tab: ChartsRegistryListTab;
   readonly page: number;
   readonly limit: number;
@@ -384,6 +393,8 @@ function useChartsRegistryMutations(params: {
 export function ChartsRegistry({
   currentUserId,
   initialWorkspaces,
+  projects = [],
+  sprints = [],
   tab,
   page,
   limit,
@@ -463,6 +474,7 @@ export function ChartsRegistry({
         const created = await createChartWorkspaceOnApi({
           title: payload.title,
           description: payload.description,
+          scope: payload.scope ?? null,
           viewerId: currentUserId,
         });
         setWorkspaces((previous) => [created, ...previous]);
@@ -578,6 +590,8 @@ export function ChartsRegistry({
       createOpen={createOpen}
       onCreateOpenChange={setCreateOpen}
       createDefaultTitle={createDefaultTitle}
+      createProjects={projects}
+      createSprints={sprints}
       onCreate={handleCreate}
       editTarget={editTarget}
       onEditOpenChange={(open) => {
@@ -626,6 +640,15 @@ function ChartsRegistryLoadedView(props: {
   // eslint-disable-next-line no-unused-vars -- create dialog
   readonly onCreateOpenChange: (open: boolean) => void;
   readonly createDefaultTitle: string;
+  readonly createProjects: ReadonlyArray<{
+    readonly id: string;
+    readonly name: string;
+  }>;
+  readonly createSprints: ReadonlyArray<{
+    readonly id: string;
+    readonly name: string;
+    readonly projectId: string;
+  }>;
   readonly onCreate: (
     // eslint-disable-next-line no-unused-vars -- create payload
     payload: ChartsSaveWorkspacePayload
@@ -734,6 +757,8 @@ function ChartsRegistryLoadedView(props: {
         onOpenChange={props.onCreateOpenChange}
         mode="create"
         defaultTitle={props.createDefaultTitle}
+        projects={props.createProjects}
+        sprints={props.createSprints}
         onSave={props.onCreate}
       />
       <ChartsEditWorkspaceDialog

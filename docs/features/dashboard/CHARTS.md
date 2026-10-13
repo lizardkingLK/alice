@@ -118,13 +118,15 @@ Table **`charts`**:
 - `id`, `owner_id`, `title`, `description?`
 - `board_json` (widgets + layout) — **source of truth for board data**
   - Widget instances may carry per-instance `title?` and **`description?`**
-  - Chart / burndown instances also store **`scopeLocked?: boolean`** plus
-    `filters.projectId` / `filters.sprintId`. Create opens a scope dialog
-    (project required; sprint required for burndown). When locked, Quick /
-    Advanced filters disable project/sprint; **Change scope** rewrites those
-    ids, clears dimension filters (status / assignee / type / priority) and
-    `focusedSliceKey`, and keeps `scopeLocked: true`. Legacy widgets without
-    the flag stay editable. Card chrome shows **Project · Sprint**
+  - Optional board-level **`scope: { projectId, sprintId } | null`** —
+    set at workspace create when **Lock to project and sprint** is checked.
+    Scoped boards hide workspace Filter and widget project/sprint controls;
+    new Chart / burndown widgets inherit `filters` from that scope. Owners may
+    **Mark as non-scoped** (`scope: null`) but cannot change the locked pair.
+    Mixed boards keep Filter as the **active** insert selection; burndown
+    prompts only when Filter lacks a concrete project/sprint. Legacy
+    per-widget `scopeLocked` is ignored for lock UX (stripped on mark
+    non-scoped). Card chrome shows **Project · Sprint**
     (`BurndownScopeLabels`) for chart and burndown.
 - `show_on_dashboard` + `dashboard_sort_order`
 - `status`, audit columns

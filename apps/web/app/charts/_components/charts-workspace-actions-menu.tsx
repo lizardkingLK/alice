@@ -14,13 +14,16 @@ import {
   Pencil,
   RefreshCw,
   Trash2,
+  Unlock,
 } from '@repo/ui/lib/icons';
 import { afterDialogClose } from '@/lib/dialog-close';
 
 type ChartsWorkspaceActionsMenuProps = {
   readonly ownership: 'mine' | 'shared';
   readonly status: 'active' | 'archived';
+  readonly isScoped?: boolean;
   readonly onRename: () => void;
+  readonly onMarkNonScoped?: () => void;
   readonly onArchive: () => void;
   readonly onRestore: () => void;
   readonly onRequestDelete: () => void;
@@ -30,7 +33,9 @@ type ChartsWorkspaceActionsMenuProps = {
 export function ChartsWorkspaceActionsMenu({
   ownership,
   status,
+  isScoped = false,
   onRename,
+  onMarkNonScoped,
   onArchive,
   onRestore,
   onRequestDelete,
@@ -53,7 +58,7 @@ export function ChartsWorkspaceActionsMenu({
           <MoreHorizontal className="size-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent align="end" className="w-52">
         {isMine ? (
           <DropdownMenuItem
             className="cursor-pointer gap-2"
@@ -63,6 +68,17 @@ export function ChartsWorkspaceActionsMenu({
           >
             <Pencil className="size-4" />
             Save option
+          </DropdownMenuItem>
+        ) : null}
+        {isMine && isScoped && onMarkNonScoped ? (
+          <DropdownMenuItem
+            className="cursor-pointer gap-2"
+            onSelect={() => {
+              afterDialogClose(onMarkNonScoped);
+            }}
+          >
+            <Unlock className="size-4" />
+            Mark as non-scoped
           </DropdownMenuItem>
         ) : null}
         {isMine && isActive ? (

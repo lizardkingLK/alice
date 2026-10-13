@@ -82,12 +82,8 @@ type ChartsBoardCanvasProps = {
     // eslint-disable-next-line no-unused-vars
     filters: ChartBoardWidgetInstance['filters'] | null
   ) => void;
-  readonly onScopeChange?: (
-    // eslint-disable-next-line no-unused-vars
-    instanceId: string,
-    // eslint-disable-next-line no-unused-vars
-    scope: { readonly projectId: string; readonly sprintId: string | null }
-  ) => void;
+  /** When true, widget project/sprint filters are locked to workspace scope. */
+  readonly workspaceScoped?: boolean;
   readonly onViewModeChange: (
     // eslint-disable-next-line no-unused-vars
     instanceId: string,
@@ -141,7 +137,7 @@ export function ChartsBoardCanvas({
   onDuplicateWidget,
   onRenameWidget,
   onFiltersChange,
-  onScopeChange,
+  workspaceScoped = false,
   onViewModeChange,
   onPieVariantChange,
   onLabelFieldChange,
@@ -233,7 +229,7 @@ export function ChartsBoardCanvas({
           onDuplicateWidget={onDuplicateWidget}
           onRenameWidget={onRenameWidget}
           onFiltersChange={onFiltersChange}
-          onScopeChange={onScopeChange}
+          workspaceScoped={workspaceScoped}
           onViewModeChange={onViewModeChange}
           onPieVariantChange={onPieVariantChange}
           onLabelFieldChange={onLabelFieldChange}
@@ -262,7 +258,7 @@ function BoardCanvasBody({
   onDuplicateWidget,
   onRenameWidget,
   onFiltersChange,
-  onScopeChange,
+  workspaceScoped = false,
   onViewModeChange,
   onPieVariantChange,
   onLabelFieldChange,
@@ -304,12 +300,7 @@ function BoardCanvasBody({
     // eslint-disable-next-line no-unused-vars
     filters: ChartBoardWidgetInstance['filters'] | null
   ) => void;
-  onScopeChange?: (
-    // eslint-disable-next-line no-unused-vars
-    instanceId: string,
-    // eslint-disable-next-line no-unused-vars
-    scope: { readonly projectId: string; readonly sprintId: string | null }
-  ) => void;
+  workspaceScoped?: boolean;
   onViewModeChange: (
     // eslint-disable-next-line no-unused-vars
     instanceId: string,
@@ -417,7 +408,7 @@ function BoardCanvasBody({
               catalogDescription={meta?.description}
               Icon={meta?.icon}
               filters={entry?.instance.filters}
-              scopeLocked={entry?.instance.scopeLocked}
+              scopeLocked={workspaceScoped}
               viewMode={entry?.instance.viewMode}
               pieVariant={entry?.instance.pieVariant}
               labelField={entry?.instance.labelField}
@@ -435,11 +426,6 @@ function BoardCanvasBody({
               onRename={(metaPayload) => onRenameWidget(item.i, metaPayload)}
               onFiltersChange={(nextFilters) =>
                 onFiltersChange(item.i, nextFilters)
-              }
-              onScopeChange={
-                onScopeChange
-                  ? (scope) => onScopeChange(item.i, scope)
-                  : undefined
               }
               onViewModeChange={(nextMode, nextFocused) =>
                 onViewModeChange(item.i, nextMode, nextFocused)
