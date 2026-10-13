@@ -10,7 +10,9 @@ import type { User } from '@/app/users/_services/users.mutations.client';
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import {
   clearProjectCreationDraft,
+  readProjectCreationDraft,
   saveProjectCreationDraft,
+  type ProjectCreationDraft,
 } from '@/app/projects/_helpers/project-creation-draft-storage';
 import {
   getComboboxOptions,
@@ -33,6 +35,7 @@ vi.mock('@/app/projects/_services/projects.cache.actions.server', () => ({
 vi.mock('@/app/projects/_helpers/project-creation-draft-storage', () => ({
   PROJECT_CREATION_DRAFT_VERSION: 1,
   saveProjectCreationDraft: vi.fn(),
+  readProjectCreationDraft: vi.fn(),
   clearProjectCreationDraft: vi.fn(),
 }));
 
@@ -154,6 +157,46 @@ const mockGithubConnection = {
   updated_at: '2026-07-09T10:00:00Z',
 };
 
+const mockProjectCreationDraft: ProjectCreationDraft = {
+  version: 1,
+  currentStep: 5,
+  basicInfo: {
+    name: 'Restored Project',
+    key: 'RESTORE',
+    description: 'Restored project description',
+    selectedOwnerId: 'user-mgr-1',
+    status: 'archived',
+    startDate: '2099-09-01',
+    endDate: '2099-10-01',
+    selectedWorkItemTypes: ['Epic', 'Story'],
+  },
+  imports: {
+    importFromJira: true,
+    jiraConnectionId: 'conn-1',
+    jiraProjectKey: 'TEST',
+  },
+  sourceControl: {
+    enableGithub: true,
+    githubOwner: 'octocat',
+    githubRepoName: 'hello-world',
+  },
+  sprint: {
+    createInitialSprint: true,
+    sprintName: 'Restored Sprint',
+    sprintGoal: 'Restore the saved work',
+    sprintStartDate: '2099-09-01',
+    sprintEndDate: '2099-09-14',
+  },
+  team: {
+    createInitialTeam: true,
+    teamName: 'Restored Team',
+    teamDescription: 'Restored team description',
+    teamManagerId: 'user-mgr-2',
+    teamTechStack: 'TypeScript',
+    teamMemberIds: ['user-member'],
+  },
+};
+
 function mockJiraApiFetch(options?: {
   connections?: (typeof mockJiraConnection)[];
   importedCount?: number;
@@ -226,6 +269,7 @@ describe('ProjectForm Component', () => {
     mockJiraApiFetch({ connections: [] });
     vi.mocked(invalidateProjectDropdownCache).mockResolvedValue(undefined);
     vi.mocked(saveProjectCreationDraft).mockReturnValue(true);
+    vi.mocked(readProjectCreationDraft).mockReturnValue(null);
     vi.mocked(clearProjectCreationDraft).mockReturnValue(true);
   });
 
@@ -658,6 +702,202 @@ describe('ProjectForm Component', () => {
     });
   });
 
+  it('shows an empty create form when no saved draft exists', async () => {
+    render(<ProjectForm users={mockUsers} currentUserId="user-admin" />);
+
+    await waitFor(() => {
+      expect(readProjectCreationDraft).toHaveBeenCalledWith('user-admin');
+    });
+    expect(
+      screen.queryByText('Resume saved project draft?')
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Project Name/i)).toHaveValue('');
+    expect(screen.getByLabelText(/Project Key/i)).toHaveValue('');
+  });
+
+  it('restores all draft sections, the saved step, and Jira layout state', async () => {
+    const onJiraImportToggle = vi.fn();
+    vi.mocked(readProjectCreationDraft).mockReturnValue(
+      mockProjectCreationDraft
+    );
+    mockJiraApiFetch();
+    const view = render(
+      <ProjectForm
+        users={mockUsers}
+        currentUserId="user-admin"
+        onJiraImportToggle={onJiraImportToggle}
+      />
+    );
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Resume Draft' })
+    );
+
+    expect(
+      screen.getByRole('checkbox', { name: /Create an initial team/i })
+    ).toBeChecked();
+    expect(screen.getByLabelText(/Team Name/i)).toHaveValue('Restored Team');
+    expect(screen.getByLabelText(/^Description$/i)).toHaveValue(
+      'Restored team description'
+    );
+    expect(screen.getByLabelText(/Technology Stack/i)).toHaveValue(
+      'TypeScript'
+    );
+    expect(screen.getByLabelText(/Team Manager/i)).toHaveValue(
+      'Manager Two (mgr2@alice.dev)'
+    );
+    expect(
+      screen.getByRole('checkbox', { name: /Member User/i })
+    ).toBeChecked();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(
+      screen.getByRole('checkbox', { name: /Create an initial sprint/i })
+    ).toBeChecked();
+    expect(screen.getByLabelText(/Sprint Name/i)).toHaveValue(
+      'Restored Sprint'
+    );
+    expect(screen.getByLabelText(/Sprint Goal/i)).toHaveValue(
+      'Restore the saved work'
+    );
+    expect(screen.getByLabelText(/Sprint Start Date/i)).toHaveValue(
+      '2099-09-01'
+    );
+    expect(screen.getByLabelText(/Sprint End Date/i)).toHaveValue('2099-09-14');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByRole('checkbox', { name: /^GitHub$/i })).toBeChecked();
+    expect(screen.getByLabelText(/GitHub Repository URL/i)).toHaveValue(
+      'https://github.com/octocat/hello-world'
+    );
+    expect(screen.queryByLabelText(/Personal Access Token/i)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByRole('checkbox', { name: /^Jira$/i })).toBeChecked();
+    await waitFor(() => {
+      const jiraSelects = screen.getAllByTestId('ui-select');
+      expect(jiraSelects[0]).toHaveValue('conn-1');
+      expect(jiraSelects[1]).toHaveValue('TEST');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByLabelText(/Project Name/i)).toHaveValue(
+      'Restored Project'
+    );
+    expect(screen.getByLabelText(/Project Key/i)).toHaveValue('RESTORE');
+    expect(screen.getByLabelText(/Description/i)).toHaveValue(
+      'Restored project description'
+    );
+    expect(screen.getByLabelText(/Project Owner/i)).toHaveValue(
+      'Manager One (mgr1@alice.dev)'
+    );
+    expect(screen.getByLabelText(/Start Date/i)).toHaveValue('2099-09-01');
+    expect(screen.getByLabelText(/End Date/i)).toHaveValue('2099-10-01');
+    expect(screen.getByRole('checkbox', { name: 'Epic' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Story' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Feature' })).not.toBeChecked();
+    expect(onJiraImportToggle).toHaveBeenCalledWith(true);
+
+    fireEvent.change(screen.getByLabelText(/Project Name/i), {
+      target: { value: 'Edited Restored Project' },
+    });
+    view.rerender(
+      <ProjectForm
+        users={mockUsers}
+        currentUserId="user-admin"
+        onJiraImportToggle={onJiraImportToggle}
+      />
+    );
+    expect(screen.getByLabelText(/Project Name/i)).toHaveValue(
+      'Edited Restored Project'
+    );
+    expect(readProjectCreationDraft).toHaveBeenCalledOnce();
+  });
+
+  it('starts fresh only after explicitly clearing the saved draft', async () => {
+    const onJiraImportToggle = vi.fn();
+    vi.mocked(readProjectCreationDraft).mockReturnValue(
+      mockProjectCreationDraft
+    );
+    render(
+      <ProjectForm
+        users={mockUsers}
+        currentUserId="user-admin"
+        onJiraImportToggle={onJiraImportToggle}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Start Fresh' }));
+
+    expect(clearProjectCreationDraft).toHaveBeenCalledWith('user-admin');
+    expect(
+      screen.queryByText('Resume saved project draft?')
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Project Name/i)).toHaveValue('');
+    expect(screen.getByLabelText(/Project Key/i)).toHaveValue('');
+    expect(screen.getByLabelText(/Start Date/i)).not.toHaveValue('');
+    expect(onJiraImportToggle).toHaveBeenCalledWith(false);
+  });
+
+  it('removes unavailable saved user references without substituting users', async () => {
+    vi.mocked(readProjectCreationDraft).mockReturnValue({
+      ...mockProjectCreationDraft,
+      basicInfo: {
+        ...mockProjectCreationDraft.basicInfo,
+        selectedOwnerId: 'missing-owner',
+      },
+      team: {
+        ...mockProjectCreationDraft.team,
+        teamManagerId: 'missing-manager',
+        teamMemberIds: ['user-member', 'missing-member'],
+      },
+    });
+    render(<ProjectForm users={mockUsers} currentUserId="user-admin" />);
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Resume Draft' })
+    );
+
+    expect(screen.getByLabelText(/Team Manager/i)).toHaveValue('');
+    expect(
+      screen.getByRole('checkbox', { name: /Member User/i })
+    ).toBeChecked();
+    expect(
+      screen.getByText(/Some saved users are no longer available/i)
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
+
+    expect(
+      await screen.findByText('Project Owner is required.')
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/Project Owner/i)).toHaveValue('');
+    expect(createProject).not.toHaveBeenCalled();
+  });
+
+  it('revalidates restored dates before creating a project', async () => {
+    vi.mocked(readProjectCreationDraft).mockReturnValue({
+      ...mockProjectCreationDraft,
+      basicInfo: {
+        ...mockProjectCreationDraft.basicInfo,
+        startDate: '2020-01-01',
+        endDate: '2020-02-01',
+      },
+    });
+    render(<ProjectForm users={mockUsers} currentUserId="user-admin" />);
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Resume Draft' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
+
+    expect(
+      await screen.findByText('Start Date cannot be a past date.')
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/Start Date/i)).toHaveValue('2020-01-01');
+    expect(createProject).not.toHaveBeenCalled();
+  });
+
   it('closes an untouched create form without confirmation', () => {
     const onClose = vi.fn();
     render(<ProjectForm users={mockUsers} onClose={onClose} />);
@@ -829,6 +1069,7 @@ describe('ProjectForm Component', () => {
     expect(onClose).toHaveBeenCalledOnce();
     expect(screen.queryByText('Save project draft?')).not.toBeInTheDocument();
     expect(saveProjectCreationDraft).not.toHaveBeenCalled();
+    expect(readProjectCreationDraft).not.toHaveBeenCalled();
   });
 
   it('shows Jira OAuth fields when checkbox is toggled with an existing connection', async () => {

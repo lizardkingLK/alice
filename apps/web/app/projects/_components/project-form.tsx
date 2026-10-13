@@ -46,6 +46,7 @@ import {
 import {
   CANONICAL_HIERARCHY_ORDER,
   initialSprintSchema,
+  isProductUsableUser,
   type WorkItemType,
 } from '@repo/types';
 import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
@@ -79,6 +80,7 @@ import {
 import {
   clearProjectCreationDraft,
   PROJECT_CREATION_DRAFT_VERSION,
+  readProjectCreationDraft,
   saveProjectCreationDraft,
   type ProjectCreationDraft,
 } from '@/app/projects/_helpers/project-creation-draft-storage';
@@ -867,6 +869,95 @@ function ProjectDraftCloseDialog({
   );
 }
 
+function ProjectDraftRestoreDialog({
+  open,
+  onResume,
+  onStartFresh,
+}: Readonly<{
+  open: boolean;
+  onResume: () => void;
+  onStartFresh: () => void;
+}>) {
+  return (
+    <Dialog open={open}>
+      <DialogContent
+        showCloseButton={false}
+        dismissOnOutsideClick={false}
+        onEscapeKeyDown={(event) => event.preventDefault()}
+      >
+        <DialogHeader>
+          <DialogTitle>Resume saved project draft?</DialogTitle>
+          <DialogDescription>
+            Continue from your saved step, or start fresh. Starting fresh will
+            permanently discard the saved draft.
+          </DialogDescription>
+        </DialogHeader>
+
+        <DialogFooter>
+          <Button type="button" variant="destructive" onClick={onStartFresh}>
+            Start Fresh
+          </Button>
+          <Button type="button" onClick={onResume}>
+            Resume Draft
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function getRestoredPeople(
+  draft: ProjectCreationDraft,
+  users: User[]
+): {
+  selectedOwnerId: string;
+  teamManagerId: string;
+  teamMemberIds: string[];
+  hasUnavailablePeople: boolean;
+} {
+  const ownerIsAvailable = users.some(
+    (user) =>
+      user.id === draft.basicInfo.selectedOwnerId && user.role === 'manager'
+  );
+  const usableUsers = users.filter(isProductUsableUser);
+  const usableUserIds = new Set(usableUsers.map((user) => user.id));
+  const managerIds = new Set(
+    usableUsers
+      .filter((user) => user.role === 'admin' || user.role === 'manager')
+      .map((user) => user.id)
+  );
+  const selectedOwnerId = ownerIsAvailable
+    ? draft.basicInfo.selectedOwnerId
+    : '';
+  const teamManagerId = managerIds.has(draft.team.teamManagerId)
+    ? draft.team.teamManagerId
+    : '';
+  const teamMemberIds = [
+    ...new Set(
+      draft.team.teamMemberIds.filter((memberId) => usableUserIds.has(memberId))
+    ),
+  ];
+
+  return {
+    selectedOwnerId,
+    teamManagerId,
+    teamMemberIds,
+    hasUnavailablePeople:
+      selectedOwnerId !== draft.basicInfo.selectedOwnerId ||
+      teamManagerId !== draft.team.teamManagerId ||
+      teamMemberIds.length !== new Set(draft.team.teamMemberIds).size,
+  };
+}
+
+function getSafeDraftStep(
+  currentStep: ProjectCreationDraft['currentStep']
+): ProjectCreationDraft['currentStep'] {
+  return Math.min(
+    5,
+    Math.max(1, currentStep)
+  ) as ProjectCreationDraft['currentStep'];
+}
+
 function getProjectFormCardClass(
   isMaximized: boolean,
   isCloseConfirmationOpen: boolean
@@ -996,6 +1087,8 @@ export function ProjectForm({
   const [isSuccess, setIsSuccess] = useState(false);
   const [isCloseConfirmationOpen, setIsCloseConfirmationOpen] = useState(false);
   const [draftSaveError, setDraftSaveError] = useState<string | null>(null);
+  const [availableDraft, setAvailableDraft] =
+    useState<ProjectCreationDraft | null>(null);
 
   const [name, setName] = useState(projectToEdit?.name ?? '');
   const [key, setKey] = useState(projectToEdit?.key ?? '');
@@ -1131,6 +1224,92 @@ export function ProjectForm({
     },
   });
 
+  const resetCreateForm = () => {
+    setName('');
+    setKey('');
+    setDescription('');
+    setSelectedOwnerId('');
+    setStatus('active');
+    setStartDate(getTodayDateString());
+    setEndDate('');
+    setSelectedWorkItemTypes([...CANONICAL_HIERARCHY_ORDER]);
+    setStep(1);
+    setImportFromJira(false);
+    setJiraConnectionId('');
+    setJiraProjectKey('');
+    setEnableGithub(false);
+    setGithubOwner('');
+    setGithubRepoName('');
+    setGithubToken('');
+    setCreateInitialSprint(false);
+    setSprintName('');
+    setSprintGoal('');
+    setSprintStartDate('');
+    setSprintEndDate('');
+    setCreateInitialTeam(false);
+    setTeamName('');
+    setTeamDescription('');
+    setTeamManagerId('');
+    setTeamTechStack('');
+    setTeamMemberIds([]);
+    setMessage(null);
+    setIsError(false);
+    onJiraImportToggle?.(false);
+  };
+
+  const handleResumeDraft = () => {
+    if (!availableDraft || isEditMode) return;
+
+    const restoredPeople = getRestoredPeople(availableDraft, users);
+    setName(availableDraft.basicInfo.name);
+    setKey(availableDraft.basicInfo.key);
+    setDescription(availableDraft.basicInfo.description);
+    setSelectedOwnerId(restoredPeople.selectedOwnerId);
+    setStatus(availableDraft.basicInfo.status);
+    setStartDate(availableDraft.basicInfo.startDate);
+    setEndDate(availableDraft.basicInfo.endDate);
+    setSelectedWorkItemTypes([
+      ...availableDraft.basicInfo.selectedWorkItemTypes,
+    ]);
+    setImportFromJira(availableDraft.imports.importFromJira);
+    setJiraConnectionId(availableDraft.imports.jiraConnectionId);
+    setJiraProjectKey(availableDraft.imports.jiraProjectKey);
+    setEnableGithub(availableDraft.sourceControl.enableGithub);
+    setGithubOwner(availableDraft.sourceControl.githubOwner);
+    setGithubRepoName(availableDraft.sourceControl.githubRepoName);
+    setGithubToken('');
+    setCreateInitialSprint(availableDraft.sprint.createInitialSprint);
+    setSprintName(availableDraft.sprint.sprintName);
+    setSprintGoal(availableDraft.sprint.sprintGoal);
+    setSprintStartDate(availableDraft.sprint.sprintStartDate);
+    setSprintEndDate(availableDraft.sprint.sprintEndDate);
+    setCreateInitialTeam(availableDraft.team.createInitialTeam);
+    setTeamName(availableDraft.team.teamName);
+    setTeamDescription(availableDraft.team.teamDescription);
+    setTeamManagerId(restoredPeople.teamManagerId);
+    setTeamTechStack(availableDraft.team.teamTechStack);
+    setTeamMemberIds(restoredPeople.teamMemberIds);
+    setStep(getSafeDraftStep(availableDraft.currentStep));
+    onJiraImportToggle?.(availableDraft.imports.importFromJira);
+
+    if (restoredPeople.hasUnavailablePeople) {
+      setMessage(
+        'Some saved users are no longer available. Please select replacements.'
+      );
+      setIsError(true);
+    } else {
+      setMessage(null);
+      setIsError(false);
+    }
+    setAvailableDraft(null);
+  };
+
+  const handleStartFresh = () => {
+    clearProjectCreationDraft(currentUserId);
+    resetCreateForm();
+    setAvailableDraft(null);
+  };
+
   const handleCloseRequest = () => {
     if (!onClose || isSubmitting) return;
 
@@ -1256,6 +1435,15 @@ export function ProjectForm({
     setGithubToken('');
   }, [projectToEdit]);
 
+  useEffect(() => {
+    if (isEditMode) {
+      setAvailableDraft(null);
+      return;
+    }
+
+    setAvailableDraft(readProjectCreationDraft(currentUserId));
+  }, [currentUserId, isEditMode]);
+
   const handleProjectUpdate = async (projectData: CreateProjectInput) => {
     if (!projectToEdit) return;
     const expectedUpdatedAt = projectToEdit.updated_at;
@@ -1352,7 +1540,17 @@ export function ProjectForm({
     };
   };
 
-  const validateFinalStep = (): boolean => isEditMode || validateStep(step);
+  const validateFinalStep = (): boolean => {
+    if (isEditMode) return true;
+
+    for (const wizardStep of [1, 2, 3, 4, 5]) {
+      if (!validateStep(wizardStep)) {
+        setStep(wizardStep);
+        return false;
+      }
+    }
+    return true;
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1589,6 +1787,11 @@ export function ProjectForm({
         onOpenChange={handleCloseDialogOpenChange}
         onSave={handleSaveDraft}
         onDiscard={handleDiscardChanges}
+      />
+      <ProjectDraftRestoreDialog
+        open={availableDraft !== null}
+        onResume={handleResumeDraft}
+        onStartFresh={handleStartFresh}
       />
     </Card>
   );
