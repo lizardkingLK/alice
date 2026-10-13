@@ -25,7 +25,6 @@ import {
 import { CircleHelp, X } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { FilterFieldNavItem } from '@/components/filter-field-nav-item';
-import { FILTER_OPTIONS_SCROLL_CLASS } from '@/components/filter-dialog-shell';
 import { preventDismissForFloatingPortal } from '@/lib/dialog-outside-events';
 import {
   CHARTS_FILTER_COLUMNS,
@@ -413,8 +412,11 @@ export function ChartsAdvancedFiltersPopover({
       <PopoverContent
         align="start"
         sideOffset={8}
+        collisionPadding={12}
         className={cn(
-          'bg-popover text-popover-foreground border-border ring-foreground/10 w-[min(92vw,36rem)] gap-0 rounded-xl p-0 shadow-lg ring-1',
+          // Cap to Radix available height so the popover stays in-viewport
+          // when the chart filter trigger sits near the bottom of the board.
+          'bg-popover text-popover-foreground border-border ring-foreground/10 flex max-h-(--radix-popover-content-available-height) w-[min(92vw,36rem)] flex-col gap-0 overflow-hidden rounded-xl p-0 shadow-lg ring-1',
           className
         )}
         onOpenAutoFocus={(event) => event.preventDefault()}
@@ -422,7 +424,7 @@ export function ChartsAdvancedFiltersPopover({
         onPointerDownOutside={preventDismissForFloatingPortal}
         onInteractOutside={preventDismissForFloatingPortal}
       >
-        <div className="border-border flex items-start justify-between gap-3 border-b px-4 py-3">
+        <div className="border-border flex shrink-0 items-start justify-between gap-3 border-b px-4 py-3">
           <div className="min-w-0 space-y-0.5">
             <h3 className="text-sm font-semibold tracking-tight">
               {mode === 'advanced' ? 'Advanced filters' : 'Quick filters'}
@@ -458,7 +460,7 @@ export function ChartsAdvancedFiltersPopover({
         </div>
 
         {mode === 'advanced' ? (
-          <div className="flex flex-col gap-3 px-4 py-3">
+          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-muted-foreground w-14 shrink-0 text-xs font-medium">
                 Project
@@ -562,7 +564,7 @@ export function ChartsAdvancedFiltersPopover({
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-[9rem_minmax(0,1fr)] overflow-hidden">
+          <div className="grid min-h-0 flex-1 grid-cols-[9rem_minmax(0,1fr)] overflow-hidden">
             <nav
               className="border-border flex flex-col gap-0.5 overflow-y-auto border-r p-2"
               aria-label="Quick filter fields"
@@ -593,10 +595,12 @@ export function ChartsAdvancedFiltersPopover({
                 Portaled Popover inside Dialog: body scroll-lock swallows wheel
                 events on native overflow. ScrollArea + stopPropagation matches
                 calendar overflow + registry filter panes.
+                Cap matches registry panes (24rem / h-96) but shrinks with
+                available popover height so Close/Apply stay in view.
               */}
               <ScrollArea
                 type="always"
-                className={cn('min-h-0 w-full', FILTER_OPTIONS_SCROLL_CLASS)}
+                className="h-[min(24rem,calc(var(--radix-popover-content-available-height,100dvh)-12rem))] min-h-0 w-full"
                 onWheel={(event) => event.stopPropagation()}
               >
                 <div className="flex flex-col gap-0.5 px-3 pb-3">
@@ -664,7 +668,7 @@ export function ChartsAdvancedFiltersPopover({
           </div>
         )}
 
-        <div className="border-border flex items-center justify-between gap-3 border-t px-4 py-3">
+        <div className="border-border flex shrink-0 items-center justify-between gap-3 border-t px-4 py-3">
           <button
             type="button"
             className="text-muted-foreground hover:text-foreground cursor-pointer text-xs font-medium"
