@@ -181,15 +181,15 @@ export function ChartsWidgetScopeDialog({
     onOpenChange(false);
   };
 
-  const title = mode === 'change' ? 'Change scope' : 'Choose scope';
+  const title = mode === 'change' ? 'Change scope' : 'Choose sprint';
   let description =
-    'Pick the project this widget belongs to. Scope stays locked in filters afterward.';
+    'Pick the project and sprint for this widget from the board Filter selection.';
   if (mode === 'change') {
     description =
       'Changing scope resets status, assignee, type, and priority filters under the new project and sprint.';
   } else if (requireSprint) {
     description =
-      'Pick project and sprint for this burndown. Scope stays locked in filters afterward.';
+      'Burndown needs a concrete project and sprint. The board Filter is missing one or both — select them to continue.';
   }
 
   return (

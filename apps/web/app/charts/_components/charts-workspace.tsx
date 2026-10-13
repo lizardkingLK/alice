@@ -18,6 +18,7 @@ import {
 } from '@repo/ui/components/ui/tooltip';
 import { BarChart3, Info, Loader2, GitFork } from '@repo/ui/lib/icons';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { ChartsAddMenu } from '@/app/charts/_components/charts-add-widget-menu';
@@ -44,6 +45,7 @@ import {
   ChartsWidgetScopeDialog,
   type ChartsWidgetScopeSelection,
 } from '@/app/charts/_components/charts-widget-scope-dialog';
+import { BurndownScopeLabels } from '@/components/burndown-scope-labels';
 import { isChartWidgetAvailable } from '@/app/charts/_components/charts-widget-catalog';
 import { resolveChartsDescription } from '@/app/charts/_helpers/charts-description';
 import type {
@@ -65,9 +67,12 @@ import { isSessionExpiredError } from '@/lib/errors/session-expired';
 import { writeChartsLastOpenedId } from '@/app/charts/_helpers/charts-last-opened';
 import { chartsWorkspaceHref } from '@/app/charts/_helpers/charts-links';
 import {
-  buildScopedFilters,
-  updateChartWidgetScope,
-  widgetTypeRequiresScope,
+  boardFilterFromPreference,
+  clearInstanceScopeLocks,
+  filtersFromBoardSelection,
+  isWorkspaceScoped,
+  resolveChartWidgetInsertAction,
+  type ChartsBoardFilterSelection,
 } from '@/app/charts/_helpers/charts-widget-scope';
 import {
   clearLegacyChartsLocalStorage,
@@ -102,6 +107,32 @@ type ChartsWorkspaceProps = {
   readonly projects: readonly Project[];
   readonly sprints: readonly Sprint[];
 };
+
+function reportWorkspaceActionError(
+  err: unknown,
+  fallback: string,
+  // eslint-disable-next-line no-unused-vars -- setter
+  setActionError: (message: string | null) => void
+): void {
+  if (isSessionExpiredError(err)) {
+    return;
+  }
+  setActionError(err instanceof Error ? err.message : fallback);
+}
+
+function markWorkspaceNonScoped(
+  previous: ChartWorkspaceRecord
+): ChartWorkspaceRecord | null {
+  if (!previous.scope) {
+    return null;
+  }
+  return {
+    ...previous,
+    scope: null,
+    instances: clearInstanceScopeLocks(previous.instances),
+    updatedAt: new Date().toISOString(),
+  };
+}
 
 export function ChartsWorkspace({
   workspaceId,
@@ -147,12 +178,22 @@ export function ChartsWorkspace({
     }
   }, []);
 
-  const { savedPreference, insertPreference, saveDefaults } =
-    useChartsWorkspaceDefaults({
-      userId: currentUserId,
-      projects,
-      sprints,
-    });
+  const { savedPreference, saveDefaults } = useChartsWorkspaceDefaults({
+    userId: currentUserId,
+    projects,
+    sprints,
+  });
+
+  const [activeBoardFilter, setActiveBoardFilter] =
+    useState<ChartsBoardFilterSelection>(() =>
+      boardFilterFromPreference(savedPreference)
+    );
+
+  useEffect(() => {
+    setActiveBoardFilter(boardFilterFromPreference(savedPreference));
+  }, [savedPreference]);
+
+  const workspaceScoped = isWorkspaceScoped(workspace);
 
   const accessibleSprints = useMemo(
     () =>
@@ -244,45 +285,69 @@ export function ChartsWorkspace({
     [hydrated, layout, persistBoard]
   );
 
-  const [pendingScopeTypeId, setPendingScopeTypeId] =
+  /** Mixed burndown insert when Filter lacks project and/or sprint. */
+  const [pendingBurndownTypeId, setPendingBurndownTypeId] =
     useState<ChartWidgetTypeId | null>(null);
+
+  const insertWidgetWithFilters = useCallback(
+    (typeId: ChartWidgetTypeId, filters: ChartsWidgetFilterDraft) => {
+      commitBoard(
+        appendChartWidget(typeId, instances, layout, {
+          filters,
+        })
+      );
+    },
+    [commitBoard, instances, layout]
+  );
 
   const handleSelectWidget = useCallback(
     (typeId: ChartWidgetTypeId) => {
       if (!isChartWidgetAvailable(typeId)) {
         return;
       }
-      if (widgetTypeRequiresScope(typeId)) {
-        setPendingScopeTypeId(typeId);
+
+      const action = resolveChartWidgetInsertAction({
+        typeId,
+        workspaceScope: workspace?.scope,
+        activeBoardFilter,
+      });
+
+      if (action.type === 'prompt-burndown') {
+        setPendingBurndownTypeId(typeId);
+        return;
+      }
+      if (action.type === 'append-filters') {
+        insertWidgetWithFilters(typeId, action.filters);
         return;
       }
       commitBoard(appendChartWidget(typeId, instances, layout));
     },
-    [commitBoard, instances, layout]
+    [
+      activeBoardFilter,
+      commitBoard,
+      insertWidgetWithFilters,
+      instances,
+      layout,
+      workspace?.scope,
+    ]
   );
 
-  const handleConfirmCreateScope = useCallback(
+  const handleConfirmBurndownScope = useCallback(
     (scope: ChartsWidgetScopeSelection) => {
-      if (!pendingScopeTypeId) {
+      if (!pendingBurndownTypeId) {
         return;
       }
-      const typeId = pendingScopeTypeId;
-      setPendingScopeTypeId(null);
-      commitBoard(
-        appendChartWidget(typeId, instances, layout, {
-          filters: buildScopedFilters(scope),
-          scopeLocked: true,
+      const typeId = pendingBurndownTypeId;
+      setPendingBurndownTypeId(null);
+      insertWidgetWithFilters(
+        typeId,
+        filtersFromBoardSelection({
+          projectId: scope.projectId,
+          sprintId: scope.sprintId,
         })
       );
     },
-    [commitBoard, instances, layout, pendingScopeTypeId]
-  );
-
-  const handleWidgetScopeChange = useCallback(
-    (instanceId: string, scope: ChartsWidgetScopeSelection) => {
-      commitInstances(updateChartWidgetScope(instanceId, scope, instances));
-    },
-    [commitInstances, instances]
+    [insertWidgetWithFilters, pendingBurndownTypeId]
   );
 
   const handleAddWorkspace = useCallback(() => {
@@ -298,14 +363,28 @@ export function ChartsWorkspace({
       });
       router.push(`/charts/${forked.id}`);
     } catch (err) {
-      if (isSessionExpiredError(err)) {
-        return;
-      }
-      setActionError(
-        err instanceof Error ? err.message : 'Failed to fork workspace'
+      reportWorkspaceActionError(
+        err,
+        'Failed to fork workspace',
+        setActionError
       );
     }
   }, [currentUserId, router, workspaceId]);
+
+  const handleMarkNonScoped = useCallback(() => {
+    setWorkspace((previous) => {
+      if (!previous) {
+        return previous;
+      }
+      const updated = markWorkspaceNonScoped(previous);
+      if (!updated) {
+        return previous;
+      }
+      setInstances(updated.instances);
+      runWorkspaceSync(updated).catch(() => {});
+      return updated;
+    });
+  }, [runWorkspaceSync]);
 
   const handleCreateWorkspace = useCallback(
     async (payload: ChartsSaveWorkspacePayload) => {
@@ -314,17 +393,19 @@ export function ChartsWorkspace({
         const created = await createChartWorkspaceOnApi({
           title: payload.title,
           description: payload.description,
+          scope: payload.scope ?? null,
           viewerId: currentUserId,
         });
         router.push(`/charts/${created.id}`);
       } catch (err) {
-        if (isSessionExpiredError(err)) {
-          return;
-        }
-        const message =
-          err instanceof Error ? err.message : 'Failed to create workspace';
-        setActionError(message);
-        throw err instanceof Error ? err : new Error(message);
+        reportWorkspaceActionError(
+          err,
+          'Failed to create workspace',
+          setActionError
+        );
+        throw err instanceof Error
+          ? err
+          : new Error('Failed to create workspace');
       }
     },
     [currentUserId, router]
@@ -360,11 +441,10 @@ export function ChartsWorkspace({
         )
       );
     } catch (err) {
-      if (isSessionExpiredError(err)) {
-        return;
-      }
-      setActionError(
-        err instanceof Error ? err.message : 'Failed to archive workspace'
+      reportWorkspaceActionError(
+        err,
+        'Failed to archive workspace',
+        setActionError
       );
     }
   }, [currentUserId, workspaceId]);
@@ -380,11 +460,10 @@ export function ChartsWorkspace({
         )
       );
     } catch (err) {
-      if (isSessionExpiredError(err)) {
-        return;
-      }
-      setActionError(
-        err instanceof Error ? err.message : 'Failed to restore workspace'
+      reportWorkspaceActionError(
+        err,
+        'Failed to restore workspace',
+        setActionError
       );
     }
   }, [currentUserId, workspaceId]);
@@ -407,13 +486,11 @@ export function ChartsWorkspace({
         await deleteChartWorkspace(workspaceId);
       }
     } catch (err) {
-      let message = 'Failed to delete workspace';
-      if (err instanceof Error) {
-        message = err.message;
-      } else if (kind === 'share') {
-        message = 'Failed to leave shared workspace';
-      }
-      console.error(message, err);
+      const fallback =
+        kind === 'share'
+          ? 'Failed to leave shared workspace'
+          : 'Failed to delete workspace';
+      console.error(err instanceof Error ? err.message : fallback, err);
     } finally {
       setDeletePending(false);
       deleteInFlightRef.current = false;
@@ -541,25 +618,266 @@ export function ChartsWorkspace({
   });
 
   return (
+    <ChartsWorkspaceView
+      actionError={actionError}
+      onDismissError={() => setActionError(null)}
+      workspace={workspace}
+      workspaceScoped={workspaceScoped}
+      shareProjects={shareProjects}
+      accessibleSprints={accessibleSprints}
+      projects={projects}
+      sprints={sprints}
+      activeBoardFilter={activeBoardFilter}
+      onApplyFilter={setActiveBoardFilter}
+      onSaveWorkspaceDefaults={saveDefaults}
+      isSaving={isSaving}
+      onForkWorkspace={() => void handleForkWorkspace()}
+      onSelectWidget={handleSelectWidget}
+      onAddWorkspace={handleAddWorkspace}
+      instances={instances}
+      layout={layout}
+      hydrated={hydrated}
+      focusWidgetId={focusWidgetId}
+      assigneeMembers={assigneeMembers}
+      onLayoutChange={handleLayoutChange}
+      onRemoveWidget={handleRemoveWidget}
+      onDuplicateWidget={handleDuplicateWidget}
+      onRenameWidget={handleSaveWidgetMeta}
+      onFiltersChange={handleFiltersChange}
+      onViewModeChange={handleViewModeChange}
+      onPieVariantChange={handlePieVariantChange}
+      onLabelFieldChange={handleLabelFieldChange}
+      onDisplaySettingsChange={handleDisplaySettingsChange}
+      onFocusWidgetDismiss={handleCloseWidgetDeepLink}
+      onRenameWorkspace={() => setSaveDialogOpen(true)}
+      onMarkNonScoped={handleMarkNonScoped}
+      onArchiveWorkspace={() => void handleArchiveWorkspace()}
+      onRestoreWorkspace={() => void handleRestoreWorkspace()}
+      onRequestDelete={(kind) => setDeleteKind(kind)}
+      pendingBurndownTypeId={pendingBurndownTypeId}
+      onPendingBurndownOpenChange={(open) => {
+        if (!open) {
+          setPendingBurndownTypeId(null);
+        }
+      }}
+      onConfirmBurndownScope={handleConfirmBurndownScope}
+      createDialogOpen={createDialogOpen}
+      onCreateDialogOpenChange={setCreateDialogOpen}
+      createDefaultTitle={createDefaultTitle}
+      onCreateWorkspace={handleCreateWorkspace}
+      saveDialogOpen={saveDialogOpen}
+      onSaveDialogOpenChange={setSaveDialogOpen}
+      saveDefaultTitle={saveDefaultTitle}
+      onSaveWorkspace={handleSaveWorkspace}
+      deleteKind={deleteKind}
+      deletePending={deletePending}
+      onCancelDelete={() => setDeleteKind(null)}
+      onConfirmDelete={() => void handleConfirmDelete()}
+    />
+  );
+}
+
+type ChartsWorkspaceViewProps = {
+  readonly actionError: string | null;
+  readonly onDismissError: () => void;
+  readonly workspace: ChartWorkspaceRecord | null;
+  readonly workspaceScoped: boolean;
+  readonly shareProjects: ChartsWorkspaceProps['shareProjects'];
+  readonly accessibleSprints: ReadonlyArray<{
+    readonly id: string;
+    readonly name: string;
+    readonly projectId: string;
+  }>;
+  readonly projects: readonly Project[];
+  readonly sprints: readonly Sprint[];
+  readonly activeBoardFilter: ChartsBoardFilterSelection;
+  // eslint-disable-next-line no-unused-vars
+  readonly onApplyFilter: (selection: ChartsBoardFilterSelection) => void;
+  readonly onSaveWorkspaceDefaults: (
+    // eslint-disable-next-line no-unused-vars
+    preference: BoardDefaultsPreference | null
+  ) => void;
+  readonly isSaving: boolean;
+  readonly onForkWorkspace: () => void;
+  // eslint-disable-next-line no-unused-vars
+  readonly onSelectWidget: (typeId: ChartWidgetTypeId) => void;
+  readonly onAddWorkspace: () => void;
+  readonly instances: ChartBoardWidgetInstance[];
+  readonly layout: LayoutItem[];
+  readonly hydrated: boolean;
+  readonly focusWidgetId?: string;
+  readonly assigneeMembers: readonly ChartsSampleMember[];
+  // eslint-disable-next-line no-unused-vars
+  readonly onLayoutChange: (next: LayoutItem[]) => void;
+  // eslint-disable-next-line no-unused-vars
+  readonly onRemoveWidget: (instanceId: string) => void;
+  // eslint-disable-next-line no-unused-vars
+  readonly onDuplicateWidget: (instanceId: string) => void;
+  readonly onRenameWidget: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    meta: { readonly title: string; readonly description: string | null }
+  ) => void;
+  readonly onFiltersChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    filters: ChartsWidgetFilterDraft | null | undefined
+  ) => void;
+  readonly onViewModeChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    viewMode: ChartWidgetViewMode,
+    // eslint-disable-next-line no-unused-vars
+    focusedSliceKey?: string | null
+  ) => void;
+  readonly onPieVariantChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    pieVariant: ChartPieVariant
+  ) => void;
+  readonly onLabelFieldChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    labelField: ChartsLabelFieldId
+  ) => void;
+  readonly onDisplaySettingsChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    patch: ChartWidgetDisplaySettingsPatch
+  ) => void;
+  readonly onFocusWidgetDismiss: () => void;
+  readonly onRenameWorkspace: () => void;
+  readonly onMarkNonScoped: () => void;
+  readonly onArchiveWorkspace: () => void;
+  readonly onRestoreWorkspace: () => void;
+  // eslint-disable-next-line no-unused-vars
+  readonly onRequestDelete: (kind: 'owned' | 'share') => void;
+  readonly pendingBurndownTypeId: ChartWidgetTypeId | null;
+  // eslint-disable-next-line no-unused-vars
+  readonly onPendingBurndownOpenChange: (open: boolean) => void;
+  // eslint-disable-next-line no-unused-vars
+  readonly onConfirmBurndownScope: (scope: ChartsWidgetScopeSelection) => void;
+  readonly createDialogOpen: boolean;
+  // eslint-disable-next-line no-unused-vars
+  readonly onCreateDialogOpenChange: (open: boolean) => void;
+  readonly createDefaultTitle: string;
+  // eslint-disable-next-line no-unused-vars
+  readonly onCreateWorkspace: (payload: ChartsSaveWorkspacePayload) => void;
+  readonly saveDialogOpen: boolean;
+  // eslint-disable-next-line no-unused-vars
+  readonly onSaveDialogOpenChange: (open: boolean) => void;
+  readonly saveDefaultTitle: string;
+  // eslint-disable-next-line no-unused-vars
+  readonly onSaveWorkspace: (payload: ChartsSaveWorkspacePayload) => void;
+  readonly deleteKind: 'owned' | 'share' | null;
+  readonly deletePending: boolean;
+  readonly onCancelDelete: () => void;
+  readonly onConfirmDelete: () => void;
+};
+
+function ChartsWorkspaceBoardFilter(props: {
+  readonly workspaceScoped: boolean;
+  readonly scope: ChartWorkspaceRecord['scope'];
+  readonly shareProjects: ChartsWorkspaceProps['shareProjects'];
+  readonly accessibleSprints: ChartsWorkspaceViewProps['accessibleSprints'];
+  readonly projects: readonly Project[];
+  readonly sprints: readonly Sprint[];
+  readonly activeBoardFilter: ChartsBoardFilterSelection;
+  // eslint-disable-next-line no-unused-vars
+  readonly onApplyFilter: (selection: ChartsBoardFilterSelection) => void;
+  readonly onSaveWorkspaceDefaults: ChartsWorkspaceViewProps['onSaveWorkspaceDefaults'];
+}) {
+  if (props.workspaceScoped && props.scope) {
+    return (
+      <BurndownScopeLabels
+        projectName={
+          props.shareProjects.find((p) => p.id === props.scope?.projectId)
+            ?.name ?? null
+        }
+        sprintName={
+          props.accessibleSprints.find((s) => s.id === props.scope?.sprintId)
+            ?.name ?? null
+        }
+        className="justify-start"
+      />
+    );
+  }
+
+  return (
+    <ChartsWorkspaceFilterDialog
+      projects={props.projects}
+      sprints={props.sprints}
+      activeFilter={props.activeBoardFilter}
+      onApplyFilter={props.onApplyFilter}
+      onSaveWorkspaceDefaults={props.onSaveWorkspaceDefaults}
+    />
+  );
+}
+
+function ChartsWorkspaceDeleteDialog(props: {
+  readonly deleteKind: 'owned' | 'share';
+  readonly title: string;
+  readonly deletePending: boolean;
+  readonly onCancel: () => void;
+  readonly onConfirm: () => void;
+}) {
+  const isShare = props.deleteKind === 'share';
+  return (
+    <RegistryConfirmDialog
+      title={
+        isShare ? 'Leave shared workspace' : 'Permanently delete workspace'
+      }
+      subject={props.title}
+      detail={
+        isShare
+          ? 'This removes your access to this board only. The owner’s copy is unchanged. If you still have a Views entry for this board, leave or delete that share from Views as well.'
+          : 'This action is irreversible. The chart workspace, its board layout, and any share records linked to it will be permanently removed.'
+      }
+      confirmLabel={isShare ? 'Leave' : 'Delete'}
+      pendingLabel={isShare ? 'Leaving...' : 'Deleting...'}
+      isPending={props.deletePending}
+      isSoft={false}
+      actionVerb={isShare ? 'leave' : undefined}
+      onCancel={props.onCancel}
+      onConfirm={props.onConfirm}
+    />
+  );
+}
+
+function ChartsWorkspaceView(props: Readonly<ChartsWorkspaceViewProps>) {
+  const ownership = props.workspace?.ownership ?? 'mine';
+
+  return (
     <div className="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
-      {actionError ? (
+      {props.actionError ? (
         <DismissibleError
-          message={actionError}
-          onDismiss={() => setActionError(null)}
+          message={props.actionError}
+          onDismiss={props.onDismissError}
         />
       ) : null}
       <div className="flex shrink-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          <ChartsWorkspaceFilterDialog
-            projects={projects}
-            sprints={sprints}
-            savedPreference={savedPreference}
-            onSaveWorkspaceDefaults={saveDefaults}
+          <ChartsWorkspaceBoardFilter
+            workspaceScoped={props.workspaceScoped}
+            scope={props.workspace?.scope}
+            shareProjects={props.shareProjects}
+            accessibleSprints={props.accessibleSprints}
+            projects={props.projects}
+            sprints={props.sprints}
+            activeBoardFilter={props.activeBoardFilter}
+            onApplyFilter={props.onApplyFilter}
+            onSaveWorkspaceDefaults={props.onSaveWorkspaceDefaults}
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-3 self-start">
-          {isSaving ? (
+          {props.isSaving ? (
             <div
               className="text-muted-foreground flex items-center gap-2 text-sm"
               role="status"
@@ -569,21 +887,21 @@ export function ChartsWorkspace({
               <span>Saving…</span>
             </div>
           ) : null}
-          {(workspace?.ownership ?? 'mine') === 'shared' ? (
+          {ownership === 'shared' ? (
             <Button
               type="button"
               variant="outline"
               size="sm"
               className="h-9 cursor-pointer gap-2"
-              onClick={() => void handleForkWorkspace()}
+              onClick={props.onForkWorkspace}
             >
               <GitFork className="size-3.5" data-icon="inline-start" />
               Fork
             </Button>
           ) : null}
           <ChartsAddMenu
-            onSelectWidget={handleSelectWidget}
-            onAddWorkspace={handleAddWorkspace}
+            onSelectWidget={props.onSelectWidget}
+            onAddWorkspace={props.onAddWorkspace}
           />
         </div>
       </div>
@@ -595,7 +913,7 @@ export function ChartsWorkspace({
               <CardTitle className="flex min-w-0 items-center gap-2 text-2xl font-bold tracking-tight">
                 <BarChart3 className="text-primary size-5 shrink-0" />
                 <TruncatedText className="min-w-0">
-                  {workspace?.title ?? 'Charts'}
+                  {props.workspace?.title ?? 'Charts'}
                 </TruncatedText>
                 <Tooltip delayDuration={300}>
                   <TooltipTrigger asChild>
@@ -609,8 +927,8 @@ export function ChartsWorkspace({
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs text-left">
                     {resolveChartsDescription({
-                      description: workspace?.description,
-                      title: workspace?.title,
+                      description: props.workspace?.description,
+                      title: props.workspace?.title,
                     })}
                   </TooltipContent>
                 </Tooltip>
@@ -620,18 +938,18 @@ export function ChartsWorkspace({
                 account.
               </CardDescription>
             </div>
-            {workspace ? (
+            {props.workspace ? (
               <ChartsWorkspaceActionsMenu
-                ownership={workspace.ownership ?? 'mine'}
-                status={workspace.status}
-                onRename={() => setSaveDialogOpen(true)}
-                onArchive={() => void handleArchiveWorkspace()}
-                onRestore={() => void handleRestoreWorkspace()}
+                ownership={ownership}
+                status={props.workspace.status}
+                isScoped={props.workspaceScoped}
+                onRename={props.onRenameWorkspace}
+                onMarkNonScoped={props.onMarkNonScoped}
+                onArchive={props.onArchiveWorkspace}
+                onRestore={props.onRestoreWorkspace}
                 onRequestDelete={() =>
-                  setDeleteKind(
-                    (workspace.ownership ?? 'mine') === 'shared'
-                      ? 'share'
-                      : 'owned'
+                  props.onRequestDelete(
+                    ownership === 'shared' ? 'share' : 'owned'
                   )
                 }
               />
@@ -640,87 +958,75 @@ export function ChartsWorkspace({
         </CardHeader>
         <CardContent className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto pt-2 pb-2">
           <ChartsBoardCanvas
-            instances={instances}
-            layout={layout}
-            hydrated={hydrated}
-            focusWidgetId={focusWidgetId}
-            accessibleProjects={shareProjects}
-            accessibleSprints={accessibleSprints}
-            assigneeMembers={assigneeMembers}
-            onLayoutChange={handleLayoutChange}
-            onRemoveWidget={handleRemoveWidget}
-            onDuplicateWidget={handleDuplicateWidget}
-            onRenameWidget={handleSaveWidgetMeta}
-            onFiltersChange={handleFiltersChange}
-            onScopeChange={handleWidgetScopeChange}
-            onViewModeChange={handleViewModeChange}
-            onPieVariantChange={handlePieVariantChange}
-            onLabelFieldChange={handleLabelFieldChange}
-            onDisplaySettingsChange={handleDisplaySettingsChange}
-            onFocusWidgetDismiss={handleCloseWidgetDeepLink}
+            instances={props.instances}
+            layout={props.layout}
+            hydrated={props.hydrated}
+            focusWidgetId={props.focusWidgetId}
+            accessibleProjects={props.shareProjects}
+            accessibleSprints={props.accessibleSprints}
+            assigneeMembers={props.assigneeMembers}
+            onLayoutChange={props.onLayoutChange}
+            onRemoveWidget={props.onRemoveWidget}
+            onDuplicateWidget={props.onDuplicateWidget}
+            onRenameWidget={props.onRenameWidget}
+            onFiltersChange={props.onFiltersChange}
+            workspaceScoped={props.workspaceScoped}
+            onViewModeChange={props.onViewModeChange}
+            onPieVariantChange={props.onPieVariantChange}
+            onLabelFieldChange={props.onLabelFieldChange}
+            onDisplaySettingsChange={props.onDisplaySettingsChange}
+            onFocusWidgetDismiss={props.onFocusWidgetDismiss}
           />
         </CardContent>
       </Card>
 
       <ChartsWidgetScopeDialog
-        open={pendingScopeTypeId != null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setPendingScopeTypeId(null);
-          }
-        }}
+        open={props.pendingBurndownTypeId != null}
+        onOpenChange={props.onPendingBurndownOpenChange}
         mode="create"
-        typeId={pendingScopeTypeId ?? 'chart'}
-        projects={shareProjects}
-        sprints={accessibleSprints}
-        insertPreference={insertPreference}
-        onConfirm={handleConfirmCreateScope}
+        typeId={props.pendingBurndownTypeId ?? 'burndown'}
+        projects={props.shareProjects}
+        sprints={props.accessibleSprints}
+        insertPreference={{
+          projectId: props.activeBoardFilter.projectId,
+          sprintId: props.activeBoardFilter.sprintId,
+        }}
+        onConfirm={props.onConfirmBurndownScope}
       />
 
       <ChartsSaveWorkspaceDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
+        open={props.createDialogOpen}
+        onOpenChange={props.onCreateDialogOpenChange}
         mode="create"
-        defaultTitle={createDefaultTitle}
-        aliceContext={{ widgetCount: instances.length }}
-        onSave={handleCreateWorkspace}
+        defaultTitle={props.createDefaultTitle}
+        aliceContext={{ widgetCount: props.instances.length }}
+        projects={props.shareProjects}
+        sprints={props.accessibleSprints}
+        onSave={props.onCreateWorkspace}
       />
       <ChartsSaveWorkspaceDialog
-        open={saveDialogOpen}
-        onOpenChange={setSaveDialogOpen}
+        open={props.saveDialogOpen}
+        onOpenChange={props.onSaveDialogOpenChange}
         mode="save"
-        defaultTitle={saveDefaultTitle}
-        defaultDescription={workspace?.description ?? null}
+        defaultTitle={props.saveDefaultTitle}
+        defaultDescription={props.workspace?.description ?? null}
         aliceContext={{
-          widgets: instances.map((item) => ({
+          widgets: props.instances.map((item) => ({
             typeId: item.typeId,
             title: item.title ?? null,
             labelField: item.labelField ?? null,
             pieVariant: item.pieVariant ?? null,
           })),
         }}
-        onSave={handleSaveWorkspace}
+        onSave={props.onSaveWorkspace}
       />
-      {deleteKind ? (
-        <RegistryConfirmDialog
-          title={
-            deleteKind === 'share'
-              ? 'Leave shared workspace'
-              : 'Permanently delete workspace'
-          }
-          subject={workspace?.title ?? 'this workspace'}
-          detail={
-            deleteKind === 'share'
-              ? 'This removes your access to this board only. The owner’s copy is unchanged. If you still have a Views entry for this board, leave or delete that share from Views as well.'
-              : 'This action is irreversible. The chart workspace, its board layout, and any share records linked to it will be permanently removed.'
-          }
-          confirmLabel={deleteKind === 'share' ? 'Leave' : 'Delete'}
-          pendingLabel={deleteKind === 'share' ? 'Leaving...' : 'Deleting...'}
-          isPending={deletePending}
-          isSoft={false}
-          actionVerb={deleteKind === 'share' ? 'leave' : undefined}
-          onCancel={() => setDeleteKind(null)}
-          onConfirm={() => void handleConfirmDelete()}
+      {props.deleteKind ? (
+        <ChartsWorkspaceDeleteDialog
+          deleteKind={props.deleteKind}
+          title={props.workspace?.title ?? 'this workspace'}
+          deletePending={props.deletePending}
+          onCancel={props.onCancelDelete}
+          onConfirm={props.onConfirmDelete}
         />
       ) : null}
     </div>

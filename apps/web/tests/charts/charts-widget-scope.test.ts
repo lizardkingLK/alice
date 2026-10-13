@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { ChartBoardWidgetInstance } from '@/app/charts/_components/charts.types';
 import {
+  boardFilterFromPreference,
   buildScopedFilters,
+  burndownInsertNeedsScopePrompt,
   clearDimensionFiltersKeepingScope,
+  clearInstanceScopeLocks,
+  filtersFromBoardSelection,
+  filtersFromWorkspaceScope,
+  isWorkspaceScoped,
   requiresSprintOnCreate,
-  updateChartWidgetScope,
+  resolveChartWidgetInsertAction,
   widgetTypeRequiresScope,
 } from '@/app/charts/_helpers/charts-widget-scope';
 
@@ -20,6 +26,16 @@ describe('charts-widget-scope', () => {
     expect(requiresSprintOnCreate('burndown')).toBe(true);
     expect(requiresSprintOnCreate('data-over-time')).toBe(true);
     expect(requiresSprintOnCreate('chart')).toBe(false);
+  });
+
+  it('detects workspace scope', () => {
+    expect(isWorkspaceScoped({ scope: null })).toBe(false);
+    expect(isWorkspaceScoped({})).toBe(false);
+    expect(
+      isWorkspaceScoped({
+        scope: { projectId: 'proj-1', sprintId: 'sprint-1' },
+      })
+    ).toBe(true);
   });
 
   it('builds clean scoped filters with optional sprint', () => {
@@ -40,7 +56,7 @@ describe('charts-widget-scope', () => {
     );
 
     expect(
-      buildScopedFilters({ projectId: 'proj-1', sprintId: 'sprint-1' })
+      filtersFromWorkspaceScope({ projectId: 'proj-1', sprintId: 'sprint-1' })
     ).toEqual({
       mode: 'quick',
       projectId: 'proj-1',
@@ -57,7 +73,76 @@ describe('charts-widget-scope', () => {
     });
   });
 
-  it('clears dimension filters while keeping locked project/sprint', () => {
+  it('maps board Filter selection into widget filters', () => {
+    expect(
+      filtersFromBoardSelection({
+        projectId: 'all',
+        sprintId: null,
+      }).projectId
+    ).toBe('all');
+
+    expect(
+      boardFilterFromPreference({
+        projectId: 'proj-1',
+        sprintId: 'sprint-1',
+      })
+    ).toEqual({ projectId: 'proj-1', sprintId: 'sprint-1' });
+  });
+
+  it('prompts for burndown when Filter lacks project or sprint', () => {
+    expect(
+      burndownInsertNeedsScopePrompt({
+        projectId: 'proj-1',
+        sprintId: 'sprint-1',
+      })
+    ).toBe(false);
+    expect(
+      burndownInsertNeedsScopePrompt({ projectId: 'proj-1', sprintId: null })
+    ).toBe(true);
+    expect(
+      burndownInsertNeedsScopePrompt({ projectId: 'all', sprintId: 'sprint-1' })
+    ).toBe(true);
+  });
+
+  it('resolves insert actions for scoped vs mixed boards', () => {
+    const filter = {
+      projectId: 'proj-1',
+      sprintId: 'sprint-1' as string | null,
+    };
+    expect(
+      resolveChartWidgetInsertAction({
+        typeId: 'chart',
+        workspaceScope: { projectId: 'proj-1', sprintId: 'sprint-1' },
+        activeBoardFilter: filter,
+      }).type
+    ).toBe('append-filters');
+
+    expect(
+      resolveChartWidgetInsertAction({
+        typeId: 'numbers',
+        workspaceScope: null,
+        activeBoardFilter: filter,
+      }).type
+    ).toBe('append-plain');
+
+    expect(
+      resolveChartWidgetInsertAction({
+        typeId: 'burndown',
+        workspaceScope: null,
+        activeBoardFilter: { projectId: 'proj-1', sprintId: null },
+      }).type
+    ).toBe('prompt-burndown');
+
+    expect(
+      resolveChartWidgetInsertAction({
+        typeId: 'chart',
+        workspaceScope: null,
+        activeBoardFilter: filter,
+      }).type
+    ).toBe('append-filters');
+  });
+
+  it('clears dimension filters while keeping project/sprint', () => {
     const kept = clearDimensionFiltersKeepingScope({
       mode: 'advanced',
       projectId: 'proj-1',
@@ -87,45 +172,24 @@ describe('charts-widget-scope', () => {
     expect(kept.quickSelections.assignee).toBe('all');
   });
 
-  it('updates scope, drops dimension filters, and clears focused slice', () => {
+  it('strips legacy per-widget scopeLocked flags', () => {
     const instances: ChartBoardWidgetInstance[] = [
       {
         instanceId: 'w1',
         typeId: 'chart',
         scopeLocked: true,
-        focusedSliceKey: 'Done',
-        filters: {
-          mode: 'quick',
-          projectId: 'old-proj',
-          sprintId: 'old-sprint',
-          rows: [],
-          quickSelections: {
-            project: 'old-proj',
-            sprint: 'old-sprint',
-            status: 'Done',
-            type: 'all',
-            assignee: 'user-1',
-            priority: 'all',
-          },
-        },
         title: 'Tasks',
-        pieVariant: 'donut',
+      },
+      {
+        instanceId: 'w2',
+        typeId: 'chart',
+        title: 'Open',
       },
     ];
 
-    const next = updateChartWidgetScope(
-      'w1',
-      { projectId: 'new-proj', sprintId: 'new-sprint' },
-      instances
-    );
-
-    expect(next[0]?.scopeLocked).toBe(true);
-    expect(next[0]?.focusedSliceKey).toBeUndefined();
-    expect(next[0]?.filters?.projectId).toBe('new-proj');
-    expect(next[0]?.filters?.sprintId).toBe('new-sprint');
-    expect(next[0]?.filters?.quickSelections.status).toBe('all');
-    expect(next[0]?.filters?.quickSelections.assignee).toBe('all');
+    const next = clearInstanceScopeLocks(instances);
+    expect(next[0]?.scopeLocked).toBeUndefined();
+    expect(next[1]?.scopeLocked).toBeUndefined();
     expect(next[0]?.title).toBe('Tasks');
-    expect(next[0]?.pieVariant).toBe('donut');
   });
 });

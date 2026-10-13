@@ -34,11 +34,6 @@ import { CircleHelp, X } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { FilterFieldNavItem } from '@/components/filter-field-nav-item';
 import { preventDismissForFloatingPortal } from '@/lib/dialog-outside-events';
-import {
-  ChartsWidgetScopeDialog,
-  type ChartsWidgetScopeSelection,
-} from '@/app/charts/_components/charts-widget-scope-dialog';
-import type { ChartWidgetTypeId } from '@/app/charts/_components/charts.types';
 import { clearDimensionFiltersKeepingScope } from '@/app/charts/_helpers/charts-widget-scope';
 import { CHARTS_DEFAULT_QUICK_SELECTIONS } from '@/app/charts/_helpers/charts-widget-defaults';
 import {
@@ -66,13 +61,8 @@ type ChartsAdvancedFiltersPopoverProps = {
   // eslint-disable-next-line no-unused-vars -- apply draft filters
   readonly onApply: (draft: ChartsWidgetFilterDraft) => void;
   readonly appliedFilters?: ChartsWidgetFilterDraft | null;
-  /** When true, project/sprint cannot be edited here — use Change scope. */
+  /** When true, project/sprint are workspace-locked (not editable here). */
   readonly scopeLocked?: boolean;
-  readonly typeId?: ChartWidgetTypeId;
-  readonly onScopeChange?: (
-    // eslint-disable-next-line no-unused-vars -- change locked scope
-    scope: ChartsWidgetScopeSelection
-  ) => void;
   readonly projects?: readonly ChartsProjectOption[];
   readonly sprints?: readonly ChartsSprintOption[];
   readonly members?: readonly ChartsSampleMember[];
@@ -227,23 +217,10 @@ function ChartsFilterSelect({
   );
 }
 
-function ScopeLockedHint({
-  onChangeScope,
-}: Readonly<{
-  readonly onChangeScope?: () => void;
-}>) {
+function ScopeLockedHint() {
   return (
     <p className="text-muted-foreground text-xs">
-      Project and sprint were set when this widget was created.{' '}
-      {onChangeScope ? (
-        <button
-          type="button"
-          className="text-primary hover:text-primary/80 cursor-pointer font-medium"
-          onClick={onChangeScope}
-        >
-          Change scope
-        </button>
-      ) : null}
+      Project and sprint are locked for this workspace.
     </p>
   );
 }
@@ -305,8 +282,6 @@ export function ChartsAdvancedFiltersPopover({
   onApply,
   appliedFilters = null,
   scopeLocked = false,
-  typeId = 'chart',
-  onScopeChange,
   projects = [],
   sprints = [],
   members = [],
@@ -327,7 +302,6 @@ export function ChartsAdvancedFiltersPopover({
   const [sprintId, setSprintId] = useState<string | undefined>(
     initial.sprintId
   );
-  const [changeScopeOpen, setChangeScopeOpen] = useState(false);
   const wasOpenRef = useRef(false);
 
   useEffect(() => {
@@ -573,42 +547,39 @@ export function ChartsAdvancedFiltersPopover({
 
           {mode === 'advanced' ? (
             <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-3">
-              {scopeLocked ? (
-                <ScopeLockedHint
-                  onChangeScope={
-                    onScopeChange ? () => setChangeScopeOpen(true) : undefined
-                  }
-                />
+              {scopeLocked ? <ScopeLockedHint /> : null}
+              {!scopeLocked ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-muted-foreground w-14 shrink-0 text-xs font-medium">
+                    Project
+                  </span>
+                  <ChartsFilterSelect
+                    value={projectId}
+                    onValueChange={setProjectScope}
+                    ariaLabel="Project"
+                    placeholder="All projects"
+                    triggerClassName="min-w-0"
+                    options={projectOptions}
+                  />
+                </div>
               ) : null}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-muted-foreground w-14 shrink-0 text-xs font-medium">
-                  Project
-                </span>
-                <ChartsFilterSelect
-                  value={projectId}
-                  onValueChange={setProjectScope}
-                  ariaLabel="Project"
-                  placeholder="All projects"
-                  triggerClassName="min-w-0"
-                  options={projectOptions}
-                  disabled={scopeLocked}
-                />
-              </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-muted-foreground w-14 shrink-0 text-xs font-medium">
-                  Sprint
-                </span>
-                <ChartsFilterSelect
-                  value={sprintId ?? 'all'}
-                  onValueChange={setSprintScope}
-                  ariaLabel="Sprint"
-                  placeholder="All sprints"
-                  triggerClassName="min-w-0"
-                  options={sprintOptions}
-                  disabled={scopeLocked || sprintSelectDisabled}
-                />
-              </div>
+              {!scopeLocked ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-muted-foreground w-14 shrink-0 text-xs font-medium">
+                    Sprint
+                  </span>
+                  <ChartsFilterSelect
+                    value={sprintId ?? 'all'}
+                    onValueChange={setSprintScope}
+                    ariaLabel="Sprint"
+                    placeholder="All sprints"
+                    triggerClassName="min-w-0"
+                    options={sprintOptions}
+                    disabled={sprintSelectDisabled}
+                  />
+                </div>
+              ) : null}
 
               {rows.map((row, index) => {
                 const valueOptions = chartsFilterValueOptions(
@@ -692,15 +663,6 @@ export function ChartsAdvancedFiltersPopover({
                 className="border-border flex flex-col gap-0.5 overflow-y-auto border-r p-2"
                 aria-label="Quick filter fields"
               >
-                {scopeLocked && onScopeChange ? (
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:bg-muted/50 hover:text-foreground mb-1 cursor-pointer rounded-md px-2 py-1.5 text-left text-xs font-medium"
-                    onClick={() => setChangeScopeOpen(true)}
-                  >
-                    Change scope
-                  </button>
-                ) : null}
                 {quickNavFields.map((field) => (
                   <FilterFieldNavItem
                     key={field.id}
@@ -838,25 +800,6 @@ export function ChartsAdvancedFiltersPopover({
           </div>
         </PopoverContent>
       </Popover>
-
-      {onScopeChange ? (
-        <ChartsWidgetScopeDialog
-          open={changeScopeOpen}
-          onOpenChange={setChangeScopeOpen}
-          mode="change"
-          typeId={typeId}
-          projects={projects}
-          sprints={sprints}
-          initialScope={{
-            projectId: resolvedProjectId === 'all' ? '' : resolvedProjectId,
-            sprintId: sprintId ?? null,
-          }}
-          onConfirm={(scope) => {
-            onScopeChange(scope);
-            onOpenChange(false);
-          }}
-        />
-      ) : null}
     </>
   );
 }

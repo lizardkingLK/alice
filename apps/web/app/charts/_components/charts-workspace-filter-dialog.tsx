@@ -9,6 +9,7 @@ import {
 import { buildSprintFilterOptionsForQuery } from '@/app/board/_services/board.defaults.shared';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import type { ChartsBoardFilterSelection } from '@/app/charts/_helpers/charts-widget-scope';
 import {
   FilterDialogShell,
   FilterOptionsChecklistPane,
@@ -26,7 +27,10 @@ type ChartsFilterDraft = {
 type ChartsWorkspaceFilterDialogProps = {
   readonly projects: readonly Project[];
   readonly sprints: readonly Sprint[];
-  readonly savedPreference: BoardDefaultsPreference | null;
+  /** Current board Filter selection (drives mixed widget inserts). */
+  readonly activeFilter: ChartsBoardFilterSelection;
+  // eslint-disable-next-line no-unused-vars -- apply active selection
+  readonly onApplyFilter: (selection: ChartsBoardFilterSelection) => void;
   readonly onSaveWorkspaceDefaults: (
     // eslint-disable-next-line no-unused-vars -- callback signature
     preference: BoardDefaultsPreference | null
@@ -42,34 +46,48 @@ const CHARTS_FILTER_FIELDS = [
 
 type ChartsFilterFieldId = (typeof CHARTS_FILTER_FIELDS)[number]['id'];
 
-function draftFromPreference(
-  preference: BoardDefaultsPreference | null
+function draftFromSelection(
+  selection: ChartsBoardFilterSelection
 ): ChartsFilterDraft {
-  if (!preference) {
-    return {
-      project: QUERY_FILTER_ALL_VALUE,
-      sprint: QUERY_FILTER_ALL_VALUE,
-    };
-  }
   return {
-    project: preference.projectId,
-    sprint: preference.sprintId ?? QUERY_FILTER_ALL_VALUE,
+    project: selection.projectId || QUERY_FILTER_ALL_VALUE,
+    sprint: selection.sprintId ?? QUERY_FILTER_ALL_VALUE,
   };
 }
 
+function selectionFromDraft(
+  draft: ChartsFilterDraft
+): ChartsBoardFilterSelection {
+  return {
+    projectId: draft.project || QUERY_FILTER_ALL_VALUE,
+    sprintId:
+      !draft.sprint || draft.sprint === QUERY_FILTER_ALL_VALUE
+        ? null
+        : draft.sprint,
+  };
+}
+
+function isFilterActive(selection: ChartsBoardFilterSelection): boolean {
+  return (
+    (selection.projectId && selection.projectId !== QUERY_FILTER_ALL_VALUE) ||
+    Boolean(selection.sprintId)
+  );
+}
+
 /**
- * Charts Filter dialog (project / sprint) used to set workspace defaults that
- * seed new Chart widgets. No page URL rewrite.
+ * Charts Filter dialog (project / sprint). Okay applies the **active** board
+ * selection used when inserting widgets. Optionally persist as user defaults.
  */
 export function ChartsWorkspaceFilterDialog({
   projects,
   sprints,
-  savedPreference,
+  activeFilter,
+  onApplyFilter,
   onSaveWorkspaceDefaults,
 }: Readonly<ChartsWorkspaceFilterDialogProps>) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<ChartsFilterDraft>(() =>
-    draftFromPreference(savedPreference)
+    draftFromSelection(activeFilter)
   );
   const [activeFieldId, setActiveFieldId] =
     useState<ChartsFilterFieldId>('project');
@@ -81,10 +99,10 @@ export function ChartsWorkspaceFilterDialog({
     if (!open) {
       return;
     }
-    setDraft(draftFromPreference(savedPreference));
+    setDraft(draftFromSelection(activeFilter));
     setOptionSearch('');
     setDefaultsIntent(null);
-  }, [open, savedPreference]);
+  }, [open, activeFilter]);
 
   useEffect(() => {
     setOptionSearch('');
@@ -140,7 +158,7 @@ export function ChartsWorkspaceFilterDialog({
     <FilterDialogShell
       open={open}
       onOpenChange={setOpen}
-      hasActiveFilters={savedPreference !== null}
+      hasActiveFilters={isFilterActive(activeFilter)}
       fields={CHARTS_FILTER_FIELDS}
       activeFieldId={activeFieldId}
       onActiveFieldIdChange={(id) =>
@@ -154,20 +172,19 @@ export function ChartsWorkspaceFilterDialog({
       }
       onClearActiveField={clearActiveField}
       onOkay={() => {
-        const intent =
-          defaultsIntent ??
-          (draft.sprint && draft.sprint !== QUERY_FILTER_ALL_VALUE
-            ? 'sprint'
-            : 'project');
-        onSaveWorkspaceDefaults(
-          resolvePreferenceFromFilterDraft({
-            intent,
-            projectValue: draft.project,
-            sprintValue: draft.sprint,
-            allValue: QUERY_FILTER_ALL_VALUE,
-            sprints,
-          })
-        );
+        const selection = selectionFromDraft(draft);
+        onApplyFilter(selection);
+        if (defaultsIntent) {
+          onSaveWorkspaceDefaults(
+            resolvePreferenceFromFilterDraft({
+              intent: defaultsIntent,
+              projectValue: draft.project,
+              sprintValue: draft.sprint,
+              allValue: QUERY_FILTER_ALL_VALUE,
+              sprints,
+            })
+          );
+        }
         setOpen(false);
       }}
       footerCountLabel={`${filteredOptions.length + 1} of ${filteredOptions.length + 1}`}

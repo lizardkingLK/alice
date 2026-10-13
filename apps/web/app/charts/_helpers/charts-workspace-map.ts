@@ -2,6 +2,7 @@ import type { LayoutItem } from 'react-grid-layout';
 import type {
   ChartBoardWidgetInstance,
   ChartWorkspaceRecord,
+  ChartWorkspaceScope,
 } from '@/app/charts/_components/charts.types';
 
 /** Wire row from `GET /api/charts` (owned, shared, or dashboard). */
@@ -17,12 +18,28 @@ export type ChartApiRow = {
   readonly updated_at: string;
 };
 
+function parseWorkspaceScope(value: unknown): ChartWorkspaceScope | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+  const record = value as Record<string, unknown>;
+  const projectId =
+    typeof record.projectId === 'string' ? record.projectId.trim() : '';
+  const sprintId =
+    typeof record.sprintId === 'string' ? record.sprintId.trim() : '';
+  if (!projectId || !sprintId) {
+    return null;
+  }
+  return { projectId, sprintId };
+}
+
 function parseBoardJson(value: unknown): {
   instances: ChartBoardWidgetInstance[];
   layout: LayoutItem[];
+  scope: ChartWorkspaceScope | null;
 } {
   if (!value || typeof value !== 'object') {
-    return { instances: [], layout: [] };
+    return { instances: [], layout: [], scope: null };
   }
   const record = value as Record<string, unknown>;
   const instances = Array.isArray(record.instances)
@@ -31,7 +48,11 @@ function parseBoardJson(value: unknown): {
   const layout = Array.isArray(record.layout)
     ? (record.layout as LayoutItem[])
     : [];
-  return { instances, layout };
+  return {
+    instances,
+    layout,
+    scope: parseWorkspaceScope(record.scope),
+  };
 }
 
 export function chartWorkspaceFromApiRow(
@@ -51,6 +72,7 @@ export function chartWorkspaceFromApiRow(
     ownership,
     instances: board.instances,
     layout: board.layout,
+    scope: board.scope,
   };
 }
 

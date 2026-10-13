@@ -174,6 +174,15 @@ export type ChartWidgetDisplaySettingsPatch = {
   readonly sliceColors?: Readonly<Record<string, ChartsSliceColorToken>> | null;
 };
 
+/**
+ * Workspace-level project + sprint lock (set at create; clear via
+ * Mark as non-scoped). Both ids are concrete UUIDs.
+ */
+export type ChartWorkspaceScope = {
+  readonly projectId: string;
+  readonly sprintId: string;
+};
+
 /** Persisted chart workspace (`charts` row; client holds in-memory only). */
 export type ChartWorkspaceRecord = {
   readonly id: string;
@@ -189,4 +198,9 @@ export type ChartWorkspaceRecord = {
   readonly ownership?: 'mine' | 'shared';
   readonly instances: ChartBoardWidgetInstance[];
   readonly layout: LayoutItem[];
+  /**
+   * When set, board Filter is hidden and widgets inherit this project+sprint.
+   * Absent / null = mixed (unscoped) workspace.
+   */
+  readonly scope?: ChartWorkspaceScope | null;
 };
