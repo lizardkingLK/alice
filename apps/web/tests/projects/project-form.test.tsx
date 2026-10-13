@@ -313,6 +313,7 @@ describe('ProjectForm Component', () => {
     render(
       <ProjectForm
         users={mockUsers}
+        currentUserId="user-admin"
         onSuccess={onSuccess}
         onProjectUpdated={onProjectUpdated}
       />
@@ -371,8 +372,41 @@ describe('ProjectForm Component', () => {
     ).toBeInTheDocument();
     expect(onProjectUpdated).not.toHaveBeenCalled();
     expect(invalidateProjectDropdownCache).not.toHaveBeenCalled();
+    expect(clearProjectCreationDraft).toHaveBeenCalledOnce();
+    expect(clearProjectCreationDraft).toHaveBeenCalledWith('user-admin');
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalled(), {
+      timeout: 2_000,
+    });
+  });
+
+  it('keeps creation successful when draft cleanup fails', async () => {
+    const onSuccess = vi.fn();
+    vi.mocked(createProject).mockResolvedValue({
+      accepted: true,
+      message: "Project creation started. You'll be notified when it's ready.",
+      correlationId: 'corr-cleanup-failure',
+    });
+    vi.mocked(clearProjectCreationDraft).mockReturnValue(false);
+    render(
+      <ProjectForm
+        users={mockUsers}
+        currentUserId="user-admin"
+        onSuccess={onSuccess}
+      />
+    );
+
+    await fillStep1Basics();
+    await advanceCreateFormToTeamStep();
+    fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
+
+    expect(
+      await screen.findByText(/Project creation started/i)
+    ).toBeInTheDocument();
+    expect(createProject).toHaveBeenCalledOnce();
+    expect(clearProjectCreationDraft).toHaveBeenCalledWith('user-admin');
+    expect(screen.queryByText(/Failed to create project/i)).toBeNull();
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce(), {
       timeout: 2_000,
     });
   });
@@ -615,6 +649,7 @@ describe('ProjectForm Component', () => {
     render(
       <ProjectForm
         users={mockUsers}
+        currentUserId="user-admin"
         onSuccess={onSuccess}
         onProjectUpdated={onProjectUpdated}
       />
@@ -630,6 +665,12 @@ describe('ProjectForm Component', () => {
     expect(invalidateProjectDropdownCache).not.toHaveBeenCalled();
     expect(onProjectUpdated).not.toHaveBeenCalled();
     expect(onSuccess).not.toHaveBeenCalled();
+    expect(clearProjectCreationDraft).not.toHaveBeenCalled();
+
+    for (let remainingSteps = 4; remainingSteps > 0; remainingSteps -= 1) {
+      fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    }
+    expect(screen.getByLabelText(/Project Name/i)).toHaveValue('Project Alice');
   });
 
   it('populates fields from projectToEdit and updates correctly in edit mode', async () => {
@@ -643,6 +684,7 @@ describe('ProjectForm Component', () => {
       <ProjectForm
         projectToEdit={mockProject}
         users={mockUsers}
+        currentUserId="user-admin"
         onProjectUpdated={onProjectUpdated}
       />
     );
@@ -700,6 +742,7 @@ describe('ProjectForm Component', () => {
       ...mockProject,
       name: 'Project Alice Updated',
     });
+    expect(clearProjectCreationDraft).not.toHaveBeenCalled();
   });
 
   it('shows an empty create form when no saved draft exists', async () => {
@@ -907,6 +950,7 @@ describe('ProjectForm Component', () => {
 
     expect(onClose).toHaveBeenCalled();
     expect(screen.queryByText('Save project draft?')).not.toBeInTheDocument();
+    expect(clearProjectCreationDraft).not.toHaveBeenCalled();
   });
 
   it('keeps entered values when Cancel is followed by Keep Editing', () => {

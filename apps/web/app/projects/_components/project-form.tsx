@@ -1304,8 +1304,16 @@ export function ProjectForm({
     setAvailableDraft(null);
   };
 
+  const clearCurrentUserDraft = (): boolean => {
+    try {
+      return clearProjectCreationDraft(currentUserId);
+    } catch {
+      return false;
+    }
+  };
+
   const handleStartFresh = () => {
-    clearProjectCreationDraft(currentUserId);
+    clearCurrentUserDraft();
     resetCreateForm();
     setAvailableDraft(null);
   };
@@ -1352,7 +1360,7 @@ export function ProjectForm({
   };
 
   const handleDiscardChanges = () => {
-    clearProjectCreationDraft(currentUserId);
+    clearCurrentUserDraft();
     setIsCloseConfirmationOpen(false);
     setDraftSaveError(null);
     onClose?.();
@@ -1479,6 +1487,7 @@ export function ProjectForm({
 
   const handleProjectCreate = async (projectData: CreateProjectInput) => {
     const accepted = await createProject(projectData);
+    clearCurrentUserDraft();
     const hasJiraConfig = Boolean(jiraConnectionId && jiraProjectKey);
     const jiraHint =
       importFromJira && hasJiraConfig
