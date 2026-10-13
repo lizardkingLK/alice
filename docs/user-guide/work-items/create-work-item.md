@@ -14,7 +14,9 @@ Add a new epic, story, task, or issue to a project.
    - **Project** (required)
    - **Type** — Epic, Story, Task, or Issue
    - **Title** (required)
-   - **Description**, assignee, priority, labels, sprint, due date (optional)
+   - **Description**, assignee, sprint, and due date (optional)
+   - On the compact (modern) form: **priority**, **story points**, and
+     **labels** are under **More**
 4. Submit **Create Work Item** (or **Create** on the compact form).
 
 The new item opens in the list and on the board (unless status is **Draft**).

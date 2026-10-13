@@ -45,13 +45,20 @@ import {
 } from '@/app/board/_helpers/workflow-move-blocked-toast';
 import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels/work-item-labels-input';
 import { FormStatusAlerts } from '@/app/work-items/_components/work-item-form/work-item-form-alerts';
+import { toDateInputValue } from '@/app/work-items/_helpers/work-item-due-date';
 import { cn } from '@repo/ui/lib/utils';
 
 export type WorkItemPatchFieldId =
-  'assignee_id' | 'reporter_id' | 'title' | 'status' | 'labels' | 'sprint_id';
+  | 'assignee_id'
+  | 'reporter_id'
+  | 'title'
+  | 'status'
+  | 'labels'
+  | 'sprint_id'
+  | 'due_date';
 
 export type WorkItemPatchFieldKind =
-  'user' | 'text' | 'status' | 'labels' | 'sprint';
+  'user' | 'text' | 'status' | 'labels' | 'sprint' | 'date';
 
 export type WorkItemPatchFieldConfig = {
   readonly field: WorkItemPatchFieldId;
@@ -116,6 +123,13 @@ export const WORK_ITEM_PATCH_FIELD_CONFIG: Record<
     label: 'Sprint',
     unassignedLabel: 'Backlog',
   },
+  due_date: {
+    field: 'due_date',
+    kind: 'date',
+    title: 'Change Due Date',
+    description: 'Set or clear the due date for this work item.',
+    label: 'Due date',
+  },
 };
 
 export type WorkItemPatchMemberOption = {
@@ -179,6 +193,9 @@ function initialSelectedValue(
   if (kind === 'sprint') {
     return selectValueFromSprintId(currentValue);
   }
+  if (kind === 'date') {
+    return toDateInputValue(currentValue);
+  }
   return currentValue ?? '';
 }
 
@@ -201,6 +218,7 @@ export function WorkItemFieldPatchDialog({
   const isStatusField = fieldConfig.kind === 'status';
   const isLabelsField = fieldConfig.kind === 'labels';
   const isSprintField = fieldConfig.kind === 'sprint';
+  const isDateField = fieldConfig.kind === 'date';
   const statusChoices: readonly WorkflowStateOption[] =
     stateOptions ?? legacyWorkflowStateOptions();
   const [selectedValue, setSelectedValue] = useState(
@@ -369,6 +387,25 @@ export function WorkItemFieldPatchDialog({
     }
   };
 
+  const saveDateField = async () => {
+    const nextDueDate = selectedValue.trim();
+    const formData = new FormData();
+    formData.set('due_date', nextDueDate);
+    const response = await updateWorkItem(
+      workItemId,
+      formData,
+      expectedUpdatedAt
+    );
+
+    await finishWithInDialogSuccess(
+      `${fieldConfig.label} updated successfully.`,
+      {
+        due_date: response.data?.due_date ?? (nextDueDate || null),
+        updated_at: response.data?.updated_at,
+      }
+    );
+  };
+
   const saveByKind = async () => {
     switch (fieldConfig.kind) {
       case 'text':
@@ -382,6 +419,9 @@ export function WorkItemFieldPatchDialog({
         return;
       case 'sprint':
         await saveSprintField();
+        return;
+      case 'date':
+        await saveDateField();
         return;
       default:
         await saveUserField();
@@ -398,6 +438,8 @@ export function WorkItemFieldPatchDialog({
         return { labels: labelsValue };
       case 'sprint':
         return { sprint_id: sprintIdFromSelectValue(selectedValue) };
+      case 'date':
+        return { due_date: selectedValue.trim() || null };
       default:
         return {
           [fieldConfig.field]:
@@ -524,6 +566,23 @@ export function WorkItemFieldPatchDialog({
           })),
         ]}
         emptyText="No matching sprints."
+      />
+    );
+  } else if (isDateField) {
+    fieldControl = (
+      <Input
+        id={`patch-${fieldConfig.field}`}
+        type="date"
+        value={selectedValue}
+        disabled={isPending}
+        autoFocus
+        onChange={(event) => setSelectedValue(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            handleSave().catch(() => {});
+          }
+        }}
       />
     );
   } else {

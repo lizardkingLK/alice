@@ -1,6 +1,9 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { toDateOnly } from '@repo/types';
-import { isWorkItemOverdue } from '@/app/work-items/_helpers/work-item-due-date';
+import {
+  isWorkItemOverdue,
+  toDateInputValue,
+} from '@/app/work-items/_helpers/work-item-due-date';
 
 describe('work-item-due-date', () => {
   afterEach(() => {
@@ -10,6 +13,13 @@ describe('work-item-due-date', () => {
   it('normalizes ISO timestamps to date-only via @repo/types', () => {
     expect(toDateOnly('2026-07-31T12:00:00.000Z')).toBe('2026-07-31');
     expect(toDateOnly(null)).toBeNull();
+  });
+
+  it('maps due dates to date-input values', () => {
+    expect(toDateInputValue('2026-07-31T12:00:00.000Z')).toBe('2026-07-31');
+    expect(toDateInputValue('2026-07-31')).toBe('2026-07-31');
+    expect(toDateInputValue(null)).toBe('');
+    expect(toDateInputValue(undefined)).toBe('');
   });
 
   it('marks past due incomplete items as overdue', () => {
