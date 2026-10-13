@@ -18,18 +18,21 @@ import {
   type WorkItemPriority,
   type WorkItemType,
 } from '@repo/types';
-import { boardConfigSchema, type BoardConfig } from '@repo/types/api/v1';
+import {
+  type ChatViewContext,
+  type WorkflowConfigEnvelope,
+} from '@repo/types/api/v1';
 import type { WorkItemService } from '../work-items/work-items.service';
 import type { SprintsService } from '../sprints/sprints.service';
 import type { ProjectsService } from '../projects/projects.service';
 import type { ProjectsRepository } from '../projects/projects.repository';
-import type { TeamsRepository } from '../teams/teams.repository';
 import type { IntegrationsService } from '../integrations/integrations.service';
 import type { ResolvedChatModelConfig } from '../integrations/chat-providers/chat-provider.types';
 import { resolveChatProvider } from '../integrations/chat-providers/resolve-chat-provider';
 import {
   systemInstruction,
   aliceChatTools,
+  chartDescriptionSystemPrompt,
   dynamicFieldsSystemPrompt,
 } from './chat.route.data';
 import type { ChatRepository } from './chat.repository';
@@ -37,7 +40,15 @@ import { ChatAttachmentsRepository } from './chat-attachments.repository';
 import { fetchAndParseWorkItemAttachment } from './chat-attachment-parser';
 import { WorkItemDeduplicationAgent } from './work-item-deduplication.agent';
 import { sanitizeLog } from './chat.utils';
-import { buildBoardDraft } from './board-draft';
+import {
+  parseDismissWorkflowProposalInput,
+  parseProposeWorkflowPatchInput,
+  summarizeWorkflowEnvelopeDiff,
+} from './workflow-patch';
+import {
+  createWorkflowPatchToken,
+  verifyWorkflowPatchToken,
+} from './workflow-patch-token';
 import { prisma } from '../../../lib/prisma';
 import { Prisma } from '@repo/types/prisma';
 import { prismaAuditUpdate } from '../../../lib/prisma-audit';
@@ -61,13 +72,13 @@ export type ChatServiceDeps = {
   sprintsService: Pick<SprintsService, 'createSprint'>;
   projectsService: Pick<
     ProjectsService,
-    'createProject' | 'getProjectDetail' | 'listProjectsForActor'
+    | 'createProject'
+    | 'getProjectDetail'
+    | 'listProjectsForActor'
+    | 'getWorkflowConfig'
+    | 'putWorkflowConfig'
   >;
-  projectsRepository: Pick<
-    ProjectsRepository,
-    'listAll' | 'findById' | 'listActiveBoardMembers'
-  >;
-  teamsRepository: Pick<TeamsRepository, 'listActiveByProject'>;
+  projectsRepository: Pick<ProjectsRepository, 'listAll' | 'findById'>;
   integrationsService: Pick<IntegrationsService, 'resolveChatModelForChat'>;
 };
 
@@ -213,6 +224,20 @@ function extractJsonFromText(text: string): unknown {
     );
   }
   return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
+}
+
+/** Strip leading/trailing quote characters without backtracking regex. */
+function stripWrappingQuotes(value: string): string {
+  const quotes = new Set(['"', "'", '`']);
+  let start = 0;
+  let end = value.length;
+  while (start < end && quotes.has(value[start] ?? '')) {
+    start += 1;
+  }
+  while (end > start && quotes.has(value[end - 1] ?? '')) {
+    end -= 1;
+  }
+  return value.slice(start, end);
 }
 
 function buildSchemaFromRawFields(rawFields: unknown[]): {
@@ -543,16 +568,19 @@ async function rollbackBatchImport(params: {
     }
   }
 
-  for (const orig of updatedOriginalStates) {
-    try {
-      await prisma.work_items.update({
+  const restoreResults = await Promise.allSettled(
+    updatedOriginalStates.map((orig) =>
+      prisma.work_items.update({
         where: { id: orig.id },
         data: { parent_id: orig.parent_id },
-      });
-    } catch (restoreErr) {
+      })
+    )
+  );
+  for (const result of restoreResults) {
+    if (result.status === 'rejected') {
       console.error(
         'Failed to restore updated work item during rollback:',
-        sanitizeLog(restoreErr)
+        sanitizeLog(result.reason)
       );
     }
   }
@@ -650,25 +678,30 @@ async function executeChildNodesImport(
   parentId: string
 ): Promise<void> {
   const allowedChildType = getAllowedChildType(parentType);
-  for (const child of children) {
-    if (!allowedChildType) {
-      if (ctx.skipInvalidHierarchy) {
+  if (!allowedChildType) {
+    if (ctx.skipInvalidHierarchy) {
+      for (const child of children) {
         ctx.skippedItems.push({
           title: child.title,
           reason: `Parent of type ${parentType} cannot have subtasks`,
         });
-        continue;
       }
-      throw new Error(
-        `Parent of type ${parentType} cannot have subtasks (found on "${parentTitle}"). Import aborted; no work items were created.`
-      );
+      return;
     }
-    const effectiveChild: ParsedWorkItemNode = {
-      ...child,
-      type: child.type || allowedChildType,
-    };
-    await executeSingleNodeImport(ctx, effectiveChild, parentId);
+    throw new Error(
+      `Parent of type ${parentType} cannot have subtasks (found on "${parentTitle}"). Import aborted; no work items were created.`
+    );
   }
+
+  await Promise.all(
+    children.map((child) => {
+      const effectiveChild: ParsedWorkItemNode = {
+        ...child,
+        type: child.type || allowedChildType,
+      };
+      return executeSingleNodeImport(ctx, effectiveChild, parentId);
+    })
+  );
 }
 
 async function executeSingleNodeImport(
@@ -835,21 +868,58 @@ async function processReferencedParentItem(
   await executeSingleNodeImport(ctx, effectiveItem, parentId);
 }
 
+function isParentReferenceResolvable(
+  item: ParsedWorkItemNode,
+  ctx: BatchImportContext
+): boolean {
+  const parentRef = item.parentReference;
+  if (!parentRef) {
+    return true;
+  }
+  return (
+    ctx.idMapping.has(parentRef) ||
+    ctx.idMapping.has(parentRef.toLowerCase().trim()) ||
+    ctx.idMapping.has(parentRef.toUpperCase().trim())
+  );
+}
+
+async function processReferencedImportItems(
+  items: ParsedWorkItemNode[],
+  ctx: BatchImportContext
+): Promise<void> {
+  if (items.length === 0) {
+    return;
+  }
+
+  const ready = items.filter((item) => isParentReferenceResolvable(item, ctx));
+  const deferred = items.filter(
+    (item) => !isParentReferenceResolvable(item, ctx)
+  );
+
+  if (ready.length === 0) {
+    await Promise.all(
+      deferred.map((item) => processReferencedParentItem(item, ctx))
+    );
+    return;
+  }
+
+  await Promise.all(
+    ready.map((item) => processReferencedParentItem(item, ctx))
+  );
+  await processReferencedImportItems(deferred, ctx);
+}
+
 async function processValidImportItems(
   validItems: ParsedWorkItemNode[],
   ctx: BatchImportContext
 ): Promise<void> {
-  for (const item of validItems) {
-    if (!item.parentReference) {
-      await executeSingleNodeImport(ctx, item, null);
-    }
-  }
+  const rootItems = validItems.filter((item) => !item.parentReference);
+  const referencedItems = validItems.filter((item) => item.parentReference);
 
-  for (const item of validItems) {
-    if (item.parentReference) {
-      await processReferencedParentItem(item, ctx);
-    }
-  }
+  await Promise.all(
+    rootItems.map((item) => executeSingleNodeImport(ctx, item, null))
+  );
+  await processReferencedImportItems(referencedItems, ctx);
 }
 
 export class ChatService {
@@ -899,37 +969,49 @@ export class ChatService {
     userId: string,
     functionCalls: ChatContentPart[],
     toolActionsPerformed: ToolAction[],
-    history: StoredChatMessage[] = []
+    history: StoredChatMessage[] = [],
+    viewContext?: ChatViewContext | null
   ): Promise<ChatContentPart[]> {
-    const functionResponseParts: ChatContentPart[] = [];
-    for (const call of functionCalls) {
-      if (!call.functionCall) continue;
-      const { name, args } = call.functionCall;
-      let result: unknown;
+    const callable = functionCalls.filter(
+      (
+        call
+      ): call is ChatContentPart & {
+        functionCall: NonNullable<ChatContentPart['functionCall']>;
+      } => Boolean(call.functionCall)
+    );
 
-      try {
-        result = await this.executeTool(
-          userId,
-          name,
-          args || {},
-          toolActionsPerformed,
-          history
-        );
-      } catch (err: unknown) {
-        console.error(`Error executing tool ${sanitizeLog(name)}`);
-        result = {
-          error: err instanceof Error ? err.message : 'Unknown error',
+    return Promise.all(
+      callable.map(async (call) => {
+        const { name, args } = call.functionCall;
+        let result: unknown;
+
+        try {
+          result = await this.executeTool(
+            userId,
+            name,
+            args || {},
+            toolActionsPerformed,
+            history,
+            viewContext
+          );
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'Unknown error';
+          console.error(
+            `Error executing tool ${sanitizeLog(name)}:`,
+            sanitizeLog(message)
+          );
+          result = { error: message };
+        }
+
+        const part: ChatContentPart = {
+          functionResponse: {
+            name,
+            response: { result },
+          },
         };
-      }
-
-      functionResponseParts.push({
-        functionResponse: {
-          name,
-          response: { result },
-        },
-      });
-    }
-    return functionResponseParts;
+        return part;
+      })
+    );
   }
 
   private async executeTool(
@@ -937,7 +1019,8 @@ export class ChatService {
     name: string,
     args: Record<string, unknown>,
     toolActionsPerformed: ToolAction[],
-    history: StoredChatMessage[]
+    history: StoredChatMessage[],
+    viewContext?: ChatViewContext | null
   ): Promise<unknown> {
     const toolHandlers: Record<string, () => Promise<unknown>> = {
       list_projects: () => this.handleListProjects(userId),
@@ -947,9 +1030,17 @@ export class ChatService {
       create_sprint: () =>
         this.handleCreateSprint(userId, args, toolActionsPerformed),
       list_users: () => this.chat.listUsersSnapshot(),
-      list_board_entities: () => this.handleListBoardEntities(userId, args),
-      configure_board_draft: () =>
-        this.handleConfigureBoardDraft(userId, args, toolActionsPerformed),
+      get_workflow_config: () =>
+        this.handleGetWorkflowConfig(userId, args, viewContext),
+      propose_workflow_patch: () =>
+        this.handleProposeWorkflowPatch(
+          userId,
+          args,
+          toolActionsPerformed,
+          viewContext
+        ),
+      dismiss_workflow_proposal: () =>
+        this.handleDismissWorkflowProposal(userId, args, toolActionsPerformed),
       create_work_item: () =>
         this.handleCreateWorkItem(userId, args, toolActionsPerformed),
       parse_work_item_attachment: () =>
@@ -991,10 +1082,67 @@ export class ChatService {
     };
   }
 
-  private async loadBoardEntities(userId: string, projectId: string) {
+  private resolveWorkflowEnvelopeForChat(
+    projectId: string,
+    serverConfig: WorkflowConfigEnvelope,
+    viewContext?: ChatViewContext | null
+  ): {
+    readonly config: WorkflowConfigEnvelope;
+    readonly source: 'designer_draft' | 'server';
+  } {
+    if (
+      viewContext?.surface === 'workflow_designer' &&
+      viewContext.projectId === projectId
+    ) {
+      return { config: viewContext.draftEnvelope, source: 'designer_draft' };
+    }
+    return { config: serverConfig, source: 'server' };
+  }
+
+  private async handleGetWorkflowConfig(
+    userId: string,
+    args: Record<string, unknown>,
+    viewContext?: ChatViewContext | null
+  ): Promise<unknown> {
+    const projectId = typeof args.projectId === 'string' ? args.projectId : '';
     if (!projectId) {
       throw new Error('projectId is required.');
     }
+
+    const result = await this.deps.projectsService.getWorkflowConfig(
+      projectId,
+      userId
+    );
+    const resolved = this.resolveWorkflowEnvelopeForChat(
+      projectId,
+      result.config,
+      viewContext
+    );
+
+    return {
+      projectId,
+      config: resolved.config,
+      source: resolved.source,
+      usedFallback: result.usedFallback && resolved.source === 'server',
+      updatedAt: result.updatedAt,
+      dirty:
+        viewContext?.surface === 'workflow_designer' &&
+        viewContext.projectId === projectId
+          ? viewContext.dirty
+          : false,
+    };
+  }
+
+  private async requireManagerWorkflowProject(
+    userId: string,
+    projectId: string,
+    deniedMessage: string
+  ) {
+    await requireUserWithRole(
+      userId,
+      [UserRoleEnum.admin, UserRoleEnum.manager],
+      deniedMessage
+    );
 
     const project = await this.deps.projectsService.getProjectDetail(
       projectId,
@@ -1004,100 +1152,128 @@ export class ChatService {
       throw new Error('Project not found.');
     }
 
-    const [teams, members] = await Promise.all([
-      this.deps.teamsRepository.listActiveByProject(projectId),
-      this.deps.projectsRepository.listActiveBoardMembers(projectId),
-    ]);
-    const currentConfig = boardConfigSchema.safeParse(project.workflow_config);
-
-    return {
-      project: {
-        id: project.id,
-        name: project.name,
-        key: project.key,
-        description: project.description,
-        status: project.status,
-      },
-      boardConfig: currentConfig.success ? currentConfig.data : null,
-      teams,
-      members,
-    };
+    return project;
   }
 
-  private async handleListBoardEntities(
-    userId: string,
-    args: Record<string, unknown>
-  ): Promise<unknown> {
-    const projectId = typeof args.projectId === 'string' ? args.projectId : '';
-    return this.loadBoardEntities(userId, projectId);
-  }
-
-  private validateDraftEntityReferences(
-    config: BoardConfig,
-    teams: readonly { readonly id: string }[],
-    members: readonly { readonly id: string }[]
-  ): void {
-    if (config.version !== '2') return;
-
-    const activeTeamIds = new Set(teams.map((team) => team.id));
-    const activeMemberIds = new Set(members.map((member) => member.id));
-    for (const transition of config.transitions) {
-      for (const matcher of transition.allowAnyOf) {
-        if (matcher.scope === 'team' && !activeTeamIds.has(matcher.teamId)) {
-          throw new Error(
-            `Team ${matcher.teamId} is not an active team in this project.`
-          );
-        }
-        if (matcher.scope === 'user' && !activeMemberIds.has(matcher.userId)) {
-          throw new Error(
-            `User ${matcher.userId} is not an active member of this project.`
-          );
-        }
-      }
-    }
-  }
-
-  private async handleConfigureBoardDraft(
+  private async handleProposeWorkflowPatch(
     userId: string,
     args: Record<string, unknown>,
-    toolActionsPerformed: ToolAction[]
+    toolActionsPerformed: ToolAction[],
+    viewContext?: ChatViewContext | null
   ): Promise<unknown> {
-    const projectId = typeof args.projectId === 'string' ? args.projectId : '';
-    const entities = await this.loadBoardEntities(userId, projectId);
+    const input = parseProposeWorkflowPatchInput(args);
 
-    await requireUserWithRole(
+    const project = await this.requireManagerWorkflowProject(
       userId,
-      [UserRoleEnum.admin, UserRoleEnum.manager],
-      'Only admins and managers can create a structured board draft. You can still ask Alice for conversational board suggestions.'
+      input.projectId,
+      'Only admins and managers can propose workflow changes. You can still ask Alice for conversational suggestions.'
     );
 
-    const { config, input } = buildBoardDraft(entities.boardConfig, args);
-    if (input.transitions !== undefined) {
-      this.validateDraftEntityReferences(
-        config,
-        entities.teams,
-        entities.members
-      );
-    }
+    const server = await this.deps.projectsService.getWorkflowConfig(
+      input.projectId,
+      userId
+    );
+    const baseline = this.resolveWorkflowEnvelopeForChat(
+      input.projectId,
+      server.config,
+      viewContext
+    );
+    const changeSummary = summarizeWorkflowEnvelopeDiff(
+      baseline.config,
+      input.config
+    );
+    const confirmationToken = createWorkflowPatchToken(
+      userId,
+      input.projectId,
+      input.config
+    );
 
     const action: ToolAction = {
-      type: 'configure_board',
+      type: 'propose_workflow_patch',
       entity: {
-        projectId: entities.project.id,
-        projectName: entities.project.name,
-        config,
+        projectId: project.id,
+        projectName: project.name,
+        summary: input.summary,
+        confirmationToken,
+        proposedConfig: input.config,
+        changeSummary,
       },
     };
     toolActionsPerformed.push(action);
 
     return {
-      draftCreated: true,
+      proposed: true,
       saved: false,
-      projectId: entities.project.id,
-      projectName: entities.project.name,
-      config,
-      nextStep: 'Review and save this draft in Board Designer.',
+      projectId: project.id,
+      projectName: project.name,
+      summary: input.summary,
+      changeSummary,
+      nextStep:
+        'Show the Apply / Reject card. Do not claim the workflow was saved.',
     };
+  }
+
+  private async handleDismissWorkflowProposal(
+    userId: string,
+    args: Record<string, unknown>,
+    toolActionsPerformed: ToolAction[]
+  ): Promise<unknown> {
+    const input = parseDismissWorkflowProposalInput(args);
+
+    const project = await this.requireManagerWorkflowProject(
+      userId,
+      input.projectId,
+      'Only admins and managers can dismiss workflow proposals.'
+    );
+
+    const action: ToolAction = {
+      type: 'dismiss_workflow_patch',
+      entity: {
+        projectId: project.id,
+        projectName: project.name,
+        reason: input.reason,
+      },
+    };
+    toolActionsPerformed.push(action);
+
+    return {
+      dismissed: true,
+      saved: false,
+      projectId: project.id,
+      projectName: project.name,
+      reason: input.reason ?? null,
+      nextStep:
+        'Pending Apply/Reject cards for this project were dismissed. Canvas unchanged. Do not claim the workflow was saved.',
+    };
+  }
+
+  async applyWorkflowPatch(
+    userId: string,
+    input: {
+      readonly projectId: string;
+      readonly confirmationToken: string;
+      readonly proposedConfig: WorkflowConfigEnvelope;
+      readonly expectedUpdatedAt: string;
+    }
+  ) {
+    await requireUserWithRole(
+      userId,
+      [UserRoleEnum.admin, UserRoleEnum.manager],
+      'Only admins and managers can apply workflow changes.'
+    );
+
+    verifyWorkflowPatchToken(input.confirmationToken, {
+      userId,
+      projectId: input.projectId,
+      config: input.proposedConfig,
+    });
+
+    return this.deps.projectsService.putWorkflowConfig(
+      userId,
+      input.projectId,
+      input.proposedConfig,
+      input.expectedUpdatedAt
+    );
   }
 
   private async handleCreateProject(
@@ -1743,10 +1919,28 @@ export class ChatService {
     return { users, activeSprints };
   }
 
+  private buildViewContextInstruction(
+    viewContext?: ChatViewContext | null
+  ): string {
+    if (viewContext?.surface !== 'workflow_designer') {
+      return '';
+    }
+    return `
+Active UI View Context:
+- Surface: workflow_designer
+- Project ID: ${viewContext.projectId}
+- Designer dirty: ${viewContext.dirty}
+- Expected updatedAt (optimistic lock): ${viewContext.expectedUpdatedAt}
+- Live designer draft is available to get_workflow_config / propose_workflow_patch (prefer it over the last saved server copy).
+- Use WORKFLOW CONFIGURATION PROTOCOL.
+`;
+  }
+
   async generateChatResponse(
     userId: string,
     history: StoredChatMessage[],
-    chatModel: ResolvedChatModelConfig
+    chatModel: ResolvedChatModelConfig,
+    viewContext?: ChatViewContext | null
   ): Promise<{ responseText: string; toolActionsPerformed: ToolAction[] }> {
     const contents: ChatContentTurn[] = history.map((msg) => {
       const role = toChatTurnRole(msg.role);
@@ -1790,14 +1984,17 @@ Current Workspace State:
 - System Users: ${JSON.stringify(users.map((u) => ({ id: u.id, name: u.name, email: u.email })))}
 - Ongoing Sprints (Active Status Only): ${JSON.stringify(sprints.map((s) => ({ id: s.id, name: s.name, projectId: s.project_id })))}
 ${attachmentsInstruction}
+${this.buildViewContextInstruction(viewContext)}
 `;
 
-    let responseText = '';
     const toolActionsPerformed: ToolAction[] = [];
-    let loopCount = 0;
     const maxLoops = 5;
 
-    while (loopCount < maxLoops) {
+    const runToolRounds = async (loopCount: number): Promise<string> => {
+      if (loopCount >= maxLoops) {
+        return '';
+      }
+
       const llmResponse = await this.callChatModelAPI(
         chatModel,
         contents,
@@ -1816,27 +2013,29 @@ ${attachmentsInstruction}
         (p: ChatContentPart) => p.functionCall
       );
       if (!functionCalls || functionCalls.length === 0) {
-        responseText =
+        return (
           modelContent.parts
             ?.map((p: ChatContentPart) => p.text || '')
-            .join('\n') || '';
-        break;
+            .join('\n') || ''
+        );
       }
 
       const functionResponseParts = await this.processFunctionCalls(
         userId,
         functionCalls,
         toolActionsPerformed,
-        history
+        history,
+        viewContext
       );
       contents.push({
         role: ChatTurnRoles.User,
         parts: functionResponseParts,
       });
 
-      loopCount++;
-    }
+      return runToolRounds(loopCount + 1);
+    };
 
+    const responseText = await runToolRounds(0);
     return { responseText, toolActionsPerformed };
   }
 
@@ -1844,11 +2043,17 @@ ${attachmentsInstruction}
     userId: string,
     conversationId: string,
     history: StoredChatMessage[],
-    chatModel: ResolvedChatModelConfig
+    chatModel: ResolvedChatModelConfig,
+    viewContext?: ChatViewContext | null
   ): Promise<void> {
     try {
       const { responseText, toolActionsPerformed } =
-        await this.generateChatResponse(userId, history, chatModel);
+        await this.generateChatResponse(
+          userId,
+          history,
+          chatModel,
+          viewContext
+        );
 
       const newAssistantMessage: StoredChatMessage = {
         id: `msg-${Date.now()}`,
@@ -1906,6 +2111,51 @@ ${attachmentsInstruction}
       success: true,
       schema,
     };
+  }
+
+  async generateChartDescription(params: {
+    readonly scope: 'widget' | 'workspace';
+    readonly title: string;
+    readonly currentDescription?: string | null;
+    readonly context?: unknown;
+  }): Promise<string> {
+    const chatModel = await this.resolveChatModelForChat({});
+    const contextJson =
+      params.context === undefined
+        ? ''
+        : `\nContext JSON:\n${JSON.stringify(params.context, null, 2)}`;
+    const current = params.currentDescription?.trim()
+      ? `\nCurrent description (improve or replace):\n${params.currentDescription.trim()}`
+      : '';
+    const userMessage = `Scope: ${params.scope}\nTitle: ${params.title}${current}${contextJson}`;
+
+    const contents: ChatContentTurn[] = [
+      {
+        role: ChatTurnRoleEnum.USER,
+        parts: [{ text: userMessage }],
+      },
+    ];
+
+    const response = await this.callChatModelAPI(
+      chatModel,
+      contents,
+      chartDescriptionSystemPrompt
+    );
+
+    const parts = response.candidates?.[0]?.content?.parts ?? [];
+    let text = '';
+    for (const part of parts) {
+      if (part.text) {
+        text += part.text;
+      }
+    }
+    const cleaned = stripWrappingQuotes(text.trim())
+      .replace(/\s+/g, ' ')
+      .slice(0, 280);
+    if (!cleaned) {
+      throw new Error('Alice returned an empty description');
+    }
+    return cleaned;
   }
 
   async generateProjectFieldsSchema(

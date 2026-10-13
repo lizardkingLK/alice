@@ -19,8 +19,10 @@ Update title, description, and fields on an existing item.
 On the detail page:
 
 - **Title** and **description** (rich text) in the main pane
-- **Status**, **priority**, **assignee**, **reporter**, **labels**, **due date**,
-  **sprint**, and other fields in the sidebar
+- **Status**, **assignee**, **reporter**, **sprint**, **due date**, and
+  **labels** in the Details sidebar (pencil to edit)
+- **Priority** and **story points** are shown in the sidebar (edit via the full
+  Edit dialog)
 
 ## Edit from a dialog
 
@@ -33,6 +35,9 @@ use the shared **Work Item** form:
   text for formatting).
 - Validation and save messages stay **above Cancel / Save** so you do not need
   to scroll the form to see them.
+- Changing **Type** on an item that still has subtasks opens a confirmation:
+  unlink those children and continue (default), or cancel and unlink them
+  yourself first.
 
 ---
 

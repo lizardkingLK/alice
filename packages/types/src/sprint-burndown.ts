@@ -42,6 +42,53 @@ export type SprintBurndownPayload = {
   series: BurndownPoint[];
 };
 
+/** Ideal remaining on `dayLabel` (YYYY-MM-DD) for a linear burndown. */
+export function computeBurndownIdeal(
+  estimatedTotal: number,
+  startDate: string,
+  endDate: string,
+  dayLabel: string
+): number {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const day = new Date(dayLabel);
+  const durationDays = (end.getTime() - start.getTime()) / 86_400_000;
+  if (durationDays === 0) {
+    return 0;
+  }
+  const elapsed = (day.getTime() - start.getTime()) / 86_400_000;
+  const ideal = Math.max(0, estimatedTotal * (1 - elapsed / durationDays));
+  return Math.round(ideal * 100) / 100;
+}
+
+/**
+ * Attach ideal values to rollup remaining rows (ideal is derived, not stored).
+ */
+export function seriesFromBurndownRollupRows(
+  sprint: Pick<BurndownSprintInput, 'start_date' | 'end_date'>,
+  rows: readonly {
+    readonly bucket_date: string;
+    readonly remaining: number | null;
+    readonly estimated_total: number;
+  }[]
+): BurndownSeriesResult {
+  if (rows.length === 0) {
+    return { estimatedTotal: 0, series: [] };
+  }
+  const estimatedTotal = rows[0]!.estimated_total;
+  const series: BurndownPoint[] = rows.map((row) => ({
+    date: row.bucket_date,
+    remaining: row.remaining,
+    ideal: computeBurndownIdeal(
+      estimatedTotal,
+      sprint.start_date,
+      sprint.end_date,
+      row.bucket_date
+    ),
+  }));
+  return { estimatedTotal, series };
+}
+
 /**
  * Build ideal + remaining series for a sprint.
  * Shared by Express `GET /api/sprints/:id/burndown` and the web RSC reader.
@@ -63,17 +110,17 @@ export function computeBurndown(
     0
   );
 
-  const durationDays = (end.getTime() - start.getTime()) / 86_400_000;
   const series: BurndownPoint[] = [];
   const hasWorkLogs = workLogs.length > 0;
 
   for (let cur = new Date(start); cur <= end; cur.setDate(cur.getDate() + 1)) {
     const dayLabel = cur.toISOString().slice(0, 10);
-    const elapsed = (cur.getTime() - start.getTime()) / 86_400_000;
-    const ideal =
-      durationDays === 0
-        ? 0
-        : Math.max(0, estimatedTotal * (1 - elapsed / durationDays));
+    const ideal = computeBurndownIdeal(
+      estimatedTotal,
+      sprint.start_date,
+      sprint.end_date,
+      dayLabel
+    );
 
     const isPast = sprint.status === 'closed' ? true : dayLabel <= todayStr;
 
@@ -97,7 +144,7 @@ export function computeBurndown(
     series.push({
       date: dayLabel,
       remaining,
-      ideal: Math.round(ideal * 100) / 100,
+      ideal,
     });
   }
 

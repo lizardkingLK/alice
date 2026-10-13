@@ -1,293 +1,261 @@
-# Day-one environment setup
+# Day One local development setup
 
-Status: **Plan**  
-Last updated: 2026-08-15
+Status: **Living**
 
-One operator path to take a **new or empty Supabase project** to a working Alice
-backend: schema applied, Storage buckets present, Auth providers configured,
-and Auth mail leaving via a third-party SMTP provider.
+Last updated: 2026-10-05
 
-This is **not** implemented yet. Today those steps are split across
-`pnpm db migrate:deploy`, `pnpm db seed`, and dashboard clicks.
+Use this guide to clone Alice, configure its local environment, initialize its
+Supabase database, and run the web and API applications. Run all commands from
+the repository root unless a step says otherwise.
 
-Related:
+## Prerequisites
 
-- Workflow today: [DATABASE.md](../../guides/DATABASE.md)
-- Auth as-built: [AUTHENTICATION.md](../../auth/AUTHENTICATION.md) (especially §4 Google, §12 email templates)
-- Attachments buckets: [ATTACHMENTS.md](../work-items/ATTACHMENTS.md)
-- Profile pictures bucket: [EDIT_PROFILE.md](../profile/EDIT_PROFILE.md)
-- Management API: [Auth config PATCH](https://supabase.com/docs/reference/api/v1-update-auth-service-config),
-  [custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp),
-  [Google provider](https://supabase.com/docs/guides/auth/social-login/auth-google)
+- Git
+- Node.js 20.19+, 22.12+, or 24+. The devcontainer currently uses Node 24,
+  while CI uses Node 20.
+- pnpm 12.4.2, the version pinned by the root `package.json`
+- Access to a Supabase project
+- Access to a Pusher Channels app
 
----
+Alice does not include a local Supabase `config.toml`; local development uses a
+hosted or team-provided Supabase project. Docker is not required for the normal
+local development flow.
 
-## Goals
+## 1. Clone the repository
 
-- **One command** from the repo (working name: `pnpm db day-one`) that is
-  idempotent and safe to re-run.
-- Cover three pillars in a fixed order: **database → Auth providers → email**.
-- Encode Alice-specific Auth email templates (`token_hash` + `RedirectTo`) so
-  invite / reset / confirm links work with `/auth/callback`.
-- Create Storage buckets the apps already expect (do not invent new names).
-- Keep secrets out of git; fail closed if required env is missing.
-
-## Non-goals (v1)
-
-- Creating the Google Cloud OAuth **client** (Google Console stays human).
-- Creating the Resend (or other SMTP) **account** and DNS records.
-- Provisioning AWS / Terraform ([INFRASTRUCTURE.md](../../guides/INFRASTRUCTURE.md)).
-- **Supabase Edge Functions** — Alice does not ship any today; Postgres RPCs
-  live in Prisma migrations instead.
-- Pointing `pnpm db migrate:reset` or destructive seeds at a shared prod
-  database.
-- Replacing Prisma as the source of truth for tables and indexes.
-
----
-
-## Why a script
-
-| Area                          | Today                                                                                         | Gap                                                              |
-| ----------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Tables, indexes, grants, RPC  | `packages/db/prisma/migrations/` + `pnpm db migrate:deploy`                                   | Easy to forget grants / RPC if someone applies SQL by hand       |
-| Storage buckets               | Manual dashboard (or first upload fails)                                                      | Apps assume `alice_storage_*` buckets exist                      |
-| Google OAuth                  | Dashboard → Authentication → Providers                                                        | Client ID/secret never land unless someone remembers             |
-| Custom SMTP                   | Dashboard → Authentication → SMTP                                                             | Built-in mailer is rate-limited and unreliable for invites       |
-| Auth email templates          | Dashboard HTML; must use `token_hash` ([AUTHENTICATION.md](../../auth/AUTHENTICATION.md) §12) | Default `ConfirmationURL` breaks SSR callback (`?error=expired`) |
-| Site URL + redirect allowlist | Dashboard URL configuration                                                                   | Localhost + prod origins must both be listed                     |
-
----
-
-## Target flow
-
-```mermaid
-flowchart TD
-  pre["0. Preconditions: project ref, PAT, secrets"]
-  db["1. Database: migrate deploy"]
-  storage["2. Storage buckets + policies"]
-  auth["3. Auth: Google + URL allowlist"]
-  mail["4. Email: custom SMTP + templates"]
-  seed["5. Optional: idempotent seed"]
-  verify["6. Smoke checks"]
-
-  pre --> db --> storage --> auth --> mail --> seed --> verify
+```bash
+git clone https://github.com/lizardkingLK/alice.git
+cd alice
 ```
 
-Phases 1–4 are required for a usable empty project. Phase 5 is opt-in
-(`DAY_ONE_SEED=1`) because seed writes sample `alice.dev` users into Auth.
+## 2. Activate the pinned pnpm version
 
----
+The repository's `packageManager` field pins pnpm 12.4.2. With Corepack
+available, run:
 
-## Pillar 1 — Database (tables, indexes, functions)
-
-**Source of truth:** Prisma schema + SQL migrations under
-`packages/db/prisma/`. Do not duplicate DDL in the day-one script.
-
-The script should:
-
-1. Require `DIRECT_URL` (migrations / type generation). Pooled `DATABASE_URL`
-   belongs on `apps/api` for runtime Prisma. See [DATABASE.md](../../guides/DATABASE.md).
-2. Run `pnpm db migrate:deploy` (additive only).
-3. Treat **indexes** as already declared in `schema.prisma` / migration SQL —
-   no second index pass.
-4. Treat **Postgres functions / RPCs** as already in migrations. Today that
-   includes `public.deactivate_user_guarded` (`SECURITY INVOKER`, called from
-   the API via supabase-js).
-5. Rely on `prisma/sql/supabase_grants.sql` already appended to migrations so
-   `anon` / `authenticated` / `service_role` can use `public`.
-6. Optionally `pnpm db generate` if types are missing locally (usually
-   committed in `@repo/types`).
-
-### Storage (same pillar; not Prisma)
-
-Create or update these buckets via the [Storage Management API](https://supabase.com/docs/reference/api/v1-create-a-bucket)
-(or equivalent CLI) so uploads do not 404 on a fresh project:
-
-| Bucket                           | Public? | Used by                         |
-| -------------------------------- | ------- | ------------------------------- |
-| `alice_storage_attachments`      | No      | Work-item files                 |
-| `alice_storage_profile_pictures` | Yes     | Avatars (`getPublicUrl`)        |
-| `alice_storage_profile_covers`   | Yes     | Profile covers (`getPublicUrl`) |
-| `alice_storage_project_logos`    | Yes     | Project logos (`getPublicUrl`)  |
-| `alice_storage_project_covers`   | Yes     | Project covers (`getPublicUrl`) |
-| `alice_storage_chat_history`     | No      | Chat export / history objects   |
-
-Names must match `apps/api/src/config/env.ts`. After create: confirm Data API
-exposure and RLS/policies match existing prod (attachments private + signed
-URLs; profile pictures public).
-
-### Edge Functions
-
-**Out of scope.** There is no `supabase/functions` tree in this repo. If we add
-Edge Functions later, day-one can grow a `supabase functions deploy` step. Do
-not stub empty functions “just in case.”
-
----
-
-## Pillar 2 — Auth providers (Google)
-
-App code already calls `signInWithOAuth({ provider: 'google' })` on `/login`.
-The project must have the provider **enabled** with a Web client whose
-**Authorized redirect URI** is the Supabase callback:
-
-`https://<project-ref>.supabase.co/auth/v1/callback`
-
-(Documented in [Login with Google](https://supabase.com/docs/guides/auth/social-login/auth-google).)
-
-The script **cannot** create that Google Cloud client. It **can** push the
-client ID/secret into Auth via
-`PATCH https://api.supabase.com/v1/projects/{ref}/config/auth`
-with a [personal access token](https://supabase.com/docs/reference/api/introduction):
-
-```json
-{
-  "external_google_enabled": true,
-  "external_google_client_id": "<from Google Cloud>",
-  "external_google_secret": "<from Google Cloud>"
-}
+```bash
+corepack enable
+corepack install
+node --version
+pnpm --version
 ```
 
-Also set (same PATCH, or a dedicated URL-config call):
+`pnpm --version` should print `12.4.2`.
 
-| Field            | Intent                                                                 |
-| ---------------- | ---------------------------------------------------------------------- |
-| `site_url`       | Canonical Site URL (prod origin in a prod project)                     |
-| `uri_allow_list` | Include `http://localhost:3000/**` and the deployed web origin `/**`   |
-| Email confirm    | Match product: keep confirmation on unless the env is explicitly local |
+## 3. Install dependencies
 
-`SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET` in `apps/web` is only a **warn**
-today (local/hosted Auth). Hosted Google config lives on the **Supabase
-project**, not in Next.js public env. Do not put the Google client secret in
-`NEXT_PUBLIC_*`.
-
-Manual checklist the script should print if Google env is omitted:
-
-1. Google Auth Platform → Clients → Web → redirect URI above.
-2. Copy client ID + secret into day-one env and re-run (idempotent PATCH).
-
----
-
-## Pillar 3 — Third-party email (custom SMTP)
-
-Auth mail (signup confirm, invite, recovery, allowlist invite via Auth mailer)
-must use **custom SMTP**. Built-in Supabase mail is not enough for day-one
-invites. Production currently uses **Resend** (Tokyo) per
-[PERFORMANCE.md](../../guides/PERFORMANCE.md) §2.10; any SMTP provider works.
-
-Configure via the same Auth config PATCH ([custom SMTP guide](https://supabase.com/docs/guides/auth/auth-smtp)):
-
-| Field                    | Example intent               |
-| ------------------------ | ---------------------------- |
-| `smtp_host`              | `smtp.resend.com`            |
-| `smtp_port`              | `587`                        |
-| `smtp_user`              | Provider username            |
-| `smtp_pass`              | Provider API key / password  |
-| `smtp_admin_email`       | `no-reply@<verified-domain>` |
-| `smtp_sender_name`       | `Alice`                      |
-| `external_email_enabled` | `true`                       |
-
-Then apply **Alice email templates** so links use `token_hash` (not
-`{{ .ConfirmationURL }}`). Management API fields include
-`mailer_templates_invite_content`, `mailer_templates_recovery_content`,
-`mailer_templates_confirmation_content`. Store HTML (or Go templates) in-repo
-under something like `packages/db/auth-templates/` and PATCH them.
-
-Required link shapes ([AUTHENTICATION.md](../../auth/AUTHENTICATION.md) §12):
-
-| Template       | Href                                                          |
-| -------------- | ------------------------------------------------------------- |
-| Invite user    | `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=invite`   |
-| Reset password | `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery` |
-| Confirm signup | `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup`   |
-
-Operator still verifies the sending domain at the provider (SPF/DKIM). The
-script only writes SMTP credentials and templates into Auth.
-
----
-
-## Proposed command and layout
-
-Keep the entrypoint in `@repo/db` next to migrate/seed (root: `pnpm db day-one`).
-
-```text
-packages/db/
-  scripts/day-one.sh          # orchestration, --help, dry-run
-  src/day-one/
-    auth-config.ts            # PATCH /v1/projects/{ref}/config/auth
-    storage-buckets.ts        # create/update buckets
-    verify.ts                 # smoke: migrate status, bucket list, auth GET
-  auth-templates/             # invite / recovery / confirmation HTML
-  sample.day-one.env          # names only, no secrets
+```bash
+pnpm install --frozen-lockfile
 ```
 
-Suggested env (never committed filled in):
+Install once at the repository root; pnpm installs every workspace package.
 
-| Variable                                                                   | Used for                               |
-| -------------------------------------------------------------------------- | -------------------------------------- |
-| `SUPABASE_ACCESS_TOKEN`                                                    | Management API PAT (`sbp_…`)           |
-| `SUPABASE_PROJECT_REF`                                                     | Project ref in API URLs                |
-| `DIRECT_URL`                                                               | Migrate / generate                     |
-| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`                               | Optional seed + verify                 |
-| `GOOGLE_AUTH_CLIENT_ID` / `GOOGLE_AUTH_CLIENT_SECRET`                      | Auth provider PATCH                    |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_ADMIN_EMAIL` | Custom SMTP                            |
-| `AUTH_SITE_URL`                                                            | `site_url`                             |
-| `AUTH_URI_ALLOW_LIST`                                                      | Comma-separated redirect globs         |
-| `DAY_ONE_SEED`                                                             | `1` to run `pnpm db seed` after config |
+## 4. Collect service credentials
 
-`--dry-run` should print the PATCH bodies with secrets redacted.
+From the Supabase project, collect:
 
-`--skip-auth` / `--skip-smtp` / `--skip-storage` for partial re-runs.
+- Project URL
+- anon key
+- service-role key
+- Direct Postgres connection string for migrations (`DIRECT_URL`)
+- Supavisor **session-mode** connection string on port 5432 for the API
+  (`DATABASE_URL`)
 
----
+Do not use the Supavisor transaction-mode URL on port 6543 for
+`DATABASE_URL`. From the Pusher Channels app, collect the app ID, key, secret,
+and cluster.
 
-## What stays human
+Keep service-role, database, and Pusher secrets out of Git. The local env files
+created below are ignored by the repository.
 
-1. Create Supabase project (or pass an existing ref). Creating projects via
-   `POST /v1/projects` can be a **later** flag; v1 assumes the project exists.
-2. Google Cloud OAuth client + consent screen.
-3. SMTP provider account + domain authentication.
-4. Copy project URL / anon / service_role keys into `apps/web` and `apps/api`
-   env (Vercel / local `.env`). The script can **print** which keys to set; it
-   should not write app `.env` files unless we add an explicit `--write-env`
-   later.
+## 5. Create local environment files
 
----
+Create the three app-specific env files from the committed templates.
 
-## Verification (phase 6)
+macOS/Linux:
 
-Minimum checks after a successful run:
+```bash
+cp apps/web/sample.env apps/web/.env.local
+cp apps/api/sample.env apps/api/.env
+cp packages/db/sample.env packages/db/.env
+```
 
-- `pnpm db migrate:status` — up to date
-- Storage: three buckets exist with the expected public flags
-- Auth GET config: `external_google_enabled` matches whether Google secrets were
-  provided; SMTP host set when SMTP env was provided
-- Optional: `inviteUserByEmail` to a mailbox you control, confirm the link hits
-  `/auth/callback?token_hash=…`
+PowerShell:
 
-Do not require a full Cypress suite in day-one v1.
+```powershell
+Copy-Item apps/web/sample.env apps/web/.env.local
+Copy-Item apps/api/sample.env apps/api/.env
+Copy-Item packages/db/sample.env packages/db/.env
+```
 
----
+Replace template placeholders with the values below.
 
-## Rollout
+### `apps/web/.env.local`
 
-| Step | Work                                                                  | Status      |
-| ---- | --------------------------------------------------------------------- | ----------- |
-| 0    | This plan                                                             | **Now**     |
-| 1    | Auth HTML templates in-repo matching §12                              | Not started |
-| 2    | Management API client (auth config + buckets) + dry-run               | Not started |
-| 3    | `pnpm db day-one` wiring migrate → storage → auth → smtp              | Not started |
-| 4    | Document PAT + Google + Resend operator runbook in this file (Living) | After 3     |
-| 5    | Optional: create-project flag, extra OAuth providers                  | Later       |
+Set these values:
 
-When step 3 ships, mark this doc **Living** and add the command to
-[DATABASE.md](../../guides/DATABASE.md) “Commands”.
+```dotenv
+NEXT_PUBLIC_API_URL="http://localhost:5000"
+NEXT_PUBLIC_SUPABASE_URL="<Supabase project URL>"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="<Supabase anon key>"
+NEXT_PUBLIC_PUSHER_KEY="<Pusher key>"
+NEXT_PUBLIC_PUSHER_CLUSTER="<Pusher cluster>"
+SUPABASE_SERVICE_ROLE_KEY="<Supabase service-role key>"
+```
 
----
+`SUPABASE_SERVICE_ROLE_KEY` is server-only despite being in the web app's env
+file; never prefix it with `NEXT_PUBLIC_`. It is needed by server-rendered
+allowlist, user, project, and chat operations.
 
-## Security notes
+`NEXT_PUBLIC_SITE_URL="http://localhost:3000"` is recommended for predictable
+local authentication links. It is not required for startup; when it is unset,
+the application falls back to the request origin.
 
-- PAT has dashboard-equivalent power. Store it in CI secrets / local env only.
-- Never log `smtp_pass`, Google secret, or `service_role`.
-- Day-one must not disable RLS or ship `SECURITY DEFINER` RPCs; existing
-  `deactivate_user_guarded` stays `SECURITY INVOKER`.
-- Google client secret is a **server** Auth setting, not a public Next env var.
+The Google Auth secret, `DATA_READS_VIA_API`, and Cypress credentials in the
+template are not required for normal Day One startup. Missing Google
+configuration may produce a warning, but seeded email/password login still
+works.
+
+### `apps/api/.env`
+
+Configure the required runtime values:
+
+```dotenv
+PORT="5000"
+FRONTEND_URL="http://localhost:3000"
+DATABASE_URL="<Supavisor session-mode URL on port 5432>"
+
+SUPABASE_URL="<Supabase project URL>"
+SUPABASE_ANON_KEY="<Supabase anon key>"
+SUPABASE_SERVICE_ROLE_KEY="<Supabase service-role key>"
+
+PUSHER_APP_ID="<Pusher app ID>"
+PUSHER_KEY="<Pusher key>"
+PUSHER_SECRET="<Pusher secret>"
+PUSHER_CLUSTER="<Pusher cluster>"
+
+CRON_SECRET="<a non-empty local secret>"
+
+STORAGE_BUCKET_ATTACHMENTS="alice_storage_attachments"
+STORAGE_BUCKET_CHAT_ATTACHMENTS="alice_storage_chat_attachments"
+STORAGE_BUCKET_CHAT_HISTORY="alice_storage_chat_history"
+STORAGE_BUCKET_PROFILE_COVERS="alice_storage_profile_covers"
+STORAGE_BUCKET_PROFILE_PICTURES="alice_storage_profile_pictures"
+STORAGE_BUCKET_PROJECT_COVERS="alice_storage_project_covers"
+STORAGE_BUCKET_PROJECT_LOGOS="alice_storage_project_logos"
+```
+
+The Atlassian, GitHub, and integration-encryption variables are optional for
+startup. If you are not developing those integrations, remove or comment out
+their lines after copying `sample.env`. Do not leave `YOUR_*` placeholders in
+place because the API treats non-empty placeholder strings as configured
+values.
+
+### `packages/db/.env`
+
+Configure the Prisma/migration connection and seed credentials:
+
+```dotenv
+DIRECT_URL="<direct non-pooled Postgres URL>"
+SUPABASE_URL="<Supabase project URL>"
+SUPABASE_SERVICE_ROLE_KEY="<Supabase service-role key>"
+SEED_USER_PASSWORD="<password for local seed accounts>"
+```
+
+`SEED_USER_PASSWORD` is required by `pnpm db seed` even though it is not
+currently present in `packages/db/sample.env`. Do not put the API's pooled
+`DATABASE_URL` in place of `DIRECT_URL`.
+
+## 6. Initialize Supabase
+
+Choose the path that matches the Supabase project you are using:
+
+- **Already initialized Alice team project:** ask the team which provisioning
+  steps are already complete. Do not repeat migrations, bucket creation, or
+  initial seeding unnecessarily; run only the steps the team asks you to run.
+- **Fresh or empty project:** complete the migration, storage, and seed steps
+  below.
+
+Never run `migrate:reset` or `seed:reset` against data you need to keep.
+
+For a fresh project, or when the team asks you to provision an existing
+project, continue with the following steps.
+
+Apply all committed migrations:
+
+```bash
+pnpm db migrate:deploy
+```
+
+In Supabase Dashboard -> Storage, create the following buckets if they do not
+already exist:
+
+| Bucket                           | Access  |
+| -------------------------------- | ------- |
+| `alice_storage_attachments`      | Private |
+| `alice_storage_chat_attachments` | Private |
+| `alice_storage_chat_history`     | Private |
+| `alice_storage_profile_pictures` | Public  |
+| `alice_storage_profile_covers`   | Public  |
+| `alice_storage_project_logos`    | Public  |
+| `alice_storage_project_covers`   | Public  |
+
+The API can create the two chat buckets on first use, but creating all seven
+now makes every upload path available from the first run.
+
+Seed an empty development project with login accounts and sample Alice data:
+
+```bash
+pnpm db seed
+```
+
+The seed is structurally idempotent, but rerunning it updates existing seeded
+Auth users to the password currently set in `SEED_USER_PASSWORD`. Check with
+the team before running it against a shared project. It creates these primary
+accounts:
+
+- `admin@alice.dev`
+- `manager@alice.dev`
+- `member@alice.dev`
+
+It also allowlists the `alice.dev` domain, so these accounts can enter the
+application. If you intentionally skip the seed, the app can start, but you
+must provision an Auth user, a matching `public.users` row, and allowlist data
+before protected pages are usable.
+
+Google OAuth, custom SMTP, and Supabase email-template customization are not
+required to start Alice or use the seeded accounts locally.
+
+## 7. Run Alice
+
+Start the full workspace:
+
+```bash
+pnpm dev
+```
+
+Turborepo builds required internal packages and starts:
+
+- Web: `http://localhost:3000`
+- API: `http://localhost:5000`
+
+Keep this terminal running while developing.
+
+## 8. Verify the setup
+
+1. Confirm the API terminal logs `prisma connected` and a listener on port 5000.
+2. Open `http://localhost:5000`; it should report that the API server is
+   listening.
+3. Open `http://localhost:3000` and sign in as `admin@alice.dev` with the
+   configured seed password.
+4. Confirm the dashboard loads the seeded Alice project and work items.
+5. In another terminal, confirm the database has no pending migrations:
+
+   ```bash
+   pnpm db migrate:status
+   ```
+
+If startup fails environment validation, compare the reported variable with
+the appropriate `sample.env`. If the API starts but database requests fail,
+recheck that `DIRECT_URL` is the direct migration URL and `DATABASE_URL` is the
+Supavisor session-mode URL on port 5432.

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import WorkItemSidebar from '@/app/work-items/_components/work-item-details/work-item-details-sidebar';
 import { workItemFactory } from '../factories/workItem.factory';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
@@ -12,6 +12,14 @@ import {
 import { linkPR } from '@/app/work-items/_services/work-items.mutations.client';
 import { getLinkedPRs } from '@/app/work-items/_services/work-items.reads.client';
 import { mockPush, resetNextNavigationMock } from '../mocks/next-navigation';
+
+const { isUserOnlineMock } = vi.hoisted(() => ({
+  isUserOnlineMock: vi.fn((userId: string) => userId.startsWith('online-')),
+}));
+
+vi.mock('@/components/realtime/realtime-provider', () => ({
+  useRealtime: () => ({ isUserOnline: isUserOnlineMock }),
+}));
 
 vi.mock('next/navigation', () => import('../mocks/next-navigation'));
 
@@ -116,6 +124,87 @@ function renderSidebar({
     />
   );
 }
+
+describe('WorkItemSidebar presence', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows presence for an online assignee but not an offline reporter', () => {
+    renderSidebar({
+      workItem: workItemFactory.build({
+        assignee_id: 'online-assignee-id',
+        assignee: {
+          id: 'online-assignee-id',
+          name: 'Online Assignee',
+          email: 'online-assignee@example.com',
+          profile_picture: null,
+        },
+        reporter_id: 'offline-reporter-id',
+        reporter: {
+          id: 'offline-reporter-id',
+          name: 'Offline Reporter',
+          email: 'offline-reporter@example.com',
+          profile_picture: null,
+        },
+      }),
+    });
+
+    expect(isUserOnlineMock).toHaveBeenCalledWith('online-assignee-id');
+    expect(isUserOnlineMock).toHaveBeenCalledWith('offline-reporter-id');
+    expect(
+      within(screen.getByTitle('Online Assignee')).getByLabelText('Online')
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTitle('Offline Reporter')).queryByLabelText('Online')
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows presence for an online reporter but not an offline assignee', () => {
+    renderSidebar({
+      workItem: workItemFactory.build({
+        assignee_id: 'offline-assignee-id',
+        assignee: {
+          id: 'offline-assignee-id',
+          name: 'Offline Assignee',
+          email: 'offline-assignee@example.com',
+          profile_picture: null,
+        },
+        reporter_id: 'online-reporter-id',
+        reporter: {
+          id: 'online-reporter-id',
+          name: 'Online Reporter',
+          email: 'online-reporter@example.com',
+          profile_picture: null,
+        },
+      }),
+    });
+
+    expect(isUserOnlineMock).toHaveBeenCalledWith('offline-assignee-id');
+    expect(isUserOnlineMock).toHaveBeenCalledWith('online-reporter-id');
+    expect(
+      within(screen.getByTitle('Offline Assignee')).queryByLabelText('Online')
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTitle('Online Reporter')).getByLabelText('Online')
+    ).toBeInTheDocument();
+  });
+
+  it('keeps null users unassigned without checking their presence', () => {
+    renderSidebar({
+      workItem: workItemFactory.build({
+        assignee_id: null,
+        assignee: null,
+        reporter_id: null,
+        reporter: null,
+      }),
+    });
+
+    expect(isUserOnlineMock).not.toHaveBeenCalled();
+    expect(screen.getAllByText('?')).toHaveLength(2);
+    expect(screen.getAllByText('Unassigned')).toHaveLength(2);
+  });
+});
 
 describe('WorkItemSidebar Done gate', () => {
   beforeEach(() => {

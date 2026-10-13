@@ -1,10 +1,10 @@
 # Charts
 
 Build personal **chart workspaces** — drag-and-drop widget boards. The sidebar
-opens the Charts registry. You can save multiple workspaces, mark one for
-Overview, and deep-link into a widget’s configuration. Workspaces sync to your
-account. Boards are stored on the server — this device does not keep a local
-copy of workspace layout.
+opens the Charts registry. You can save multiple workspaces, pin any of them to
+**Overview**, share via **Views**, and deep-link into a widget’s configuration.
+Workspaces sync to your account. Boards are stored on the server — this device
+does not keep a local copy of workspace layout.
 
 **Audience:** All users
 
@@ -41,17 +41,29 @@ shell).
 ### Create a workspace
 
 1. Select **Create Workspace** (toolbar or empty-state CTA).
-2. Enter a name and optional overview mark, then create — Alice opens the new
-   empty board.
+2. Enter a **name** and optional **description**, then create — Alice opens
+   the new empty board.
 
-### Save or rename a workspace
+### Save option (name and description)
 
 1. Open a workspace board, then open the board **⋯** menu and choose
-   **Rename / Save**.
-2. Confirm or edit the name (for example `Charts` or `Charts (2)`).
-3. Optionally **Mark as overview** — only one overview workspace at a time;
-   Overview will use it when that binding ships. Last-opened stays separate
-   from the overview mark.
+   **Save option**.
+2. Confirm or edit the **name** (for example `Charts` or `Charts (2)`).
+3. Optionally add a **description** (info tooltip on the title). Use
+   **Suggest with Alice** to draft a description from the board’s widgets.
+
+Last-opened (which board you opened last) stays separate from Overview pins.
+
+### Pin to Overview
+
+From the Charts registry row **⋯ → Edit**:
+
+1. Set **Show on dashboard** so the workspace appears on **Overview**.
+2. Set a **Dashboard order** number (lower numbers appear earlier in the
+   Overview slider).
+
+You can pin **multiple** workspaces. There is no Shared tab on Charts —
+sharing stays on **Views**.
 
 ### Share a workspace
 
@@ -63,6 +75,8 @@ Charts does **not** have a native Share action. To share a board:
 
 Recipients open the board from **Views → Shared with me** (or the inbox link).
 Alice grants board access (`chart_shares`) when you share a chart-backed view.
+On a shared board, **Fork** (next to **+**) creates your own
+editable copy.
 
 ### Archive, restore, or delete a workspace
 
@@ -86,10 +100,15 @@ After delete or leave from a board, Alice returns to the registry. Empty
 
 On `/charts/[id]`:
 
-- **All workspaces** returns to the registry
-- **Filter** (**Shift+F**) sets project / sprint defaults that seed filters for
-  new Chart widgets (check **Set as default** on Project or Sprint, then Okay)
+- Breadcrumb **Charts** returns to the registry (the old **All workspaces**
+  button is being removed)
+- **Filter** (**Shift+F**) sets project / sprint defaults that **prefill** the
+  create-scope dialog for new Chart / burndown widgets (check **Set as
+  default** on Project or Sprint, then Okay). Existing locked widgets are not
+  rewritten.
 - **+** adds a widget or creates another workspace
+- A **Saving…** indicator (**coming soon**) appears top-right while the board
+  syncs to your account
 
 ---
 
@@ -97,8 +116,23 @@ On `/charts/[id]`:
 
 1. On a board, select the **+** button.
 2. Choose **Add widget** for the catalog on the **current** workspace.
-3. Under Add widget, pick **Chart** (other types show **Coming soon**), or
-   **More widgets** to browse the full catalog.
+3. Under Add widget, pick **Chart**, **Data over time** (sprint burndown), or
+   **More widgets** to browse the full catalog (Delivery → **Burndown** is the
+   same burndown widget). Other types still show **Coming soon**.
+4. For **Chart** and burndown widgets, choose **project** (required) and
+   **sprint** (required for burndown; optional for Chart). Workspace **Filter**
+   defaults prefill when set. That scope stays **locked** on the widget.
+
+The card header shows **Project · Sprint** for Chart and burndown widgets.
+In filters, project and sprint are read-only; use **Change scope** to pick a
+new project/sprint (this resets status, assignee, type, and priority filters).
+
+### Burndown widget
+
+**Data over time** and **Burndown** show remaining work versus the ideal line
+for a sprint (same math as Overview). The header shows **Project · Sprint**.
+Pick project and sprint when you add the widget; change them later via
+**Change scope** in filters.
 
 ---
 
@@ -106,11 +140,13 @@ On `/charts/[id]`:
 
 - Hold the **grip** on a widget to **drag** it
 - Resize from the **bottom-right** corner
-- Open the **⋯** menu for **Full screen**, **Rename**, **Duplicate**, or
-  **Delete** (**Dock this widget** is disabled for now)
+- Open the **⋯** menu for **Full screen**, **Save option** (name +
+  description), **Duplicate**, or **Delete** (**Dock this widget** is disabled
+  for now). On **Overview** slides, only fullscreen / export stay available.
 
-Chart widgets show a pie, donut, or bar chart. Layout modes (Chart / Table /
-Split) apply only inside the fullscreen configuration window.
+Chart widgets show a pie, donut, horizontal bar, or vertical column chart.
+Layout modes (Chart / Table / Split) apply only inside the fullscreen
+configuration window.
 
 ---
 
@@ -129,7 +165,7 @@ Use the **split view** button in the toolbar to choose:
 
 | Layout     | What you see                                           |
 | ---------- | ------------------------------------------------------ |
-| Chart      | Full pie, donut, or bar chart (default donut)          |
+| Chart      | Full pie, donut, bar, or column chart (default donut)  |
 | Table      | Collapsible groups of work items by status (paginated) |
 | Split mode | Chart on top and the status table underneath           |
 
@@ -145,11 +181,15 @@ Pick another layout to clear the slice focus.
 ### Widget settings
 
 1. Select the **settings** (gear) button in the fullscreen toolbar.
-2. Under **Chart type**, choose **Pie**, **Donut**, or **Bar**. Other chart
-   types show **Coming soon**.
+2. Under **Chart type**, choose **Pie**, **Donut**, **Bar** (horizontal), or
+   **Column** (vertical).
 3. Under **Labels** → **Columns**, choose how to group the chart: **Project**,
-   **Owner**, **Status**, **Type**, or **Priority**. The chart and legend update
-   from live work-item counts.
+   **Owner**, **Category**, **Type**, or **Priority**. When a single **project**
+   filter is selected, **State** is also available (workflow states for that
+   project). The chart and legend update from live work-item counts. Each work
+   item counts once — a parent Epic and its subtasks in the same sprint both
+   appear when they match the filter. Use **Type** to focus on Epics or Tasks
+   only.
 4. Under **Values**, charts use **Count items** only (other calculations are
    coming later).
 5. Under **Customize**, choose **Value** or **%**, sort slices, and optionally
@@ -157,11 +197,12 @@ Pick another layout to clear the slice focus.
    changing **Labels → Columns** resets colors to the defaults. Use
    **Reset colors** to clear custom swatches without changing Labels.
 6. Under **Choose which columns to show**, pick which drilldown table columns
-   appear. **Task**, **Owner**, **Status**, **Type**, **Priority**, and
-   **Actions** are on by default; **Project** and **Sprint** are available but
-   off until you enable them. **Actions** → **Open** goes to the work item
-   page; **Edit** opens the same edit dialog used elsewhere. Saving an edit
-   refreshes the chart and table from live data.
+   appear. **Task**, **Owner**, **Status**, **State**, **Type**, **Priority**,
+   and **Actions** are on by default; **Project** and **Sprint** are available
+   but off until you enable them. **State** shows the project workflow state
+   name (or legacy status when the project has no workflow). **Actions** →
+   **Open** goes to the work item page; **Edit** opens the same edit dialog
+   used elsewhere. Saving an edit refreshes the chart and table from live data.
 7. **Groups** is **Coming soon** (empty status groups are already hidden in the
    table).
 

@@ -579,14 +579,6 @@ export type work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput = {
   deleteMany?: Prisma.work_item_worklogsScalarWhereInput | Prisma.work_item_worklogsScalarWhereInput[]
 }
 
-export type FloatFieldUpdateOperationsInput = {
-  set?: number
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type work_item_worklogsCreateWithoutUserInput = {
   id?: string
   logged_hours: number

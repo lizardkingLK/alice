@@ -10,11 +10,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@repo/ui/components/ui/tooltip';
 import { ChartPie, Columns2, Table2 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import type { ChartWidgetViewMode } from '@/app/charts/_components/charts.types';
@@ -60,26 +55,22 @@ export function ChartsWidgetLayoutMenu({
 }: Readonly<ChartsWidgetLayoutMenuProps>) {
   return (
     <DropdownMenu>
-      <Tooltip delayDuration={400}>
-        <TooltipTrigger asChild>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Split view"
-              className={cn(
-                'text-muted-foreground hover:text-foreground shrink-0 cursor-pointer',
-                viewMode !== 'chart' && 'text-primary hover:text-primary',
-                className
-              )}
-            >
-              <Columns2 className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">Split view</TooltipContent>
-      </Tooltip>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Split view"
+          title="Split view"
+          className={cn(
+            'text-muted-foreground hover:text-foreground shrink-0 cursor-pointer',
+            viewMode !== 'chart' && 'text-primary hover:text-primary',
+            className
+          )}
+        >
+          <Columns2 className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Layout</DropdownMenuLabel>
         <DropdownMenuSeparator />

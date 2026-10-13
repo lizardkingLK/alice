@@ -79,34 +79,27 @@ Project Details Workspace (/projects/[id])
 
 The active tab is tracked using the `tab` URL query parameter, preserving bookmarkability, deep linking, and browser back/forward history:
 
-| Tab ID         | URL Route                                        | Minimum Viewer Role     | Description                                         |
-| :------------- | :----------------------------------------------- | :---------------------- | :-------------------------------------------------- |
-| `details`      | `/projects/[id]` or `/projects/[id]?tab=details` | Member                  | Overview, metrics, branding banner, start/end dates |
-| `members`      | `/projects/[id]?tab=members`                     | Member                  | Project member roster and assignments               |
-| `teams`        | `/projects/[id]?tab=teams`                       | Member                  | Teams associated with the project                   |
-| `work-items`   | `/projects/[id]?tab=work-items`                  | Member                  | Flat/hierarchical work-item table & backlog         |
-| `integrations` | `/projects/[id]?tab=integrations`                | Member (Edit: Manager+) | Jira Cloud & GitHub repository links                |
-| `fields`       | `/projects/[id]?tab=fields`                      | Member (Edit: Manager+) | Dynamic fields JSON Schema configuration            |
+| Tab ID         | URL Route                                        | Minimum Viewer Role  | Description                                         |
+| :------------- | :----------------------------------------------- | :------------------- | :-------------------------------------------------- |
+| `details`      | `/projects/[id]` or `/projects/[id]?tab=details` | Member               | Overview, metrics, branding banner, start/end dates |
+| `members`      | `/projects/[id]?tab=members`                     | Member               | Project member roster and assignments               |
+| `teams`        | `/projects/[id]?tab=teams`                       | Manager+             | Teams associated with the project                   |
+| `work-items`   | `/projects/[id]?tab=work-items`                  | Member               | Flat/hierarchical work-item table & backlog         |
+| `sprints`      | `/projects/[id]?tab=sprints`                     | Manager+             | Sprint registry for this project                    |
+| `integrations` | `/projects/[id]?tab=integrations`                | Manager+ (view/edit) | Jira Cloud & GitHub repository links                |
+| `fields`       | `/projects/[id]?tab=fields`                      | Manager+             | Dynamic fields JSON Schema configuration            |
+| `workflow`     | `/projects/[id]?tab=workflow`                    | Manager+             | Workflow graph designer (states / transitions)      |
+| `types`        | `/projects/[id]?tab=types`                       | Manager+             | Allowed work-item types                             |
 
-The helper `parseProjectDetailsTab` in `apps/web/lib/search-params.ts` is extended to support `'fields'`:
+Legacy `?tab=board` bookmarks resolve to **Workflow** (Board designer retired).
 
-```typescript
-export type ProjectDetailsTab =
-  'details' | 'members' | 'teams' | 'work-items' | 'integrations' | 'fields';
+The secondary project sidebar is **collapsible** on desktop. Open/collapsed state
+persists with cookie `project_details_sidebar_state` (SSR seed) and localStorage
+key prefix `alice:project-details-sidebar-open:v1:` (per user). Collapsed chrome
+shows the project logo or key initials only.
 
-export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
-  if (
-    tab === 'members' ||
-    tab === 'teams' ||
-    tab === 'work-items' ||
-    tab === 'integrations' ||
-    tab === 'fields'
-  ) {
-    return tab;
-  }
-  return 'details';
-}
-```
+The helper `parseProjectDetailsTab` in `apps/web/lib/search-params.ts` recognizes
+all tab ids above (legacy `settings` → `types`, legacy `board` → `workflow`).
 
 ### 2.3 UI & Responsive Design Patterns
 
@@ -510,11 +503,12 @@ Dynamic field values are stored directly within work items using a resilient two
    ```
 2. **Backward-Compatibility Fallback (Text Marker)**:
    For plain text descriptions or legacy documents, fields are extracted from a standardized text marker:
-   ```text
+
+```text
    [Dynamic Fields]
    moscowRating: Must
    businessValue: 85
-   ```
+```
 
 ### 7.3 Shared Extraction & Mutation Helpers
 
@@ -592,7 +586,7 @@ The AI bot **does not write directly to the database**. All AI-generated schemas
 | **Member**  | Yes (Read-only summary)  | No (Hidden/Locked) |  No (Hidden / Locked)  |     Yes (Optional input)      |
 
 - **Client side**: When viewed by a Member, action buttons (`Load Template`, `Beautify`, `Generate with Alice`, `Save Changes`) are disabled or hidden, and an amber view-only banner is displayed (`Lock` icon).
-- **Members sidebar**: Only Details, Members, and Work Items. Teams, Integrations, Fields, Board, Sprints, and Settings are hidden (deep links fall back to Details). Active/Archived on project Work Items and `/work-items` is hidden; use My Work (`/member`) for archived items. Nav uses Next.js `Link`s with tab-scoped RSC loads.
+- **Members sidebar**: Only Details, Members, and Work Items. Teams, Integrations, Fields, Workflow, Sprints, and Types are hidden (deep links fall back to Details). Active/Archived on project Work Items and `/work-items` is hidden; use My Work (`/member`) for archived items. Nav uses Next.js `Link`s with tab-scoped RSC loads.
 - **Server side**: Server actions and PUT endpoints verify `isManagerOrAdmin(currentUserRole)` and check project membership before updating `projects.attributes_config`.
 
 ---

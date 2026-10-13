@@ -20,7 +20,7 @@ but they don't open the project registry.
 | ----------------------------------------------------------------- | -------------------------------------------------- |
 | [Browse projects](./browse-projects.md)                           | Find projects you can access                       |
 | [Create a project](./create-project.md)                           | Add a new project (admins)                         |
-| [Project settings](./project-settings.md)                         | Edit project metadata                              |
+| [Project types](./project-settings.md)                            | Allowed work-item types per project                |
 | [Project members](./project-members.md)                           | Add or remove people on a project                  |
 | [Project integrations](./project-integrations.md)                 | GitHub and Jira connections                        |
 | [Dynamic fields & sidebar](./dynamic-fields.md)                   | Configure custom fields and navigate workspaces    |

@@ -106,10 +106,25 @@ export const NotificationType = {
   view_shared: 'view_shared',
   chart_shared: 'chart_shared',
   chat_processed: 'chat_processed',
-  access_request: 'access_request'
+  access_request: 'access_request',
+  project_created: 'project_created',
+  project_create_failed: 'project_create_failed'
 } as const
 
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType]
+
+
+export const ActivityAction = {
+  created: 'created',
+  field_changed: 'field_changed',
+  attachment_added: 'attachment_added',
+  attachment_removed: 'attachment_removed',
+  commented: 'commented',
+  workflow_transition: 'workflow_transition',
+  escalation_resolved: 'escalation_resolved'
+} as const
+
+export type ActivityAction = (typeof ActivityAction)[keyof typeof ActivityAction]
 
 
 export const AccessAllowlistKind = {

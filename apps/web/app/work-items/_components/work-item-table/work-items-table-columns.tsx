@@ -34,6 +34,7 @@ import type { WorkItemWorkspaceProps } from '@/app/work-items/_components/work-i
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { isWorkItemOverdue } from '@/app/work-items/_helpers/work-item-due-date';
 import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
+import { resolveWorkItemStateColumnModel } from '@/app/work-items/_helpers/work-item-state-column';
 import { RegistryTitleCell } from '@/components/registry-title-cell';
 import { UserAvatar } from '@/components/user-avatar';
 import { useRealtime } from '@/components/realtime/realtime-provider';
@@ -394,6 +395,26 @@ export function buildWorkItemColumns(options: {
       cell: ({ row }) => (
         <WorkItemStatusBadge status={row.original.workItem.status} />
       ),
+    },
+    {
+      id: 'state',
+      header: 'State',
+      cell: ({ row }) => {
+        const workItem = row.original.workItem;
+        const project = projects.find(
+          (entry) => entry.id === workItem.project_id
+        );
+        const model = resolveWorkItemStateColumnModel({
+          status: workItem.status,
+          state: workItem.state,
+          type: workItem.type,
+          boardColumnId: workItem.board_column_id,
+          workflowConfig: project?.workflow_config,
+        });
+        return (
+          <WorkItemStatusBadge status={model.status} label={model.label} />
+        );
+      },
     },
     {
       id: 'priority',

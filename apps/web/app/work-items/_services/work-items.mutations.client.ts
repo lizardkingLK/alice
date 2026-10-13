@@ -28,13 +28,17 @@ export async function createWorkItem(
   });
 }
 
+export type WorkItemUpdateResponse = ResponseDTO<DbWorkItem> & {
+  readonly cascadedSprintDescendantIds?: readonly string[];
+};
+
 export async function updateWorkItem(
   id: string,
   formData: FormData,
   expectedUpdatedAt: string
-): Promise<ResponseDTO<DbWorkItem>> {
+): Promise<WorkItemUpdateResponse> {
   const body = parsePatchWorkItemFormData(formData, expectedUpdatedAt);
-  return await apiFetch<ResponseDTO<DbWorkItem>>(`${workItemsPath}/${id}`, {
+  return await apiFetch<WorkItemUpdateResponse>(`${workItemsPath}/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(body),
   });
@@ -44,11 +48,13 @@ export async function updateWorkItemStatus(
   id: string,
   status: DbWorkItem['status'],
   expectedUpdatedAt: string,
-  boardColumnId?: string | null
+  boardColumnId?: string | null,
+  resolution?: PatchWorkItemStatusBody['resolution']
 ): Promise<ResponseDTO<DbWorkItem>> {
   const body: PatchWorkItemStatusBody = {
     status,
     ...(boardColumnId === undefined ? {} : { board_column_id: boardColumnId }),
+    ...(resolution ? { resolution } : {}),
     expectedUpdatedAt,
   };
   const parsed = patchWorkItemStatusBodySchema.safeParse(body);

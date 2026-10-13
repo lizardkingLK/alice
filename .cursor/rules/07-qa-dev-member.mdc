@@ -11,25 +11,36 @@ You reinforce post-change quality hygiene for the monorepo. This role is
 **always applied** so offers still appear after feature work outside test files
 (unlike QA Dev Manager, which is scoped to test globs).
 
-## Sonar duplication prescan (offer only)
+## Sonar new-code prescan (offer only)
 
-The duplication prescan skill (`sonar-duplication-prescan`) is **explicit-only**
-(`disable-model-invocation: true`).
+Two explicit-only skills cover SonarCloud hygiene before CI
+(`disable-model-invocation: true` on both):
+
+| Invoke | Skill | Focus |
+| ------ | ----- | ----- |
+| `/sonar-new-code-prescan` | `.cursor/skills/sonar-new-code-prescan/SKILL.md` | Duplication **plus** recurring smells (duplicate imports, optional chain, complexity, …); optional SonarCloud PR issues API |
+| `/sonar-duplication-prescan` | `.cursor/skills/sonar-duplication-prescan/SKILL.md` | Duplication-only (narrower) |
+
+Prefer offering the **broader** `/sonar-new-code-prescan` after feature work.
+Offer duplication-only when the user is specifically chasing a duplication gate.
 
 ### After completing work
 
 When you finish a turn that **edited source code** under `apps/` or `packages/`:
 
-1. Do **not** run the prescan automatically.
-2. End with a **one-line offer**, e.g. *Want me to run `/sonar-duplication-prescan` on these changes?*
-3. If the user says yes, read and follow `.cursor/skills/sonar-duplication-prescan/SKILL.md`.
+1. Do **not** run a Sonar prescan automatically.
+2. End with a **one-line offer**, e.g. *Want me to run `/sonar-new-code-prescan` on these changes?*
+3. If the user says yes, read and follow the matching skill file.
+4. Do **not** open the Cursor browser for SonarCloud unless they explicitly ask;
+   use the SonarCloud Web API or local diff heuristics instead.
+5. Do **not** push fixes unless they explicitly ask to push.
 
 ### When to skip the offer
 
 - Question-only or review-only turns (no edits)
 - Docs-only, lockfile-only, or generated-file-only changes
-- The user already ran or declined a prescan in the same thread
-- Trivial one-line edits with no duplication risk
+- The user already ran or declined a Sonar prescan in the same thread
+- Trivial one-line edits with no duplication / smell risk
 
 Keep the offer brief — one sentence, no bullet list.
 
@@ -40,10 +51,11 @@ tests** without waiting for a separate ask if either signal applies:
 
 1. **No follow-ups** — the user’s latest message closes the task (no “also…”,
    “next…”, or new scope). Treat that as sign-off that the changes are ready.
-2. **Deduplication requested** — the user confirms / asks to run
-   `/sonar-duplication-prescan` (or equivalent “dedupe these changes”). That
-   means they accept the implementation direction; after the prescan (and any
-   extractions they approve), run tests for the touched packages.
+2. **Sonar prescan requested** — the user confirms / asks to run
+   `/sonar-new-code-prescan`, `/sonar-duplication-prescan`, or equivalent
+   (“dedupe these changes”, “fix Sonar smells”). That means they accept the
+   implementation direction; after the prescan (and any fixes they approve),
+   run tests for the touched packages.
 
 ### How to run
 
@@ -65,3 +77,5 @@ tests** without waiting for a separate ask if either signal applies:
 
 - Test standards / Vitest / Cypress: `.cursor/rules/08-qa-dev-manager.mdc`
 - Sonar overview: `docs/guides/SONAR.md`
+- Skills: `.cursor/skills/sonar-new-code-prescan/`,
+  `.cursor/skills/sonar-duplication-prescan/`

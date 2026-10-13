@@ -14,7 +14,9 @@ Add a new epic, story, task, or issue to a project.
    - **Project** (required)
    - **Type** — Epic, Story, Task, or Issue
    - **Title** (required)
-   - **Description**, assignee, priority, labels, sprint, due date (optional)
+   - **Description**, assignee, sprint, and due date (optional)
+   - On the compact (modern) form: **priority**, **story points**, and
+     **labels** are under **More**
 4. Submit **Create Work Item** (or **Create** on the compact form).
 
 The new item opens in the list and on the board (unless status is **Draft**).
@@ -35,7 +37,10 @@ The child appears in the **Subtasks** section and in hierarchy list view.
 
 - Child type must match the hierarchy (Epic → Story → Task → Issue).
 - Parent and child must be in the **same project**.
-- **Issue** items cannot have subtasks.
+- **Issue** items cannot have subtasks — the **Subtasks** section is hidden on
+  those details pages.
+- Changing the **Type** of an item that still has subtasks asks you to unlink
+  those children first (or confirm detaching them), so the hierarchy stays valid.
 
 ---
 

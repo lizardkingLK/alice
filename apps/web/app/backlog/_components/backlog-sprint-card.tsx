@@ -1,11 +1,16 @@
 'use client';
 
 import type React from 'react';
+import { useMemo } from 'react';
 import { BacklogDropZone } from '@/app/backlog/_components/backlog-drop-zone';
 import { BacklogItemCount } from '@/app/backlog/_components/backlog-item-count';
-import { BacklogSprintCapacityPopover } from '@/app/backlog/_components/backlog-sprint-capacity-popover';
+import { BacklogSprintCapacitySummary } from '@/app/backlog/_components/backlog-sprint-capacity-summary';
 import { BacklogSprintDetailsPopover } from '@/app/backlog/_components/backlog-sprint-details-popover';
-import type { ProjectTeamMemberCapacity } from '@/app/backlog/_helpers/backlog-sprint-capacity';
+import type { BacklogCapacityDisplayId } from '@/app/backlog/_helpers/backlog-capacity-display-storage';
+import {
+  computeSprintCapacity,
+  type ProjectTeamMemberCapacity,
+} from '@/app/backlog/_helpers/backlog-sprint-capacity';
 import type { BacklogAssignee } from '@/app/backlog/_helpers/backlog-item-utils';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
@@ -13,6 +18,12 @@ import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { SprintStatusEnum } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card } from '@repo/ui/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@repo/ui/components/ui/dropdown-menu';
 import {
   Tooltip,
   TooltipContent,
@@ -23,6 +34,8 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  MoreHorizontal,
+  Pencil,
   Play,
   Plus,
 } from '@repo/ui/lib/icons';
@@ -39,8 +52,10 @@ type BacklogSprintCardProps = {
   readonly projects: DbProject[];
   readonly projectMembers: readonly BacklogAssignee[];
   readonly teamCapacities: readonly ProjectTeamMemberCapacity[];
+  readonly capacityDisplay?: BacklogCapacityDisplayId;
   readonly onToggle: (sprintId: string) => void;
   readonly onCreateIssue: (sprintId: string) => void;
+  readonly onEditSprint: (sprint: Sprint) => void;
   readonly onStartSprint: (sprintId: string) => void;
   readonly onCompleteSprint: (sprintId: string) => void;
   readonly onSelectItem: (item: DbWorkItem) => void;
@@ -69,6 +84,8 @@ type SprintCardActionsProps = {
   // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onCreateIssue: (sprintId: string) => void;
   // eslint-disable-next-line no-unused-vars -- callback signature
+  readonly onEditSprint: (sprint: Sprint) => void;
+  // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onStartSprint: (sprintId: string) => void;
   // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onCompleteSprint: (sprintId: string) => void;
@@ -79,6 +96,7 @@ function SprintCardActions({
   issueCount,
   isManagerOrAdmin,
   onCreateIssue,
+  onEditSprint,
   onStartSprint,
   onCompleteSprint,
 }: Readonly<SprintCardActionsProps>) {
@@ -174,6 +192,33 @@ function SprintCardActions({
           <TooltipContent side="bottom">Complete sprint</TooltipContent>
         </Tooltip>
       ) : null}
+
+      {isManagerOrAdmin ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="size-8 cursor-pointer"
+              aria-label="Open Actions Menu"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <MoreHorizontal className="size-4" />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              aria-label="Edit Sprint"
+              onClick={() => onEditSprint(sprint)}
+            >
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit Sprint
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
     </>
   );
 }
@@ -188,8 +233,10 @@ export function BacklogSprintCard({
   projects,
   projectMembers,
   teamCapacities,
+  capacityDisplay = 'bar',
   onToggle,
   onCreateIssue,
+  onEditSprint,
   onStartSprint,
   onCompleteSprint,
   onSelectItem,
@@ -198,8 +245,18 @@ export function BacklogSprintCard({
   onDragLeave,
   onDrop,
 }: Readonly<BacklogSprintCardProps>) {
+  const capacitySnapshot = useMemo(
+    () =>
+      computeSprintCapacity({
+        projectId: sprint.project?.id,
+        storyPoints: items.map((item) => item.story_points),
+        teamMembers: teamCapacities,
+      }),
+    [items, sprint.project?.id, teamCapacities]
+  );
+
   return (
-    <Card className="border-border/70 gap-0 overflow-visible py-0 shadow-sm transition-all duration-200">
+    <Card className="border-border/70 gap-0 overflow-visible py-0 shadow-sm ring-0 transition-all duration-200">
       <div className="bg-muted/30 hover:bg-muted/50 border-border/50 flex flex-row items-center justify-between gap-2 rounded-t-xl border-b px-4 py-3 transition-colors">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <Button
@@ -215,12 +272,13 @@ export function BacklogSprintCard({
             )}
           </Button>
 
-          <BacklogSprintDetailsPopover sprint={sprint} />
-          <BacklogSprintCapacityPopover
-            sprintName={sprint.name}
-            projectId={sprint.project?.id}
-            items={items}
-            teamMembers={teamCapacities}
+          <BacklogSprintDetailsPopover
+            sprint={sprint}
+            capacitySnapshot={capacitySnapshot}
+          />
+          <BacklogSprintCapacitySummary
+            snapshot={capacitySnapshot}
+            mode={capacityDisplay}
           />
         </div>
 
@@ -230,6 +288,7 @@ export function BacklogSprintCard({
             issueCount={issueCount}
             isManagerOrAdmin={isManagerOrAdmin}
             onCreateIssue={onCreateIssue}
+            onEditSprint={onEditSprint}
             onStartSprint={onStartSprint}
             onCompleteSprint={onCompleteSprint}
           />

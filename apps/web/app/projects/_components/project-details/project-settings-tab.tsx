@@ -24,19 +24,23 @@ import {
   AlertTriangle,
   CheckCircle2,
   Loader2,
-  Settings,
+  Shapes,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import {
   CANONICAL_HIERARCHY_ORDER,
   type WorkItemType,
   WorkItemTypeEnum,
+  type WorkItemTypeRemovalPreviewResponse,
+  type WorkItemTypeRemovalStrategy,
 } from '@repo/types';
 import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
 import {
+  previewWorkItemTypeRemoval,
   updateProject,
   type Project,
 } from '@/app/projects/_services/projects.mutations.client';
+import { ProjectTypeRemovalStrategyDialog } from '@/app/projects/_components/project-details/project-type-removal-strategy-dialog';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import { errorMessage } from '@/lib/errors/error-message';
@@ -85,6 +89,11 @@ export function ProjectSettingsTab({
   const [pendingUncheck, setPendingUncheck] = useState<WorkItemType | null>(
     null
   );
+  const [strategyOpen, setStrategyOpen] = useState(false);
+  const [preview, setPreview] =
+    useState<WorkItemTypeRemovalPreviewResponse | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   const removedTypes = initialTypes.filter((t) => !selectedTypes.includes(t));
   const hasRemovedTypes = removedTypes.length > 0;
@@ -115,6 +124,38 @@ export function ProjectSettingsTab({
     applyUncheck(type);
   };
 
+  const saveWithStrategies = async (
+    strategies?: WorkItemTypeRemovalStrategy[]
+  ) => {
+    const mergedWorkflowConfig: ProjectWorkflowConfig = {
+      ...existingConfig,
+      work_item_types: selectedTypes,
+    };
+
+    const pendingFields: Record<string, unknown> = {
+      workflow_config: mergedWorkflowConfig,
+    };
+    if (strategies && strategies.length > 0) {
+      pendingFields.typeRemovalStrategies = strategies;
+    }
+
+    const data = await runLockedMutationOrThrow({
+      mutate: () =>
+        updateProject(
+          project.id,
+          pendingFields as Parameters<typeof updateProject>[1],
+          project.updated_at
+        ),
+      handleMutationError,
+      entityType: 'project',
+      entityId: project.id,
+      expectedUpdatedAt: project.updated_at,
+      pendingFields,
+    });
+
+    return data;
+  };
+
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
     if (selectedTypes.length === 0) {
@@ -128,33 +169,71 @@ export function ProjectSettingsTab({
     setIsSaving(true);
     setFeedback(null);
 
-    const mergedWorkflowConfig: ProjectWorkflowConfig = {
-      ...existingConfig,
-      work_item_types: selectedTypes,
-    };
-
-    const pendingFields = {
-      workflow_config: mergedWorkflowConfig,
-    };
-
     try {
-      await runLockedMutationOrThrow({
-        mutate: () =>
-          updateProject(project.id, pendingFields, project.updated_at),
-        handleMutationError,
-        entityType: 'project',
-        entityId: project.id,
-        expectedUpdatedAt: project.updated_at,
-        pendingFields,
-      });
+      if (hasRemovedTypes) {
+        setPreviewLoading(true);
+        setPreviewError(null);
+        setStrategyOpen(true);
+        try {
+          const nextPreview = await previewWorkItemTypeRemoval(
+            project.id,
+            removedTypes,
+            selectedTypes
+          );
+          setPreview(nextPreview);
+          if (nextPreview.totalAffected === 0) {
+            setStrategyOpen(false);
+            await saveWithStrategies();
+            setFeedback({
+              type: 'success',
+              text: 'Project work-item types updated successfully.',
+            });
+            startTransition(() => {
+              router.refresh();
+            });
+            return;
+          }
+        } catch (err) {
+          setPreviewError(
+            errorMessage(err, 'Failed to load affected work items.')
+          );
+        } finally {
+          setPreviewLoading(false);
+          setIsSaving(false);
+        }
+        return;
+      }
 
+      await saveWithStrategies();
       setFeedback({
         type: 'success',
-        text: hasRemovedTypes
-          ? `Work-item types updated. Items with removed types (${removedTypes.join(', ')}) have fallen back to Issue.`
-          : 'Project work-item types updated successfully.',
+        text: 'Project work-item types updated successfully.',
       });
+      startTransition(() => {
+        router.refresh();
+      });
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        text: errorMessage(err, 'Failed to update project settings.'),
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
+  const handleStrategyConfirm = async (
+    strategies: WorkItemTypeRemovalStrategy[]
+  ) => {
+    setIsSaving(true);
+    setFeedback(null);
+    try {
+      await saveWithStrategies(strategies);
+      setStrategyOpen(false);
+      setFeedback({
+        type: 'success',
+        text: 'Work-item types updated. Existing items were handled per your choices.',
+      });
       startTransition(() => {
         router.refresh();
       });
@@ -173,8 +252,8 @@ export function ProjectSettingsTab({
       <Card className="border-border/60 h-full w-full">
         <CardContent className="p-6 text-center">
           <p className="text-muted-foreground text-sm">
-            Only Project Managers and Administrators can configure project
-            settings.
+            Only Project Managers and Administrators can configure work-item
+            types.
           </p>
         </CardContent>
       </Card>
@@ -186,7 +265,7 @@ export function ProjectSettingsTab({
       <Card className="border-border/60 flex h-full min-h-0 w-full flex-1 flex-col shadow-sm">
         <CardHeader>
           <CardTitle className="text-primary flex items-center gap-2 text-base font-semibold">
-            <Settings className="h-5 w-5" />
+            <Shapes className="h-5 w-5" />
             Allowed Work-Item Types
           </CardTitle>
           <CardDescription className="text-muted-foreground text-sm">
@@ -280,19 +359,18 @@ export function ProjectSettingsTab({
               )}
 
             {hasRemovedTypes && (
-              <div className="flex items-start gap-3 rounded-lg border border-amber-700/30 bg-amber-100 p-3.5 text-amber-950 dark:border-amber-500/40 dark:bg-amber-950 dark:text-amber-100">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-800 dark:text-amber-300" />
-                <div className="space-y-1 text-sm">
-                  <p className="font-semibold text-amber-950 dark:text-amber-50">
-                    Work items will be migrated
+              <div className="border-destructive/20 bg-destructive/10 text-destructive flex items-start gap-3 rounded-lg border p-3.5 text-sm">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                <div className="space-y-1">
+                  <p className="font-semibold">
+                    Existing items need a resolution strategy
                   </p>
-                  <p className="text-amber-900 dark:text-amber-100/90">
+                  <p className="text-destructive/90 leading-relaxed">
                     Removing{' '}
                     <span className="font-bold">{removedTypes.join(', ')}</span>{' '}
-                    will cause all existing items of those types in this project
-                    to fall back to <span className="font-bold">Issue</span>.
-                    Any subtask relations that are invalid under the new
-                    hierarchy will be cleared.
+                    will prompt you to delete or convert each affected type when
+                    you save. Parent links that would become invalid are
+                    detached first.
                   </p>
                 </div>
               </div>
@@ -303,10 +381,10 @@ export function ProjectSettingsTab({
                 type="submit"
                 disabled={isSaving || selectedTypes.length === 0 || !isDirty}
                 size="sm"
-                title="Save settings"
+                title="Save types"
               >
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Settings
+                Save Types
               </Button>
             </div>
           </form>
@@ -324,12 +402,9 @@ export function ProjectSettingsTab({
             </DialogTitle>
             <DialogDescription>
               Existing work items of type{' '}
-              <span className="font-semibold">{pendingUncheck}</span> in this
-              project will fall back to{' '}
-              <span className="font-semibold">Issue</span>
-              {'. '}
-              Any subtask relations that are invalid under the new hierarchy
-              will be cleared when you save.
+              <span className="font-semibold">{pendingUncheck}</span> must be
+              deleted or converted when you save. You will choose the strategy
+              for each removed type in the next step.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -350,6 +425,17 @@ export function ProjectSettingsTab({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ProjectTypeRemovalStrategyDialog
+        open={strategyOpen}
+        onOpenChange={setStrategyOpen}
+        preview={preview}
+        previewLoading={previewLoading}
+        previewError={previewError}
+        migrateTargets={selectedTypes}
+        isSubmitting={isSaving}
+        onConfirm={handleStrategyConfirm}
+      />
     </div>
   );
 }

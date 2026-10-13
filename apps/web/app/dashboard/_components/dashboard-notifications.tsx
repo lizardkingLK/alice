@@ -19,6 +19,8 @@ import {
   Layers,
   Inbox,
   Star,
+  FolderKanban,
+  AlertTriangle,
 } from '@repo/ui/lib/icons';
 import {
   DropdownMenu,
@@ -29,6 +31,10 @@ import { cn } from '@repo/ui/lib/utils';
 import { Button } from '@repo/ui/components/ui/button';
 import { resolveNotificationHref } from '@/lib/notifications/resolve-notification-href';
 import { extractEmailFromAccessRequestMessage } from '@/lib/notifications/access-request-message';
+import {
+  NotificationMessage,
+  stripNotificationMarkdown,
+} from '@/lib/notifications/notification-message';
 import {
   Dialog,
   DialogContent,
@@ -50,6 +56,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   view_shared: Layers,
   chat_processed: MessageSquare,
   access_request: Inbox,
+  project_created: FolderKanban,
+  project_create_failed: AlertTriangle,
   default: Bell,
 };
 
@@ -70,6 +78,10 @@ const iconColorMap: Record<string, string> = {
     'text-indigo-500 bg-indigo-500/10 border-indigo-500/20 dark:bg-indigo-500/20',
   access_request:
     'text-orange-500 bg-orange-500/10 border-orange-500/20 dark:bg-orange-500/20',
+  project_created:
+    'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 dark:bg-emerald-500/20',
+  project_create_failed:
+    'text-rose-500 bg-rose-500/10 border-rose-500/20 dark:bg-rose-500/20',
   default: 'text-muted-foreground bg-muted border-border',
 };
 
@@ -523,8 +535,8 @@ export function NotificationInbox({
         >
           <button
             type="button"
-            onClick={() => handleNotificationClick(notif)}
-            className="flex flex-1 cursor-pointer items-start gap-3 text-left focus-visible:outline-hidden"
+            onClick={() => void handleNotificationClick(notif)}
+            className="flex flex-1 cursor-pointer items-start gap-3 border-0 bg-transparent p-0 text-left focus-visible:outline-hidden"
           >
             <div
               className={cn(
@@ -535,8 +547,8 @@ export function NotificationInbox({
               <Icon className="size-4" />
             </div>
             <div className="min-w-0 flex-1 space-y-1 pr-2">
-              <p
-                title={notif.message}
+              <div
+                title={stripNotificationMarkdown(notif.message)}
                 className={cn(
                   'line-clamp-3 text-xs leading-relaxed wrap-break-word',
                   notif.read_status
@@ -544,8 +556,16 @@ export function NotificationInbox({
                     : 'text-foreground font-medium'
                 )}
               >
-                {notif.message}
-              </p>
+                <NotificationMessage
+                  message={notif.message}
+                  onInternalLinkClick={() => {
+                    setIsOpen(false);
+                    if (!notif.read_status) {
+                      void handleMarkAsRead(notif.id);
+                    }
+                  }}
+                />
+              </div>
               <span className="text-muted-foreground block text-[10px]">
                 {formatRelativeTime(notif.created_at)}
               </span>
@@ -608,7 +628,7 @@ export function NotificationInbox({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleMarkAllAsRead();
+                  void handleMarkAllAsRead();
                 }}
                 className="text-primary hover:text-primary/80 flex cursor-pointer items-center gap-1 text-xs font-medium transition-colors"
               >

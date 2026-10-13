@@ -1,9 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import Image from 'next/image';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
+import { useRealtime } from '@/components/realtime/realtime-provider';
+import { UserAvatar } from '@/components/user-avatar';
 import { FileText } from '@repo/ui/lib/icons';
 import {
   Card,
@@ -33,6 +34,8 @@ export function SprintReportDeliverables({
   filteredWorkItems,
   statusCounts,
 }: Readonly<SprintReportDeliverablesProps>) {
+  const { isUserOnline } = useRealtime();
+
   return (
     <Card className="border-border/60 bg-card/50 card deliverables-card">
       <CardHeader>
@@ -114,6 +117,7 @@ export function SprintReportDeliverables({
               <tbody className="divide-border/30 divide-y">
                 {filteredWorkItems.map((item) => {
                   const statusMeta = STATUS_META[item.status];
+                  const assigneeName = item.assignee?.name || 'Unassigned';
                   return (
                     <tr
                       key={item.id}
@@ -149,24 +153,17 @@ export function SprintReportDeliverables({
                       </td>
                       <td className="p-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          {item.assignee?.profile_picture ? (
-                            <Image
-                              src={item.assignee.profile_picture}
-                              alt={item.assignee.name || 'Assignee'}
-                              width={24}
-                              height={24}
-                              className="rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="bg-primary/10 text-primary flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold">
-                              {(item.assignee?.name || 'Unassigned')
-                                .slice(0, 2)
-                                .toUpperCase()}
-                            </div>
-                          )}
-                          <span className="text-xs">
-                            {item.assignee?.name || 'Unassigned'}
-                          </span>
+                          <UserAvatar
+                            name={assigneeName}
+                            imageUrl={item.assignee?.profile_picture}
+                            title=""
+                            isOnline={Boolean(
+                              item.assignee_id && isUserOnline(item.assignee_id)
+                            )}
+                            className="border-0 after:border-0"
+                            fallbackClassName="bg-primary/10 text-primary text-[10px] font-bold group-data-[size=sm]/avatar:text-[10px]"
+                          />
+                          <span className="text-xs">{assigneeName}</span>
                         </div>
                       </td>
                       <td className="text-foreground p-4 text-right font-semibold whitespace-nowrap">

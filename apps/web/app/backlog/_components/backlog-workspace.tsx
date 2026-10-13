@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, HelpCircle } from '@repo/ui/lib/icons';
 import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
 
+import { useBacklogCapacityDisplay } from '@/app/backlog/_components/backlog-capacity-display-menu';
 import { useBacklogLayout } from '@/app/backlog/_components/backlog-layout-menu';
 import { BacklogToolbar } from '@/app/backlog/_components/backlog-toolbar';
 import { useBacklogProjectDefaults } from '@/app/backlog/_hooks/use-backlog-project-defaults';
@@ -18,6 +19,7 @@ import {
   BacklogCompleteSprintDialog,
   BacklogCreateIssueDialog,
   BacklogCreateSprintDialog,
+  BacklogEditSprintDialog,
   BacklogMismatchDialog,
   BacklogStartSprintDialog,
   BacklogErrorDialog,
@@ -37,6 +39,7 @@ import {
 } from '@/app/backlog/_helpers/backlog-item-utils';
 import type { ProjectTeamMemberCapacity } from '@/app/backlog/_helpers/backlog-sprint-capacity';
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import { collectLocalDescendantIds } from '@/app/work-items/_helpers/work-item-descendant-ids';
 import { mergeWorkItemServerRow } from '@/app/work-items/_helpers/work-item-merge-server-row';
 import { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { updateSprintStatusWithOptimisticLock } from '@/app/sprints/_helpers/update-sprint-status-with-lock';
@@ -46,6 +49,37 @@ import { updateWorkItem } from '@/app/work-items/_services/work-items.mutations.
 import { resolveWorkItemMember } from '@/app/work-items/_helpers/work-item-member';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutation } from '@/lib/optimistic-lock/run-locked-mutation';
+
+function sameWorkItemSprintId(
+  a: string | null | undefined,
+  b: string | null | undefined
+): boolean {
+  return (a ?? null) === (b ?? null);
+}
+
+function restoreSprintIdsFromMap(
+  previousById: ReadonlyMap<string, string | null | undefined>,
+  items: readonly DbWorkItem[]
+): DbWorkItem[] {
+  return items.map((item) => {
+    const previous = previousById.get(item.id);
+    return previous === undefined ? item : { ...item, sprint_id: previous };
+  });
+}
+
+function applySprintIdsToItems(
+  items: readonly DbWorkItem[],
+  ids: readonly string[],
+  sprintId: string | null
+): DbWorkItem[] {
+  if (ids.length === 0) {
+    return [...items];
+  }
+  const idSet = new Set(ids);
+  return items.map((item) =>
+    idSet.has(item.id) ? { ...item, sprint_id: sprintId } : item
+  );
+}
 
 interface BacklogWorkspaceProps {
   projects: DbProject[];
@@ -103,6 +137,8 @@ export function BacklogWorkspace({
   const showBacklogPane = activeTab === 'active';
   const { preferredLayout, effectiveLayout, setPreferredLayout } =
     useBacklogLayout(currentUserId, showBacklogPane);
+  const { capacityDisplay, setCapacityDisplay } =
+    useBacklogCapacityDisplay(currentUserId);
 
   const backlogDefaults = useBacklogProjectDefaults({
     userId: currentUserId ?? null,
@@ -135,6 +171,7 @@ export function BacklogWorkspace({
 
   // Dialogs State
   const [isCreateSprintOpen, setIsCreateSprintOpen] = useState(false);
+  const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
   const [isCreateIssueOpen, setIsCreateIssueOpen] = useState(false);
   const [createIssueSprintId, setCreateIssueSprintId] = useState<string | null>(
     null
@@ -150,17 +187,34 @@ export function BacklogWorkspace({
     itemId: string | null,
     targetSprintId: string | null
   ): boolean => {
-    if (!itemId || !targetSprintId) {
+    if (!itemId) {
       return false;
     }
     const draggedItem = workItems.find((item) => item.id === itemId);
+    if (!draggedItem) {
+      return false;
+    }
+
+    if (draggedItem.parent_id) {
+      const parent = workItems.find(
+        (item) => item.id === draggedItem.parent_id
+      );
+      const parentSprintId = parent?.sprint_id ?? null;
+      const nextSprintId = targetSprintId || null;
+      if (!sameWorkItemSprintId(parentSprintId, nextSprintId)) {
+        return true;
+      }
+    }
+
+    if (!targetSprintId) {
+      return false;
+    }
+
     const targetSprint = sprintList.find(
       (sprint) => sprint.id === targetSprintId
     );
     const sprintProjId = targetSprint?.project?.id;
-    return Boolean(
-      draggedItem && sprintProjId && draggedItem.project_id !== sprintProjId
-    );
+    return Boolean(sprintProjId && draggedItem.project_id !== sprintProjId);
   };
 
   const restoreWorkItemAfterFailedMutation = (
@@ -231,22 +285,31 @@ export function BacklogWorkspace({
         return;
       }
 
+      const draggedItem = workItems.find((item) => item.id === itemId);
+      const cascadeIds =
+        draggedItem && !draggedItem.parent_id
+          ? collectLocalDescendantIds(itemId, workItems)
+          : [];
+      const affectedIds = new Set([itemId, ...cascadeIds]);
+
       setWorkItems((prev) =>
         prev.map((item) =>
-          item.id === itemId ? { ...item, sprint_id: targetId } : item
+          affectedIds.has(item.id) ? { ...item, sprint_id: targetId } : item
         )
       );
-      // Update selected item in sheet if it's currently open
-      if (selectedItem?.id === itemId) {
+      if (selectedItem && affectedIds.has(selectedItem.id)) {
         setSelectedItem((prev) =>
           prev ? { ...prev, sprint_id: targetId } : null
         );
       }
       const formData = new FormData();
       formData.append('sprint_id', targetId || '');
-      const draggedItem = workItems.find((item) => item.id === itemId);
       if (draggedItem) {
-        const previousSprintId = draggedItem.sprint_id;
+        const previousById = new Map(
+          workItems
+            .filter((item) => affectedIds.has(item.id))
+            .map((item) => [item.id, item.sprint_id] as const)
+        );
         const expectedUpdatedAt = draggedItem.updated_at;
         runLockedMutation({
           mutate: () => updateWorkItem(itemId, formData, expectedUpdatedAt),
@@ -260,27 +323,51 @@ export function BacklogWorkspace({
           .then((result) => {
             if (result.ok) {
               const updated = result.data.data;
+              const serverCascade =
+                result.data.cascadedSprintDescendantIds ?? cascadeIds;
               if (updated) {
                 syncWorkItemFromServer(itemId, updated);
               }
+              const nextSprintId = updated?.sprint_id ?? targetId;
+              setWorkItems((prev) =>
+                applySprintIdsToItems(prev, serverCascade, nextSprintId)
+              );
               return;
             }
             if (!result.conflict) {
-              restoreWorkItemAfterFailedMutation(
-                itemId,
-                { sprint_id: previousSprintId },
-                'Failed to update work item sprint.',
-                result.error
+              setWorkItems((prev) =>
+                restoreSprintIdsFromMap(previousById, prev)
               );
+              setSelectedItem((prev) => {
+                if (!prev) {
+                  return prev;
+                }
+                const restored = restoreSprintIdsFromMap(previousById, [prev]);
+                return restored[0] ?? prev;
+              });
+              setActionError(
+                result.error instanceof Error
+                  ? result.error.message
+                  : 'Failed to update work item sprint.'
+              );
+              setIsErrorOpen(true);
             }
           })
           .catch((error: unknown) => {
-            restoreWorkItemAfterFailedMutation(
-              itemId,
-              { sprint_id: previousSprintId },
-              'Failed to update work item sprint.',
-              error
+            setWorkItems((prev) => restoreSprintIdsFromMap(previousById, prev));
+            setSelectedItem((prev) => {
+              if (!prev) {
+                return prev;
+              }
+              const restored = restoreSprintIdsFromMap(previousById, [prev]);
+              return restored[0] ?? prev;
+            });
+            setActionError(
+              error instanceof Error
+                ? error.message
+                : 'Failed to update work item sprint.'
             );
+            setIsErrorOpen(true);
           });
       }
     }
@@ -459,6 +546,16 @@ export function BacklogWorkspace({
     setIsCreateSprintOpen(false);
   };
 
+  const handleEditSprintSuccess = (updatedSprint: Sprint) => {
+    if (!isManagerOrAdmin) return;
+    setSprintList((prev) =>
+      prev.map((sprint) =>
+        sprint.id === updatedSprint.id ? updatedSprint : sprint
+      )
+    );
+    setEditingSprint(null);
+  };
+
   const openCreateIssue = (sprintId: string | null = null) => {
     setCreateIssueSprintId(sprintId);
     setIsCreateIssueOpen(true);
@@ -597,19 +694,38 @@ export function BacklogWorkspace({
       }
     }
 
-    // Apply all updates to local state
+    const targetItem = workItems.find((item) => item.id === itemId);
+    const sprintCascadeIds =
+      targetItem && !targetItem.parent_id && Object.hasOwn(updates, 'sprint_id')
+        ? collectLocalDescendantIds(itemId, workItems)
+        : [];
+    const sprintAffectedIds = new Set([itemId, ...sprintCascadeIds]);
+
+    // Apply all updates to local state (cascade sprint to descendants)
     setWorkItems((prev) =>
-      prev.map((item) =>
-        item.id === itemId ? applyLocalFieldUpdates(item, updates) : item
-      )
+      prev.map((item) => {
+        if (item.id === itemId) {
+          return applyLocalFieldUpdates(item, updates);
+        }
+        if (sprintCascadeIds.includes(item.id) && 'sprint_id' in updates) {
+          return { ...item, sprint_id: updates.sprint_id ?? null };
+        }
+        return item;
+      })
     );
 
     // Sync selected item state
     setSelectedItem((prev) => {
-      if (prev?.id !== itemId) {
+      if (!prev || !sprintAffectedIds.has(prev.id)) {
         return prev;
       }
-      return applyLocalFieldUpdates(prev, updates);
+      if (prev.id === itemId) {
+        return applyLocalFieldUpdates(prev, updates);
+      }
+      if ('sprint_id' in updates) {
+        return { ...prev, sprint_id: updates.sprint_id ?? null };
+      }
+      return prev;
     });
 
     const formData = new FormData();
@@ -617,7 +733,6 @@ export function BacklogWorkspace({
       formData.append(key, getFormDataStringValue(value));
     }
 
-    const targetItem = workItems.find((item) => item.id === itemId);
     if (targetItem) {
       const expectedUpdatedAt = targetItem.updated_at;
       const previousValues = Object.fromEntries(
@@ -626,6 +741,12 @@ export function BacklogWorkspace({
           targetItem[key as keyof typeof targetItem],
         ])
       ) as Partial<DbWorkItem>;
+      const previousSprintByDescendant = new Map(
+        sprintCascadeIds.map((id) => {
+          const row = workItems.find((item) => item.id === id);
+          return [id, row?.sprint_id ?? null] as const;
+        })
+      );
       runLockedMutation({
         mutate: () => updateWorkItem(itemId, formData, expectedUpdatedAt),
         handleMutationError,
@@ -641,9 +762,22 @@ export function BacklogWorkspace({
             if (updated) {
               syncWorkItemFromServer(itemId, updated);
             }
+            const serverCascade =
+              result.data.cascadedSprintDescendantIds ?? sprintCascadeIds;
+            if ('sprint_id' in updates && serverCascade.length > 0) {
+              const nextSprintId = updated?.sprint_id ?? updates.sprint_id;
+              setWorkItems((prev) =>
+                applySprintIdsToItems(prev, serverCascade, nextSprintId ?? null)
+              );
+            }
             return;
           }
           if (!result.conflict) {
+            if (previousSprintByDescendant.size > 0) {
+              setWorkItems((prev) =>
+                restoreSprintIdsFromMap(previousSprintByDescendant, prev)
+              );
+            }
             restoreWorkItemAfterFailedMutation(
               itemId,
               previousValues,
@@ -653,6 +787,11 @@ export function BacklogWorkspace({
           }
         })
         .catch((error: unknown) => {
+          if (previousSprintByDescendant.size > 0) {
+            setWorkItems((prev) =>
+              restoreSprintIdsFromMap(previousSprintByDescendant, prev)
+            );
+          }
           restoreWorkItemAfterFailedMutation(
             itemId,
             previousValues,
@@ -792,6 +931,8 @@ export function BacklogWorkspace({
           onTabChange={setActiveTab}
           preferredLayout={preferredLayout}
           onLayoutChange={setPreferredLayout}
+          capacityDisplay={capacityDisplay}
+          onCapacityDisplayChange={setCapacityDisplay}
           onCreateSprint={() => setIsCreateSprintOpen(true)}
           onCreateIssue={() => openCreateIssue(null)}
           searchQuery={searchQuery}
@@ -837,8 +978,10 @@ export function BacklogWorkspace({
                   projects={projects}
                   projectMembers={projectMembers}
                   teamCapacities={teamCapacities}
+                  capacityDisplay={capacityDisplay}
                   onToggle={toggleSprint}
                   onCreateIssue={openCreateIssue}
+                  onEditSprint={setEditingSprint}
                   onStartSprint={handleStartSprint}
                   onCompleteSprint={handleCompleteSprint}
                   onSelectItem={setSelectedItem}
@@ -892,6 +1035,17 @@ export function BacklogWorkspace({
             defaultProjectId={createSprintDefaultProjectId}
             onClose={() => setIsCreateSprintOpen(false)}
             onCreated={handleCreateSprintSuccess}
+          />
+        )}
+
+        {/* Dialog: Edit Sprint */}
+        {isManagerOrAdmin && (
+          <BacklogEditSprintDialog
+            sprint={editingSprint}
+            projects={projects}
+            currentUserId={currentUserId}
+            onClose={() => setEditingSprint(null)}
+            onUpdated={handleEditSprintSuccess}
           />
         )}
 

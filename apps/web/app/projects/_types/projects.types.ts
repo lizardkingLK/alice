@@ -1,5 +1,10 @@
 import type { Tables } from '@repo/types';
-import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
+import type {
+  InitialProjectTeamInput,
+  InitialSprintInput,
+  ProjectWorkflowConfig,
+  WorkItemTypeRemovalStrategy,
+} from '@repo/types/api/v1';
 import type { User } from '@/app/users/_services/users.mutations.client';
 
 export {
@@ -32,7 +37,7 @@ export type GetProjectsPaginatedResponse = {
   totalPages: number;
 };
 
-export type CreateProjectInput = Omit<
+type ProjectMutationInput = Omit<
   Tables<'projects'>,
   | 'id'
   | 'created_at'
@@ -59,8 +64,14 @@ export type CreateProjectInput = Omit<
   workflow_config?: ProjectWorkflowConfig | null;
 };
 
-export type UpdateProjectInput = Partial<CreateProjectInput> & {
+export type CreateProjectInput = ProjectMutationInput & {
+  sprint?: InitialSprintInput;
+  team?: InitialProjectTeamInput;
+};
+
+export type UpdateProjectInput = Partial<ProjectMutationInput> & {
   workflow_config?: ProjectWorkflowConfig | null;
+  typeRemovalStrategies?: WorkItemTypeRemovalStrategy[];
 };
 
 export type ProjectMemberWithUser = {

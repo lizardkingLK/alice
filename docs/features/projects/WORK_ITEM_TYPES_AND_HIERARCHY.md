@@ -38,12 +38,14 @@ ALICE uses a two-tier hierarchy model:
 ### API Backend (`apps/api`)
 
 - **`src/routes/api/projects/projects.repository.ts`**:
-  - `migrateWorkItemTypesAndPruneHierarchy`: Reassigns work items of removed types to `Issue` and unlinks invalid parent-child relations.
+  - Type-removal preview/apply with per-type strategies (`delete` or `migrate`),
+    detach-first parent unlink, then hard-delete or convert remaining items.
   - `linkImportedJiraParents`: Links imported Jira parents complying strictly with the project's active hierarchy.
 - **`src/routes/api/projects/projects.service.ts`**:
-  - Detects removed types during project updates and triggers migration.
+  - Requires `typeRemovalStrategies` when a project update removes types that still have work items.
 - **`src/routes/api/work-items/work-items.service.ts`**:
-  - Validates that `createWorkItem` and `updateWorkItem` enforce allowed project types.
+  - Validates that `createWorkItem` and `updateWorkItem` enforce allowed project types;
+    detach-children confirmation when changing type on a parent with subtasks.
 - **`src/routes/api/projects/projects.route.ts`**:
   - `POST /:id/jira/preview`: Returns discovered Jira issue types and preview counts.
   - `POST /:id/jira/import`: Processes `JiraImportConfig`, executing mapped, ignored, and dropped actions.
@@ -53,7 +55,7 @@ ALICE uses a two-tier hierarchy model:
 - **`app/projects/_components/project-form.tsx`**:
   - Basic Details Step 1 checkboxes for allowed types.
 - **`app/projects/_components/project-details/project-settings-tab.tsx`**:
-  - Settings tab card for toggling permitted types with migration warning.
+  - Types tab card for toggling permitted types with migration warning.
 - **`app/work-items/_components/work-item-form/work-item-form.tsx`**:
   - Scopes Type dropdown to project-configured types.
 - **`app/projects/_components/project-details/jira-import-dialog.tsx`**:
@@ -67,5 +69,7 @@ In Prisma (`schema.prisma`), `work_items.type` is non-nullable (`WorkItemType`).
 Therefore:
 
 - ALICE work-item type is **mandatory**.
-- When an enabled type is removed from project configuration, affected items fall back to **`Issue`** (the leaf type).
+- When an enabled type is removed from project configuration, save requires an
+  explicit per-type strategy (**delete** or **convert**); archive is not offered.
+  Parent links involving removed-type items are detached before delete/migrate.
 - Leaf items cannot have children, ensuring hierarchy integrity.

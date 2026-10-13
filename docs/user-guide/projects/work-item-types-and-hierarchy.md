@@ -60,34 +60,76 @@ When creating or editing work items:
 
 ---
 
-## 3. Mandatory Type Behavior & Fallback to Issue
+## 3. Removing types that already have work items
 
 In ALICE, work items have a **mandatory** type field in the database.
 
-When an administrator or project manager removes an active type from a project:
+When an administrator or project manager removes an active type from a project
+and items of that type still exist (active **or** archived):
 
-1. **Automatic Fallback**: Any existing work items in that project with the removed type are automatically reassigned to **`Issue`** (the leaf type).
-2. **Hierarchy Pruning**: Since `Issue` cannot have subtasks, any children of the migrated items have their parent link cleared (`parent_id = null`).
-3. **Invalid Link Cleanup**: Any parent-child relationship that no longer conforms to the project's active hierarchy is unlinked to avoid orphan or cycle errors.
+1. **Save is blocked** until you choose a strategy for each affected type.
+2. A conflict dialog lists the work items under each removed type (collapsible
+   groups, similar to resolving merge conflicts).
+3. For each type, choose one of:
+   - **Delete permanently** — hard-deletes those work items (archive is not
+     offered, because restore would reintroduce a disallowed type).
+   - **Convert to…** — migrates them to one of the types that remain enabled.
+4. **Detach first** — before delete/migrate, ALICE clears parent links that
+   involve removed-type items (or that would be invalid after migration). That
+   avoids hierarchy loops when several types are removed together (for example
+   Epic and Story in one save).
+5. When a removed type is still the allowed child of a kept parent type, the
+   dialog warns that those parent→child links will be unlinked.
+
+If no work items use the removed types, the allowed-types list saves without the
+dialog.
 
 ---
 
-## 4. Restoring Removed Types in Project Settings
+## 3b. Changing type on a single work item with subtasks
+
+When you change the type of a work item that still has direct subtasks:
+
+1. ALICE asks how to proceed (default: **unlink subtasks, then change type**).
+2. Confirming detaches those children (`parent_id` cleared) and applies the new
+   type. If the new type cannot keep its current parent, that parent link is
+   cleared as well.
+3. You can cancel and unlink subtasks yourself first, then change the type.
+
+Leaf items (no children) change type without this prompt.
+
+---
+
+## 4. Restoring Removed Types on the Types Tab
 
 Managers and Admins can update allowed work-item types at any time:
 
-1. Open the project workspace and select the **Settings** tab (`/projects/[id]?tab=settings`).
+1. Open the project workspace and select the **Types** tab (`/projects/[id]?tab=types`).
 2. In the **Allowed Work-Item Types** card:
    - Check or uncheck permitted types.
-   - If removing a type that currently has work items, a warning alert explains that affected items will fall back to `Issue`.
-3. Select **Save Settings**.
+   - If removing a type that currently has work items, a warning alert explains that those items must be deleted or converted when you save.
+3. Select **Save Types**. When items still use a removed type, complete the conflict dialog (delete or convert each type).
 4. **Restoring a Type**:
    - Re-enabling a previously removed type allows it to be used for new work items immediately.
-   - **Important**: Restoring a type does **not** retroactively convert items that previously fell back to `Issue` back to their old type.
+   - **Important**: Restoring a type does **not** retroactively change items that were deleted or converted when the type was removed.
 
 ---
 
-## 5. Jira Import & Hierarchy Mapping
+## 5. Sprint planning and parent–child items
+
+Work items with a **parent** inherit that parent’s sprint (Jira-style):
+
+- On **work item details**, Sprint is read-only text: the sprint name or **Backlog**.
+- In **create/edit forms** and the **backlog** sheet, you cannot assign a different sprint while a parent is linked.
+- Moving the **parent** into or out of a sprint updates all descendants automatically.
+
+To plan a child in a different sprint, remove the parent link or use a separate top-level work item instead of a subtask.
+
+Sprint names cannot be **Backlog** (case-insensitive) — that label is reserved for unscheduled work.
+
+---
+
+## 6. Jira Import & Hierarchy Mapping
 
 When importing issues from Jira into ALICE:
 
@@ -104,13 +146,13 @@ When importing issues from Jira into ALICE:
 5. Select **Start Import**:
    - Issues are imported with their mapped types.
    - Parent-child links are established conforming strictly to the configured target hierarchy.
-   - The custom hierarchy is saved in the project configuration, and an indicator badge in **Settings** confirms custom hierarchy is active.
+   - The custom hierarchy is saved in the project configuration, and an indicator badge on **Types** confirms custom hierarchy is active.
 
 ---
 
-## Related Documentation
+## 7. Related Documentation
 
 - [User Testing Guide](./work-item-types-testing.md)
-- [Project Settings](./project-settings.md)
+- [Project types](./project-settings.md)
 - [Create a Project](./create-project.md)
 - [Project Integrations](./project-integrations.md)

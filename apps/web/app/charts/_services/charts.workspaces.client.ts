@@ -13,12 +13,12 @@ export {
 } from '@/app/charts/_helpers/charts-workspace-map';
 
 export async function listChartsFromApi(params?: {
-  readonly scope?: 'owned' | 'shared';
+  readonly scope?: 'owned' | 'shared' | 'dashboard';
   readonly status?: 'active' | 'archived';
 }): Promise<ChartApiRow[]> {
   const search = new URLSearchParams();
-  if (params?.scope === 'shared') {
-    search.set('scope', 'shared');
+  if (params?.scope === 'shared' || params?.scope === 'dashboard') {
+    search.set('scope', params.scope);
   }
   if (params?.status) {
     search.set('status', params.status);

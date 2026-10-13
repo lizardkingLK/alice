@@ -126,6 +126,19 @@ Job: `sonar_quality_gate` in `.github/workflows/deploy.yml`
 
 IDE settings mirror exclusions via `sonarlint.analyzerProperties` in `.vscode/settings.json`.
 
+## Agent skills (Cursor)
+
+Agents do **not** auto-run SonarCloud. After source edits they should **offer**
+an explicit prescan (see `.cursor/rules/07-qa-dev-member.mdc`):
+
+| Command                      | Skill                                       | Use when                                                                                        |
+| ---------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `/sonar-new-code-prescan`    | `.cursor/skills/sonar-new-code-prescan/`    | Default — duplication + recurring TypeScript smells; can pull open PR issues via SonarCloud API |
+| `/sonar-duplication-prescan` | `.cursor/skills/sonar-duplication-prescan/` | Narrow chase of a duplication % gate only                                                       |
+
+Agents must not open the IDE browser for Sonar unless you ask; prefer
+`https://sonarcloud.io/api/issues/search?...` for PR issue lists.
+
 ## Relationship to ESLint `base.js`
 
 ```javascript

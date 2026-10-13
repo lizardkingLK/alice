@@ -37,7 +37,7 @@ type ChartsStatusPiePreviewProps = {
   readonly loading?: boolean;
   readonly emptyMessage?: string;
   readonly totalLabel?: string;
-  /** Pie (solid), donut, or horizontal bar; defaults to donut. */
+  /** Pie (solid), donut, horizontal bar, or vertical column; defaults to donut. */
   readonly pieVariant?: ChartPieVariant;
   /** Currently selected slice key (legend / pie toggle). */
   readonly selectedSliceKey?: string | null;
@@ -151,6 +151,7 @@ function ChartsPieLegendSwatchRow({
   entry: ChartsStatusPieSlice;
   showValueAs: 'value' | 'percent';
 }>) {
+  const metric = formatSliceMetric(entry, showValueAs);
   return (
     <>
       <span
@@ -158,9 +159,12 @@ function ChartsPieLegendSwatchRow({
         style={{ backgroundColor: entry.swatch }}
         aria-hidden
       />
-      <TruncatedText className="text-foreground max-w-full min-w-0">
-        {`${entry.label}: ${formatSliceMetric(entry, showValueAs)}`}
+      <TruncatedText className="text-foreground min-w-0 flex-1">
+        {entry.label}
       </TruncatedText>
+      <span className="text-muted-foreground shrink-0 tabular-nums">
+        {`: ${metric}`}
+      </span>
     </>
   );
 }
@@ -383,6 +387,7 @@ function ChartsStatusBarPane({
   data,
   config,
   isRoomy,
+  orientation,
   selectedSliceKey,
   sliceInteractive,
   onHoverStatus,
@@ -391,6 +396,8 @@ function ChartsStatusBarPane({
   data: readonly ChartsStatusPieSlice[];
   config: ChartConfig;
   isRoomy: boolean;
+  /** `bar` = horizontal bars; `column` = vertical columns. */
+  orientation: 'bar' | 'column';
   selectedSliceKey: string | null;
   sliceInteractive: boolean;
   // eslint-disable-next-line no-unused-vars
@@ -398,6 +405,7 @@ function ChartsStatusBarPane({
   // eslint-disable-next-line no-unused-vars
   onSliceChartKey: (chartKey: string) => void;
 }>) {
+  const isColumn = orientation === 'column';
   return (
     <div className="relative h-full min-h-0 w-full max-w-full min-w-0 flex-1 self-stretch">
       <ChartViewport
@@ -406,34 +414,57 @@ function ChartsStatusBarPane({
         chartClassName="aspect-auto! h-full w-full"
       >
         <BarChart
-          layout="vertical"
+          layout={isColumn ? 'horizontal' : 'vertical'}
           data={[...data]}
           margin={{
-            left: 4,
+            left: isColumn ? 8 : 4,
             right: 12,
             top: 8,
-            bottom: 4,
+            bottom: isColumn ? 8 : 4,
           }}
           onMouseLeave={() => {
             onHoverStatus(null);
           }}
         >
-          <CartesianGrid horizontal={false} />
-          <XAxis
-            type="number"
-            tickLine={false}
-            axisLine={false}
-            allowDecimals={false}
-            tickMargin={6}
-          />
-          <YAxis
-            type="category"
-            dataKey="label"
-            width={isRoomy ? 104 : 80}
-            tickLine={false}
-            axisLine={false}
-            tickMargin={4}
-          />
+          <CartesianGrid horizontal={isColumn} vertical={!isColumn} />
+          {isColumn ? (
+            <>
+              <XAxis
+                type="category"
+                dataKey="label"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={6}
+                interval={0}
+              />
+              <YAxis
+                type="number"
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+                tickMargin={4}
+                width={isRoomy ? 36 : 28}
+              />
+            </>
+          ) : (
+            <>
+              <XAxis
+                type="number"
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+                tickMargin={6}
+              />
+              <YAxis
+                type="category"
+                dataKey="label"
+                width={isRoomy ? 104 : 80}
+                tickLine={false}
+                axisLine={false}
+                tickMargin={4}
+              />
+            </>
+          )}
           <ChartTooltip
             cursor={{ fill: 'var(--muted)', opacity: 0.35 }}
             content={<ChartTooltipContent hideLabel nameKey="status" />}
@@ -441,7 +472,7 @@ function ChartsStatusBarPane({
           <Bar
             dataKey="count"
             name="count"
-            radius={[0, 6, 6, 0]}
+            radius={isColumn ? [6, 6, 0, 0] : [0, 6, 6, 0]}
             maxBarSize={isRoomy ? 28 : 20}
             cursor={sliceInteractive ? 'pointer' : undefined}
             shape={<ChartsStatusBarShape selectedSliceKey={selectedSliceKey} />}
@@ -497,6 +528,7 @@ export function ChartsStatusPiePreview({
 
   const sliceInteractive = Boolean(onSliceClick);
   const isBar = pieVariant === 'bar';
+  const isColumn = pieVariant === 'column';
   const isDonut = pieVariant === 'donut';
   const selectedEntry = findEntryByKey(data, selectedSliceKey);
   const hoveredEntry = findEntryByChartStatus(data, hoveredChartStatus);
@@ -530,11 +562,12 @@ export function ChartsStatusPiePreview({
         className
       )}
     >
-      {isBar ? (
+      {isBar || isColumn ? (
         <ChartsStatusBarPane
           data={data}
           config={config}
           isRoomy={isRoomy}
+          orientation={isColumn ? 'column' : 'bar'}
           selectedSliceKey={selectedSliceKey}
           sliceInteractive={sliceInteractive}
           onHoverStatus={setHoveredChartStatus}
@@ -558,7 +591,7 @@ export function ChartsStatusPiePreview({
         data={data}
         isRoomy={isRoomy}
         legendHeightClass={isRoomy ? 'h-56' : 'h-40'}
-        legendWidthClass={isRoomy ? 'w-44' : 'w-36'}
+        legendWidthClass={isRoomy ? 'w-52' : 'w-44'}
         selectedSliceKey={selectedSliceKey}
         hoveredChartStatus={hoveredChartStatus}
         total={total}

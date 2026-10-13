@@ -50,7 +50,7 @@ export function BacklogPanel({
   onDrop,
 }: Readonly<BacklogPanelProps>) {
   return (
-    <Card className="border-border/70 gap-0 overflow-visible py-0 shadow-sm">
+    <Card className="border-border/70 gap-0 overflow-visible py-0 shadow-sm ring-0">
       <div className="bg-muted/20 hover:bg-muted/40 border-border/50 flex flex-col justify-between gap-3 rounded-t-xl border-b px-4 py-3 transition-colors sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
           <Button

@@ -9,6 +9,7 @@ import {
   ComboboxItem,
   ComboboxList,
 } from '@repo/ui/components/ui/combobox';
+import { Loader2 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 
 export type SearchableSelectOption = {
@@ -28,6 +29,8 @@ type SearchableSelectProps = {
   readonly disabled?: boolean;
   readonly className?: string;
   readonly emptyText?: string;
+  /** When true, show a spinner in the empty state instead of `emptyText`. */
+  readonly isLoading?: boolean;
   readonly id?: string;
   readonly showClear?: boolean;
 };
@@ -50,6 +53,7 @@ export function SearchableSelect({
   disabled,
   className,
   emptyText = 'No results found.',
+  isLoading = false,
   id,
   showClear = false,
 }: SearchableSelectProps) {
@@ -101,7 +105,16 @@ export function SearchableSelect({
         disabled={disabled}
       />
       <ComboboxContent className="w-(--anchor-width)">
-        <ComboboxEmpty>{emptyText}</ComboboxEmpty>
+        <ComboboxEmpty>
+          {isLoading ? (
+            <span className="text-muted-foreground flex items-center justify-center gap-2 py-1">
+              <Loader2 className="size-3.5 animate-spin" aria-hidden />
+              Loading…
+            </span>
+          ) : (
+            emptyText
+          )}
+        </ComboboxEmpty>
         <ComboboxList>
           {(item) => (
             <ComboboxItem key={item.value} value={item}>

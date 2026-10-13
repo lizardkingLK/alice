@@ -9,11 +9,7 @@ import React, {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChatRoles, type ChatAttachmentWire } from '@repo/types';
-import type {
-  ChatMessage,
-  ActionItem,
-  ChatClientProps,
-} from './chat-client.types';
+import type { ChatMessage, ChatClientProps } from './chat-client.types';
 import {
   sendChatMessage,
   deleteConversation,
@@ -22,15 +18,15 @@ import {
 } from '../_services/chat.mutations.client';
 import { deleteChatAttachment } from '../_services/chat-attachments.client';
 import type { PendingChatAttachment } from './chat-attachment-tiles';
-import {
-  revalidateAfterChatActions,
-  type ChatMutationActionType,
-} from '@/lib/cache/revalidate-after-chat';
 import { loadConversationHistory } from './chat-client-bootstrap';
 import { writeChatHistorySidebarOpenCookie } from '@/app/chat/_helpers/chat-history-sidebar-storage';
 import { revalidateChatConversations } from '../_services/chat.reads.actions.server';
 import { ChatClientFrame } from '@/app/chat/_components/chat-client-frame';
 import { useWorkspaceChatModels } from '@/app/chat/_components/use-workspace-chat-models';
+import {
+  useWorkflowProposalDismiss,
+  WorkflowProposalDismissProvider,
+} from '@/app/chat/_components/workflow-proposal-dismiss-context';
 import { isAdmin } from '@/lib/rbac';
 import { buildChatHref } from '../_helpers/chat-url';
 import {
@@ -48,11 +44,21 @@ import {
   resolveActiveConversationTitle,
   resolveChatEmptyGate,
   uploadSelectedChatFiles,
+  syncChatMutationSideEffects,
 } from './chat-client-support';
 
-export function ChatClient({
+export function ChatClient(props: Readonly<ChatClientProps>) {
+  return (
+    <WorkflowProposalDismissProvider>
+      <ChatClientInner {...props} />
+    </WorkflowProposalDismissProvider>
+  );
+}
+
+function ChatClientInner({
   variant = 'page',
   onClose,
+  viewContext = null,
   currentUserName,
   currentUserEmail = null,
   currentUserImageUrl,
@@ -65,6 +71,7 @@ export function ChatClient({
   currentUserId,
   currentUserRole,
 }: Readonly<ChatClientProps>) {
+  const { dismissProject } = useWorkflowProposalDismiss();
   const router = useRouter();
   const isPage = variant === 'page';
   const canManageChatModels = isAdmin(currentUserRole);
@@ -135,14 +142,17 @@ export function ChatClient({
   const handleNewChat = useCallback(
     (force = false) => {
       if (isConversationBusy && !force) return;
-      router.replace(buildChatHref({ agentId: boundAgentId }));
+      // Full-page chat syncs the URL; docked Alice stays on the current page.
+      if (isPage) {
+        router.replace(buildChatHref({ agentId: boundAgentId }));
+      }
       setActiveConversationId(undefined);
       setMessages([]);
       setPendingAttachments([]);
       setError(null);
       setHasStartedEmptyConversation(true);
     },
-    [boundAgentId, isConversationBusy, router]
+    [boundAgentId, isConversationBusy, isPage, router]
   );
 
   useChatConversationsRealtime({
@@ -174,12 +184,14 @@ export function ChatClient({
     if (isConversationBusy) return;
     if (id === activeConversationId && messages.length > 0) return;
 
-    router.replace(
-      buildChatHref({
-        conversationId: id,
-        agentId: boundAgentId,
-      })
-    );
+    if (isPage) {
+      router.replace(
+        buildChatHref({
+          conversationId: id,
+          agentId: boundAgentId,
+        })
+      );
+    }
 
     setIsLoadingHistory(true);
     setActiveConversationId(id);
@@ -355,7 +367,8 @@ export function ChatClient({
         history,
         activeConversationId,
         selectedIntegrationId,
-        attachmentsToSend.length > 0 ? attachmentsToSend : undefined
+        attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
+        viewContext
       );
 
       applySuccessfulChatResponse({
@@ -367,18 +380,15 @@ export function ChatClient({
         setConversations,
         hydratedRef,
         router,
+        syncUrl: isPage,
       });
       void revalidateChatConversations();
 
-      if (response.actions && response.actions.length > 0) {
-        const mutationActionTypes = response.actions
-          .map((action: ActionItem) => action.type)
-          .filter(
-            (type): type is ChatMutationActionType => type !== 'configure_board'
-          );
-        await revalidateAfterChatActions(mutationActionTypes);
-        router.refresh();
-      }
+      await syncChatMutationSideEffects({
+        actions: response.actions,
+        dismissProject,
+        router,
+      });
     } catch (err: unknown) {
       console.error('Chat error:', err);
       const message =

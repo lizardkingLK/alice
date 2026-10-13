@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback } from 'react';
 import { fetchProjectMembersForForm } from '@/lib/form-read-actions';
 import type { WorkItemMemberLike } from '@/app/work-items/_helpers/work-item-member';
+import { useProjectResourceOptions } from '@/app/work-items/_hooks/use-project-resource-options';
 
 export type UseProjectMembersArgs = {
   readonly projectId: string;
@@ -9,11 +10,16 @@ export type UseProjectMembersArgs = {
   readonly lockAssignee?: boolean;
   /**
    * When true, skip network fetch and keep using the provided `projectMembers`
-   * list (e.g. charts mock board).
+   * list (e.g. charts mock board, dialog bootstrap).
    */
   readonly preferProvidedMembers?: boolean;
   // eslint-disable-next-line no-unused-vars
   readonly onAssigneeChange: (assigneeId: string | null) => void;
+};
+
+export type UseProjectMembersResult = {
+  readonly members: readonly WorkItemMemberLike[];
+  readonly isLoading: boolean;
 };
 
 export function useProjectMembers({
@@ -23,87 +29,26 @@ export function useProjectMembers({
   lockAssignee = false,
   preferProvidedMembers = false,
   onAssigneeChange,
-}: UseProjectMembersArgs) {
-  const [currentMembers, setCurrentMembers] = useState<
-    readonly WorkItemMemberLike[]
-  >(() => {
-    if (!projectId) {
-      return projectMembers;
+}: UseProjectMembersArgs): UseProjectMembersResult {
+  const fetchOptions = useCallback(async (id: string) => {
+    try {
+      return await fetchProjectMembersForForm(id);
+    } catch (err) {
+      console.error('Failed to fetch project members:', err);
+      throw err;
     }
-    if (preferProvidedMembers) {
-      return projectMembers;
-    }
-    if (assigneeId) {
-      const initialAssignee = projectMembers.find((m) => m.id === assigneeId);
-      if (initialAssignee) {
-        return [initialAssignee];
-      }
-    }
-    return [];
+  }, []);
+
+  const { options, isLoading } = useProjectResourceOptions({
+    projectId,
+    provided: projectMembers,
+    selectedId: assigneeId,
+    preferProvided: preferProvidedMembers,
+    clearWhenMissing: !lockAssignee,
+    onSelectionChange: onAssigneeChange,
+    fetchOptions,
+    noProjectOptions: projectMembers,
   });
 
-  const assigneeIdRef = useRef(assigneeId);
-  useEffect(() => {
-    assigneeIdRef.current = assigneeId;
-  }, [assigneeId]);
-
-  const onAssigneeChangeRef = useRef(onAssigneeChange);
-  useEffect(() => {
-    onAssigneeChangeRef.current = onAssigneeChange;
-  }, [onAssigneeChange]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    if (preferProvidedMembers) {
-      setCurrentMembers(projectMembers);
-      const latestAssigneeId = assigneeIdRef.current;
-      if (
-        latestAssigneeId &&
-        !lockAssignee &&
-        !projectMembers.some((m) => m.id === latestAssigneeId)
-      ) {
-        onAssigneeChangeRef.current(null);
-      }
-      return () => {
-        isMounted = false;
-      };
-    }
-
-    if (projectId) {
-      fetchProjectMembersForForm(projectId)
-        .then((mapped) => {
-          if (!isMounted) return;
-          setCurrentMembers(mapped);
-
-          const latestAssigneeId = assigneeIdRef.current;
-          if (
-            latestAssigneeId &&
-            !lockAssignee &&
-            !mapped.some((m) => m.id === latestAssigneeId)
-          ) {
-            onAssigneeChangeRef.current(null);
-          }
-        })
-        .catch((err) => {
-          console.error('Failed to fetch project members:', err);
-        });
-    } else {
-      setCurrentMembers(projectMembers);
-
-      const latestAssigneeId = assigneeIdRef.current;
-      if (
-        latestAssigneeId &&
-        !lockAssignee &&
-        !projectMembers.some((m) => m.id === latestAssigneeId)
-      ) {
-        onAssigneeChangeRef.current(null);
-      }
-    }
-    return () => {
-      isMounted = false;
-    };
-  }, [projectId, projectMembers, lockAssignee, preferProvidedMembers]);
-
-  return currentMembers;
+  return { members: options, isLoading };
 }

@@ -57,7 +57,7 @@ describe('updateChartWidgetLabelField', () => {
     expect(next[0]?.labelField).toBe('priority');
   });
 
-  it('clears sliceColors when resetting Labels to status', () => {
+  it('clears sliceColors when resetting Labels to category', () => {
     const instances: ChartBoardWidgetInstance[] = [
       {
         instanceId: 'w1',
@@ -67,7 +67,7 @@ describe('updateChartWidgetLabelField', () => {
       },
     ];
 
-    const next = updateChartWidgetLabelField('w1', 'status', instances);
+    const next = updateChartWidgetLabelField('w1', 'category', instances);
     expect(next[0]?.sliceColors).toBeUndefined();
     expect(next[0]?.labelField).toBeUndefined();
   });

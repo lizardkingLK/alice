@@ -5,8 +5,10 @@ import { expectedUpdatedAtSchema } from '../../optimistic-lock.js';
 import { projectRelationSelect } from './projects.js';
 import { userRelationSelect } from '../../users.js';
 import { WORK_ITEM_PRIORITIES } from '../../work-item-priorities.js';
-import { WORK_ITEM_STATUSES } from '../../work-item-status.js';
-import type { WorkItemStatus } from '../../work-item-status.js';
+import {
+  WORK_ITEM_STATUSES,
+  type WorkItemStatus,
+} from '../../work-item-status.js';
 import { WORK_ITEM_TYPES, type WorkItemType } from '../../work-item-types.js';
 import {
   coerceLabelsFormField,
@@ -15,6 +17,7 @@ import {
   WorkItemLabelsValidationError,
 } from '../../work-item-labels.js';
 import { emptyToUndefined } from './query-preprocess.js';
+import { workflowResolutionPayloadSchema } from './workflow-resolution.js';
 
 /**
  * Prisma `select` objects for unused Express work-item GETs.
@@ -44,7 +47,7 @@ export const WORK_ITEM_REPORTER_POSTGREST_SELECT = userRelationSelect(
  * Field list must stay aligned with `workItemListSelect` keys.
  */
 export const WORK_ITEM_LIST_POSTGREST_COLUMNS =
-  'id, project_id, sprint_id, parent_id, title, type, priority, labels, assignee_id, reporter_id, due_date, story_points, status, board_column_id, record_status, done_at, created_by, created_at, updated_by, updated_at, jira_issue_key' as const;
+  'id, project_id, sprint_id, parent_id, title, type, priority, labels, assignee_id, reporter_id, due_date, story_points, status, state, board_column_id, record_status, done_at, created_by, created_at, updated_by, updated_at, jira_issue_key' as const;
 
 /** PostgREST select for list/board reads (optional TipTap description). */
 export function workItemListPostgrestSelect(
@@ -90,6 +93,7 @@ export const workItemListSelect = {
   due_date: true,
   story_points: true,
   status: true,
+  state: true,
   board_column_id: true,
   record_status: true,
   done_at: true,
@@ -488,17 +492,29 @@ export const patchWorkItemBodySchema = workItemCoreObject
       .trim()
       .min(1, 'Board column ID is required')
       .nullable(),
+    /**
+     * When changing type on a parent that still has children, set true to
+     * unlink direct children (`parent_id = null`) before applying the new type.
+     */
+    detachChildren: z.boolean().optional(),
+    resolution: workflowResolutionPayloadSchema.optional(),
   })
   .partial()
   .extend({
     expectedUpdatedAt: expectedUpdatedAtSchema,
   })
   .refine(
-    (data) => Object.keys(data).some((key) => key !== 'expectedUpdatedAt'),
+    (data) =>
+      Object.keys(data).some(
+        (key) => key !== 'expectedUpdatedAt' && key !== 'detachChildren'
+      ),
     {
       message: 'At least one field must be provided for update',
     }
   );
+
+/** API `code` when type change is blocked because the item still has children. */
+export const HIERARCHY_TYPE_CHANGE_CODE = 'HIERARCHY_TYPE_CHANGE' as const;
 
 export const patchWorkItemStatusBodySchema = z.object({
   status: workItemStatusSchema,
@@ -508,6 +524,7 @@ export const patchWorkItemStatusBodySchema = z.object({
     .min(1, 'Board column ID is required')
     .nullable()
     .optional(),
+  resolution: workflowResolutionPayloadSchema.optional(),
   expectedUpdatedAt: expectedUpdatedAtSchema,
 });
 
@@ -548,6 +565,42 @@ export type WorkItemUpdateBody = CreateWorkItemBody & {
 
 export type WorkItemMutationDescriptionParseMode = 'strict' | 'lenient';
 
+function preprocessDescriptionField(
+  processed: Record<string, unknown>,
+  description: string,
+  descriptionParseMode: WorkItemMutationDescriptionParseMode
+): boolean {
+  const raw = description.trim();
+  if (!raw) {
+    delete processed.description;
+    return true;
+  }
+
+  try {
+    processed.description = JSON.parse(raw);
+    return true;
+  } catch {
+    if (descriptionParseMode === 'lenient') {
+      processed.description = description;
+      return true;
+    }
+    return false;
+  }
+}
+
+function preprocessDetachChildrenField(
+  processed: Record<string, unknown>,
+  raw: unknown
+): void {
+  if (raw === true || raw === 'true' || raw === '1') {
+    processed.detachChildren = true;
+    return;
+  }
+  if (raw === false || raw === 'false' || raw === '0' || raw === '') {
+    delete processed.detachChildren;
+  }
+}
+
 /**
  * Normalize FormData / JSON bodies before Zod parse.
  * - `strict` (PATCH): invalid description JSON → `null`
@@ -561,24 +614,22 @@ export function preprocessWorkItemMutationBody(
   const processed = { ...body };
 
   if (typeof body.description === 'string') {
-    const raw = body.description.trim();
-    if (!raw) {
-      delete processed.description;
-    } else {
-      try {
-        processed.description = JSON.parse(raw);
-      } catch {
-        if (descriptionParseMode === 'lenient') {
-          processed.description = body.description;
-        } else {
-          return null;
-        }
-      }
+    const ok = preprocessDescriptionField(
+      processed,
+      body.description,
+      descriptionParseMode
+    );
+    if (!ok) {
+      return null;
     }
   }
 
   if ('labels' in body) {
     processed.labels = coerceLabelsFormField(body.labels);
+  }
+
+  if ('detachChildren' in body) {
+    preprocessDetachChildrenField(processed, body.detachChildren);
   }
 
   return processed;

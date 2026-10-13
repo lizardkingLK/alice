@@ -1,6 +1,6 @@
 # Work-item activity feed
 
-Status: **Plan**
+Status: **Living**
 
 Timeline of field and related-entity changes on a work item, shown on
 `/work-items/[id]` **alongside** Discussion (comments). Complements the
@@ -12,8 +12,10 @@ Related:
 - Attachments: [ATTACHMENTS.md](./ATTACHMENTS.md)
 - Audit columns: [AUDIT_COLUMNS.md](../../database/AUDIT_COLUMNS.md)
 - Notifications (inbox): `notifications` model + `apps/web/app/dashboard/_components/dashboard-notifications.tsx`
-- Schema today: `work_items`, `comments`, `attachments` in `packages/db/prisma/schema.prisma`
+- Schema today: `work_items`, `comments`, `attachments`, `activities` in `packages/db/prisma/schema.prisma`
 - Novu removed — realtime is Supabase client channels + table writes
+- Workflow plan (transitions / resolutions on this feed):
+  [../workflow/WORKFLOW.md](../workflow/WORKFLOW.md)
 
 ---
 
@@ -46,7 +48,7 @@ Related:
 | Audience                | One user (`user_id`)                    | Anyone viewing the work item                      |
 | Purpose                 | “Something needs your attention”        | “What happened on this item”                      |
 | Examples                | Assigned to you; mentioned in a comment | Status → Done; assignee changed; attachment added |
-| Table (today / planned) | `notifications` (exists)                | `activities` (planned)                            |
+| Table (today / planned) | `notifications` (exists)                | `activities` (exists)                             |
 | UI                      | Header inbox                            | Work-item details (with Discussion)               |
 
 Creating an activity row does **not** automatically create a notification.
@@ -77,10 +79,20 @@ Optional: standard `created_by` if we want consistency with [AUDIT_COLUMNS.md](.
 
 ```text
 created | field_changed | attachment_added | attachment_removed | commented
+| workflow_transition | escalation_resolved
 ```
 
 `field_changed` uses `field` + `old_value` / `new_value`. Side effects that are
 not a single column on `work_items` use dedicated actions + `meta`.
+
+Workflow extensions (when [Workflow](../workflow/) Step 5 lands):
+
+| `action`              | `meta` highlights                                  |
+| --------------------- | -------------------------------------------------- |
+| `workflow_transition` | `fromStateId`, `toStateId`, `workflowId`, `edgeId` |
+| `escalation_resolved` | Preset id, snapshot of fields/outcome labels       |
+
+Do **not** store these in `work_item_worklogs` (time tracking only).
 
 Indexes:
 
@@ -188,6 +200,12 @@ Today `CommentsFeed` renders a heading like `Discussion ({stats.active})`
    button).
 4. Active tab shows either the existing comments UI or the activity list.
 5. Empty states stay per tab (“No comments yet” / “No activity yet”).
+6. **Activity layouts:** when Activity is active, a layout dropdown (same pattern
+   as board layout) offers **Cards** (default bordered list), **Timeline**
+   (shared `@repo/ui` Timeline compound), and **Table** (When / Actor /
+   Details). Preference is stored per work item in `localStorage`
+   (`alice:work-item-activity-layout:v1:<workItemId>`). All layouts share
+   `describeActivity` copy and newest-first sort.
 
 Prefer shared tabs from `@repo/ui` if a Tabs primitive already exists; otherwise
 compose with existing button/toggle patterns without inventing a one-off chrome.
@@ -257,16 +275,28 @@ Realtime (optional v1):
 
 ---
 
-## Open decisions
+## Locked decisions
 
-| Topic          | Candidates                      | Notes                                                                        |
-| -------------- | ------------------------------- | ---------------------------------------------------------------------------- |
-| UI layout      | Tabs (locked)                   | Heading `Discussion (n)` → tab bar                                           |
-| Fullscreen     | Match description maximize      | Icon button (`Maximize2` / `Minimize2`) on **right** of tab bar row          |
-| Tab counts     | Show counts vs labels only      | Optional; can mirror old `(n)` on Discussion tab                             |
-| Comment events | Activity row vs Discussion-only | Prefer Discussion-only in v1 to avoid duplicate noise                        |
-| Value storage  | Raw ids vs display strings      | Prefer store ids + resolve labels on read; fallback string for deleted users |
-| Writers        | API-only vs API + trigger       | Prefer API-first                                                             |
-| Description    | Log opaque “updated” vs omit    | Prefer opaque “description updated”                                          |
+| Topic          | Decision                                                               |
+| -------------- | ---------------------------------------------------------------------- |
+| UI layout      | Tabs: Discussion \| Activity \| Work Log (tab bar is section chrome)   |
+| Fullscreen     | Maximize/minimize whole section (`Maximize2` / `Minimize2`, `ml-auto`) |
+| Tab counts     | Labels only in v1 (no badges)                                          |
+| Comment events | Discussion-only — no `commented` activity rows in v1                   |
+| Value storage  | Store ids / raw values; resolve actor labels on read                   |
+| Writers        | API-first (`ActivitiesService`); no triggers in v1                     |
+| Description    | Opaque “description updated”                                           |
+| Realtime       | Deferred (workflow N8)                                                 |
+| Escalation     | `escalation_resolved` action reserved; writer lands in Workflow Step 6 |
 
-Lock remaining items in this doc’s **Locked decisions** section when implementation starts.
+## As-built (Step 5)
+
+| Piece          | Location                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------------ |
+| Schema         | `activities` + `ActivityAction` — migration `add_activities`                                     |
+| Types / select | `packages/types/src/work-item-activity.ts`                                                       |
+| Writers        | `ActivitiesRepository` / `ActivitiesService`; injected into work-items + attachments services    |
+| Events         | `created`, `field_changed`, `workflow_transition`, `attachment_added` / `_removed`               |
+| RSC reader     | `getWorkItemActivities` → details `Promise.all`                                                  |
+| UI             | `WorkItemActivityFeed` layouts (cards / timeline / table); `@repo/ui` Timeline; section maximize |
+| Tests          | `apps/api/tests/activities/`, `work-items.activity.test.ts`, web feed/tabs tests                 |

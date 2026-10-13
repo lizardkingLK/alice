@@ -15,6 +15,8 @@ export interface RawSearchParams {
   requestId?: string;
   project?: string;
   sprint?: string;
+  /** Active board workflow (`/board?workflow=`). */
+  workflow?: string;
   type?: string;
   assignee?: string;
   /** JSON array of exact label strings, e.g. `["Mobile","auth"]`. */
@@ -31,6 +33,8 @@ export interface RawSearchParams {
   showPopup?: string;
   /** Integration identifier to open in settings integrations view (e.g. `github`). */
   integration?: string | string[];
+  /** Dashboard: show legacy mock overview grid (`1` / `true`). */
+  mockOverview?: string;
 }
 
 export interface ParsedStandardParams {
@@ -177,10 +181,18 @@ export type ProjectDetailsTab =
   | 'sprints'
   | 'integrations'
   | 'fields'
-  | 'board'
-  | 'settings';
+  | 'workflow'
+  | 'types';
 
 export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
+  // Legacy `settings` bookmarks resolve to the Types tab.
+  if (tab === 'settings' || tab === 'types') {
+    return 'types';
+  }
+  // Legacy Board designer bookmarks resolve to the Workflow designer.
+  if (tab === 'board') {
+    return 'workflow';
+  }
   if (
     tab === 'members' ||
     tab === 'teams' ||
@@ -188,8 +200,7 @@ export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
     tab === 'sprints' ||
     tab === 'integrations' ||
     tab === 'fields' ||
-    tab === 'board' ||
-    tab === 'settings'
+    tab === 'workflow'
   ) {
     return tab;
   }
@@ -202,14 +213,6 @@ export function parseTeamStatusFilter(
   if (value === 'archived') return 'archived';
   if (value === 'inactive') return 'inactive';
   return 'active';
-}
-
-export type BoardDesignerSection = 'columns' | 'rules';
-
-export function parseBoardDesignerSection(
-  value?: string | null
-): BoardDesignerSection {
-  return value === 'rules' ? 'rules' : 'columns';
 }
 
 export function parseManagerTabStatus(
@@ -233,6 +236,17 @@ export type BoardPageTab = 'board' | 'calendar';
 
 export function parseBoardPageTab(tab?: string | null): BoardPageTab {
   return tab === 'calendar' ? 'calendar' : 'board';
+}
+
+/** Active workflow on `/board?workflow=` (envelope projects only). */
+export function parseBoardWorkflowId(
+  workflow?: string | null
+): string | undefined {
+  if (typeof workflow !== 'string') {
+    return undefined;
+  }
+  const trimmed = workflow.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }
 
 /** Alice chat page tabs (`/chat?tab=`). Default `conversation` omits the query param. */

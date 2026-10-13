@@ -10,7 +10,7 @@ import {
 import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
 import type { ActionItem } from '@/app/chat/_components/chat-client.types';
-import { boardConfigSchema } from '@repo/types/api/v1';
+import { ChatProposeWorkflowPatchCard } from '@/app/chat/_components/chat-propose-workflow-patch-card';
 
 type ActionCardTone = 'emerald' | 'blue' | 'indigo';
 
@@ -41,14 +41,12 @@ function ActionCardFrame({
   children,
   href,
   linkLabel,
-  onLinkClick,
 }: Readonly<{
   tone: ActionCardTone;
   icon: LucideIcon;
   children: ReactNode;
-  href: string;
-  linkLabel: string;
-  onLinkClick?: () => void;
+  href?: string;
+  linkLabel?: string;
 }>) {
   const toneClass = ACTION_CARD_TONE_CLASS[tone];
 
@@ -63,16 +61,17 @@ function ActionCardFrame({
         <Icon className={cn('h-4 w-4', toneClass.icon)} />
         <span className="text-xs">{children}</span>
       </div>
-      <Link
-        href={href}
-        onClick={onLinkClick}
-        className={cn(
-          'text-[11px] underline transition-colors',
-          toneClass.link
-        )}
-      >
-        {linkLabel}
-      </Link>
+      {href && linkLabel ? (
+        <Link
+          href={href}
+          className={cn(
+            'text-[11px] underline transition-colors',
+            toneClass.link
+          )}
+        >
+          {linkLabel}
+        </Link>
+      ) : null}
     </div>
   );
 }
@@ -202,26 +201,34 @@ export function ChatExecutedActionCard({
         </ActionCardFrame>
       );
     case 'configure_board': {
-      const href = `/projects/${action.entity.projectId}?tab=board`;
+      // Historical board drafts — Board designer retired; Workflow is the config surface.
+      const href = `/projects/${action.entity.projectId}?tab=workflow`;
       return (
         <ActionCardFrame
           tone="indigo"
           icon={FolderKanban}
           href={href}
-          linkLabel="Open in Board Designer"
-          onLinkClick={() => {
-            const parsed = boardConfigSchema.safeParse(action.entity.config);
-            if (!parsed.success) return;
-            sessionStorage.setItem(
-              `board_draft_${action.entity.projectId}`,
-              JSON.stringify(parsed.data)
-            );
-          }}
+          linkLabel="Open Workflow designer"
         >
-          Board Draft Created: <strong>{action.entity.projectName}</strong>
+          Board draft (retired): <strong>{action.entity.projectName}</strong>
         </ActionCardFrame>
       );
     }
+    case 'propose_workflow_patch':
+      return <ChatProposeWorkflowPatchCard action={action} />;
+    case 'dismiss_workflow_patch':
+      return (
+        <ActionCardFrame tone="indigo" icon={FolderKanban}>
+          Workflow proposal dismissed for{' '}
+          <strong>{action.entity.projectName}</strong>
+          {action.entity.reason ? (
+            <>
+              {': '}
+              {action.entity.reason}
+            </>
+          ) : null}
+        </ActionCardFrame>
+      );
     default:
       return null;
   }

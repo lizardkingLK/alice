@@ -15,6 +15,12 @@ import { WorkItemFormModernDescription } from '@/app/work-items/_components/work
 import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels/work-item-labels-input';
 import { WorkItemPrioritySelect } from '@/app/work-items/_components/work-item-priority-select';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
+import {
+  classicSprintPlaceholder,
+  isOptionsLoadingEmpty,
+  loadingAwarePlaceholder,
+} from '@/app/work-items/_helpers/work-item-form-loading-placeholder';
+import { resolveSprintDisplayName } from '@/app/work-items/_helpers/work-item-sprint';
 
 export type WorkItemFormClassicFieldsProps = WorkItemFormSharedFieldProps & {
   readonly titleDefault?: string;
@@ -35,6 +41,10 @@ export function WorkItemFormClassicFields({
   availableTypes,
   projectId,
   assigneeId,
+  sprintId,
+  sprintOptions,
+  sprintOptionsLoading,
+  assigneeOptionsLoading,
   type,
   priority,
   parentId,
@@ -55,6 +65,8 @@ export function WorkItemFormClassicFields({
   labelsDefault = [],
   onProjectIdChange,
   onAssigneeIdChange,
+  onSprintIdChange,
+  lockSprintFromParent,
   onTypeChange,
   onPriorityChange,
   onParentIdChange,
@@ -189,14 +201,65 @@ export function WorkItemFormClassicFields({
           value={assigneeId}
           onValueChange={onAssigneeIdChange}
           disabled={lockAssignee}
-          placeholder="Search assignees…"
+          placeholder={loadingAwarePlaceholder(
+            isOptionsLoadingEmpty(
+              assigneeOptionsLoading,
+              projectMembers.length
+            ),
+            'Loading assignees…',
+            'Search assignees…'
+          )}
           options={projectMembers.map((member) => ({
             value: member.id,
             label: `${member.name} (${member.email})`,
           }))}
           emptyText="No matching assignees."
+          isLoading={isOptionsLoadingEmpty(
+            assigneeOptionsLoading,
+            projectMembers.length
+          )}
         />
         <input type="hidden" name="assignee_id" value={assigneeId} />
+      </div>
+
+      <div className="space-y-2 sm:col-span-2">
+        <Label htmlFor="sprint_id">Sprint</Label>
+        {lockSprintFromParent ? (
+          <>
+            <p className="text-sm font-medium">
+              {resolveSprintDisplayName(sprintId, sprintOptions)}
+            </p>
+            <input type="hidden" name="sprint_id" value={sprintId} />
+            <p className="text-muted-foreground text-xs">
+              Inherited from the parent work item.
+            </p>
+          </>
+        ) : (
+          <>
+            <SearchableSelect
+              id="sprint_id"
+              value={sprintId}
+              onValueChange={onSprintIdChange}
+              showClear
+              disabled={!projectId}
+              placeholder={classicSprintPlaceholder(
+                projectId,
+                sprintOptionsLoading,
+                sprintOptions.length
+              )}
+              options={sprintOptions.map((sprint) => ({
+                value: sprint.id,
+                label: sprint.name,
+              }))}
+              emptyText="No matching sprints."
+              isLoading={isOptionsLoadingEmpty(
+                sprintOptionsLoading,
+                sprintOptions.length
+              )}
+            />
+            <input type="hidden" name="sprint_id" value={sprintId} />
+          </>
+        )}
       </div>
 
       <div className="space-y-2 sm:col-span-2">

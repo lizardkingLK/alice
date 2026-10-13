@@ -5,6 +5,7 @@ import type {
 } from '@repo/types';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import type { User as DbUser } from '@/app/users/_services/users.mutations.client';
+import type { WorkItemSprintOption } from '@/app/work-items/_helpers/work-item-sprint';
 import type { SearchableSelectOption } from '@/components/searchable-select';
 
 export type WorkItemFormMember = Pick<DbUser, 'id' | 'name' | 'email'>;
@@ -18,6 +19,10 @@ export type WorkItemFormSharedFieldProps = {
   readonly availableTypes: readonly WorkItemType[];
   readonly projectId: string;
   readonly assigneeId: string;
+  readonly sprintId: string;
+  readonly sprintOptions: readonly WorkItemSprintOption[];
+  readonly sprintOptionsLoading: boolean;
+  readonly assigneeOptionsLoading: boolean;
   readonly type: string;
   readonly priority: WorkItemPriority;
   readonly parentId: string;
@@ -25,6 +30,8 @@ export type WorkItemFormSharedFieldProps = {
   readonly parentOptionsLoading: boolean;
   readonly parentTypeLabel: string | null;
   readonly lockParent: boolean;
+  /** Child work items inherit sprint from parent (Jira-style). */
+  readonly lockSprintFromParent: boolean;
   readonly lockProject: boolean;
   readonly lockAssignee: boolean;
   readonly typeLocked: boolean;
@@ -34,6 +41,8 @@ export type WorkItemFormSharedFieldProps = {
   readonly onProjectIdChange: (value: string) => void;
   // eslint-disable-next-line no-unused-vars -- controlled setter
   readonly onAssigneeIdChange: (value: string) => void;
+  // eslint-disable-next-line no-unused-vars -- controlled setter
+  readonly onSprintIdChange: (value: string) => void;
   // eslint-disable-next-line no-unused-vars -- controlled setter
   readonly onTypeChange: (value: string) => void;
   // eslint-disable-next-line no-unused-vars -- controlled setter

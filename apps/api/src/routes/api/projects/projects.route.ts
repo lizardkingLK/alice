@@ -14,13 +14,20 @@ import {
   registerLockedStatusPatch,
 } from '../../../lib/optimistic-lock';
 import { jsonErrorFromCaught } from '../../../lib/http-error-status';
-import { ProjectsService } from './projects.service';
+import {
+  ProjectsService,
+  ProjectTeamValidationError,
+} from './projects.service';
 import {
   createProjectSchema,
   projectLockActionSchema,
   updateProjectSchema,
+  putWorkflowConfigSchema,
+  forkWorkflowConfigSchema,
+  workflowIdParamActionSchema,
 } from './projects.schemas';
 import { withoutIntegrationSecrets } from './projects.repository';
+import { WorkflowConfigError } from './workflow-config.errors';
 import { type WorkItemBody } from '../work-items/work-items.schemas';
 import type { WorkItemService } from '../work-items/work-items.service';
 import { supabase } from '../../../lib/supabase';
@@ -77,6 +84,18 @@ function isUniqueViolation(error: unknown): boolean {
     /duplicate|unique|already exists/i.test(message) ||
     message.includes('23505')
   );
+}
+
+function sendWorkflowMutationError(
+  res: { status: (code: number) => { json: (body: unknown) => void } },
+  error: unknown,
+  fallbackMessage: string
+): void {
+  if (error instanceof WorkflowConfigError) {
+    res.status(error.status).json({ error: error.message });
+    return;
+  }
+  sendRouteMutationError(res, error, fallbackMessage);
 }
 
 export type ProjectsRouterDeps = {
@@ -146,6 +165,192 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
   );
 
   projectsRouter.get(
+    '/:id/workflow-config',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ error: 'Project ID is required' });
+      }
+      try {
+        const result = await projectsService.getWorkflowConfig(id, req.userId!);
+        res.json(result);
+      } catch (error) {
+        sendWorkflowMutationError(res, error, 'Failed to load workflow config');
+      }
+    }
+  );
+
+  projectsRouter.put(
+    '/:id/workflow-config',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ error: 'Project ID is required' });
+      }
+      const parsed = putWorkflowConfigSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+      try {
+        const result = await projectsService.putWorkflowConfig(
+          req.userId!,
+          id,
+          parsed.data.config,
+          parsed.data.expectedUpdatedAt
+        );
+        res.json(result);
+      } catch (error) {
+        sendWorkflowMutationError(res, error, 'Failed to save workflow config');
+      }
+    }
+  );
+
+  projectsRouter.post(
+    '/:id/workflow-config/fork',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ error: 'Project ID is required' });
+      }
+      const parsed = forkWorkflowConfigSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+      try {
+        const { expectedUpdatedAt, ...input } = parsed.data;
+        const result = await projectsService.forkWorkflow(
+          req.userId!,
+          id,
+          input,
+          expectedUpdatedAt
+        );
+        res.status(201).json(result);
+      } catch (error) {
+        sendWorkflowMutationError(res, error, 'Failed to fork workflow');
+      }
+    }
+  );
+
+  projectsRouter.post(
+    '/:id/workflow-config/:workflowId/default',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { id, workflowId } = req.params;
+      if (!id || !workflowId) {
+        return res
+          .status(400)
+          .json({ error: 'Project ID and workflow ID are required' });
+      }
+      const parsed = workflowIdParamActionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+      try {
+        const result = await projectsService.setDefaultWorkflow(
+          req.userId!,
+          id,
+          workflowId,
+          parsed.data.expectedUpdatedAt
+        );
+        res.json(result);
+      } catch (error) {
+        sendWorkflowMutationError(
+          res,
+          error,
+          'Failed to mark workflow as default'
+        );
+      }
+    }
+  );
+
+  projectsRouter.delete(
+    '/:id/workflow-config/:workflowId',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { id, workflowId } = req.params;
+      if (!id || !workflowId) {
+        return res
+          .status(400)
+          .json({ error: 'Project ID and workflow ID are required' });
+      }
+      const parsed = workflowIdParamActionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+      try {
+        const result = await projectsService.deleteWorkflow(
+          req.userId!,
+          id,
+          workflowId,
+          parsed.data.expectedUpdatedAt
+        );
+        res.json(result);
+      } catch (error) {
+        sendWorkflowMutationError(res, error, 'Failed to delete workflow');
+      }
+    }
+  );
+
+  projectsRouter.get(
+    '/:id/work-item-type-removal-preview',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.id);
+      if (!parsedId.success) {
+        return res.status(400).json({ error: 'Invalid project id' });
+      }
+
+      const removeRaw = firstQueryValue(req.query.removeTypes);
+      const keepRaw = firstQueryValue(req.query.keepTypes);
+      const parseTypes = (raw: string | undefined): WorkItemType[] => {
+        if (!raw) {
+          return [];
+        }
+        return raw
+          .split(',')
+          .map((part) => part.trim())
+          .filter((part): part is WorkItemType =>
+            (Object.values(WorkItemTypeEnum) as string[]).includes(part)
+          );
+      };
+
+      const removedTypes = parseTypes(removeRaw);
+      const keptTypes = parseTypes(keepRaw);
+
+      if (removedTypes.length === 0) {
+        return res.status(400).json({
+          error: 'Query removeTypes must list at least one work-item type',
+        });
+      }
+      if (keptTypes.length === 0) {
+        return res.status(400).json({
+          error:
+            'Query keepTypes must list at least one remaining work-item type',
+        });
+      }
+
+      try {
+        const preview = await projectsService.previewWorkItemTypeRemoval(
+          req.userId!,
+          parsedId.data,
+          removedTypes,
+          keptTypes
+        );
+        res.json(preview);
+      } catch (error) {
+        const { status, error: message } = jsonErrorFromCaught(
+          error,
+          'Failed to preview work-item type removal'
+        );
+        return res.status(status).json({ error: message });
+      }
+    }
+  );
+
+  projectsRouter.get(
     '/:id/members',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
@@ -210,9 +415,9 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
     existingKeys: Set<string>;
     config?: JiraImportConfig;
   }): Promise<number> {
-    let importedCount = 0;
     const typeMappings = params.config?.typeMappings || {};
 
+    const toImport: { key: string; input: WorkItemBody }[] = [];
     for (const issue of params.issues) {
       if (params.existingKeys.has(issue.key)) {
         continue;
@@ -221,7 +426,6 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
       const rawType = issue.rawType || issue.type;
       const mapping = typeMappings[rawType];
 
-      // Handle ignore behavior: skip import
       if (mapping?.action === JiraImportActionEnum.Ignore) {
         continue;
       }
@@ -236,30 +440,37 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         resolvedType = mapping.targetType;
       }
 
-      const workItemInput: WorkItemBody = {
-        title: issue.title,
-        project_id: params.projectId,
-        type: resolvedType,
-        assignee_id: null,
-        due_date: null,
-        description: issue.description || null,
-        jira_issue_key: issue.key,
-      };
-
-      try {
-        await workItemService.createWorkItem(params.actorId, workItemInput);
-        importedCount++;
-        params.existingKeys.add(issue.key);
-      } catch (createError) {
-        if (isUniqueViolation(createError)) {
-          params.existingKeys.add(issue.key);
-          continue;
-        }
-        throw createError;
-      }
+      toImport.push({
+        key: issue.key,
+        input: {
+          title: issue.title,
+          project_id: params.projectId,
+          type: resolvedType,
+          assignee_id: null,
+          due_date: null,
+          description: issue.description || null,
+          jira_issue_key: issue.key,
+        },
+      });
     }
 
-    return importedCount;
+    const results = await Promise.all(
+      toImport.map(async ({ key, input }) => {
+        try {
+          await workItemService.createWorkItem(params.actorId, input);
+          params.existingKeys.add(key);
+          return true;
+        } catch (createError) {
+          if (isUniqueViolation(createError)) {
+            params.existingKeys.add(key);
+            return false;
+          }
+          throw createError;
+        }
+      })
+    );
+
+    return results.filter(Boolean).length;
   }
 
   async function resolveProjectJiraLink(projectId: string): Promise<
@@ -303,28 +514,45 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
       }
 
       try {
-        const project = await projectsService.createProject(req.userId!, {
-          name: parsed.data.name,
-          key: parsed.data.key,
-          description: parsed.data.description ?? null,
-          owner_id: parsed.data.owner_id,
-          start_date: parsed.data.start_date ?? null,
-          end_date: parsed.data.end_date ?? null,
-          status: parsed.data.status ?? ProjectStatusEnum.active,
-          jira_project_key: parsed.data.jira_project_key ?? null,
-          jira_connection_id: parsed.data.jira_connection_id ?? null,
-          github_repo: parsed.data.github_repo ?? null,
-          github_token: parsed.data.github_token ?? null,
-          attributes_config: parsed.data.attributes_config ?? null,
-          workflow_config: parsed.data.workflow_config ?? null,
-        });
-        res.status(201).json({ project: withoutIntegrationSecrets(project) });
-      } catch (error) {
-        const { status, error: message } = jsonErrorFromCaught(
-          error,
-          'Failed to create project'
+        const accepted = await projectsService.enqueueCreateProject(
+          req.userId!,
+          {
+            name: parsed.data.name,
+            key: parsed.data.key,
+            description: parsed.data.description ?? null,
+            owner_id: parsed.data.owner_id,
+            start_date: parsed.data.start_date ?? null,
+            end_date: parsed.data.end_date ?? null,
+            status: parsed.data.status ?? ProjectStatusEnum.active,
+            jira_project_key: parsed.data.jira_project_key ?? null,
+            jira_connection_id: parsed.data.jira_connection_id ?? null,
+            github_repo: parsed.data.github_repo ?? null,
+            github_token: parsed.data.github_token ?? null,
+            attributes_config: parsed.data.attributes_config ?? null,
+            workflow_config: parsed.data.workflow_config ?? null,
+            ...(parsed.data.sprint ? { sprint: parsed.data.sprint } : {}),
+            ...(parsed.data.team ? { team: parsed.data.team } : {}),
+          }
         );
-        res.status(status).json({ error: message });
+        // 202 — create finishes in the background; inbox notifies on success/failure.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
+      } catch (error) {
+        if (error instanceof ProjectTeamValidationError) {
+          return res.status(400).json({ error: error.message });
+        }
+        const {
+          status,
+          error: message,
+          code,
+        } = jsonErrorFromCaught(error, 'Failed to create project');
+        res.status(status).json({
+          error: message,
+          ...(code ? { code } : {}),
+        });
       }
     }
   );
@@ -470,13 +698,16 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
 
       try {
         const { expectedUpdatedAt, ...input } = parsed.data;
-        const project = await projectsService.updateProject(
+        const { project, typeRemoval } = await projectsService.updateProject(
           req.userId!,
           id,
           input,
           expectedUpdatedAt
         );
-        res.json({ project: withoutIntegrationSecrets(project) });
+        res.json({
+          project: withoutIntegrationSecrets(project),
+          ...(typeRemoval ? { typeRemoval } : {}),
+        });
       } catch (error) {
         sendRouteMutationError(res, error, 'Failed to update project');
       }

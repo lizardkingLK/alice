@@ -27,6 +27,7 @@ export class ChartsService {
       actorId,
       query.projectId
     );
+    this.assertStateLabelScope(query.labelField, responseProjectId);
     const dimensionFilters = this.pickDimensionFilters(query);
     const { slices, totalCount } = await this.chartsRepository.sumSeries({
       projectIds,
@@ -55,6 +56,7 @@ export class ChartsService {
       actorId,
       query.projectId
     );
+    this.assertStateLabelScope(query.labelField, responseProjectId);
     const dimensionFilters = this.pickDimensionFilters(query);
     const page = await this.chartsRepository.listDrilldown({
       projectIds,
@@ -86,7 +88,8 @@ export class ChartsService {
           title: input.title,
           description: input.description ?? null,
           board_json: input.board_json,
-          is_overview: input.is_overview,
+          show_on_dashboard: input.show_on_dashboard,
+          dashboard_sort_order: input.dashboard_sort_order,
         });
       }
     }
@@ -100,6 +103,10 @@ export class ChartsService {
 
   listSharedWithMe(userId: string) {
     return this.chartsRepository.listSharedWithMe(userId);
+  }
+
+  listDashboardSlides(userId: string) {
+    return this.chartsRepository.listDashboardSlides(userId);
   }
 
   async getAccessible(actorId: string, chartId: string): Promise<ChartRow> {
@@ -121,6 +128,24 @@ export class ChartsService {
   async update(actorId: string, chartId: string, input: UpdateChartBody) {
     const chart = await this.requireOwned(actorId, chartId);
     return this.chartsRepository.update(chart.id, actorId, input);
+  }
+
+  /**
+   * Clone a shared (or accessible) chart under the viewer as owner.
+   */
+  async fork(actorId: string, chartId: string) {
+    await this.getAccessible(actorId, chartId);
+    const source = await this.chartsRepository.getById(chartId);
+    if (!source) {
+      throw new Error('Chart not found');
+    }
+    if (source.owner_id === actorId) {
+      throw new Error('Cannot fork your own chart');
+    }
+    return this.chartsRepository.fork({
+      sourceChartId: chartId,
+      actorId,
+    });
   }
 
   async archive(actorId: string, chartId: string) {
@@ -179,6 +204,15 @@ export class ChartsService {
       chartId,
       userId: actorId,
     });
+  }
+
+  private assertStateLabelScope(
+    labelField: ChartSeriesQuery['labelField'],
+    responseProjectId: string | null
+  ): void {
+    if (labelField === 'state' && !responseProjectId) {
+      throw new Error('State series requires a single project filter');
+    }
   }
 
   private pickDimensionFilters(query: ChartSeriesQuery | ChartDrilldownQuery): {

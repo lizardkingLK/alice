@@ -58,6 +58,8 @@ export const ModelName = {
   team_members: 'team_members',
   sprints: 'sprints',
   work_items: 'work_items',
+  activities: 'activities',
+  sprint_burndown_rollups: 'sprint_burndown_rollups',
   work_item_chart_rollups: 'work_item_chart_rollups',
   work_item_worklogs: 'work_item_worklogs',
   comments: 'comments',
@@ -219,7 +221,11 @@ export const Work_itemsScalarFieldEnum = {
   due_date: 'due_date',
   story_points: 'story_points',
   status: 'status',
+  state: 'state',
   board_column_id: 'board_column_id',
+  status_category: 'status_category',
+  state_id: 'state_id',
+  state_workflow_id: 'state_workflow_id',
   record_status: 'record_status',
   done_at: 'done_at',
   created_by: 'created_by',
@@ -232,12 +238,42 @@ export const Work_itemsScalarFieldEnum = {
 export type Work_itemsScalarFieldEnum = (typeof Work_itemsScalarFieldEnum)[keyof typeof Work_itemsScalarFieldEnum]
 
 
+export const ActivitiesScalarFieldEnum = {
+  id: 'id',
+  work_item_id: 'work_item_id',
+  actor_id: 'actor_id',
+  action: 'action',
+  field: 'field',
+  old_value: 'old_value',
+  new_value: 'new_value',
+  meta: 'meta',
+  created_at: 'created_at'
+} as const
+
+export type ActivitiesScalarFieldEnum = (typeof ActivitiesScalarFieldEnum)[keyof typeof ActivitiesScalarFieldEnum]
+
+
+export const Sprint_burndown_rollupsScalarFieldEnum = {
+  sprint_id: 'sprint_id',
+  bucket_date: 'bucket_date',
+  project_id: 'project_id',
+  estimated_total: 'estimated_total',
+  spent: 'spent',
+  remaining: 'remaining'
+} as const
+
+export type Sprint_burndown_rollupsScalarFieldEnum = (typeof Sprint_burndown_rollupsScalarFieldEnum)[keyof typeof Sprint_burndown_rollupsScalarFieldEnum]
+
+
 export const Work_item_chart_rollupsScalarFieldEnum = {
   grain_key: 'grain_key',
   bucket_date: 'bucket_date',
   project_id: 'project_id',
   sprint_id: 'sprint_id',
   status: 'status',
+  status_category: 'status_category',
+  workflow_id: 'workflow_id',
+  state_id: 'state_id',
   type: 'type',
   priority: 'priority',
   assignee_id: 'assignee_id',
@@ -439,7 +475,8 @@ export const ChartsScalarFieldEnum = {
   title: 'title',
   description: 'description',
   board_json: 'board_json',
-  is_overview: 'is_overview',
+  show_on_dashboard: 'show_on_dashboard',
+  dashboard_sort_order: 'dashboard_sort_order',
   status: 'status',
   created_by: 'created_by',
   created_at: 'created_at',

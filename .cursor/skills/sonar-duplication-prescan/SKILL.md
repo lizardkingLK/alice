@@ -13,6 +13,7 @@ Identify **code duplication** in local changes before they reach SonarCloud. Thi
 
 Related project docs:
 
+- Broader new-code + smells: `.cursor/skills/sonar-new-code-prescan/SKILL.md`
 - `docs/guides/SONAR.md` — SonarCloud + ESLint SonarJS layers
 - `sonar-project.properties` — scan scope and exclusions
 

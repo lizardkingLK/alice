@@ -12,6 +12,7 @@ export const hardDeleteProject = service.hardDeleteProject;
 export const addProjectMember = service.addProjectMember;
 export const removeProjectMember = service.removeProjectMember;
 export const updateProjectFieldsConfig = service.updateProjectFieldsConfig;
+export const previewWorkItemTypeRemoval = service.previewWorkItemTypeRemoval;
 
 export type {
   Project,

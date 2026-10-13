@@ -48,6 +48,9 @@ export type Work_itemsMinAggregateOutputType = {
   story_points: number | null
   status: $Enums.WorkItemStatus | null
   board_column_id: string | null
+  status_category: string | null
+  state_id: string | null
+  state_workflow_id: string | null
   record_status: $Enums.RecordStatus | null
   done_at: Date | null
   created_by: string | null
@@ -71,6 +74,9 @@ export type Work_itemsMaxAggregateOutputType = {
   story_points: number | null
   status: $Enums.WorkItemStatus | null
   board_column_id: string | null
+  status_category: string | null
+  state_id: string | null
+  state_workflow_id: string | null
   record_status: $Enums.RecordStatus | null
   done_at: Date | null
   created_by: string | null
@@ -95,7 +101,11 @@ export type Work_itemsCountAggregateOutputType = {
   due_date: number
   story_points: number
   status: number
+  state: number
   board_column_id: number
+  status_category: number
+  state_id: number
+  state_workflow_id: number
   record_status: number
   done_at: number
   created_by: number
@@ -129,6 +139,9 @@ export type Work_itemsMinAggregateInputType = {
   story_points?: true
   status?: true
   board_column_id?: true
+  status_category?: true
+  state_id?: true
+  state_workflow_id?: true
   record_status?: true
   done_at?: true
   created_by?: true
@@ -152,6 +165,9 @@ export type Work_itemsMaxAggregateInputType = {
   story_points?: true
   status?: true
   board_column_id?: true
+  status_category?: true
+  state_id?: true
+  state_workflow_id?: true
   record_status?: true
   done_at?: true
   created_by?: true
@@ -176,7 +192,11 @@ export type Work_itemsCountAggregateInputType = {
   due_date?: true
   story_points?: true
   status?: true
+  state?: true
   board_column_id?: true
+  status_category?: true
+  state_id?: true
+  state_workflow_id?: true
   record_status?: true
   done_at?: true
   created_by?: true
@@ -288,7 +308,11 @@ export type Work_itemsGroupByOutputType = {
   due_date: Date | null
   story_points: number | null
   status: $Enums.WorkItemStatus
+  state: runtime.JsonValue | null
   board_column_id: string | null
+  status_category: string
+  state_id: string
+  state_workflow_id: string
   record_status: $Enums.RecordStatus
   done_at: Date | null
   created_by: string | null
@@ -336,7 +360,11 @@ export type work_itemsWhereInput = {
   due_date?: Prisma.DateTimeNullableFilter<"work_items"> | Date | string | null
   story_points?: Prisma.IntNullableFilter<"work_items"> | number | null
   status?: Prisma.EnumWorkItemStatusFilter<"work_items"> | $Enums.WorkItemStatus
+  state?: Prisma.JsonNullableFilter<"work_items">
   board_column_id?: Prisma.StringNullableFilter<"work_items"> | string | null
+  status_category?: Prisma.StringFilter<"work_items"> | string
+  state_id?: Prisma.StringFilter<"work_items"> | string
+  state_workflow_id?: Prisma.StringFilter<"work_items"> | string
   record_status?: Prisma.EnumRecordStatusFilter<"work_items"> | $Enums.RecordStatus
   done_at?: Prisma.DateTimeNullableFilter<"work_items"> | Date | string | null
   created_by?: Prisma.UuidNullableFilter<"work_items"> | string | null
@@ -355,6 +383,7 @@ export type work_itemsWhereInput = {
   comments?: Prisma.CommentsListRelationFilter
   attachments?: Prisma.AttachmentsListRelationFilter
   worklogs?: Prisma.Work_item_worklogsListRelationFilter
+  activities?: Prisma.ActivitiesListRelationFilter
   github_pull_requests?: Prisma.Github_pull_requestsListRelationFilter
 }
 
@@ -373,7 +402,11 @@ export type work_itemsOrderByWithRelationInput = {
   due_date?: Prisma.SortOrderInput | Prisma.SortOrder
   story_points?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
+  state?: Prisma.SortOrderInput | Prisma.SortOrder
   board_column_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  status_category?: Prisma.SortOrder
+  state_id?: Prisma.SortOrder
+  state_workflow_id?: Prisma.SortOrder
   record_status?: Prisma.SortOrder
   done_at?: Prisma.SortOrderInput | Prisma.SortOrder
   created_by?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -392,6 +425,7 @@ export type work_itemsOrderByWithRelationInput = {
   comments?: Prisma.commentsOrderByRelationAggregateInput
   attachments?: Prisma.attachmentsOrderByRelationAggregateInput
   worklogs?: Prisma.work_item_worklogsOrderByRelationAggregateInput
+  activities?: Prisma.activitiesOrderByRelationAggregateInput
   github_pull_requests?: Prisma.github_pull_requestsOrderByRelationAggregateInput
 }
 
@@ -414,7 +448,11 @@ export type work_itemsWhereUniqueInput = Prisma.AtLeast<{
   due_date?: Prisma.DateTimeNullableFilter<"work_items"> | Date | string | null
   story_points?: Prisma.IntNullableFilter<"work_items"> | number | null
   status?: Prisma.EnumWorkItemStatusFilter<"work_items"> | $Enums.WorkItemStatus
+  state?: Prisma.JsonNullableFilter<"work_items">
   board_column_id?: Prisma.StringNullableFilter<"work_items"> | string | null
+  status_category?: Prisma.StringFilter<"work_items"> | string
+  state_id?: Prisma.StringFilter<"work_items"> | string
+  state_workflow_id?: Prisma.StringFilter<"work_items"> | string
   record_status?: Prisma.EnumRecordStatusFilter<"work_items"> | $Enums.RecordStatus
   done_at?: Prisma.DateTimeNullableFilter<"work_items"> | Date | string | null
   created_by?: Prisma.UuidNullableFilter<"work_items"> | string | null
@@ -433,6 +471,7 @@ export type work_itemsWhereUniqueInput = Prisma.AtLeast<{
   comments?: Prisma.CommentsListRelationFilter
   attachments?: Prisma.AttachmentsListRelationFilter
   worklogs?: Prisma.Work_item_worklogsListRelationFilter
+  activities?: Prisma.ActivitiesListRelationFilter
   github_pull_requests?: Prisma.Github_pull_requestsListRelationFilter
 }, "id" | "project_id_jira_issue_key">
 
@@ -451,7 +490,11 @@ export type work_itemsOrderByWithAggregationInput = {
   due_date?: Prisma.SortOrderInput | Prisma.SortOrder
   story_points?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
+  state?: Prisma.SortOrderInput | Prisma.SortOrder
   board_column_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  status_category?: Prisma.SortOrder
+  state_id?: Prisma.SortOrder
+  state_workflow_id?: Prisma.SortOrder
   record_status?: Prisma.SortOrder
   done_at?: Prisma.SortOrderInput | Prisma.SortOrder
   created_by?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -484,7 +527,11 @@ export type work_itemsScalarWhereWithAggregatesInput = {
   due_date?: Prisma.DateTimeNullableWithAggregatesFilter<"work_items"> | Date | string | null
   story_points?: Prisma.IntNullableWithAggregatesFilter<"work_items"> | number | null
   status?: Prisma.EnumWorkItemStatusWithAggregatesFilter<"work_items"> | $Enums.WorkItemStatus
+  state?: Prisma.JsonNullableWithAggregatesFilter<"work_items">
   board_column_id?: Prisma.StringNullableWithAggregatesFilter<"work_items"> | string | null
+  status_category?: Prisma.StringWithAggregatesFilter<"work_items"> | string
+  state_id?: Prisma.StringWithAggregatesFilter<"work_items"> | string
+  state_workflow_id?: Prisma.StringWithAggregatesFilter<"work_items"> | string
   record_status?: Prisma.EnumRecordStatusWithAggregatesFilter<"work_items"> | $Enums.RecordStatus
   done_at?: Prisma.DateTimeNullableWithAggregatesFilter<"work_items"> | Date | string | null
   created_by?: Prisma.UuidNullableWithAggregatesFilter<"work_items"> | string | null
@@ -504,7 +551,11 @@ export type work_itemsCreateInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -521,6 +572,7 @@ export type work_itemsCreateInput = {
   comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
 }
 
@@ -539,7 +591,11 @@ export type work_itemsUncheckedCreateInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -551,6 +607,7 @@ export type work_itemsUncheckedCreateInput = {
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
 }
 
@@ -564,7 +621,11 @@ export type work_itemsUpdateInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -581,6 +642,7 @@ export type work_itemsUpdateInput = {
   comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -599,7 +661,11 @@ export type work_itemsUncheckedUpdateInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -611,6 +677,7 @@ export type work_itemsUncheckedUpdateInput = {
   comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -629,7 +696,11 @@ export type work_itemsCreateManyInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -649,7 +720,11 @@ export type work_itemsUpdateManyMutationInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -672,7 +747,11 @@ export type work_itemsUncheckedUpdateManyInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -717,7 +796,11 @@ export type work_itemsCountOrderByAggregateInput = {
   due_date?: Prisma.SortOrder
   story_points?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  state?: Prisma.SortOrder
   board_column_id?: Prisma.SortOrder
+  status_category?: Prisma.SortOrder
+  state_id?: Prisma.SortOrder
+  state_workflow_id?: Prisma.SortOrder
   record_status?: Prisma.SortOrder
   done_at?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
@@ -745,6 +828,9 @@ export type work_itemsMaxOrderByAggregateInput = {
   story_points?: Prisma.SortOrder
   status?: Prisma.SortOrder
   board_column_id?: Prisma.SortOrder
+  status_category?: Prisma.SortOrder
+  state_id?: Prisma.SortOrder
+  state_workflow_id?: Prisma.SortOrder
   record_status?: Prisma.SortOrder
   done_at?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
@@ -768,6 +854,9 @@ export type work_itemsMinOrderByAggregateInput = {
   story_points?: Prisma.SortOrder
   status?: Prisma.SortOrder
   board_column_id?: Prisma.SortOrder
+  status_category?: Prisma.SortOrder
+  state_id?: Prisma.SortOrder
+  state_workflow_id?: Prisma.SortOrder
   record_status?: Prisma.SortOrder
   done_at?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
@@ -1108,6 +1197,20 @@ export type work_itemsUncheckedUpdateManyWithoutParentNestedInput = {
   deleteMany?: Prisma.work_itemsScalarWhereInput | Prisma.work_itemsScalarWhereInput[]
 }
 
+export type work_itemsCreateNestedOneWithoutActivitiesInput = {
+  create?: Prisma.XOR<Prisma.work_itemsCreateWithoutActivitiesInput, Prisma.work_itemsUncheckedCreateWithoutActivitiesInput>
+  connectOrCreate?: Prisma.work_itemsCreateOrConnectWithoutActivitiesInput
+  connect?: Prisma.work_itemsWhereUniqueInput
+}
+
+export type work_itemsUpdateOneRequiredWithoutActivitiesNestedInput = {
+  create?: Prisma.XOR<Prisma.work_itemsCreateWithoutActivitiesInput, Prisma.work_itemsUncheckedCreateWithoutActivitiesInput>
+  connectOrCreate?: Prisma.work_itemsCreateOrConnectWithoutActivitiesInput
+  upsert?: Prisma.work_itemsUpsertWithoutActivitiesInput
+  connect?: Prisma.work_itemsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.work_itemsUpdateToOneWithWhereWithoutActivitiesInput, Prisma.work_itemsUpdateWithoutActivitiesInput>, Prisma.work_itemsUncheckedUpdateWithoutActivitiesInput>
+}
+
 export type work_itemsCreateNestedOneWithoutWorklogsInput = {
   create?: Prisma.XOR<Prisma.work_itemsCreateWithoutWorklogsInput, Prisma.work_itemsUncheckedCreateWithoutWorklogsInput>
   connectOrCreate?: Prisma.work_itemsCreateOrConnectWithoutWorklogsInput
@@ -1174,7 +1277,11 @@ export type work_itemsCreateWithoutAssigneeInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1190,6 +1297,7 @@ export type work_itemsCreateWithoutAssigneeInput = {
   comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1207,7 +1315,11 @@ export type work_itemsUncheckedCreateWithoutAssigneeInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -1219,6 +1331,7 @@ export type work_itemsUncheckedCreateWithoutAssigneeInput = {
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1242,7 +1355,11 @@ export type work_itemsCreateWithoutReporterInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1258,6 +1375,7 @@ export type work_itemsCreateWithoutReporterInput = {
   comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1275,7 +1393,11 @@ export type work_itemsUncheckedCreateWithoutReporterInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -1287,6 +1409,7 @@ export type work_itemsUncheckedCreateWithoutReporterInput = {
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1310,7 +1433,11 @@ export type work_itemsCreateWithoutCreated_by_userInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1326,6 +1453,7 @@ export type work_itemsCreateWithoutCreated_by_userInput = {
   comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1344,7 +1472,11 @@ export type work_itemsUncheckedCreateWithoutCreated_by_userInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1355,6 +1487,7 @@ export type work_itemsUncheckedCreateWithoutCreated_by_userInput = {
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1378,7 +1511,11 @@ export type work_itemsCreateWithoutUpdated_by_userInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1394,6 +1531,7 @@ export type work_itemsCreateWithoutUpdated_by_userInput = {
   comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1412,7 +1550,11 @@ export type work_itemsUncheckedCreateWithoutUpdated_by_userInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -1423,6 +1565,7 @@ export type work_itemsUncheckedCreateWithoutUpdated_by_userInput = {
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1470,7 +1613,11 @@ export type work_itemsScalarWhereInput = {
   due_date?: Prisma.DateTimeNullableFilter<"work_items"> | Date | string | null
   story_points?: Prisma.IntNullableFilter<"work_items"> | number | null
   status?: Prisma.EnumWorkItemStatusFilter<"work_items"> | $Enums.WorkItemStatus
+  state?: Prisma.JsonNullableFilter<"work_items">
   board_column_id?: Prisma.StringNullableFilter<"work_items"> | string | null
+  status_category?: Prisma.StringFilter<"work_items"> | string
+  state_id?: Prisma.StringFilter<"work_items"> | string
+  state_workflow_id?: Prisma.StringFilter<"work_items"> | string
   record_status?: Prisma.EnumRecordStatusFilter<"work_items"> | $Enums.RecordStatus
   done_at?: Prisma.DateTimeNullableFilter<"work_items"> | Date | string | null
   created_by?: Prisma.UuidNullableFilter<"work_items"> | string | null
@@ -1538,7 +1685,11 @@ export type work_itemsCreateWithoutProjectInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1554,6 +1705,7 @@ export type work_itemsCreateWithoutProjectInput = {
   comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1571,7 +1723,11 @@ export type work_itemsUncheckedCreateWithoutProjectInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -1583,6 +1739,7 @@ export type work_itemsUncheckedCreateWithoutProjectInput = {
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1622,7 +1779,11 @@ export type work_itemsCreateWithoutSprintInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1638,6 +1799,7 @@ export type work_itemsCreateWithoutSprintInput = {
   comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1655,7 +1817,11 @@ export type work_itemsUncheckedCreateWithoutSprintInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -1667,6 +1833,7 @@ export type work_itemsUncheckedCreateWithoutSprintInput = {
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1706,7 +1873,11 @@ export type work_itemsCreateWithoutChildrenInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1722,6 +1893,7 @@ export type work_itemsCreateWithoutChildrenInput = {
   comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1740,7 +1912,11 @@ export type work_itemsUncheckedCreateWithoutChildrenInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -1751,6 +1927,7 @@ export type work_itemsUncheckedCreateWithoutChildrenInput = {
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1769,7 +1946,11 @@ export type work_itemsCreateWithoutParentInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1785,6 +1966,7 @@ export type work_itemsCreateWithoutParentInput = {
   comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1802,7 +1984,11 @@ export type work_itemsUncheckedCreateWithoutParentInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -1814,6 +2000,7 @@ export type work_itemsUncheckedCreateWithoutParentInput = {
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1848,7 +2035,11 @@ export type work_itemsUpdateWithoutChildrenInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1864,6 +2055,7 @@ export type work_itemsUpdateWithoutChildrenInput = {
   comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -1882,7 +2074,11 @@ export type work_itemsUncheckedUpdateWithoutChildrenInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1893,6 +2089,7 @@ export type work_itemsUncheckedUpdateWithoutChildrenInput = {
   comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -1912,7 +2109,7 @@ export type work_itemsUpdateManyWithWhereWithoutParentInput = {
   data: Prisma.XOR<Prisma.work_itemsUpdateManyMutationInput, Prisma.work_itemsUncheckedUpdateManyWithoutParentInput>
 }
 
-export type work_itemsCreateWithoutWorklogsInput = {
+export type work_itemsCreateWithoutActivitiesInput = {
   id?: string
   title: string
   type: $Enums.WorkItemType
@@ -1922,7 +2119,11 @@ export type work_itemsCreateWithoutWorklogsInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -1938,6 +2139,159 @@ export type work_itemsCreateWithoutWorklogsInput = {
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_work_itemsInput
   comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
+  worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
+}
+
+export type work_itemsUncheckedCreateWithoutActivitiesInput = {
+  id?: string
+  project_id: string
+  sprint_id?: string | null
+  parent_id?: string | null
+  title: string
+  type: $Enums.WorkItemType
+  priority?: $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  assignee_id?: string | null
+  reporter_id?: string | null
+  due_date?: Date | string | null
+  story_points?: number | null
+  status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
+  record_status?: $Enums.RecordStatus
+  done_at?: Date | string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  jira_issue_key?: string | null
+  children?: Prisma.work_itemsUncheckedCreateNestedManyWithoutParentInput
+  comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
+  attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
+  worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+}
+
+export type work_itemsCreateOrConnectWithoutActivitiesInput = {
+  where: Prisma.work_itemsWhereUniqueInput
+  create: Prisma.XOR<Prisma.work_itemsCreateWithoutActivitiesInput, Prisma.work_itemsUncheckedCreateWithoutActivitiesInput>
+}
+
+export type work_itemsUpsertWithoutActivitiesInput = {
+  update: Prisma.XOR<Prisma.work_itemsUpdateWithoutActivitiesInput, Prisma.work_itemsUncheckedUpdateWithoutActivitiesInput>
+  create: Prisma.XOR<Prisma.work_itemsCreateWithoutActivitiesInput, Prisma.work_itemsUncheckedCreateWithoutActivitiesInput>
+  where?: Prisma.work_itemsWhereInput
+}
+
+export type work_itemsUpdateToOneWithWhereWithoutActivitiesInput = {
+  where?: Prisma.work_itemsWhereInput
+  data: Prisma.XOR<Prisma.work_itemsUpdateWithoutActivitiesInput, Prisma.work_itemsUncheckedUpdateWithoutActivitiesInput>
+}
+
+export type work_itemsUpdateWithoutActivitiesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
+  record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  jira_issue_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  project?: Prisma.projectsUpdateOneRequiredWithoutWork_itemsNestedInput
+  sprint?: Prisma.sprintsUpdateOneWithoutWork_itemsNestedInput
+  parent?: Prisma.work_itemsUpdateOneWithoutChildrenNestedInput
+  children?: Prisma.work_itemsUpdateManyWithoutParentNestedInput
+  assignee?: Prisma.usersUpdateOneWithoutAssigned_work_itemsNestedInput
+  reporter?: Prisma.usersUpdateOneWithoutReported_work_itemsNestedInput
+  created_by_user?: Prisma.usersUpdateOneWithoutCreated_work_itemsNestedInput
+  updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_work_itemsNestedInput
+  comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
+  attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
+  worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
+}
+
+export type work_itemsUncheckedUpdateWithoutActivitiesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  assignee_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reporter_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
+  record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  jira_issue_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  children?: Prisma.work_itemsUncheckedUpdateManyWithoutParentNestedInput
+  comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
+  attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
+  worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+}
+
+export type work_itemsCreateWithoutWorklogsInput = {
+  id?: string
+  title: string
+  type: $Enums.WorkItemType
+  priority?: $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  due_date?: Date | string | null
+  story_points?: number | null
+  status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
+  record_status?: $Enums.RecordStatus
+  done_at?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  jira_issue_key?: string | null
+  project: Prisma.projectsCreateNestedOneWithoutWork_itemsInput
+  sprint?: Prisma.sprintsCreateNestedOneWithoutWork_itemsInput
+  parent?: Prisma.work_itemsCreateNestedOneWithoutChildrenInput
+  children?: Prisma.work_itemsCreateNestedManyWithoutParentInput
+  assignee?: Prisma.usersCreateNestedOneWithoutAssigned_work_itemsInput
+  reporter?: Prisma.usersCreateNestedOneWithoutReported_work_itemsInput
+  created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_work_itemsInput
+  updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_work_itemsInput
+  comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
+  attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1956,7 +2310,11 @@ export type work_itemsUncheckedCreateWithoutWorklogsInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -1967,6 +2325,7 @@ export type work_itemsUncheckedCreateWithoutWorklogsInput = {
   children?: Prisma.work_itemsUncheckedCreateNestedManyWithoutParentInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
 }
 
@@ -1996,7 +2355,11 @@ export type work_itemsUpdateWithoutWorklogsInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2012,6 +2375,7 @@ export type work_itemsUpdateWithoutWorklogsInput = {
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_work_itemsNestedInput
   comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -2030,7 +2394,11 @@ export type work_itemsUncheckedUpdateWithoutWorklogsInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2041,6 +2409,7 @@ export type work_itemsUncheckedUpdateWithoutWorklogsInput = {
   children?: Prisma.work_itemsUncheckedUpdateManyWithoutParentNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -2054,7 +2423,11 @@ export type work_itemsCreateWithoutCommentsInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -2070,6 +2443,7 @@ export type work_itemsCreateWithoutCommentsInput = {
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_work_itemsInput
   attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
 }
 
@@ -2088,7 +2462,11 @@ export type work_itemsUncheckedCreateWithoutCommentsInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -2099,6 +2477,7 @@ export type work_itemsUncheckedCreateWithoutCommentsInput = {
   children?: Prisma.work_itemsUncheckedCreateNestedManyWithoutParentInput
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
 }
 
@@ -2128,7 +2507,11 @@ export type work_itemsUpdateWithoutCommentsInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2144,6 +2527,7 @@ export type work_itemsUpdateWithoutCommentsInput = {
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_work_itemsNestedInput
   attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -2162,7 +2546,11 @@ export type work_itemsUncheckedUpdateWithoutCommentsInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2173,6 +2561,7 @@ export type work_itemsUncheckedUpdateWithoutCommentsInput = {
   children?: Prisma.work_itemsUncheckedUpdateManyWithoutParentNestedInput
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -2186,7 +2575,11 @@ export type work_itemsCreateWithoutAttachmentsInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -2202,6 +2595,7 @@ export type work_itemsCreateWithoutAttachmentsInput = {
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_work_itemsInput
   comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
 }
 
@@ -2220,7 +2614,11 @@ export type work_itemsUncheckedCreateWithoutAttachmentsInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -2231,6 +2629,7 @@ export type work_itemsUncheckedCreateWithoutAttachmentsInput = {
   children?: Prisma.work_itemsUncheckedCreateNestedManyWithoutParentInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
 }
 
@@ -2260,7 +2659,11 @@ export type work_itemsUpdateWithoutAttachmentsInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2276,6 +2679,7 @@ export type work_itemsUpdateWithoutAttachmentsInput = {
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_work_itemsNestedInput
   comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -2294,7 +2698,11 @@ export type work_itemsUncheckedUpdateWithoutAttachmentsInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2305,6 +2713,7 @@ export type work_itemsUncheckedUpdateWithoutAttachmentsInput = {
   children?: Prisma.work_itemsUncheckedUpdateManyWithoutParentNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -2318,7 +2727,11 @@ export type work_itemsCreateWithoutGithub_pull_requestsInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -2335,6 +2748,7 @@ export type work_itemsCreateWithoutGithub_pull_requestsInput = {
   comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
 }
 
 export type work_itemsUncheckedCreateWithoutGithub_pull_requestsInput = {
@@ -2352,7 +2766,11 @@ export type work_itemsUncheckedCreateWithoutGithub_pull_requestsInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -2364,6 +2782,7 @@ export type work_itemsUncheckedCreateWithoutGithub_pull_requestsInput = {
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
 }
 
 export type work_itemsCreateOrConnectWithoutGithub_pull_requestsInput = {
@@ -2392,7 +2811,11 @@ export type work_itemsUpdateWithoutGithub_pull_requestsInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2409,6 +2832,7 @@ export type work_itemsUpdateWithoutGithub_pull_requestsInput = {
   comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
 }
 
 export type work_itemsUncheckedUpdateWithoutGithub_pull_requestsInput = {
@@ -2426,7 +2850,11 @@ export type work_itemsUncheckedUpdateWithoutGithub_pull_requestsInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2438,6 +2866,7 @@ export type work_itemsUncheckedUpdateWithoutGithub_pull_requestsInput = {
   comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
 }
 
 export type work_itemsCreateManyAssigneeInput = {
@@ -2454,7 +2883,11 @@ export type work_itemsCreateManyAssigneeInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -2478,7 +2911,11 @@ export type work_itemsCreateManyReporterInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -2503,7 +2940,11 @@ export type work_itemsCreateManyCreated_by_userInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_at?: Date | string
@@ -2527,7 +2968,11 @@ export type work_itemsCreateManyUpdated_by_userInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -2546,7 +2991,11 @@ export type work_itemsUpdateWithoutAssigneeInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2562,6 +3011,7 @@ export type work_itemsUpdateWithoutAssigneeInput = {
   comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -2579,7 +3029,11 @@ export type work_itemsUncheckedUpdateWithoutAssigneeInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2591,6 +3045,7 @@ export type work_itemsUncheckedUpdateWithoutAssigneeInput = {
   comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -2608,7 +3063,11 @@ export type work_itemsUncheckedUpdateManyWithoutAssigneeInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2628,7 +3087,11 @@ export type work_itemsUpdateWithoutReporterInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2644,6 +3107,7 @@ export type work_itemsUpdateWithoutReporterInput = {
   comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -2661,7 +3125,11 @@ export type work_itemsUncheckedUpdateWithoutReporterInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2673,6 +3141,7 @@ export type work_itemsUncheckedUpdateWithoutReporterInput = {
   comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -2690,7 +3159,11 @@ export type work_itemsUncheckedUpdateManyWithoutReporterInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2710,7 +3183,11 @@ export type work_itemsUpdateWithoutCreated_by_userInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2726,6 +3203,7 @@ export type work_itemsUpdateWithoutCreated_by_userInput = {
   comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -2744,7 +3222,11 @@ export type work_itemsUncheckedUpdateWithoutCreated_by_userInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2755,6 +3237,7 @@ export type work_itemsUncheckedUpdateWithoutCreated_by_userInput = {
   comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -2773,7 +3256,11 @@ export type work_itemsUncheckedUpdateManyWithoutCreated_by_userInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2792,7 +3279,11 @@ export type work_itemsUpdateWithoutUpdated_by_userInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2808,6 +3299,7 @@ export type work_itemsUpdateWithoutUpdated_by_userInput = {
   comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -2826,7 +3318,11 @@ export type work_itemsUncheckedUpdateWithoutUpdated_by_userInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2837,6 +3333,7 @@ export type work_itemsUncheckedUpdateWithoutUpdated_by_userInput = {
   comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -2855,7 +3352,11 @@ export type work_itemsUncheckedUpdateManyWithoutUpdated_by_userInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2878,7 +3379,11 @@ export type work_itemsCreateManyProjectInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -2898,7 +3403,11 @@ export type work_itemsUpdateWithoutProjectInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2914,6 +3423,7 @@ export type work_itemsUpdateWithoutProjectInput = {
   comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -2931,7 +3441,11 @@ export type work_itemsUncheckedUpdateWithoutProjectInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2943,6 +3457,7 @@ export type work_itemsUncheckedUpdateWithoutProjectInput = {
   comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -2960,7 +3475,11 @@ export type work_itemsUncheckedUpdateManyWithoutProjectInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2984,7 +3503,11 @@ export type work_itemsCreateManySprintInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -3004,7 +3527,11 @@ export type work_itemsUpdateWithoutSprintInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -3020,6 +3547,7 @@ export type work_itemsUpdateWithoutSprintInput = {
   comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -3037,7 +3565,11 @@ export type work_itemsUncheckedUpdateWithoutSprintInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3049,6 +3581,7 @@ export type work_itemsUncheckedUpdateWithoutSprintInput = {
   comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -3066,7 +3599,11 @@ export type work_itemsUncheckedUpdateManyWithoutSprintInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3090,7 +3627,11 @@ export type work_itemsCreateManyParentInput = {
   due_date?: Date | string | null
   story_points?: number | null
   status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
   record_status?: $Enums.RecordStatus
   done_at?: Date | string | null
   created_by?: string | null
@@ -3110,7 +3651,11 @@ export type work_itemsUpdateWithoutParentInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -3126,6 +3671,7 @@ export type work_itemsUpdateWithoutParentInput = {
   comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -3143,7 +3689,11 @@ export type work_itemsUncheckedUpdateWithoutParentInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3155,6 +3705,7 @@ export type work_itemsUncheckedUpdateWithoutParentInput = {
   comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
 }
 
@@ -3172,7 +3723,11 @@ export type work_itemsUncheckedUpdateManyWithoutParentInput = {
   due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3192,6 +3747,7 @@ export type Work_itemsCountOutputType = {
   comments: number
   attachments: number
   worklogs: number
+  activities: number
   github_pull_requests: number
 }
 
@@ -3200,6 +3756,7 @@ export type Work_itemsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extens
   comments?: boolean | Work_itemsCountOutputTypeCountCommentsArgs
   attachments?: boolean | Work_itemsCountOutputTypeCountAttachmentsArgs
   worklogs?: boolean | Work_itemsCountOutputTypeCountWorklogsArgs
+  activities?: boolean | Work_itemsCountOutputTypeCountActivitiesArgs
   github_pull_requests?: boolean | Work_itemsCountOutputTypeCountGithub_pull_requestsArgs
 }
 
@@ -3244,6 +3801,13 @@ export type Work_itemsCountOutputTypeCountWorklogsArgs<ExtArgs extends runtime.T
 /**
  * Work_itemsCountOutputType without action
  */
+export type Work_itemsCountOutputTypeCountActivitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.activitiesWhereInput
+}
+
+/**
+ * Work_itemsCountOutputType without action
+ */
 export type Work_itemsCountOutputTypeCountGithub_pull_requestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.github_pull_requestsWhereInput
 }
@@ -3264,7 +3828,11 @@ export type work_itemsSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   due_date?: boolean
   story_points?: boolean
   status?: boolean
+  state?: boolean
   board_column_id?: boolean
+  status_category?: boolean
+  state_id?: boolean
+  state_workflow_id?: boolean
   record_status?: boolean
   done_at?: boolean
   created_by?: boolean
@@ -3283,6 +3851,7 @@ export type work_itemsSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   comments?: boolean | Prisma.work_items$commentsArgs<ExtArgs>
   attachments?: boolean | Prisma.work_items$attachmentsArgs<ExtArgs>
   worklogs?: boolean | Prisma.work_items$worklogsArgs<ExtArgs>
+  activities?: boolean | Prisma.work_items$activitiesArgs<ExtArgs>
   github_pull_requests?: boolean | Prisma.work_items$github_pull_requestsArgs<ExtArgs>
   _count?: boolean | Prisma.Work_itemsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["work_items"]>
@@ -3302,7 +3871,11 @@ export type work_itemsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   due_date?: boolean
   story_points?: boolean
   status?: boolean
+  state?: boolean
   board_column_id?: boolean
+  status_category?: boolean
+  state_id?: boolean
+  state_workflow_id?: boolean
   record_status?: boolean
   done_at?: boolean
   created_by?: boolean
@@ -3334,7 +3907,11 @@ export type work_itemsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   due_date?: boolean
   story_points?: boolean
   status?: boolean
+  state?: boolean
   board_column_id?: boolean
+  status_category?: boolean
+  state_id?: boolean
+  state_workflow_id?: boolean
   record_status?: boolean
   done_at?: boolean
   created_by?: boolean
@@ -3366,7 +3943,11 @@ export type work_itemsSelectScalar = {
   due_date?: boolean
   story_points?: boolean
   status?: boolean
+  state?: boolean
   board_column_id?: boolean
+  status_category?: boolean
+  state_id?: boolean
+  state_workflow_id?: boolean
   record_status?: boolean
   done_at?: boolean
   created_by?: boolean
@@ -3376,7 +3957,7 @@ export type work_itemsSelectScalar = {
   jira_issue_key?: boolean
 }
 
-export type work_itemsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "project_id" | "sprint_id" | "parent_id" | "title" | "type" | "priority" | "description" | "labels" | "assignee_id" | "reporter_id" | "due_date" | "story_points" | "status" | "board_column_id" | "record_status" | "done_at" | "created_by" | "created_at" | "updated_by" | "updated_at" | "jira_issue_key", ExtArgs["result"]["work_items"]>
+export type work_itemsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "project_id" | "sprint_id" | "parent_id" | "title" | "type" | "priority" | "description" | "labels" | "assignee_id" | "reporter_id" | "due_date" | "story_points" | "status" | "state" | "board_column_id" | "status_category" | "state_id" | "state_workflow_id" | "record_status" | "done_at" | "created_by" | "created_at" | "updated_by" | "updated_at" | "jira_issue_key", ExtArgs["result"]["work_items"]>
 export type work_itemsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.projectsDefaultArgs<ExtArgs>
   sprint?: boolean | Prisma.work_items$sprintArgs<ExtArgs>
@@ -3389,6 +3970,7 @@ export type work_itemsInclude<ExtArgs extends runtime.Types.Extensions.InternalA
   comments?: boolean | Prisma.work_items$commentsArgs<ExtArgs>
   attachments?: boolean | Prisma.work_items$attachmentsArgs<ExtArgs>
   worklogs?: boolean | Prisma.work_items$worklogsArgs<ExtArgs>
+  activities?: boolean | Prisma.work_items$activitiesArgs<ExtArgs>
   github_pull_requests?: boolean | Prisma.work_items$github_pull_requestsArgs<ExtArgs>
   _count?: boolean | Prisma.Work_itemsCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -3425,6 +4007,7 @@ export type $work_itemsPayload<ExtArgs extends runtime.Types.Extensions.Internal
     comments: Prisma.$commentsPayload<ExtArgs>[]
     attachments: Prisma.$attachmentsPayload<ExtArgs>[]
     worklogs: Prisma.$work_item_worklogsPayload<ExtArgs>[]
+    activities: Prisma.$activitiesPayload<ExtArgs>[]
     github_pull_requests: Prisma.$github_pull_requestsPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -3442,7 +4025,18 @@ export type $work_itemsPayload<ExtArgs extends runtime.Types.Extensions.Internal
     due_date: Date | null
     story_points: number | null
     status: $Enums.WorkItemStatus
+    /**
+     * Single-current workflow placement: { workflowId, stateId, category, historyByWorkflow? }.
+     * Nullable while legacy rows rely on `status`; writers dual-fill via @repo/types helpers.
+     */
+    state: runtime.JsonValue | null
     board_column_id: string | null
+    /**
+     * Trigger-maintained mirrors of resolved `state` (charts drilldown + indexes).
+     */
+    status_category: string
+    state_id: string
+    state_workflow_id: string
     record_status: $Enums.RecordStatus
     done_at: Date | null
     created_by: string | null
@@ -3855,6 +4449,7 @@ export interface Prisma__work_itemsClient<T, Null = never, ExtArgs extends runti
   comments<T extends Prisma.work_items$commentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$commentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$commentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   attachments<T extends Prisma.work_items$attachmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$attachmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$attachmentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   worklogs<T extends Prisma.work_items$worklogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$worklogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$work_item_worklogsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  activities<T extends Prisma.work_items$activitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$activitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$activitiesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   github_pull_requests<T extends Prisma.work_items$github_pull_requestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$github_pull_requestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$github_pull_requestsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -3899,7 +4494,11 @@ export interface work_itemsFieldRefs {
   readonly due_date: Prisma.FieldRef<"work_items", 'DateTime'>
   readonly story_points: Prisma.FieldRef<"work_items", 'Int'>
   readonly status: Prisma.FieldRef<"work_items", 'WorkItemStatus'>
+  readonly state: Prisma.FieldRef<"work_items", 'Json'>
   readonly board_column_id: Prisma.FieldRef<"work_items", 'String'>
+  readonly status_category: Prisma.FieldRef<"work_items", 'String'>
+  readonly state_id: Prisma.FieldRef<"work_items", 'String'>
+  readonly state_workflow_id: Prisma.FieldRef<"work_items", 'String'>
   readonly record_status: Prisma.FieldRef<"work_items", 'RecordStatus'>
   readonly done_at: Prisma.FieldRef<"work_items", 'DateTime'>
   readonly created_by: Prisma.FieldRef<"work_items", 'String'>
@@ -4515,6 +5114,30 @@ export type work_items$worklogsArgs<ExtArgs extends runtime.Types.Extensions.Int
   take?: number
   skip?: number
   distinct?: Prisma.Work_item_worklogsScalarFieldEnum | Prisma.Work_item_worklogsScalarFieldEnum[]
+}
+
+/**
+ * work_items.activities
+ */
+export type work_items$activitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the activities
+   */
+  select?: Prisma.activitiesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the activities
+   */
+  omit?: Prisma.activitiesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.activitiesInclude<ExtArgs> | null
+  where?: Prisma.activitiesWhereInput
+  orderBy?: Prisma.activitiesOrderByWithRelationInput | Prisma.activitiesOrderByWithRelationInput[]
+  cursor?: Prisma.activitiesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ActivitiesScalarFieldEnum | Prisma.ActivitiesScalarFieldEnum[]
 }
 
 /**

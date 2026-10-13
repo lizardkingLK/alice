@@ -40,7 +40,12 @@ Verify that the Project Details layout uses vertical sidebar navigation and sync
    - **Sprints** (Icon: Timer — visible only to managers and admins)
    - **Integrations** (Icon: Plug)
    - **Fields** (Icon: SlidersHorizontal)
-4. Click on **Fields**:
+   - **Board** (Icon: Kanban — managers/admins)
+   - **Workflow** (Icon: GitBranch — managers/admins; status transition rules)
+   - **Types** (Icon: Shapes — managers/admins)
+4. On desktop, click the outline collapse icon at the **bottom left** of the project sidebar:
+   - Verify the rail narrows, project name hides, and logo/initials remain.
+   - Click the expand icon at the bottom and confirm the preference persists after reload.
    - Verify the URL updates to `/projects/[id]?tab=fields` without reloading the page.
    - Verify the **Fields** tab button highlights with active styling (`bg-muted font-medium`).
 5. Click on **Work Items**:

@@ -94,10 +94,11 @@ import {
 } from '@/hooks/use-query-filter';
 import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
 import { ApiError } from '@/lib/api/api-fetch.helper';
-import { toast } from '@repo/ui/components/ui/sonner';
+import { toastWorkflowMoveBlocked } from '@/app/board/_helpers/workflow-move-blocked-toast';
 import {
   BOARD_MOVE_FORBIDDEN_CODE,
   type BoardColumn,
+  type BoardWorkflowTab,
 } from '@repo/types/api/v1';
 
 type BoardStatus = BoardColumn['status'];
@@ -117,9 +118,70 @@ function assigneeName(item: DbWorkItem) {
   return item.assignee?.name?.trim() || 'Unassigned';
 }
 
+function resolveActiveWorkflowBindings(
+  boardMode: 'workflow' | 'legacy' | 'default',
+  activeWorkflowId: string | null,
+  workflowTabs: readonly BoardWorkflowTab[]
+): ReadonlySet<string> | null {
+  if (boardMode !== 'workflow' || !activeWorkflowId) {
+    return null;
+  }
+  const tab = workflowTabs.find(
+    (candidate) => candidate.id === activeWorkflowId
+  );
+  return tab ? new Set(tab.typeBindings) : null;
+}
+
+function itemMatchesBoardFilters(
+  item: DbWorkItem,
+  params: {
+    readonly query: string;
+    readonly priorityFilter: string;
+    readonly assigneeFilter: string | null;
+    readonly activeLabels: readonly string[];
+    readonly activeWorkflowBindings: ReadonlySet<string> | null;
+  }
+): boolean {
+  if (item.status === 'Draft') {
+    return false;
+  }
+
+  if (
+    params.activeWorkflowBindings &&
+    params.activeWorkflowBindings.size > 0 &&
+    !params.activeWorkflowBindings.has(item.type)
+  ) {
+    return false;
+  }
+
+  const description = descriptionToPlainText(item.description ?? null);
+  const assignee = assigneeName(item).toLowerCase();
+  const matchesSearch =
+    !params.query ||
+    item.title.toLowerCase().includes(params.query) ||
+    item.id.toLowerCase().includes(params.query) ||
+    description.toLowerCase().includes(params.query) ||
+    assignee.includes(params.query) ||
+    item.type.toLowerCase().includes(params.query);
+  const matchesPriority =
+    params.priorityFilter === QUERY_FILTER_ALL_VALUE ||
+    item.priority === params.priorityFilter;
+  const matchesAssignee =
+    !params.assigneeFilter || item.assignee_id === params.assigneeFilter;
+  const itemLabels = parseWorkItemLabels(item.labels);
+  const matchesLabels =
+    params.activeLabels.length === 0 ||
+    params.activeLabels.some((label) => itemLabels.includes(label));
+
+  return matchesSearch && matchesPriority && matchesAssignee && matchesLabels;
+}
+
 type KanbanBoardProps = {
   readonly boardColumns: BoardColumn[];
   readonly usesCustomBoardConfig: boolean;
+  readonly workflowTabs?: readonly BoardWorkflowTab[];
+  readonly activeWorkflowId?: string | null;
+  readonly boardMode?: 'workflow' | 'legacy' | 'default';
   readonly initialWorkItems: DbWorkItem[];
   readonly projects: Project[];
   readonly sprints: Sprint[];
@@ -133,6 +195,9 @@ type KanbanBoardProps = {
 export function KanbanBoard({
   boardColumns,
   usesCustomBoardConfig,
+  workflowTabs = [],
+  activeWorkflowId = null,
+  boardMode = 'default',
   initialWorkItems,
   projects,
   sprints,
@@ -499,42 +564,31 @@ export function KanbanBoard({
     ]
   );
 
+  const activeWorkflowBindings = useMemo(
+    () =>
+      resolveActiveWorkflowBindings(boardMode, activeWorkflowId, workflowTabs),
+    [boardMode, activeWorkflowId, workflowTabs]
+  );
+
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();
-
-    return workItems.filter((item) => {
-      if (item.status === 'Draft') {
-        return false;
-      }
-
-      const description = descriptionToPlainText(item.description ?? null);
-      const assignee = assigneeName(item).toLowerCase();
-
-      const matchesSearch =
-        !query ||
-        item.title.toLowerCase().includes(query) ||
-        item.id.toLowerCase().includes(query) ||
-        description.toLowerCase().includes(query) ||
-        assignee.includes(query) ||
-        item.type.toLowerCase().includes(query);
-
-      const matchesPriority =
-        priorityFilter === QUERY_FILTER_ALL_VALUE ||
-        item.priority === priorityFilter;
-
-      const matchesAssignee =
-        !assigneeFilter || item.assignee_id === assigneeFilter;
-
-      const itemLabels = parseWorkItemLabels(item.labels);
-      const matchesLabels =
-        activeLabels.length === 0 ||
-        activeLabels.some((label) => itemLabels.includes(label));
-
-      return (
-        matchesSearch && matchesPriority && matchesAssignee && matchesLabels
-      );
-    });
-  }, [workItems, search, priorityFilter, assigneeFilter, activeLabels]);
+    return workItems.filter((item) =>
+      itemMatchesBoardFilters(item, {
+        query,
+        priorityFilter,
+        assigneeFilter,
+        activeLabels,
+        activeWorkflowBindings,
+      })
+    );
+  }, [
+    workItems,
+    search,
+    priorityFilter,
+    assigneeFilter,
+    activeLabels,
+    activeWorkflowBindings,
+  ]);
 
   const columnItemsMap = useMemo(() => {
     return assignItemsToColumns(filteredItems, boardColumns);
@@ -672,9 +726,13 @@ export function KanbanBoard({
           error instanceof ApiError &&
           error.code === BOARD_MOVE_FORBIDDEN_CODE
         ) {
-          toast.error(
-            `Move blocked: you do not have permission to move this item from ${sourceColumnName} to ${targetColumn.name}.`
+          toastWorkflowMoveBlocked(
+            `You do not have permission to move this item from ${sourceColumnName} to ${targetColumn.name}.`
           );
+          return;
+        }
+        if (error instanceof ApiError && error.status === 400) {
+          toastWorkflowMoveBlocked(error.message);
           return;
         }
         if (

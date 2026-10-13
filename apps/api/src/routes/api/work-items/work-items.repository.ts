@@ -4,6 +4,10 @@ import {
   DEFAULT_WORK_ITEM_PRIORITY,
   WorkItemStatusEnum,
   type Database,
+  doneAtForCategoryChange,
+  resolveWorkItemState,
+  syncWorkItemStateForStatusChange,
+  workItemStateToJson,
   workItemDetailSelect,
   workItemListSelect,
   workItemListSelectWithDescription,
@@ -11,8 +15,10 @@ import {
   type WorkItemListRow,
   type WorkItemListRowWithDescription,
   type WorkItemPrismaListFilters,
+  type WorkItemState,
   paginationMeta,
   type UserRole,
+  RecordStatusEnum,
 } from '@repo/types';
 import { Prisma, RecordStatus, UserMembershipStatus } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -63,6 +69,12 @@ export type UpdateWorkItemRecord = WorkItemUpdateBody & {
   id: string;
   updatedBy: string;
   expectedUpdatedAt: string;
+  /**
+   * When set (graph workflow moves), persist this state instead of bridging
+   * category from status alone — required for draft destinations with null
+   * `board_column_id`.
+   */
+  stateOverride?: WorkItemState;
 };
 
 const ASSIGNEE_SELECT = userRelationSelect('assignee', 'assignee_id');
@@ -257,6 +269,47 @@ export class WorkItemRepository {
     };
   }
 
+  /** Count direct children (active + archived) for hierarchy type-change gates. */
+  async countDirectChildren(parentId: string): Promise<number> {
+    return await prisma.work_items.count({
+      where: { parent_id: parentId },
+    });
+  }
+
+  /** Clear parent_id for every direct child of `parentId`. */
+  async detachDirectChildren(parentId: string): Promise<number> {
+    const result = await prisma.work_items.updateMany({
+      where: { parent_id: parentId },
+      data: { parent_id: null },
+    });
+    return result.count;
+  }
+
+  /** Align sprint_id for descendant work items (excludes `rootId`). */
+  async updateSprintForDescendants(
+    rootId: string,
+    sprintId: string | null,
+    updatedBy: string
+  ): Promise<string[]> {
+    const ids = await this.collectDescendantIds(rootId);
+    const descendantIds = ids.filter((id) => id !== rootId);
+    if (descendantIds.length === 0) {
+      return [];
+    }
+
+    await prisma.work_items.updateMany({
+      where: {
+        id: { in: descendantIds },
+        record_status: RecordStatusEnum.active,
+      },
+      data: {
+        sprint_id: sprintId,
+        ...prismaAuditUpdate(updatedBy),
+      },
+    });
+    return descendantIds;
+  }
+
   /** Count direct children that are not yet Done (for Done-gate validation). */
   async countIncompleteChildren(parentId: string): Promise<number> {
     const { count, error } = await this.db
@@ -277,7 +330,55 @@ export class WorkItemRepository {
     return count ?? 0;
   }
 
+  /**
+   * Count direct children that are not yet in the parent's target state
+   * (or same category when state ids differ across workflows).
+   */
+  async countChildrenNotInTargetState(
+    parentId: string,
+    targetStateId: string,
+    targetCategory: string
+  ): Promise<number> {
+    const { data, error } = await this.db
+      .from('work_items')
+      .select('id, status, state, board_column_id')
+      .eq('parent_id', parentId)
+      .eq('record_status', 'active');
+
+    if (error) {
+      console.error(
+        'error. failed to list children for target-state gate:',
+        error.message
+      );
+      throw new Error('Failed to list children for target-state gate');
+    }
+
+    let mismatched = 0;
+    for (const child of data ?? []) {
+      const resolved = resolveWorkItemState({
+        state: child.state,
+        status: child.status,
+        boardColumnId: child.board_column_id,
+      });
+      const matchesState =
+        resolved.stateId === targetStateId ||
+        child.board_column_id === targetStateId ||
+        child.status === targetStateId;
+      const matchesCategory = resolved.category === targetCategory;
+      if (!matchesState && !matchesCategory) {
+        mismatched += 1;
+      }
+    }
+    return mismatched;
+  }
+
   async create(input: CreateWorkItemRecord): Promise<DbWorkItem> {
+    const status = input.status ?? WorkItemStatusEnum.New;
+    const synced = syncWorkItemStateForStatusChange({
+      nextStatus: status,
+      previousState: null,
+    });
+
     const created = await prisma.work_items.create({
       data: {
         title: input.title,
@@ -288,7 +389,9 @@ export class WorkItemRepository {
         due_date: prismaOptionalDate(input.due_date) ?? null,
         sprint_id: input.sprint_id,
         reporter_id: input.createdBy,
-        status: input.status ?? WorkItemStatusEnum.New,
+        status: synced.status,
+        state: workItemStateToJson(synced.state) as Prisma.InputJsonValue,
+        ...(synced.doneAt !== undefined ? { done_at: synced.doneAt } : {}),
         story_points: input.story_points,
         jira_issue_key: input.jira_issue_key,
         description:
@@ -311,19 +414,28 @@ export class WorkItemRepository {
   async update(input: UpdateWorkItemRecord): Promise<DbWorkItem> {
     const current = await this.getById(input.id);
 
-    const becomingDone =
-      input.status === WorkItemStatusEnum.Done &&
-      current?.status !== WorkItemStatusEnum.Done;
-    const leavingDone =
-      input.status !== WorkItemStatusEnum.Done &&
-      current?.status === WorkItemStatusEnum.Done;
+    const previousState = current
+      ? resolveWorkItemState({
+          state: current.state,
+          status: current.status,
+          boardColumnId: current.board_column_id,
+        })
+      : null;
 
-    let doneAtUpdate: Date | null | undefined;
-    if (becomingDone) {
-      doneAtUpdate = new Date();
-    } else if (leavingDone) {
-      doneAtUpdate = null;
-    }
+    const synced = input.stateOverride
+      ? {
+          state: input.stateOverride,
+          status: input.status,
+          doneAt: doneAtForCategoryChange({
+            previousCategory: previousState?.category,
+            nextCategory: input.stateOverride.category,
+          }),
+        }
+      : syncWorkItemStateForStatusChange({
+          nextStatus: input.status,
+          previousState,
+          boardColumnId: input.board_column_id,
+        });
 
     let descriptionUpdate:
       Prisma.InputJsonValue | typeof Prisma.DbNull | undefined;
@@ -349,7 +461,8 @@ export class WorkItemRepository {
         due_date: prismaOptionalDate(input.due_date) ?? null,
         description: descriptionUpdate,
         labels: (input.labels ?? []) as Prisma.InputJsonValue,
-        status: input.status,
+        status: synced.status,
+        state: workItemStateToJson(synced.state) as Prisma.InputJsonValue,
         board_column_id: input.board_column_id,
         sprint_id: input.sprint_id,
         story_points: input.story_points,
@@ -357,7 +470,7 @@ export class WorkItemRepository {
         ...(input.jira_issue_key !== undefined
           ? { jira_issue_key: input.jira_issue_key }
           : {}),
-        ...(doneAtUpdate !== undefined ? { done_at: doneAtUpdate } : {}),
+        ...(synced.doneAt !== undefined ? { done_at: synced.doneAt } : {}),
         ...prismaAuditUpdate(input.updatedBy),
       },
     });
@@ -478,18 +591,44 @@ export class WorkItemRepository {
   /**
    * BFS collect of `rootId` and every descendant via `parent_id`.
    * Order is root-first; callers that need leaves-first should reverse.
+   *
+   * Loads the project's parent links in one query, then walks in memory so we
+   * never `await` per BFS level (Sonar S2982 / S5382). Levels cannot be
+   * `Promise.all`'d — each frontier depends on the previous.
    */
   async collectDescendantIds(rootId: string): Promise<string[]> {
+    const root = await prisma.work_items.findUnique({
+      where: { id: rootId },
+      select: { project_id: true },
+    });
+
+    if (!root) {
+      return [rootId];
+    }
+
+    const rows = await prisma.work_items.findMany({
+      where: { project_id: root.project_id },
+      select: { id: true, parent_id: true },
+    });
+
+    const childrenByParent = new Map<string, string[]>();
+    for (const row of rows) {
+      if (row.parent_id == null) {
+        continue;
+      }
+      const siblings = childrenByParent.get(row.parent_id);
+      if (siblings) {
+        siblings.push(row.id);
+      } else {
+        childrenByParent.set(row.parent_id, [row.id]);
+      }
+    }
+
     const collected: string[] = [];
     let frontier = [rootId];
-
     while (frontier.length > 0) {
       collected.push(...frontier);
-      const children = await prisma.work_items.findMany({
-        where: { parent_id: { in: frontier } },
-        select: { id: true },
-      });
-      frontier = children.map((child) => child.id);
+      frontier = frontier.flatMap((id) => childrenByParent.get(id) ?? []);
     }
 
     return collected;

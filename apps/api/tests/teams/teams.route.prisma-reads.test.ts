@@ -10,10 +10,12 @@ import { AddressInfo } from 'node:net';
 import { createTeamsRouter } from '../../src/routes/api/teams/teams.route';
 import type { TeamsService } from '../../src/routes/api/teams/teams.service';
 
-const { listTeamsPaginatedMock, getTeamDetailMock } = vi.hoisted(() => ({
-  listTeamsPaginatedMock: vi.fn(),
-  getTeamDetailMock: vi.fn(),
-}));
+const { listTeamsPaginatedMock, getTeamDetailMock, createTeamMock } =
+  vi.hoisted(() => ({
+    listTeamsPaginatedMock: vi.fn(),
+    getTeamDetailMock: vi.fn(),
+    createTeamMock: vi.fn(),
+  }));
 
 vi.mock('../../src/middlewares/auth', () => ({
   requireApiAuth: (
@@ -29,11 +31,13 @@ vi.mock('../../src/middlewares/auth', () => ({
 const teamsService = {
   listTeamsPaginated: listTeamsPaginatedMock,
   getTeamDetail: getTeamDetailMock,
+  createTeam: createTeamMock,
 } as unknown as TeamsService;
 
 async function withApp(run: (baseUrl: string) => Promise<void>): Promise<void> {
   const app = express();
   app.disable('x-powered-by');
+  app.use(express.json());
   app.use('/api/teams', createTeamsRouter({ teamsService }));
 
   const server: Server = await new Promise((resolve) => {
@@ -68,7 +72,7 @@ const mockTeamDetail = {
   members: [],
 };
 
-describe('teams unused Prisma GET routes', () => {
+describe('teams routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -128,6 +132,43 @@ describe('teams unused Prisma GET routes', () => {
       expect(getTeamDetailMock).toHaveBeenCalledWith(
         mockTeamDetail.id,
         '11111111-1111-4111-8111-111111111111'
+      );
+    });
+  });
+
+  it('creates a team with a normalized name', async () => {
+    const createdTeam = { ...mockTeamDetail, name: 'Development' };
+    createTeamMock.mockResolvedValue(createdTeam);
+
+    await withApp(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/teams`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: '  Development  ',
+          description: 'Product development',
+          manager_id: mockTeamDetail.manager_id,
+          project_id: mockTeamDetail.project_id,
+          tech_stack: 'TypeScript',
+          status: 'active',
+        }),
+      });
+      const body = await response.json();
+
+      expect(response.status).toBe(201);
+      expect(body).toEqual({ team: createdTeam });
+      expect(createTeamMock).toHaveBeenCalledWith(
+        '11111111-1111-4111-8111-111111111111',
+        {
+          name: 'Development',
+          description: 'Product development',
+          manager_id: mockTeamDetail.manager_id,
+          project_id: mockTeamDetail.project_id,
+          tech_stack: 'TypeScript',
+          status: 'active',
+          member_ids: undefined,
+          members: undefined,
+        }
       );
     });
   });

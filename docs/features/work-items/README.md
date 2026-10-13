@@ -7,6 +7,10 @@
 | [LABELS.md](./LABELS.md)                                            | JSONB text-array labels, create/details edit, search UX      | Implemented |
 | [ACTIVITY.md](./ACTIVITY.md)                                        | Work-item activity timeline next to Discussion               | Plan        |
 
+> Workflow transitions and escalation resolutions will write to `activities`
+> when [Workflow](../workflow/) ships — see ACTIVITY.md extensions and
+> [WORKFLOW.md](../workflow/WORKFLOW.md).
+
 Quick links:
 
 - Implementation: `apps/web/app/work-items/`
@@ -16,12 +20,13 @@ Quick links:
 - API: `apps/api/src/routes/api/work-items/`
 - Schema: `work_items` in `packages/db/prisma/schema.prisma`
 - Shared hierarchy helpers: `packages/types/src/work-item-types.ts`
-- Related: [board](../board/), [database ER diagram](../../database/ER_DIAGRAM.md)
+- Related: [board](../board/), [workflow (plan)](../workflow/),
+  [database ER diagram](../../database/ER_DIAGRAM.md)
 - Testing guide: [TESTING_DEVELOPMENT_FLOW.md](../../guides/TESTING_DEVELOPMENT_FLOW.md)
 
 ## Types and hierarchy
 
-`WorkItemType` values: **Epic**, **Story**, **Task**, **Issue**.
+`WorkItemType` values: **Epic**, **Story**, **Task**, **Issue** (plus optional **Feature**).
 
 Subtasks use self-referential `work_items.parent_id`. Allowed child types:
 
@@ -38,6 +43,28 @@ Rules enforced on API create/update when `parent_id` is set:
 - Child must be in the same project
 - Child `type` must match the table above
 - A work item cannot be its own parent
+
+### Removing allowed types (project settings)
+
+Silent fallback to **Issue** is no longer used (#480). When managers remove
+types that still have work items:
+
+1. `GET /api/projects/:id/work-item-type-removal-preview` lists active + archived
+   rows per removed type.
+2. `PUT /api/projects/:id` accepts `typeRemovalStrategies`:
+   `{ type, action: 'delete' | 'migrate', migrateTo? }[]`.
+3. Apply order: **detach** invalid/involved parent links → delete or migrate →
+   save `workflow_config.work_item_types`.
+
+UI: collapsible per-type conflict dialog on Settings save
+(`project-type-removal-strategy-dialog.tsx`).
+
+### Changing type on a parent (#482)
+
+`PATCH /api/work-items/:id` with a new `type` when the item has direct children
+requires `detachChildren: true` (otherwise `409` + `code: HIERARCHY_TYPE_CHANGE`).
+When set, children are unlinked, then the type is updated; an incompatible own
+parent link is cleared.
 
 On the work-item details page:
 
@@ -76,6 +103,14 @@ Toolbar (same left / right split as other registries):
   a plain badge because `/sprints` is role-gated
 
 Chevron affordances follow `getAllowedChildType` (Epic / Story / Task). Issues are leaves.
+
+## Due date
+
+`work_items.due_date` is an optional calendar day (`DATE`). Create/edit forms
+(classic always; modern as a main pill next to assignee/sprint) and the details
+sidebar (**Details → Due date**, pencil → `WorkItemFieldPatchDialog`) all submit
+the same FormData key. Calendar drag-and-drop also patches `due_date`. Create
+rejects past dates; PATCH allows an unchanged past due date.
 
 ## Done status gates
 

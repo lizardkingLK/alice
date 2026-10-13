@@ -40,7 +40,10 @@ import {
   SearchableSelect,
   type SearchableSelectOption,
 } from '@/components/searchable-select';
-import type { WorkItemFormSharedFieldProps } from '@/app/work-items/_components/work-item-form/work-item-form-field-props';
+import type {
+  WorkItemFormMember,
+  WorkItemFormSharedFieldProps,
+} from '@/app/work-items/_components/work-item-form/work-item-form-field-props';
 import {
   resolveShowParentPicker,
   WorkItemFormParentStatusSection,
@@ -52,6 +55,15 @@ import { WorkItemPrioritySelect } from '@/app/work-items/_components/work-item-p
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
 import { WORK_ITEM_TYPE_ICONS } from '@/app/work-items/_helpers/work-item-type';
 import { MODERN_BORDERLESS_FOCUS_CLASSES } from '@/lib/editor/compact-editor-attrs';
+import {
+  isOptionsLoadingEmpty,
+  loadingAwarePlaceholder,
+} from '@/app/work-items/_helpers/work-item-form-loading-placeholder';
+import {
+  resolveSprintDisplayName,
+  type WorkItemSprintOption,
+} from '@/app/work-items/_helpers/work-item-sprint';
+import { toDateInputValue } from '@/app/work-items/_helpers/work-item-due-date';
 
 export type WorkItemFormModernFieldsProps = WorkItemFormSharedFieldProps & {
   readonly titleDefault?: string;
@@ -62,15 +74,9 @@ export type WorkItemFormModernFieldsProps = WorkItemFormSharedFieldProps & {
   readonly descriptionDefault?: unknown;
 };
 
-type OptionalField = 'priority' | 'due_date' | 'story_points' | 'labels';
-
-function toDateInputValue(value: string): string {
-  return value.split('T')[0] ?? '';
-}
+type OptionalField = 'priority' | 'story_points' | 'labels';
 
 function initialOptionalFields(options: {
-  readonly dueDateDefault: string;
-  readonly lockDueDate: boolean;
   readonly storyPointsDefault: number | null;
   readonly labelsDefault: readonly string[];
   readonly hasExplicitPriority: boolean;
@@ -78,9 +84,6 @@ function initialOptionalFields(options: {
   const fields = new Set<OptionalField>();
   if (options.hasExplicitPriority) {
     fields.add('priority');
-  }
-  if (toDateInputValue(options.dueDateDefault) || options.lockDueDate) {
-    fields.add('due_date');
   }
   if (options.storyPointsDefault != null) {
     fields.add('story_points');
@@ -96,7 +99,6 @@ const OPTIONAL_FIELD_OPTIONS: ReadonlyArray<{
   readonly label: string;
 }> = [
   { id: 'priority', label: 'Priority' },
-  { id: 'due_date', label: 'Due date' },
   { id: 'story_points', label: 'Story points' },
   { id: 'labels', label: 'Labels' },
 ];
@@ -129,6 +131,7 @@ function IconSearchablePill({
   placeholder,
   options,
   emptyText,
+  isLoading = false,
   showClear = false,
 }: Readonly<{
   icon: ReactNode;
@@ -140,6 +143,7 @@ function IconSearchablePill({
   placeholder: string;
   options: readonly SearchableSelectOption[];
   emptyText: string;
+  isLoading?: boolean;
   showClear?: boolean;
 }>) {
   return (
@@ -156,6 +160,7 @@ function IconSearchablePill({
         ariaLabel={placeholder}
         options={options}
         emptyText={emptyText}
+        isLoading={isLoading}
         showClear={showClear}
         className={cn(pillTriggerClassName(Boolean(value)), 'pl-8')}
       />
@@ -166,6 +171,104 @@ function IconSearchablePill({
 
 function isWorkItemType(value: string): value is WorkItemType {
   return value in WORK_ITEM_TYPE_ICONS;
+}
+
+function ModernSprintField({
+  sprintId,
+  sprintOptions,
+  projectId,
+  lockSprintFromParent,
+  onSprintIdChange,
+  sprintOptionsLoading,
+}: Readonly<{
+  readonly sprintId: string;
+  readonly sprintOptions: readonly WorkItemSprintOption[];
+  readonly sprintOptionsLoading: boolean;
+  readonly projectId: string;
+  readonly lockSprintFromParent: boolean;
+  // eslint-disable-next-line no-unused-vars -- controlled setter
+  readonly onSprintIdChange: (value: string) => void;
+}>) {
+  const loadingEmpty = isOptionsLoadingEmpty(
+    sprintOptionsLoading,
+    sprintOptions.length
+  );
+  return (
+    <>
+      <FieldTooltip
+        label={lockSprintFromParent ? 'Sprint (from parent)' : 'Sprint'}
+      >
+        {lockSprintFromParent ? (
+          <span className="text-sm font-medium">
+            {resolveSprintDisplayName(sprintId, sprintOptions)}
+          </span>
+        ) : (
+          <IconSearchablePill
+            icon={<Layers />}
+            id="sprint_id"
+            value={sprintId}
+            onValueChange={onSprintIdChange}
+            disabled={!projectId}
+            showClear
+            placeholder={loadingAwarePlaceholder(
+              loadingEmpty,
+              'Loading…',
+              'Sprint'
+            )}
+            options={sprintOptions.map((sprint) => ({
+              value: sprint.id,
+              label: sprint.name,
+            }))}
+            emptyText="No matching sprints."
+            isLoading={loadingEmpty}
+          />
+        )}
+      </FieldTooltip>
+      <input type="hidden" name="sprint_id" value={sprintId} />
+    </>
+  );
+}
+
+function ModernAssigneeField({
+  assigneeId,
+  projectMembers,
+  lockAssignee,
+  assigneeOptionsLoading,
+  onAssigneeIdChange,
+}: Readonly<{
+  readonly assigneeId: string;
+  readonly projectMembers: readonly WorkItemFormMember[];
+  readonly lockAssignee: boolean;
+  readonly assigneeOptionsLoading: boolean;
+  // eslint-disable-next-line no-unused-vars -- controlled setter
+  readonly onAssigneeIdChange: (value: string) => void;
+}>) {
+  const loadingEmpty = isOptionsLoadingEmpty(
+    assigneeOptionsLoading,
+    projectMembers.length
+  );
+  return (
+    <FieldTooltip label="Assignee">
+      <IconSearchablePill
+        icon={<CircleUserRound />}
+        id="assignee_id"
+        value={assigneeId}
+        onValueChange={onAssigneeIdChange}
+        disabled={lockAssignee}
+        placeholder={loadingAwarePlaceholder(
+          loadingEmpty,
+          'Loading…',
+          'Assignee'
+        )}
+        options={projectMembers.map((member) => ({
+          value: member.id,
+          label: member.name,
+        }))}
+        emptyText="No matching assignees."
+        isLoading={loadingEmpty}
+      />
+    </FieldTooltip>
+  );
 }
 
 /**
@@ -179,6 +282,10 @@ export function WorkItemFormModernFields({
   availableTypes,
   projectId,
   assigneeId,
+  sprintId,
+  sprintOptions,
+  sprintOptionsLoading,
+  assigneeOptionsLoading,
   type,
   priority,
   parentId,
@@ -186,6 +293,7 @@ export function WorkItemFormModernFields({
   parentOptionsLoading,
   parentTypeLabel,
   lockParent,
+  lockSprintFromParent,
   lockProject,
   lockAssignee,
   typeLocked,
@@ -193,6 +301,7 @@ export function WorkItemFormModernFields({
   status,
   onProjectIdChange,
   onAssigneeIdChange,
+  onSprintIdChange,
   onTypeChange,
   onPriorityChange,
   onParentIdChange,
@@ -211,8 +320,6 @@ export function WorkItemFormModernFields({
     ReadonlySet<OptionalField>
   >(() =>
     initialOptionalFields({
-      dueDateDefault,
-      lockDueDate,
       storyPointsDefault,
       labelsDefault,
       hasExplicitPriority: Boolean(titleDefault),
@@ -239,9 +346,7 @@ export function WorkItemFormModernFields({
   };
 
   const remainingOptional = OPTIONAL_FIELD_OPTIONS.filter(
-    (option) =>
-      !optionalFields.has(option.id) &&
-      !(lockDueDate && option.id === 'due_date')
+    (option) => !optionalFields.has(option.id)
   );
 
   const selectedProject = projects.find((project) => project.id === projectId);
@@ -383,21 +488,27 @@ export function WorkItemFormModernFields({
             }
           />
 
-          <FieldTooltip label="Assignee">
-            <IconSearchablePill
-              icon={<CircleUserRound />}
-              id="assignee_id"
-              value={assigneeId}
-              onValueChange={onAssigneeIdChange}
-              disabled={lockAssignee}
-              placeholder="Assignee"
-              options={projectMembers.map((member) => ({
-                value: member.id,
-                label: member.name,
-              }))}
-              emptyText="No matching assignees."
-            />
-          </FieldTooltip>
+          <ModernAssigneeField
+            assigneeId={assigneeId}
+            projectMembers={projectMembers}
+            lockAssignee={lockAssignee}
+            assigneeOptionsLoading={assigneeOptionsLoading}
+            onAssigneeIdChange={onAssigneeIdChange}
+          />
+
+          <ModernSprintField
+            sprintId={sprintId}
+            sprintOptions={sprintOptions}
+            sprintOptionsLoading={sprintOptionsLoading}
+            projectId={projectId}
+            lockSprintFromParent={lockSprintFromParent}
+            onSprintIdChange={onSprintIdChange}
+          />
+
+          <ModernDueDateField
+            dueDateDefault={dueDateValue}
+            lockDueDate={lockDueDate}
+          />
         </div>
 
         <ModernOptionalFieldPills
@@ -406,8 +517,6 @@ export function WorkItemFormModernFields({
           priority={priority}
           onPriorityChange={onPriorityChange}
           onAddOptionalField={addOptionalField}
-          dueDateDefault={dueDateValue}
-          lockDueDate={lockDueDate}
           storyPointsDefault={storyPointsDefault}
         />
 
@@ -433,44 +542,35 @@ type ModernOptionalFieldPillsProps = {
   readonly onPriorityChange: (value: WorkItemPriority) => void;
   // eslint-disable-next-line no-unused-vars -- controlled setter
   readonly onAddOptionalField: (field: OptionalField) => void;
-  readonly dueDateDefault: string;
-  readonly lockDueDate: boolean;
   readonly storyPointsDefault: number | null;
 };
 
 function ModernDueDateField({
-  optionalFields,
   dueDateDefault,
   lockDueDate,
 }: Readonly<{
-  optionalFields: ReadonlySet<OptionalField>;
   dueDateDefault: string;
   lockDueDate: boolean;
 }>) {
-  if (optionalFields.has('due_date')) {
-    return (
-      <FieldTooltip label="Due date">
-        <div className="relative">
-          <Calendar className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
-          <Input
-            id="due_date"
-            name="due_date"
-            type="date"
-            aria-label="Due date"
-            defaultValue={dueDateDefault}
-            disabled={lockDueDate}
-            className={cn(pillTriggerClassName(false), 'w-38 pr-2 pl-8')}
-          />
-        </div>
-      </FieldTooltip>
-    );
-  }
-
-  if (lockDueDate && dueDateDefault) {
-    return <input type="hidden" name="due_date" value={dueDateDefault} />;
-  }
-
-  return null;
+  return (
+    <FieldTooltip label="Due date">
+      <div className="relative">
+        <Calendar className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
+        <Input
+          id="due_date"
+          name="due_date"
+          type="date"
+          aria-label="Due date"
+          defaultValue={dueDateDefault}
+          disabled={lockDueDate}
+          className={cn(
+            pillTriggerClassName(Boolean(dueDateDefault)),
+            'w-38 pr-2 pl-8'
+          )}
+        />
+      </div>
+    </FieldTooltip>
+  );
 }
 
 function ModernOptionalFieldPills({
@@ -479,8 +579,6 @@ function ModernOptionalFieldPills({
   priority,
   onPriorityChange,
   onAddOptionalField,
-  dueDateDefault,
-  lockDueDate,
   storyPointsDefault,
 }: Readonly<ModernOptionalFieldPillsProps>) {
   return (
@@ -504,16 +602,6 @@ function ModernOptionalFieldPills({
       ) : (
         <input type="hidden" name="priority" value={priority} />
       )}
-
-      {optionalFields.has('due_date') || (lockDueDate && dueDateDefault) ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <ModernDueDateField
-            optionalFields={optionalFields}
-            dueDateDefault={dueDateDefault}
-            lockDueDate={lockDueDate}
-          />
-        </div>
-      ) : null}
 
       {optionalFields.has('story_points') ? (
         <div className="flex flex-wrap items-center gap-2">

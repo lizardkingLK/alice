@@ -1,9 +1,14 @@
 import { Suspense } from 'react';
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { ProjectDetailsData } from '@/app/projects/[id]/_components/project-details-data';
 import { ProjectDetailsSkeleton } from '@/app/projects/[id]/_components/project-details-skeleton';
 import { buildProjectBreadcrumbOverrides } from '@/app/projects/_helpers/project-links';
+import {
+  PROJECT_DETAILS_SIDEBAR_COOKIE_NAME,
+  parseProjectDetailsSidebarOpenCookie,
+} from '@/app/projects/_helpers/project-details-sidebar-storage';
 import { getProject } from '@/app/projects/_services/projects.reads.server';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import type { RawSearchParams } from '@/lib/search-params';
@@ -16,15 +21,18 @@ export default async function ProjectDetailsPage({
   searchParams: Promise<RawSearchParams>;
 }>) {
   const { id } = await params;
-  const project = await safeServerFetch(
-    getProject(id),
-    null,
-    'load project for breadcrumb'
-  );
+  const [project, cookieStore] = await Promise.all([
+    safeServerFetch(getProject(id), null, 'load project for breadcrumb'),
+    cookies(),
+  ]);
 
   if (!project) {
     notFound();
   }
+
+  const sidebarOpen = parseProjectDetailsSidebarOpenCookie(
+    cookieStore.get(PROJECT_DETAILS_SIDEBAR_COOKIE_NAME)?.value
+  );
 
   return (
     <DashboardShell
@@ -35,7 +43,7 @@ export default async function ProjectDetailsPage({
       favoriteLabel={project.name}
       projectId={id}
     >
-      <Suspense fallback={<ProjectDetailsSkeleton />}>
+      <Suspense fallback={<ProjectDetailsSkeleton sidebarOpen={sidebarOpen} />}>
         <ProjectDetailsData projectId={id} searchParams={searchParams} />
       </Suspense>
     </DashboardShell>

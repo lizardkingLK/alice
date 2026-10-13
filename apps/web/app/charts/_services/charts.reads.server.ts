@@ -20,6 +20,19 @@ export async function listOwnedChartWorkspaces(
   );
 }
 
+/** Pinned chart workspaces for the Dashboard Overview slider. */
+export async function listDashboardChartSlides(
+  viewerId: string
+): Promise<ChartWorkspaceRecord[]> {
+  const result = await apiFetch<{ data: ChartApiRow[] }>(
+    '/api/charts?scope=dashboard',
+    { method: 'GET' }
+  );
+  return (result.data ?? []).map((row) =>
+    chartWorkspaceFromApiRow(row, chartOwnershipForViewer(row, viewerId))
+  );
+}
+
 /** Accessible chart board (owner or share recipient). */
 export async function getAccessibleChartWorkspace(
   chartId: string,

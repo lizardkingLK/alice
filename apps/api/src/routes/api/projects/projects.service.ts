@@ -11,12 +11,21 @@ import {
   type WorkItemType,
   CANONICAL_HIERARCHY_ORDER,
   type ProjectWorkflowConfig,
+  type WorkItemTypeRemovalApplyResult,
+  type WorkflowConfigEnvelope,
+  type WorkflowDocument,
+  findWorkflowById,
+  mergeWorkflowEnvelopeIntoProjectConfig,
+  resolveWorkflowConfig,
+  workflowConfigEnvelopeSchema,
 } from '@repo/types';
-import type {
-  ProjectStatus,
-  IntegrationStatus,
-  UserRole,
+import {
+  NotificationType as NotificationTypeEnum,
+  type ProjectStatus,
+  type IntegrationStatus,
+  type UserRole,
 } from '@repo/types/prisma';
+import { randomUUID } from 'node:crypto';
 import { prisma } from '../../../lib/prisma';
 import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
 import { encryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
@@ -28,8 +37,17 @@ import type {
   ProjectRowWithOwner,
   UpdateProjectInput,
 } from './projects.types';
+import { WorkflowConfigError } from './workflow-config.errors';
 
 export type { CreateProjectInput, UpdateProjectInput } from './projects.types';
+
+export class ProjectTeamValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ProjectTeamValidationError';
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
 
 async function requireProjectManager(actorId: string) {
   return await requireUserWithRole(
@@ -232,10 +250,14 @@ export class ProjectsService {
     await this.projectsRepository.removeMember(projectId, userId);
   }
 
-  async createProject(
+  /**
+   * Validate + normalize create input (sync). Used before accepting async create
+   * and by the synchronous create helper.
+   */
+  private async prepareCreateProjectInput(
     actorId: string,
     input: CreateProjectInput
-  ): Promise<ProjectRow> {
+  ): Promise<CreateProjectInput> {
     await requireAdmin(actorId);
 
     const duplicate = await this.projectsRepository.findByKey(input.key);
@@ -257,6 +279,50 @@ export class ProjectsService {
       }
     }
 
+    const team = input.team;
+
+    if (team) {
+      // Collect the selected team member IDs.
+      const selectedMemberIds =
+        team.members?.map((member) => member.user_id) ?? team.member_ids ?? [];
+
+      // Include the manager and remove duplicate user IDs.
+      const teamUserIds = [...new Set([team.manager_id, ...selectedMemberIds])];
+
+      // Find active users matching the supplied IDs.
+      const activeUsers = await prisma.users.findMany({
+        where: {
+          id: { in: teamUserIds },
+          active: true,
+          membership_status: 'active',
+        },
+        select: {
+          id: true,
+          role: true,
+        },
+      });
+
+      // Every selected user must exist and be active.
+      if (activeUsers.length !== teamUserIds.length) {
+        throw new ProjectTeamValidationError(
+          'Team manager and members must be active users.'
+        );
+      }
+
+      // Only admins or managers can manage a team.
+      const manager = activeUsers.find((user) => user.id === team.manager_id);
+
+      if (
+        !manager ||
+        (manager.role !== UserRoleEnum.admin &&
+          manager.role !== UserRoleEnum.manager)
+      ) {
+        throw new ProjectTeamValidationError(
+          'Team manager must have an admin or manager role.'
+        );
+      }
+    }
+
     const prepared = prepareGithubTokenForPersist(
       input,
       'create'
@@ -270,15 +336,114 @@ export class ProjectsService {
         ? workflowConfig.work_item_types
         : [...CANONICAL_HIERARCHY_ORDER];
 
-    const preparedWithWorkflow: CreateProjectInput = {
+    return {
       ...prepared,
       workflow_config: {
         ...workflowConfig,
         work_item_types: workItemTypes,
       },
     };
+  }
 
-    return await this.projectsRepository.create(preparedWithWorkflow, actorId);
+  private async notifyProjectCreateResult(options: {
+    readonly userId: string;
+    readonly type:
+      | typeof NotificationTypeEnum.project_created
+      | typeof NotificationTypeEnum.project_create_failed;
+    readonly message: string;
+    readonly relatedItemId: string | null;
+  }): Promise<void> {
+    await prisma.notifications.create({
+      data: {
+        user_id: options.userId,
+        type: options.type,
+        message: options.message,
+        related_item_id: options.relatedItemId,
+        created_by: options.userId,
+      },
+    });
+  }
+
+  private async runCreateProjectInBackground(
+    actorId: string,
+    prepared: CreateProjectInput,
+    correlationId: string
+  ): Promise<void> {
+    let project: ProjectRow;
+    try {
+      project = await this.projectsRepository.create(prepared, actorId);
+    } catch (error: unknown) {
+      const reason =
+        error instanceof Error ? error.message : 'Unknown create failure';
+      console.error(
+        `error. project create failed correlationId=${correlationId} key=${prepared.key}: ${reason}`
+      );
+      try {
+        await this.notifyProjectCreateResult({
+          userId: actorId,
+          type: NotificationTypeEnum.project_create_failed,
+          message: `Could not create Project **${prepared.name}** (${prepared.key}). ${reason} (ref ${correlationId})`,
+          relatedItemId: null,
+        });
+      } catch (notifyError: unknown) {
+        console.error(
+          `error. project create failure notification failed correlationId=${correlationId}:`,
+          notifyError
+        );
+      }
+      return;
+    }
+
+    try {
+      await this.notifyProjectCreateResult({
+        userId: actorId,
+        type: NotificationTypeEnum.project_created,
+        message: `Project [**${project.name}**](/projects/${project.id}) is ready`,
+        relatedItemId: project.id,
+      });
+    } catch (notifyError: unknown) {
+      console.error(
+        `error. project create success notification failed correlationId=${correlationId} projectId=${project.id}:`,
+        notifyError
+      );
+    }
+  }
+
+  /**
+   * Validate sync, accept create, finish in the background with busy-retry,
+   * then inbox-notify the actor (workflow Step 11).
+   */
+  async enqueueCreateProject(
+    actorId: string,
+    input: CreateProjectInput
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    const prepared = await this.prepareCreateProjectInput(actorId, input);
+    const correlationId = randomUUID();
+
+    void this.runCreateProjectInBackground(
+      actorId,
+      prepared,
+      correlationId
+    ).catch((error: unknown) => {
+      console.error(
+        `error. project create background task crashed correlationId=${correlationId}:`,
+        error
+      );
+    });
+
+    return {
+      correlationId,
+      message: "Project creation started. You'll be notified when it's ready.",
+    };
+  }
+
+  /** Synchronous create (tests / internal). Prefer `enqueueCreateProject` for HTTP. */
+  async createProject(
+    actorId: string,
+    input: CreateProjectInput
+  ): Promise<ProjectRow> {
+    const prepared = await this.prepareCreateProjectInput(actorId, input);
+    return await this.projectsRepository.create(prepared, actorId);
   }
 
   async updateProject(
@@ -286,7 +451,10 @@ export class ProjectsService {
     projectId: string,
     input: UpdateProjectInput,
     expectedUpdatedAt: string
-  ): Promise<ProjectRow> {
+  ): Promise<{
+    project: ProjectRow;
+    typeRemoval: WorkItemTypeRemovalApplyResult | null;
+  }> {
     await requireProjectManager(actorId);
 
     if (input.github_repo !== undefined && input.github_repo !== null) {
@@ -345,15 +513,18 @@ export class ProjectsService {
       }
     }
 
-    await this.handleWorkItemTypeMigrationIfNeeded(
+    const removalResult = await this.handleWorkItemTypeMigrationIfNeeded(
       projectId,
       prepared,
       previous
     );
 
+    const persistInput: UpdateProjectInput = { ...prepared };
+    delete persistInput.typeRemovalStrategies;
+
     const updated = await this.projectsRepository.update(
       projectId,
-      prepared,
+      persistInput,
       actorId,
       expectedUpdatedAt
     );
@@ -371,7 +542,31 @@ export class ProjectsService {
       );
     }
 
-    return updated;
+    return { project: updated, typeRemoval: removalResult };
+  }
+
+  async previewWorkItemTypeRemoval(
+    actorId: string,
+    projectId: string,
+    removedTypes: WorkItemType[],
+    keptTypes: WorkItemType[]
+  ) {
+    await requireProjectManager(actorId);
+
+    const project = await this.projectsRepository.findById(projectId);
+    if (!project) {
+      throw new Error('Project not found');
+    }
+
+    const existingConfig =
+      (project.workflow_config as ProjectWorkflowConfig | null) ?? null;
+
+    return await this.projectsRepository.previewWorkItemTypeRemoval(
+      projectId,
+      removedTypes,
+      keptTypes,
+      existingConfig?.hierarchy ?? null
+    );
   }
 
   async softDeleteProject(
@@ -521,17 +716,17 @@ export class ProjectsService {
     projectId: string,
     prepared: UpdateProjectInput,
     previous: ProjectRow | null
-  ): Promise<void> {
+  ): Promise<WorkItemTypeRemovalApplyResult | null> {
     if (
       !prepared.workflow_config ||
       typeof prepared.workflow_config !== 'object'
     ) {
-      return;
+      return null;
     }
 
     const newConfig = prepared.workflow_config as ProjectWorkflowConfig;
     if (!newConfig.work_item_types || newConfig.work_item_types.length === 0) {
-      return;
+      return null;
     }
 
     const previousConfig = previous?.workflow_config as
@@ -542,15 +737,293 @@ export class ProjectsService {
         ? previousConfig.work_item_types
         : [...CANONICAL_HIERARCHY_ORDER];
 
-    const hasRemovedTypes = previousTypes.some(
+    const removedTypes = previousTypes.filter(
       (t) => !newConfig.work_item_types!.includes(t)
     );
 
-    if (hasRemovedTypes) {
-      await this.projectsRepository.migrateWorkItemTypesAndPruneHierarchy(
+    if (removedTypes.length === 0) {
+      return null;
+    }
+
+    const preview = await this.projectsRepository.previewWorkItemTypeRemoval(
+      projectId,
+      removedTypes,
+      newConfig.work_item_types,
+      newConfig.hierarchy ?? null,
+      1
+    );
+
+    const typesWithItems = preview.groups
+      .filter((group) => group.count > 0)
+      .map((group) => group.type);
+
+    if (typesWithItems.length === 0) {
+      return await this.projectsRepository.applyWorkItemTypeRemovalStrategies(
         projectId,
         newConfig.work_item_types,
-        newConfig.hierarchy
+        [],
+        newConfig.hierarchy ?? null
+      );
+    }
+
+    const strategies = prepared.typeRemovalStrategies ?? [];
+    const strategyTypes = new Set(strategies.map((s) => s.type));
+    const missing = typesWithItems.filter((t) => !strategyTypes.has(t));
+    if (missing.length > 0) {
+      throw new Error(
+        `Work items still use removed type(s) ${missing.join(', ')}. Provide typeRemovalStrategies (delete or migrate) for each before saving.`
+      );
+    }
+
+    const invalidMigrate = strategies.filter(
+      (s) =>
+        s.action === 'migrate' &&
+        (!s.migrateTo || !newConfig.work_item_types!.includes(s.migrateTo))
+    );
+    if (invalidMigrate.length > 0) {
+      throw new Error(
+        `Migration targets must be among the remaining project types.`
+      );
+    }
+
+    return await this.projectsRepository.applyWorkItemTypeRemovalStrategies(
+      projectId,
+      newConfig.work_item_types,
+      strategies.filter((s) => typesWithItems.includes(s.type)),
+      newConfig.hierarchy ?? null
+    );
+  }
+
+  async getWorkflowConfig(projectId: string, actorId: string) {
+    await this.assertProjectReadable(projectId, actorId);
+    const project = await this.projectsRepository.findById(projectId);
+    if (!project) {
+      throw new WorkflowConfigError('Project not found.', 404);
+    }
+
+    const resolved = resolveWorkflowConfig(project.workflow_config);
+    return {
+      config: resolved.config,
+      usedFallback: resolved.usedFallback,
+      updatedAt: project.updated_at,
+    };
+  }
+
+  async putWorkflowConfig(
+    actorId: string,
+    projectId: string,
+    envelope: WorkflowConfigEnvelope,
+    expectedUpdatedAt: string
+  ) {
+    await requireProjectManager(actorId);
+    const project = await this.requireProjectRow(projectId);
+    const merged = mergeWorkflowEnvelopeIntoProjectConfig(
+      project.workflow_config,
+      envelope
+    );
+
+    const updated = await this.projectsRepository.update(
+      projectId,
+      { workflow_config: merged as ProjectWorkflowConfig },
+      actorId,
+      expectedUpdatedAt
+    );
+
+    return {
+      config: resolveWorkflowConfig(updated.workflow_config).config,
+      usedFallback: false,
+      updatedAt: updated.updated_at,
+    };
+  }
+
+  async forkWorkflow(
+    actorId: string,
+    projectId: string,
+    input: {
+      readonly sourceWorkflowId?: string;
+      readonly title?: string;
+      readonly description?: string;
+    },
+    expectedUpdatedAt: string
+  ) {
+    await this.assertCanForkWorkflow(actorId, projectId);
+    const project = await this.requireProjectRow(projectId);
+    const { config } = resolveWorkflowConfig(project.workflow_config);
+    const sourceId = input.sourceWorkflowId ?? config.defaultWorkflowId;
+    const source = findWorkflowById(config, sourceId);
+    if (!source) {
+      throw new WorkflowConfigError(`Source workflow "${sourceId}" not found.`);
+    }
+    if (source.forkedFromId) {
+      throw new WorkflowConfigError(
+        'Cannot fork a forked workflow (fork depth is limited to 1).'
+      );
+    }
+
+    const forkId = `wf-${randomUUID()}`;
+    const fork: WorkflowDocument = {
+      ...structuredClone(source),
+      id: forkId,
+      title: input.title?.trim() || `${source.title} (fork)`,
+      description: input.description ?? source.description,
+      forkedFromId: source.id,
+      typeBindings: [],
+    };
+
+    const nextEnvelope = workflowConfigEnvelopeSchema.parse({
+      ...config,
+      workflows: [...config.workflows, fork],
+    });
+
+    const merged = mergeWorkflowEnvelopeIntoProjectConfig(
+      project.workflow_config,
+      nextEnvelope
+    );
+
+    const updated = await this.projectsRepository.update(
+      projectId,
+      { workflow_config: merged as ProjectWorkflowConfig },
+      actorId,
+      expectedUpdatedAt
+    );
+
+    return {
+      config: resolveWorkflowConfig(updated.workflow_config).config,
+      forkedWorkflowId: forkId,
+      updatedAt: updated.updated_at,
+    };
+  }
+
+  async setDefaultWorkflow(
+    actorId: string,
+    projectId: string,
+    workflowId: string,
+    expectedUpdatedAt: string
+  ) {
+    await requireProjectManager(actorId);
+    const project = await this.requireProjectRow(projectId);
+    const { config } = resolveWorkflowConfig(project.workflow_config);
+    if (!findWorkflowById(config, workflowId)) {
+      throw new WorkflowConfigError(`Workflow "${workflowId}" not found.`);
+    }
+
+    const nextEnvelope = workflowConfigEnvelopeSchema.parse({
+      ...config,
+      defaultWorkflowId: workflowId,
+    });
+    const merged = mergeWorkflowEnvelopeIntoProjectConfig(
+      project.workflow_config,
+      nextEnvelope
+    );
+
+    const updated = await this.projectsRepository.update(
+      projectId,
+      { workflow_config: merged as ProjectWorkflowConfig },
+      actorId,
+      expectedUpdatedAt
+    );
+
+    return {
+      config: resolveWorkflowConfig(updated.workflow_config).config,
+      updatedAt: updated.updated_at,
+    };
+  }
+
+  async deleteWorkflow(
+    actorId: string,
+    projectId: string,
+    workflowId: string,
+    expectedUpdatedAt: string
+  ) {
+    await requireProjectManager(actorId);
+    const project = await this.requireProjectRow(projectId);
+    const { config } = resolveWorkflowConfig(project.workflow_config);
+
+    if (!findWorkflowById(config, workflowId)) {
+      throw new WorkflowConfigError(`Workflow "${workflowId}" not found.`);
+    }
+    if (config.workflows.length <= 1) {
+      throw new WorkflowConfigError(
+        'Cannot delete the only workflow on a project.'
+      );
+    }
+    if (config.defaultWorkflowId === workflowId) {
+      throw new WorkflowConfigError(
+        'Cannot delete the default workflow. Mark another workflow as default first.'
+      );
+    }
+
+    const nextEnvelope = workflowConfigEnvelopeSchema.parse({
+      ...config,
+      workflows: config.workflows.filter(
+        (workflow) => workflow.id !== workflowId
+      ),
+    });
+    const merged = mergeWorkflowEnvelopeIntoProjectConfig(
+      project.workflow_config,
+      nextEnvelope
+    );
+
+    const updated = await this.projectsRepository.update(
+      projectId,
+      { workflow_config: merged as ProjectWorkflowConfig },
+      actorId,
+      expectedUpdatedAt
+    );
+
+    return {
+      config: resolveWorkflowConfig(updated.workflow_config).config,
+      updatedAt: updated.updated_at,
+    };
+  }
+
+  private async requireProjectRow(projectId: string): Promise<ProjectRow> {
+    const project = await this.projectsRepository.findById(projectId);
+    if (!project) {
+      throw new WorkflowConfigError('Project not found.', 404);
+    }
+    return project;
+  }
+
+  private async assertProjectReadable(
+    projectId: string,
+    actorId: string
+  ): Promise<void> {
+    const accessible =
+      await this.projectsRepository.listAccessibleProjectIds(actorId);
+    if (!accessible.includes(projectId)) {
+      throw new WorkflowConfigError(
+        'Unauthorized project workspace access.',
+        403
+      );
+    }
+  }
+
+  private async assertCanForkWorkflow(
+    actorId: string,
+    projectId: string
+  ): Promise<void> {
+    const actor = await getActorUser(actorId);
+    if (
+      actor.role === UserRoleEnum.admin ||
+      actor.role === UserRoleEnum.manager
+    ) {
+      return;
+    }
+
+    const team = await prisma.teams.findFirst({
+      where: {
+        project_id: projectId,
+        manager_id: actorId,
+        status: 'active',
+      },
+      select: { id: true },
+    });
+
+    if (!team) {
+      throw new WorkflowConfigError(
+        'Unauthorized. Only project managers/admins or a project team manager can fork workflows.',
+        403
       );
     }
   }

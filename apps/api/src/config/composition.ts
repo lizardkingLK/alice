@@ -20,6 +20,8 @@ import { createChatRouter } from '../routes/api/chat/chat.route';
 import { AttachmentsRepository } from '../routes/api/attachments/attachments.repository';
 import { AttachmentsService } from '../routes/api/attachments/attachments.service';
 import { createAttachmentsRouter } from '../routes/api/attachments/attachments.route';
+import { ActivitiesRepository } from '../routes/api/activities/activities.repository';
+import { ActivitiesService } from '../routes/api/activities/activities.service';
 import { WorklogsRepository } from '../routes/api/worklogs/worklogs.repository';
 import { WorklogsService } from '../routes/api/worklogs/worklogs.service';
 import { createWorklogsRouter } from '../routes/api/worklogs/worklogs.route';
@@ -118,13 +120,25 @@ function createAccessRequestsConfig() {
   };
 }
 
+function createActivitiesConfig() {
+  const activitiesRepository = new ActivitiesRepository();
+  const activitiesService = new ActivitiesService(activitiesRepository);
+
+  return {
+    activitiesRepository,
+    activitiesService,
+  };
+}
+
 function createAttachmentsConfig(
-  workItemRepository: Pick<WorkItemRepository, 'requireProjectMember'>
+  workItemRepository: Pick<WorkItemRepository, 'requireProjectMember'>,
+  activitiesService: ActivitiesService
 ) {
   const attachmentsRepository = new AttachmentsRepository(supabase);
   const attachmentsService = new AttachmentsService(
     attachmentsRepository,
-    workItemRepository
+    workItemRepository,
+    activitiesService
   );
   const router = createAttachmentsRouter({
     attachmentsService,
@@ -195,12 +209,14 @@ function createNotificationsConfig(
 
 function createWorkItemsConfig(
   notificationsService: NotificationsService,
+  activitiesService: ActivitiesService,
   githubService?: GithubService
 ) {
   const workItemRepository = new WorkItemRepository(supabase);
   const workItemService = new WorkItemService(
     workItemRepository,
-    githubService
+    githubService,
+    activitiesService
   );
   const router = createWorkItemsRouter({
     workItemService,
@@ -338,7 +354,6 @@ function createChatConfig(
   sprintsService: SprintsService,
   projectsService: ProjectsService,
   projectsRepository: ProjectsRepository,
-  teamsRepository: TeamsRepository,
   integrationsService: IntegrationsService
 ) {
   const chatRepository = new ChatRepository(supabase);
@@ -352,7 +367,6 @@ function createChatConfig(
     sprintsService,
     projectsService,
     projectsRepository,
-    teamsRepository,
     integrationsService,
   });
   const router = createChatRouter({ chatService });
@@ -415,13 +429,16 @@ export const accessAllowlist = createAccessAllowlistConfig(
 export const notifications = createNotificationsConfig(
   accessRequests.accessRequestsService
 );
+export const activities = createActivitiesConfig();
 export const github = createGithubConfig();
 export const workItems = createWorkItemsConfig(
   notifications.notificationsService,
+  activities.activitiesService,
   github.githubService
 );
 export const attachments = createAttachmentsConfig(
-  workItems.workItemRepository
+  workItems.workItemRepository,
+  activities.activitiesService
 );
 export const comments = createCommentsConfig(
   notifications.notificationsService
@@ -461,6 +478,5 @@ export const chat = createChatConfig(
   sprints.sprintsService,
   projects.projectsService,
   projects.projectsRepository,
-  teams.teamsRepository,
   integrations.integrationsService
 );

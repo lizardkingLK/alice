@@ -12,8 +12,14 @@ const {
   updateMock,
   deleteMock,
   migrateWorkItemTypesAndPruneHierarchyMock,
+  previewWorkItemTypeRemovalMock,
+  applyWorkItemTypeRemovalStrategiesMock,
   listAccessibleProjectIdsMock,
   listAccessibleSummariesMock,
+  usersFindManyMock,
+  integrationFindFirstMock,
+  teamFindFirstMock,
+  notificationsCreateMock,
 } = vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
   return {
@@ -28,8 +34,14 @@ const {
     updateMock: vi.fn(),
     deleteMock: vi.fn(),
     migrateWorkItemTypesAndPruneHierarchyMock: vi.fn(),
+    previewWorkItemTypeRemovalMock: vi.fn(),
+    applyWorkItemTypeRemovalStrategiesMock: vi.fn(),
     listAccessibleProjectIdsMock: vi.fn(),
     listAccessibleSummariesMock: vi.fn(),
+    usersFindManyMock: vi.fn(),
+    integrationFindFirstMock: vi.fn(),
+    teamFindFirstMock: vi.fn(),
+    notificationsCreateMock: vi.fn(),
   };
 });
 
@@ -45,8 +57,18 @@ vi.mock('../../src/lib/supabase', () => ({
   },
 }));
 
+vi.mock('../../src/lib/prisma', () => ({
+  prisma: {
+    users: { findMany: usersFindManyMock },
+    integrations: { findFirst: integrationFindFirstMock },
+    teams: { findFirst: teamFindFirstMock },
+    notifications: { create: notificationsCreateMock },
+  },
+}));
+
 import {
   CreateProjectInput,
+  ProjectTeamValidationError,
   ProjectsService,
 } from '../../src/routes/api/projects/projects.service';
 import type { ProjectsRepository } from '../../src/routes/api/projects/projects.repository';
@@ -96,6 +118,8 @@ describe('ProjectsService backend tests', () => {
     delete: deleteMock,
     migrateWorkItemTypesAndPruneHierarchy:
       migrateWorkItemTypesAndPruneHierarchyMock,
+    previewWorkItemTypeRemoval: previewWorkItemTypeRemovalMock,
+    applyWorkItemTypeRemovalStrategies: applyWorkItemTypeRemovalStrategiesMock,
     listAccessibleProjectIds: listAccessibleProjectIdsMock,
     listAccessibleSummaries: listAccessibleSummariesMock,
   } as unknown as ProjectsRepository;
@@ -133,6 +157,67 @@ describe('ProjectsService backend tests', () => {
       selectSingleMock.mockResolvedValue({ data: { role }, error: null });
     }
   }
+
+  describe('enqueueCreateProject', () => {
+    it('accepts create and notifies when background create succeeds', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      createMock.mockResolvedValue(mockProject);
+      notificationsCreateMock.mockResolvedValue({});
+
+      const accepted = await service.enqueueCreateProject(
+        'user-admin',
+        createProjectInput()
+      );
+
+      expect(accepted.correlationId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      );
+      expect(accepted.message).toMatch(/notified/i);
+
+      await vi.waitFor(() => {
+        expect(createMock).toHaveBeenCalled();
+        expect(notificationsCreateMock).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            user_id: 'user-admin',
+            type: 'project_created',
+            related_item_id: mockProject.id,
+            message: `Project [**${mockProject.name}**](/projects/${mockProject.id}) is ready`,
+          }),
+        });
+      });
+    });
+
+    it('does not send create_failed when create succeeds but notify fails', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      createMock.mockResolvedValue(mockProject);
+      notificationsCreateMock.mockRejectedValue(
+        new Error('invalid enum value')
+      );
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      await service.enqueueCreateProject('user-admin', createProjectInput());
+
+      await vi.waitFor(() => {
+        expect(createMock).toHaveBeenCalled();
+        expect(notificationsCreateMock).toHaveBeenCalledTimes(1);
+        expect(errorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('success notification failed'),
+          expect.any(Error)
+        );
+      });
+
+      expect(notificationsCreateMock).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          type: 'project_created',
+          related_item_id: mockProject.id,
+        }),
+      });
+
+      errorSpy.mockRestore();
+    });
+  });
 
   describe('createProject', () => {
     it('creates project successfully as administrator', async () => {
@@ -180,6 +265,182 @@ describe('ProjectsService backend tests', () => {
         'user-admin'
       );
       expect(result).toEqual(mockProject);
+    });
+
+    it('preserves initial sprint data during project preparation', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      createMock.mockResolvedValue(mockProject);
+      const sprint = {
+        name: 'Sprint 1',
+        goal: 'Initial delivery',
+        startDate: '2026-09-01',
+        endDate: '2026-09-14',
+      };
+      const input = createProjectInput({ sprint });
+
+      await service.createProject('user-admin', input);
+
+      expect(createMock).toHaveBeenCalledWith(
+        expect.objectContaining({ sprint }),
+        'user-admin'
+      );
+    });
+
+    it('validates and preserves initial team data', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      createMock.mockResolvedValue(mockProject);
+      usersFindManyMock.mockResolvedValue([
+        { id: 'team-manager', role: 'manager' },
+        { id: 'team-member', role: 'member' },
+      ]);
+      const team = {
+        name: 'Platform Team',
+        description: null,
+        manager_id: 'team-manager',
+        tech_stack: null,
+        status: 'active' as const,
+        member_ids: ['team-member', 'team-member'],
+      };
+
+      await service.createProject('user-admin', createProjectInput({ team }));
+
+      expect(usersFindManyMock).toHaveBeenCalledWith({
+        where: {
+          id: { in: ['team-manager', 'team-member'] },
+          active: true,
+          membership_status: 'active',
+        },
+        select: { id: true, role: true },
+      });
+      expect(createMock).toHaveBeenCalledWith(
+        expect.objectContaining({ team }),
+        'user-admin'
+      );
+    });
+
+    it('rejects an inactive initial team manager', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      usersFindManyMock.mockResolvedValue([]);
+
+      await expect(
+        service.createProject(
+          'user-admin',
+          createProjectInput({
+            team: {
+              name: 'Platform Team',
+              manager_id: 'inactive-manager',
+              status: 'active',
+              member_ids: [],
+            },
+          })
+        )
+      ).rejects.toThrow('Team manager and members must be active users.');
+
+      expect(createMock).not.toHaveBeenCalled();
+    });
+
+    it('rejects an inactive selected team member', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      usersFindManyMock.mockResolvedValue([
+        { id: 'team-manager', role: 'manager' },
+      ]);
+
+      const result = service.createProject(
+        'user-admin',
+        createProjectInput({
+          team: {
+            name: 'Platform Team',
+            manager_id: 'team-manager',
+            status: 'active',
+            member_ids: ['inactive-member'],
+          },
+        })
+      );
+
+      await expect(result).rejects.toBeInstanceOf(ProjectTeamValidationError);
+      await expect(result).rejects.toThrow(
+        'Team manager and members must be active users.'
+      );
+      expect(createMock).not.toHaveBeenCalled();
+    });
+
+    it('rejects a selected team member with inactive membership status', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      usersFindManyMock.mockResolvedValue([
+        { id: 'team-manager', role: 'manager' },
+      ]);
+
+      await expect(
+        service.createProject(
+          'user-admin',
+          createProjectInput({
+            team: {
+              name: 'Platform Team',
+              manager_id: 'team-manager',
+              status: 'active',
+              member_ids: ['membership-inactive-member'],
+            },
+          })
+        )
+      ).rejects.toBeInstanceOf(ProjectTeamValidationError);
+
+      expect(usersFindManyMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ membership_status: 'active' }),
+        })
+      );
+      expect(createMock).not.toHaveBeenCalled();
+    });
+
+    it('accepts an active administrator as the initial team manager', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      createMock.mockResolvedValue(mockProject);
+      usersFindManyMock.mockResolvedValue([
+        { id: 'team-admin', role: 'admin' },
+      ]);
+      const team = {
+        name: 'Platform Team',
+        manager_id: 'team-admin',
+        status: 'active' as const,
+        member_ids: [],
+      };
+
+      await service.createProject('user-admin', createProjectInput({ team }));
+
+      expect(createMock).toHaveBeenCalledWith(
+        expect.objectContaining({ team }),
+        'user-admin'
+      );
+    });
+
+    it('rejects an initial team manager without admin or manager role', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      usersFindManyMock.mockResolvedValue([
+        { id: 'member-manager', role: 'member' },
+      ]);
+
+      await expect(
+        service.createProject(
+          'user-admin',
+          createProjectInput({
+            team: {
+              name: 'Platform Team',
+              manager_id: 'member-manager',
+              status: 'active',
+              member_ids: [],
+            },
+          })
+        )
+      ).rejects.toThrow('Team manager must have an admin or manager role.');
+
+      expect(createMock).not.toHaveBeenCalled();
     });
 
     it('rejects creation for managers', async () => {
@@ -285,10 +546,48 @@ describe('ProjectsService backend tests', () => {
         'user-manager',
         mockProject.updated_at
       );
-      expect(result.name).toBe('Updated name');
+      expect(result.project.name).toBe('Updated name');
     });
 
-    it('migrates work items to Issue and prunes hierarchy when types are removed on update', async () => {
+    it('requires typeRemovalStrategies when removing types that still have work items', async () => {
+      mockActorRole('manager');
+      findByKeyMock.mockResolvedValue(null);
+      findByIdMock.mockResolvedValue({
+        ...mockProject,
+        workflow_config: {
+          work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+        },
+      });
+      previewWorkItemTypeRemovalMock.mockResolvedValue({
+        groups: [
+          {
+            type: 'Feature',
+            count: 2,
+            childSlotParents: [],
+            items: [],
+          },
+        ],
+        totalAffected: 2,
+      });
+
+      await expect(
+        service.updateProject(
+          'user-manager',
+          'project-1',
+          {
+            workflow_config: {
+              work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+            },
+          },
+          mockProject.updated_at
+        )
+      ).rejects.toThrow(/typeRemovalStrategies/);
+
+      expect(applyWorkItemTypeRemovalStrategiesMock).not.toHaveBeenCalled();
+      expect(updateMock).not.toHaveBeenCalled();
+    });
+
+    it('applies typeRemovalStrategies when removing types with existing work items', async () => {
       mockActorRole('manager');
       findByKeyMock.mockResolvedValue(null);
       findByIdMock.mockResolvedValue({
@@ -298,27 +597,48 @@ describe('ProjectsService backend tests', () => {
         },
       });
       updateMock.mockResolvedValue(mockProject);
-      migrateWorkItemTypesAndPruneHierarchyMock.mockResolvedValue({
+      previewWorkItemTypeRemovalMock.mockResolvedValue({
+        groups: [
+          {
+            type: 'Feature',
+            count: 2,
+            childSlotParents: [],
+            items: [],
+          },
+        ],
+        totalAffected: 2,
+      });
+      applyWorkItemTypeRemovalStrategiesMock.mockResolvedValue({
+        detachedCount: 1,
+        deletedCount: 0,
         migratedCount: 2,
-        unlinkedCount: 1,
       });
 
-      await service.updateProject(
+      const result = await service.updateProject(
         'user-manager',
         'project-1',
         {
           workflow_config: {
             work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
           },
+          typeRemovalStrategies: [
+            { type: 'Feature', action: 'migrate', migrateTo: 'Story' },
+          ],
         },
         mockProject.updated_at
       );
 
-      expect(migrateWorkItemTypesAndPruneHierarchyMock).toHaveBeenCalledWith(
+      expect(applyWorkItemTypeRemovalStrategiesMock).toHaveBeenCalledWith(
         'project-1',
         ['Epic', 'Story', 'Task', 'Issue'],
-        undefined
+        [{ type: 'Feature', action: 'migrate', migrateTo: 'Story' }],
+        null
       );
+      expect(result.typeRemoval).toEqual({
+        detachedCount: 1,
+        deletedCount: 0,
+        migratedCount: 2,
+      });
     });
 
     it('validates key uniqueness on update', async () => {

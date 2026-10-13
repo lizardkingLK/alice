@@ -1,6 +1,15 @@
 import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { ProjectDetailsWorkspace } from '@/app/projects/_components/project-details/project-details-workspace';
 import { ProjectWorkspaceAccessDenied } from '@/app/projects/_components/project-details/project-workspace-access-denied';
+import {
+  PROJECT_DETAILS_SIDEBAR_COOKIE_NAME,
+  parseProjectDetailsSidebarOpenCookie,
+} from '@/app/projects/_helpers/project-details-sidebar-storage';
+import {
+  WORKFLOW_DESIGNER_SETTINGS_COOKIE_NAME,
+  parseWorkflowDesignerSettingsOpenCookie,
+} from '@/app/projects/_helpers/workflow-designer-settings-storage';
 import { getProjectWorkspace } from '@/app/projects/_services/projects.reads.workspace.server';
 import { readWorkItemTableColumnVisibilityBootstrap } from '@/app/work-items/_helpers/work-item-table-columns-cookie.server';
 import type { RawSearchParams } from '@/lib/search-params';
@@ -10,15 +19,36 @@ type ProjectDetailsDataProps = {
   readonly searchParams: Promise<RawSearchParams>;
 };
 
+async function readProjectPanelDefaults(): Promise<{
+  readonly sidebarOpen: boolean;
+  readonly workflowSettingsOpen: boolean;
+}> {
+  const store = await cookies();
+  return {
+    sidebarOpen: parseProjectDetailsSidebarOpenCookie(
+      store.get(PROJECT_DETAILS_SIDEBAR_COOKIE_NAME)?.value
+    ),
+    workflowSettingsOpen: parseWorkflowDesignerSettingsOpenCookie(
+      store.get(WORKFLOW_DESIGNER_SETTINGS_COOKIE_NAME)?.value
+    ),
+  };
+}
+
 export async function ProjectDetailsData({
   projectId,
   searchParams,
 }: Readonly<ProjectDetailsDataProps>) {
   const resolvedSearchParams = await searchParams;
-  const [workspace, columnVisibilityBootstrap] = await Promise.all([
-    getProjectWorkspace(projectId, resolvedSearchParams),
-    readWorkItemTableColumnVisibilityBootstrap(),
-  ]);
+  const [workspace, columnVisibilityBootstrap, panelDefaults] =
+    await Promise.all([
+      getProjectWorkspace(projectId, resolvedSearchParams),
+      readWorkItemTableColumnVisibilityBootstrap(),
+      readProjectPanelDefaults(),
+    ]);
+  const {
+    sidebarOpen: initialSidebarOpen,
+    workflowSettingsOpen: initialWorkflowSettingsOpen,
+  } = panelDefaults;
 
   if (!workspace) {
     notFound();
@@ -49,6 +79,8 @@ export async function ProjectDetailsData({
         boardRuleTeams={workspace.boardRuleTeams}
         initialColumnVisibility={columnVisibilityBootstrap.visibility}
         columnVisibilityHasCookie={columnVisibilityBootstrap.hasCookie}
+        initialSidebarOpen={initialSidebarOpen}
+        initialWorkflowSettingsOpen={initialWorkflowSettingsOpen}
       />
     </div>
   );

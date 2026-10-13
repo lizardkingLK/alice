@@ -142,7 +142,6 @@ describe('Dynamic Fields Schema Generation and Merging', () => {
       sprintsService: {} as never,
       projectsService: {} as never,
       projectsRepository: {} as never,
-      teamsRepository: {} as never,
       integrationsService: {} as never,
     });
 
@@ -175,7 +174,6 @@ describe('Dynamic Fields Schema Generation and Merging', () => {
       sprintsService: {} as never,
       projectsService: {} as never,
       projectsRepository: {} as never,
-      teamsRepository: {} as never,
       integrationsService: {
         resolveChatModelForChat: vi.fn().mockResolvedValue({}),
       } as never,
@@ -317,7 +315,6 @@ describe('ChatService loadChatHistory with Expired Attachments', () => {
       sprintsService: {} as never,
       projectsService: {} as never,
       projectsRepository: {} as never,
-      teamsRepository: {} as never,
       integrationsService: {} as never,
     });
 
@@ -356,7 +353,6 @@ describe('ChatService batch_import_work_items', () => {
       workItemService: { createWorkItem: createWorkItemMock } as never,
       sprintsService: {} as never,
       projectsService: {} as never,
-      teamsRepository: {} as never,
       integrationsService: {} as never,
     });
 
@@ -420,7 +416,6 @@ describe('ChatService batch_import_work_items', () => {
       workItemService: { createWorkItem: createWorkItemMock } as never,
       sprintsService: {} as never,
       projectsService: {} as never,
-      teamsRepository: {} as never,
       integrationsService: {} as never,
     });
 
@@ -497,7 +492,6 @@ describe('ChatService batch_import_work_items', () => {
       workItemService: { createWorkItem: createWorkItemMock } as never,
       sprintsService: {} as never,
       projectsService: {} as never,
-      teamsRepository: {} as never,
       integrationsService: {} as never,
     });
 
@@ -573,7 +567,6 @@ describe('ChatService batch_import_work_items', () => {
       workItemService: { createWorkItem: createWorkItemMock } as never,
       sprintsService: {} as never,
       projectsService: {} as never,
-      teamsRepository: {} as never,
       integrationsService: {} as never,
     });
 
@@ -655,7 +648,6 @@ describe('ChatService batch_import_work_items', () => {
       workItemService: { createWorkItem: vi.fn() } as never,
       sprintsService: {} as never,
       projectsService: {} as never,
-      teamsRepository: {} as never,
       integrationsService: {} as never,
     });
 
@@ -735,7 +727,6 @@ describe('ChatService batch_import_work_items', () => {
       workItemService: { createWorkItem: vi.fn() } as never,
       sprintsService: {} as never,
       projectsService: {} as never,
-      teamsRepository: {} as never,
       integrationsService: {} as never,
     });
 
@@ -835,7 +826,6 @@ describe('ChatService batch_import_work_items', () => {
       workItemService: { createWorkItem: createWorkItemMock } as never,
       sprintsService: {} as never,
       projectsService: {} as never,
-      teamsRepository: {} as never,
       integrationsService: {} as never,
     });
 
@@ -926,7 +916,6 @@ ALICE-2,Feature,Authentication Service,ALICE-1,high,Updated auth description,Sec
       workItemService: { createWorkItem: createWorkItemMock } as never,
       sprintsService: {} as never,
       projectsService: {} as never,
-      teamsRepository: {} as never,
       integrationsService: {} as never,
     });
 
@@ -1019,7 +1008,6 @@ ALICE-2,Feature,Authentication Service,ALICE-1,high,Updated auth description,Sec
         projectsService: {
           listProjectsForActor: listProjectsForActorMock,
         } as never,
-        teamsRepository: {} as never,
         integrationsService: {} as never,
       });
 
@@ -1111,7 +1099,6 @@ ALICE-2,Feature,Authentication Service,ALICE-1,high,Updated auth description,Sec
         projectsService: {
           listProjectsForActor: listProjectsForActorMock,
         } as never,
-        teamsRepository: {} as never,
         integrationsService: {} as never,
       });
 

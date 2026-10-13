@@ -6,50 +6,74 @@ Set who owns work and move items through your workflow.
 
 ---
 
-## Status workflow
+## States and categories
 
-Common statuses (project may vary):
+Each work item follows its project **workflow** (by type). The details sidebar
+shows the **workflow name** and the current **state**. Lists and filters group
+work by **category** (for example to do, in progress, done) so cross-project
+views stay simple.
 
-| Status          | Meaning               |
-| --------------- | --------------------- |
-| **Draft**       | Not on the board yet  |
-| **New**         | Ready but not started |
-| **To Do**       | Queued for work       |
-| **In Progress** | Actively being worked |
-| **Testing**     | In review or QA       |
-| **Done**        | Complete              |
+Typical default states (projects may rename or add their own):
 
-Change status from the work-item sidebar dropdown, the board (drag cards), or
-bulk actions where available.
+| State           | Usual category | Meaning               |
+| --------------- | -------------- | --------------------- |
+| **Draft**       | draft          | Not on the board yet  |
+| **New**         | todo           | Ready but not started |
+| **To Do**       | todo           | Queued for work       |
+| **In Progress** | in progress    | Actively being worked |
+| **Testing**     | in progress    | In review or QA       |
+| **Done**        | done           | Complete              |
 
-**Draft** items are hidden from the kanban board.
+On the work-item details page, the header banner shows the current **state**
+(icon + color) with the title, type, key, project, and assignee. Change state
+from the colorized **State** control in the sidebar (or **Status** on projects
+that still use a legacy board). The work-items list and Charts drilldown table
+also show a **State** column (next to **Status**) with the same workflow label.
+The board (drag cards) and bulk actions also move items where available.
+
+Only **allowed transitions** succeed — including moves back (for example
+Testing → In Progress) when the workflow defines them. If the transition
+**Requires escalation**, you complete the **resolution form** (fields +
+**Outcome**) before the move finishes.
+
+**Draft**-category states stay off the kanban board. You can still move an item
+into a draft state from details; it leaves the board until it returns to a
+non-draft state.
 
 ---
 
-## Assignee and reporter
+## Assignee, reporter, sprint, and due date
 
 - **Assignee** — who is responsible for delivery
 - **Reporter** — who reported or owns the request
+- **Sprint** — which sprint the item belongs to, or **Backlog** when cleared
+- **Due date** — optional calendar day the item should be finished by
 
-Use the searchable dropdowns in the sidebar. **My Work** filters the registry to
-items where you are assignee.
+Use the searchable controls (and date picker for due date) in the create/edit
+dialogs and the details sidebar. **My Work** filters the registry to items where
+you are assignee. The calendar view also shows items by due date.
 
 ---
 
-## Done rules
+## Completion and locks
 
-Before marking **Done**:
+Workflow edges can set **Require children** to **Off**, **All complete** (direct
+subtasks must be in a done category), or **Match parent target** (direct
+subtasks must already be in the parent’s target state, or the same category when
+types differ). If blocked, a dialog explains what to fix.
 
-- All **direct subtasks** must be Done (or unlinked)
-- If blocked, a dialog explains which children are incomplete
+When a state has **Lock record in this state**, most fields stay read-only until
+you move the item (for example reopen from Done). **Terminal state** means no
+outbound moves.
 
-After **Done**, most fields become read-only until status changes again.
+Managers configure these rules in the
+[Workflow designer](../board-and-planning/workflow-designer.md).
 
 ---
 
 ## Board and backlog
 
-- **Board** — drag a card between columns to change status
+- **Board** — pick a workflow in the switcher, then drag cards between columns
 - **Backlog** — drag items into sprints or reorder within the backlog pane
 
 ---
@@ -57,4 +81,6 @@ After **Done**, most fields become read-only until status changes again.
 ## Related
 
 - [Kanban board](../board-and-planning/kanban-board.md)
+- [Workflow designer](../board-and-planning/workflow-designer.md)
 - [Edit a work item](./edit-work-item.md)
+- [Comments and activity](./comments-and-activity.md)

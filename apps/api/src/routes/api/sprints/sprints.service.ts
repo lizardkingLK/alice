@@ -1,6 +1,7 @@
 import {
   computeBurndown,
   mapSprintRowToResponse,
+  seriesFromBurndownRollupRows,
   SprintStatusEnum,
   UserRoleEnum,
   type DeleteSprintAction,
@@ -10,6 +11,7 @@ import {
   type SprintDetailRow,
   type SprintPrismaListFilters,
   paginationMeta,
+  normalizeSprintGoal,
 } from '@repo/types';
 import type { CreateSprintBody, UpdateSprintBody } from './sprints.schemas';
 import type {
@@ -51,8 +53,7 @@ export class SprintsService {
     input: CreateSprintBody
   ): Promise<SprintResponse> {
     await requireManagerOrAdmin(userId);
-    const goal =
-      input.goal === undefined || input.goal === '' ? null : input.goal;
+    const goal = normalizeSprintGoal(input.goal);
 
     const duplicate = await this.sprints.findByNameInProject(
       input.projectId,
@@ -144,8 +145,8 @@ export class SprintsService {
     input: UpdateSprintBody
   ): Promise<SprintResponse> {
     await requireManagerOrAdmin(userId);
-    const goal =
-      input.goal === undefined || input.goal === '' ? null : input.goal;
+    await this.sprints.requireProjectMember(sprintId, userId);
+    const goal = normalizeSprintGoal(input.goal);
 
     const currentSprint = await this.sprints.findById(sprintId);
     if (!currentSprint) {
@@ -156,6 +157,7 @@ export class SprintsService {
     }
 
     if (input.projectId !== currentSprint.project_id) {
+      await this.sprints.assertCanAccessProject(userId, input.projectId);
       const count = await this.sprints.getWorkItemCount(sprintId);
       if (count > 0) {
         throw new Error(
@@ -286,11 +288,33 @@ export class SprintBurndownService {
       return null;
     }
 
+    const rollupRows = await this.burndownRepo.getBurndownRollupRows(sprintId);
+    if (rollupRows.length > 0) {
+      const { estimatedTotal, series } = seriesFromBurndownRollupRows(
+        sprint,
+        rollupRows
+      );
+      return {
+        sprint: {
+          id: sprint.id,
+          name: sprint.name,
+          startDate: sprint.start_date,
+          endDate: sprint.end_date,
+          status: sprint.status,
+        },
+        estimatedTotal,
+        series,
+      };
+    }
+
     const items = await this.burndownRepo.getWorkItemsForBurndown(sprintId);
     const workItemIds = items.map((i) => i.id);
     const workLogs =
       await this.burndownRepo.getWorkLogsForWorkItems(workItemIds);
     const { estimatedTotal, series } = computeBurndown(sprint, items, workLogs);
+
+    // Best-effort populate rollup for subsequent reads (migration applied).
+    void this.burndownRepo.rebuildBurndownRollup(sprintId);
 
     return {
       sprint: {

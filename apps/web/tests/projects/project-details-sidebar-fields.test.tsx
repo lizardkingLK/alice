@@ -49,6 +49,8 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+vi.mock('next/dynamic', () => import('../mocks/next-dynamic'));
+
 vi.mock(
   '@/app/projects/_components/project-details/project-summary-banner',
   () => ({
@@ -95,10 +97,10 @@ vi.mock(
 );
 
 vi.mock(
-  '@/app/projects/_components/project-details/board-designer-workspace',
+  '@/app/projects/_components/project-details/workflow-designer-workspace',
   () => ({
-    BoardDesignerWorkspace: () => (
-      <div data-testid="board-designer-workspace">Board Designer</div>
+    WorkflowDesignerWorkspace: () => (
+      <div data-testid="workflow-designer-workspace">Workflow Designer</div>
     ),
   })
 );
@@ -167,8 +169,10 @@ describe('parseProjectDetailsTab', () => {
     expect(parseProjectDetailsTab('work-items')).toBe('work-items');
     expect(parseProjectDetailsTab('sprints')).toBe('sprints');
     expect(parseProjectDetailsTab('integrations')).toBe('integrations');
-    expect(parseProjectDetailsTab('board')).toBe('board');
-    expect(parseProjectDetailsTab('settings')).toBe('settings');
+    expect(parseProjectDetailsTab('board')).toBe('workflow');
+    expect(parseProjectDetailsTab('workflow')).toBe('workflow');
+    expect(parseProjectDetailsTab('types')).toBe('types');
+    expect(parseProjectDetailsTab('settings')).toBe('types');
   });
 
   it('falls back to "details" for unknown or empty values', () => {
@@ -184,7 +188,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
     mockPush.mockClear();
   });
 
-  it('renders the board designer for ?tab=board', () => {
+  it('redirects legacy ?tab=board bookmarks to the Workflow designer', async () => {
     searchParamsValue = new URLSearchParams('tab=board');
 
     render(
@@ -225,10 +229,58 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       />
     );
 
-    expect(screen.getByTestId('board-designer-workspace')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('workflow-designer-workspace')
+    ).toBeInTheDocument();
   });
 
-  it('renders all navigation options including role-gated Sprints and Board', () => {
+  it('renders the workflow designer for ?tab=workflow', async () => {
+    searchParamsValue = new URLSearchParams('tab=workflow');
+
+    render(
+      <ProjectDetailsWorkspace
+        project={mockProject}
+        members={[]}
+        allUsers={[]}
+        currentUserId="user-manager-1"
+        currentUserRole="manager"
+        workItems={{
+          initialWorkItems: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          typeFilter: '',
+          assigneeFilter: '',
+          sprintFilter: '',
+          listView: 'flat',
+          tab: 'active',
+        }}
+        teams={{
+          items: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          status: 'active',
+        }}
+        sprints={{
+          sprints: [],
+          pagination: { page: 1, limit: 10, totalCount: 0, totalPages: 1 },
+          filterTab: 'active',
+          search: '',
+        }}
+      />
+    );
+
+    expect(
+      await screen.findByTestId('workflow-designer-workspace')
+    ).toBeInTheDocument();
+  });
+
+  it('renders all navigation options including role-gated Sprints and Workflow', () => {
     render(
       <ProjectDetailsWorkspace
         project={mockProject}
@@ -280,7 +332,12 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       screen.getByRole('link', { name: /integrations/i })
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /fields/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /board/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /^workflow$/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /^board$/i })
+    ).not.toBeInTheDocument();
   });
 
   it('hides manager-only nav for members', () => {
@@ -335,10 +392,13 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       screen.queryByRole('link', { name: /fields/i })
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('link', { name: /board/i })
+      screen.queryByRole('link', { name: /^board$/i })
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('link', { name: /settings/i })
+      screen.queryByRole('link', { name: /^workflow$/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /^types$/i })
     ).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /details/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /members/i })).toBeInTheDocument();

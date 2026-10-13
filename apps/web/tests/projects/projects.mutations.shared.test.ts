@@ -4,9 +4,13 @@ import { projectFactory } from '../factories/project.factory';
 import type { CreateProjectInput } from '@/app/projects/_services/projects.mutations.client';
 
 describe('createProjectsService frontend tests', () => {
-  it('creates project via POST', async () => {
-    const project = projectFactory.build();
-    const apiFetch = vi.fn().mockResolvedValue({ project });
+  it('accepts project create via POST (202)', async () => {
+    const accepted = {
+      accepted: true as const,
+      message: 'Project creation started. You’ll be notified when it’s ready.',
+      correlationId: 'corr-1',
+    };
+    const apiFetch = vi.fn().mockResolvedValue(accepted);
     const service = createProjectsService(apiFetch);
     const input: CreateProjectInput = {
       name: 'Project Alpha',
@@ -26,8 +30,78 @@ describe('createProjectsService frontend tests', () => {
     expect(apiFetch).toHaveBeenCalledWith('/api/projects', {
       method: 'POST',
       body: JSON.stringify(input),
+      skipDatabaseBusyRetry: true,
     });
-    expect(result).toEqual(project);
+    expect(result).toEqual(accepted);
+  });
+
+  it('includes initial sprint data in the project POST body', async () => {
+    const accepted = {
+      accepted: true as const,
+      message: 'ok',
+      correlationId: 'corr-1',
+    };
+    const apiFetch = vi.fn().mockResolvedValue(accepted);
+    const service = createProjectsService(apiFetch);
+    const input: CreateProjectInput = {
+      name: 'Project Alpha',
+      key: 'PAL',
+      description: null,
+      owner_id: 'user-1',
+      status: 'active',
+      start_date: null,
+      end_date: null,
+      attributes_config: null,
+      sprint: {
+        name: 'Sprint 1',
+        goal: null,
+        startDate: '2026-09-01',
+        endDate: '2026-09-14',
+      },
+    };
+
+    await service.createProject(input);
+
+    expect(apiFetch).toHaveBeenCalledWith('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify(input),
+      skipDatabaseBusyRetry: true,
+    });
+  });
+
+  it('includes initial team data in the project POST body', async () => {
+    const apiFetch = vi.fn().mockResolvedValue({
+      accepted: true,
+      message: 'ok',
+      correlationId: 'corr-1',
+    });
+    const service = createProjectsService(apiFetch);
+    const input: CreateProjectInput = {
+      name: 'Project Alpha',
+      key: 'PAL',
+      description: null,
+      owner_id: '11111111-1111-4111-8111-111111111111',
+      status: 'active',
+      start_date: null,
+      end_date: null,
+      attributes_config: null,
+      team: {
+        name: 'Platform Team',
+        description: null,
+        manager_id: '22222222-2222-4222-8222-222222222222',
+        tech_stack: null,
+        status: 'active',
+        member_ids: ['33333333-3333-4333-8333-333333333333'],
+      },
+    };
+
+    await service.createProject(input);
+
+    expect(apiFetch).toHaveBeenCalledWith('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify(input),
+      skipDatabaseBusyRetry: true,
+    });
   });
 
   it('updates project via PUT', async () => {
@@ -52,19 +126,14 @@ describe('createProjectsService frontend tests', () => {
     expect(result).toEqual(project);
   });
 
-  it('updates a project board configuration via PUT', async () => {
+  it('updates project work item types via PUT workflow_config', async () => {
     const project = projectFactory.build();
     const apiFetch = vi.fn().mockResolvedValue({ project });
     const service = createProjectsService(apiFetch);
     const workflow_config = {
-      version: '1' as const,
-      columns: [
-        { id: 'new', name: 'New', status: 'New' as const },
-        { id: 'todo', name: 'Ready', status: 'ToDo' as const },
-        { id: 'doing', name: 'Doing', status: 'InProgress' as const },
-        { id: 'test', name: 'Testing', status: 'Testing' as const },
-        { id: 'done', name: 'Done', status: 'Done' as const },
-      ],
+      work_item_types: ['Epic', 'Story', 'Task'] as Array<
+        'Epic' | 'Story' | 'Task' | 'Issue' | 'Feature'
+      >,
     };
 
     await service.updateProject('proj-1', { workflow_config }, 'timestamp');

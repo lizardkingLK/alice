@@ -1,24 +1,30 @@
 'use client';
 
-import {
-  formatLabelWithSpace,
-  formatDate,
-  getInitials,
-} from '@/app/_shared/utility';
+import { formatDate } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import {
   WORK_ITEM_PATCH_FIELD_CONFIG,
-  WORK_ITEM_STATUSES,
   WorkItemFieldPatchDialog,
+  type WorkItemPatchFieldId,
   type WorkItemPatchMemberOption,
 } from '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog';
+import type { WorkItemSprintOption } from '@/app/work-items/_helpers/work-item-sprint';
 import { IncompleteSubtasksDoneBlockedDialog } from '@/app/work-items/_components/work-item-subtasks/incomplete-subtasks-done-blocked-dialog';
+import { WorkItemResolutionDialog } from '@/app/work-items/_components/work-item-details/work-item-resolution-dialog';
 import { hasIncompleteStatuses } from '@/app/work-items/_helpers/work-item-status';
+import {
+  boardColumnIdForStateOption,
+  resolutionPresetForMove,
+  resolveStatePresentation,
+  resolveWorkItemStatePickerModel,
+} from '@/app/work-items/_helpers/workflow-state-options';
 import {
   extractDynamicFieldValues,
   patchWorkItemDynamicFields,
 } from '@/app/work-items/_helpers/work-item-dynamic-fields';
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import { useRealtime } from '@/components/realtime/realtime-provider';
+import { UserAvatar } from '@/components/user-avatar';
 import { useRouter } from 'next/navigation';
 import {
   parseWorkItemLabels,
@@ -30,11 +36,6 @@ import {
   type WorkItemGithubConfigStatus,
 } from '@repo/types';
 import { isManagerOrAdmin, type AppRole } from '@/lib/rbac';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@repo/ui/components/ui/avatar';
 import { Button } from '@repo/ui/components/ui/button';
 import { ButtonGroup } from '@repo/ui/components/ui/button-group';
 import {
@@ -92,6 +93,7 @@ import {
   linkPR,
   unlinkPR,
   updateWorkItem,
+  updateWorkItemStatus,
 } from '@/app/work-items/_services/work-items.mutations.client';
 import { SafeDynamicFieldsSection } from './safe-dynamic-fields-section';
 import { ProjectFieldsErrorDialog } from '@/app/projects/_components/project-details/project-fields-error-dialog';
@@ -110,41 +112,123 @@ import {
 } from '@repo/ui/components/ui/dialog';
 import { Input } from '@repo/ui/components/ui/input';
 import { toast } from '@repo/ui/components/ui/sonner';
+import {
+  isWorkflowMoveBlockedError,
+  toastWorkflowMoveBlockedFromError,
+} from '@/app/board/_helpers/workflow-move-blocked-toast';
 import { FormStatusAlerts } from '@/app/work-items/_components/work-item-form/work-item-form-alerts';
 
 function StatusDropdown({
   workItemId,
   expectedUpdatedAt,
   workItemStatus,
+  workItemState,
+  boardColumnId,
   childStatuses,
+  workItemType,
+  workflowConfig,
   onPatched,
 }: Readonly<{
   workItemId: string;
   expectedUpdatedAt: string;
   workItemStatus: DbWorkItem['status'];
+  workItemState: DbWorkItem['state'];
+  boardColumnId: DbWorkItem['board_column_id'];
   childStatuses: readonly WorkItemStatus[];
+  workItemType: DbWorkItem['type'];
+  workflowConfig: unknown;
   // eslint-disable-next-line no-unused-vars -- callback signature
   onPatched: (updated: Partial<DbWorkItem>) => void;
 }>) {
+  const picker = useMemo(
+    () =>
+      resolveWorkItemStatePickerModel({
+        workflowConfig,
+        workItemType,
+        status: workItemStatus,
+        state: workItemState,
+        boardColumnId,
+      }),
+    [workflowConfig, workItemType, workItemStatus, workItemState, boardColumnId]
+  );
+
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [resolutionOpen, setResolutionOpen] = useState(false);
   const [blockedOpen, setBlockedOpen] = useState(false);
-  const [pendingStatus, setPendingStatus] =
-    useState<DbWorkItem['status']>(workItemStatus);
+  const [isSavingResolution, setIsSavingResolution] = useState(false);
+  const [pendingStateId, setPendingStateId] = useState(picker.currentStateId);
+
+  useEffect(() => {
+    setPendingStateId(picker.currentStateId);
+  }, [picker.currentStateId]);
 
   const incompleteSubtaskCount = childStatuses.filter(
     (status) => status !== 'Done'
   ).length;
 
+  const pendingOption =
+    picker.options.find((option) => option.id === pendingStateId) ?? null;
+  const currentOption =
+    picker.options.find((option) => option.id === picker.currentStateId) ??
+    null;
+  const currentPresentation = resolveStatePresentation({
+    category: currentOption?.category,
+    status: currentOption?.status ?? workItemStatus,
+    stateName: picker.currentLabel,
+  });
+  const CurrentIcon = currentPresentation.icon;
+
+  const statusFieldConfig = useMemo(
+    () => ({
+      ...WORK_ITEM_PATCH_FIELD_CONFIG.status,
+      title: picker.usesWorkflow ? 'Change State' : 'Change Status',
+      description: picker.usesWorkflow
+        ? 'Confirm the new workflow state for this work item.'
+        : WORK_ITEM_PATCH_FIELD_CONFIG.status.description,
+      label: picker.fieldLabel,
+    }),
+    [picker.fieldLabel, picker.usesWorkflow]
+  );
+
+  const resolutionPreset = useMemo(() => {
+    if (!picker.workflow || !pendingOption) {
+      return null;
+    }
+    return resolutionPresetForMove(
+      picker.workflow,
+      picker.currentStateId,
+      pendingOption.id
+    );
+  }, [picker.workflow, picker.currentStateId, pendingOption]);
+
   const handleStatusSelect = (value: string) => {
-    const nextStatus = value as DbWorkItem['status'];
-    if (nextStatus === workItemStatus) {
+    if (value === picker.currentStateId) {
       return;
     }
-    if (nextStatus === 'Done' && hasIncompleteStatuses(childStatuses)) {
+    const nextOption = picker.options.find((option) => option.id === value);
+    if (!nextOption) {
+      return;
+    }
+    if (
+      nextOption.category === 'done' &&
+      hasIncompleteStatuses(childStatuses)
+    ) {
       setBlockedOpen(true);
       return;
     }
-    setPendingStatus(nextStatus);
+    setPendingStateId(nextOption.id);
+
+    if (
+      picker.workflow &&
+      resolutionPresetForMove(
+        picker.workflow,
+        picker.currentStateId,
+        nextOption.id
+      )
+    ) {
+      setResolutionOpen(true);
+      return;
+    }
     setDialogOpen(true);
   };
 
@@ -152,30 +236,62 @@ function StatusDropdown({
     <>
       <ButtonGroup className="w-full">
         <Button
-          variant="default"
-          className="bg-primary text-primary-foreground hover:bg-primary/90 flex-1 justify-start"
+          variant="outline"
+          className={cn(
+            'flex-1 justify-start gap-2 border font-semibold',
+            currentPresentation.borderClass,
+            currentPresentation.bgClass,
+            currentPresentation.textClass,
+            'hover:opacity-90'
+          )}
         >
-          {formatLabelWithSpace(workItemStatus)}
+          <CurrentIcon className="h-4 w-4 shrink-0" />
+          {picker.currentLabel}
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="default" className="cursor-pointer px-2">
+            <Button
+              variant="outline"
+              className={cn(
+                'cursor-pointer border px-2',
+                currentPresentation.borderClass,
+                currentPresentation.bgClass,
+                currentPresentation.textClass
+              )}
+            >
               <ChevronDown />
-              <span className="sr-only">Change status</span>
+              <span className="sr-only">{picker.changeLabel}</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuGroup>
-              <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+              <DropdownMenuLabel>{picker.changeLabel}</DropdownMenuLabel>
               <DropdownMenuRadioGroup
-                value={workItemStatus}
+                value={picker.currentStateId}
                 onValueChange={handleStatusSelect}
               >
-                {WORK_ITEM_STATUSES.map((item) => (
-                  <DropdownMenuRadioItem key={item} value={item}>
-                    {formatLabelWithSpace(item)}
-                  </DropdownMenuRadioItem>
-                ))}
+                {picker.options.map((option) => {
+                  const presentation = resolveStatePresentation({
+                    category: option.category,
+                    status: option.status,
+                    stateName: option.name,
+                  });
+                  const OptionIcon = presentation.icon;
+                  return (
+                    <DropdownMenuRadioItem
+                      key={option.id}
+                      value={option.id}
+                      className="gap-2"
+                    >
+                      <OptionIcon
+                        className={cn('h-3.5 w-3.5', presentation.textClass)}
+                      />
+                      <span className={presentation.textClass}>
+                        {option.name}
+                      </span>
+                    </DropdownMenuRadioItem>
+                  );
+                })}
               </DropdownMenuRadioGroup>
             </DropdownMenuGroup>
           </DropdownMenuContent>
@@ -187,10 +303,57 @@ function StatusDropdown({
         onOpenChange={setDialogOpen}
         workItemId={workItemId}
         expectedUpdatedAt={expectedUpdatedAt}
-        fieldConfig={WORK_ITEM_PATCH_FIELD_CONFIG.status}
-        currentValue={pendingStatus}
+        fieldConfig={statusFieldConfig}
+        currentValue={pendingStateId}
+        stateOptions={picker.options}
         onPatched={onPatched}
       />
+
+      {resolutionPreset && pendingOption ? (
+        <WorkItemResolutionDialog
+          open={resolutionOpen}
+          onOpenChange={setResolutionOpen}
+          preset={resolutionPreset}
+          targetStatusLabel={pendingOption.name}
+          isPending={isSavingResolution}
+          onSubmit={async (payload) => {
+            setIsSavingResolution(true);
+            try {
+              const response = await updateWorkItemStatus(
+                workItemId,
+                pendingOption.status,
+                expectedUpdatedAt,
+                boardColumnIdForStateOption(pendingOption),
+                payload
+              );
+              toast.success(
+                `${picker.fieldLabel} updated to ${pendingOption.name}.`
+              );
+              onPatched({
+                status: response.data?.status ?? pendingOption.status,
+                board_column_id:
+                  response.data?.board_column_id ??
+                  boardColumnIdForStateOption(pendingOption),
+                state: response.data?.state ?? workItemState,
+                updated_at: response.data?.updated_at,
+              });
+              setResolutionOpen(false);
+            } catch (error) {
+              if (isWorkflowMoveBlockedError(error)) {
+                toastWorkflowMoveBlockedFromError(error);
+              } else {
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : `Could not update ${picker.fieldLabel.toLowerCase()}.`
+                );
+              }
+            } finally {
+              setIsSavingResolution(false);
+            }
+          }}
+        />
+      ) : null}
 
       <IncompleteSubtasksDoneBlockedDialog
         open={blockedOpen}
@@ -291,20 +454,25 @@ function SidebarCollapsibleSection({
 function UserPill({
   name,
   imageUrl,
+  isOnline,
   emptyLabel = 'Unassigned',
 }: Readonly<{
   name?: string | null;
   imageUrl?: string | null;
+  isOnline: boolean;
   emptyLabel?: string;
 }>) {
   const displayName = name?.trim() || emptyLabel;
 
   return (
     <div className="flex items-center gap-2">
-      <Avatar size="sm">
-        {imageUrl ? <AvatarImage src={imageUrl} alt={displayName} /> : null}
-        <AvatarFallback>{getInitials(name)}</AvatarFallback>
-      </Avatar>
+      <UserAvatar
+        name={name}
+        imageUrl={imageUrl}
+        isOnline={isOnline}
+        className="border-0"
+        fallbackClassName="text-xs font-normal"
+      />
       <span className="text-sm font-medium">{displayName}</span>
     </div>
   );
@@ -314,6 +482,7 @@ function UserPill({
 type EditableUserFieldProps = {
   readonly name?: string | null;
   readonly imageUrl?: string | null;
+  readonly isOnline: boolean;
   readonly field: 'assignee_id' | 'reporter_id';
   readonly onEdit: (field: 'assignee_id' | 'reporter_id') => void;
   readonly readOnly?: boolean;
@@ -346,6 +515,7 @@ function DetailFieldEditButton({
 function EditableUserField({
   name,
   imageUrl,
+  isOnline,
   field,
   onEdit,
   readOnly = false,
@@ -357,6 +527,7 @@ function EditableUserField({
       <UserPill
         name={name}
         imageUrl={imageUrl}
+        isOnline={isOnline}
         emptyLabel={config.unassignedLabel ?? 'Unassigned'}
       />
       {readOnly ? null : (
@@ -402,10 +573,74 @@ function EditableLabelsField({
   );
 }
 
+function EditableDetailTextField({
+  displayText,
+  editAriaLabel,
+  onEdit,
+  readOnly = false,
+}: Readonly<{
+  readonly displayText: string;
+  readonly editAriaLabel: string;
+  readonly onEdit: () => void;
+  readonly readOnly?: boolean;
+}>) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-sm font-medium">{displayText}</span>
+      {readOnly ? null : (
+        <DetailFieldEditButton
+          ariaLabel={editAriaLabel}
+          className="shrink-0"
+          onClick={onEdit}
+        />
+      )}
+    </div>
+  );
+}
+
+function EditableSprintField({
+  sprintName,
+  onEdit,
+  readOnly = false,
+}: Readonly<{
+  readonly sprintName?: string | null;
+  readonly onEdit: () => void;
+  readonly readOnly?: boolean;
+}>) {
+  return (
+    <EditableDetailTextField
+      displayText={sprintName?.trim() || 'Backlog'}
+      editAriaLabel="Edit sprint"
+      onEdit={onEdit}
+      readOnly={readOnly}
+    />
+  );
+}
+
+function EditableDueDateField({
+  dueDate,
+  onEdit,
+  readOnly = false,
+}: Readonly<{
+  readonly dueDate?: string | null;
+  readonly onEdit: () => void;
+  readonly readOnly?: boolean;
+}>) {
+  return (
+    <EditableDetailTextField
+      displayText={formatDate(dueDate ?? null)}
+      editAriaLabel="Edit due date"
+      onEdit={onEdit}
+      readOnly={readOnly}
+    />
+  );
+}
+
 export default function WorkItemSidebar({
   workItem,
   childStatuses = [],
   projectMembers = [],
+  projectSprints = [],
   project,
   workLogs = [],
   detailsOpen,
@@ -420,6 +655,7 @@ export default function WorkItemSidebar({
   workItem: DbWorkItem;
   childStatuses?: readonly WorkItemStatus[];
   projectMembers?: readonly WorkItemPatchMemberOption[];
+  projectSprints?: readonly WorkItemSprintOption[];
   project?: DbProject | null;
   workLogs?: WorkItemWorkLog[];
   detailsOpen: boolean;
@@ -433,12 +669,19 @@ export default function WorkItemSidebar({
   readOnly?: boolean;
   currentUserRole?: string | null;
 }>) {
-  const [activeField, setActiveField] = useState<
-    'assignee_id' | 'reporter_id' | 'labels' | null
-  >(null);
+  const { isUserOnline } = useRealtime();
+  const [activeField, setActiveField] = useState<WorkItemPatchFieldId | null>(
+    null
+  );
   const [developmentOpen, setDevelopmentOpen] = useState(true);
   const [additionalFieldsOpen, setAdditionalFieldsOpen] = useState(true);
   const labels = parseWorkItemLabels(workItem.labels);
+  const assigneeIsOnline = Boolean(
+    workItem.assignee_id && isUserOnline(workItem.assignee_id)
+  );
+  const reporterIsOnline = Boolean(
+    workItem.reporter_id && isUserOnline(workItem.reporter_id)
+  );
 
   const hasValidDynamicFields = useMemo(() => {
     if (!project?.attributes_config) return false;
@@ -526,7 +769,16 @@ export default function WorkItemSidebar({
     currentValue = workItem.assignee_id;
   } else if (activeField === 'reporter_id') {
     currentValue = workItem.reporter_id;
+  } else if (activeField === 'sprint_id') {
+    currentValue = workItem.sprint_id;
+  } else if (activeField === 'due_date') {
+    currentValue = workItem.due_date;
   }
+
+  const sprintDisplayName =
+    workItem.sprint?.name ??
+    projectSprints.find((sprint) => sprint.id === workItem.sprint_id)?.name ??
+    null;
 
   return (
     <aside className="space-y-4 lg:col-span-2">
@@ -534,7 +786,11 @@ export default function WorkItemSidebar({
         workItemId={workItem.id}
         expectedUpdatedAt={workItem.updated_at}
         workItemStatus={workItem.status}
+        workItemState={workItem.state}
+        boardColumnId={workItem.board_column_id}
         childStatuses={childStatuses}
+        workItemType={workItem.type}
+        workflowConfig={project?.workflow_config}
         onPatched={onWorkItemPatched}
       />
 
@@ -547,6 +803,7 @@ export default function WorkItemSidebar({
           <EditableUserField
             name={workItem.assignee?.name}
             imageUrl={workItem.assignee?.profile_picture}
+            isOnline={assigneeIsOnline}
             field="assignee_id"
             onEdit={setActiveField}
             readOnly={readOnly}
@@ -556,6 +813,7 @@ export default function WorkItemSidebar({
           <EditableUserField
             name={workItem.reporter?.name}
             imageUrl={workItem.reporter?.profile_picture}
+            isOnline={reporterIsOnline}
             field="reporter_id"
             onEdit={setActiveField}
             readOnly={readOnly}
@@ -563,6 +821,20 @@ export default function WorkItemSidebar({
         </DetailRow>
         <DetailRow label="Priority">
           <PriorityBadge priority={workItem.priority} />
+        </DetailRow>
+        <DetailRow label="Sprint">
+          <EditableSprintField
+            sprintName={sprintDisplayName}
+            onEdit={() => setActiveField('sprint_id')}
+            readOnly={readOnly || Boolean(workItem.parent_id)}
+          />
+        </DetailRow>
+        <DetailRow label="Due date">
+          <EditableDueDateField
+            dueDate={workItem.due_date}
+            onEdit={() => setActiveField('due_date')}
+            readOnly={readOnly}
+          />
         </DetailRow>
         <DetailRow label="Labels">
           <EditableLabelsField
@@ -651,14 +923,8 @@ export default function WorkItemSidebar({
           onLogWorkClick={readOnly ? undefined : onLogWorkClick}
         />
 
-        <DetailRow label="Due date">
-          <span>{formatDate(workItem.due_date)}</span>
-        </DetailRow>
         <DetailRow label="Story points">
           <span>{workItem.story_points ?? '—'}</span>
-        </DetailRow>
-        <DetailRow label="Sprint">
-          <span>{workItem.sprint_id ? 'Assigned' : 'Backlog'}</span>
         </DetailRow>
       </SidebarCollapsibleSection>
 
@@ -689,6 +955,7 @@ export default function WorkItemSidebar({
           expectedUpdatedAt={workItem.updated_at}
           fieldConfig={activeConfig}
           options={projectMembers}
+          sprintOptions={projectSprints}
           currentValue={currentValue}
           currentLabels={labels}
           onPatched={onWorkItemPatched}
@@ -1033,7 +1300,7 @@ function DevelopmentSection({
   }, [workItem.id]);
 
   useEffect(() => {
-    fetchGithubLinks();
+    void fetchGithubLinks();
   }, [fetchGithubLinks]);
 
   const handleLinkPRSubmit = async (e: React.FormEvent) => {
@@ -1076,7 +1343,7 @@ function DevelopmentSection({
       await linkPR(workItem.id, url);
       setPrUrlInput('');
       setLinkDialogOpen(false);
-      fetchGithubLinks();
+      void fetchGithubLinks();
     } catch (err) {
       console.error(err);
       const message =
@@ -1091,7 +1358,7 @@ function DevelopmentSection({
   const handleUnlinkPR = async (prId: string) => {
     try {
       await unlinkPR(workItem.id, prId);
-      fetchGithubLinks();
+      void fetchGithubLinks();
     } catch (err) {
       console.error(err);
       toast.error('Failed to unlink pull request');

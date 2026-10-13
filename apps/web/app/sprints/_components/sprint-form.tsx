@@ -33,6 +33,7 @@ import { loadProjectsForSprintForm } from '@/lib/cache/load-projects-for-forms';
 import { createClient } from '@/lib/supabase/client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
+import { isReservedSprintName } from '@repo/types';
 
 type SprintFormProps = {
   className?: string;
@@ -47,6 +48,8 @@ type SprintFormProps = {
   defaultProjectId?: string;
   /** Locks project to this id (e.g. project details sprints tab). */
   lockedProjectId?: string;
+  /** Locks the sprint's current project without changing its selected id. */
+  lockProject?: boolean;
 };
 
 function validateSprintForm(
@@ -63,6 +66,9 @@ function validateSprintForm(
   }
   if (!selectedProjectId) {
     return 'A project must be selected.';
+  }
+  if (isReservedSprintName(name)) {
+    return 'Sprint name cannot be "Backlog" — that label is reserved for unscheduled work items.';
   }
   return null;
 }
@@ -84,9 +90,10 @@ export function SprintForm({
   currentUserId,
   defaultProjectId,
   lockedProjectId,
+  lockProject = false,
 }: Readonly<SprintFormProps>) {
   const isEditMode = !!sprintToEdit;
-  const isProjectLocked = Boolean(lockedProjectId);
+  const isProjectLocked = lockProject || Boolean(lockedProjectId);
   const preferredProjectId = lockedProjectId ?? defaultProjectId;
   const { handleMutationError } = useOptimisticLock();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -275,6 +282,14 @@ export function SprintForm({
     submitButtonContent = isEditMode ? 'Save Changes' : 'Create Sprint';
   }
 
+  let formDescription =
+    'Plan a new sprint with a name, goal, project and date range.';
+  if (isEditMode) {
+    formDescription = isProjectLocked
+      ? 'Update the name, goal and date range of this sprint.'
+      : 'Update the name, goal, project and date range of this sprint.';
+  }
+
   return (
     <Card
       className={cn(
@@ -305,9 +320,7 @@ export function SprintForm({
           {isEditMode ? 'Edit Sprint' : 'Create Sprint'}
         </CardTitle>
         <CardDescription className="text-muted-foreground text-sm">
-          {isEditMode
-            ? 'Update the name, goal, project and date range of this sprint.'
-            : 'Plan a new sprint with a name, goal, project and date range.'}
+          {formDescription}
         </CardDescription>
       </CardHeader>
       <CardContent>

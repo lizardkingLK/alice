@@ -155,6 +155,57 @@ export type Database = {
           },
         ]
       }
+      activities: {
+        Row: {
+          action: Database["public"]["Enums"]["ActivityAction"]
+          actor_id: string | null
+          created_at: string
+          field: string | null
+          id: string
+          meta: Json | null
+          new_value: string | null
+          old_value: string | null
+          work_item_id: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["ActivityAction"]
+          actor_id?: string | null
+          created_at?: string
+          field?: string | null
+          id?: string
+          meta?: Json | null
+          new_value?: string | null
+          old_value?: string | null
+          work_item_id: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["ActivityAction"]
+          actor_id?: string | null
+          created_at?: string
+          field?: string | null
+          id?: string
+          meta?: Json | null
+          new_value?: string | null
+          old_value?: string | null
+          work_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_work_item_id_fkey"
+            columns: ["work_item_id"]
+            isOneToOne: false
+            referencedRelation: "work_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attachments: {
         Row: {
           created_at: string
@@ -225,6 +276,192 @@ export type Database = {
             columns: ["work_item_id"]
             isOneToOne: false
             referencedRelation: "work_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chart_shares: {
+        Row: {
+          chart_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          status: Database["public"]["Enums"]["RecordStatus"]
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+        }
+        Insert: {
+          chart_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          updated_at: string
+          updated_by?: string | null
+          user_id: string
+        }
+        Update: {
+          chart_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chart_shares_chart_id_fkey"
+            columns: ["chart_id"]
+            isOneToOne: false
+            referencedRelation: "charts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chart_shares_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chart_shares_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chart_shares_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      charts: {
+        Row: {
+          board_json: Json
+          created_at: string
+          created_by: string | null
+          dashboard_sort_order: number
+          description: string | null
+          id: string
+          owner_id: string
+          show_on_dashboard: boolean
+          status: Database["public"]["Enums"]["RecordStatus"]
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          board_json?: Json
+          created_at?: string
+          created_by?: string | null
+          dashboard_sort_order?: number
+          description?: string | null
+          id?: string
+          owner_id: string
+          show_on_dashboard?: boolean
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          title: string
+          updated_at: string
+          updated_by?: string | null
+        }
+        Update: {
+          board_json?: Json
+          created_at?: string
+          created_by?: string | null
+          dashboard_sort_order?: number
+          description?: string | null
+          id?: string
+          owner_id?: string
+          show_on_dashboard?: boolean
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "charts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "charts_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "charts_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_attachments: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          expires_at: string | null
+          file_name: string
+          file_size: number
+          id: string
+          mime_type: string
+          status: Database["public"]["Enums"]["RecordStatus"]
+          storage_path: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          file_name: string
+          file_size: number
+          id?: string
+          mime_type: string
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          storage_path: string
+          updated_at: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          file_name?: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          storage_path?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_attachments_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_attachments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -881,6 +1118,48 @@ export type Database = {
           },
         ]
       }
+      sprint_burndown_rollups: {
+        Row: {
+          bucket_date: string
+          estimated_total: number
+          project_id: string
+          remaining: number | null
+          spent: number
+          sprint_id: string
+        }
+        Insert: {
+          bucket_date: string
+          estimated_total: number
+          project_id: string
+          remaining?: number | null
+          spent?: number
+          sprint_id: string
+        }
+        Update: {
+          bucket_date?: string
+          estimated_total?: number
+          project_id?: string
+          remaining?: number | null
+          spent?: number
+          sprint_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sprint_burndown_rollups_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sprint_burndown_rollups_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "sprints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sprints: {
         Row: {
           created_at: string
@@ -1163,6 +1442,73 @@ export type Database = {
           },
         ]
       }
+      work_item_chart_rollups: {
+        Row: {
+          assignee_id: string | null
+          bucket_date: string
+          grain_key: string
+          item_count: number
+          priority: Database["public"]["Enums"]["WorkItemPriority"]
+          project_id: string
+          sprint_id: string | null
+          state_id: string
+          status: Database["public"]["Enums"]["WorkItemStatus"]
+          status_category: string
+          type: Database["public"]["Enums"]["WorkItemType"]
+          workflow_id: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          bucket_date: string
+          grain_key: string
+          item_count?: number
+          priority: Database["public"]["Enums"]["WorkItemPriority"]
+          project_id: string
+          sprint_id?: string | null
+          state_id: string
+          status: Database["public"]["Enums"]["WorkItemStatus"]
+          status_category: string
+          type: Database["public"]["Enums"]["WorkItemType"]
+          workflow_id: string
+        }
+        Update: {
+          assignee_id?: string | null
+          bucket_date?: string
+          grain_key?: string
+          item_count?: number
+          priority?: Database["public"]["Enums"]["WorkItemPriority"]
+          project_id?: string
+          sprint_id?: string | null
+          state_id?: string
+          status?: Database["public"]["Enums"]["WorkItemStatus"]
+          status_category?: string
+          type?: Database["public"]["Enums"]["WorkItemType"]
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_item_chart_rollups_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_item_chart_rollups_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_item_chart_rollups_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "sprints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_item_worklogs: {
         Row: {
           comment: string | null
@@ -1238,7 +1584,11 @@ export type Database = {
           record_status: Database["public"]["Enums"]["RecordStatus"]
           reporter_id: string | null
           sprint_id: string | null
+          state: Json | null
+          state_id: string
+          state_workflow_id: string
           status: Database["public"]["Enums"]["WorkItemStatus"]
+          status_category: string
           story_points: number | null
           title: string
           type: Database["public"]["Enums"]["WorkItemType"]
@@ -1262,7 +1612,11 @@ export type Database = {
           record_status?: Database["public"]["Enums"]["RecordStatus"]
           reporter_id?: string | null
           sprint_id?: string | null
+          state?: Json | null
+          state_id?: string
+          state_workflow_id?: string
           status?: Database["public"]["Enums"]["WorkItemStatus"]
+          status_category?: string
           story_points?: number | null
           title: string
           type: Database["public"]["Enums"]["WorkItemType"]
@@ -1286,7 +1640,11 @@ export type Database = {
           record_status?: Database["public"]["Enums"]["RecordStatus"]
           reporter_id?: string | null
           sprint_id?: string | null
+          state?: Json | null
+          state_id?: string
+          state_workflow_id?: string
           status?: Database["public"]["Enums"]["WorkItemStatus"]
+          status_category?: string
           story_points?: number | null
           title?: string
           type?: Database["public"]["Enums"]["WorkItemType"]
@@ -1378,11 +1736,70 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      rebuild_sprint_burndown_rollups: {
+        Args: { p_sprint_id: string }
+        Returns: undefined
+      }
+      work_item_chart_category_from_status: {
+        Args: { p_status: Database["public"]["Enums"]["WorkItemStatus"] }
+        Returns: string
+      }
+      work_item_chart_resolve_placement: {
+        Args: {
+          p_board_column_id: string
+          p_state: Json
+          p_status: Database["public"]["Enums"]["WorkItemStatus"]
+        }
+        Returns: {
+          state_id: string
+          status_category: string
+          workflow_id: string
+        }[]
+      }
+      work_item_chart_rollup_apply_delta: {
+        Args: {
+          p_assignee_id: string
+          p_bucket_date: string
+          p_delta: number
+          p_priority: Database["public"]["Enums"]["WorkItemPriority"]
+          p_project_id: string
+          p_sprint_id: string
+          p_state_id: string
+          p_status: Database["public"]["Enums"]["WorkItemStatus"]
+          p_status_category: string
+          p_type: Database["public"]["Enums"]["WorkItemType"]
+          p_workflow_id: string
+        }
+        Returns: undefined
+      }
+      work_item_chart_rollup_grain_key: {
+        Args: {
+          p_assignee_id: string
+          p_bucket_date: string
+          p_priority: Database["public"]["Enums"]["WorkItemPriority"]
+          p_project_id: string
+          p_sprint_id: string
+          p_state_id: string
+          p_status: Database["public"]["Enums"]["WorkItemStatus"]
+          p_status_category: string
+          p_type: Database["public"]["Enums"]["WorkItemType"]
+          p_workflow_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       AccessAllowlistKind: "domain" | "email"
       AccessRequestKind: "admission" | "project_expansion"
       AccessRequestStatus: "pending" | "granted" | "denied"
+      ActivityAction:
+        | "created"
+        | "field_changed"
+        | "attachment_added"
+        | "attachment_removed"
+        | "commented"
+        | "workflow_transition"
+        | "escalation_resolved"
       IntegrationCategory:
         | "ai_agent"
         | "communication"
@@ -1398,9 +1815,11 @@ export type Database = {
         | "sprint"
         | "due_date"
         | "view_shared"
-        | "chart_shared"
         | "chat_processed"
         | "access_request"
+        | "chart_shared"
+        | "project_created"
+        | "project_create_failed"
       ProjectStatus: "active" | "archived"
       RecordStatus: "active" | "inactive" | "archived" | "deleted"
       SavedViewResourceKind: "page" | "chart"
@@ -1525,7 +1944,7 @@ export type Enums<
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"] // NOSONAR
+    | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
@@ -1546,6 +1965,15 @@ export const Constants = {
       AccessAllowlistKind: ["domain", "email"],
       AccessRequestKind: ["admission", "project_expansion"],
       AccessRequestStatus: ["pending", "granted", "denied"],
+      ActivityAction: [
+        "created",
+        "field_changed",
+        "attachment_added",
+        "attachment_removed",
+        "commented",
+        "workflow_transition",
+        "escalation_resolved",
+      ],
       IntegrationCategory: [
         "ai_agent",
         "communication",
@@ -1562,9 +1990,11 @@ export const Constants = {
         "sprint",
         "due_date",
         "view_shared",
-        "chart_shared",
         "chat_processed",
         "access_request",
+        "chart_shared",
+        "project_created",
+        "project_create_failed",
       ],
       ProjectStatus: ["active", "archived"],
       RecordStatus: ["active", "inactive", "archived", "deleted"],

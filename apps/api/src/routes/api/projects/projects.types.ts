@@ -1,4 +1,9 @@
-import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
+import type {
+  InitialProjectTeamInput,
+  InitialSprintInput,
+  ProjectWorkflowConfig,
+  WorkItemTypeRemovalStrategy,
+} from '@repo/types/api/v1';
 
 export type ProjectRow = {
   id: string;
@@ -49,8 +54,8 @@ export type ProjectMemberWithUser = {
   } | null;
 };
 
-/** Input for creating a project (logo/cover optional until uploaded). */
-export type CreateProjectInput = Omit<
+/** Project fields shared by create and update mutations. */
+type ProjectMutationInput = Omit<
   ProjectRow,
   | 'id'
   | 'created_at'
@@ -65,6 +70,13 @@ export type CreateProjectInput = Omit<
   workflow_config?: ProjectWorkflowConfig | null;
 };
 
-export type UpdateProjectInput = Partial<CreateProjectInput> & {
+/** Input for creating a project with optional logo, cover, sprint, and team. */
+export type CreateProjectInput = ProjectMutationInput & {
+  sprint?: InitialSprintInput;
+  team?: InitialProjectTeamInput;
+};
+
+export type UpdateProjectInput = Partial<ProjectMutationInput> & {
   workflow_config?: ProjectWorkflowConfig | null;
+  typeRemovalStrategies?: WorkItemTypeRemovalStrategy[];
 };

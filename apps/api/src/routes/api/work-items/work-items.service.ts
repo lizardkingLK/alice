@@ -2,15 +2,31 @@ import {
   boardConfigSchema,
   findBoardTransition,
   findStatusTransition,
+  buildEscalationResolvedMeta,
+  findResolutionPreset,
+  boardColumnIdForWorkflowState,
+  findWorkflowEdge,
+  findWorkflowState,
   getAllowedChildType,
+  getAllowedParentType,
+  getResolutionRequirement,
+  legacyStatusFromWorkItemState,
   normalizeBoardConfig,
-  resolveBoardDestinationColumn,
-  resolveBoardSourceColumn,
+  parseWorkflowConfigEnvelope,
+  resolveWorkItemState,
+  resolveWorkflowGraphState,
+  resolveWorkflowPlacementState,
+  validateResolutionPayload,
   type BoardRuleMatcher,
+  type RuntimeBoardConfig,
   type WorkItemType,
+  type WorkflowConfigEnvelope,
+  type WorkflowDocument,
+  type WorkflowEdge,
+  type WorkflowResolutionPayload,
+  type WorkflowStateNode,
   CANONICAL_HIERARCHY_ORDER,
   type ProjectWorkflowConfig,
-  parseWorkItemLabels,
   paginationMeta,
   type ListWorkItemsQuery,
   type WorkItemDetailRow,
@@ -32,15 +48,19 @@ import type {
   DbGithubPullRequest,
 } from './work-items.repository';
 import type { WorkItemPaginatedList } from './work-items.prisma-query';
-import { sameNullable } from './work-items.patch-utils';
 import {
-  toDateOnly,
-  WorkItemBody,
-  WorkItemUpdateBody,
-} from './work-items.schemas';
+  collectWorkItemFieldChanges,
+  hasNonStatusWorkItemFieldChanges,
+  resolveValidatedBoardMove,
+  sameNullable,
+} from './work-items.patch-utils';
+import { assertChildSprintMatchesParent } from './work-items-sprint-hierarchy';
+import { WorkItemBody, WorkItemUpdateBody } from './work-items.schemas';
+import type { ActivitiesService } from '../activities/activities.service';
 import {
   BoardMoveForbiddenError,
   StatusTransitionForbiddenError,
+  WorkItemHierarchyTypeChangeError,
   WorkItemValidationError,
 } from './work-items.errors';
 import type { GithubService } from '../github/github.service';
@@ -123,7 +143,8 @@ function throwWorkflowConfigLoadError(error: unknown): void {
 export class WorkItemService {
   constructor(
     private readonly workItems: WorkItemRepository,
-    private readonly githubService?: GithubService
+    private readonly githubService?: GithubService,
+    private readonly activities?: ActivitiesService
   ) {}
 
   private async resolveGithubHeaders(
@@ -221,36 +242,47 @@ export class WorkItemService {
       hierarchy,
     });
 
+    const createInput = await this.applySprintInheritanceForCreate(input);
+
     await this.validateAllocation(
-      input.project_id,
-      input.sprint_id,
-      input.assignee_id,
-      input.story_points
+      createInput.project_id,
+      createInput.sprint_id,
+      createInput.assignee_id,
+      createInput.story_points
     );
 
     const created = await this.workItems.create({
-      ...input,
+      ...createInput,
       createdBy: userId,
     });
 
-    if (input.sprint_id || input.assignee_id || input.story_points) {
+    await this.activities?.recordCreated({
+      workItemId: created.id,
+      actorId: userId,
+    });
+
+    if (
+      createInput.sprint_id ||
+      createInput.assignee_id ||
+      createInput.story_points
+    ) {
       let sprintName: string = WorkItemDefaults.BACKLOG;
-      if (input.sprint_id) {
+      if (createInput.sprint_id) {
         const sprint = await prisma.sprints.findUnique({
-          where: { id: input.sprint_id },
+          where: { id: createInput.sprint_id },
           select: { name: true },
         });
         sprintName = sprint?.name || WorkItemDefaults.SPRINT;
       }
       let assigneeName: string = WorkItemDefaults.UNASSIGNED;
-      if (input.assignee_id) {
+      if (createInput.assignee_id) {
         const assignee = await prisma.users.findUnique({
-          where: { id: input.assignee_id },
+          where: { id: createInput.assignee_id },
           select: { name: true },
         });
         assigneeName = assignee?.name || WorkItemDefaults.USER;
       }
-      const comment = `Allocation changed: Assigned to sprint ${sprintName}, Assignee set to ${assigneeName}, Story points set to ${input.story_points || 0}.`;
+      const comment = `Allocation changed: Assigned to sprint ${sprintName}, Assignee set to ${assigneeName}, Story points set to ${createInput.story_points || 0}.`;
       await prisma.work_item_worklogs.create({
         data: {
           work_item_id: created.id,
@@ -270,8 +302,21 @@ export class WorkItemService {
     userId: string,
     workItemId: string,
     input: WorkItemUpdateBody,
-    expectedUpdatedAt: string
-  ): Promise<DbWorkItem> {
+    expectedUpdatedAt: string,
+    options?: {
+      detachChildren?: boolean;
+      resolution?: WorkflowResolutionPayload;
+      /**
+       * True when the PATCH body explicitly included `sprint_id` (before
+       * coalesce). Re-saving the same sprint still cascades so divergent
+       * children heal — `sprintChanged` alone misses that case.
+       */
+      cascadeSprint?: boolean;
+    }
+  ): Promise<{
+    workItem: DbWorkItem;
+    cascadedSprintDescendantIds: readonly string[];
+  }> {
     await this.workItems.requireProjectMember(workItemId, userId);
     await this.workItems.assertCanAccessProject(userId, input.project_id);
 
@@ -285,79 +330,122 @@ export class WorkItemService {
       );
     }
 
-    const statusChanged = current.status !== input.status;
-    const workflow = await this.resolveWorkflowValidation(
+    let nextInput = await this.resolveInputAfterTypeChange({
+      workItemId,
       current,
       input,
+      allowedTypes,
+      hierarchy,
+      detachChildren: options?.detachChildren === true,
+    });
+
+    const workflow = this.resolveWorkflowValidation(
+      current,
+      nextInput,
       workflowConfig,
       workflowConfigError
     );
-    const boardTransition =
-      workflow.config && workflow.boardMove
-        ? findBoardTransition(
-            workflow.config,
-            workflow.boardMove.source.id,
-            workflow.boardMove.destination.id
-          )
-        : null;
-    const statusTransition =
-      statusChanged && workflow.config
-        ? findStatusTransition(workflow.config, current.status, input.status)
-        : null;
-    await this.assertWorkflowTransitionsAllowed(
-      userId,
-      current.project_id,
-      boardTransition,
-      statusTransition
-    );
 
-    if (
-      !sameNullable(input.parent_id, current?.parent_id) ||
-      (input.type && input.type !== current?.type)
-    ) {
-      await this.assertValidParentLink({
-        parentId:
-          input.parent_id !== undefined ? input.parent_id : current?.parent_id,
-        projectId: input.project_id,
-        childType: input.type ?? (current.type as WorkItemType),
-        childId: workItemId,
-        allowedTypes,
-        hierarchy,
-      });
+    const graphPlacement =
+      workflow.mode === 'workflow'
+        ? this.normalizeGraphWorkflowPlacement(current, nextInput, workflow)
+        : null;
+    if (graphPlacement) {
+      nextInput = graphPlacement.nextInput;
     }
 
-    await this.assertCanBecomeDone(current, workItemId, input.status);
-    this.assertDoneIsReadOnlyExceptStatus(current, input);
+    const resolutionMeta = this.assertWorkflowResolution(
+      workflow,
+      options?.resolution
+    );
 
-    const sprintId = 'sprint_id' in input ? input.sprint_id : current.sprint_id;
+    await this.assertResolvedTransitions(
+      userId,
+      current,
+      nextInput,
+      workItemId,
+      workflow
+    );
+
+    await this.assertParentLinkWhenHierarchyTouches({
+      current,
+      nextInput,
+      workItemId,
+      allowedTypes,
+      hierarchy,
+    });
+
+    nextInput = await this.applySprintHierarchyRules(current, nextInput);
+
+    await this.assertResolvedLockAndDoneGates(
+      current,
+      nextInput,
+      workItemId,
+      workflow
+    );
+
+    const sprintId =
+      'sprint_id' in nextInput ? nextInput.sprint_id : current.sprint_id;
     const assigneeId =
-      'assignee_id' in input ? input.assignee_id : current.assignee_id;
+      'assignee_id' in nextInput ? nextInput.assignee_id : current.assignee_id;
     const storyPoints =
-      'story_points' in input ? input.story_points : current.story_points;
+      'story_points' in nextInput
+        ? nextInput.story_points
+        : current.story_points;
 
     await this.validateAllocation(
-      input.project_id,
+      nextInput.project_id,
       sprintId,
       assigneeId,
       storyPoints,
       workItemId
     );
 
-    const sprintChanged = !sameNullable(input.sprint_id, current.sprint_id);
+    const sprintChanged = !sameNullable(nextInput.sprint_id, current.sprint_id);
     const assigneeChanged = !sameNullable(
-      input.assignee_id,
+      nextInput.assignee_id,
       current.assignee_id
     );
     const storyPointsChanged = !sameNullable(
-      input.story_points,
+      nextInput.story_points,
       current.story_points
     );
 
     const updated = await this.workItems.update({
-      ...input,
+      ...nextInput,
       id: workItemId,
       updatedBy: userId,
       expectedUpdatedAt,
+      ...(graphPlacement?.stateOverride
+        ? { stateOverride: graphPlacement.stateOverride }
+        : {}),
+    });
+
+    const effectiveParentId =
+      nextInput.parent_id !== undefined
+        ? nextInput.parent_id
+        : current.parent_id;
+    const shouldCascadeSprint =
+      !effectiveParentId && (sprintChanged || options?.cascadeSprint === true);
+    let cascadedSprintDescendantIds: readonly string[] = [];
+    if (shouldCascadeSprint) {
+      // Cascade immediately after the parent write so activity/worklog
+      // side-effects cannot leave children on the old sprint.
+      cascadedSprintDescendantIds =
+        await this.workItems.updateSprintForDescendants(
+          workItemId,
+          sprintId ?? null,
+          userId
+        );
+    }
+
+    await this.recordUpdateActivities({
+      userId,
+      workItemId,
+      current,
+      nextInput,
+      workflow,
+      resolutionMeta,
     });
 
     if (sprintChanged || assigneeChanged || storyPointsChanged) {
@@ -374,33 +462,369 @@ export class WorkItemService {
       });
     }
 
-    return updated;
+    return { workItem: updated, cascadedSprintDescendantIds };
   }
 
-  private async resolveWorkflowValidation(
+  private async applySprintInheritanceForCreate(
+    input: WorkItemBody
+  ): Promise<WorkItemBody> {
+    if (!input.parent_id) {
+      return input;
+    }
+
+    const parent = await this.workItems.getById(input.parent_id);
+    const parentSprintId = parent.sprint_id ?? null;
+    if (input.sprint_id !== undefined) {
+      assertChildSprintMatchesParent(parentSprintId, input.sprint_id);
+    }
+
+    return { ...input, sprint_id: parentSprintId };
+  }
+
+  private async applySprintHierarchyRules(
+    current: DbWorkItem,
+    input: WorkItemUpdateBody
+  ): Promise<WorkItemUpdateBody> {
+    const nextParentId =
+      input.parent_id !== undefined ? input.parent_id : current.parent_id;
+
+    if (!nextParentId) {
+      return input;
+    }
+
+    const parent = await this.workItems.getById(nextParentId);
+    const parentSprintId = parent.sprint_id ?? null;
+
+    if ('sprint_id' in input) {
+      assertChildSprintMatchesParent(parentSprintId, input.sprint_id ?? null);
+    }
+
+    const parentLinkChanged =
+      'parent_id' in input &&
+      !sameNullable(input.parent_id ?? null, current.parent_id ?? null);
+    const needsInherit =
+      parentLinkChanged || !sameNullable(current.sprint_id, parentSprintId);
+
+    if (!needsInherit) {
+      return input;
+    }
+
+    return { ...input, sprint_id: parentSprintId };
+  }
+
+  private async recordUpdateActivities(params: {
+    userId: string;
+    workItemId: string;
+    current: DbWorkItem;
+    nextInput: WorkItemUpdateBody;
+    workflow: Awaited<ReturnType<WorkItemService['resolveWorkflowValidation']>>;
+    resolutionMeta: ReturnType<typeof buildEscalationResolvedMeta> | null;
+  }): Promise<void> {
+    if (!this.activities) {
+      return;
+    }
+
+    const { userId, workItemId, current, nextInput, workflow, resolutionMeta } =
+      params;
+    let wroteWorkflowTransition = false;
+
+    if (workflow.mode === 'workflow') {
+      const { sourceState, destinationState, edge, workflow: doc } = workflow;
+      if (sourceState.id !== destinationState.id) {
+        wroteWorkflowTransition = true;
+        await this.activities.recordWorkflowTransition({
+          workItemId,
+          actorId: userId,
+          meta: {
+            fromStateId: sourceState.id,
+            toStateId: destinationState.id,
+            workflowId: doc.id,
+            edgeId: edge?.id ?? null,
+          },
+        });
+        if (resolutionMeta) {
+          await this.activities.recordEscalationResolved({
+            workItemId,
+            actorId: userId,
+            meta: resolutionMeta,
+          });
+        }
+      }
+    }
+
+    const fieldChanges = collectWorkItemFieldChanges(current, nextInput, {
+      includeStatus: !wroteWorkflowTransition,
+    });
+    await this.activities.recordFieldChanges({
+      workItemId,
+      actorId: userId,
+      changes: fieldChanges,
+    });
+  }
+
+  private assertWorkflowResolution(
+    workflow: Awaited<ReturnType<WorkItemService['resolveWorkflowValidation']>>,
+    resolution: WorkflowResolutionPayload | undefined
+  ): ReturnType<typeof buildEscalationResolvedMeta> | null {
+    if (workflow.mode !== 'workflow') {
+      return null;
+    }
+    if (workflow.sourceState.id === workflow.destinationState.id) {
+      return null;
+    }
+
+    const requirement = getResolutionRequirement(
+      workflow.edge,
+      workflow.sourceState
+    );
+    if (!requirement.required) {
+      return null;
+    }
+
+    const resolutionRequiredMessage =
+      'This move needs a resolution form before you can save.';
+    if (!requirement.presetId || !resolution) {
+      throw new WorkItemValidationError(resolutionRequiredMessage);
+    }
+
+    const preset = findResolutionPreset(
+      workflow.workflow,
+      requirement.presetId
+    );
+    if (!preset) {
+      throw new WorkItemValidationError(resolutionRequiredMessage);
+    }
+
+    const validated = validateResolutionPayload(preset, resolution);
+    if (!validated.ok) {
+      throw new WorkItemValidationError(validated.message);
+    }
+
+    return buildEscalationResolvedMeta({
+      preset,
+      payload: resolution,
+      workflowId: workflow.workflow.id,
+      edgeId: workflow.edge?.id ?? null,
+      fromStateId: workflow.sourceState.id,
+      toStateId: workflow.destinationState.id,
+    });
+  }
+
+  private async resolveInputAfterTypeChange(params: {
+    workItemId: string;
+    current: DbWorkItem;
+    input: WorkItemUpdateBody;
+    allowedTypes: readonly WorkItemType[];
+    hierarchy?: Record<string, string | null> | null;
+    detachChildren: boolean;
+  }): Promise<WorkItemUpdateBody> {
+    const { workItemId, current, input, allowedTypes, hierarchy } = params;
+    const typeChanged =
+      Boolean(input.type) && input.type !== (current.type as WorkItemType);
+    if (!typeChanged) {
+      return input;
+    }
+
+    const childCount = await this.workItems.countDirectChildren(workItemId);
+    if (childCount > 0) {
+      if (!params.detachChildren) {
+        throw new WorkItemHierarchyTypeChangeError(childCount);
+      }
+      await this.workItems.detachDirectChildren(workItemId);
+    }
+
+    return await this.clearParentIfInvalidForNewType({
+      current,
+      input,
+      allowedTypes,
+      hierarchy,
+    });
+  }
+
+  private async clearParentIfInvalidForNewType(params: {
+    current: DbWorkItem;
+    input: WorkItemUpdateBody;
+    allowedTypes: readonly WorkItemType[];
+    hierarchy?: Record<string, string | null> | null;
+  }): Promise<WorkItemUpdateBody> {
+    const { current, input, allowedTypes, hierarchy } = params;
+    const parentId =
+      input.parent_id !== undefined ? input.parent_id : current.parent_id;
+    if (!parentId) {
+      return input;
+    }
+
+    const parent = await this.workItems.getById(parentId);
+    const allowedParent = getAllowedParentType(
+      input.type as WorkItemType,
+      allowedTypes,
+      hierarchy
+    );
+    if (
+      !parent ||
+      !allowedParent ||
+      (parent.type as WorkItemType) !== allowedParent
+    ) {
+      return { ...input, parent_id: null };
+    }
+    return input;
+  }
+
+  private async assertParentLinkWhenHierarchyTouches(params: {
+    current: DbWorkItem;
+    nextInput: WorkItemUpdateBody;
+    workItemId: string;
+    allowedTypes: readonly WorkItemType[];
+    hierarchy?: Record<string, string | null> | null;
+  }): Promise<void> {
+    const { current, nextInput, workItemId, allowedTypes, hierarchy } = params;
+    const parentChanged = !sameNullable(nextInput.parent_id, current.parent_id);
+    const typeChanged = Boolean(
+      nextInput.type && nextInput.type !== current.type
+    );
+    if (!parentChanged && !typeChanged) {
+      return;
+    }
+
+    await this.assertValidParentLink({
+      parentId:
+        nextInput.parent_id !== undefined
+          ? nextInput.parent_id
+          : current.parent_id,
+      projectId: nextInput.project_id,
+      childType: nextInput.type ?? (current.type as WorkItemType),
+      childId: workItemId,
+      allowedTypes,
+      hierarchy,
+    });
+  }
+
+  private async assertResolvedTransitions(
+    userId: string,
+    current: DbWorkItem,
+    nextInput: WorkItemUpdateBody,
+    workItemId: string,
+    workflow: Awaited<ReturnType<WorkItemService['resolveWorkflowValidation']>>
+  ): Promise<void> {
+    if (workflow.mode === 'legacy') {
+      const statusChanged = current.status !== nextInput.status;
+      const boardTransition = workflow.boardMove
+        ? findBoardTransition(
+            workflow.config,
+            workflow.boardMove.source.id,
+            workflow.boardMove.destination.id
+          )
+        : null;
+      const statusTransition = statusChanged
+        ? findStatusTransition(
+            workflow.config,
+            current.status,
+            nextInput.status
+          )
+        : null;
+      await this.assertLegacyTransitionsAllowed(
+        userId,
+        current.project_id,
+        boardTransition,
+        statusTransition
+      );
+      return;
+    }
+
+    if (workflow.mode === 'workflow') {
+      await this.assertGraphTransitionAllowed(
+        userId,
+        current.project_id,
+        workflow
+      );
+      await this.assertWorkflowRequireChildren(
+        workItemId,
+        workflow.edge,
+        workflow.destinationState
+      );
+    }
+  }
+
+  private async assertResolvedLockAndDoneGates(
+    current: DbWorkItem,
+    nextInput: WorkItemUpdateBody,
+    workItemId: string,
+    workflow: Awaited<ReturnType<WorkItemService['resolveWorkflowValidation']>>
+  ): Promise<void> {
+    if (workflow.mode === 'workflow') {
+      this.assertLockRecordReadOnly(workflow.sourceState, current, nextInput);
+      if (workflow.destinationState.category === 'done') {
+        await this.assertCanBecomeDone(current, workItemId, nextInput.status);
+      }
+      return;
+    }
+
+    await this.assertCanBecomeDone(current, workItemId, nextInput.status);
+    this.assertDoneIsReadOnlyExceptStatus(current, nextInput);
+  }
+
+  private resolveWorkflowValidation(
     current: DbWorkItem,
     input: WorkItemUpdateBody,
     workflowConfig: unknown,
     workflowConfigError: unknown
-  ) {
+  ):
+    | { mode: 'none' }
+    | {
+        mode: 'legacy';
+        config: RuntimeBoardConfig;
+        boardMove: {
+          source: { id: string };
+          destination: { id: string };
+        } | null;
+      }
+    | {
+        mode: 'workflow';
+        workflow: WorkflowDocument;
+        edge: WorkflowEdge | null;
+        sourceState: WorkflowStateNode;
+        destinationState: WorkflowStateNode;
+      } {
     if (input.project_id !== current.project_id) {
       if (input.board_column_id !== null) {
         throw new WorkItemValidationError(
           'Board column placement cannot be carried to another project'
         );
       }
-      return { config: null, boardMove: null };
+      return { mode: 'none' };
     }
 
     const statusChanged = current.status !== input.status;
     const boardPlacementChanged =
       statusChanged || current.board_column_id !== input.board_column_id;
     if (!boardPlacementChanged) {
-      return { config: null, boardMove: null };
+      return { mode: 'none' };
     }
 
     throwWorkflowConfigLoadError(workflowConfigError);
 
+    const envelope = parseWorkflowConfigEnvelope(workflowConfig);
+    if (envelope) {
+      return this.resolveGraphWorkflowValidation(current, input, envelope);
+    }
+
+    return this.resolveLegacyBoardValidation(current, input, workflowConfig);
+  }
+
+  private resolveLegacyBoardValidation(
+    current: DbWorkItem,
+    input: WorkItemUpdateBody,
+    workflowConfig: unknown
+  ):
+    | {
+        mode: 'legacy';
+        config: RuntimeBoardConfig;
+        boardMove: {
+          source: { id: string };
+          destination: { id: string };
+        } | null;
+      }
+    | { mode: 'none' } {
     const parsed = boardConfigSchema.safeParse(workflowConfig);
     if (!parsed.success) {
       if (input.board_column_id !== null) {
@@ -408,44 +832,129 @@ export class WorkItemService {
           'This project does not have a valid custom board configuration'
         );
       }
-      return { config: null, boardMove: null };
+      return { mode: 'none' };
     }
 
     const config = normalizeBoardConfig(parsed.data);
-    if (input.board_column_id !== null) {
-      const configuredColumn = config.columns.find(
-        (candidate) => candidate.id === input.board_column_id
-      );
-      if (!configuredColumn) {
-        throw new WorkItemValidationError(
-          'Board column does not exist in this project'
-        );
-      }
-      if (configuredColumn.status !== input.status) {
-        throw new WorkItemValidationError(
-          'Board column does not match the work item status'
-        );
-      }
-    }
-
-    const destination = resolveBoardDestinationColumn(
-      { status: input.status, board_column_id: input.board_column_id },
+    const { boardMove } = resolveValidatedBoardMove(
+      current,
+      input,
       config.columns
     );
-    if (!destination) {
-      throw new WorkItemValidationError(
-        'Board column does not exist in this project'
-      );
-    }
 
-    const source = resolveBoardSourceColumn(current, config.columns);
-    const boardMove =
-      source && source.id !== destination.id ? { source, destination } : null;
-
-    return { config, boardMove };
+    return { mode: 'legacy', config, boardMove };
   }
 
-  private async assertWorkflowTransitionsAllowed(
+  private resolveGraphWorkflowValidation(
+    current: DbWorkItem,
+    input: WorkItemUpdateBody,
+    envelope: WorkflowConfigEnvelope
+  ): {
+    mode: 'workflow';
+    workflow: WorkflowDocument;
+    edge: WorkflowEdge | null;
+    sourceState: WorkflowStateNode;
+    destinationState: WorkflowStateNode;
+  } {
+    const currentState = resolveWorkItemState({
+      state: current.state,
+      status: current.status,
+      boardColumnId: current.board_column_id,
+    });
+    const workflow =
+      envelope.workflows.find(
+        (candidate) => candidate.id === currentState.workflowId
+      ) ??
+      envelope.workflows.find(
+        (candidate) => candidate.id === envelope.defaultWorkflowId
+      ) ??
+      envelope.workflows[0]!;
+
+    const sourceState =
+      findWorkflowState(workflow, currentState.stateId) ??
+      resolveWorkflowGraphState({
+        workflow,
+        status: current.status,
+        board_column_id: current.board_column_id,
+      });
+
+    // Prefer an explicit state id; do not silently fall back when the id is unknown.
+    const destinationState = input.board_column_id
+      ? findWorkflowState(workflow, input.board_column_id)
+      : resolveWorkflowGraphState({
+          workflow,
+          status: input.status,
+          board_column_id: null,
+        });
+
+    if (!sourceState || !destinationState) {
+      throw new WorkItemValidationError('That state is not on this workflow.');
+    }
+
+    const edge =
+      sourceState.id === destinationState.id
+        ? null
+        : findWorkflowEdge(workflow, sourceState.id, destinationState.id);
+
+    return {
+      mode: 'workflow',
+      workflow,
+      edge,
+      sourceState,
+      destinationState,
+    };
+  }
+
+  /**
+   * Bridge status + null board_column_id for draft destinations, and build the
+   * state JSONB override so category stays correct when the column is cleared.
+   */
+  private normalizeGraphWorkflowPlacement(
+    current: DbWorkItem,
+    input: WorkItemUpdateBody,
+    workflow: {
+      mode: 'workflow';
+      workflow: WorkflowDocument;
+      destinationState: WorkflowStateNode;
+    }
+  ): {
+    nextInput: WorkItemUpdateBody;
+    stateOverride: NonNullable<
+      ReturnType<typeof resolveWorkflowPlacementState>
+    >;
+  } {
+    const previousState = resolveWorkItemState({
+      state: current.state,
+      status: current.status,
+      boardColumnId: current.board_column_id,
+    });
+    const destination = workflow.destinationState;
+    const status = legacyStatusFromWorkItemState({
+      workflowId: workflow.workflow.id,
+      stateId: destination.id,
+      category: destination.category,
+    });
+    const stateOverride = resolveWorkflowPlacementState({
+      workflow: workflow.workflow,
+      previousState,
+      targetStateId: destination.id,
+      updatedAt: new Date().toISOString(),
+    });
+    if (!stateOverride) {
+      throw new WorkItemValidationError('That state is not on this workflow.');
+    }
+
+    return {
+      nextInput: {
+        ...input,
+        status,
+        board_column_id: boardColumnIdForWorkflowState(destination),
+      },
+      stateOverride,
+    };
+  }
+
+  private async assertLegacyTransitionsAllowed(
     actorId: string,
     projectId: string,
     boardTransition: ReturnType<typeof findBoardTransition>,
@@ -465,6 +974,93 @@ export class WorkItemService {
       !doesTransitionRuleAllowActor(statusTransition.allowAnyOf, actor, actorId)
     ) {
       throw new StatusTransitionForbiddenError();
+    }
+  }
+
+  private async assertGraphTransitionAllowed(
+    actorId: string,
+    projectId: string,
+    workflow: {
+      edge: WorkflowEdge | null;
+      sourceState: WorkflowStateNode;
+      destinationState: WorkflowStateNode;
+    }
+  ): Promise<void> {
+    if (workflow.sourceState.id === workflow.destinationState.id) {
+      return;
+    }
+
+    if (workflow.sourceState.terminal) {
+      throw new WorkItemValidationError(
+        'Terminal states cannot have outbound transitions'
+      );
+    }
+
+    if (!workflow.edge) {
+      throw new WorkItemValidationError(
+        `This transition is not allowed in the workflow (${workflow.sourceState.name} → ${workflow.destinationState.name}).`
+      );
+    }
+
+    if (workflow.edge.allowAnyOf.length === 0) {
+      return;
+    }
+
+    const actor = await this.workItems.getBoardActorContext(actorId, projectId);
+    if (
+      !doesTransitionRuleAllowActor(workflow.edge.allowAnyOf, actor, actorId)
+    ) {
+      throw new BoardMoveForbiddenError();
+    }
+  }
+
+  private async assertWorkflowRequireChildren(
+    workItemId: string,
+    edge: WorkflowEdge | null,
+    destinationState: WorkflowStateNode
+  ): Promise<void> {
+    if (!edge || edge.requireChildren === 'off') {
+      return;
+    }
+
+    if (edge.requireChildren === 'all_complete') {
+      const incompleteCount =
+        await this.workItems.countIncompleteChildren(workItemId);
+      if (incompleteCount > 0) {
+        throw new WorkItemValidationError(
+          `Cannot move while ${incompleteCount} subtask${incompleteCount === 1 ? ' is' : 's are'} incomplete. Complete or unlink them first.`
+        );
+      }
+      return;
+    }
+
+    if (edge.requireChildren === 'match_parent_target') {
+      const mismatched = await this.workItems.countChildrenNotInTargetState(
+        workItemId,
+        destinationState.id,
+        destinationState.category
+      );
+      if (mismatched > 0) {
+        throw new WorkItemValidationError(
+          `Cannot move while ${mismatched} subtask${mismatched === 1 ? ' is' : 's are'} not in the target state. Align children first.`
+        );
+      }
+    }
+  }
+
+  private assertLockRecordReadOnly(
+    sourceState: WorkflowStateNode,
+    current: DbWorkItem,
+    input: WorkItemUpdateBody
+  ): void {
+    if (!sourceState.lockRecord) {
+      return;
+    }
+
+    if (hasNonStatusWorkItemFieldChanges(current, input)) {
+      throw new WorkItemValidationError(
+        'This work item is locked in its current state. Change state to edit other fields.'
+      );
     }
   }
 
@@ -733,31 +1329,7 @@ export class WorkItemService {
       return;
     }
 
-    const dueUnchanged =
-      toDateOnly(input.due_date) === toDateOnly(current.due_date);
-    const descriptionUnchanged =
-      JSON.stringify(input.description ?? null) ===
-      JSON.stringify(current.description ?? null);
-    const labelsUnchanged =
-      JSON.stringify(input.labels ?? parseWorkItemLabels(current.labels)) ===
-      JSON.stringify(parseWorkItemLabels(current.labels));
-
-    const nonStatusChanged =
-      input.title !== current.title ||
-      input.project_id !== current.project_id ||
-      input.type !== current.type ||
-      input.priority !== current.priority ||
-      !sameNullable(input.assignee_id, current.assignee_id) ||
-      !sameNullable(input.reporter_id, current.reporter_id) ||
-      !dueUnchanged ||
-      !sameNullable(input.sprint_id, current.sprint_id) ||
-      !sameNullable(input.story_points, current.story_points) ||
-      !sameNullable(input.parent_id, current.parent_id) ||
-      !descriptionUnchanged ||
-      !labelsUnchanged ||
-      !sameNullable(input.jira_issue_key, current.jira_issue_key);
-
-    if (nonStatusChanged) {
+    if (hasNonStatusWorkItemFieldChanges(current, input)) {
       throw new WorkItemValidationError(
         'Done work items are read-only except Status. Change status to edit other fields.'
       );
@@ -858,25 +1430,23 @@ export class WorkItemService {
     childId: string,
     parentId: string
   ): Promise<void> {
-    let currentId: string | null = parentId;
     const seen = new Set<string>();
 
-    while (currentId) {
-      if (currentId === childId) {
-        throw new WorkItemValidationError(
-          'Cannot set parent: that would create a cycle in the work item hierarchy'
-        );
+    const walk = async (currentId: string | null): Promise<void> => {
+      if (!currentId) {
+        return;
       }
-      if (seen.has(currentId)) {
+      if (currentId === childId || seen.has(currentId)) {
         throw new WorkItemValidationError(
           'Cannot set parent: that would create a cycle in the work item hierarchy'
         );
       }
       seen.add(currentId);
-
       const ancestor = await this.workItems.getById(currentId);
-      currentId = ancestor?.parent_id ?? null;
-    }
+      await walk(ancestor?.parent_id ?? null);
+    };
+
+    await walk(parentId);
   }
 
   private async fetchGithubPRData(
@@ -1011,51 +1581,52 @@ export class WorkItemService {
       };
     }
 
-    const result = [];
-    for (const pr of prs) {
-      const details = await this.fetchGithubPRData(pr, headers);
+    const result = await Promise.all(
+      prs.map(async (pr) => {
+        const details = await this.fetchGithubPRData(pr, headers);
 
-      if (details.success) {
-        if (
-          details.status !== pr.status ||
-          details.title !== pr.pr_title ||
-          details.branchName !== pr.branch_name
-        ) {
-          await this.workItems.linkPR(workItemId, {
-            prNumber: pr.pr_number,
-            repoOwner: pr.repo_owner,
-            repoName: pr.repo_name,
-            prTitle: details.title,
-            prUrl: pr.pr_url,
-            branchName: details.branchName,
-            status: details.status,
-          });
+        if (details.success) {
+          const metadataChanged =
+            details.status !== pr.status ||
+            details.title !== pr.pr_title ||
+            details.branchName !== pr.branch_name;
+          if (metadataChanged) {
+            await this.workItems.linkPR(workItemId, {
+              prNumber: pr.pr_number,
+              repoOwner: pr.repo_owner,
+              repoName: pr.repo_name,
+              prTitle: details.title,
+              prUrl: pr.pr_url,
+              branchName: details.branchName,
+              status: details.status,
+            });
+          }
+        } else {
+          details.commits = [
+            {
+              sha: `f7a${pr.pr_number}c1`,
+              message: `feat: implement changes for work item`,
+              author: 'Carol Member',
+              date: new Date(Date.now() - 3600000 * 24).toISOString(),
+            },
+            {
+              sha: `9b1${pr.pr_number}e8`,
+              message: `test: add unit tests and validations`,
+              author: 'Carol Member',
+              date: new Date(Date.now() - 3600000 * 2).toISOString(),
+            },
+          ];
         }
-      } else {
-        details.commits = [
-          {
-            sha: `f7a${pr.pr_number}c1`,
-            message: `feat: implement changes for work item`,
-            author: 'Carol Member',
-            date: new Date(Date.now() - 3600000 * 24).toISOString(),
-          },
-          {
-            sha: `9b1${pr.pr_number}e8`,
-            message: `test: add unit tests and validations`,
-            author: 'Carol Member',
-            date: new Date(Date.now() - 3600000 * 2).toISOString(),
-          },
-        ];
-      }
 
-      result.push({
-        ...pr,
-        pr_title: details.title,
-        status: details.status,
-        branch_name: details.branchName,
-        commits: details.commits,
-      });
-    }
+        return {
+          ...pr,
+          pr_title: details.title,
+          status: details.status,
+          branch_name: details.branchName,
+          commits: details.commits,
+        };
+      })
+    );
 
     return {
       prs: result,

@@ -115,4 +115,24 @@ describe('getBacklogWorkspace', () => {
     expect(result.initialWorkItems).toEqual([]);
     expect(result.sprints).toEqual([]);
   });
+
+  it('keeps an active accessible project with no sprints or work items', async () => {
+    const emptyProject = {
+      id: 'proj-empty',
+      name: 'Empty Project',
+      status: 'active',
+      deleted_at: null,
+    };
+    getDbUserMock.mockResolvedValue({ id: 'admin-1', role: 'admin' });
+    listAccessibleProjectIdsMock.mockResolvedValue(['proj-empty']);
+    getAccessibleProjectListMock.mockResolvedValue([emptyProject]);
+    getWorkItemsMock.mockResolvedValue([]);
+    getSprintsPaginatedServerMock.mockResolvedValue({ sprints: [] });
+
+    const result = await getBacklogWorkspace();
+
+    expect(result.projects).toEqual([emptyProject]);
+    expect(result.initialWorkItems).toEqual([]);
+    expect(result.sprints).toEqual([]);
+  });
 });

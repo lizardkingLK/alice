@@ -7,6 +7,7 @@ import {
   type ProjectStatus,
 } from '../../generated/prisma/enums.js';
 import { UserRoleEnum, type UserRole } from '../../users.js';
+import type { WorkItemType } from '../../work-item-types.js';
 import { projectWorkflowConfigSchema } from './board-config.js';
 import {
   emptyToUndefined,
@@ -14,6 +15,8 @@ import {
   paginatedListPageField,
 } from './query-preprocess.js';
 import { ProjectFieldsConfigSchema } from './dynamic-fields.js';
+import { initialSprintSchema } from './sprints.js';
+import { initialProjectTeamSchema } from './teams.js';
 
 export * from './jira-import-types.js';
 export { projectWorkflowConfigSchema };
@@ -55,6 +58,9 @@ export function projectRelationSelect(
   return `${alias}:projects(${projection})`;
 }
 
+const workItemTypeValues = Constants.public.Enums.WorkItemType;
+const workItemTypeField = z.enum(workItemTypeValues);
+
 const baseCreateProjectSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   key: z
@@ -80,6 +86,10 @@ const baseCreateProjectSchema = z.object({
 });
 
 export const createProjectSchema = baseCreateProjectSchema
+  .extend({
+    sprint: initialSprintSchema.optional(),
+    team: initialProjectTeamSchema.optional(),
+  })
   .refine(
     (data) => {
       if (data.start_date && data.end_date) {
@@ -123,10 +133,48 @@ export const createProjectSchema = baseCreateProjectSchema
     }
   );
 
+/** Team details supplied when creating a project. */
+export type InitialProjectTeamInput = z.infer<typeof initialProjectTeamSchema>;
+
+/** Per removed type: permanently delete rows, or convert to a kept type. */
+export const workItemTypeRemovalStrategySchema = z
+  .object({
+    type: workItemTypeField,
+    action: z.enum(['delete', 'migrate']),
+    migrateTo: workItemTypeField.optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.action === 'migrate') {
+      if (!value.migrateTo) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'migrateTo is required when action is migrate',
+          path: ['migrateTo'],
+        });
+      } else if (value.migrateTo === value.type) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'migrateTo must differ from the removed type',
+          path: ['migrateTo'],
+        });
+      }
+    }
+  });
+
+export const workItemTypeRemovalStrategiesSchema = z
+  .array(workItemTypeRemovalStrategySchema)
+  .max(workItemTypeValues.length);
+
+export type WorkItemTypeRemovalStrategy = z.infer<
+  typeof workItemTypeRemovalStrategySchema
+>;
+
 export const updateProjectSchema = baseCreateProjectSchema
   .partial()
   .extend({
     workflow_config: projectWorkflowConfigSchema.nullable().optional(),
+    /** Required when removing types that still have work items. */
+    typeRemovalStrategies: workItemTypeRemovalStrategiesSchema.optional(),
   })
   .refine(
     (data) => {
@@ -142,6 +190,36 @@ export const updateProjectSchema = baseCreateProjectSchema
       path: ['end_date'],
     }
   );
+
+export type WorkItemTypeRemovalPreviewItem = {
+  id: string;
+  title: string;
+  type: WorkItemType;
+  status: string;
+  record_status: string;
+  parent_id: string | null;
+  parent_title: string | null;
+  jira_issue_key: string | null;
+};
+
+export type WorkItemTypeRemovalPreviewGroup = {
+  type: WorkItemType;
+  count: number;
+  /** Kept parent types that currently allow this type as their child. */
+  childSlotParents: WorkItemType[];
+  items: WorkItemTypeRemovalPreviewItem[];
+};
+
+export type WorkItemTypeRemovalPreviewResponse = {
+  groups: WorkItemTypeRemovalPreviewGroup[];
+  totalAffected: number;
+};
+
+export type WorkItemTypeRemovalApplyResult = {
+  detachedCount: number;
+  deletedCount: number;
+  migratedCount: number;
+};
 
 /**
  * Strip integration secrets before project rows reach clients.

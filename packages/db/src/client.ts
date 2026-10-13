@@ -15,7 +15,8 @@ export type { PrismaClient };
 /** Prisma query-engine URL flags — `pg` does not honor these. */
 const PRISMA_URL_PARAMS_TO_STRIP = ['pgbouncer', 'connection_limit'] as const;
 
-const PG_POOL_MAX = 10;
+/** Raised for alice#562 — interactive `$transaction` needs spare pool slots. */
+const PG_POOL_MAX = 20;
 const PG_POOL_CONNECT_TIMEOUT_MS = 8_000;
 const PG_POOL_IDLE_TIMEOUT_MS = 30_000;
 const PG_POOL_QUERY_TIMEOUT_MS = 10_000;

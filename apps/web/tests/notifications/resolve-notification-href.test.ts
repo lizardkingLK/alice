@@ -57,4 +57,22 @@ describe('resolveNotificationHref', () => {
       )
     ).toBe('/charts/chart-1');
   });
+
+  it('routes project_created to project details', () => {
+    expect(
+      resolveNotificationHref(
+        { type: 'project_created', related_item_id: 'proj-1' },
+        null
+      )
+    ).toBe('/projects/proj-1');
+  });
+
+  it('does not navigate for project_create_failed', () => {
+    expect(
+      resolveNotificationHref(
+        { type: 'project_create_failed', related_item_id: 'proj-1' },
+        null
+      )
+    ).toBeNull();
+  });
 });

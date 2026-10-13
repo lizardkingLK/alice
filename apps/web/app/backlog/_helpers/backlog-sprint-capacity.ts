@@ -78,3 +78,46 @@ export function computeSprintCapacity(options: {
     percentUsed,
   };
 }
+
+export function formatCapacityPoints(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+/** Compact header label: `12 / 40` or `12 pts` when capacity is unconfigured. */
+export function formatCapacityHeaderLabel(
+  snapshot: SprintCapacitySnapshot
+): string {
+  if (snapshot.hasConfiguredCapacity) {
+    return `${formatCapacityPoints(snapshot.usedPoints)} / ${formatCapacityPoints(snapshot.totalCapacity)}`;
+  }
+  return `${formatCapacityPoints(snapshot.usedPoints)} pts`;
+}
+
+/**
+ * Rounded percent of capacity used (not capped at 100, so over-capacity can
+ * show values like `125%`). Returns `—` when capacity is unconfigured.
+ */
+export function formatCapacityPercentLabel(
+  snapshot: SprintCapacitySnapshot
+): string {
+  if (!snapshot.hasConfiguredCapacity || snapshot.totalCapacity <= 0) {
+    return '—';
+  }
+  return `${Math.round((snapshot.usedPoints / snapshot.totalCapacity) * 100)}%`;
+}
+
+export function isCapacityOver(snapshot: SprintCapacitySnapshot): boolean {
+  return (
+    snapshot.hasConfiguredCapacity &&
+    snapshot.usedPoints > snapshot.totalCapacity
+  );
+}
+
+/** Near-full warning (not over) for amber styling. */
+export function isCapacityNearFull(snapshot: SprintCapacitySnapshot): boolean {
+  return (
+    snapshot.hasConfiguredCapacity &&
+    !isCapacityOver(snapshot) &&
+    snapshot.percentUsed >= 90
+  );
+}

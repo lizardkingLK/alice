@@ -11,6 +11,7 @@ type ApiErrorResponse = {
   error: unknown;
   code?: string;
   serverEntity?: unknown;
+  childCount?: number;
 };
 
 /** Error carrying the HTTP status so callers can branch (e.g. 410 Gone). */
@@ -18,23 +19,31 @@ export class ApiError extends Error {
   readonly status: number;
   readonly code?: string;
   readonly serverEntity?: unknown;
+  readonly childCount?: number;
 
   constructor(
     message: string,
     status: number,
-    options?: { code?: string; serverEntity?: unknown }
+    options?: {
+      code?: string;
+      serverEntity?: unknown;
+      childCount?: number;
+    }
   ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = options?.code;
     this.serverEntity = options?.serverEntity;
+    this.childCount = options?.childCount;
   }
 }
 
 type TreeifiedError = {
   errors?: string[];
   properties?: Record<string, TreeifiedError | undefined>;
+  /** Zod 4 `z.treeifyError` nests array element issues under `items`. */
+  items?: ReadonlyArray<TreeifiedError | null | undefined>;
 };
 
 export function getAPIUrl() {
@@ -55,27 +64,45 @@ function isTreeifiedError(value: unknown): value is TreeifiedError {
     return false;
   }
 
-  return 'errors' in value || 'properties' in value;
+  return 'errors' in value || 'properties' in value || 'items' in value;
 }
 
-function collectTreeifyMessages(node: TreeifiedError, path = ''): string[] {
+function treeifyChildPath(path: string, segment: string): string {
+  return path ? `${path}.${segment}` : segment;
+}
+
+function collectTreeifyChildMessages(
+  children: Iterable<readonly [string, TreeifiedError | null | undefined]>,
+  path: string
+): string[] {
   const messages: string[] = [];
-
-  for (const error of node.errors ?? []) {
-    messages.push(error);
-  }
-
-  if (!node.properties) {
-    return messages;
-  }
-
-  for (const [key, child] of Object.entries(node.properties)) {
+  for (const [segment, child] of children) {
     if (!child) {
       continue;
     }
+    messages.push(
+      ...collectTreeifyMessages(child, treeifyChildPath(path, segment))
+    );
+  }
+  return messages;
+}
 
-    const nextPath = path ? `${path}.${key}` : key;
-    messages.push(...collectTreeifyMessages(child, nextPath));
+function collectTreeifyMessages(node: TreeifiedError, path = ''): string[] {
+  const messages = [...(node.errors ?? [])];
+
+  if (node.properties) {
+    messages.push(
+      ...collectTreeifyChildMessages(Object.entries(node.properties), path)
+    );
+  }
+
+  if (node.items) {
+    messages.push(
+      ...collectTreeifyChildMessages(
+        node.items.map((child, index) => [String(index), child] as const),
+        path
+      )
+    );
   }
 
   return messages;
@@ -138,6 +165,12 @@ export type GetResponseInit = RequestInit & {
    * loops, Jira import) pass a higher `timeoutMs`.
    */
   timeoutMs?: number;
+  /**
+   * Skip client `withApiBusyRetry` and the “Database is busy. Retrying…” toast.
+   * Use for fire-and-forget accepts (e.g. async project create) where the HTTP
+   * call returns before the busy `$transaction` runs.
+   */
+  skipDatabaseBusyRetry?: boolean;
 };
 
 function mergeAbortSignals(
@@ -149,6 +182,35 @@ function mergeAbortSignals(
     return timeout;
   }
   return AbortSignal.any([timeout, external]);
+}
+
+function readApiErrorChildCount(data: unknown): number | undefined {
+  if (
+    typeof data === 'object' &&
+    data !== null &&
+    'childCount' in data &&
+    typeof data.childCount === 'number'
+  ) {
+    return data.childCount;
+  }
+  return undefined;
+}
+
+function throwApiErrorFromResponse(response: Response, data: unknown): never {
+  const message = getApiErrorMessage(data);
+  if (
+    response.status === OPTIMISTIC_LOCK_HTTP_STATUS &&
+    isOptimisticLockConflictBody(data)
+  ) {
+    throw new ApiError(message, response.status, {
+      code: OPTIMISTIC_LOCK_ERROR_CODE,
+      serverEntity: (data as ApiErrorResponse).serverEntity,
+    });
+  }
+  throw new ApiError(message, response.status, {
+    code: getApiErrorCode(data),
+    childCount: readApiErrorChildCount(data),
+  });
 }
 
 export async function getResponse<T>(
@@ -204,19 +266,7 @@ export async function getResponse<T>(
   }
 
   if (!response.ok) {
-    const message = getApiErrorMessage(data);
-    if (
-      response.status === OPTIMISTIC_LOCK_HTTP_STATUS &&
-      isOptimisticLockConflictBody(data)
-    ) {
-      throw new ApiError(message, response.status, {
-        code: OPTIMISTIC_LOCK_ERROR_CODE,
-        serverEntity: data.serverEntity,
-      });
-    }
-    throw new ApiError(message, response.status, {
-      code: getApiErrorCode(data),
-    });
+    throwApiErrorFromResponse(response, data);
   }
 
   return data as T;

@@ -15,7 +15,6 @@ import { prisma } from '../../../lib/prisma';
 import { env } from '../../../config/env';
 import { removeStorageObjects } from '../../../lib/file-helpers';
 import {
-  prismaAuditCreateWithoutStatus,
   prismaAuditUpdate,
   prismaLockTimestamp,
   prismaOptionalDate,
@@ -29,17 +28,11 @@ import {
   sprintListPageSlice,
   type SprintPaginatedList,
 } from './sprints.prisma-query';
+import { insertSprint, type CreateSprintRecord } from './sprints.prisma';
+
+export { insertSprint, type CreateSprintRecord } from './sprints.prisma';
 
 export type SprintRow = Tables<'sprints'>;
-
-export type CreateSprintRecord = {
-  name: string;
-  goal: string | null;
-  startDate: string;
-  endDate: string;
-  createdBy: string;
-  projectId: string;
-};
 
 export class SprintsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
@@ -67,16 +60,7 @@ export class SprintsRepository {
   }
 
   async create(input: CreateSprintRecord): Promise<SprintRowWithProject> {
-    const created = await prisma.sprints.create({
-      data: {
-        name: input.name,
-        goal: input.goal,
-        start_date: prismaOptionalDate(input.startDate)!,
-        end_date: prismaOptionalDate(input.endDate)!,
-        project_id: input.projectId,
-        ...prismaAuditCreateWithoutStatus(input.createdBy),
-      },
-    });
+    const created = await insertSprint(prisma, input);
 
     const row = await this.findById(created.id);
     if (!row) {
@@ -438,5 +422,66 @@ export class SprintBurndownRepository {
     }
 
     return (data ?? []) as Array<{ logged_at: string; logged_hours: number }>;
+  }
+
+  /**
+   * Precomputed daily series from `sprint_burndown_rollups`.
+   * Empty when migration not applied or sprint not backfilled yet.
+   */
+  async getBurndownRollupRows(sprintId: string): Promise<
+    Array<{
+      bucket_date: string;
+      remaining: number | null;
+      estimated_total: number;
+      spent: number;
+    }>
+  > {
+    try {
+      const rows = await prisma.sprint_burndown_rollups.findMany({
+        where: { sprint_id: sprintId },
+        orderBy: { bucket_date: 'asc' },
+        select: {
+          bucket_date: true,
+          remaining: true,
+          estimated_total: true,
+          spent: true,
+        },
+      });
+
+      return rows.map((row) => ({
+        bucket_date: row.bucket_date.toISOString().slice(0, 10),
+        remaining: row.remaining,
+        estimated_total: row.estimated_total,
+        spent: row.spent,
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      // Table missing before migrate:deploy — fall back to live compute.
+      if (
+        message.includes('sprint_burndown_rollups') ||
+        message.includes('does not exist')
+      ) {
+        console.warn(
+          'warn. sprint_burndown_rollups unavailable; using live burndown compute.'
+        );
+        return [];
+      }
+      throw error;
+    }
+  }
+
+  /** Trigger SQL rebuild for a sprint (also used after live fallback). */
+  async rebuildBurndownRollup(sprintId: string): Promise<void> {
+    try {
+      await prisma.$executeRawUnsafe(
+        'SELECT public.rebuild_sprint_burndown_rollups($1::uuid)',
+        sprintId
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(
+        `warn. rebuild_sprint_burndown_rollups failed for ${sprintId}: ${message}`
+      );
+    }
   }
 }

@@ -1,6 +1,8 @@
 'use client';
 
 import { CheckCircle2, CircleDot, Layers, Plus } from '@repo/ui/lib/icons';
+import { BacklogCapacityDisplayMenu } from '@/app/backlog/_components/backlog-capacity-display-menu';
+import type { BacklogCapacityDisplayId } from '@/app/backlog/_helpers/backlog-capacity-display-storage';
 import {
   AppliedFilterBadges,
   type AppliedFilterBadgeItem,
@@ -12,12 +14,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@repo/ui/components/ui/tooltip';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import {
   BacklogFilterDialog,
@@ -43,6 +39,8 @@ type BacklogToolbarProps = {
   readonly onTabChange: (tab: BacklogActiveTab) => void;
   readonly preferredLayout: BacklogLayoutId;
   readonly onLayoutChange: (layout: BacklogLayoutId) => void;
+  readonly capacityDisplay: BacklogCapacityDisplayId;
+  readonly onCapacityDisplayChange: (display: BacklogCapacityDisplayId) => void;
   readonly onCreateSprint: () => void;
   readonly onCreateIssue: () => void;
   readonly searchQuery: string;
@@ -79,6 +77,8 @@ export function BacklogToolbar({
   onTabChange,
   preferredLayout,
   onLayoutChange,
+  capacityDisplay,
+  onCapacityDisplayChange,
   onCreateSprint,
   onCreateIssue,
   searchQuery,
@@ -145,6 +145,11 @@ export function BacklogToolbar({
           onLayoutChange={onLayoutChange}
         />
 
+        <BacklogCapacityDisplayMenu
+          capacityDisplay={capacityDisplay}
+          onCapacityDisplayChange={onCapacityDisplayChange}
+        />
+
         <RegistryTabSwitcher
           tabs={BACKLOG_TABS}
           value={activeTab}
@@ -152,43 +157,37 @@ export function BacklogToolbar({
           aria-label="Backlog status"
         />
 
-        <TooltipProvider delayDuration={200}>
-          <DropdownMenu>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    size="icon"
-                    className="size-8 shrink-0 cursor-pointer"
-                    aria-label="Create"
-                  >
-                    <Plus className="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Create</TooltipContent>
-            </Tooltip>
-            <DropdownMenuContent align="end" className="w-48">
-              {isManagerOrAdmin ? (
-                <DropdownMenuItem
-                  className="cursor-pointer gap-2"
-                  onSelect={onCreateSprint}
-                >
-                  <Layers className="size-4" />
-                  Create Sprint
-                </DropdownMenuItem>
-              ) : null}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              size="icon"
+              className="size-8 shrink-0 cursor-pointer"
+              aria-label="Create"
+              title="Create"
+            >
+              <Plus className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {isManagerOrAdmin ? (
               <DropdownMenuItem
                 className="cursor-pointer gap-2"
-                onSelect={onCreateIssue}
+                onSelect={onCreateSprint}
               >
-                <Plus className="size-4" />
-                Create Work-Item
+                <Layers className="size-4" />
+                Create Sprint
               </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </TooltipProvider>
+            ) : null}
+            <DropdownMenuItem
+              className="cursor-pointer gap-2"
+              onSelect={onCreateIssue}
+            >
+              <Plus className="size-4" />
+              Create Work-Item
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

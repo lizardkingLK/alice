@@ -9,7 +9,8 @@ export const createChartSchema = z.object({
   title: z.string().trim().min(1).max(200),
   description: z.string().trim().max(2000).nullable().optional(),
   board_json: chartBoardJsonSchema.optional(),
-  is_overview: z.boolean().optional(),
+  show_on_dashboard: z.boolean().optional(),
+  dashboard_sort_order: z.number().int().min(0).max(1_000_000).optional(),
   id: z.uuid().optional(),
 });
 
@@ -17,7 +18,8 @@ export const updateChartSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
   description: z.string().trim().max(2000).nullable().optional(),
   board_json: chartBoardJsonSchema.optional(),
-  is_overview: z.boolean().optional(),
+  show_on_dashboard: z.boolean().optional(),
+  dashboard_sort_order: z.number().int().min(0).max(1_000_000).optional(),
   status: z.enum(['active', 'archived']).optional(),
 });
 

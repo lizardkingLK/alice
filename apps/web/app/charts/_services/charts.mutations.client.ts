@@ -40,7 +40,8 @@ export async function syncChartWorkspaceToApi(
         title: workspace.title,
         description: workspace.description,
         board_json: boardJsonFromWorkspace(workspace),
-        is_overview: workspace.isOverview,
+        show_on_dashboard: workspace.showOnDashboard,
+        dashboard_sort_order: workspace.dashboardSortOrder,
       }),
     });
     return result.data;
@@ -55,17 +56,54 @@ export async function syncChartWorkspaceToApi(
 /** Create a new owned chart workspace on the server. */
 export async function createChartWorkspaceOnApi(params: {
   readonly title: string;
-  readonly isOverview?: boolean;
+  readonly description?: string | null;
+  readonly showOnDashboard?: boolean;
+  readonly dashboardSortOrder?: number;
   readonly viewerId: string;
 }): Promise<ChartWorkspaceRecord> {
   const result = await apiFetch<{ data: ChartApiRow }>('/api/charts', {
     method: 'POST',
     body: JSON.stringify({
       title: params.title,
-      is_overview: params.isOverview ?? false,
+      description: params.description ?? null,
+      show_on_dashboard: params.showOnDashboard ?? false,
+      dashboard_sort_order: params.dashboardSortOrder ?? 0,
       board_json: { instances: [], layout: [] },
     }),
   });
+  return chartWorkspaceFromApiRow(
+    result.data,
+    chartOwnershipForViewer(result.data, params.viewerId)
+  );
+}
+
+/** Patch owned chart meta (registry Edit / Save option). */
+export async function updateChartWorkspaceMetaOnApi(params: {
+  readonly chartId: string;
+  readonly title?: string;
+  readonly description?: string | null;
+  readonly showOnDashboard?: boolean;
+  readonly dashboardSortOrder?: number;
+  readonly viewerId: string;
+}): Promise<ChartWorkspaceRecord> {
+  const result = await apiFetch<{ data: ChartApiRow }>(
+    `/api/charts/${params.chartId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({
+        ...(params.title !== undefined ? { title: params.title } : {}),
+        ...(params.description !== undefined
+          ? { description: params.description }
+          : {}),
+        ...(params.showOnDashboard !== undefined
+          ? { show_on_dashboard: params.showOnDashboard }
+          : {}),
+        ...(params.dashboardSortOrder !== undefined
+          ? { dashboard_sort_order: params.dashboardSortOrder }
+          : {}),
+      }),
+    }
+  );
   return chartWorkspaceFromApiRow(
     result.data,
     chartOwnershipForViewer(result.data, params.viewerId)
@@ -106,4 +144,16 @@ export async function leaveSharedChartWorkspace(
   await apiFetch<ChartMutationSuccess>(`/api/charts/${chartId}/share`, {
     method: 'DELETE',
   });
+}
+
+/** Fork a shared chart into an owned copy. */
+export async function forkChartWorkspaceOnApi(params: {
+  readonly chartId: string;
+  readonly viewerId: string;
+}): Promise<ChartWorkspaceRecord> {
+  const result = await apiFetch<{ data: ChartApiRow }>(
+    `/api/charts/${params.chartId}/fork`,
+    { method: 'POST' }
+  );
+  return chartWorkspaceFromApiRow(result.data, 'mine');
 }

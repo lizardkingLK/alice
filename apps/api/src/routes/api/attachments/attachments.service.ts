@@ -17,6 +17,7 @@ import type {
   UploadedAttachmentResult,
 } from '@repo/types';
 import type { WorkItemRepository } from '../work-items/work-items.repository';
+import type { ActivitiesService } from '../activities/activities.service';
 import { AttachmentsRepository } from './attachments.repository';
 
 /** Attachment row does not exist (or is archived/deleted). */
@@ -45,7 +46,8 @@ type WorkItemAccess = Pick<WorkItemRepository, 'requireProjectMember'>;
 export class AttachmentsService {
   constructor(
     private readonly attachmentsRepository: AttachmentsRepository,
-    private readonly workItems: WorkItemAccess
+    private readonly workItems: WorkItemAccess,
+    private readonly activities?: ActivitiesService
   ) {}
 
   /** Unused Express list path — requires project membership for the work item. */
@@ -101,6 +103,15 @@ export class AttachmentsService {
         storage_path: uploaded.path,
         file_size: file.size,
         mime_type: file.mimetype || 'application/octet-stream',
+      });
+
+      await this.activities?.recordAttachmentAdded({
+        workItemId,
+        actorId,
+        meta: {
+          attachmentId: attachment.id,
+          fileName: attachment.file_name,
+        },
       });
 
       return {
@@ -189,6 +200,15 @@ export class AttachmentsService {
       mime_type: mimeType || 'application/octet-stream',
     });
 
+    await this.activities?.recordAttachmentAdded({
+      workItemId,
+      actorId,
+      meta: {
+        attachmentId: attachment.id,
+        fileName: attachment.file_name,
+      },
+    });
+
     return {
       success: true,
       path: storagePath,
@@ -251,6 +271,16 @@ export class AttachmentsService {
       actorId,
       expectedUpdatedAt
     );
+
+    await this.activities?.recordAttachmentRemoved({
+      workItemId: attachment.work_item_id,
+      actorId,
+      meta: {
+        attachmentId: attachment.id,
+        fileName: attachment.file_name,
+      },
+    });
+
     await removeStorageObjects(env.STORAGE_BUCKET_ATTACHMENTS, [
       attachment.storage_path,
     ]);

@@ -404,6 +404,8 @@ export const ModelName = {
   team_members: 'team_members',
   sprints: 'sprints',
   work_items: 'work_items',
+  activities: 'activities',
+  sprint_burndown_rollups: 'sprint_burndown_rollups',
   work_item_chart_rollups: 'work_item_chart_rollups',
   work_item_worklogs: 'work_item_worklogs',
   comments: 'comments',
@@ -435,7 +437,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_chart_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "jira_connections" | "chat_conversations" | "chat_attachments" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "github_pull_requests" | "integrations"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "jira_connections" | "chat_conversations" | "chat_attachments" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "github_pull_requests" | "integrations"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -954,6 +956,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.work_itemsCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.Work_itemsCountAggregateOutputType> | number
+        }
+      }
+    }
+    activities: {
+      payload: Prisma.$activitiesPayload<ExtArgs>
+      fields: Prisma.activitiesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.activitiesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$activitiesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.activitiesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$activitiesPayload>
+        }
+        findFirst: {
+          args: Prisma.activitiesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$activitiesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.activitiesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$activitiesPayload>
+        }
+        findMany: {
+          args: Prisma.activitiesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$activitiesPayload>[]
+        }
+        create: {
+          args: Prisma.activitiesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$activitiesPayload>
+        }
+        createMany: {
+          args: Prisma.activitiesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.activitiesCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$activitiesPayload>[]
+        }
+        delete: {
+          args: Prisma.activitiesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$activitiesPayload>
+        }
+        update: {
+          args: Prisma.activitiesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$activitiesPayload>
+        }
+        deleteMany: {
+          args: Prisma.activitiesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.activitiesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.activitiesUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$activitiesPayload>[]
+        }
+        upsert: {
+          args: Prisma.activitiesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$activitiesPayload>
+        }
+        aggregate: {
+          args: Prisma.ActivitiesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateActivities>
+        }
+        groupBy: {
+          args: Prisma.activitiesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ActivitiesGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.activitiesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ActivitiesCountAggregateOutputType> | number
+        }
+      }
+    }
+    sprint_burndown_rollups: {
+      payload: Prisma.$sprint_burndown_rollupsPayload<ExtArgs>
+      fields: Prisma.sprint_burndown_rollupsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.sprint_burndown_rollupsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sprint_burndown_rollupsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.sprint_burndown_rollupsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sprint_burndown_rollupsPayload>
+        }
+        findFirst: {
+          args: Prisma.sprint_burndown_rollupsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sprint_burndown_rollupsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.sprint_burndown_rollupsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sprint_burndown_rollupsPayload>
+        }
+        findMany: {
+          args: Prisma.sprint_burndown_rollupsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sprint_burndown_rollupsPayload>[]
+        }
+        create: {
+          args: Prisma.sprint_burndown_rollupsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sprint_burndown_rollupsPayload>
+        }
+        createMany: {
+          args: Prisma.sprint_burndown_rollupsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.sprint_burndown_rollupsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sprint_burndown_rollupsPayload>[]
+        }
+        delete: {
+          args: Prisma.sprint_burndown_rollupsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sprint_burndown_rollupsPayload>
+        }
+        update: {
+          args: Prisma.sprint_burndown_rollupsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sprint_burndown_rollupsPayload>
+        }
+        deleteMany: {
+          args: Prisma.sprint_burndown_rollupsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.sprint_burndown_rollupsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.sprint_burndown_rollupsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sprint_burndown_rollupsPayload>[]
+        }
+        upsert: {
+          args: Prisma.sprint_burndown_rollupsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sprint_burndown_rollupsPayload>
+        }
+        aggregate: {
+          args: Prisma.Sprint_burndown_rollupsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSprint_burndown_rollups>
+        }
+        groupBy: {
+          args: Prisma.sprint_burndown_rollupsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Sprint_burndown_rollupsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.sprint_burndown_rollupsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Sprint_burndown_rollupsCountAggregateOutputType> | number
         }
       }
     }
@@ -2307,7 +2457,11 @@ export const Work_itemsScalarFieldEnum = {
   due_date: 'due_date',
   story_points: 'story_points',
   status: 'status',
+  state: 'state',
   board_column_id: 'board_column_id',
+  status_category: 'status_category',
+  state_id: 'state_id',
+  state_workflow_id: 'state_workflow_id',
   record_status: 'record_status',
   done_at: 'done_at',
   created_by: 'created_by',
@@ -2320,12 +2474,42 @@ export const Work_itemsScalarFieldEnum = {
 export type Work_itemsScalarFieldEnum = (typeof Work_itemsScalarFieldEnum)[keyof typeof Work_itemsScalarFieldEnum]
 
 
+export const ActivitiesScalarFieldEnum = {
+  id: 'id',
+  work_item_id: 'work_item_id',
+  actor_id: 'actor_id',
+  action: 'action',
+  field: 'field',
+  old_value: 'old_value',
+  new_value: 'new_value',
+  meta: 'meta',
+  created_at: 'created_at'
+} as const
+
+export type ActivitiesScalarFieldEnum = (typeof ActivitiesScalarFieldEnum)[keyof typeof ActivitiesScalarFieldEnum]
+
+
+export const Sprint_burndown_rollupsScalarFieldEnum = {
+  sprint_id: 'sprint_id',
+  bucket_date: 'bucket_date',
+  project_id: 'project_id',
+  estimated_total: 'estimated_total',
+  spent: 'spent',
+  remaining: 'remaining'
+} as const
+
+export type Sprint_burndown_rollupsScalarFieldEnum = (typeof Sprint_burndown_rollupsScalarFieldEnum)[keyof typeof Sprint_burndown_rollupsScalarFieldEnum]
+
+
 export const Work_item_chart_rollupsScalarFieldEnum = {
   grain_key: 'grain_key',
   bucket_date: 'bucket_date',
   project_id: 'project_id',
   sprint_id: 'sprint_id',
   status: 'status',
+  status_category: 'status_category',
+  workflow_id: 'workflow_id',
+  state_id: 'state_id',
   type: 'type',
   priority: 'priority',
   assignee_id: 'assignee_id',
@@ -2527,7 +2711,8 @@ export const ChartsScalarFieldEnum = {
   title: 'title',
   description: 'description',
   board_json: 'board_json',
-  is_overview: 'is_overview',
+  show_on_dashboard: 'show_on_dashboard',
+  dashboard_sort_order: 'dashboard_sort_order',
   status: 'status',
   created_by: 'created_by',
   created_at: 'created_at',
@@ -2818,6 +3003,20 @@ export type ListEnumWorkItemStatusFieldRefInput<$PrismaModel> = FieldRefInputTyp
 
 
 /**
+ * Reference to a field of type 'ActivityAction'
+ */
+export type EnumActivityActionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ActivityAction'>
+    
+
+
+/**
+ * Reference to a field of type 'ActivityAction[]'
+ */
+export type ListEnumActivityActionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ActivityAction[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -3100,6 +3299,8 @@ export type GlobalOmitConfig = {
   team_members?: Prisma.team_membersOmit
   sprints?: Prisma.sprintsOmit
   work_items?: Prisma.work_itemsOmit
+  activities?: Prisma.activitiesOmit
+  sprint_burndown_rollups?: Prisma.sprint_burndown_rollupsOmit
   work_item_chart_rollups?: Prisma.work_item_chart_rollupsOmit
   work_item_worklogs?: Prisma.work_item_worklogsOmit
   comments?: Prisma.commentsOmit

@@ -2,7 +2,10 @@ import { z } from 'zod';
 import type { teamsGetPayload } from '../../generated/prisma/models/teams.js';
 
 export const createTeamSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  name: z
+    .string()
+    .trim()
+    .min(2, { message: 'Name must be at least 2 characters.' }),
   description: z.string().nullable().optional(),
   manager_id: z.uuid({ message: 'Please select a valid manager.' }),
   project_id: z.uuid({ message: 'Please select a valid project.' }),
@@ -21,6 +24,18 @@ export const createTeamSchema = z.object({
     )
     .optional(),
 });
+
+export const initialProjectTeamSchema = createTeamSchema
+  .omit({
+    project_id: true,
+  })
+  .refine(
+    (team) => team.member_ids === undefined || team.members === undefined,
+    {
+      message: 'Provide either member_ids or members, not both.',
+      path: ['members'],
+    }
+  );
 
 export const updateTeamSchema = createTeamSchema.partial();
 

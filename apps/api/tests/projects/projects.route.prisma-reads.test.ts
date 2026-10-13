@@ -21,16 +21,21 @@ import express from 'express';
 import type { Server } from 'node:http';
 import { AddressInfo } from 'node:net';
 import { createProjectsRouter } from '../../src/routes/api/projects/projects.route';
-import type { ProjectsService } from '../../src/routes/api/projects/projects.service';
+import {
+  ProjectTeamValidationError,
+  type ProjectsService,
+} from '../../src/routes/api/projects/projects.service';
 
 const {
   listProjectsPaginatedMock,
   getProjectDetailMock,
   listProjectMembersPrismaMock,
+  enqueueCreateProjectMock,
 } = vi.hoisted(() => ({
   listProjectsPaginatedMock: vi.fn(),
   getProjectDetailMock: vi.fn(),
   listProjectMembersPrismaMock: vi.fn(),
+  enqueueCreateProjectMock: vi.fn(),
 }));
 
 vi.mock('../../src/middlewares/auth', () => ({
@@ -48,6 +53,7 @@ const projectsService = {
   listProjectsPaginated: listProjectsPaginatedMock,
   getProjectDetail: getProjectDetailMock,
   listProjectMembersPrisma: listProjectMembersPrismaMock,
+  enqueueCreateProject: enqueueCreateProjectMock,
 } as unknown as ProjectsService;
 
 const workItemService = {
@@ -61,6 +67,7 @@ const jiraService = {
 async function withApp(run: (baseUrl: string) => Promise<void>): Promise<void> {
   const app = express();
   app.disable('x-powered-by');
+  app.use(express.json());
   app.use(
     '/api/projects',
     createProjectsRouter({ projectsService, workItemService, jiraService })
@@ -100,6 +107,16 @@ const mockProjectDetail = {
     name: 'Owner',
     email: 'owner@example.com',
   },
+};
+
+const validCreateBody = {
+  name: 'Alice Project',
+  key: 'ALICE',
+  description: 'A description',
+  owner_id: '11111111-1111-4111-8111-111111111111',
+  start_date: '2099-09-01',
+  end_date: '2099-09-30',
+  status: 'active',
 };
 
 describe('projects unused Prisma GET routes', () => {
@@ -201,6 +218,193 @@ describe('projects unused Prisma GET routes', () => {
         '33333333-3333-4333-8333-333333333333',
         '11111111-1111-4111-8111-111111111111'
       );
+    });
+  });
+
+  it('passes nested sprint configuration to project creation', async () => {
+    enqueueCreateProjectMock.mockResolvedValue({
+      accepted: true,
+      message: 'Project creation started.',
+      correlationId: 'corr-1',
+    });
+    const sprint = {
+      name: 'Sprint Alpha',
+      goal: 'Deliver the first increment',
+      startDate: '2099-09-01',
+      endDate: '2099-09-14',
+    };
+
+    await withApp(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...validCreateBody, sprint }),
+      });
+
+      expect(response.status).toBe(202);
+      expect(enqueueCreateProjectMock).toHaveBeenCalledWith(
+        '11111111-1111-4111-8111-111111111111',
+        expect.objectContaining({ sprint })
+      );
+    });
+  });
+
+  it('passes nested team configuration to project creation', async () => {
+    enqueueCreateProjectMock.mockResolvedValue({
+      accepted: true,
+      message: 'Project creation started.',
+      correlationId: 'corr-1',
+    });
+    const team = {
+      name: 'Platform Team',
+      description: null,
+      manager_id: '22222222-2222-4222-8222-222222222222',
+      tech_stack: 'TypeScript',
+      status: 'active',
+      member_ids: ['33333333-3333-4333-8333-333333333333'],
+    };
+
+    await withApp(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...validCreateBody, team }),
+      });
+
+      expect(response.status).toBe(202);
+      expect(enqueueCreateProjectMock).toHaveBeenCalledWith(
+        '11111111-1111-4111-8111-111111111111',
+        expect.objectContaining({ team })
+      );
+    });
+  });
+
+  it('rejects a whitespace-only initial team name before project creation', async () => {
+    await withApp(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...validCreateBody,
+          team: {
+            name: '  ',
+            manager_id: '22222222-2222-4222-8222-222222222222',
+          },
+        }),
+      });
+
+      expect(response.status).toBe(400);
+      expect(enqueueCreateProjectMock).not.toHaveBeenCalled();
+    });
+  });
+
+  it('rejects both initial team membership formats with HTTP 400', async () => {
+    await withApp(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...validCreateBody,
+          team: {
+            name: 'Platform Team',
+            manager_id: '22222222-2222-4222-8222-222222222222',
+            member_ids: ['33333333-3333-4333-8333-333333333333'],
+            members: [{ user_id: '44444444-4444-4444-8444-444444444444' }],
+          },
+        }),
+      });
+
+      expect(response.status).toBe(400);
+      expect(enqueueCreateProjectMock).not.toHaveBeenCalled();
+    });
+  });
+
+  it.each([
+    'Team manager and members must be active users.',
+    'Team manager must have an admin or manager role.',
+  ])(
+    'returns HTTP 400 for initial team validation error: %s',
+    async (message) => {
+      enqueueCreateProjectMock.mockRejectedValue(
+        new ProjectTeamValidationError(message)
+      );
+
+      await withApp(async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/api/projects`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...validCreateBody,
+            team: {
+              name: 'Platform Team',
+              manager_id: '22222222-2222-4222-8222-222222222222',
+            },
+          }),
+        });
+        const body = await response.json();
+
+        expect(response.status).toBe(400);
+        expect(body).toEqual({ error: message });
+        expect(enqueueCreateProjectMock).toHaveBeenCalledOnce();
+      });
+    }
+  );
+
+  it('keeps unexpected project creation failures as HTTP 500', async () => {
+    enqueueCreateProjectMock.mockRejectedValue(
+      new Error('Database unavailable')
+    );
+
+    await withApp(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(validCreateBody),
+      });
+
+      expect(response.status).toBe(500);
+    });
+  });
+
+  it('keeps project creation without sprint backward compatible', async () => {
+    enqueueCreateProjectMock.mockResolvedValue({
+      accepted: true,
+      message: 'Project creation started.',
+      correlationId: 'corr-1',
+    });
+
+    await withApp(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(validCreateBody),
+      });
+
+      expect(response.status).toBe(202);
+      const [actorId, input] = enqueueCreateProjectMock.mock.calls[0]!;
+      expect(actorId).toBe('11111111-1111-4111-8111-111111111111');
+      expect(input).not.toHaveProperty('sprint');
+      expect(input).not.toHaveProperty('team');
+    });
+  });
+
+  it('rejects invalid nested sprint configuration before the service', async () => {
+    await withApp(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...validCreateBody,
+          sprint: {
+            name: 'Sprint Alpha',
+            startDate: '2099-09-14',
+            endDate: '2099-09-01',
+          },
+        }),
+      });
+
+      expect(response.status).toBe(400);
+      expect(enqueueCreateProjectMock).not.toHaveBeenCalled();
     });
   });
 });

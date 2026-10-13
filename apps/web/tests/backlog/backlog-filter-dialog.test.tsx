@@ -250,6 +250,42 @@ describe('BacklogFilterDialog', () => {
     });
   });
 
+  it('updates sprint option labels when sprint data changes', () => {
+    const onApplyFilters = vi.fn();
+    const props = {
+      projects,
+      projectMembers,
+      projectFilter: 'all',
+      sprintFilter: '',
+      assigneeFilter: 'all',
+      priorityFilter: 'all',
+      activeTab: 'active' as const,
+      hasActiveFilters: false,
+      onApplyFilters,
+    };
+    const { rerender } = render(
+      <BacklogFilterDialog {...props} sprints={sprints} />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /open filters/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Sprint/ }));
+    expect(screen.getByText('Sprint 1 Platform')).toBeInTheDocument();
+
+    rerender(
+      <BacklogFilterDialog
+        {...props}
+        sprints={sprints.map((sprint) =>
+          sprint.id === 'sprint-1'
+            ? { ...sprint, name: 'Renamed Platform Sprint' }
+            : sprint
+        )}
+      />
+    );
+
+    expect(screen.getByText('Renamed Platform Sprint')).toBeInTheDocument();
+    expect(screen.queryByText('Sprint 1 Platform')).not.toBeInTheDocument();
+  });
+
   it('resets sprint when Clear All is clicked', () => {
     const onApplyFilters = vi.fn();
     render(

@@ -1,51 +1,54 @@
 'use client';
 
-import { formatDate } from '@/app/_shared/utility';
 import { CommentsFeed } from '@/app/comments/_components/comments-feed';
 import { CommentsSortMenu } from '@/app/comments/_components/comments-sort-menu';
 import type { CommentsSortOrder } from '@/app/comments/_components/comments-feed-helpers';
 import type { CommentItem } from '@/app/comments/_services/comments.mutations.client';
 import type { CommentWorkItemOption } from '@/app/comments/_services/comments.mutations.shared';
+import { WorkItemActivityFeed } from '@/app/work-items/_components/work-item-details/work-item-activity-feed';
+import { WorkItemActivityLayoutMenu } from '@/app/work-items/_components/work-item-details/work-item-activity-layout-menu';
 import { WorkItemWorkLogPanel } from '@/app/work-items/_components/work-item-work-logs/work-item-work-log-panel';
-import type { WorkItemWorkLog } from '@repo/types';
+import type { ActivityValueLookups } from '@/app/work-items/_helpers/work-item-activity-format';
+import {
+  DEFAULT_WORK_ITEM_ACTIVITY_LAYOUT,
+  readWorkItemActivityLayout,
+  writeWorkItemActivityLayout,
+  type WorkItemActivityLayout,
+} from '@/app/work-items/_helpers/work-item-activity-layout-preference';
+import type { WorkItemActivity, WorkItemWorkLog } from '@repo/types';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
-import { Card, CardContent } from '@repo/ui/components/ui/card';
+import { Button } from '@repo/ui/components/ui/button';
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@repo/ui/components/ui/tabs';
-import { History } from '@repo/ui/lib/icons';
-import { useLayoutEffect, useRef, useState, type FormEvent } from 'react';
+import { Maximize2, Minimize2, Plus } from '@repo/ui/lib/icons';
+import { cn } from '@repo/ui/lib/utils';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export type WorkItemActivityTab = 'discussion' | 'activity' | 'work-log';
 
 const ACTIVITY_TAB_TRIGGER_CLASS =
   'data-[state=active]:border-primary rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:bg-transparent data-[state=active]:shadow-none';
 
+const ACTIVITY_TAB_CONTENT_CLASS = 'mt-4 pb-6';
+
 type WorkItemActivityTabsProps = {
   activeTab: WorkItemActivityTab;
   // eslint-disable-next-line no-unused-vars -- callback signature
   onActiveTabChange: (tab: WorkItemActivityTab) => void;
   initialComments: CommentItem[];
+  initialActivities?: WorkItemActivity[];
+  /** Resolve assignee/reporter/sprint ids in activity lines. */
+  activityLookups?: ActivityValueLookups;
   workItem: DbWorkItem;
   discussionWorkItems: CommentWorkItemOption[];
   currentUserId?: string;
   workLogs: WorkItemWorkLog[];
-  loggedHoursInput: string;
-  loggedAtInput: string;
-  workLogCommentInput: string;
-  isLoggingWork: boolean;
-  // eslint-disable-next-line no-unused-vars -- callback signature
-  onLoggedHoursChange: (value: string) => void;
-  // eslint-disable-next-line no-unused-vars -- callback signature
-  onLoggedAtChange: (value: string) => void;
-  // eslint-disable-next-line no-unused-vars -- callback signature
-  onWorkLogCommentChange: (value: string) => void;
-  // eslint-disable-next-line no-unused-vars -- callback signature
-  onWorkLogSubmit: (event: FormEvent) => void;
-  /** When true, hide work-log form (Done work items). Discussion stays available. */
+  onAddWorkLogClick?: () => void;
+  /** When true, hide work-log add control (Done work items). Discussion stays available. */
   readOnly?: boolean;
 };
 
@@ -83,35 +86,68 @@ export function WorkItemActivityTabs({
   activeTab,
   onActiveTabChange,
   initialComments,
+  initialActivities = [],
+  activityLookups,
   workItem,
   discussionWorkItems,
   currentUserId,
   workLogs,
-  loggedHoursInput,
-  loggedAtInput,
-  workLogCommentInput,
-  isLoggingWork,
-  onLoggedHoursChange,
-  onLoggedAtChange,
-  onWorkLogCommentChange,
-  onWorkLogSubmit,
+  onAddWorkLogClick,
   readOnly = false,
 }: Readonly<WorkItemActivityTabsProps>) {
   const captureScrollBeforeTabChange = usePreserveScrollOnTabChange(activeTab);
   const [commentsSortOrder, setCommentsSortOrder] =
     useState<CommentsSortOrder>('newest');
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [activityLayout, setActivityLayout] = useState<WorkItemActivityLayout>(
+    DEFAULT_WORK_ITEM_ACTIVITY_LAYOUT
+  );
+
+  useEffect(() => {
+    setActivityLayout(readWorkItemActivityLayout(workItem.id));
+  }, [workItem.id]);
+
+  useEffect(() => {
+    if (!isMaximized) {
+      return;
+    }
+
+    const originalStyle = globalThis.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, [isMaximized]);
+
+  const handleActivityLayoutChange = (layout: WorkItemActivityLayout) => {
+    setActivityLayout(layout);
+    writeWorkItemActivityLayout(workItem.id, layout);
+  };
 
   const handleTabChange = (value: string) => {
     captureScrollBeforeTabChange();
     onActiveTabChange(value as WorkItemActivityTab);
   };
 
-  return (
-    <section className="space-y-3 [overflow-anchor:none]">
-      <h2 className="text-sm font-semibold">Activity</h2>
+  const tabPanelClassName = cn(
+    ACTIVITY_TAB_CONTENT_CLASS,
+    isMaximized && 'min-h-0 flex-1'
+  );
 
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <div className="flex items-center justify-between gap-2 border-b">
+  return (
+    <section
+      className={cn(
+        'space-y-3 [overflow-anchor:none]',
+        isMaximized &&
+          'bg-background fixed inset-0 z-50 flex h-screen w-screen flex-col gap-4 overflow-y-auto rounded-none p-6'
+      )}
+    >
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className={cn(isMaximized && 'flex min-h-0 flex-1 flex-col')}
+      >
+        <div className="flex items-center gap-2 border-b">
           <TabsList className="h-auto justify-start rounded-none border-0 bg-transparent p-0">
             <TabsTrigger
               value="discussion"
@@ -139,9 +175,45 @@ export function WorkItemActivityTabs({
               onSortOrderChange={setCommentsSortOrder}
             />
           ) : null}
+
+          {activeTab === 'activity' ? (
+            <WorkItemActivityLayoutMenu
+              layout={activityLayout}
+              onLayoutChange={handleActivityLayoutChange}
+            />
+          ) : null}
+
+          {activeTab === 'work-log' && !readOnly && onAddWorkLogClick ? (
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="cursor-pointer"
+              aria-label="Log work"
+              onClick={onAddWorkLogClick}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          ) : null}
+
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="ml-auto"
+            title={isMaximized ? 'Minimize section' : 'Maximize section'}
+            aria-label={isMaximized ? 'Minimize section' : 'Maximize section'}
+            onClick={() => setIsMaximized((prev) => !prev)}
+          >
+            {isMaximized ? (
+              <Minimize2 className="h-4 w-4" />
+            ) : (
+              <Maximize2 className="h-4 w-4" />
+            )}
+          </Button>
         </div>
 
-        <TabsContent value="discussion" className="mt-4 pb-6">
+        <TabsContent value="discussion" className={tabPanelClassName}>
           <CommentsFeed
             embedded
             hideSortControl
@@ -154,38 +226,18 @@ export function WorkItemActivityTabs({
           />
         </TabsContent>
 
-        <TabsContent value="activity" className="mt-4 pb-6">
-          <Card className="border-dashed">
-            <CardContent className="space-y-3 pt-12 pb-14 text-center">
-              <div className="bg-muted mx-auto flex size-12 items-center justify-center rounded-full">
-                <History className="text-muted-foreground size-6" />
-              </div>
-              <h3 className="text-foreground text-base font-semibold">
-                No activity yet
-              </h3>
-              <p className="text-muted-foreground mx-auto max-w-sm text-sm">
-                Status changes, field updates, and transitions will appear here.
-              </p>
-              <p className="text-muted-foreground text-xs">
-                Last updated {formatDate(workItem.updated_at)}
-              </p>
-            </CardContent>
-          </Card>
+        <TabsContent value="activity" className={tabPanelClassName}>
+          <WorkItemActivityFeed
+            activities={initialActivities}
+            lookups={activityLookups}
+            layout={activityLayout}
+          />
         </TabsContent>
 
-        <TabsContent value="work-log" className="mt-4 pb-6">
+        <TabsContent value="work-log" className={tabPanelClassName}>
           <WorkItemWorkLogPanel
             workLogs={workLogs}
             currentUserId={currentUserId}
-            loggedHoursInput={loggedHoursInput}
-            loggedAtInput={loggedAtInput}
-            workLogCommentInput={workLogCommentInput}
-            isLoggingWork={isLoggingWork}
-            onLoggedHoursChange={onLoggedHoursChange}
-            onLoggedAtChange={onLoggedAtChange}
-            onWorkLogCommentChange={onWorkLogCommentChange}
-            onSubmit={onWorkLogSubmit}
-            readOnly={readOnly}
           />
         </TabsContent>
       </Tabs>

@@ -10,6 +10,14 @@ import { workItemFactory } from '../factories/workItem.factory';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 
+const { isUserOnlineMock } = vi.hoisted(() => ({
+  isUserOnlineMock: vi.fn(() => false),
+}));
+
+vi.mock('@/components/realtime/realtime-provider', () => ({
+  useRealtime: () => ({ isUserOnline: isUserOnlineMock }),
+}));
+
 vi.mock('next/navigation', () => import('../mocks/next-navigation'));
 
 vi.mock(

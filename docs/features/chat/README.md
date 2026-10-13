@@ -18,5 +18,7 @@ Quick links:
 - DI: [architecture/DI.md](../../architecture/DI.md)
 - Schema: `chat_conversations` and `chat_attachments` in `packages/db/prisma/schema.prisma`
 - Types: `packages/types/src/chat.ts`, `packages/types/src/chat-attachments.ts`, `packages/types/src/api/v1/chat.ts`
-- Related: [Projects](../projects/), [Work items](../work-items/), [Sprints](../sprints/), [Dashboard](../dashboard/)
+- Related: [Projects](../projects/), [Work items](../work-items/), [Sprints](../sprints/),
+  [Dashboard](../dashboard/),
+  [Workflow (plan — docked designer chat)](../workflow/)
 - Roadmap (future AI ideas, not this feature): [product/ROADMAP.md](../../product/ROADMAP.md)

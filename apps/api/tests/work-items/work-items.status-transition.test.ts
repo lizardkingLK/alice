@@ -26,6 +26,7 @@ const {
   getProjectWorkflowConfigMock,
   requireProjectMemberMock,
   updateMock,
+  updateSprintForDescendantsMock,
 } = vi.hoisted(() => ({
   assertCanAccessProjectMock: vi.fn(),
   getByIdMock: vi.fn(),
@@ -33,6 +34,7 @@ const {
   getProjectWorkflowConfigMock: vi.fn(),
   requireProjectMemberMock: vi.fn(),
   updateMock: vi.fn(),
+  updateSprintForDescendantsMock: vi.fn(),
 }));
 
 const repository = {
@@ -42,6 +44,7 @@ const repository = {
   getProjectWorkflowConfig: getProjectWorkflowConfigMock,
   requireProjectMember: requireProjectMemberMock,
   update: updateMock,
+  updateSprintForDescendants: updateSprintForDescendantsMock,
 } as unknown as WorkItemRepository;
 
 const service = new WorkItemService(repository);
@@ -139,6 +142,7 @@ function updateInput(
 describe('WorkItemService status-transition validation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    updateSprintForDescendantsMock.mockResolvedValue([]);
     requireProjectMemberMock.mockResolvedValue({ projectId: PROJECT_ID });
     assertCanAccessProjectMock.mockResolvedValue(undefined);
     getByIdMock.mockResolvedValue(currentWorkItem);
@@ -160,7 +164,10 @@ describe('WorkItemService status-transition validation', () => {
 
     await expect(
       service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
-    ).resolves.toMatchObject({ status: 'InProgress' });
+    ).resolves.toMatchObject({
+      workItem: { status: 'InProgress' },
+      cascadedSprintDescendantIds: [],
+    });
 
     expect(getBoardActorContextMock).toHaveBeenCalledOnce();
     expect(updateMock).toHaveBeenCalledOnce();
@@ -187,7 +194,10 @@ describe('WorkItemService status-transition validation', () => {
 
     await expect(
       service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
-    ).resolves.toMatchObject({ status: 'InProgress' });
+    ).resolves.toMatchObject({
+      workItem: { status: 'InProgress' },
+      cascadedSprintDescendantIds: [],
+    });
 
     expect(getBoardActorContextMock).not.toHaveBeenCalled();
   });
@@ -200,8 +210,8 @@ describe('WorkItemService status-transition validation', () => {
     await expect(
       service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
     ).resolves.toMatchObject({
-      status: 'InProgress',
-      board_column_id: 'development',
+      workItem: { status: 'InProgress', board_column_id: 'development' },
+      cascadedSprintDescendantIds: [],
     });
   });
 

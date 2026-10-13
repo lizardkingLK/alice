@@ -9,6 +9,7 @@ import {
   BoardMoveForbiddenError,
   StatusTransitionForbiddenError,
   WorkItemAccessError,
+  WorkItemHierarchyTypeChangeError,
   WorkItemValidationError,
 } from './work-items.errors';
 import { type WorkItemService } from './work-items.service';
@@ -147,6 +148,14 @@ function sendWorkItemMutationError(
       data: null,
       error: message,
       ...(code ? { code } : {}),
+    });
+  }
+  if (error instanceof WorkItemHierarchyTypeChangeError) {
+    return res.status(409).json({
+      data: null,
+      error: message,
+      code: error.code,
+      childCount: error.childCount,
     });
   }
   if (
@@ -459,12 +468,18 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
 
         const payload = buildWorkItemPayload(parsed.data, existingWorkItem);
         const { expectedUpdatedAt, ...domainFields } = payload;
-        const workItem = await workItemService.updateWorkItem(
-          req.userId!,
-          req.params.id!,
-          domainFields,
-          expectedUpdatedAt
-        );
+        const { workItem, cascadedSprintDescendantIds } =
+          await workItemService.updateWorkItem(
+            req.userId!,
+            req.params.id!,
+            domainFields,
+            expectedUpdatedAt,
+            {
+              detachChildren: parsed.data.detachChildren === true,
+              resolution: parsed.data.resolution,
+              cascadeSprint: Object.hasOwn(parsed.data, 'sprint_id'),
+            }
+          );
 
         await notifyAssigneeAfterCommit(
           workItem,
@@ -472,7 +487,11 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
           shouldNotifyAssigneeChange(existingWorkItem, workItem, req.userId)
         );
 
-        res.status(200).json({ data: workItem, error: null });
+        res.status(200).json({
+          data: workItem,
+          error: null,
+          cascadedSprintDescendantIds,
+        });
       } catch (error) {
         sendWorkItemMutationError(res, error, 'Failed to update work-item');
       }

@@ -82,6 +82,19 @@ enum NotificationType {
   chart_shared
   chat_processed
   access_request
+  project_created
+  project_create_failed
+}
+
+/// Append-only work-item activity feed actions (see docs/features/work-items/ACTIVITY.md).
+enum ActivityAction {
+  created
+  field_changed
+  attachment_added
+  attachment_removed
+  commented
+  workflow_transition
+  escalation_resolved
 }
 
 enum AccessAllowlistKind {
@@ -151,6 +164,7 @@ model users {
   comments            comments[]        @relation("CommentAuthor")
   attachments         attachments[]     @relation("AttachmentUploader")
   work_item_worklogs  work_item_worklogs[] @relation("WorkLogAuthor")
+  activities          activities[]         @relation("ActivityActor")
 
   created_projects        projects[]        @relation("ProjectCreatedBy")
   updated_projects        projects[]        @relation("ProjectUpdatedBy")
@@ -220,12 +234,13 @@ model projects {
   created_by_user users?            @relation("ProjectCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users?            @relation("ProjectUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
   jira_connection jira_connections? @relation(fields: [jira_connection_id], references: [id], onDelete: SetNull)
-  members         project_members[]
-  teams           teams[]
-  sprints         sprints[]
-  work_items      work_items[]
-  chart_rollups   work_item_chart_rollups[]
-  saved_views     saved_views[]
+  members              project_members[]
+  teams                teams[]
+  sprints              sprints[]
+  work_items           work_items[]
+  chart_rollups        work_item_chart_rollups[]
+  burndown_rollups     sprint_burndown_rollups[]
+  saved_views          saved_views[]
 }
 
 model project_members {
@@ -304,11 +319,12 @@ model sprints {
   updated_by     String?      @db.Uuid
   updated_at     DateTime     @updatedAt @db.Timestamptz(6)
 
-  project         projects     @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  created_by_user users?       @relation("SprintCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
-  updated_by_user users?       @relation("SprintUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
-  work_items      work_items[]
-  chart_rollups   work_item_chart_rollups[]
+  project          projects                  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  created_by_user  users?                    @relation("SprintCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user  users?                    @relation("SprintUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  work_items       work_items[]
+  chart_rollups    work_item_chart_rollups[]
+  burndown_rollups sprint_burndown_rollups[]
 
   @@unique([project_id, name])
 }
@@ -329,7 +345,14 @@ model work_items {
   due_date     DateTime?        @db.Date
   story_points Int?
   status          WorkItemStatus @default(New)
+  /// Single-current workflow placement: { workflowId, stateId, category, historyByWorkflow? }.
+  /// Nullable while legacy rows rely on `status`; writers dual-fill via @repo/types helpers.
+  state           Json?
   board_column_id String?
+  /// Trigger-maintained mirrors of resolved `state` (charts drilldown + indexes).
+  status_category    String @default("todo")
+  state_id           String @default("New")
+  state_workflow_id  String @default("wf-default")
   record_status   RecordStatus   @default(active)
   done_at         DateTime?      @db.Timestamptz(6)
   created_by      String?        @db.Uuid
@@ -349,6 +372,7 @@ model work_items {
   comments             comments[]
   attachments          attachments[]
   worklogs             work_item_worklogs[]
+  activities           activities[]
   github_pull_requests github_pull_requests[]
 
   @@unique([project_id, jira_issue_key])
@@ -357,7 +381,45 @@ model work_items {
   @@index([assignee_id])
   @@index([sprint_id])
   @@index([project_id, status])
+  @@index([project_id, status_category])
+  @@index([project_id, state_id])
   @@index([created_at])
+}
+
+/// Append-only timeline of field changes, transitions, and side effects on a work item.
+model activities {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  work_item_id String         @db.Uuid
+  actor_id     String?        @db.Uuid
+  action       ActivityAction
+  field        String?
+  old_value    String?
+  new_value    String?
+  meta         Json?
+  created_at   DateTime       @default(now()) @db.Timestamptz(6)
+
+  work_item work_items @relation(fields: [work_item_id], references: [id], onDelete: Cascade)
+  actor     users?     @relation("ActivityActor", fields: [actor_id], references: [id], onDelete: SetNull)
+
+  @@index([work_item_id, created_at(sort: Desc)])
+}
+
+/// Precomputed sprint burndown series (trigger-maintained) for Charts + future
+/// read replicas. Ideal line is derived at read time from estimated_total + dates.
+model sprint_burndown_rollups {
+  sprint_id       String   @db.Uuid
+  bucket_date     DateTime @db.Date
+  project_id      String   @db.Uuid
+  estimated_total Float
+  spent           Float    @default(0)
+  /// Null for future days on non-closed sprints (matches computeBurndown).
+  remaining       Float?
+
+  sprint  sprints  @relation(fields: [sprint_id], references: [id], onDelete: Cascade)
+  project projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@id([sprint_id, bucket_date])
+  @@index([project_id, sprint_id])
 }
 
 /// Precomputed categorical counts for Charts Tier 1 (trigger-maintained).
@@ -368,6 +430,10 @@ model work_item_chart_rollups {
   project_id   String           @db.Uuid
   sprint_id    String?          @db.Uuid
   status       WorkItemStatus
+  /// Workflow coarse bucket (draft | todo | in_progress | done).
+  status_category String
+  workflow_id     String
+  state_id        String
   type         WorkItemType
   priority     WorkItemPriority
   assignee_id  String?          @db.Uuid
@@ -378,6 +444,8 @@ model work_item_chart_rollups {
   assignee users?   @relation("WorkItemChartRollupAssignee", fields: [assignee_id], references: [id], onDelete: SetNull)
 
   @@index([project_id, bucket_date])
+  @@index([project_id, status_category])
+  @@index([project_id, state_id])
 }
 
 model work_item_worklogs {
@@ -614,17 +682,20 @@ model saved_view_shares {
 
 /// Per-user chart workspace (board JSON: widgets + layout).
 model charts {
-  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  owner_id    String       @db.Uuid
-  title       String
-  description String?
-  board_json  Json         @default("{}")
-  is_overview Boolean      @default(false)
-  status      RecordStatus @default(active)
-  created_by  String?      @db.Uuid
-  created_at  DateTime     @default(now()) @db.Timestamptz(6)
-  updated_by  String?      @db.Uuid
-  updated_at  DateTime     @updatedAt @db.Timestamptz(6)
+  id                   String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_id             String       @db.Uuid
+  title                String
+  description          String?
+  board_json           Json         @default("{}")
+  /// Pin to Dashboard Overview slider (many per owner; replaces is_overview).
+  show_on_dashboard    Boolean      @default(false)
+  /// Lower values appear earlier in the Overview slider.
+  dashboard_sort_order Int          @default(0)
+  status               RecordStatus @default(active)
+  created_by           String?      @db.Uuid
+  created_at           DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by           String?      @db.Uuid
+  updated_at           DateTime     @updatedAt @db.Timestamptz(6)
 
   owner           users          @relation("ChartOwner", fields: [owner_id], references: [id], onDelete: Cascade)
   created_by_user users?         @relation("ChartCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
@@ -633,6 +704,7 @@ model charts {
   saved_views     saved_views[]  @relation("ChartSavedViewBookmark")
 
   @@index([owner_id, status])
+  @@index([show_on_dashboard, dashboard_sort_order, title])
 }
 
 model chart_shares {

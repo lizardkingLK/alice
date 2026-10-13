@@ -16,6 +16,10 @@ import { useDashboardTrailBreadcrumb } from '@/app/dashboard/_components/dashboa
 import type { DashboardBreadcrumbOverride } from '@/app/dashboard/_components/dashboard-breadcrumb';
 import { isChatFavoritesReady } from '../_helpers/is-chat-favorites-ready';
 import { buildChatHref } from '../_helpers/chat-url';
+import {
+  revalidateAfterChatActions,
+  type ChatMutationActionType,
+} from '@/lib/cache/revalidate-after-chat';
 
 export function ChatPageTrailBreadcrumb({
   trail,
@@ -180,43 +184,45 @@ export async function uploadSelectedChatFiles(params: {
   const fileArray = Array.from(selectedFiles);
   if (fileArray.length === 0) return;
 
-  for (const file of fileArray) {
-    const tempId = `temp-${Date.now()}-${++attachmentCounter}`;
-    const optimisticAttachment: PendingChatAttachment = {
-      id: tempId,
-      fileName: file.name,
-      fileSize: file.size,
-      mimeType: file.type || 'application/octet-stream',
-      storagePath: '',
-      url: '',
-      fileType: inferChatAttachmentFileType(file.name, file.type || ''),
-      isUploading: true,
-    };
+  await Promise.all(
+    fileArray.map(async (file) => {
+      const tempId = `temp-${Date.now()}-${++attachmentCounter}`;
+      const optimisticAttachment: PendingChatAttachment = {
+        id: tempId,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type || 'application/octet-stream',
+        storagePath: '',
+        url: '',
+        fileType: inferChatAttachmentFileType(file.name, file.type || ''),
+        isUploading: true,
+      };
 
-    setPendingAttachments((prev) => [...prev, optimisticAttachment]);
+      setPendingAttachments((prev) => [...prev, optimisticAttachment]);
 
-    try {
-      const uploaded = await uploadChatAttachment(file, activeConversationId);
-      setPendingAttachments((prev) => {
-        const stillPresent = prev.some((item) => item.id === tempId);
-        if (!stillPresent) {
-          void deleteChatAttachment(uploaded.id);
-          return prev;
-        }
-        return prev.map((item) =>
-          item.id === tempId ? { ...uploaded, isUploading: false } : item
+      try {
+        const uploaded = await uploadChatAttachment(file, activeConversationId);
+        setPendingAttachments((prev) => {
+          const stillPresent = prev.some((item) => item.id === tempId);
+          if (!stillPresent) {
+            void deleteChatAttachment(uploaded.id);
+            return prev;
+          }
+          return prev.map((item) =>
+            item.id === tempId ? { ...uploaded, isUploading: false } : item
+          );
+        });
+      } catch (uploadError) {
+        console.error('Failed to upload chat attachment:', uploadError);
+        setPendingAttachments((prev) =>
+          prev.filter((item) => item.id !== tempId)
         );
-      });
-    } catch (uploadError) {
-      console.error('Failed to upload chat attachment:', uploadError);
-      setPendingAttachments((prev) =>
-        prev.filter((item) => item.id !== tempId)
-      );
-      setError(
-        `Failed to upload ${file.name}: ${uploadError instanceof Error ? uploadError.message : 'Upload failed'}`
-      );
-    }
-  }
+        setError(
+          `Failed to upload ${file.name}: ${uploadError instanceof Error ? uploadError.message : 'Upload failed'}`
+        );
+      }
+    })
+  );
 
   if (fileInputRef.current) {
     fileInputRef.current.value = '';
@@ -242,6 +248,8 @@ export function applySuccessfulChatResponse(params: {
   setConversations: Dispatch<SetStateAction<ChatConversation[]>>;
   hydratedRef: RefObject<string | null>;
   router: ChatResponseRouter;
+  /** When false (docked Alice), stay on the current page URL. */
+  readonly syncUrl?: boolean;
 }) {
   const {
     response,
@@ -252,6 +260,7 @@ export function applySuccessfulChatResponse(params: {
     setConversations,
     hydratedRef,
     router,
+    syncUrl = true,
   } = params;
 
   if (response.history) {
@@ -262,13 +271,15 @@ export function applySuccessfulChatResponse(params: {
     if (!response.is_processing) {
       hydratedRef.current = response.conversationId;
     }
-    // Keep Next searchParams in sync so favorites / breadcrumbs use the new id.
-    router.replace(
-      buildChatHref({
-        conversationId: response.conversationId,
-        agentId,
-      })
-    );
+    // Full-page chat keeps searchParams in sync for favorites / breadcrumbs.
+    if (syncUrl) {
+      router.replace(
+        buildChatHref({
+          conversationId: response.conversationId,
+          agentId,
+        })
+      );
+    }
     setActiveConversationId(response.conversationId);
     setConversations((prev) => [
       {
@@ -306,4 +317,35 @@ export function applySuccessfulChatResponse(params: {
       ...others,
     ];
   });
+}
+
+/* eslint-disable no-unused-vars -- callback param names document the API */
+export async function syncChatMutationSideEffects(params: {
+  readonly actions: readonly ActionItem[] | undefined;
+  readonly dismissProject: (projectId: string) => void;
+  readonly router: { refresh: () => void };
+}): Promise<void> {
+  /* eslint-enable no-unused-vars */
+  const { actions, dismissProject, router } = params;
+  if (!actions || actions.length === 0) {
+    return;
+  }
+
+  for (const action of actions) {
+    if (action.type === 'dismiss_workflow_patch') {
+      dismissProject(action.entity.projectId);
+    }
+  }
+
+  const mutationActionTypes = actions
+    .map((action) => action.type)
+    .filter(
+      (type): type is ChatMutationActionType =>
+        type !== 'configure_board' &&
+        type !== 'propose_workflow_patch' &&
+        type !== 'dismiss_workflow_patch'
+    );
+
+  await revalidateAfterChatActions(mutationActionTypes);
+  router.refresh();
 }

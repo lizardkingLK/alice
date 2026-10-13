@@ -22,11 +22,23 @@ during setup.
 2. Select **Add Project**.
 3. Complete the **Create New Project** form (name, description, dates, etc.).
 4. Optionally connect **Jira** or **GitHub** in the same flow if prompted.
-5. Submit **Create Project**.
+5. On the optional **Team** step, use **Search members…** next to **Team Members**
+   to filter the list by name or email before selecting people.
+6. Submit **Create Project**.
+
+Creation is accepted quickly — you are not left waiting on the form while the
+database finishes. Watch the [dashboard inbox](../notifications/dashboard-inbox.md)
+for a **project ready** notification with a link to the new project, or a
+**failure** notice if something went wrong (includes a short reference id for
+support). The bell badge updates live when that alert arrives (no reload needed).
 
 You become a **project member** (so the project stays in your accessible list).
 The manager you pick as **Project Owner** becomes the owner and is also added as
 a member.
+
+If you checked **import from Jira** during create, import after the project
+appears: open it from the inbox link (or Projects list), then use the
+**Integrations** tab.
 
 ---
 
@@ -34,7 +46,7 @@ a member.
 
 - Open the project workspace to add **Members**, **Teams**, and **Work items**
 - Configure **Integrations** on the project **Integrations** tab
-- Adjust metadata with [Project settings](./project-settings.md)
+- Adjust allowed types with [Project types](./project-settings.md)
 
 The creating admin and the owner stay on the Members list and cannot be removed
 from membership (see [Project members](./project-members.md)).
@@ -45,3 +57,4 @@ from membership (see [Project members](./project-members.md)).
 
 - [Browse projects](./browse-projects.md)
 - [Project integrations](./project-integrations.md)
+- [Dashboard inbox](../notifications/dashboard-inbox.md)

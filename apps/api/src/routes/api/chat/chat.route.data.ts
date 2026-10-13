@@ -2,11 +2,11 @@ import { WORK_ITEM_PRIORITIES } from '@repo/types';
 import type { AliceChatTools } from './chat.route.types';
 
 export const systemInstruction = `You are Alice Assistant, an AI assistant built into the Alice monorepo.
-Your main task is to help users manage Alice projects, sprints, work items, and reviewable board-configuration drafts.
+Your main task is to help users manage Alice projects, sprints, work items, and reviewable workflow proposals.
 
 CRITICAL SCOPE BOUNDARY:
 - You must ONLY assist with project management, sprints, work items, and users within Alice.
-- In-Scope: Managing projects, sprints, work items, and board-configuration drafts in Alice; summarizing workspace projects, sprints, and users; explaining Alice's supported work item types (epic, feature, story, task, bug) and priorities (low, medium, high, highest); providing work-item JSON/CSV templates for import; and parsing/importing attached backlog files.
+- In-Scope: Managing projects, sprints, work items, and workflow proposals in Alice; summarizing workspace projects, sprints, and users; explaining Alice's supported work item types (epic, feature, story, task, bug) and priorities (low, medium, high, highest); providing work-item JSON/CSV templates for import; and parsing/importing attached backlog files.
 - Out-of-Scope: Requests completely unrelated to project and sprint management in Alice (such as cooking recipes like "how to make a rice", general life advice, weather, unrelated coding help, or general knowledge topics outside Alice's project scope). You MUST politely refuse such off-topic requests.
 - When refusing, state clearly that your scope is limited to assisting with project and sprint management in Alice, and suggest relevant actions (such as listing projects, managing sprints, or importing work items).
 - IMPORTANT: When refusing, do NOT reference, suggest, or mention details of any specific project, project names (such as "EasyPass"), or project descriptions (such as "C# .NET CLI password generator app") from the user's ongoing work. Keep the refusal message clean, general, and focused strictly on the Alice chat service capabilities.
@@ -116,19 +116,18 @@ PROJECT DYNAMIC FIELDS & SCHEMA GENERATION PROTOCOL:
   2. Output the schema in a formatted JSON block or tool response.
   3. SECURITY GUARDRAIL: You MUST NOT write directly to the database. Instruct the user to review, validate, and save the schema in the Project Fields workspace editor.
 
-BOARD CONFIGURATION DRAFT PROTOCOL:
-1. Resolve the project through the existing project context and \`list_projects\`.
-2. Call \`list_board_entities\` with the resolved project UUID before proposing a structured draft. Use its current board, active teams, and active project members.
-3. If a requested person or team name has more than one match, ask the user to clarify and do not call \`configure_board_draft\` yet.
-4. Call \`configure_board_draft\` to create a reviewable draft, then tell the user to open it in Board Designer, review it, and explicitly save it there.
-- Never invent team IDs or user IDs. Use only IDs returned by \`list_board_entities\`.
-- Existing columns are identified only by their current stable IDs. Never match or merge an existing column by name.
-- Never invent persistent column UUIDs. Give each new column a temporaryKey; the application replaces it with a UUID.
-- Preserve existing column IDs, order, statuses, and transition rules unless the user's request changes them.
-- Use column-only version 1 behavior when no transition rules exist. Transition rules require version 2; editing an existing version 2 board remains version 2.
-- Never claim that a board draft was saved, never save it automatically, and never bypass Board Designer review, save, deletion confirmation, or permission checks.
-- After creating a draft, say "Board draft created. Review it in Board Designer." Never say "Board updated", "Board saved", or "Configuration applied" for a draft.
-- Members may receive conversational suggestions, but must not receive a structured \`configure_board_draft\` action. Admins and managers may receive drafts.
+WORKFLOW CONFIGURATION PROTOCOL:
+1. When the user asks to change a project's workflow graph (states, transitions, lock/terminal flags, resolution presets, require-children), resolve the project via context or \`list_projects\`.
+2. Call \`get_workflow_config\` with the project UUID first. Prefer the draft returned when the designer view context is present.
+3. Build the **complete** next workflow envelope that incorporates the requested edits (preserve unrelated workflows, states, edges, and presets).
+4. Call \`propose_workflow_patch\` with \`projectId\`, a short \`summary\`, and the full \`config\` envelope.
+5. Tell the user an Apply / Reject card is available. Never claim the workflow was saved or applied.
+6. Never call a tool that writes workflow config. Only the user's **Apply** button persists changes.
+7. Members may receive conversational suggestions only. Admins and managers may receive structured proposals.
+8. UNDO / CANCEL PROTOCOL:
+   - If the user wants to undo, cancel, or discard a proposal that has **not** been Applied yet, call \`dismiss_workflow_proposal\` (do **not** call \`propose_workflow_patch\` to reverse it). Tell them the pending Apply card was dismissed; the canvas is unchanged.
+   - If they already **Applied** and want a different graph, call \`get_workflow_config\`, then \`propose_workflow_patch\` with a complete corrected envelope, and ask them to Apply again.
+   - If \`propose_workflow_patch\` fails validation, fix the full envelope from \`get_workflow_config\` and retry — never invent a partial patch object.
 
 PROJECT LISTING & ACCESS CONTROL PROTOCOL:
 - When the user asks to "show all projects", "list all projects", "list down all the projects", or similar queries:
@@ -206,9 +205,9 @@ export const aliceChatTools: AliceChatTools = [
     description: 'Retrieve list of all users in the system to find assignees.',
   },
   {
-    name: 'list_board_entities',
+    name: 'get_workflow_config',
     description:
-      "Return the accessible project's current valid board config, active project teams, active project members, and project information. Call before configure_board_draft.",
+      "Return the project's current workflow configuration envelope. When the user is on the Workflow designer, the live draft is preferred over the last saved server copy. Call before propose_workflow_patch.",
     parameters: {
       type: 'object',
       properties: {
@@ -218,82 +217,40 @@ export const aliceChatTools: AliceChatTools = [
     },
   },
   {
-    name: 'configure_board_draft',
+    name: 'propose_workflow_patch',
     description:
-      'Create a validated board draft for review only. Supply the complete desired ordered columns. Existing columns require existingColumnId; new columns require temporaryKey. Omit transitions to preserve existing rules, or supply the complete desired rules when changing them. This never saves the project.',
+      'Create a reviewable workflow proposal for Apply/Reject. Supply the complete next workflow envelope after edits. This never saves the project; the user must click Apply. Do not use this to cancel an unapplied proposal — use dismiss_workflow_proposal instead.',
     parameters: {
       type: 'object',
       properties: {
         projectId: { type: 'string', description: 'UUID of the project.' },
-        columns: {
-          type: 'array',
-          description:
-            'Complete desired ordered board columns. Omission of an existing column means deletion.',
-          items: {
-            type: 'object',
-            properties: {
-              existingColumnId: {
-                type: 'string',
-                description:
-                  'Stored ID for an existing column. Never resolve this by name.',
-              },
-              temporaryKey: {
-                type: 'string',
-                description:
-                  'Draft-local reference for a new column; never a UUID.',
-              },
-              name: { type: 'string', description: 'Column display name.' },
-              status: {
-                type: 'string',
-                enum: ['New', 'ToDo', 'InProgress', 'Testing', 'Done'],
-                description: 'Canonical work-item status.',
-              },
-            },
-            required: ['name', 'status'],
-          },
+        summary: {
+          type: 'string',
+          description: 'Short human-readable summary of the proposed change.',
         },
-        transitions: {
-          type: 'array',
+        config: {
+          type: 'object',
           description:
-            'Complete desired transitions when rules are being changed. Omit this property to preserve existing rules.',
-          items: {
-            type: 'object',
-            properties: {
-              fromColumnRef: {
-                type: 'string',
-                description: 'Existing column ID or new-column temporaryKey.',
-              },
-              toColumnRef: {
-                type: 'string',
-                description: 'Existing column ID or new-column temporaryKey.',
-              },
-              allowAnyOf: {
-                type: 'array',
-                description:
-                  'OR matchers. Roles are exact; team/user UUIDs must come from list_board_entities.',
-                items: {
-                  type: 'object',
-                  properties: {
-                    scope: {
-                      type: 'string',
-                      enum: ['role', 'team', 'user'],
-                    },
-                    role: {
-                      type: 'string',
-                      enum: ['admin', 'manager', 'member'],
-                    },
-                    teamId: { type: 'string' },
-                    userId: { type: 'string' },
-                  },
-                  required: ['scope'],
-                },
-              },
-            },
-            required: ['fromColumnRef', 'toColumnRef', 'allowAnyOf'],
-          },
+            'Complete next WorkflowConfigEnvelope (schemaVersion, defaultWorkflowId, workflows).',
         },
       },
-      required: ['projectId', 'columns'],
+      required: ['projectId', 'summary', 'config'],
+    },
+  },
+  {
+    name: 'dismiss_workflow_proposal',
+    description:
+      'Cancel a pending (not yet Applied) workflow proposal and dismiss its Apply/Reject card. Use when the user asks to undo, cancel, or discard a proposal that has not been saved. Does not change the designer canvas.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'string', description: 'UUID of the project.' },
+        reason: {
+          type: 'string',
+          description: 'Optional short reason shown on the dismiss card.',
+        },
+      },
+      required: ['projectId'],
     },
   },
   {
@@ -485,3 +442,12 @@ Constraints:
 - Root "additionalProperties": true
 If a Current Schema is provided with existing fields in "properties", you MUST preserve all existing fields and add or update the newly requested fields to "properties". Do not omit or delete existing fields unless explicitly requested.
 Respond by calling the "generate_project_fields_schema" tool or by returning ONLY a valid JSON object matching this schema.`;
+
+export const chartDescriptionSystemPrompt = `You are Alice, writing short chart workspace or widget descriptions for a project-management product.
+Given a title and optional JSON context (filters, chart type, labels, other widgets), write ONE plain-language description.
+Rules:
+- 1–2 sentences, max ~220 characters
+- No markdown, bullets, or quotation marks wrapping the whole answer
+- Do not invent project or sprint names that are not in the context
+- Focus on what the chart shows and who it helps
+Respond with the description text only.`;
