@@ -573,6 +573,31 @@ function EditableLabelsField({
   );
 }
 
+function EditableDetailTextField({
+  displayText,
+  editAriaLabel,
+  onEdit,
+  readOnly = false,
+}: Readonly<{
+  readonly displayText: string;
+  readonly editAriaLabel: string;
+  readonly onEdit: () => void;
+  readonly readOnly?: boolean;
+}>) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-sm font-medium">{displayText}</span>
+      {readOnly ? null : (
+        <DetailFieldEditButton
+          ariaLabel={editAriaLabel}
+          className="shrink-0"
+          onClick={onEdit}
+        />
+      )}
+    </div>
+  );
+}
+
 function EditableSprintField({
   sprintName,
   onEdit,
@@ -583,18 +608,31 @@ function EditableSprintField({
   readonly readOnly?: boolean;
 }>) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-sm font-medium">
-        {sprintName?.trim() || 'Backlog'}
-      </span>
-      {readOnly ? null : (
-        <DetailFieldEditButton
-          ariaLabel="Edit sprint"
-          className="shrink-0"
-          onClick={onEdit}
-        />
-      )}
-    </div>
+    <EditableDetailTextField
+      displayText={sprintName?.trim() || 'Backlog'}
+      editAriaLabel="Edit sprint"
+      onEdit={onEdit}
+      readOnly={readOnly}
+    />
+  );
+}
+
+function EditableDueDateField({
+  dueDate,
+  onEdit,
+  readOnly = false,
+}: Readonly<{
+  readonly dueDate?: string | null;
+  readonly onEdit: () => void;
+  readonly readOnly?: boolean;
+}>) {
+  return (
+    <EditableDetailTextField
+      displayText={formatDate(dueDate ?? null)}
+      editAriaLabel="Edit due date"
+      onEdit={onEdit}
+      readOnly={readOnly}
+    />
   );
 }
 
@@ -733,6 +771,8 @@ export default function WorkItemSidebar({
     currentValue = workItem.reporter_id;
   } else if (activeField === 'sprint_id') {
     currentValue = workItem.sprint_id;
+  } else if (activeField === 'due_date') {
+    currentValue = workItem.due_date;
   }
 
   const sprintDisplayName =
@@ -787,6 +827,13 @@ export default function WorkItemSidebar({
             sprintName={sprintDisplayName}
             onEdit={() => setActiveField('sprint_id')}
             readOnly={readOnly || Boolean(workItem.parent_id)}
+          />
+        </DetailRow>
+        <DetailRow label="Due date">
+          <EditableDueDateField
+            dueDate={workItem.due_date}
+            onEdit={() => setActiveField('due_date')}
+            readOnly={readOnly}
           />
         </DetailRow>
         <DetailRow label="Labels">
@@ -876,9 +923,6 @@ export default function WorkItemSidebar({
           onLogWorkClick={readOnly ? undefined : onLogWorkClick}
         />
 
-        <DetailRow label="Due date">
-          <span>{formatDate(workItem.due_date)}</span>
-        </DetailRow>
         <DetailRow label="Story points">
           <span>{workItem.story_points ?? '—'}</span>
         </DetailRow>

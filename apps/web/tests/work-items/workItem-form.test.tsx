@@ -121,10 +121,13 @@ describe('WorkItemForm', () => {
     expect(screen.getByLabelText(/^Project$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Type$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Assignee$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Due date$/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/^Priority$/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/^More fields$/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/^Labels$/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/^Due date$/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('menuitem', { name: /^Due date$/i })
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /^Create$/i })
     ).toBeInTheDocument();

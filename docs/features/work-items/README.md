@@ -104,6 +104,14 @@ Toolbar (same left / right split as other registries):
 
 Chevron affordances follow `getAllowedChildType` (Epic / Story / Task). Issues are leaves.
 
+## Due date
+
+`work_items.due_date` is an optional calendar day (`DATE`). Create/edit forms
+(classic always; modern as a main pill next to assignee/sprint) and the details
+sidebar (**Details → Due date**, pencil → `WorkItemFieldPatchDialog`) all submit
+the same FormData key. Calendar drag-and-drop also patches `due_date`. Create
+rejects past dates; PATCH allows an unchanged past due date.
+
 ## Done status gates
 
 ### Incomplete subtasks (implemented)

@@ -19,8 +19,10 @@ Update title, description, and fields on an existing item.
 On the detail page:
 
 - **Title** and **description** (rich text) in the main pane
-- **Status**, **priority**, **assignee**, **reporter**, **labels**, **due date**,
-  **sprint**, and other fields in the sidebar
+- **Status**, **assignee**, **reporter**, **sprint**, **due date**, and
+  **labels** in the Details sidebar (pencil to edit)
+- **Priority** and **story points** are shown in the sidebar (edit via the full
+  Edit dialog)
 
 ## Edit from a dialog
 

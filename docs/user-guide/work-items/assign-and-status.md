@@ -42,14 +42,16 @@ non-draft state.
 
 ---
 
-## Assignee, reporter, and sprint
+## Assignee, reporter, sprint, and due date
 
 - **Assignee** — who is responsible for delivery
 - **Reporter** — who reported or owns the request
 - **Sprint** — which sprint the item belongs to, or **Backlog** when cleared
+- **Due date** — optional calendar day the item should be finished by
 
-Use the searchable controls in the create/edit dialogs and the details sidebar.
-**My Work** filters the registry to items where you are assignee.
+Use the searchable controls (and date picker for due date) in the create/edit
+dialogs and the details sidebar. **My Work** filters the registry to items where
+you are assignee. The calendar view also shows items by due date.
 
 ---
 
