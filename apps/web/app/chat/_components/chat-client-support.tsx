@@ -184,43 +184,45 @@ export async function uploadSelectedChatFiles(params: {
   const fileArray = Array.from(selectedFiles);
   if (fileArray.length === 0) return;
 
-  for (const file of fileArray) {
-    const tempId = `temp-${Date.now()}-${++attachmentCounter}`;
-    const optimisticAttachment: PendingChatAttachment = {
-      id: tempId,
-      fileName: file.name,
-      fileSize: file.size,
-      mimeType: file.type || 'application/octet-stream',
-      storagePath: '',
-      url: '',
-      fileType: inferChatAttachmentFileType(file.name, file.type || ''),
-      isUploading: true,
-    };
+  await Promise.all(
+    fileArray.map(async (file) => {
+      const tempId = `temp-${Date.now()}-${++attachmentCounter}`;
+      const optimisticAttachment: PendingChatAttachment = {
+        id: tempId,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type || 'application/octet-stream',
+        storagePath: '',
+        url: '',
+        fileType: inferChatAttachmentFileType(file.name, file.type || ''),
+        isUploading: true,
+      };
 
-    setPendingAttachments((prev) => [...prev, optimisticAttachment]);
+      setPendingAttachments((prev) => [...prev, optimisticAttachment]);
 
-    try {
-      const uploaded = await uploadChatAttachment(file, activeConversationId);
-      setPendingAttachments((prev) => {
-        const stillPresent = prev.some((item) => item.id === tempId);
-        if (!stillPresent) {
-          void deleteChatAttachment(uploaded.id);
-          return prev;
-        }
-        return prev.map((item) =>
-          item.id === tempId ? { ...uploaded, isUploading: false } : item
+      try {
+        const uploaded = await uploadChatAttachment(file, activeConversationId);
+        setPendingAttachments((prev) => {
+          const stillPresent = prev.some((item) => item.id === tempId);
+          if (!stillPresent) {
+            void deleteChatAttachment(uploaded.id);
+            return prev;
+          }
+          return prev.map((item) =>
+            item.id === tempId ? { ...uploaded, isUploading: false } : item
+          );
+        });
+      } catch (uploadError) {
+        console.error('Failed to upload chat attachment:', uploadError);
+        setPendingAttachments((prev) =>
+          prev.filter((item) => item.id !== tempId)
         );
-      });
-    } catch (uploadError) {
-      console.error('Failed to upload chat attachment:', uploadError);
-      setPendingAttachments((prev) =>
-        prev.filter((item) => item.id !== tempId)
-      );
-      setError(
-        `Failed to upload ${file.name}: ${uploadError instanceof Error ? uploadError.message : 'Upload failed'}`
-      );
-    }
-  }
+        setError(
+          `Failed to upload ${file.name}: ${uploadError instanceof Error ? uploadError.message : 'Upload failed'}`
+        );
+      }
+    })
+  );
 
   if (fileInputRef.current) {
     fileInputRef.current.value = '';

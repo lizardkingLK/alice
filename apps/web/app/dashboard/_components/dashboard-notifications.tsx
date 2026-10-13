@@ -533,17 +533,10 @@ export function NotificationInbox({
             !notif.read_status && 'bg-primary/2 dark:bg-primary/1'
           )}
         >
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => handleNotificationClick(notif)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                void handleNotificationClick(notif);
-              }
-            }}
-            className="flex flex-1 cursor-pointer items-start gap-3 text-left focus-visible:outline-hidden"
+          <button
+            type="button"
+            onClick={() => void handleNotificationClick(notif)}
+            className="flex flex-1 cursor-pointer items-start gap-3 border-0 bg-transparent p-0 text-left focus-visible:outline-hidden"
           >
             <div
               className={cn(
@@ -577,7 +570,7 @@ export function NotificationInbox({
                 {formatRelativeTime(notif.created_at)}
               </span>
             </div>
-          </div>
+          </button>
           <div className="flex shrink-0 items-center gap-1.5 self-center">
             {!notif.read_status && (
               <span className="bg-primary size-2 animate-pulse rounded-full" />
@@ -635,7 +628,7 @@ export function NotificationInbox({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleMarkAllAsRead();
+                  void handleMarkAllAsRead();
                 }}
                 className="text-primary hover:text-primary/80 flex cursor-pointer items-center gap-1 text-xs font-medium transition-colors"
               >

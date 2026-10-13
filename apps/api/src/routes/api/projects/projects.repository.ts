@@ -942,6 +942,7 @@ export class ProjectsRepository {
 
     const { parentToChild } = resolveProjectHierarchy(allowedTypes, hierarchy);
 
+    const parentLinkUpdates: { childId: string; parentId: string }[] = [];
     for (const issue of issues) {
       if (!issue.parentKey) {
         continue;
@@ -958,11 +959,20 @@ export class ProjectsRepository {
       const needsUpdate = childItem.parent_id !== parentItem.id;
 
       if (isAllowedHierarchy && needsUpdate) {
-        await prisma.work_items.update({
-          where: { id: childItem.id },
-          data: { parent_id: parentItem.id },
+        parentLinkUpdates.push({
+          childId: childItem.id,
+          parentId: parentItem.id,
         });
       }
     }
+
+    await Promise.all(
+      parentLinkUpdates.map((update) =>
+        prisma.work_items.update({
+          where: { id: update.childId },
+          data: { parent_id: update.parentId },
+        })
+      )
+    );
   }
 }

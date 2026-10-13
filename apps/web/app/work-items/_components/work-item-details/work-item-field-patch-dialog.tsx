@@ -17,7 +17,6 @@ import { delay } from '@/app/_shared/utility';
 import { WorkItemActionDialog } from '@/app/work-items/_components/work-item-details/work-item-action-dialog';
 import { buildMemberSelectOptions } from '@/app/work-items/_components/member-select-items';
 import { resolveWorkItemMember } from '@/app/work-items/_helpers/work-item-member';
-import { WORK_ITEM_STATUSES } from '@/app/work-items/_helpers/work-item-status';
 import {
   boardColumnIdForStateOption,
   legacyWorkflowStateOptions,
@@ -69,7 +68,7 @@ export type WorkItemPatchFieldConfig = {
   readonly unassignedLabel?: string;
 };
 
-export { WORK_ITEM_STATUSES };
+export { WORK_ITEM_STATUSES } from '@/app/work-items/_helpers/work-item-status';
 
 export const WORK_ITEM_PATCH_FIELD_CONFIG: Record<
   WorkItemPatchFieldId,
