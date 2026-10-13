@@ -220,7 +220,7 @@ export function ProjectMembersTab({
                           if (isProtectedMember) {
                             return;
                           }
-                          handleRemoveMember(member.user_id);
+                          void handleRemoveMember(member.user_id);
                         }}
                         className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors disabled:opacity-50"
                         title={protectedMemberRemoveTitle({
