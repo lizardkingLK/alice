@@ -9,14 +9,11 @@ import {
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
-  Line,
-  LineChart,
   XAxis,
   YAxis,
 } from '@repo/ui/components/ui/chart';
 import {
   ACTIVITY_ITEMS,
-  BURNDOWN_CONFIG,
   STAT_VALUES,
   STATUS_MIX_CONFIG,
   STATUS_MIX_DATA,
@@ -31,10 +28,21 @@ import { StatusDistributionWheel } from '@/components/status-distribution-wheel'
 import { SIDEBAR_LAYOUT_SETTLE_MS } from '@/hooks/use-sidebar-layout-settling';
 import { createClient } from '@/lib/supabase/client';
 import { readBoardDefaults } from '@/app/board/_helpers/board-defaults-storage';
-import { ALL_PROJECTS_ID } from '@/app/board/_helpers/workspace-defaults-shared';
 import { loadSprintBurndownAction } from '@/app/dashboard/_components/actions';
+import {
+  burndownScopeFromSprint,
+  selectBurndownSprint,
+  type BurndownScopeLabelsModel,
+} from '@/app/dashboard/_helpers/burndown-scope';
 import type { DashboardBurndownBootstrap } from '@/app/dashboard/_services/dashboard.reads.burndown.server';
-import { SprintStatusEnum } from '@repo/types';
+import {
+  applyBurndownPayload,
+  BurndownLineChart,
+  defaultBurndownAxisRange,
+  type BurndownAxisRange,
+  type BurndownPoint,
+} from '@/components/burndown-line-chart';
+import { BurndownScopeLabels } from '@/components/burndown-scope-labels';
 import type { SprintBurndownPayload } from '@repo/types';
 
 const widgetById = Object.fromEntries(
@@ -95,93 +103,13 @@ function StatusMixWidget() {
   );
 }
 
-type BurndownPoint = SprintBurndownPayload['series'][number];
-
-type BurndownAxisRange = {
-  startDate: string;
-  endDate: string;
-};
-
 const BURNDOWN_EMPTY_NO_SPRINT = 'No active sprint selected.';
 const BURNDOWN_EMPTY_UNAVAILABLE =
   'Burndown is temporarily unavailable. If you are an admin, verify the burndown migration is applied and this sprint has work items.';
 
-function defaultBurndownAxisRange(): BurndownAxisRange {
-  const end = new Date();
-  const start = new Date(end);
-  start.setUTCDate(start.getUTCDate() - 6);
-
-  return {
-    startDate: start.toISOString().slice(0, 10),
-    endDate: end.toISOString().slice(0, 10),
-  };
-}
-
-function buildEmptyBurndownAxisScaffold(
-  range: BurndownAxisRange
-): BurndownPoint[] {
-  return [
-    { date: range.startDate, remaining: null, ideal: 0 },
-    { date: range.endDate, remaining: null, ideal: 0 },
-  ];
-}
-
-function computeBurndownYAxisMax(
-  points: BurndownPoint[],
-  estimatedTotal = 0
-): number {
-  const peak = points.reduce((max, point) => {
-    const next = Math.max(point.ideal, point.remaining ?? 0);
-    return Math.max(max, next);
-  }, 0);
-
-  return Math.max(peak, estimatedTotal, 10);
-}
-
-function formatBurndownTick(isoDate: string) {
-  // Force UTC parsing to avoid timezone shifts like Jul 28 vs Jul 29.
-  const [yRaw, mRaw, dRaw] = isoDate.split('-');
-  const y = Number(yRaw);
-  const m = Number(mRaw);
-  const d = Number(dRaw);
-
-  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) {
-    return isoDate;
-  }
-
-  const dt = new Date(Date.UTC(y, m - 1, d));
-  return dt.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    timeZone: 'UTC',
-  });
-}
-
-type BurndownSprintListItem = DashboardBurndownBootstrap['sprints'][number];
-
-function selectBurndownSprint(
-  sprints: readonly BurndownSprintListItem[],
-  preference: {
-    readonly projectId: string;
-    readonly sprintId: string | null;
-  } | null
-): BurndownSprintListItem | undefined {
-  const candidates =
-    preference?.projectId && preference.projectId !== ALL_PROJECTS_ID
-      ? sprints.filter((sprint) => sprint.project?.id === preference.projectId)
-      : sprints;
-
-  return (
-    (preference?.sprintId
-      ? candidates.find((sprint) => sprint.id === preference.sprintId)
-      : undefined) ??
-    candidates.find((sprint) => sprint.status === SprintStatusEnum.Active) ??
-    candidates.find((sprint) => sprint.status === SprintStatusEnum.Planned) ??
-    candidates[0]
-  );
-}
-
-function applyBurndownPayload(burndown: SprintBurndownPayload | null): {
+function applyDashboardBurndownPayload(
+  burndown: SprintBurndownPayload | null
+): {
   series: BurndownPoint[];
   estimatedTotal: number;
   axisRange: BurndownAxisRange;
@@ -189,22 +117,35 @@ function applyBurndownPayload(burndown: SprintBurndownPayload | null): {
 } {
   if (!burndown) {
     return {
-      series: [],
-      estimatedTotal: 0,
-      axisRange: defaultBurndownAxisRange(),
+      ...applyBurndownPayload(null),
       emptyHint: BURNDOWN_EMPTY_NO_SPRINT,
     };
   }
 
   return {
-    series: burndown.series,
-    estimatedTotal: burndown.estimatedTotal,
-    axisRange: {
-      startDate: burndown.sprint.startDate,
-      endDate: burndown.sprint.endDate,
-    },
+    ...applyBurndownPayload(burndown),
     emptyHint: null,
   };
+}
+
+function initialBurndownScope(
+  bootstrap: DashboardBurndownBootstrap
+): BurndownScopeLabelsModel {
+  const defaultSprint =
+    bootstrap.sprints.find(
+      (sprint) => sprint.id === bootstrap.defaultSprintId
+    ) ?? bootstrap.sprints[0];
+  const scope = burndownScopeFromSprint(defaultSprint);
+
+  if (bootstrap.burndown?.sprint.name) {
+    return {
+      ...scope,
+      sprintName: bootstrap.burndown.sprint.name,
+      sprintId: bootstrap.burndown.sprint.id,
+    };
+  }
+
+  return scope;
 }
 
 async function resolvePreferredBurndown(
@@ -214,6 +155,7 @@ async function resolvePreferredBurndown(
   estimatedTotal: number;
   axisRange: BurndownAxisRange;
   emptyHint: string | null;
+  scope: BurndownScopeLabelsModel;
 }> {
   const supabase = createClient();
   const {
@@ -222,6 +164,7 @@ async function resolvePreferredBurndown(
 
   const preference = user ? readBoardDefaults(user.id) : null;
   const selected = selectBurndownSprint(bootstrap.sprints, preference);
+  const scope = burndownScopeFromSprint(selected);
 
   if (!selected) {
     return {
@@ -229,11 +172,19 @@ async function resolvePreferredBurndown(
       estimatedTotal: 0,
       axisRange: defaultBurndownAxisRange(),
       emptyHint: BURNDOWN_EMPTY_NO_SPRINT,
+      scope,
     };
   }
 
   if (selected.id === bootstrap.defaultSprintId && bootstrap.burndown) {
-    return applyBurndownPayload(bootstrap.burndown);
+    return {
+      ...applyDashboardBurndownPayload(bootstrap.burndown),
+      scope: {
+        ...scope,
+        sprintName: bootstrap.burndown.sprint.name,
+        sprintId: bootstrap.burndown.sprint.id,
+      },
+    };
   }
 
   try {
@@ -244,9 +195,17 @@ async function resolvePreferredBurndown(
         estimatedTotal: 0,
         axisRange: defaultBurndownAxisRange(),
         emptyHint: BURNDOWN_EMPTY_UNAVAILABLE,
+        scope,
       };
     }
-    return applyBurndownPayload(burndown);
+    return {
+      ...applyDashboardBurndownPayload(burndown),
+      scope: {
+        ...scope,
+        sprintName: burndown.sprint.name,
+        sprintId: burndown.sprint.id,
+      },
+    };
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Failed to load burndown';
     const unavailable =
@@ -258,6 +217,7 @@ async function resolvePreferredBurndown(
       estimatedTotal: 0,
       axisRange: defaultBurndownAxisRange(),
       emptyHint: unavailable ? BURNDOWN_EMPTY_UNAVAILABLE : message,
+      scope,
     };
   }
 }
@@ -269,7 +229,7 @@ type BurndownWidgetProps = {
 function BurndownWidget({ bootstrap }: BurndownWidgetProps) {
   const meta = widgetById['sprint-burndown'];
   const initial = bootstrap.burndown
-    ? applyBurndownPayload(bootstrap.burndown)
+    ? applyDashboardBurndownPayload(bootstrap.burndown)
     : {
         series: [] as BurndownPoint[],
         estimatedTotal: 0,
@@ -278,6 +238,7 @@ function BurndownWidget({ bootstrap }: BurndownWidgetProps) {
           ? BURNDOWN_EMPTY_UNAVAILABLE
           : BURNDOWN_EMPTY_NO_SPRINT,
       };
+  const initialScope = initialBurndownScope(bootstrap);
 
   const [emptyHint, setEmptyHint] = useState<string | null>(initial.emptyHint);
   const [series, setSeries] = useState<BurndownPoint[]>(initial.series);
@@ -285,6 +246,7 @@ function BurndownWidget({ bootstrap }: BurndownWidgetProps) {
     initial.axisRange
   );
   const [estimatedTotal, setEstimatedTotal] = useState(initial.estimatedTotal);
+  const [scope, setScope] = useState<BurndownScopeLabelsModel>(initialScope);
 
   useEffect(() => {
     let cancelled = false;
@@ -296,6 +258,7 @@ function BurndownWidget({ bootstrap }: BurndownWidgetProps) {
       setEstimatedTotal(next.estimatedTotal);
       setAxisRange(next.axisRange);
       setEmptyHint(next.emptyHint);
+      setScope(next.scope);
     }
 
     void reconcilePreference();
@@ -305,65 +268,24 @@ function BurndownWidget({ bootstrap }: BurndownWidgetProps) {
     };
   }, [bootstrap]);
 
-  const hasData = series.length > 0;
-  const chartData = hasData
-    ? series
-    : buildEmptyBurndownAxisScaffold(axisRange);
-  const yAxisMax = computeBurndownYAxisMax(chartData, estimatedTotal);
-
   return (
-    <DashboardWidgetShell title={meta.title} description={meta.description}>
-      <div className="relative flex min-h-0 flex-1 flex-col">
-        <DashboardChartViewport config={BURNDOWN_CONFIG}>
-          <LineChart
-            data={[...chartData]}
-            margin={{ left: 4, right: 8, top: 8, bottom: 0 }}
-          >
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={!hasData}
-              tickMargin={8}
-              tickFormatter={(value) =>
-                typeof value === 'string' ? formatBurndownTick(value) : ''
-              }
-            />
-            <YAxis
-              tickLine={false}
-              axisLine={!hasData}
-              width={28}
-              domain={[0, yAxisMax]}
-            />
-            {hasData ? (
-              <>
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line
-                  type="monotone"
-                  dataKey="ideal"
-                  stroke="var(--color-ideal)"
-                  strokeDasharray="4 4"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="remaining"
-                  stroke="var(--color-remaining)"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
-              </>
-            ) : null}
-          </LineChart>
-        </DashboardChartViewport>
-        {emptyHint ? (
-          <p className="text-muted-foreground pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center text-sm">
-            {emptyHint}
-          </p>
-        ) : null}
-      </div>
+    <DashboardWidgetShell
+      title={meta.title}
+      description={meta.description}
+      headerActions={
+        <BurndownScopeLabels
+          projectName={scope.projectName}
+          sprintName={scope.sprintName}
+        />
+      }
+    >
+      <BurndownLineChart
+        series={series}
+        estimatedTotal={estimatedTotal}
+        axisRange={axisRange}
+        emptyHint={emptyHint}
+        settleMs={SIDEBAR_LAYOUT_SETTLE_MS}
+      />
     </DashboardWidgetShell>
   );
 }

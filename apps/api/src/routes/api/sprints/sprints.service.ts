@@ -1,6 +1,7 @@
 import {
   computeBurndown,
   mapSprintRowToResponse,
+  seriesFromBurndownRollupRows,
   SprintStatusEnum,
   UserRoleEnum,
   type DeleteSprintAction,
@@ -287,11 +288,33 @@ export class SprintBurndownService {
       return null;
     }
 
+    const rollupRows = await this.burndownRepo.getBurndownRollupRows(sprintId);
+    if (rollupRows.length > 0) {
+      const { estimatedTotal, series } = seriesFromBurndownRollupRows(
+        sprint,
+        rollupRows
+      );
+      return {
+        sprint: {
+          id: sprint.id,
+          name: sprint.name,
+          startDate: sprint.start_date,
+          endDate: sprint.end_date,
+          status: sprint.status,
+        },
+        estimatedTotal,
+        series,
+      };
+    }
+
     const items = await this.burndownRepo.getWorkItemsForBurndown(sprintId);
     const workItemIds = items.map((i) => i.id);
     const workLogs =
       await this.burndownRepo.getWorkLogsForWorkItems(workItemIds);
     const { estimatedTotal, series } = computeBurndown(sprint, items, workLogs);
+
+    // Best-effort populate rollup for subsequent reads (migration applied).
+    void this.burndownRepo.rebuildBurndownRollup(sprintId);
 
     return {
       sprint: {

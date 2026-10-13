@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 
 export const DASHBOARD_OVERVIEW_DESCRIPTION =
-  'Customize your overview — drag, resize, and glance at team progress.';
+  'Pinned chart workspaces — slide between boards, or customize on Charts.';
 
 /** Shared shell chrome for `/dashboard` page + soft-nav loading. */
 export function DashboardOverviewFrame({

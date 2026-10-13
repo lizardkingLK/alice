@@ -25,6 +25,8 @@ type ChartsWidgetActionsMenuProps = {
   readonly contentClassName?: string;
   readonly showExport?: boolean;
   readonly showDock?: boolean;
+  /** Overview slider: export only (no settings / save / duplicate / delete). */
+  readonly overviewChrome?: boolean;
   readonly onRename: () => void;
   readonly onDuplicate: () => void;
   readonly onDelete: () => void;
@@ -42,6 +44,7 @@ export function ChartsWidgetActionsMenu({
   contentClassName = 'w-48',
   showExport = false,
   showDock = false,
+  overviewChrome = false,
   onRename,
   onDuplicate,
   onDelete,
@@ -50,6 +53,20 @@ export function ChartsWidgetActionsMenu({
   open,
   onOpenChange,
 }: Readonly<ChartsWidgetActionsMenuProps>) {
+  if (overviewChrome) {
+    return (
+      <DropdownMenu open={open} onOpenChange={onOpenChange}>
+        <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className={contentClassName}>
+          {leadingItem}
+          {showExport ? (
+            <ChartsWidgetExportSubmenu onExport={onExport} />
+          ) : null}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
   return (
     <DropdownMenu open={open} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
@@ -65,7 +82,7 @@ export function ChartsWidgetActionsMenu({
         </DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer gap-2" onSelect={onRename}>
           <Pencil className="size-4" />
-          Rename
+          Save option
         </DropdownMenuItem>
         <DropdownMenuItem
           className="cursor-pointer gap-2"

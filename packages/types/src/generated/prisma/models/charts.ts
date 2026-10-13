@@ -20,8 +20,18 @@ export type chartsModel = runtime.Types.Result.DefaultSelection<Prisma.$chartsPa
 
 export type AggregateCharts = {
   _count: ChartsCountAggregateOutputType | null
+  _avg: ChartsAvgAggregateOutputType | null
+  _sum: ChartsSumAggregateOutputType | null
   _min: ChartsMinAggregateOutputType | null
   _max: ChartsMaxAggregateOutputType | null
+}
+
+export type ChartsAvgAggregateOutputType = {
+  dashboard_sort_order: number | null
+}
+
+export type ChartsSumAggregateOutputType = {
+  dashboard_sort_order: number | null
 }
 
 export type ChartsMinAggregateOutputType = {
@@ -29,7 +39,8 @@ export type ChartsMinAggregateOutputType = {
   owner_id: string | null
   title: string | null
   description: string | null
-  is_overview: boolean | null
+  show_on_dashboard: boolean | null
+  dashboard_sort_order: number | null
   status: $Enums.RecordStatus | null
   created_by: string | null
   created_at: Date | null
@@ -42,7 +53,8 @@ export type ChartsMaxAggregateOutputType = {
   owner_id: string | null
   title: string | null
   description: string | null
-  is_overview: boolean | null
+  show_on_dashboard: boolean | null
+  dashboard_sort_order: number | null
   status: $Enums.RecordStatus | null
   created_by: string | null
   created_at: Date | null
@@ -56,7 +68,8 @@ export type ChartsCountAggregateOutputType = {
   title: number
   description: number
   board_json: number
-  is_overview: number
+  show_on_dashboard: number
+  dashboard_sort_order: number
   status: number
   created_by: number
   created_at: number
@@ -66,12 +79,21 @@ export type ChartsCountAggregateOutputType = {
 }
 
 
+export type ChartsAvgAggregateInputType = {
+  dashboard_sort_order?: true
+}
+
+export type ChartsSumAggregateInputType = {
+  dashboard_sort_order?: true
+}
+
 export type ChartsMinAggregateInputType = {
   id?: true
   owner_id?: true
   title?: true
   description?: true
-  is_overview?: true
+  show_on_dashboard?: true
+  dashboard_sort_order?: true
   status?: true
   created_by?: true
   created_at?: true
@@ -84,7 +106,8 @@ export type ChartsMaxAggregateInputType = {
   owner_id?: true
   title?: true
   description?: true
-  is_overview?: true
+  show_on_dashboard?: true
+  dashboard_sort_order?: true
   status?: true
   created_by?: true
   created_at?: true
@@ -98,7 +121,8 @@ export type ChartsCountAggregateInputType = {
   title?: true
   description?: true
   board_json?: true
-  is_overview?: true
+  show_on_dashboard?: true
+  dashboard_sort_order?: true
   status?: true
   created_by?: true
   created_at?: true
@@ -145,6 +169,18 @@ export type ChartsAggregateArgs<ExtArgs extends runtime.Types.Extensions.Interna
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: ChartsAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: ChartsSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: ChartsMinAggregateInputType
@@ -175,6 +211,8 @@ export type chartsGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   _count?: ChartsCountAggregateInputType | true
+  _avg?: ChartsAvgAggregateInputType
+  _sum?: ChartsSumAggregateInputType
   _min?: ChartsMinAggregateInputType
   _max?: ChartsMaxAggregateInputType
 }
@@ -185,13 +223,16 @@ export type ChartsGroupByOutputType = {
   title: string
   description: string | null
   board_json: runtime.JsonValue
-  is_overview: boolean
+  show_on_dashboard: boolean
+  dashboard_sort_order: number
   status: $Enums.RecordStatus
   created_by: string | null
   created_at: Date
   updated_by: string | null
   updated_at: Date
   _count: ChartsCountAggregateOutputType | null
+  _avg: ChartsAvgAggregateOutputType | null
+  _sum: ChartsSumAggregateOutputType | null
   _min: ChartsMinAggregateOutputType | null
   _max: ChartsMaxAggregateOutputType | null
 }
@@ -220,7 +261,8 @@ export type chartsWhereInput = {
   title?: Prisma.StringFilter<"charts"> | string
   description?: Prisma.StringNullableFilter<"charts"> | string | null
   board_json?: Prisma.JsonFilter<"charts">
-  is_overview?: Prisma.BoolFilter<"charts"> | boolean
+  show_on_dashboard?: Prisma.BoolFilter<"charts"> | boolean
+  dashboard_sort_order?: Prisma.IntFilter<"charts"> | number
   status?: Prisma.EnumRecordStatusFilter<"charts"> | $Enums.RecordStatus
   created_by?: Prisma.UuidNullableFilter<"charts"> | string | null
   created_at?: Prisma.DateTimeFilter<"charts"> | Date | string
@@ -239,7 +281,8 @@ export type chartsOrderByWithRelationInput = {
   title?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   board_json?: Prisma.SortOrder
-  is_overview?: Prisma.SortOrder
+  show_on_dashboard?: Prisma.SortOrder
+  dashboard_sort_order?: Prisma.SortOrder
   status?: Prisma.SortOrder
   created_by?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
@@ -261,7 +304,8 @@ export type chartsWhereUniqueInput = Prisma.AtLeast<{
   title?: Prisma.StringFilter<"charts"> | string
   description?: Prisma.StringNullableFilter<"charts"> | string | null
   board_json?: Prisma.JsonFilter<"charts">
-  is_overview?: Prisma.BoolFilter<"charts"> | boolean
+  show_on_dashboard?: Prisma.BoolFilter<"charts"> | boolean
+  dashboard_sort_order?: Prisma.IntFilter<"charts"> | number
   status?: Prisma.EnumRecordStatusFilter<"charts"> | $Enums.RecordStatus
   created_by?: Prisma.UuidNullableFilter<"charts"> | string | null
   created_at?: Prisma.DateTimeFilter<"charts"> | Date | string
@@ -280,15 +324,18 @@ export type chartsOrderByWithAggregationInput = {
   title?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   board_json?: Prisma.SortOrder
-  is_overview?: Prisma.SortOrder
+  show_on_dashboard?: Prisma.SortOrder
+  dashboard_sort_order?: Prisma.SortOrder
   status?: Prisma.SortOrder
   created_by?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_by?: Prisma.SortOrderInput | Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   _count?: Prisma.chartsCountOrderByAggregateInput
+  _avg?: Prisma.chartsAvgOrderByAggregateInput
   _max?: Prisma.chartsMaxOrderByAggregateInput
   _min?: Prisma.chartsMinOrderByAggregateInput
+  _sum?: Prisma.chartsSumOrderByAggregateInput
 }
 
 export type chartsScalarWhereWithAggregatesInput = {
@@ -300,7 +347,8 @@ export type chartsScalarWhereWithAggregatesInput = {
   title?: Prisma.StringWithAggregatesFilter<"charts"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"charts"> | string | null
   board_json?: Prisma.JsonWithAggregatesFilter<"charts">
-  is_overview?: Prisma.BoolWithAggregatesFilter<"charts"> | boolean
+  show_on_dashboard?: Prisma.BoolWithAggregatesFilter<"charts"> | boolean
+  dashboard_sort_order?: Prisma.IntWithAggregatesFilter<"charts"> | number
   status?: Prisma.EnumRecordStatusWithAggregatesFilter<"charts"> | $Enums.RecordStatus
   created_by?: Prisma.UuidNullableWithAggregatesFilter<"charts"> | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"charts"> | Date | string
@@ -313,7 +361,8 @@ export type chartsCreateInput = {
   title: string
   description?: string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: number
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
@@ -330,7 +379,8 @@ export type chartsUncheckedCreateInput = {
   title: string
   description?: string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: number
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -345,7 +395,8 @@ export type chartsUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -362,7 +413,8 @@ export type chartsUncheckedUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -378,7 +430,8 @@ export type chartsCreateManyInput = {
   title: string
   description?: string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: number
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -391,7 +444,8 @@ export type chartsUpdateManyMutationInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -403,7 +457,8 @@ export type chartsUncheckedUpdateManyInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -432,7 +487,8 @@ export type chartsCountOrderByAggregateInput = {
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
   board_json?: Prisma.SortOrder
-  is_overview?: Prisma.SortOrder
+  show_on_dashboard?: Prisma.SortOrder
+  dashboard_sort_order?: Prisma.SortOrder
   status?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
@@ -440,12 +496,17 @@ export type chartsCountOrderByAggregateInput = {
   updated_at?: Prisma.SortOrder
 }
 
+export type chartsAvgOrderByAggregateInput = {
+  dashboard_sort_order?: Prisma.SortOrder
+}
+
 export type chartsMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   owner_id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  is_overview?: Prisma.SortOrder
+  show_on_dashboard?: Prisma.SortOrder
+  dashboard_sort_order?: Prisma.SortOrder
   status?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
@@ -458,12 +519,17 @@ export type chartsMinOrderByAggregateInput = {
   owner_id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  is_overview?: Prisma.SortOrder
+  show_on_dashboard?: Prisma.SortOrder
+  dashboard_sort_order?: Prisma.SortOrder
   status?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_by?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
+}
+
+export type chartsSumOrderByAggregateInput = {
+  dashboard_sort_order?: Prisma.SortOrder
 }
 
 export type ChartsScalarRelationFilter = {
@@ -632,7 +698,8 @@ export type chartsCreateWithoutOwnerInput = {
   title: string
   description?: string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: number
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
@@ -647,7 +714,8 @@ export type chartsUncheckedCreateWithoutOwnerInput = {
   title: string
   description?: string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: number
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -672,7 +740,8 @@ export type chartsCreateWithoutCreated_by_userInput = {
   title: string
   description?: string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: number
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
@@ -688,7 +757,8 @@ export type chartsUncheckedCreateWithoutCreated_by_userInput = {
   title: string
   description?: string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: number
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_by?: string | null
@@ -712,7 +782,8 @@ export type chartsCreateWithoutUpdated_by_userInput = {
   title: string
   description?: string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: number
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
@@ -728,7 +799,8 @@ export type chartsUncheckedCreateWithoutUpdated_by_userInput = {
   title: string
   description?: string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: number
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -772,7 +844,8 @@ export type chartsScalarWhereInput = {
   title?: Prisma.StringFilter<"charts"> | string
   description?: Prisma.StringNullableFilter<"charts"> | string | null
   board_json?: Prisma.JsonFilter<"charts">
-  is_overview?: Prisma.BoolFilter<"charts"> | boolean
+  show_on_dashboard?: Prisma.BoolFilter<"charts"> | boolean
+  dashboard_sort_order?: Prisma.IntFilter<"charts"> | number
   status?: Prisma.EnumRecordStatusFilter<"charts"> | $Enums.RecordStatus
   created_by?: Prisma.UuidNullableFilter<"charts"> | string | null
   created_at?: Prisma.DateTimeFilter<"charts"> | Date | string
@@ -817,7 +890,8 @@ export type chartsCreateWithoutSaved_viewsInput = {
   title: string
   description?: string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: number
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
@@ -833,7 +907,8 @@ export type chartsUncheckedCreateWithoutSaved_viewsInput = {
   title: string
   description?: string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: number
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -863,7 +938,8 @@ export type chartsUpdateWithoutSaved_viewsInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -879,7 +955,8 @@ export type chartsUncheckedUpdateWithoutSaved_viewsInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -893,7 +970,8 @@ export type chartsCreateWithoutSharesInput = {
   title: string
   description?: string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: number
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
@@ -909,7 +987,8 @@ export type chartsUncheckedCreateWithoutSharesInput = {
   title: string
   description?: string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: number
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -939,7 +1018,8 @@ export type chartsUpdateWithoutSharesInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -955,7 +1035,8 @@ export type chartsUncheckedUpdateWithoutSharesInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -969,7 +1050,8 @@ export type chartsCreateManyOwnerInput = {
   title: string
   description?: string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: number
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -983,7 +1065,8 @@ export type chartsCreateManyCreated_by_userInput = {
   title: string
   description?: string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: number
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_by?: string | null
@@ -996,7 +1079,8 @@ export type chartsCreateManyUpdated_by_userInput = {
   title: string
   description?: string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: number
   status?: $Enums.RecordStatus
   created_by?: string | null
   created_at?: Date | string
@@ -1008,7 +1092,8 @@ export type chartsUpdateWithoutOwnerInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1023,7 +1108,8 @@ export type chartsUncheckedUpdateWithoutOwnerInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1038,7 +1124,8 @@ export type chartsUncheckedUpdateManyWithoutOwnerInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1051,7 +1138,8 @@ export type chartsUpdateWithoutCreated_by_userInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1067,7 +1155,8 @@ export type chartsUncheckedUpdateWithoutCreated_by_userInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1082,7 +1171,8 @@ export type chartsUncheckedUpdateManyWithoutCreated_by_userInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1094,7 +1184,8 @@ export type chartsUpdateWithoutUpdated_by_userInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1110,7 +1201,8 @@ export type chartsUncheckedUpdateWithoutUpdated_by_userInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1125,7 +1217,8 @@ export type chartsUncheckedUpdateManyWithoutUpdated_by_userInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   board_json?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  is_overview?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  show_on_dashboard?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dashboard_sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1178,7 +1271,8 @@ export type chartsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   title?: boolean
   description?: boolean
   board_json?: boolean
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: boolean
   status?: boolean
   created_by?: boolean
   created_at?: boolean
@@ -1198,7 +1292,8 @@ export type chartsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   title?: boolean
   description?: boolean
   board_json?: boolean
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: boolean
   status?: boolean
   created_by?: boolean
   created_at?: boolean
@@ -1215,7 +1310,8 @@ export type chartsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   title?: boolean
   description?: boolean
   board_json?: boolean
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: boolean
   status?: boolean
   created_by?: boolean
   created_at?: boolean
@@ -1232,7 +1328,8 @@ export type chartsSelectScalar = {
   title?: boolean
   description?: boolean
   board_json?: boolean
-  is_overview?: boolean
+  show_on_dashboard?: boolean
+  dashboard_sort_order?: boolean
   status?: boolean
   created_by?: boolean
   created_at?: boolean
@@ -1240,7 +1337,7 @@ export type chartsSelectScalar = {
   updated_at?: boolean
 }
 
-export type chartsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "owner_id" | "title" | "description" | "board_json" | "is_overview" | "status" | "created_by" | "created_at" | "updated_by" | "updated_at", ExtArgs["result"]["charts"]>
+export type chartsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "owner_id" | "title" | "description" | "board_json" | "show_on_dashboard" | "dashboard_sort_order" | "status" | "created_by" | "created_at" | "updated_by" | "updated_at", ExtArgs["result"]["charts"]>
 export type chartsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   created_by_user?: boolean | Prisma.charts$created_by_userArgs<ExtArgs>
@@ -1275,7 +1372,14 @@ export type $chartsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     title: string
     description: string | null
     board_json: runtime.JsonValue
-    is_overview: boolean
+    /**
+     * Pin to Dashboard Overview slider (many per owner; replaces is_overview).
+     */
+    show_on_dashboard: boolean
+    /**
+     * Lower values appear earlier in the Overview slider.
+     */
+    dashboard_sort_order: number
     status: $Enums.RecordStatus
     created_by: string | null
     created_at: Date
@@ -1714,7 +1818,8 @@ export interface chartsFieldRefs {
   readonly title: Prisma.FieldRef<"charts", 'String'>
   readonly description: Prisma.FieldRef<"charts", 'String'>
   readonly board_json: Prisma.FieldRef<"charts", 'Json'>
-  readonly is_overview: Prisma.FieldRef<"charts", 'Boolean'>
+  readonly show_on_dashboard: Prisma.FieldRef<"charts", 'Boolean'>
+  readonly dashboard_sort_order: Prisma.FieldRef<"charts", 'Int'>
   readonly status: Prisma.FieldRef<"charts", 'RecordStatus'>
   readonly created_by: Prisma.FieldRef<"charts", 'String'>
   readonly created_at: Prisma.FieldRef<"charts", 'DateTime'>

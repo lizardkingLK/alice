@@ -53,4 +53,18 @@ describe('ChartsStatusGroupedTable presence', () => {
       within(screen.getByTitle('Offline Owner')).queryByLabelText('Online')
     ).not.toBeInTheDocument();
   });
+
+  it('shows State column with legacy status label when no workflow', () => {
+    render(
+      <ChartsStatusGroupedTable
+        workItems={[item('state-item-id', 'user-id', 'Owner')]}
+        visibleColumns={['state']}
+      />
+    );
+
+    expect(
+      screen.getByRole('columnheader', { name: 'State' })
+    ).toBeInTheDocument();
+    expect(screen.getAllByText('New').length).toBeGreaterThan(0);
+  });
 });

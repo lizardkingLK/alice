@@ -347,10 +347,11 @@ export type Database = {
           board_json: Json
           created_at: string
           created_by: string | null
+          dashboard_sort_order: number
           description: string | null
           id: string
-          is_overview: boolean
           owner_id: string
+          show_on_dashboard: boolean
           status: Database["public"]["Enums"]["RecordStatus"]
           title: string
           updated_at: string
@@ -360,10 +361,11 @@ export type Database = {
           board_json?: Json
           created_at?: string
           created_by?: string | null
+          dashboard_sort_order?: number
           description?: string | null
           id?: string
-          is_overview?: boolean
           owner_id: string
+          show_on_dashboard?: boolean
           status?: Database["public"]["Enums"]["RecordStatus"]
           title: string
           updated_at: string
@@ -373,10 +375,11 @@ export type Database = {
           board_json?: Json
           created_at?: string
           created_by?: string | null
+          dashboard_sort_order?: number
           description?: string | null
           id?: string
-          is_overview?: boolean
           owner_id?: string
+          show_on_dashboard?: boolean
           status?: Database["public"]["Enums"]["RecordStatus"]
           title?: string
           updated_at?: string
@@ -1115,6 +1118,48 @@ export type Database = {
           },
         ]
       }
+      sprint_burndown_rollups: {
+        Row: {
+          bucket_date: string
+          estimated_total: number
+          project_id: string
+          remaining: number | null
+          spent: number
+          sprint_id: string
+        }
+        Insert: {
+          bucket_date: string
+          estimated_total: number
+          project_id: string
+          remaining?: number | null
+          spent?: number
+          sprint_id: string
+        }
+        Update: {
+          bucket_date?: string
+          estimated_total?: number
+          project_id?: string
+          remaining?: number | null
+          spent?: number
+          sprint_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sprint_burndown_rollups_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sprint_burndown_rollups_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "sprints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sprints: {
         Row: {
           created_at: string
@@ -1690,6 +1735,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      rebuild_sprint_burndown_rollups: {
+        Args: { p_sprint_id: string }
+        Returns: undefined
       }
       work_item_chart_category_from_status: {
         Args: { p_status: Database["public"]["Enums"]["WorkItemStatus"] }

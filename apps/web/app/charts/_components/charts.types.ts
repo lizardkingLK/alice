@@ -46,7 +46,7 @@ export type ChartWidgetCatalogItem = {
 export type ChartWidgetViewMode = 'chart' | 'table' | 'split';
 
 /** Chart family subtype for Chart widgets (default donut matches today’s wheel). */
-export type ChartPieVariant = 'pie' | 'donut' | 'bar';
+export type ChartPieVariant = 'pie' | 'donut' | 'bar' | 'column';
 
 /** Shared persist callbacks used by widget card + config dialog. */
 export type ChartsWidgetFiltersChangeHandler = (
@@ -81,6 +81,11 @@ export type ChartBoardWidgetInstance = {
   readonly typeId: ChartWidgetTypeId;
   /** User-renamed label; falls back to catalog title when unset. */
   readonly title?: string;
+  /**
+   * Optional blurb for the title tooltip / Save option dialog.
+   * When unset, UI falls back to the default display title.
+   */
+  readonly description?: string;
   /** Applied Advanced/Quick filters for chart widgets (local board JSON). */
   readonly filters?: ChartsWidgetFilterDraft;
   /** Chart / Table / Split — fullscreen preview only; canvas always shows the pie. */
@@ -109,7 +114,7 @@ export type ChartBoardWidgetInstance = {
   readonly showEmptySlices?: boolean;
   /**
    * Drilldown table columns to show.
-   * When unset, defaults to Task / Owner / Status / Type / Priority
+   * When unset, defaults to Task / Owner / Status / State / Type / Priority
    * (Project and Sprint stay optional / off).
    */
   readonly visibleTableColumns?: readonly ChartsTableColumnId[];
@@ -129,6 +134,7 @@ export const CHARTS_TABLE_COLUMN_IDS = [
   'task',
   'owner',
   'status',
+  'state',
   'type',
   'priority',
   'project',
@@ -140,12 +146,13 @@ export type ChartsTableColumnId = (typeof CHARTS_TABLE_COLUMN_IDS)[number];
 
 /** Columns checked by default in widget settings (and when unset on a widget). */
 export const DEFAULT_CHARTS_VISIBLE_TABLE_COLUMNS: readonly ChartsTableColumnId[] =
-  ['task', 'owner', 'status', 'type', 'priority', 'actions'];
+  ['task', 'owner', 'status', 'state', 'type', 'priority', 'actions'];
 
 export const CHARTS_TABLE_COLUMN_LABELS: Record<ChartsTableColumnId, string> = {
   task: 'Task',
   owner: 'Owner',
   status: 'Status',
+  state: 'State',
   type: 'Type',
   priority: 'Priority',
   project: 'Project',
@@ -168,7 +175,10 @@ export type ChartWorkspaceRecord = {
   readonly title: string;
   readonly description: string | null;
   readonly status: 'active' | 'archived';
-  readonly isOverview: boolean;
+  /** Pin on Dashboard Overview slider. */
+  readonly showOnDashboard: boolean;
+  /** Lower values appear earlier on the Overview slider. */
+  readonly dashboardSortOrder: number;
   readonly updatedAt: string;
   /** Owner vs shared ACL; defaults to mine. */
   readonly ownership?: 'mine' | 'shared';

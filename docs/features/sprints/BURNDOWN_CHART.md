@@ -339,10 +339,29 @@ tickFormatter={(iso) =>
 
 ---
 
-## 8. Related docs
+## 8. Charts workspace burndown (next)
+
+Dashboard overview already consumes live `computeBurndown` / `GET /api/sprints/:id/burndown`
+and shows **Project · Sprint** context labels in the widget header
+(`BurndownScopeLabels`, driven by board defaults).
+**Charts** boards will add Burndown / Data-over-time widgets on a dedicated
+`sprint_burndown_rollups` table (scaling-ready reads), reusing those labels.
+
+Plan and steps (burndown only; nested charts blocked on open questions):
+
+- [CHARTS_AGGREGATION.md — Charts Burndown widget](../dashboard/CHARTS_AGGREGATION.md#charts-burndown-widget-next-implementation)
+- Product surface: [CHARTS.md](../dashboard/CHARTS.md#burndown-widget-next)
+
+Do not change the domain algorithm here without updating both this doc and the
+shared `packages/types/src/sprint-burndown.ts` implementation.
+
+---
+
+## 9. Related docs
 
 - [Sprint feature overview](./README.md)
 - [Dashboard feature overview](../dashboard/README.md)
+- [Charts aggregation](../dashboard/CHARTS_AGGREGATION.md)
 - [Work items](../work-items/)
 - [TRD](../../architecture/TRD.md) — data model reference
 - DB schema: `packages/db/prisma/schema.prisma`

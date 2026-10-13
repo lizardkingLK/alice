@@ -33,6 +33,8 @@ export interface RawSearchParams {
   showPopup?: string;
   /** Integration identifier to open in settings integrations view (e.g. `github`). */
   integration?: string | string[];
+  /** Dashboard: show legacy mock overview grid (`1` / `true`). */
+  mockOverview?: string;
 }
 
 export interface ParsedStandardParams {

@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { LayoutItem } from 'react-grid-layout';
 import {
@@ -12,7 +11,12 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { Button } from '@repo/ui/components/ui/button';
-import { BarChart3, Layers } from '@repo/ui/lib/icons';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@repo/ui/components/ui/tooltip';
+import { BarChart3, Info, Loader2, GitFork } from '@repo/ui/lib/icons';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
@@ -23,17 +27,22 @@ import {
   duplicateChartWidget,
   reconcileChartBoardLayout,
   removeChartWidget,
-  renameChartWidget,
+  saveChartWidgetMeta,
   updateChartWidgetFilters,
   updateChartWidgetLabelField,
   updateChartWidgetPieVariant,
   updateChartWidgetViewMode,
   updateChartWidgetDisplaySettings,
 } from '@/app/charts/_components/charts-board-canvas';
-import { ChartsSaveWorkspaceDialog } from '@/app/charts/_components/charts-save-workspace-dialog';
+import {
+  ChartsSaveWorkspaceDialog,
+  type ChartsSaveWorkspacePayload,
+} from '@/app/charts/_components/charts-save-workspace-dialog';
 import { ChartsWorkspaceActionsMenu } from '@/app/charts/_components/charts-workspace-actions-menu';
 import { ChartsWorkspaceFilterDialog } from '@/app/charts/_components/charts-workspace-filter-dialog';
 import { isChartWidgetAvailable } from '@/app/charts/_components/charts-widget-catalog';
+import { isBurndownWidgetType } from '@/app/charts/_helpers/charts-burndown-widget';
+import { resolveChartsDescription } from '@/app/charts/_helpers/charts-description';
 import type {
   ChartBoardWidgetInstance,
   ChartPieVariant,
@@ -66,6 +75,7 @@ import {
   archiveChartWorkspace,
   createChartWorkspaceOnApi,
   deleteChartWorkspace,
+  forkChartWorkspaceOnApi,
   leaveSharedChartWorkspace,
   restoreChartWorkspace,
   syncChartWorkspaceToApi,
@@ -117,7 +127,18 @@ export function ChartsWorkspace({
   const [deleteKind, setDeleteKind] = useState<'owned' | 'share' | null>(null);
   const [deletePending, setDeletePending] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [savingCount, setSavingCount] = useState(0);
   const deleteInFlightRef = useRef(false);
+  const isSaving = savingCount > 0;
+
+  const runWorkspaceSync = useCallback(async (next: ChartWorkspaceRecord) => {
+    setSavingCount((count) => count + 1);
+    try {
+      await syncChartWorkspaceToApi(next);
+    } finally {
+      setSavingCount((count) => Math.max(0, count - 1));
+    }
+  }, []);
 
   const { savedPreference, insertPreference, saveDefaults } =
     useChartsWorkspaceDefaults({
@@ -152,9 +173,9 @@ export function ChartsWorkspace({
         layout: reconciledLayout,
       };
       setWorkspace(repaired);
-      syncChartWorkspaceToApi(repaired).catch(() => {});
+      runWorkspaceSync(repaired).catch(() => {});
     }
-  }, [initialWorkspace]);
+  }, [initialWorkspace, runWorkspaceSync]);
 
   const persistBoard = useCallback(
     (nextInstances: ChartBoardWidgetInstance[], nextLayout: LayoutItem[]) => {
@@ -168,11 +189,11 @@ export function ChartsWorkspace({
           layout: nextLayout,
           updatedAt: new Date().toISOString(),
         };
-        syncChartWorkspaceToApi(updated).catch(() => {});
+        runWorkspaceSync(updated).catch(() => {});
         return updated;
       });
     },
-    []
+    [runWorkspaceSync]
   );
 
   const commitBoard = useCallback(
@@ -206,7 +227,7 @@ export function ChartsWorkspace({
         return;
       }
       const filters =
-        typeId === 'chart'
+        typeId === 'chart' || isBurndownWidgetType(typeId)
           ? createChartWidgetFiltersFromDefaults(insertPreference)
           : undefined;
       commitBoard(
@@ -222,13 +243,31 @@ export function ChartsWorkspace({
     setCreateDialogOpen(true);
   }, []);
 
+  const handleForkWorkspace = useCallback(async () => {
+    setActionError(null);
+    try {
+      const forked = await forkChartWorkspaceOnApi({
+        chartId: workspaceId,
+        viewerId: currentUserId,
+      });
+      router.push(`/charts/${forked.id}`);
+    } catch (err) {
+      if (isSessionExpiredError(err)) {
+        return;
+      }
+      setActionError(
+        err instanceof Error ? err.message : 'Failed to fork workspace'
+      );
+    }
+  }, [currentUserId, router, workspaceId]);
+
   const handleCreateWorkspace = useCallback(
-    async (payload: { title: string; isOverview: boolean }) => {
+    async (payload: ChartsSaveWorkspacePayload) => {
       setActionError(null);
       try {
         const created = await createChartWorkspaceOnApi({
           title: payload.title,
-          isOverview: payload.isOverview,
+          description: payload.description,
           viewerId: currentUserId,
         });
         router.push(`/charts/${created.id}`);
@@ -246,7 +285,7 @@ export function ChartsWorkspace({
   );
 
   const handleSaveWorkspace = useCallback(
-    (payload: { title: string; isOverview: boolean }) => {
+    (payload: ChartsSaveWorkspacePayload) => {
       setWorkspace((previous) => {
         if (!previous) {
           return previous;
@@ -254,14 +293,14 @@ export function ChartsWorkspace({
         const updated: ChartWorkspaceRecord = {
           ...previous,
           title: payload.title.trim() || previous.title,
-          isOverview: payload.isOverview,
+          description: payload.description,
           updatedAt: new Date().toISOString(),
         };
-        syncChartWorkspaceToApi(updated).catch(() => {});
+        runWorkspaceSync(updated).catch(() => {});
         return updated;
       });
     },
-    []
+    [runWorkspaceSync]
   );
 
   const handleArchiveWorkspace = useCallback(async () => {
@@ -363,9 +402,12 @@ export function ChartsWorkspace({
     [commitBoard, instances, layout]
   );
 
-  const handleRenameWidget = useCallback(
-    (instanceId: string, title: string) => {
-      commitInstances(renameChartWidget(instanceId, title, instances));
+  const handleSaveWidgetMeta = useCallback(
+    (
+      instanceId: string,
+      meta: { readonly title: string; readonly description: string | null }
+    ) => {
+      commitInstances(saveChartWidgetMeta(instanceId, meta, instances));
     },
     [commitInstances, instances]
   );
@@ -462,12 +504,6 @@ export function ChartsWorkspace({
       ) : null}
       <div className="flex shrink-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          <Button asChild variant="outline" size="sm" className="h-9 gap-2">
-            <Link href="/charts">
-              <Layers className="size-3.5" data-icon="inline-start" />
-              All workspaces
-            </Link>
-          </Button>
           <ChartsWorkspaceFilterDialog
             projects={projects}
             sprints={sprints}
@@ -477,6 +513,28 @@ export function ChartsWorkspace({
         </div>
 
         <div className="flex flex-wrap items-center gap-3 self-start">
+          {isSaving ? (
+            <div
+              className="text-muted-foreground flex items-center gap-2 text-sm"
+              role="status"
+              aria-live="polite"
+            >
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+              <span>Saving…</span>
+            </div>
+          ) : null}
+          {(workspace?.ownership ?? 'mine') === 'shared' ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 cursor-pointer gap-2"
+              onClick={() => void handleForkWorkspace()}
+            >
+              <GitFork className="size-3.5" data-icon="inline-start" />
+              Fork
+            </Button>
+          ) : null}
           <ChartsAddMenu
             onSelectWidget={handleSelectWidget}
             onAddWorkspace={handleAddWorkspace}
@@ -493,6 +551,23 @@ export function ChartsWorkspace({
                 <TruncatedText className="min-w-0">
                   {workspace?.title ?? 'Charts'}
                 </TruncatedText>
+                <Tooltip delayDuration={300}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground inline-flex shrink-0 cursor-pointer"
+                      aria-label="Workspace description"
+                    >
+                      <Info className="size-4" aria-hidden />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs text-left">
+                    {resolveChartsDescription({
+                      description: workspace?.description,
+                      title: workspace?.title,
+                    })}
+                  </TooltipContent>
+                </Tooltip>
               </CardTitle>
               <CardDescription>
                 Customize your board by arranging widgets. Changes sync to your
@@ -539,7 +614,7 @@ export function ChartsWorkspace({
             onLayoutChange={handleLayoutChange}
             onRemoveWidget={handleRemoveWidget}
             onDuplicateWidget={handleDuplicateWidget}
-            onRenameWidget={handleRenameWidget}
+            onRenameWidget={handleSaveWidgetMeta}
             onFiltersChange={handleFiltersChange}
             onViewModeChange={handleViewModeChange}
             onPieVariantChange={handlePieVariantChange}
@@ -555,7 +630,7 @@ export function ChartsWorkspace({
         onOpenChange={setCreateDialogOpen}
         mode="create"
         defaultTitle={createDefaultTitle}
-        initialIsOverview={false}
+        aliceContext={{ widgetCount: instances.length }}
         onSave={handleCreateWorkspace}
       />
       <ChartsSaveWorkspaceDialog
@@ -563,7 +638,15 @@ export function ChartsWorkspace({
         onOpenChange={setSaveDialogOpen}
         mode="save"
         defaultTitle={saveDefaultTitle}
-        initialIsOverview={workspace?.isOverview ?? false}
+        defaultDescription={workspace?.description ?? null}
+        aliceContext={{
+          widgets: instances.map((item) => ({
+            typeId: item.typeId,
+            title: item.title ?? null,
+            labelField: item.labelField ?? null,
+            pieVariant: item.pieVariant ?? null,
+          })),
+        }}
         onSave={handleSaveWorkspace}
       />
       {deleteKind ? (

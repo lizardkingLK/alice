@@ -25,191 +25,41 @@ import type {
   ChartPieVariant,
   ChartsLabelFieldId,
   ChartWidgetDisplaySettingsPatch,
-  ChartWidgetTypeId,
   ChartWidgetViewMode,
 } from '@/app/charts/_components/charts.types';
 import type {
+  ChartsProjectOption,
   ChartsSampleMember,
-  ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
-import { resolveChartAnalyticsProjectId } from '@/app/charts/_helpers/charts-analytics.ui';
+import {
+  chartLayoutsEqual,
+  reconcileChartBoardLayout,
+} from '@/app/charts/_helpers/charts-board-layout';
+import { resolveFocusedSliceKey } from '@/app/charts/_helpers/charts-board-widget-fields';
+import { defaultTitleForChartWidgetType } from '@/app/charts/_helpers/charts-burndown-widget';
 import 'react-grid-layout/css/styles.css';
 import '@/app/dashboard/_components/dashboard-grid.css';
 
-/**
- * Older board JSON stored status focus as `focusedStatus`.
- * Prefer `focusedSliceKey` everywhere going forward.
- */
-function resolveFocusedSliceKey(source: {
-  readonly focusedSliceKey?: string;
-  readonly focusedStatus?: string;
-}): string | undefined {
-  return source.focusedSliceKey ?? source.focusedStatus;
-}
-
-const DEFAULT_SIZE = {
-  w: 4,
-  h: 5,
-  minW: 2,
-  minH: 3,
-} as const;
-
-/** Pie / chart widgets need a medium footprint so the viz stays readable. */
-const CHART_TYPE_SIZE = {
-  w: 5,
-  h: 6,
-  minW: 3,
-  minH: 4,
-} as const;
-
-export function layoutSizeForWidgetType(typeId: ChartWidgetTypeId): {
-  readonly w: number;
-  readonly h: number;
-  readonly minW: number;
-  readonly minH: number;
-} {
-  if (typeId === 'chart') {
-    return CHART_TYPE_SIZE;
-  }
-  return DEFAULT_SIZE;
-}
-
-export function createChartWidgetInstanceId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID();
-  }
-  return `widget-${Date.now()}`;
-}
-
-function layoutItemsCollide(
-  a: Pick<LayoutItem, 'x' | 'y' | 'w' | 'h'>,
-  b: Pick<LayoutItem, 'x' | 'y' | 'w' | 'h'>
-): boolean {
-  return !(
-    a.x + a.w <= b.x ||
-    b.x + b.w <= a.x ||
-    a.y + a.h <= b.y ||
-    b.y + b.h <= a.y
-  );
-}
-
-function findOpenLayoutSlot(
-  existing: LayoutItem[],
-  size: Pick<LayoutItem, 'w' | 'h'>,
-  cols: number
-): { x: number; y: number } {
-  if (existing.length === 0) {
-    return { x: 0, y: 0 };
-  }
-
-  const occupiedHeight = existing.reduce(
-    (acc, item) => Math.max(acc, item.y + item.h),
-    0
-  );
-  // Scan existing rows (and one row past the bottom) for the first free fit.
-  const maxScanY = occupiedHeight;
-
-  for (let y = 0; y <= maxScanY; y += 1) {
-    for (let x = 0; x <= cols - size.w; x += 1) {
-      const candidate = { x, y, w: size.w, h: size.h };
-      const collides = existing.some((item) =>
-        layoutItemsCollide(candidate, item)
-      );
-      if (!collides) {
-        return { x, y };
-      }
-    }
-  }
-
-  return { x: 0, y: occupiedHeight };
-}
-
-export function nextChartLayoutItem(
-  instanceId: string,
-  existing: LayoutItem[],
-  typeId: ChartWidgetTypeId = 'chart',
-  sizeOverride?: Partial<Pick<LayoutItem, 'w' | 'h' | 'minW' | 'minH'>>
-): LayoutItem {
-  const defaults = layoutSizeForWidgetType(typeId);
-  const size = {
-    w: sizeOverride?.w ?? defaults.w,
-    h: sizeOverride?.h ?? defaults.h,
-    minW: sizeOverride?.minW ?? defaults.minW,
-    minH: sizeOverride?.minH ?? defaults.minH,
-  };
-  const cols = DASHBOARD_GRID_CONFIG.cols;
-  const slot = findOpenLayoutSlot(existing, size, cols);
-
-  return {
-    i: instanceId,
-    x: slot.x,
-    y: slot.y,
-    w: size.w,
-    h: size.h,
-    minW: size.minW,
-    minH: size.minH,
-  };
-}
-
-/**
- * Ensure every widget instance has a layout item. Repairs boards after a
- * spurious react-grid-layout `onLayoutChange([])` (common when adding the
- * first widget) or cloud hydrate with mismatched board_json.
- */
-export function reconcileChartBoardLayout(
-  instances: readonly ChartBoardWidgetInstance[],
-  layout: readonly LayoutItem[]
-): LayoutItem[] {
-  if (instances.length === 0) {
-    return [];
-  }
-
-  const layoutById = new Map<string, LayoutItem>();
-  for (const item of layout) {
-    if (typeof item.i === 'string') {
-      layoutById.set(item.i, item);
-    }
-  }
-
-  const next: LayoutItem[] = [];
-  for (const instance of instances) {
-    const stored = layoutById.get(instance.instanceId);
-    if (stored) {
-      const size = layoutSizeForWidgetType(instance.typeId);
-      next.push({
-        ...stored,
-        minW: size.minW,
-        minH: size.minH,
-      });
-      continue;
-    }
-    next.push(nextChartLayoutItem(instance.instanceId, next, instance.typeId));
-  }
-  return next;
-}
-
-function chartLayoutsEqual(
-  left: readonly LayoutItem[],
-  right: readonly LayoutItem[]
-): boolean {
-  if (left.length !== right.length) {
-    return false;
-  }
-  for (let index = 0; index < left.length; index += 1) {
-    const a = left[index]!;
-    const b = right[index]!;
-    if (
-      a.i !== b.i ||
-      a.x !== b.x ||
-      a.y !== b.y ||
-      a.w !== b.w ||
-      a.h !== b.h
-    ) {
-      return false;
-    }
-  }
-  return true;
-}
+export {
+  createChartWidgetInstanceId,
+  layoutSizeForWidgetType,
+  nextChartLayoutItem,
+  reconcileChartBoardLayout,
+} from '@/app/charts/_helpers/charts-board-layout';
+export {
+  updateChartWidgetDisplaySettings,
+  updateChartWidgetFilters,
+  updateChartWidgetLabelField,
+  updateChartWidgetPieVariant,
+  updateChartWidgetViewMode,
+} from '@/app/charts/_helpers/charts-board-widget-fields';
+export {
+  appendChartWidget,
+  duplicateChartWidget,
+  removeChartWidget,
+  renameChartWidget,
+  saveChartWidgetMeta,
+} from '@/app/charts/_helpers/charts-board-widget-ops';
 
 type ChartsBoardCanvasProps = {
   readonly instances: readonly ChartBoardWidgetInstance[];
@@ -220,8 +70,12 @@ type ChartsBoardCanvasProps = {
   readonly onRemoveWidget: (instanceId: string) => void;
   // eslint-disable-next-line no-unused-vars -- duplicate instance
   readonly onDuplicateWidget: (instanceId: string) => void;
-  // eslint-disable-next-line no-unused-vars -- rename instance
-  readonly onRenameWidget: (instanceId: string, title: string) => void;
+  readonly onRenameWidget: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    meta: { readonly title: string; readonly description: string | null }
+  ) => void;
   readonly onFiltersChange: (
     // eslint-disable-next-line no-unused-vars
     instanceId: string,
@@ -256,11 +110,8 @@ type ChartsBoardCanvasProps = {
   ) => void;
   readonly focusWidgetId?: string;
   readonly onFocusWidgetDismiss?: () => void;
-  /** Accessible projects for Chart widget filters / series. */
-  readonly accessibleProjects?: ReadonlyArray<{
-    readonly id: string;
-    readonly name: string;
-  }>;
+  /** Accessible projects for Chart widget filters / series / State labels. */
+  readonly accessibleProjects?: readonly ChartsProjectOption[];
   /** Active sprints for Chart widget sprint filter (project-scoped). */
   readonly accessibleSprints?: ReadonlyArray<{
     readonly id: string;
@@ -270,6 +121,9 @@ type ChartsBoardCanvasProps = {
   readonly assigneeMembers?: readonly ChartsSampleMember[];
   /** False until localStorage board JSON has been read on the client. */
   readonly hydrated?: boolean;
+  /** Dashboard Overview: hide mutate chrome; optionally lock layout. */
+  readonly overviewChrome?: boolean;
+  readonly layoutLocked?: boolean;
   readonly className?: string;
 };
 
@@ -291,6 +145,8 @@ export function ChartsBoardCanvas({
   accessibleSprints = [],
   assigneeMembers = [],
   hydrated = true,
+  overviewChrome = false,
+  layoutLocked = false,
   className,
 }: Readonly<ChartsBoardCanvasProps>) {
   const { stableWidth, containerRef, mounted, isSidebarSettling } =
@@ -379,6 +235,8 @@ export function ChartsBoardCanvas({
           accessibleProjects={accessibleProjects}
           accessibleSprints={accessibleSprints}
           assigneeMembers={assigneeMembers}
+          overviewChrome={overviewChrome}
+          layoutLocked={layoutLocked}
         />
       </div>
     </div>
@@ -405,6 +263,8 @@ function BoardCanvasBody({
   accessibleProjects = [],
   accessibleSprints = [],
   assigneeMembers = [],
+  overviewChrome = false,
+  layoutLocked = false,
 }: Readonly<{
   isEmpty: boolean;
   mounted: boolean;
@@ -423,8 +283,12 @@ function BoardCanvasBody({
   onRemoveWidget: (instanceId: string) => void;
   // eslint-disable-next-line no-unused-vars
   onDuplicateWidget: (instanceId: string) => void;
-  // eslint-disable-next-line no-unused-vars
-  onRenameWidget: (instanceId: string, title: string) => void;
+  onRenameWidget: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    meta: { readonly title: string; readonly description: string | null }
+  ) => void;
   onFiltersChange: (
     // eslint-disable-next-line no-unused-vars
     instanceId: string,
@@ -459,16 +323,15 @@ function BoardCanvasBody({
   ) => void;
   focusWidgetId?: string;
   onFocusWidgetDismiss?: () => void;
-  accessibleProjects?: ReadonlyArray<{
-    readonly id: string;
-    readonly name: string;
-  }>;
+  accessibleProjects?: readonly ChartsProjectOption[];
   accessibleSprints?: ReadonlyArray<{
     readonly id: string;
     readonly name: string;
     readonly projectId: string;
   }>;
   assigneeMembers?: readonly ChartsSampleMember[];
+  overviewChrome?: boolean;
+  layoutLocked?: boolean;
 }>) {
   const { dragSessionKey, onDragStart, onDragStop } =
     useCancelGridDragOnEscape(onLayoutChange);
@@ -509,8 +372,14 @@ function BoardCanvasBody({
       width={stableWidth}
       layout={layout}
       gridConfig={DASHBOARD_GRID_CONFIG}
-      dragConfig={DASHBOARD_DRAG_CONFIG}
-      resizeConfig={DASHBOARD_RESIZE_CONFIG}
+      dragConfig={{
+        ...DASHBOARD_DRAG_CONFIG,
+        enabled: !layoutLocked && DASHBOARD_DRAG_CONFIG.enabled,
+      }}
+      resizeConfig={{
+        ...DASHBOARD_RESIZE_CONFIG,
+        enabled: !layoutLocked && DASHBOARD_RESIZE_CONFIG.enabled,
+      }}
       onLayoutChange={onLayoutChange}
       onDragStart={onDragStart}
       onDragStop={onDragStop}
@@ -521,15 +390,16 @@ function BoardCanvasBody({
         const catalogTitle = meta?.title || 'Widget';
         const displayTitle =
           entry?.instance.title?.trim() ||
-          (entry?.instance.typeId === 'chart'
-            ? 'Tasks by status'
+          (entry?.instance.typeId
+            ? defaultTitleForChartWidgetType(entry.instance.typeId)
             : catalogTitle);
         return (
           <div key={item.i} className="dashboard-widget-root">
             <ChartsWidgetCard
               title={displayTitle}
               typeId={entry?.instance.typeId ?? 'chart'}
-              description={meta?.description}
+              description={entry?.instance.description}
+              catalogDescription={meta?.description}
               Icon={meta?.icon}
               filters={entry?.instance.filters}
               viewMode={entry?.instance.viewMode}
@@ -546,7 +416,7 @@ function BoardCanvasBody({
               assigneeMembers={assigneeMembers}
               onRemove={() => onRemoveWidget(item.i)}
               onDuplicate={() => onDuplicateWidget(item.i)}
-              onRename={(nextTitle) => onRenameWidget(item.i, nextTitle)}
+              onRename={(metaPayload) => onRenameWidget(item.i, metaPayload)}
               onFiltersChange={(nextFilters) =>
                 onFiltersChange(item.i, nextFilters)
               }
@@ -568,479 +438,11 @@ function BoardCanvasBody({
                   onFocusWidgetDismiss?.();
                 }
               }}
+              overviewChrome={overviewChrome}
             />
           </div>
         );
       })}
     </ReactGridLayout>
   );
-}
-
-/** Helper for parent: append a widget of the given type. */
-export function appendChartWidget(
-  typeId: ChartWidgetTypeId,
-  instances: ChartBoardWidgetInstance[],
-  layout: LayoutItem[],
-  options?: {
-    title?: string;
-    sizeOverride?: Partial<Pick<LayoutItem, 'w' | 'h' | 'minW' | 'minH'>>;
-    filters?: ChartsWidgetFilterDraft;
-  }
-): {
-  instances: ChartBoardWidgetInstance[];
-  layout: LayoutItem[];
-} {
-  const instanceId = createChartWidgetInstanceId();
-  const nextInstances = [
-    ...instances,
-    {
-      instanceId,
-      typeId,
-      ...(options?.title ? { title: options.title } : {}),
-      ...(options?.filters ? { filters: options.filters } : {}),
-    },
-  ];
-  const nextLayout = [
-    ...layout,
-    nextChartLayoutItem(instanceId, layout, typeId, options?.sizeOverride),
-  ];
-  return { instances: nextInstances, layout: nextLayout };
-}
-
-export function removeChartWidget(
-  instanceId: string,
-  instances: ChartBoardWidgetInstance[],
-  layout: LayoutItem[]
-): {
-  instances: ChartBoardWidgetInstance[];
-  layout: LayoutItem[];
-} {
-  return {
-    instances: instances.filter((item) => item.instanceId !== instanceId),
-    layout: layout.filter((item) => item.i !== instanceId),
-  };
-}
-
-export function duplicateChartWidget(
-  instanceId: string,
-  instances: ChartBoardWidgetInstance[],
-  layout: LayoutItem[]
-): {
-  instances: ChartBoardWidgetInstance[];
-  layout: LayoutItem[];
-} {
-  const source = instances.find((item) => item.instanceId === instanceId);
-  if (!source) {
-    return { instances, layout };
-  }
-
-  const catalogTitle = chartWidgetById(source.typeId)?.title;
-  const displayFallback =
-    source.typeId === 'chart' ? 'Tasks by status' : catalogTitle;
-  const baseTitle = source.title?.trim() || displayFallback || 'Widget';
-  const sourceLayout = layout.find((item) => item.i === instanceId);
-  const sizeOverride = sourceLayout
-    ? {
-        w: sourceLayout.w,
-        h: sourceLayout.h,
-        minW: sourceLayout.minW,
-        minH: sourceLayout.minH,
-      }
-    : undefined;
-
-  const next = appendChartWidget(source.typeId, instances, layout, {
-    title: `${baseTitle} (copy)`,
-    sizeOverride,
-  });
-  const copiedId = next.instances.at(-1)?.instanceId;
-  if (!copiedId) {
-    return next;
-  }
-
-  let nextInstances = next.instances;
-  if (source.filters) {
-    nextInstances = updateChartWidgetFilters(
-      copiedId,
-      source.filters,
-      nextInstances
-    );
-  }
-  const sourceFocus = resolveFocusedSliceKey(source);
-  if (source.viewMode || sourceFocus) {
-    nextInstances = updateChartWidgetViewMode(
-      copiedId,
-      source.viewMode ?? 'chart',
-      sourceFocus ?? null,
-      nextInstances
-    );
-  }
-  if (source.pieVariant && source.pieVariant !== 'donut') {
-    nextInstances = updateChartWidgetPieVariant(
-      copiedId,
-      source.pieVariant,
-      nextInstances
-    );
-  }
-  if (source.labelField && source.labelField !== 'category') {
-    nextInstances = updateChartWidgetLabelField(
-      copiedId,
-      source.labelField,
-      nextInstances
-    );
-  }
-  return { ...next, instances: nextInstances };
-}
-
-export function renameChartWidget(
-  instanceId: string,
-  title: string,
-  instances: ChartBoardWidgetInstance[]
-): ChartBoardWidgetInstance[] {
-  const trimmed = title.trim();
-  return instances.map((item) =>
-    item.instanceId === instanceId ? { ...item, title: trimmed } : item
-  );
-}
-
-type ChartInstanceFieldPatch = Partial<
-  Pick<
-    ChartBoardWidgetInstance,
-    | 'title'
-    | 'filters'
-    | 'viewMode'
-    | 'focusedSliceKey'
-    | 'pieVariant'
-    | 'labelField'
-    | 'showValueAs'
-    | 'sortSlicesBy'
-    | 'showEmptySlices'
-    | 'visibleTableColumns'
-    | 'sliceColors'
-  >
-> & {
-  readonly clearFilters?: boolean;
-  readonly clearFocusedSliceKey?: boolean;
-  readonly clearPieVariant?: boolean;
-  readonly clearLabelField?: boolean;
-  readonly clearShowValueAs?: boolean;
-  readonly clearSortSlicesBy?: boolean;
-  readonly clearShowEmptySlices?: boolean;
-  readonly clearVisibleTableColumns?: boolean;
-  readonly clearSliceColors?: boolean;
-};
-
-/** Persist a field only when set and not the omitted default. */
-function assignNonDefaultField<K extends keyof ChartBoardWidgetInstance>(
-  target: ChartBoardWidgetInstance,
-  key: K,
-  value: ChartBoardWidgetInstance[K] | undefined,
-  isOmittedDefault: boolean
-): void {
-  if (value == null || isOmittedDefault) {
-    return;
-  }
-  Object.assign(target, { [key]: value });
-}
-
-function assignUnlessCleared<K extends keyof ChartBoardWidgetInstance>(
-  target: ChartBoardWidgetInstance,
-  cleared: boolean | undefined,
-  key: K,
-  value: ChartBoardWidgetInstance[K] | undefined,
-  isOmittedDefault = false
-): void {
-  if (cleared) {
-    return;
-  }
-  assignNonDefaultField(target, key, value, isOmittedDefault);
-}
-
-function withInstanceFields(
-  item: ChartBoardWidgetInstance,
-  patch: ChartInstanceFieldPatch
-): ChartBoardWidgetInstance {
-  const next: ChartBoardWidgetInstance = {
-    instanceId: item.instanceId,
-    typeId: item.typeId,
-  };
-
-  const title = patch.title ?? item.title;
-  if (title) {
-    Object.assign(next, { title });
-  }
-
-  assignUnlessCleared(
-    next,
-    patch.clearFilters,
-    'filters',
-    patch.filters ?? item.filters
-  );
-
-  const viewMode = patch.viewMode ?? item.viewMode;
-  assignNonDefaultField(next, 'viewMode', viewMode, viewMode === 'chart');
-
-  assignUnlessCleared(
-    next,
-    patch.clearFocusedSliceKey,
-    'focusedSliceKey',
-    patch.focusedSliceKey ?? resolveFocusedSliceKey(item)
-  );
-
-  const pieVariant = patch.pieVariant ?? item.pieVariant;
-  assignUnlessCleared(
-    next,
-    patch.clearPieVariant,
-    'pieVariant',
-    pieVariant,
-    pieVariant === 'donut'
-  );
-
-  const labelField = patch.labelField ?? item.labelField;
-  assignUnlessCleared(
-    next,
-    patch.clearLabelField,
-    'labelField',
-    labelField,
-    labelField === 'category'
-  );
-
-  const showValueAs = patch.showValueAs ?? item.showValueAs;
-  assignUnlessCleared(
-    next,
-    patch.clearShowValueAs,
-    'showValueAs',
-    showValueAs,
-    showValueAs === 'percent'
-  );
-
-  const sortSlicesBy = patch.sortSlicesBy ?? item.sortSlicesBy;
-  assignUnlessCleared(
-    next,
-    patch.clearSortSlicesBy,
-    'sortSlicesBy',
-    sortSlicesBy,
-    sortSlicesBy === 'value_desc'
-  );
-
-  const showEmptySlices = patch.showEmptySlices ?? item.showEmptySlices;
-  assignUnlessCleared(
-    next,
-    patch.clearShowEmptySlices,
-    'showEmptySlices',
-    showEmptySlices,
-    showEmptySlices === false || showEmptySlices == null
-  );
-
-  const visibleTableColumns =
-    patch.visibleTableColumns ?? item.visibleTableColumns;
-  assignUnlessCleared(
-    next,
-    patch.clearVisibleTableColumns,
-    'visibleTableColumns',
-    visibleTableColumns
-  );
-
-  assignUnlessCleared(
-    next,
-    patch.clearSliceColors,
-    'sliceColors',
-    patch.sliceColors ?? item.sliceColors
-  );
-
-  return next;
-}
-
-export function updateChartWidgetFilters(
-  instanceId: string,
-  filters: ChartBoardWidgetInstance['filters'] | null,
-  instances: ChartBoardWidgetInstance[]
-): ChartBoardWidgetInstance[] {
-  return instances.map((item) => {
-    if (item.instanceId !== instanceId) {
-      return item;
-    }
-    const nextFilters = filters ?? null;
-    const projectId = resolveChartAnalyticsProjectId(nextFilters);
-    const clearStateLabel = item.labelField === 'state' && projectId === null;
-    if (!nextFilters) {
-      return withInstanceFields(item, {
-        clearFilters: true,
-        ...(clearStateLabel
-          ? {
-              clearLabelField: true,
-              clearFocusedSliceKey: true,
-              clearSliceColors: true,
-            }
-          : {}),
-      });
-    }
-    return withInstanceFields(item, {
-      filters: nextFilters,
-      ...(clearStateLabel
-        ? {
-            clearLabelField: true,
-            clearFocusedSliceKey: true,
-            clearSliceColors: true,
-          }
-        : {}),
-    });
-  });
-}
-
-export function updateChartWidgetViewMode(
-  instanceId: string,
-  viewMode: ChartWidgetViewMode,
-  focusedSliceKey: string | null | undefined,
-  instances: ChartBoardWidgetInstance[]
-): ChartBoardWidgetInstance[] {
-  return instances.map((item) => {
-    if (item.instanceId !== instanceId) {
-      return item;
-    }
-    return withInstanceFields(item, {
-      viewMode,
-      focusedSliceKey: focusedSliceKey ?? undefined,
-      clearFocusedSliceKey: focusedSliceKey == null,
-    });
-  });
-}
-
-export function updateChartWidgetPieVariant(
-  instanceId: string,
-  pieVariant: ChartPieVariant,
-  instances: ChartBoardWidgetInstance[]
-): ChartBoardWidgetInstance[] {
-  return instances.map((item) => {
-    if (item.instanceId !== instanceId) {
-      return item;
-    }
-    if (pieVariant === 'donut') {
-      return withInstanceFields(item, { clearPieVariant: true });
-    }
-    return withInstanceFields(item, { pieVariant });
-  });
-}
-
-export function updateChartWidgetLabelField(
-  instanceId: string,
-  labelField: ChartsLabelFieldId,
-  instances: ChartBoardWidgetInstance[]
-): ChartBoardWidgetInstance[] {
-  return instances.map((item) => {
-    if (item.instanceId !== instanceId) {
-      return item;
-    }
-    if (labelField === 'category') {
-      return withInstanceFields(item, {
-        clearLabelField: true,
-        clearFocusedSliceKey: true,
-        clearSliceColors: true,
-      });
-    }
-    return withInstanceFields(item, {
-      labelField,
-      clearFocusedSliceKey: true,
-      clearSliceColors: true,
-    });
-  });
-}
-
-export function updateChartWidgetDisplaySettings(
-  instanceId: string,
-  patch: ChartWidgetDisplaySettingsPatch,
-  instances: ChartBoardWidgetInstance[]
-): ChartBoardWidgetInstance[] {
-  return instances.map((item) => {
-    if (item.instanceId !== instanceId) {
-      return item;
-    }
-    return withInstanceFields(item, displaySettingsPatch(patch));
-  });
-}
-
-function displaySettingsPatch(
-  patch: ChartWidgetDisplaySettingsPatch
-): ChartInstanceFieldPatch {
-  const next: ChartInstanceFieldPatch = {};
-  applyShowValueAsPatch(patch, next);
-  applySortSlicesByPatch(patch, next);
-  applyShowEmptySlicesPatch(patch, next);
-  applyVisibleTableColumnsPatch(patch, next);
-  applySliceColorsPatch(patch, next);
-  return next;
-}
-
-function applyShowValueAsPatch(
-  patch: ChartWidgetDisplaySettingsPatch,
-  next: ChartInstanceFieldPatch
-): void {
-  if (patch.showValueAs === undefined) {
-    return;
-  }
-  if (patch.showValueAs === 'percent') {
-    Object.assign(next, { clearShowValueAs: true });
-    return;
-  }
-  Object.assign(next, { showValueAs: patch.showValueAs });
-}
-
-function applySortSlicesByPatch(
-  patch: ChartWidgetDisplaySettingsPatch,
-  next: ChartInstanceFieldPatch
-): void {
-  if (patch.sortSlicesBy === undefined) {
-    return;
-  }
-  if (patch.sortSlicesBy === 'value_desc') {
-    Object.assign(next, { clearSortSlicesBy: true });
-    return;
-  }
-  Object.assign(next, { sortSlicesBy: patch.sortSlicesBy });
-}
-
-function applyShowEmptySlicesPatch(
-  patch: ChartWidgetDisplaySettingsPatch,
-  next: ChartInstanceFieldPatch
-): void {
-  if (patch.showEmptySlices === undefined) {
-    return;
-  }
-  if (patch.showEmptySlices) {
-    Object.assign(next, { showEmptySlices: true });
-    return;
-  }
-  Object.assign(next, { clearShowEmptySlices: true });
-}
-
-function applyVisibleTableColumnsPatch(
-  patch: ChartWidgetDisplaySettingsPatch,
-  next: ChartInstanceFieldPatch
-): void {
-  if (patch.visibleTableColumns === undefined) {
-    return;
-  }
-  Object.assign(next, {
-    visibleTableColumns: patch.visibleTableColumns,
-    clearVisibleTableColumns: false,
-  });
-}
-
-function applySliceColorsPatch(
-  patch: ChartWidgetDisplaySettingsPatch,
-  next: ChartInstanceFieldPatch
-): void {
-  if (patch.sliceColors === undefined) {
-    return;
-  }
-  if (
-    patch.sliceColors == null ||
-    Object.keys(patch.sliceColors).length === 0
-  ) {
-    Object.assign(next, { clearSliceColors: true });
-    return;
-  }
-  Object.assign(next, {
-    sliceColors: patch.sliceColors,
-    clearSliceColors: false,
-  });
 }
