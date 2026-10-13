@@ -28,6 +28,14 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@repo/ui/components/ui/dialog';
+import {
   FolderPlus,
   FolderEdit,
   Loader2,
@@ -68,12 +76,19 @@ import {
   Step5Team,
   type Step5TeamProps,
 } from '@/app/projects/_components/project-form-team-step';
+import {
+  clearProjectCreationDraft,
+  PROJECT_CREATION_DRAFT_VERSION,
+  saveProjectCreationDraft,
+  type ProjectCreationDraft,
+} from '@/app/projects/_helpers/project-creation-draft-storage';
 
 interface ProjectFormProps {
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
   readonly projectToEdit?: Project | null;
   readonly users: User[];
+  readonly currentUserId?: string | null;
   // eslint-disable-next-line no-unused-vars
   readonly onProjectUpdated?: (project: Project) => void;
   // eslint-disable-next-line no-unused-vars
@@ -804,6 +819,67 @@ function getSubmitButtonContent(
   return isEditMode ? 'Save Changes' : 'Create Project';
 }
 
+function ProjectDraftCloseDialog({
+  open,
+  error,
+  onOpenChange,
+  onSave,
+  onDiscard,
+}: Readonly<{
+  open: boolean;
+  error: string | null;
+  // eslint-disable-next-line no-unused-vars
+  onOpenChange: (open: boolean) => void;
+  onSave: () => void;
+  onDiscard: () => void;
+}>) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent showCloseButton={false} dismissOnOutsideClick={false}>
+        <DialogHeader>
+          <DialogTitle>Save project draft?</DialogTitle>
+          <DialogDescription>
+            Save your progress to continue later, or discard your changes.
+          </DialogDescription>
+        </DialogHeader>
+
+        <FormAlertMessage message={error} isError />
+
+        <DialogFooter className="sm:justify-between">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Keep Editing
+          </Button>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <Button type="button" variant="destructive" onClick={onDiscard}>
+              Discard Changes
+            </Button>
+            <Button type="button" onClick={onSave}>
+              Save as Draft
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function getProjectFormCardClass(
+  isMaximized: boolean,
+  isCloseConfirmationOpen: boolean
+) {
+  return cn(
+    'border-border bg-card text-card-foreground relative border shadow-2xl transition-all duration-200',
+    isMaximized
+      ? 'fixed inset-0 flex h-screen w-screen flex-col gap-0 overflow-hidden rounded-none'
+      : 'overflow-visible',
+    isMaximized && (isCloseConfirmationOpen ? 'z-40' : 'z-60')
+  );
+}
+
 function ProjectFormNavButtons({
   step,
   finalStep,
@@ -908,6 +984,7 @@ export function ProjectForm({
   onSuccess,
   projectToEdit = null,
   users,
+  currentUserId,
   onProjectUpdated,
   onJiraImportToggle,
 }: Readonly<ProjectFormProps>) {
@@ -917,6 +994,8 @@ export function ProjectForm({
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isCloseConfirmationOpen, setIsCloseConfirmationOpen] = useState(false);
+  const [draftSaveError, setDraftSaveError] = useState<string | null>(null);
 
   const [name, setName] = useState(projectToEdit?.name ?? '');
   const [key, setKey] = useState(projectToEdit?.key ?? '');
@@ -977,6 +1056,129 @@ export function ProjectForm({
   const [teamMemberIds, setTeamMemberIds] = useState<string[]>([]);
 
   const finalStep = isEditMode ? 3 : 5;
+  const usesDefaultWorkItemTypes =
+    selectedWorkItemTypes.length === CANONICAL_HIERARCHY_ORDER.length &&
+    selectedWorkItemTypes.every(
+      (workItemType, index) => workItemType === CANONICAL_HIERARCHY_ORDER[index]
+    );
+  const hasCreateFormChanges =
+    !isEditMode &&
+    (step !== 1 ||
+      name !== '' ||
+      key !== '' ||
+      description !== '' ||
+      selectedOwnerId !== '' ||
+      status !== 'active' ||
+      (startDate !== '' && startDate !== getTodayDateString()) ||
+      endDate !== '' ||
+      !usesDefaultWorkItemTypes ||
+      importFromJira ||
+      jiraConnectionId !== '' ||
+      jiraProjectKey !== '' ||
+      enableGithub ||
+      githubOwner !== '' ||
+      githubRepoName !== '' ||
+      githubToken !== '' ||
+      createInitialSprint ||
+      sprintName !== '' ||
+      sprintGoal !== '' ||
+      sprintStartDate !== '' ||
+      sprintEndDate !== '' ||
+      createInitialTeam ||
+      teamName !== '' ||
+      teamDescription !== '' ||
+      teamManagerId !== '' ||
+      teamTechStack !== '' ||
+      teamMemberIds.length > 0);
+
+  const buildProjectCreationDraft = (): ProjectCreationDraft => ({
+    version: PROJECT_CREATION_DRAFT_VERSION,
+    currentStep: step as ProjectCreationDraft['currentStep'],
+    basicInfo: {
+      name,
+      key,
+      description,
+      selectedOwnerId,
+      status,
+      startDate,
+      endDate,
+      selectedWorkItemTypes,
+    },
+    imports: {
+      importFromJira,
+      jiraConnectionId,
+      jiraProjectKey,
+    },
+    sourceControl: {
+      enableGithub,
+      githubOwner,
+      githubRepoName,
+    },
+    sprint: {
+      createInitialSprint,
+      sprintName,
+      sprintGoal,
+      sprintStartDate,
+      sprintEndDate,
+    },
+    team: {
+      createInitialTeam,
+      teamName,
+      teamDescription,
+      teamManagerId,
+      teamTechStack,
+      teamMemberIds,
+    },
+  });
+
+  const handleCloseRequest = () => {
+    if (!onClose || isSubmitting) return;
+
+    if (isEditMode || isSuccess || !hasCreateFormChanges) {
+      onClose();
+      return;
+    }
+
+    setDraftSaveError(null);
+    setIsCloseConfirmationOpen(true);
+  };
+
+  const handleCloseDialogOpenChange = (open: boolean) => {
+    setIsCloseConfirmationOpen(open);
+    if (!open) {
+      setDraftSaveError(null);
+    }
+  };
+
+  const handleSaveDraft = () => {
+    if (!currentUserId?.trim()) {
+      setDraftSaveError('Unable to save the draft because no user was found.');
+      return;
+    }
+
+    const wasSaved = saveProjectCreationDraft(
+      currentUserId,
+      buildProjectCreationDraft()
+    );
+    if (!wasSaved) {
+      setDraftSaveError(
+        'Unable to save the draft. Please keep editing and try again.'
+      );
+      return;
+    }
+
+    setIsCloseConfirmationOpen(false);
+    setDraftSaveError(null);
+    onClose?.();
+  };
+
+  const handleDiscardChanges = () => {
+    clearProjectCreationDraft(currentUserId);
+    setIsCloseConfirmationOpen(false);
+    setDraftSaveError(null);
+    onClose?.();
+  };
+  const closeRequestHandler = onClose ? handleCloseRequest : undefined;
 
   const validateStep = (currentStep: number): boolean => {
     setMessage(null);
@@ -1239,17 +1441,12 @@ export function ProjectForm({
 
   return (
     <Card
-      className={cn(
-        'border-border bg-card text-card-foreground relative border shadow-2xl transition-all duration-200',
-        isMaximized
-          ? 'fixed inset-0 z-60 flex h-screen w-screen flex-col gap-0 overflow-hidden rounded-none'
-          : 'overflow-visible'
-      )}
+      className={getProjectFormCardClass(isMaximized, isCloseConfirmationOpen)}
     >
       <ProjectFormWindowActions
         isMaximized={isMaximized}
         onToggleMaximize={() => setIsMaximized((value) => !value)}
-        onClose={onClose}
+        onClose={closeRequestHandler}
       />
 
       <CardHeader
@@ -1379,13 +1576,20 @@ export function ProjectForm({
               finalStep={finalStep}
               isBusy={isSubmitting || isSuccess}
               isMaximized={isMaximized}
-              onClose={onClose}
+              onClose={closeRequestHandler}
               onBack={() => setStep((s) => s - 1)}
               submitLabel={getSubmitButtonContent(isSubmitting, isEditMode)}
             />
           </div>
         </form>
       </CardContent>
+      <ProjectDraftCloseDialog
+        open={isCloseConfirmationOpen}
+        error={draftSaveError}
+        onOpenChange={handleCloseDialogOpenChange}
+        onSave={handleSaveDraft}
+        onDiscard={handleDiscardChanges}
+      />
     </Card>
   );
 }
