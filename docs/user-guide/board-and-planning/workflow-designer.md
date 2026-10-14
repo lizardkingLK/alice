@@ -46,8 +46,9 @@ optional alternate path):
    or select a state, start a connection, or an edge already uses that port).
    Your chosen handles are kept; otherwise the canvas picks short sides (and
    uses the free top/bottom ports for a return edge when both directions
-   exist). Reverse (right-to-left) links use the same stepped path style with a
-   warmer stroke. Self-loops and duplicate pairs are rejected.
+   exist). Forward (left-to-right) links use the primary green stroke; reverse
+   (right-to-left) links use a dark stroke. Self-loops and duplicate pairs are
+   rejected.
 3. To move a transition’s connection points without losing Settings, select the
    edge and drag either end to another handle on the **same** two states
    (reconnect). Changing which states are linked still requires delete + create.

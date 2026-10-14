@@ -31,8 +31,8 @@ export type WorkflowEdgeHandlePreference = {
 };
 
 export const WORKFLOW_EDGE_STROKE = {
-  forward: 'var(--muted-foreground)',
-  reverse: 'oklch(0.55 0.12 55)',
+  forward: 'var(--primary)',
+  reverse: 'var(--foreground)',
 } as const;
 
 const BASE_PATH_OFFSET = 18;
