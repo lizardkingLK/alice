@@ -11,7 +11,12 @@ const GENERIC_REQUEST_MESSAGE =
   'Alice AI service encountered an error while processing your request. Please try again in a few moments.';
 
 function isTransientHttpStatus(status: number): boolean {
-  return status === 429 || status === 503 || (status >= 500 && status <= 504);
+  return (
+    status === 429 ||
+    status === 529 ||
+    status === 503 ||
+    (status >= 500 && status <= 504)
+  );
 }
 
 export type ResolveChatProviderUserFacingError = (params: {

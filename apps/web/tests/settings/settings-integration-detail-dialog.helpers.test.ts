@@ -37,6 +37,7 @@ describe('providerForCatalog', () => {
     expect(providerForCatalog('alice-gemini')).toBe('gemini');
     expect(providerForCatalog('alice-spacexai')).toBe('spacexai');
     expect(providerForCatalog('openai')).toBe('openai');
+    expect(providerForCatalog('anthropic')).toBe('anthropic');
     expect(providerForCatalog('unknown')).toBeNull();
   });
 });
@@ -53,6 +54,17 @@ describe('defaultModelForProvider', () => {
     expect(defaultModelForProvider('spacexai')).toEqual({
       value: 'grok-4.3',
       label: 'Grok 4.3',
+    });
+  });
+
+  it('returns provider-specific defaults for OpenAI and Anthropic', () => {
+    expect(defaultModelForProvider('openai')).toEqual({
+      value: 'gpt-4o',
+      label: 'GPT-4o',
+    });
+    expect(defaultModelForProvider('anthropic')).toEqual({
+      value: 'claude-sonnet-4-20250514',
+      label: 'Claude Sonnet 4',
     });
   });
 });
