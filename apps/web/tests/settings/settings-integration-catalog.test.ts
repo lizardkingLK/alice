@@ -71,6 +71,32 @@ describe('filterWorkspaceIntegrations', () => {
       filterWorkspaceIntegrations(WORKSPACE_INTEGRATIONS, 'all', 'linear.app')
     ).toEqual([expect.objectContaining({ id: 'linear' })]);
   });
+
+  it.each([
+    ['openai', 'OpenAI'],
+    ['anthropic', 'Anthropic'],
+  ])('makes %s available as a configurable integration', (id, name) => {
+    const integration = WORKSPACE_INTEGRATIONS.find((item) => item.id === id);
+
+    expect(integration).toMatchObject({
+      id,
+      name,
+      status: 'mock',
+      filterTab: 'ai-agents',
+    });
+    expect(isConfigurableCatalog(id)).toBe(true);
+  });
+
+  it('keeps Gemini and xAI available while enabling new providers', () => {
+    expect(
+      WORKSPACE_INTEGRATIONS.filter((item) =>
+        ['alice-gemini', 'alice-spacexai'].includes(item.id)
+      )
+    ).toEqual([
+      expect.objectContaining({ id: 'alice-gemini', status: 'mock' }),
+      expect.objectContaining({ id: 'alice-spacexai', status: 'mock' }),
+    ]);
+  });
 });
 
 describe('isCatalogConnected', () => {
@@ -112,7 +138,9 @@ describe('isCatalogConnected', () => {
 describe('isConfigurableCatalog', () => {
   it('recognizes chat model catalog ids', () => {
     expect(isConfigurableCatalog('alice-gemini')).toBe(true);
+    expect(isConfigurableCatalog('alice-spacexai')).toBe(true);
     expect(isConfigurableCatalog('openai')).toBe(true);
+    expect(isConfigurableCatalog('anthropic')).toBe(true);
     expect(isConfigurableCatalog('slack')).toBe(false);
   });
 });

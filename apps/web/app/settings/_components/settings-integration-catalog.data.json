@@ -46,14 +46,28 @@
     "name": "OpenAI",
     "websiteUrl": "openai.com",
     "description": "Optional GPT models alongside Gemini for Alice Chat and future automations.",
-    "filterTab": "ai-agents"
+    "filterTab": "ai-agents",
+    "status": "mock",
+    "defaultConnected": true,
+    "highlights": [
+      "Configure one or more GPT models for Alice Chat",
+      "Keep workspace API keys encrypted and private",
+      "Set a default model for your workspace"
+    ]
   },
   {
     "id": "anthropic",
     "name": "Anthropic",
     "websiteUrl": "anthropic.com",
     "description": "Claude models for long-context planning sessions and spec reviews inside Alice.",
-    "filterTab": "ai-agents"
+    "filterTab": "ai-agents",
+    "status": "mock",
+    "defaultConnected": true,
+    "highlights": [
+      "Configure one or more Claude models for Alice Chat",
+      "Keep workspace API keys encrypted and private",
+      "Set a default model for your workspace"
+    ]
   },
   {
     "id": "slack",
