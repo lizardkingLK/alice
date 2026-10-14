@@ -7,6 +7,7 @@ export type WorkflowDesignerShortcutHandlers = {
   readonly clearSelection: () => void;
   readonly undo: () => void;
   readonly addState: () => void;
+  readonly copyState: () => void;
   readonly cutState: () => void;
   readonly pasteState: () => void;
   readonly deleteSelection: () => void;
@@ -14,6 +15,7 @@ export type WorkflowDesignerShortcutHandlers = {
 
 /**
  * Designer keyboard shortcuts. Returns true when the event was handled.
+ * Add-state uses Ctrl/Cmd+Alt+N (Ctrl/Cmd+N opens a new browser tab/window).
  */
 export function handleWorkflowDesignerKeydown(
   event: KeyboardEvent,
@@ -47,10 +49,16 @@ export function handleWorkflowDesignerKeydown(
   const key = event.key.toLowerCase();
   const { handlers } = options;
 
-  if (mod && !event.shiftKey) {
+  if (mod && event.altKey && !event.shiftKey && key === 'n') {
+    event.preventDefault();
+    handlers.addState();
+    return true;
+  }
+
+  if (mod && !event.shiftKey && !event.altKey) {
     const modHandlers: Partial<Record<string, () => void>> = {
       z: handlers.undo,
-      n: handlers.addState,
+      c: handlers.copyState,
       x: handlers.cutState,
       v: handlers.pasteState,
     };

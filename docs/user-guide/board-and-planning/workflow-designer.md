@@ -39,7 +39,8 @@ change what transitions are allowed until you **Save**.
 Managers and admins can change the graph on the canvas (Alice remains an
 optional alternate path):
 
-1. Press **Ctrl/Cmd+N** to add a state (opens Settings so you can rename it).
+1. Press **Ctrl/Cmd+Alt+N** to add a state (opens Settings so you can rename
+   it), or right-click the canvas and choose **Add state**.
 2. Drag from a handle on one state to a handle on another to create a
    transition (handles sit on all four sides; they stay hidden until you hover
    or select a state, start a connection, or an edge already uses that port).
@@ -61,18 +62,20 @@ optional alternate path):
    changes** to keep the previous graph.
 
 Use the **Kanban** icon in the toolbar to open this project’s **Board**. Open
-**Help** (?) for the full keyboard list.
+**Help** (?) for the full keyboard list, or **right-click** the canvas for the
+same commands with shortcuts shown.
 
 ### Keyboard
 
-| Shortcut                   | Action                                           |
-| -------------------------- | ------------------------------------------------ |
-| **Esc**                    | Clear selection                                  |
-| **Delete** / **Backspace** | Delete selected state or transition (no confirm) |
-| **Ctrl/Cmd+Z**             | Undo the last designer change                    |
-| **Ctrl/Cmd+X**             | Cut selected state (transitions are not kept)    |
-| **Ctrl/Cmd+V**             | Paste a cut state as a new state (no edges)      |
-| **Ctrl/Cmd+N**             | Add a new state                                  |
+| Shortcut                   | Action                                                |
+| -------------------------- | ----------------------------------------------------- |
+| **Ctrl/Cmd+Alt+N**         | Add a new state                                       |
+| **Ctrl/Cmd+C**             | Copy selected state (transitions are not kept)        |
+| **Ctrl/Cmd+X**             | Cut selected state (transitions are not kept)         |
+| **Ctrl/Cmd+V**             | Paste a copied or cut state as a new state (no edges) |
+| **Ctrl/Cmd+Z**             | Undo the last designer change                         |
+| **Delete** / **Backspace** | Delete selected state or transition (no confirm)      |
+| **Esc**                    | Clear selection                                       |
 
 ---
 

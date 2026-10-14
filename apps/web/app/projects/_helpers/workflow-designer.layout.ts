@@ -613,6 +613,24 @@ export function captureStateClipboard(
   };
 }
 
+/** Captures clipboard when selection is a state; otherwise null. */
+export function captureSelectedStateClipboard(
+  document: WorkflowDocument,
+  selection: { readonly kind: string; readonly stateId?: string } | null
+): {
+  readonly stateId: string;
+  readonly clipboard: WorkflowStateClipboard;
+} | null {
+  if (selection?.kind !== 'state' || !selection.stateId) {
+    return null;
+  }
+  const clipboard = captureStateClipboard(document, selection.stateId);
+  if (!clipboard) {
+    return null;
+  }
+  return { stateId: selection.stateId, clipboard };
+}
+
 export function pasteStateFromClipboard(
   document: WorkflowDocument,
   clipboard: WorkflowStateClipboard

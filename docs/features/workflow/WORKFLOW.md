@@ -26,8 +26,9 @@ exist on disk; runtime reads fall back safely. Historical notes:
 - Safe fallback: null / unparsable / schema conflict → **seeded default**
   workflow (and default board behavior) so the project never hard-crashes.
 - Designer UI supports add/connect/delete, multi-workflow manage (Fork / Mark
-  default / Delete / Rename), keyboard shortcuts, undo, cut/paste states, live
-  Settings→node sync, Help, and Go to Board — Step 12.
+  default / Delete / Rename), keyboard shortcuts (add state: **Ctrl/Cmd+Alt+N**),
+  undo, copy/cut/paste states, canvas context menu, live Settings→node sync,
+  Help, and Go to Board — Step 12.
 - Alice docked chat can propose designer changes with **Apply / Reject**.
 
 ## Non-goals (MVP)
