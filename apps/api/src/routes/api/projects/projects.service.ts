@@ -1002,13 +1002,15 @@ export class ProjectsService {
     if (targetBefore?.forkedFromId) {
       sourceWorkflowIds.add(targetBefore.forkedFromId);
     }
-    for (const sourceId of sourceWorkflowIds) {
-      await this.reassignWorkItemsToWorkflow(
-        projectId,
-        sourceId,
-        nextEnvelope.defaultWorkflowId
-      );
-    }
+    await Promise.all(
+      [...sourceWorkflowIds].map((sourceId) =>
+        this.reassignWorkItemsToWorkflow(
+          projectId,
+          sourceId,
+          nextEnvelope.defaultWorkflowId
+        )
+      )
+    );
 
     return {
       config: resolveWorkflowConfig(updated.workflow_config).config,
@@ -1066,24 +1068,27 @@ export class ProjectsService {
       return [];
     }
 
-    const groups: WorkflowOrphanedStateGroup[] = [];
-    for (const removed of removedStates) {
-      const count = await prisma.work_items.count({
-        where: {
-          project_id: projectId,
-          state_workflow_id: removed.workflowId,
-          state_id: removed.stateId,
-        },
-      });
-      if (count <= 0) {
-        continue;
-      }
-      groups.push({
-        ...removed,
-        affectedCount: count,
-      });
-    }
-    return groups;
+    const counted = await Promise.all(
+      removedStates.map(async (removed) => {
+        const count = await prisma.work_items.count({
+          where: {
+            project_id: projectId,
+            state_workflow_id: removed.workflowId,
+            state_id: removed.stateId,
+          },
+        });
+        if (count <= 0) {
+          return null;
+        }
+        return {
+          ...removed,
+          affectedCount: count,
+        } satisfies WorkflowOrphanedStateGroup;
+      })
+    );
+    return counted.filter(
+      (group): group is WorkflowOrphanedStateGroup => group !== null
+    );
   }
 
   private async applyWorkflowStateRemaps(
@@ -1092,41 +1097,43 @@ export class ProjectsService {
     remaps: readonly WorkflowStateRemap[]
   ): Promise<void> {
     const updatedAt = new Date().toISOString();
-    for (const remap of remaps) {
-      const workflow = findWorkflowById(envelope, remap.workflowId);
-      const target = workflow
-        ? findWorkflowState(workflow, remap.toStateId)
-        : null;
-      if (!workflow || !target) {
-        continue;
-      }
+    await Promise.all(
+      remaps.map(async (remap) => {
+        const workflow = findWorkflowById(envelope, remap.workflowId);
+        const target = workflow
+          ? findWorkflowState(workflow, remap.toStateId)
+          : null;
+        if (!workflow || !target) {
+          return;
+        }
 
-      const items = await this.findWorkItemsForWorkflowPlacement(projectId, {
-        state_workflow_id: remap.workflowId,
-        state_id: remap.fromStateId,
-      });
-      const status = legacyStatusFromWorkItemState({
-        workflowId: workflow.id,
-        stateId: target.id,
-        category: target.category,
-      });
-      const boardColumnId = boardColumnIdForWorkflowState(target);
+        const items = await this.findWorkItemsForWorkflowPlacement(projectId, {
+          state_workflow_id: remap.workflowId,
+          state_id: remap.fromStateId,
+        });
+        const status = legacyStatusFromWorkItemState({
+          workflowId: workflow.id,
+          stateId: target.id,
+          category: target.category,
+        });
+        const boardColumnId = boardColumnIdForWorkflowState(target);
 
-      await Promise.all(
-        items.map((item) =>
-          this.persistWorkItemWorkflowPlacement({
-            item,
-            lookupWorkflowId: remap.workflowId,
-            workflowId: workflow.id,
-            stateId: target.id,
-            category: target.category,
-            updatedAt,
-            status,
-            boardColumnId,
-          })
-        )
-      );
-    }
+        await Promise.all(
+          items.map((item) =>
+            this.persistWorkItemWorkflowPlacement({
+              item,
+              lookupWorkflowId: remap.workflowId,
+              workflowId: workflow.id,
+              stateId: target.id,
+              category: target.category,
+              updatedAt,
+              status,
+              boardColumnId,
+            })
+          )
+        );
+      })
+    );
   }
 
   /**
@@ -1162,7 +1169,7 @@ export class ProjectsService {
     );
   }
 
-  private async findWorkItemsForWorkflowPlacement(
+  private findWorkItemsForWorkflowPlacement(
     projectId: string,
     where: {
       readonly state_workflow_id: string;
@@ -1196,7 +1203,7 @@ export class ProjectsService {
    * change. Omit `stateId` / `category` to keep the item’s current state on
    * a new workflow id (Mark default / delete reclaim).
    */
-  private async persistWorkItemWorkflowPlacement(params: {
+  private persistWorkItemWorkflowPlacement(params: {
     readonly item: {
       readonly id: string;
       readonly state: unknown;
