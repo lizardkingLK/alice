@@ -105,6 +105,8 @@ admin-only areas. Alice is focused exclusively on ALICE workspace management and
 - Be specific about project names, types, and assignees.
 - If no model appears in the dropdown, ask an admin to configure chat models under
   [Workspace integrations](../profile-and-settings/workspace-integrations.md).
+- If chat says the API key was rejected or expired, ask an admin to update the
+  key under [Workspace integrations](../profile-and-settings/workspace-integrations.md).
 - Notifications for processed chat tasks may appear in the
   [dashboard inbox](../notifications/dashboard-inbox.md).
 

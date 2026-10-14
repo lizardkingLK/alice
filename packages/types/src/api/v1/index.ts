@@ -39,6 +39,9 @@ export {
   findWorkflowById,
   mergeWorkflowEnvelopeIntoProjectConfig,
   parseWorkflowConfigEnvelope,
+  promoteWorkflowToDefault,
+  reclaimParentBindingsOntoForkedDefault,
+  removeWorkflowReclaimingBindings,
   resolveWorkflowConfig,
   resolveWorkflowForWorkItemType,
   seededDefaultWorkflowConfig,
@@ -58,6 +61,22 @@ export {
   type WorkflowResolutionPreset,
   type WorkflowStateNode,
 } from './workflow-config.js';
+export {
+  WORKFLOW_ORPHANED_STATES_CODE,
+  buildAvailableStatesByWorkflow,
+  buildWorkflowOrphanedStatesConflict,
+  isWorkflowOrphanedStatesConflict,
+  listRemovedWorkflowIds,
+  listRemovedWorkflowStates,
+  suggestRemapTargetState,
+  validateWorkflowStateRemaps,
+  workflowStateRemapSchema,
+  type WorkflowAvailableStateOption,
+  type WorkflowOrphanedStateGroup,
+  type WorkflowOrphanedStatesConflict,
+  type WorkflowRemovedStateRef,
+  type WorkflowStateRemap,
+} from './workflow-orphaned-states.js';
 export {
   buildEscalationResolvedMeta,
   cloneResolutionPreset,

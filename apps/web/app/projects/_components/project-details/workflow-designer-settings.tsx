@@ -86,6 +86,7 @@ type WorkflowResolutionPresetUpsertHandler = (
 type WorkflowDesignerSettingsProps = {
   readonly selection: WorkflowDesignerSelection;
   readonly workflow: WorkflowDocument;
+  readonly isDefaultWorkflow: boolean;
   readonly canEdit: boolean;
   readonly teams: readonly TransitionRuleTeamOption[];
   readonly members: readonly MemberCheckboxOption[];
@@ -121,6 +122,19 @@ const REQUIRE_CHILDREN_LABELS: Record<WorkflowRequireChildren, string> = {
   all_complete: 'All complete',
   match_parent_target: 'Match parent target',
 };
+
+function typeBindingsSummary(
+  workflow: WorkflowDocument,
+  isDefaultWorkflow: boolean
+): string {
+  if (workflow.typeBindings.length > 0) {
+    return workflow.typeBindings.join(', ');
+  }
+  if (isDefaultWorkflow) {
+    return 'All unbound types (default)';
+  }
+  return 'None';
+}
 
 function FieldLabel({
   htmlFor,
@@ -578,6 +592,7 @@ function EdgeSettingsForm({
 export function WorkflowDesignerSettings({
   selection,
   workflow,
+  isDefaultWorkflow,
   canEdit,
   teams,
   members,
@@ -693,12 +708,13 @@ export function WorkflowDesignerSettings({
                   <dd>{workflow.title}</dd>
                 </div>
                 <div>
-                  <dt className="text-foreground font-medium">Type bindings</dt>
-                  <dd>
-                    {workflow.typeBindings.length > 0
-                      ? workflow.typeBindings.join(', ')
-                      : 'None'}
-                  </dd>
+                  <div className="flex items-center gap-1">
+                    <dt className="text-foreground font-medium">
+                      Type bindings
+                    </dt>
+                    <WorkflowSettingsInfoTip text="Which work-item types use this workflow. Mark default moves bindings from the previous default here so items are not stuck on the old graph. Types with no binding use the project default." />
+                  </div>
+                  <dd>{typeBindingsSummary(workflow, isDefaultWorkflow)}</dd>
                 </div>
               </dl>
             </div>

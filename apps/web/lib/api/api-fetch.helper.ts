@@ -12,6 +12,7 @@ type ApiErrorResponse = {
   code?: string;
   serverEntity?: unknown;
   childCount?: number;
+  details?: unknown;
 };
 
 /** Error carrying the HTTP status so callers can branch (e.g. 410 Gone). */
@@ -20,6 +21,7 @@ export class ApiError extends Error {
   readonly code?: string;
   readonly serverEntity?: unknown;
   readonly childCount?: number;
+  readonly details?: unknown;
 
   constructor(
     message: string,
@@ -28,6 +30,7 @@ export class ApiError extends Error {
       code?: string;
       serverEntity?: unknown;
       childCount?: number;
+      details?: unknown;
     }
   ) {
     super(message);
@@ -36,6 +39,7 @@ export class ApiError extends Error {
     this.code = options?.code;
     this.serverEntity = options?.serverEntity;
     this.childCount = options?.childCount;
+    this.details = options?.details;
   }
 }
 
@@ -196,6 +200,13 @@ function readApiErrorChildCount(data: unknown): number | undefined {
   return undefined;
 }
 
+function readApiErrorDetails(data: unknown): unknown {
+  if (typeof data !== 'object' || data === null || !('details' in data)) {
+    return undefined;
+  }
+  return (data as ApiErrorResponse).details;
+}
+
 function throwApiErrorFromResponse(response: Response, data: unknown): never {
   const message = getApiErrorMessage(data);
   if (
@@ -210,6 +221,7 @@ function throwApiErrorFromResponse(response: Response, data: unknown): never {
   throw new ApiError(message, response.status, {
     code: getApiErrorCode(data),
     childCount: readApiErrorChildCount(data),
+    details: readApiErrorDetails(data),
   });
 }
 
