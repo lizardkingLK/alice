@@ -503,6 +503,41 @@ Pipe Task|Task|high`;
       }
     });
 
+    it('stops streaming, cancels, and releases the reader when the size limit is exceeded', async () => {
+      const originalFetch = globalThis.fetch;
+      const read = vi.fn().mockResolvedValueOnce({
+        done: false,
+        value: new Uint8Array(10 * 1024 * 1024 + 1),
+      });
+      const cancel = vi.fn().mockRejectedValue(new Error('cancel failed'));
+      const releaseLock = vi.fn();
+      const response = {
+        headers: new Headers(),
+        body: {
+          getReader: () => ({ read, cancel, releaseLock }),
+        },
+        ok: true,
+        status: 200,
+      } as unknown as Response;
+      globalThis.fetch = vi.fn().mockResolvedValue(response);
+
+      try {
+        await expect(
+          fetchAndParseWorkItemAttachment(
+            'https://supabase.co/chat-attachments/streamed-large.json',
+            'streamed-large.json',
+            ChatAttachmentFileTypeEnum.Json,
+            'https://supabase.co'
+          )
+        ).rejects.toThrow('Attachment is too large to parse.');
+        expect(read).toHaveBeenCalledOnce();
+        expect(cancel).toHaveBeenCalledOnce();
+        expect(releaseLock).toHaveBeenCalledOnce();
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
     it('aborts attachment downloads after the timeout', async () => {
       vi.useFakeTimers();
       const originalFetch = globalThis.fetch;

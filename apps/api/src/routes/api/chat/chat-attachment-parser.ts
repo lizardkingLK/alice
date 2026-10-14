@@ -81,21 +81,31 @@ async function readResponseTextWithLimit(response: Response): Promise<string> {
   const decoder = new TextDecoder();
   let totalBytes = 0;
   let content = '';
+  let sizeLimitExceeded = false;
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    totalBytes += value.byteLength;
-    if (totalBytes > MAX_ATTACHMENT_DOWNLOAD_BYTES) {
-      await reader.cancel();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_ATTACHMENT_DOWNLOAD_BYTES) {
+        sizeLimitExceeded = true;
+        break;
+      }
+      content += decoder.decode(value, { stream: true });
+    }
+
+    if (sizeLimitExceeded) {
+      await reader.cancel().catch(() => undefined);
       throw new SafeAttachmentDownloadError(
         'Attachment is too large to parse.'
       );
     }
-    content += decoder.decode(value, { stream: true });
-  }
 
-  return content + decoder.decode();
+    return content + decoder.decode();
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 export interface AttachmentParserEntry {
