@@ -22,12 +22,12 @@ the published workflow; they cannot open or edit the graph.
 
 ## What you design
 
-| Piece                   | Meaning                                                                                                                                                        |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **States**              | Columns on that workflow’s board (for example To Do, In Progress, Done)                                                                                        |
-| **Transitions (edges)** | Allowed moves from one state to another. Cycles need both directions as edges; a missing reverse edge blocks that move as not allowed (not a permission error) |
-| **Type bindings**       | Which work-item types use this workflow                                                                                                                        |
-| **Settings**            | Options for the selected state or transition (right-hand panel)                                                                                                |
+| Piece                   | Meaning                                                                                                                                                                                                               |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **States**              | Columns on that workflow’s board (for example To Do, In Progress, Done)                                                                                                                                               |
+| **Transitions (edges)** | Allowed moves from one state to another. Cycles need both directions as edges; a missing reverse edge blocks that move as not allowed (not a permission error)                                                        |
+| **Type bindings**       | Which work-item types use this workflow. The project **default** also owns any unbound types. **Mark default** moves bindings from the previous default onto the new one so types do not stay stuck on the old graph. |
+| **Settings**            | Options for the selected state or transition (right-hand panel)                                                                                                                                                       |
 
 Layout on the canvas is saved with the rules — moving boxes does not by itself
 change what transitions are allowed until you **Save**.
@@ -55,6 +55,10 @@ optional alternate path):
 5. Name and category changes in Settings update the canvas node immediately.
 6. Click **Save** to publish graph and Settings together, or **Discard** to
    revert unsaved edits.
+7. If you **delete a state** that still has work items, Save is blocked. A
+   dialog lists each removed state and how many items use it. Choose a
+   remaining state for those items and **Move and save**, or **Discard
+   changes** to keep the previous graph.
 
 Use the **Kanban** icon in the toolbar to open this project’s **Board**. Open
 **Help** (?) for the full keyboard list.
@@ -129,15 +133,16 @@ board move) asks for **fields** and an **Outcome** before the status changes.
 
 Next to the workflow switcher:
 
-| Action           | What it does                                                                                           |
-| ---------------- | ------------------------------------------------------------------------------------------------------ |
-| **Title**        | Rename the active workflow (saved with the envelope)                                                   |
-| **Fork**         | Copy the active workflow into a new editable fork (disabled on an existing fork)                       |
-| **Mark default** | Make the active workflow the project default (disabled when it already is)                             |
-| **Delete**       | Remove a non-default workflow when more than one exists (confirm first; promote another default first) |
+| Action           | What it does                                                                                                                                                                            |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Title**        | Rename the active workflow (saved with the envelope)                                                                                                                                    |
+| **Fork**         | Copy the active workflow into a new editable fork (disabled on an existing fork)                                                                                                        |
+| **Mark default** | Make the active workflow the project default (disabled when it already is). Also moves the previous default’s type bindings here and reassigns work items that were on the old default. |
+| **Delete**       | Remove a non-default workflow when more than one exists (confirm first; promote another default first). That workflow’s type bindings and work items move to the project default.       |
 
 - A **team manager** (set on the project team) may **fork** once via the same
-  control; that fork cannot be forked again.
+  control; that fork cannot be forked again. Forks start with **no** type
+  bindings until you mark them default (or bind types later).
 - Unsaved canvas edits are saved before Fork / Mark default / Delete so the
   server stays in sync.
 

@@ -1,8 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_WORKFLOW_ID,
+  WORKFLOW_ORPHANED_STATES_CODE,
+  WorkItemStatusEnum,
   createSeededDefaultWorkflowConfig,
+  type WorkflowConfigEnvelope,
 } from '@repo/types';
+
+function withoutToDoState(
+  envelope: WorkflowConfigEnvelope
+): WorkflowConfigEnvelope {
+  const workflow = envelope.workflows[0]!;
+  return {
+    ...envelope,
+    workflows: [
+      {
+        ...workflow,
+        graph: {
+          ...workflow.graph,
+          states: workflow.graph.states.filter(
+            (state) => state.id !== WorkItemStatusEnum.ToDo
+          ),
+          edges: workflow.graph.edges.filter(
+            (edge) =>
+              edge.from !== WorkItemStatusEnum.ToDo &&
+              edge.to !== WorkItemStatusEnum.ToDo
+          ),
+        },
+      },
+      ...envelope.workflows.slice(1),
+    ],
+  };
+}
 
 const {
   findByIdMock,
@@ -10,6 +39,9 @@ const {
   listAccessibleProjectIdsMock,
   selectSingleMock,
   teamsFindFirstMock,
+  workItemsCountMock,
+  workItemsFindManyMock,
+  workItemsUpdateMock,
 } = vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
   return {
@@ -18,6 +50,9 @@ const {
     listAccessibleProjectIdsMock: vi.fn(),
     selectSingleMock: vi.fn(),
     teamsFindFirstMock: vi.fn(),
+    workItemsCountMock: vi.fn().mockResolvedValue(0),
+    workItemsFindManyMock: vi.fn().mockResolvedValue([]),
+    workItemsUpdateMock: vi.fn(),
   };
 });
 
@@ -40,6 +75,11 @@ vi.mock('../../src/lib/prisma', () => ({
     },
     integrations: {
       findFirst: vi.fn(),
+    },
+    work_items: {
+      count: workItemsCountMock,
+      findMany: workItemsFindManyMock,
+      update: workItemsUpdateMock,
     },
   },
 }));
@@ -81,6 +121,8 @@ describe('ProjectsService workflow config', () => {
       error: null,
     });
     teamsFindFirstMock.mockResolvedValue(null);
+    workItemsCountMock.mockResolvedValue(0);
+    workItemsFindManyMock.mockResolvedValue([]);
 
     service = new ProjectsService({
       findById: findByIdMock,
@@ -125,6 +167,79 @@ describe('ProjectsService workflow config', () => {
       projectBase.updated_at
     );
     expect(result.usedFallback).toBe(false);
+  });
+
+  it('putWorkflowConfig rejects removed states that still have work items', async () => {
+    const previous = createSeededDefaultWorkflowConfig();
+    findByIdMock.mockResolvedValue({
+      ...projectBase,
+      workflow_config: previous,
+    });
+    const next = withoutToDoState(createSeededDefaultWorkflowConfig());
+    workItemsCountMock.mockResolvedValue(2);
+
+    let caught: unknown;
+    try {
+      await service.putWorkflowConfig(
+        'user-manager',
+        projectBase.id,
+        next,
+        projectBase.updated_at
+      );
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(WorkflowConfigError);
+    expect((caught as WorkflowConfigError).status).toBe(409);
+    expect((caught as WorkflowConfigError).code).toBe(
+      WORKFLOW_ORPHANED_STATES_CODE
+    );
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it('putWorkflowConfig remaps orphaned items then saves', async () => {
+    const previous = createSeededDefaultWorkflowConfig();
+    findByIdMock.mockResolvedValue({
+      ...projectBase,
+      workflow_config: previous,
+    });
+    const next = withoutToDoState(createSeededDefaultWorkflowConfig());
+    workItemsCountMock.mockResolvedValue(1);
+    workItemsFindManyMock.mockResolvedValue([
+      {
+        id: 'wi-1',
+        state: {
+          workflowId: DEFAULT_WORKFLOW_ID,
+          stateId: WorkItemStatusEnum.ToDo,
+          category: 'todo',
+        },
+        status: WorkItemStatusEnum.ToDo,
+        board_column_id: WorkItemStatusEnum.ToDo,
+      },
+    ]);
+    updateMock.mockResolvedValue({
+      ...projectBase,
+      workflow_config: next,
+      updated_at: '2026-01-05T00:00:00.000Z',
+    });
+
+    const result = await service.putWorkflowConfig(
+      'user-manager',
+      projectBase.id,
+      next,
+      projectBase.updated_at,
+      [
+        {
+          workflowId: DEFAULT_WORKFLOW_ID,
+          fromStateId: WorkItemStatusEnum.ToDo,
+          toStateId: WorkItemStatusEnum.InProgress,
+        },
+      ]
+    );
+
+    expect(workItemsUpdateMock).toHaveBeenCalled();
+    expect(result.updatedAt).toBe('2026-01-05T00:00:00.000Z');
   });
 
   it('forkWorkflow creates a depth-1 fork for a project team manager', async () => {
@@ -181,8 +296,12 @@ describe('ProjectsService workflow config', () => {
     ).rejects.toBeInstanceOf(WorkflowConfigError);
   });
 
-  it('setDefaultWorkflow promotes a fork', async () => {
+  it('setDefaultWorkflow promotes a fork and moves type bindings', async () => {
     const envelope = createSeededDefaultWorkflowConfig();
+    envelope.workflows[0] = {
+      ...envelope.workflows[0]!,
+      typeBindings: ['Story', 'Task'],
+    };
     envelope.workflows.push({
       ...structuredClone(envelope.workflows[0]!),
       id: 'wf-fork',
@@ -208,6 +327,15 @@ describe('ProjectsService workflow config', () => {
     );
 
     expect(result.config.defaultWorkflowId).toBe('wf-fork');
+    expect(
+      result.config.workflows.find((workflow) => workflow.id === 'wf-fork')
+        ?.typeBindings
+    ).toEqual(['Story', 'Task']);
+    expect(
+      result.config.workflows.find(
+        (workflow) => workflow.id === DEFAULT_WORKFLOW_ID
+      )?.typeBindings
+    ).toEqual([]);
   });
 
   it('deleteWorkflow blocks deleting the default workflow', async () => {

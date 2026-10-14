@@ -151,7 +151,8 @@ describe('WorkflowDesignerWorkspace', () => {
           schemaVersion: 1,
           defaultWorkflowId: seeded.defaultWorkflowId,
         }),
-        '2026-01-01T00:00:00.000Z'
+        '2026-01-01T00:00:00.000Z',
+        undefined
       );
     });
     await waitFor(() => {

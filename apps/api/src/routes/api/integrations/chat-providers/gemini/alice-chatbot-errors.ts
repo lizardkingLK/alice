@@ -8,6 +8,9 @@ type GeminiErrorPayload = {
 
 const SUGGESTED_MODEL_PATTERN = /use models\/(gemini-[a-z0-9._-]{1,80})/i;
 
+export const GEMINI_API_KEY_REJECTED_MESSAGE =
+  'Google Gemini rejected the API key (it may be invalid or expired). Update it under Settings → Integrations (Google Gemini).';
+
 export function parseGeminiApiErrorMessage(
   errorBody: string
 ): string | undefined {
@@ -18,6 +21,33 @@ export function parseGeminiApiErrorMessage(
   } catch {
     return undefined;
   }
+}
+
+function isGeminiApiKeyRejected(params: {
+  status: number;
+  errorBody: string;
+  apiMessage: string | undefined;
+}): boolean {
+  const { status, errorBody, apiMessage } = params;
+
+  // Google commonly returns 401/403 for bad credentials; treat those as key issues.
+  if (status === 401 || status === 403) {
+    return true;
+  }
+
+  if (/API_KEY_INVALID/i.test(errorBody)) {
+    return true;
+  }
+
+  if (!apiMessage) {
+    return false;
+  }
+
+  return (
+    /api key (not valid|expired|invalid|revoked)/i.test(apiMessage) ||
+    /API key expires/i.test(apiMessage) ||
+    /expired API key/i.test(apiMessage)
+  );
 }
 
 function isGeminiModelUnavailable(params: {
@@ -43,6 +73,17 @@ export function resolveGeminiUserFacingError(params: {
   modelId: string;
 }): string | undefined {
   const apiMessage = parseGeminiApiErrorMessage(params.errorBody);
+
+  if (
+    isGeminiApiKeyRejected({
+      status: params.status,
+      errorBody: params.errorBody,
+      apiMessage,
+    })
+  ) {
+    return GEMINI_API_KEY_REJECTED_MESSAGE;
+  }
+
   if (!apiMessage) {
     return undefined;
   }

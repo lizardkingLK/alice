@@ -5,14 +5,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   findWorkflowById,
+  isWorkflowOrphanedStatesConflict,
   resolveWorkflowConfig,
   upsertResolutionPreset,
+  WORKFLOW_ORPHANED_STATES_CODE,
   type ChatWorkflowViewContext,
   type WorkflowConfigEnvelope,
   type WorkflowDocument,
   type WorkflowEdge,
+  type WorkflowOrphanedStatesConflict,
   type WorkflowResolutionPreset,
   type WorkflowStateNode,
+  type WorkflowStateRemap,
 } from '@repo/types/api/v1';
 import { Button } from '@repo/ui/components/ui/button';
 import {
@@ -60,6 +64,7 @@ import {
 } from '@repo/ui/lib/icons';
 import { FormAlertMessage } from '@/components/form-alert-message';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { ApiError } from '@/lib/api/api-fetch.helper';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 import {
@@ -68,6 +73,7 @@ import {
   putProjectWorkflowConfig,
   setDefaultProjectWorkflow,
 } from '@/app/projects/_services/projects.workflow-config.client';
+import { WorkflowOrphanedStatesDialog } from '@/app/projects/_components/project-details/workflow-orphaned-states-dialog';
 import { WorkflowStateFlowNode } from '@/app/projects/_components/project-details/workflow-state-flow-node';
 import { WorkflowTransitionEdge } from '@/app/projects/_components/project-details/workflow-transition-edge';
 import {
@@ -770,7 +776,28 @@ export function WorkflowDesignerWorkspace({
     [resetUndo, router]
   );
 
-  const performSave = async (): Promise<{
+  const [orphanConflict, setOrphanConflict] =
+    useState<WorkflowOrphanedStatesConflict | null>(null);
+  const [orphanDialogOpen, setOrphanDialogOpen] = useState(false);
+
+  const readOrphanConflict = (
+    error: unknown
+  ): WorkflowOrphanedStatesConflict | null => {
+    if (!(error instanceof ApiError)) {
+      return null;
+    }
+    if (error.code !== WORKFLOW_ORPHANED_STATES_CODE) {
+      return null;
+    }
+    if (isWorkflowOrphanedStatesConflict(error.details)) {
+      return error.details;
+    }
+    return null;
+  };
+
+  const performSave = async (
+    stateRemaps?: readonly WorkflowStateRemap[]
+  ): Promise<{
     readonly ok: boolean;
     readonly updatedAt: string;
   }> => {
@@ -781,7 +808,8 @@ export function WorkflowDesignerWorkspace({
     setMessage(null);
     try {
       const result = await runLockedMutationOrThrow({
-        mutate: () => putProjectWorkflowConfig(project.id, draft, updatedAt),
+        mutate: () =>
+          putProjectWorkflowConfig(project.id, draft, updatedAt, stateRemaps),
         handleMutationError,
         entityType: 'project',
         entityId: project.id,
@@ -792,6 +820,8 @@ export function WorkflowDesignerWorkspace({
       if (!result) {
         return { ok: false, updatedAt };
       }
+      setOrphanDialogOpen(false);
+      setOrphanConflict(null);
       commitSavedEnvelope({
         envelope: result.config,
         nextUpdatedAt: result.updatedAt,
@@ -800,6 +830,14 @@ export function WorkflowDesignerWorkspace({
       });
       return { ok: true, updatedAt: result.updatedAt };
     } catch (error) {
+      const conflict = readOrphanConflict(error);
+      if (conflict) {
+        setOrphanConflict(conflict);
+        setOrphanDialogOpen(true);
+        setMessage(conflict.message);
+        setMessageIsError(true);
+        return { ok: false, updatedAt };
+      }
       const detail =
         error instanceof Error ? error.message : 'Could not save the workflow.';
       setMessage(detail);
@@ -813,6 +851,23 @@ export function WorkflowDesignerWorkspace({
 
   const handleSaveClick = () => {
     performSave().catch((error: unknown) => {
+      const detail =
+        error instanceof Error ? error.message : 'Could not save the workflow.';
+      setMessage(detail);
+      setMessageIsError(true);
+      toast.error(detail);
+    });
+  };
+
+  const handleOrphanDiscard = () => {
+    setOrphanDialogOpen(false);
+    setOrphanConflict(null);
+    discardChanges();
+    toast.message('Workflow changes discarded.');
+  };
+
+  const handleOrphanConfirmRemap = (remaps: readonly WorkflowStateRemap[]) => {
+    performSave(remaps).catch((error: unknown) => {
       const detail =
         error instanceof Error ? error.message : 'Could not save the workflow.';
       setMessage(detail);
@@ -1244,6 +1299,7 @@ export function WorkflowDesignerWorkspace({
         <WorkflowDesignerSettings
           selection={selection}
           workflow={activeWorkflow}
+          isDefaultWorkflow={isDefaultWorkflow}
           canEdit={canEdit}
           teams={teams}
           members={members}
@@ -1259,6 +1315,20 @@ export function WorkflowDesignerWorkspace({
       </div>
 
       <WorkflowDesignerHelp open={helpOpen} onOpenChange={setHelpOpen} />
+
+      <WorkflowOrphanedStatesDialog
+        conflict={orphanConflict}
+        open={orphanDialogOpen}
+        isSaving={isSaving}
+        onOpenChange={(open) => {
+          setOrphanDialogOpen(open);
+          if (!open) {
+            setOrphanConflict(null);
+          }
+        }}
+        onDiscard={handleOrphanDiscard}
+        onConfirmRemap={handleOrphanConfirmRemap}
+      />
 
       <Dialog open={deleteWorkflowOpen} onOpenChange={setDeleteWorkflowOpen}>
         <DialogContent data-testid="workflow-delete-confirm">

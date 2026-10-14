@@ -11,7 +11,7 @@ import {
   WorkItemStatusEnum,
   type WorkItemStatus,
 } from '../../work-item-status.js';
-import { WorkItemTypeEnum, type WorkItemType } from '../../work-item-types.js';
+import type { WorkItemType } from '../../work-item-types.js';
 
 export const WORKFLOW_CONFIG_SCHEMA_VERSION = 1 as const;
 
@@ -439,7 +439,162 @@ function seededDefaultEdges(): WorkflowEdge[] {
   return forward;
 }
 
-/** Canonical seeded envelope used when config is null/invalid. */
+/**
+ * Unique type bindings preserving first-seen order (disjoint across workflows).
+ */
+function mergeTypeBindings(
+  ...groups: readonly (readonly WorkItemType[])[]
+): WorkItemType[] {
+  const seen = new Set<WorkItemType>();
+  const merged: WorkItemType[] = [];
+  for (const group of groups) {
+    for (const type of group) {
+      if (seen.has(type)) {
+        continue;
+      }
+      seen.add(type);
+      merged.push(type);
+    }
+  }
+  return merged;
+}
+
+/**
+ * When the project default is a fork whose parent still holds type bindings
+ * (legacy promote left them behind), move those bindings onto the fork so
+ * work-item types resolve to the active default graph.
+ */
+export function reclaimParentBindingsOntoForkedDefault(
+  envelope: WorkflowConfigEnvelope
+): {
+  readonly config: WorkflowConfigEnvelope;
+  readonly reclaimedFromWorkflowId: string | null;
+} {
+  const currentDefault = findWorkflowById(envelope, envelope.defaultWorkflowId);
+  if (!currentDefault?.forkedFromId) {
+    return { config: envelope, reclaimedFromWorkflowId: null };
+  }
+
+  const parent = findWorkflowById(envelope, currentDefault.forkedFromId);
+  if (!parent || parent.typeBindings.length === 0) {
+    return { config: envelope, reclaimedFromWorkflowId: null };
+  }
+
+  const transferred = mergeTypeBindings(
+    currentDefault.typeBindings,
+    parent.typeBindings
+  );
+
+  return {
+    config: workflowConfigEnvelopeSchema.parse({
+      ...envelope,
+      workflows: envelope.workflows.map((workflow) => {
+        if (workflow.id === currentDefault.id) {
+          return { ...workflow, typeBindings: transferred };
+        }
+        if (workflow.id === parent.id) {
+          return { ...workflow, typeBindings: [] };
+        }
+        return workflow;
+      }),
+    }),
+    reclaimedFromWorkflowId: parent.id,
+  };
+}
+
+/**
+ * Promote `workflowId` to project default and move the previous default's type
+ * bindings onto it. Otherwise types stay claimed by the demoted workflow and
+ * work items never follow the new default graph.
+ *
+ * Other non-default workflows keep their bindings (parallel boards).
+ * If `workflowId` is already default, still reclaim leftover parent bindings.
+ */
+export function promoteWorkflowToDefault(
+  envelope: WorkflowConfigEnvelope,
+  workflowId: string
+): WorkflowConfigEnvelope {
+  if (!findWorkflowById(envelope, workflowId)) {
+    throw new Error(`Workflow "${workflowId}" not found.`);
+  }
+  if (envelope.defaultWorkflowId === workflowId) {
+    return reclaimParentBindingsOntoForkedDefault(envelope).config;
+  }
+
+  const previousDefaultId = envelope.defaultWorkflowId;
+  const previousDefault = findWorkflowById(envelope, previousDefaultId);
+  const nextDefault = findWorkflowById(envelope, workflowId)!;
+
+  const transferred = mergeTypeBindings(
+    nextDefault.typeBindings,
+    previousDefault?.typeBindings ?? []
+  );
+
+  const promoted = workflowConfigEnvelopeSchema.parse({
+    ...envelope,
+    defaultWorkflowId: workflowId,
+    workflows: envelope.workflows.map((workflow) => {
+      if (workflow.id === workflowId) {
+        return { ...workflow, typeBindings: transferred };
+      }
+      if (workflow.id === previousDefaultId) {
+        return { ...workflow, typeBindings: [] };
+      }
+      return workflow;
+    }),
+  });
+
+  return reclaimParentBindingsOntoForkedDefault(promoted).config;
+}
+
+/**
+ * Remove a non-default workflow and reclaim its type bindings onto the
+ * project default so those types are not left unbound-stuck on a deleted graph.
+ */
+export function removeWorkflowReclaimingBindings(
+  envelope: WorkflowConfigEnvelope,
+  workflowId: string
+): WorkflowConfigEnvelope {
+  if (envelope.defaultWorkflowId === workflowId) {
+    throw new Error(
+      'Cannot delete the default workflow. Mark another workflow as default first.'
+    );
+  }
+  const removed = findWorkflowById(envelope, workflowId);
+  if (!removed) {
+    throw new Error(`Workflow "${workflowId}" not found.`);
+  }
+  if (envelope.workflows.length <= 1) {
+    throw new Error('Cannot delete the only workflow on a project.');
+  }
+
+  const remaining = envelope.workflows.filter(
+    (workflow) => workflow.id !== workflowId
+  );
+  const workflows = remaining.map((workflow) => {
+    if (workflow.id !== envelope.defaultWorkflowId) {
+      return workflow;
+    }
+    return {
+      ...workflow,
+      typeBindings: mergeTypeBindings(
+        workflow.typeBindings,
+        removed.typeBindings
+      ),
+    };
+  });
+
+  return workflowConfigEnvelopeSchema.parse({
+    ...envelope,
+    workflows,
+  });
+}
+
+/**
+ * Canonical seeded envelope used when config is null/invalid.
+ * Default owns all types via `defaultWorkflowId` (empty bindings) so a later
+ * fork + Mark default does not leave types stuck on the demoted parent.
+ */
 export function createSeededDefaultWorkflowConfig(): WorkflowConfigEnvelope {
   return workflowConfigEnvelopeSchema.parse({
     schemaVersion: WORKFLOW_CONFIG_SCHEMA_VERSION,
@@ -450,12 +605,7 @@ export function createSeededDefaultWorkflowConfig(): WorkflowConfigEnvelope {
         title: 'Default',
         description: 'Seeded default workflow',
         forkedFromId: null,
-        typeBindings: [
-          WorkItemTypeEnum.Epic,
-          WorkItemTypeEnum.Story,
-          WorkItemTypeEnum.Task,
-          WorkItemTypeEnum.Issue,
-        ],
+        typeBindings: [],
         graph: {
           states: seededDefaultStates(),
           edges: seededDefaultEdges(),

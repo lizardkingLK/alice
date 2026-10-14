@@ -586,10 +586,7 @@ export function ChartsAdvancedFiltersPopover({
                 members
               );
               return (
-                <div
-                  key={row.id}
-                  className="flex flex-wrap items-center gap-2"
-                >
+                <div key={row.id} className="flex flex-wrap items-center gap-2">
                   <span className="text-muted-foreground w-14 shrink-0 text-xs font-medium">
                     {index === 0 ? 'Where' : 'And'}
                   </span>

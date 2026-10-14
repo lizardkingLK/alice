@@ -92,7 +92,11 @@ function sendWorkflowMutationError(
   fallbackMessage: string
 ): void {
   if (error instanceof WorkflowConfigError) {
-    res.status(error.status).json({ error: error.message });
+    res.status(error.status).json({
+      error: error.message,
+      ...(error.code ? { code: error.code } : {}),
+      ...(error.details !== undefined ? { details: error.details } : {}),
+    });
     return;
   }
   sendRouteMutationError(res, error, fallbackMessage);
@@ -198,7 +202,8 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
           req.userId!,
           id,
           parsed.data.config,
-          parsed.data.expectedUpdatedAt
+          parsed.data.expectedUpdatedAt,
+          parsed.data.stateRemaps
         );
         res.json(result);
       } catch (error) {

@@ -2,6 +2,7 @@ import {
   boardColumnIdForWorkflowState,
   categoryFromWorkItemStatus,
   findResolutionPreset,
+  findWorkflowById,
   findWorkflowEdge,
   findWorkflowState,
   getResolutionRequirement,
@@ -147,10 +148,14 @@ export function resolveWorkItemStatePickerModel(params: {
     };
   }
 
-  const workflow = resolveWorkflowForWorkItemType(
-    envelope,
-    params.workItemType as WorkItemType
-  );
+  // Prefer the item's persisted graph (matches API PATCH validation); fall
+  // back to type bindings / project default for legacy rows.
+  const workflow =
+    findWorkflowById(envelope, resolvedState.workflowId) ??
+    resolveWorkflowForWorkItemType(
+      envelope,
+      params.workItemType as WorkItemType
+    );
   const options = workflow.graph.states.map((state) =>
     optionFromState(workflow.id, state)
   );
