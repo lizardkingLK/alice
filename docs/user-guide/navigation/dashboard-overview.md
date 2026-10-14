@@ -42,7 +42,7 @@ A draggable, resizable home with live widgets:
 | Pending stories | Open stories assigned to you |
 | In progress | Items in In Progress |
 | Your projects | Projects you belong to |
-| Alice | Live chat for quick answers (open full chat from the card) |
+| Alice | Live chat that always starts a new thread (open full chat from the card) |
 | Docs | Search the user guide; open a page in a dialog (fullscreen available) |
 | Pomodoro | Focus timer (5–60 minutes, default 25; duration is saved) |
 

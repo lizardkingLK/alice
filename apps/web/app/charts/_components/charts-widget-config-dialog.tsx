@@ -42,6 +42,7 @@ import {
   type ChartsSprintOption,
   type ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
+import type { ChartSeriesLabelField } from '@repo/types';
 import {
   filterChartDrilldownTableItems,
   isChartSeriesLabelField,
@@ -379,7 +380,7 @@ function renderConfigPiePreview(params: {
   readonly open: boolean;
   readonly hierarchy: ReturnType<typeof useChartWidgetHierarchyAnalytics>;
   readonly analytics: ReturnType<typeof useChartWidgetAnalytics>;
-  readonly seriesLabelField: ChartsLabelFieldId | null;
+  readonly seriesLabelField: ChartSeriesLabelField | null;
   readonly hasSliceFocus: boolean;
   readonly focusedSliceKey: string | undefined;
   readonly digPath: readonly ChartsHierarchyDigStep[];

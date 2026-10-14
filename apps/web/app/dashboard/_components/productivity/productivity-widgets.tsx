@@ -143,14 +143,9 @@ function ProjectsWidget({
 
 function AliceWidget() {
   const meta = widgetById.alice;
-  const {
-    isLoading,
-    conversations,
-    activeConversationId,
-    messages,
-    chatModels,
-  } = useChatBootstrap({
+  const { isLoading, conversations, chatModels } = useChatBootstrap({
     enabled: true,
+    preferNewChat: true,
     logLabel: 'bootstrap Overview Alice widget',
   });
 
@@ -185,8 +180,8 @@ function AliceWidget() {
           <ChatClient
             variant="widget"
             initialConversations={conversations}
-            initialConversationId={activeConversationId}
-            initialMessages={messages ?? undefined}
+            initialConversationId={undefined}
+            initialMessages={[]}
             initialChatModels={chatModels}
           />
         </div>

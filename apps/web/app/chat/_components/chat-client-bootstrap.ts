@@ -33,14 +33,24 @@ export async function loadConversationHistory(
 }
 
 /**
- * List conversations and hydrate the latest thread.
- * Shared by `/chat` client init and the floating drawer bootstrap.
+ * List conversations and models without hydrating a thread (empty composer).
  */
-export async function bootstrapLatestChat(): Promise<LatestChatBootstrap> {
+export async function bootstrapChatShell(): Promise<
+  Pick<LatestChatBootstrap, 'conversations' | 'chatModels'>
+> {
   const [conversations, chatModels] = await Promise.all([
     listChatConversationsAction(),
     listChatModelsForChatClient(),
   ]);
+  return { conversations, chatModels };
+}
+
+/**
+ * List conversations and hydrate the latest thread.
+ * Shared by `/chat` client init and the floating drawer bootstrap.
+ */
+export async function bootstrapLatestChat(): Promise<LatestChatBootstrap> {
+  const { conversations, chatModels } = await bootstrapChatShell();
   const latest = conversations[0];
 
   if (!latest) {

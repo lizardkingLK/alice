@@ -501,7 +501,7 @@ function resolveWidgetDisplayTitle(params: {
 
 function resolveFullscreenDescription(params: {
   readonly description: string | null | undefined;
-  readonly catalogDescription: string;
+  readonly catalogDescription?: string;
   readonly isBurndown: boolean;
 }): string | null | undefined {
   if (params.description) {
