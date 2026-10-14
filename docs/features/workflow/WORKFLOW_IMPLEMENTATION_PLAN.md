@@ -506,8 +506,8 @@ Settings→node sync, Help, and Go to Board.
    for a new tab/window.
 2. **Connect edges** — Drag from a state’s handle to another’s (handles on all
    four sides). Chosen handles persist in `layout.edges`; otherwise the canvas
-   picks short sides (return edges use free top/bottom ports). Reverse edges
-   use the same smooth-step path with a warmer stroke. **Reconnect** an existing
+   picks short sides (return edges use free top/bottom ports). Forward edges
+   use the primary green stroke; reverse edges use a dark stroke. **Reconnect** an existing
    edge by dragging an endpoint to another handle on the same `from`/`to` pair
    (Settings on the edge are preserved).
    Rejects self-loops, duplicates, and exits from terminal states. New edges

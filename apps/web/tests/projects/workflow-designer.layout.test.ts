@@ -50,7 +50,7 @@ describe('workflow-designer.layout', () => {
       type: 'arrowclosed',
       width: 20,
       height: 20,
-      color: 'var(--muted-foreground)',
+      color: 'var(--primary)',
     });
   });
 

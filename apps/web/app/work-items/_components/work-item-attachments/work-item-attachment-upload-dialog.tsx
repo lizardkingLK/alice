@@ -96,7 +96,7 @@ export function WorkItemAttachmentUploadDialog({
 
     function onPaste(event: ClipboardEvent) {
       const files = event.clipboardData?.files;
-      if (!files || files.length === 0) {
+      if (!files?.length) {
         return;
       }
 
