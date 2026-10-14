@@ -102,6 +102,41 @@ export type ChartAnalyticsDimensionFilters = {
   readonly assigneeId?: string;
 };
 
+/** Stable cache segment for status/type/priority/assignee filters. */
+export function chartAnalyticsDimensionCacheKey(
+  filters: ChartAnalyticsDimensionFilters | undefined
+): string {
+  if (!filters) {
+    return '';
+  }
+  return [
+    filters.status ?? '',
+    filters.type ?? '',
+    filters.priority ?? '',
+    filters.assigneeId ?? '',
+  ].join('|');
+}
+
+/** Spread onto series/drilldown query objects from widget dimension filters. */
+export function chartAnalyticsDimensionQueryFields(
+  filters: ChartAnalyticsDimensionFilters | undefined
+): Pick<
+  ChartSeriesQuery,
+  'status' | 'type' | 'priority' | 'assigneeId'
+> {
+  if (!filters) {
+    return {};
+  }
+  return {
+    ...(filters.status ? { status: filters.status } : {}),
+    ...(filters.type ? { type: filters.type } : {}),
+    ...(filters.priority ? { priority: filters.priority } : {}),
+    ...(filters.assigneeId !== undefined
+      ? { assigneeId: filters.assigneeId }
+      : {}),
+  };
+}
+
 /**
  * Map widget quick/advanced equality filters onto analytics query params.
  * Advanced rows only apply `is` conditions (same as Tier 1 rollup equality).

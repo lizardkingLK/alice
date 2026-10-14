@@ -2,13 +2,14 @@
 
 import { Loader2 } from '@repo/ui/lib/icons';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
-import type { ChatMessage } from './chat-client.types';
+import type { ChatClientVariant, ChatMessage } from './chat-client.types';
 import ChatHeroSection from '@/app/chat/_components/chat-client-hero';
 import ChatClientThread from '@/app/chat/_components/chat-client-thread';
 import type { ChatAssistantIdentity } from '@/app/chat/_helpers/use-bound-chat-agent';
 
 type ChatClientMainProps = {
   readonly isPage: boolean;
+  readonly variant: ChatClientVariant;
   readonly isLoadingHistory: boolean;
   readonly showHero: boolean;
   readonly showEmptyThread: boolean;
@@ -25,6 +26,7 @@ type ChatClientMainProps = {
 
 export default function ChatClientMain({
   isPage,
+  variant,
   isLoadingHistory,
   showHero,
   showEmptyThread,
@@ -50,7 +52,7 @@ export default function ChatClientMain({
 
   if (showHero) {
     return (
-      <ChatHeroSection isPage={isPage} handleSendMessage={onSendMessage} />
+      <ChatHeroSection variant={variant} handleSendMessage={onSendMessage} />
     );
   }
 

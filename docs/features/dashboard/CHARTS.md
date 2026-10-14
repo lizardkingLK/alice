@@ -68,8 +68,8 @@ native Share dialog and **no Shared registry tab**. Sharing a chart-backed view
 grants **`chart_shares`**; recipients open from Views / inbox, then **Fork**
 if they want an owned editable copy.
 
-**Availability:** Only the **Chart** catalog template can be added. Other quick
-picks / Browse cards are **Coming soon**.
+**Availability:** Live catalog adds: **Chart**, **Nested donut**, **Data over
+time** / **Burndown**. Other Browse cards remain **Coming soon**.
 
 ### Chart widget (`typeId: chart`)
 
@@ -84,13 +84,25 @@ hidden; search remounts matching groups expanded.
 
 No Boards section (use project filters).
 
+### Nested donut widget (`typeId: nested-donut`)
+
+Up to three hierarchy rings from `work_item_chart_hierarchy_rollups` via
+`GET /analytics/hierarchy-series` (roots → children → grandchildren; optional
+`rootWorkItemId` for dig-zoom). Values sidebar: **Count items** or **Story
+points** (`measure` on the instance). Every node counts once; child values sit
+under their parent ring. Slice focus encodes ring + ids in `focusedSliceKey`
+(`h0:…` / `h1:parent:child` / `h2:…`). **Dig:** client `digPath` +
+`rootWorkItemId` re-roots rings; diggable slices dig in Chart mode, leaves and
+Table/Split focus drilldown. See
+[CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md#nested-donut-shipped).
+
 ### Widget settings sidebar
 
 | Section                      | Status today                                     | Notes                                                                     |
 | ---------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------- |
-| Chart type                   | Pie / Donut / Bar / **Column** (unique only)     | Stacked/grouped / line / area / bubble removed from picker for now        |
-| Labels                       | Live API-backed columns                          | Group / Name / Due date hidden until rollup supports them                 |
-| Values                       | Count items only                                 | Sum / Average / … deferred                                                |
+| Chart type                   | Pie / Donut / Bar / **Column** (unique only)     | Hidden for nested-donut                                                   |
+| Labels                       | Live API-backed columns                          | Hidden for nested-donut (hierarchy rings are fixed)                       |
+| Values                       | Count items; nested also **Story points**        | Flat Chart stays count-only; nested uses Count / Sum                      |
 | Customize                    | % vs count, sort, empty slices, **slice colors** | Theme swatches (`chart-1`…`8`); reset on Labels change                    |
 | Groups                       | Coming soon (deferred)                           | Table already hides empty status groups                                   |
 | Choose which columns to show | Drilldown column visibility                      | Default: Task/Owner/Status/State/Type/Priority; Project + Sprint optional |
@@ -165,16 +177,13 @@ Categorical pies (Chart widgets, sprint report **Status Distribution**) count
 sprint both appear in totals — same as Jira-style flat sprint membership, not a
 nested epic rollup.
 
-Use **Labels → Type** (or sprint report status breakdown) when you want to
-separate Epics from Tasks. No parent–child ring is applied today.
-
-**Future (after open questions):** optional **multilevel / nested donut** (inner
-ring = roots or Epics, outer ring = direct children). Needs a dedicated
-hierarchy rollup + counting rules. See
-[CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md#hierarchy-and-future-chart-types)
-and [open questions](./CHARTS_AGGREGATION.md#open-questions-before-nested--other-types).
+Use **Labels → Type** on Chart when you want flat type slices. For parent/child
+rings, add catalog **Nested donut** (`work_item_chart_hierarchy_rollups`,
+Count or Story points). See
+[CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md#nested-donut-shipped).
 
 **API:** `GET /api/v1/charts/analytics/series` and `…/analytics/drilldown` —
+(plus `…/hierarchy-series` / `…/hierarchy-drilldown` for nested-donut) —
 see [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md#apis).
 
 **Web:** Chart widgets load series/drilldown from that API. **Project** filter
@@ -225,10 +234,20 @@ Shipped:
    → `POST /api/v1/chat/generate-chart-description` with compact widget or
    workspace context → fills the draft for review before Save.
 
-## Dashboard Overview = chart workspace slider
+## Dashboard Overview = productivity + chart slider
 
-Default `/dashboard` is a **horizontal slider** of chart workspaces the viewer
-can access where `show_on_dashboard` is true, ordered by `dashboard_sort_order`.
+Default `/dashboard` supports two modes (Customize dialog; prefs in
+localStorage + cookie):
+
+1. **Productivity** — draggable grid (`react-grid-layout`) with live My Work
+   KPIs, projects list, Alice chat widget, docs (fullscreen), and pomodoro.
+   Default when no boards are pinned.
+2. **Chart workspaces** — horizontal slider of boards with
+   `show_on_dashboard`, ordered by `dashboard_sort_order`. Always available;
+   empty state shows a pin tip. Single pin omits tabs/chevrons.
+
+**Customize** opens a dialog: mode cards + productivity widget toggles + link to
+`/charts/[id]` for the active slide (charts mode).
 
 ### Registry Edit (owned)
 
@@ -243,8 +262,8 @@ dashboard**. No Shared registry tab — Views share remains the ACL path.
 | Fullscreen + Export            | Widget settings, Save option, duplicate, delete    |
 | Drilldown + open `/work-items` | Shared slides: layout locked (sync already no-ops) |
 
-Cache visited slides (keep-alive) so sliding back does not refetch. Empty pin
-list → CTA to `/charts`. Full customization only on `/charts/[id]`.
+Cache visited slides (keep-alive) so sliding back does not refetch. Full board
+edit via Customize → Customize active board → `/charts/[id]`.
 
 ### Workspace chrome
 
@@ -309,7 +328,7 @@ dashboard**.
 - Sharing Favorites
 - Native Charts Share dialog / Shared-with-me registry tab (Views share is enough)
 - Neon / Render / Upstash wiring (Tier 2+)
-- Nested donut / other Coming soon types in the same burndown delivery
+- Other Coming soon catalog types (Numbers, Battery, Gantt, …)
 - Reintroducing `is_overview` alongside `show_on_dashboard`
 
 ## Related

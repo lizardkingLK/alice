@@ -1,11 +1,21 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { LayoutItem } from 'react-grid-layout';
 import { Button } from '@repo/ui/components/ui/button';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
-import { BarChart3, ChevronLeft, ChevronRight } from '@repo/ui/lib/icons';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@repo/ui/components/ui/tooltip';
+import {
+  BarChart3,
+  ChevronLeft,
+  ChevronRight,
+  SlidersHorizontal,
+} from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import {
   ChartsBoardCanvas,
@@ -41,22 +51,34 @@ type DashboardChartsSliderProps = {
     readonly name: string;
     readonly projectId: string;
   }>;
+  /** When true, omit the Customize control (parent owns Overview customize). */
+  readonly hideCustomizeButton?: boolean;
+  // eslint-disable-next-line no-unused-vars -- active slide callback
+  readonly onActiveSlideChange?: (slideId: string | null) => void;
 };
 
 function DashboardChartsSliderEmpty() {
   return (
-    <div className="border-border text-muted-foreground flex min-h-72 flex-1 flex-col items-center justify-center gap-4 rounded-xl border border-dashed px-6 py-12 text-center">
-      <BarChart3 className="size-10 stroke-[1.5]" aria-hidden />
-      <div className="space-y-1">
-        <p className="text-foreground text-sm font-medium">
-          No chart workspaces on the Overview yet
-        </p>
-        <p className="mx-auto max-w-md text-sm leading-relaxed">
-          Pin workspaces from Charts → Edit → Show on dashboard to build this
-          slider.
+    <div className="border-border bg-card mx-auto flex min-h-72 w-full max-w-md flex-1 flex-col justify-between gap-6 rounded-xl border p-6 shadow-none">
+      <div className="space-y-3">
+        <div className="space-y-1">
+          <p className="text-foreground text-base font-semibold tracking-tight">
+            Charts on Overview
+          </p>
+          <p className="text-muted-foreground text-sm">
+            Pin a workspace for the slider
+          </p>
+        </div>
+        <BarChart3
+          className="text-muted-foreground size-8 stroke-[1.5]"
+          aria-hidden
+        />
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          Pin chart workspaces from Charts → Edit → Show on dashboard to build
+          the Overview slider.
         </p>
       </div>
-      <Button asChild className="cursor-pointer">
+      <Button asChild className="w-full cursor-pointer">
         <Link href="/charts">Open Charts</Link>
       </Button>
     </div>
@@ -213,6 +235,8 @@ export function DashboardChartsSlider({
   slides,
   accessibleProjects = [],
   accessibleSprints = [],
+  hideCustomizeButton = false,
+  onActiveSlideChange,
 }: Readonly<DashboardChartsSliderProps>) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [visited, setVisited] = useState<ReadonlySet<string>>(
@@ -221,6 +245,10 @@ export function DashboardChartsSlider({
 
   const safeIndex = Math.min(activeIndex, Math.max(slides.length - 1, 0));
   const activeSlide = slides[safeIndex] ?? null;
+
+  useEffect(() => {
+    onActiveSlideChange?.(activeSlide?.id ?? null);
+  }, [activeSlide?.id, onActiveSlideChange]);
 
   const slideTabs = useMemo(
     () =>
@@ -249,59 +277,84 @@ export function DashboardChartsSlider({
     }
   };
 
+  const showSlider = slides.length > 1;
+  const customizeHref = activeSlide
+    ? `/charts/${activeSlide.id}`
+    : null;
+  const showCustomize = !hideCustomizeButton && Boolean(customizeHref);
+  const showToolbar = showSlider || showCustomize;
+
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4">
-      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          {slideTabs.map((tab) => (
-            <Button
-              key={tab.id}
-              type="button"
-              variant={tab.index === safeIndex ? 'default' : 'outline'}
-              size="sm"
-              className="max-w-56 cursor-pointer"
-              title={tab.description}
-              onClick={() => goTo(tab.index)}
-            >
-              <TruncatedText className="min-w-0">{tab.title}</TruncatedText>
-            </Button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2 self-start">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            className="cursor-pointer"
-            disabled={safeIndex <= 0}
-            aria-label="Previous workspace"
-            onClick={() => goTo(safeIndex - 1)}
-          >
-            <ChevronLeft className="size-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            className="cursor-pointer"
-            disabled={safeIndex >= slides.length - 1}
-            aria-label="Next workspace"
-            onClick={() => goTo(safeIndex + 1)}
-          >
-            <ChevronRight className="size-4" />
-          </Button>
-          {activeSlide ? (
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="cursor-pointer"
-            >
-              <Link href={`/charts/${activeSlide.id}`}>Customize</Link>
-            </Button>
+      {showToolbar ? (
+        <div
+          className={cn(
+            'flex w-full shrink-0 items-center gap-2',
+            showSlider ? undefined : 'justify-end'
+          )}
+        >
+          {showSlider ? (
+            <div className="flex min-w-0 flex-1 justify-center">
+              <div className="flex max-w-full min-w-0 items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  className="shrink-0 cursor-pointer"
+                  disabled={safeIndex <= 0}
+                  aria-label="Previous workspace"
+                  onClick={() => goTo(safeIndex - 1)}
+                >
+                  <ChevronLeft className="size-4" />
+                </Button>
+                <div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
+                  {slideTabs.map((tab) => (
+                    <Button
+                      key={tab.id}
+                      type="button"
+                      variant={tab.index === safeIndex ? 'default' : 'outline'}
+                      size="sm"
+                      className="max-w-56 cursor-pointer"
+                      title={tab.description}
+                      onClick={() => goTo(tab.index)}
+                    >
+                      <TruncatedText className="min-w-0">{tab.title}</TruncatedText>
+                    </Button>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  className="shrink-0 cursor-pointer"
+                  disabled={safeIndex >= slides.length - 1}
+                  aria-label="Next workspace"
+                  onClick={() => goTo(safeIndex + 1)}
+                >
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
+            </div>
+          ) : null}
+          {showCustomize && customizeHref ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="icon-sm"
+                  className="shrink-0 cursor-pointer"
+                >
+                  <Link href={customizeHref} aria-label="Customize">
+                    <SlidersHorizontal className="size-4" />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Customize</TooltipContent>
+            </Tooltip>
           ) : null}
         </div>
-      </div>
+      ) : null}
 
       <div className="relative min-h-0 flex-1">
         {slides.map((slide, index) => {

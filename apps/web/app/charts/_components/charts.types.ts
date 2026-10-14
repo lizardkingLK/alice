@@ -25,6 +25,7 @@ export type ChartBoardSummary = {
 export type ChartWidgetTypeId =
   | 'chart'
   | 'data-over-time'
+  | 'nested-donut'
   | 'numbers'
   | 'battery'
   | 'gantt'
@@ -35,6 +36,9 @@ export type ChartWidgetTypeId =
   | 'table'
   | 'list'
   | 'burndown';
+
+/** Values measure for nested-donut (and future numeric charts). */
+export type ChartWidgetMeasure = 'item_count' | 'story_points';
 
 export type ChartWidgetCatalogItem = {
   readonly id: ChartWidgetTypeId;
@@ -109,8 +113,11 @@ export type ChartBoardWidgetInstance = {
    * Defaults to `status` when unset.
    */
   readonly labelField?: ChartsLabelFieldId;
-  /** Values measure — Tier 1 supports item count only. */
-  readonly measure?: 'item_count';
+  /**
+   * Values measure. Flat Chart widgets stay on item_count; nested-donut also
+   * supports story_points via the Values sidebar.
+   */
+  readonly measure?: ChartWidgetMeasure;
   /** Customize: show slice labels as raw count or percent of total. */
   readonly showValueAs?: ChartsShowValueAs;
   /** Customize: sort slices in the pie/legend. */
@@ -172,6 +179,8 @@ export type ChartWidgetDisplaySettingsPatch = {
   readonly visibleTableColumns?: readonly ChartsTableColumnId[];
   /** Pass `null` or `{}` to clear overrides. */
   readonly sliceColors?: Readonly<Record<string, ChartsSliceColorToken>> | null;
+  /** Nested-donut Values measure; omit / item_count is the default. */
+  readonly measure?: ChartWidgetMeasure | null;
 };
 
 /**

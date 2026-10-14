@@ -6,7 +6,7 @@ describe('ChatHeroSection', () => {
   it('renders invisible scroll and overflow classes on the root container', () => {
     const handleSendMessage = vi.fn();
     const { container } = render(
-      <ChatHeroSection isPage={true} handleSendMessage={handleSendMessage} />
+      <ChatHeroSection variant="page" handleSendMessage={handleSendMessage} />
     );
 
     const root = container.firstElementChild as HTMLElement;
@@ -19,7 +19,7 @@ describe('ChatHeroSection', () => {
   it('renders in drawer/compact mode with invisible scroll classes', () => {
     const handleSendMessage = vi.fn();
     const { container } = render(
-      <ChatHeroSection isPage={false} handleSendMessage={handleSendMessage} />
+      <ChatHeroSection variant="drawer" handleSendMessage={handleSendMessage} />
     );
 
     const root = container.firstElementChild as HTMLElement;
@@ -30,7 +30,7 @@ describe('ChatHeroSection', () => {
   it('triggers handleSendMessage when a suggestion card is clicked', () => {
     const handleSendMessage = vi.fn();
     render(
-      <ChatHeroSection isPage={true} handleSendMessage={handleSendMessage} />
+      <ChatHeroSection variant="page" handleSendMessage={handleSendMessage} />
     );
 
     const suggestionButton = screen.getByRole('button', {
@@ -41,5 +41,21 @@ describe('ChatHeroSection', () => {
     expect(handleSendMessage).toHaveBeenCalledWith(
       expect.stringContaining('work-item creation')
     );
+  });
+
+  it('shows a short welcome without suggestion cards in widget mode', () => {
+    const handleSendMessage = vi.fn();
+    render(
+      <ChatHeroSection variant="widget" handleSendMessage={handleSendMessage} />
+    );
+
+    expect(
+      screen.getByRole('heading', { name: 'How can I help?' })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: /Create new work-item creation flow/i,
+      })
+    ).not.toBeInTheDocument();
   });
 });

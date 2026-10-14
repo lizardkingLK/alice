@@ -19,10 +19,10 @@ import {
   removeLocalStorageItem,
   setLocalStorageJson,
 } from '@/lib/local-storage';
+import { mergeStoredDashboardLayout } from '@/lib/dashboard-grid-layout';
 import {
   DEFAULT_LAYOUT,
   LAYOUT_STORAGE_KEY,
-  WIDGET_CATALOG,
   type WidgetId,
 } from './dashboard-mock-data';
 import { DashboardWidget } from './dashboard-widgets';
@@ -30,34 +30,11 @@ import type { DashboardBurndownBootstrap } from '@/app/dashboard/_services/dashb
 import 'react-grid-layout/css/styles.css';
 import './dashboard-grid.css';
 
-function isWidgetId(value: string): value is WidgetId {
-  return WIDGET_CATALOG.some((widget) => widget.id === value);
-}
-
 function readStoredLayout(): LayoutItem[] {
-  const parsed = getLocalStorageJson<LayoutItem[]>(LAYOUT_STORAGE_KEY);
-  if (!Array.isArray(parsed) || parsed.length === 0) {
-    return [...DEFAULT_LAYOUT];
-  }
-
-  const byId = new Map(
-    parsed.filter((item) => isWidgetId(item.i)).map((item) => [item.i, item])
+  return mergeStoredDashboardLayout(
+    DEFAULT_LAYOUT,
+    getLocalStorageJson(LAYOUT_STORAGE_KEY)
   );
-
-  return DEFAULT_LAYOUT.map((fallback) => {
-    const stored = byId.get(fallback.i);
-    if (!stored) {
-      return { ...fallback };
-    }
-
-    return {
-      ...fallback,
-      x: stored.x,
-      y: stored.y,
-      w: stored.w,
-      h: stored.h,
-    };
-  });
 }
 
 type DashboardOverviewProps = {

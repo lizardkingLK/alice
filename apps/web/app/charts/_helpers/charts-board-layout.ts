@@ -5,6 +5,7 @@ import type {
   ChartWidgetTypeId,
 } from '@/app/charts/_components/charts.types';
 import { isBurndownWidgetType } from '@/app/charts/_helpers/charts-burndown-widget';
+import { isNestedDonutWidgetType } from '@/app/charts/_helpers/charts-nested-donut-widget';
 
 const DEFAULT_SIZE = {
   w: 4,
@@ -27,7 +28,11 @@ export function layoutSizeForWidgetType(typeId: ChartWidgetTypeId): {
   readonly minW: number;
   readonly minH: number;
 } {
-  if (typeId === 'chart' || isBurndownWidgetType(typeId)) {
+  if (
+    typeId === 'chart' ||
+    isNestedDonutWidgetType(typeId) ||
+    isBurndownWidgetType(typeId)
+  ) {
     return CHART_TYPE_SIZE;
   }
   return DEFAULT_SIZE;

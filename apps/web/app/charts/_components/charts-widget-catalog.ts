@@ -68,6 +68,16 @@ export const CHART_WIDGET_CATALOG: readonly ChartWidgetDefinition[] = [
     available: true,
   },
   {
+    id: 'nested-donut',
+    title: 'Nested donut',
+    description:
+      'Two-ring hierarchy: parents inside, direct children on the outer ring',
+    icon: ChartPie,
+    category: 'staying-on-top',
+    quickAdd: true,
+    available: true,
+  },
+  {
     id: 'numbers',
     title: 'Numbers',
     description: 'Get a quick view on all number columns',
