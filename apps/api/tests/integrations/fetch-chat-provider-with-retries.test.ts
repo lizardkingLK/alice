@@ -37,31 +37,32 @@ describe('fetchChatProviderWithRetries', () => {
     expect(fetchOnce).toHaveBeenCalledTimes(1);
   });
 
-  it('retries transient errors then succeeds', async () => {
-    vi.useFakeTimers();
-    const fetchOnce = vi
-      .fn()
-      .mockResolvedValueOnce(
-        new Response('busy', { status: 503, statusText: 'Service Unavailable' })
-      )
-      .mockResolvedValueOnce(new Response('{"ok":true}', { status: 200 }));
+  it.each([503, 529])(
+    'retries transient HTTP %s errors then succeeds',
+    async (status) => {
+      vi.useFakeTimers();
+      const fetchOnce = vi
+        .fn()
+        .mockResolvedValueOnce(new Response('busy', { status }))
+        .mockResolvedValueOnce(new Response('{"ok":true}', { status: 200 }));
 
-    const promise = fetchChatProviderWithRetries({
-      provider: 'test',
-      providerLabel: 'Test',
-      modelId: 'm1',
-      messagesCount: 2,
-      fetchOnce,
-      resolveUserFacingError: () => null,
-      initialDelayMs: 10,
-    });
+      const promise = fetchChatProviderWithRetries({
+        provider: 'test',
+        providerLabel: 'Test',
+        modelId: 'm1',
+        messagesCount: 2,
+        fetchOnce,
+        resolveUserFacingError: () => null,
+        initialDelayMs: 10,
+      });
 
-    await vi.runAllTimersAsync();
-    const response = await promise;
+      await vi.runAllTimersAsync();
+      const response = await promise;
 
-    expect(response.status).toBe(200);
-    expect(fetchOnce).toHaveBeenCalledTimes(2);
-  });
+      expect(response.status).toBe(200);
+      expect(fetchOnce).toHaveBeenCalledTimes(2);
+    }
+  );
 
   it('throws ChatProviderError when resolveUserFacingError returns a message', async () => {
     const fetchOnce = vi.fn(
