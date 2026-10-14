@@ -16,6 +16,9 @@ export function httpStatusFromErrorMessage(
   if (/not found/i.test(message)) {
     return 404;
   }
+  if (message.startsWith('Invalid integration configuration.')) {
+    return 400;
+  }
   return fallback;
 }
 

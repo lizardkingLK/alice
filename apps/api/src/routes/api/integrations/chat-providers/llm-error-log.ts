@@ -9,28 +9,29 @@ export function logLlmProviderError(
   errorDetails: {
     timestamp: string;
     status: number;
-    statusText: string;
-    errorBody: string;
     attempt: number;
     messagesCount: number;
+    responseBodyBytes: number;
   }
 ): void {
+  const safeProvider = sanitizeLog(provider);
+  const safeTimestamp = sanitizeLog(errorDetails.timestamp);
   const logMessage: string = [
-    `[${errorDetails.timestamp}]`,
-    provider,
+    `[${safeTimestamp}]`,
+    safeProvider,
     'Attempt',
     errorDetails.attempt,
     'failed with Status',
     errorDetails.status,
-    `${errorDetails.statusText}.`,
-    'Body:',
-    `${errorDetails.errorBody}.`,
+    '.',
+    'Provider response body omitted; bytes:',
+    `${errorDetails.responseBodyBytes}.`,
     'Messages in history:',
     `${errorDetails.messagesCount}\n`,
   ].join(' ');
 
   console.error(
-    `${provider} Error: Request failed with status ${errorDetails.status}. See ${CHATBOT_ERRORS_LOG} for details.`
+    `${safeProvider} Error: Request failed with status ${errorDetails.status}. See ${CHATBOT_ERRORS_LOG} for details.`
   );
   try {
     const logFilePath = path.join(

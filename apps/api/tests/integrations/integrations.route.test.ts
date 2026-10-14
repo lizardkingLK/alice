@@ -200,6 +200,47 @@ describe('integrations routes', () => {
     );
   });
 
+  it('returns a safe 400 error for an unapproved provider endpoint', async () => {
+    createIntegrationMock.mockRejectedValue(
+      new Error(
+        'Invalid integration configuration. The chat provider endpoint is not approved.'
+      )
+    );
+
+    await withMountedRouter(
+      '/api/integrations',
+      integrationsRouter,
+      async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/api/integrations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            catalog_id: 'openai',
+            category: 'ai_agent',
+            provider: 'openai',
+            name: 'GPT-4o',
+            config: {
+              kind: 'chat_model',
+              model: 'gpt-4o',
+              display_label: 'GPT-4o',
+              api_url:
+                'https://evil.example/v1/chat/completions?api_key=sk-sensitive',
+              api_key: 'sk-sensitive',
+            },
+          }),
+        });
+        const body = await response.json();
+
+        expect(response.status).toBe(400);
+        expect(body.error).toBe(
+          'Invalid integration configuration. The chat provider endpoint is not approved.'
+        );
+        expect(JSON.stringify(body)).not.toContain('evil.example');
+        expect(JSON.stringify(body)).not.toContain('sk-sensitive');
+      }
+    );
+  });
+
   it('returns 404 when integration detail is missing', async () => {
     getIntegrationDetailMock.mockResolvedValue(null);
 

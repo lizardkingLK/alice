@@ -192,36 +192,11 @@ export function openAiChatCompletionToChatLlmResponse(
   };
 }
 
-export function parseSpaceXAIApiErrorMessage(
-  errorBody: string
-): string | undefined {
-  try {
-    const parsed = JSON.parse(errorBody) as {
-      error?: { message?: string };
-      message?: string;
-    };
-    if (typeof parsed.error?.message === 'string') {
-      return parsed.error.message;
-    }
-    if (typeof parsed.message === 'string') {
-      return parsed.message;
-    }
-  } catch {
-    return undefined;
-  }
-  return undefined;
-}
-
 export function resolveSpaceXAIUserFacingError(params: {
   status: number;
   errorBody: string;
   modelId: string;
 }): string | null {
-  const trimmedBody = params.errorBody.trim();
-  const apiMessage =
-    parseSpaceXAIApiErrorMessage(params.errorBody) ??
-    (trimmedBody.length > 0 ? trimmedBody : undefined);
-
   if (params.status === 401 || params.status === 403) {
     return 'SpaceXAI rejected the API key. Update it under Settings → Integrations → SpaceXAI.';
   }
@@ -230,12 +205,8 @@ export function resolveSpaceXAIUserFacingError(params: {
     return `SpaceXAI model "${params.modelId}" was not found. Pick a suggested model (e.g. grok-4.3) under Settings → Integrations → SpaceXAI.`;
   }
 
-  if (params.status === 422 && apiMessage) {
-    return `SpaceXAI rejected the request: ${apiMessage}`;
-  }
-
-  if (apiMessage) {
-    return `SpaceXAI error: ${apiMessage}`;
+  if (params.status === 400 || params.status === 422) {
+    return 'SpaceXAI rejected the request. Check the configured model and try again.';
   }
 
   return null;

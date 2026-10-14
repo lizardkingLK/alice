@@ -184,14 +184,19 @@ describe('resolveSpaceXAIUserFacingError', () => {
     ).toContain('API key');
   });
 
-  it('surfaces plain-text 422 bodies from xAI', () => {
-    expect(
-      resolveSpaceXAIUserFacingError({
-        status: 422,
-        errorBody:
-          'Failed to deserialize the JSON body into the target type: tools[0]: missing field `parameters`',
-        modelId: 'grok-4.3',
-      })
-    ).toContain('missing field `parameters`');
+  it('does not expose plain-text 422 response bodies from xAI', () => {
+    const responseBody =
+      'Authorization: Bearer sk-sensitive; tools[0]: missing field `parameters`';
+    const message = resolveSpaceXAIUserFacingError({
+      status: 422,
+      errorBody: responseBody,
+      modelId: 'grok-4.3',
+    });
+
+    expect(message).toBe(
+      'SpaceXAI rejected the request. Check the configured model and try again.'
+    );
+    expect(message).not.toContain(responseBody);
+    expect(message).not.toContain('sk-sensitive');
   });
 });

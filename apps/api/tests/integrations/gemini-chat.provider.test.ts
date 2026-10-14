@@ -43,5 +43,10 @@ describe('GeminiChatProvider', () => {
       statusCode: 400,
       message: expect.stringContaining('gemini-3.5-flash-lite'),
     } satisfies Partial<ChatProviderError>);
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ redirect: 'error' })
+    );
   });
 });

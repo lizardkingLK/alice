@@ -234,7 +234,7 @@ Validated with Zod discriminated unions in `@repo/types` (`integrations/config.t
 | `model`         | No      | Provider model id sent to the API                                    |
 | `model_version` | No      | Shown in UI; optional patch version                                  |
 | `display_label` | No      | Chat dropdown label                                                  |
-| `api_url`       | No      | Override endpoint; provider strategy supplies default                |
+| `api_url`       | No      | Optional official provider endpoint; custom hosts are rejected       |
 | `api_key`       | **Yes** | AES-256-GCM `v1:` blob; client sends plaintext only on create/update |
 
 OpenAI example — same shape, different defaults:
@@ -387,6 +387,17 @@ Mirror [GITHUB_INTEGRATION.md](../projects/GITHUB_INTEGRATION.md):
 2. **Read (API JSON)** — `withoutIntegrationConfigSecrets()` replaces secret strings with `has_api_key: true` (never return `v1:` blobs).
 3. **Read (chat)** — decrypt in-process inside `ChatService` only; discard plaintext after the HTTP call to the LLM vendor.
 4. **Lazy migration** — plaintext values without `v1:` prefix decrypt as passthrough until rewritten.
+
+Provider endpoint overrides are restricted to HTTPS URLs on the official
+Gemini, xAI, OpenAI, or Anthropic API host and the expected chat endpoint
+path. Provider requests do not follow redirects. This prevents a configured
+URL from forwarding a decrypted API key to another host. Custom LLM proxies,
+Azure OpenAI endpoints, and other OpenAI-compatible hosts are not supported by
+the current integration contract.
+
+The API also validates each supported catalog id against its fixed category,
+provider slug, and config kind before creating or updating a row. Existing
+official Gemini and xAI endpoint formats remain supported.
 
 Requires `INTEGRATION_TOKEN_ENCRYPTION_KEY` on `apps/api` (already used for GitHub PAT + Jira OAuth).
 

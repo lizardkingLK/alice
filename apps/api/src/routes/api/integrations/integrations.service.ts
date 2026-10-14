@@ -6,6 +6,7 @@ import {
 import {
   INTEGRATION_SECRET_KEYS,
   UserRoleEnum,
+  integrationIdentityValidationMessage,
   isPlainRecord,
   withoutIntegrationConfigSecrets,
   type ChatModelOption,
@@ -21,6 +22,7 @@ import {
   type PatchIntegrationBody,
 } from '@repo/types';
 import { IntegrationStatus, Prisma } from '@repo/types/prisma';
+import { resolveApprovedChatProviderApiUrl } from './chat-providers/chat-provider-endpoints';
 import type { ResolvedChatModelConfig } from './chat-providers/chat-provider.types';
 import type { IntegrationsRepository } from './integrations.repository';
 
@@ -131,6 +133,45 @@ function stripIntegrationSecrets<T extends IntegrationListRow>(
   };
 }
 
+function assertValidIntegrationConfiguration(params: {
+  catalogId: string;
+  category: string;
+  provider: string;
+  config: unknown;
+}): void {
+  if (!isPlainRecord(params.config) || typeof params.config.kind !== 'string') {
+    throw new Error('Invalid integration configuration.');
+  }
+
+  const identityMessage = integrationIdentityValidationMessage({
+    catalogId: params.catalogId,
+    category: params.category,
+    provider: params.provider,
+    configKind: params.config.kind,
+  });
+  if (identityMessage) {
+    throw new Error(`Invalid integration configuration. ${identityMessage}`);
+  }
+
+  if (params.config.kind !== 'chat_model') {
+    return;
+  }
+
+  const model = params.config.model;
+  if (typeof model !== 'string' || model.length === 0) {
+    throw new Error('Invalid integration configuration.');
+  }
+
+  resolveApprovedChatProviderApiUrl({
+    provider: params.provider,
+    model,
+    configuredApiUrl:
+      typeof params.config.api_url === 'string'
+        ? params.config.api_url
+        : undefined,
+  });
+}
+
 function toChatModelOption(row: IntegrationListRow): ChatModelOption | null {
   if (!isPlainRecord(row.config) || row.config.kind !== 'chat_model') {
     return null;
@@ -156,22 +197,6 @@ function toChatModelOption(row: IntegrationListRow): ChatModelOption | null {
   };
 }
 
-function defaultApiUrlForProvider(provider: string, model: string): string {
-  if (provider === 'gemini') {
-    return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-  }
-  if (provider === 'spacexai') {
-    return 'https://api.x.ai/v1/chat/completions';
-  }
-  if (provider === 'openai') {
-    return 'https://api.openai.com/v1/chat/completions';
-  }
-  if (provider === 'anthropic') {
-    return 'https://api.anthropic.com/v1/messages';
-  }
-  throw new Error(`Unknown chat provider: ${provider}`);
-}
-
 function mapIntegrationRowToChatModelConfig(
   row: IntegrationDetailRow
 ): ResolvedChatModelConfig {
@@ -184,6 +209,20 @@ function mapIntegrationRowToChatModelConfig(
     throw new Error('Chat model config is missing model id');
   }
 
+  assertValidIntegrationConfiguration({
+    catalogId: row.catalog_id,
+    category: row.category,
+    provider: row.provider,
+    config: row.config,
+  });
+
+  const apiUrl = resolveApprovedChatProviderApiUrl({
+    provider: row.provider,
+    model,
+    configuredApiUrl:
+      typeof row.config.api_url === 'string' ? row.config.api_url : undefined,
+  });
+
   const encryptedApiKey = row.config.api_key;
   const apiKey = decryptSecretIfPresent(
     typeof encryptedApiKey === 'string' ? encryptedApiKey : null
@@ -191,13 +230,6 @@ function mapIntegrationRowToChatModelConfig(
   if (!apiKey) {
     throw new Error('Chat model API key is not configured');
   }
-
-  const configuredApiUrl =
-    typeof row.config.api_url === 'string' ? row.config.api_url : '';
-  const apiUrl =
-    configuredApiUrl.length > 0
-      ? configuredApiUrl
-      : defaultApiUrlForProvider(row.provider, model);
 
   return {
     integrationId: row.id,
@@ -253,6 +285,13 @@ export class IntegrationsService {
   ): Promise<IntegrationDetailWire> {
     await requireIntegrationManager(actorId);
 
+    assertValidIntegrationConfiguration({
+      catalogId: input.catalog_id,
+      category: input.category,
+      provider: input.provider,
+      config: input.config,
+    });
+
     const row = await this.integrationsRepository.create({
       actorId,
       catalog_id: input.catalog_id,
@@ -280,6 +319,19 @@ export class IntegrationsService {
       throw new Error('Integration not found');
     }
 
+    const preparedConfig =
+      input.config !== undefined
+        ? prepareStoredConfigForPatch(existing.config, input.config)
+        : undefined;
+    const nextConfig = preparedConfig ?? existing.config;
+
+    assertValidIntegrationConfiguration({
+      catalogId: input.catalog_id ?? existing.catalog_id,
+      category: input.category ?? existing.category,
+      provider: input.provider ?? existing.provider,
+      config: nextConfig,
+    });
+
     const row = await this.integrationsRepository.update({
       actorId,
       id,
@@ -290,9 +342,9 @@ export class IntegrationsService {
       ...(input.provider !== undefined ? { provider: input.provider } : {}),
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.status !== undefined ? { status: input.status } : {}),
-      ...(input.config !== undefined
+      ...(preparedConfig !== undefined
         ? {
-            config: prepareStoredConfigForPatch(existing.config, input.config),
+            config: preparedConfig,
           }
         : {}),
       ...(input.is_default !== undefined

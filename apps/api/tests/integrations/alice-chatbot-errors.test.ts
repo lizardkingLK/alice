@@ -49,4 +49,21 @@ describe('resolveGeminiUserFacingError', () => {
       })
     ).toBeUndefined();
   });
+
+  it('does not surface arbitrary response text as a suggested model', () => {
+    const message = resolveGeminiUserFacingError({
+      status: 404,
+      errorBody: JSON.stringify({
+        error: {
+          message:
+            'Model unavailable. Please use models/sk-sensitive/Authorization instead.',
+        },
+      }),
+      modelId: 'gemini-retired',
+    });
+
+    expect(message).toContain('gemini-retired');
+    expect(message).not.toContain('sk-sensitive');
+    expect(message).not.toContain('Authorization');
+  });
 });

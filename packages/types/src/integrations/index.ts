@@ -3,6 +3,7 @@ export {
   integrationConfigPatchSchema,
   integrationConfigPublicSchema,
   integrationConfigStoredSchema,
+  integrationIdentityValidationMessage,
   integrationSecretHasKey,
   isPlainRecord,
   parseIntegrationConfigPublic,
@@ -12,6 +13,7 @@ export {
   type IntegrationConfigPatch,
   type IntegrationConfigPublic,
   type IntegrationConfigStored,
+  type IntegrationIdentityInput,
   type IntegrationSecretKey,
 } from './config.js';
 

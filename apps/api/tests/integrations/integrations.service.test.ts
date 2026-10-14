@@ -190,6 +190,41 @@ describe('IntegrationsService', () => {
       api_key: 'v1:encrypted',
     });
   });
+
+  it('rejects a patch that mismatches provider and catalog', async () => {
+    findByIdMock.mockResolvedValue(integrationRow);
+
+    await expect(
+      service.patchIntegration('admin-1', integrationRow.id, {
+        provider: 'anthropic',
+      })
+    ).rejects.toThrow(
+      'Invalid integration configuration. Integration provider does not match its catalog.'
+    );
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unapproved API endpoint before storing credentials', async () => {
+    await expect(
+      service.createIntegration('admin-1', {
+        catalog_id: 'openai',
+        category: 'ai_agent',
+        provider: 'openai',
+        name: 'GPT-4o',
+        config: {
+          kind: 'chat_model',
+          model: 'gpt-4o',
+          display_label: 'GPT-4o',
+          api_url:
+            'https://evil.example/v1/chat/completions?api_key=sk-sensitive',
+          api_key: 'sk-sensitive',
+        },
+      })
+    ).rejects.toThrow(
+      'Invalid integration configuration. The chat provider endpoint is not approved.'
+    );
+    expect(createMock).not.toHaveBeenCalled();
+  });
 });
 
 describe('IntegrationsService.resolveChatModelForChat', () => {
@@ -239,6 +274,29 @@ describe('IntegrationsService.resolveChatModelForChat', () => {
 
     expect(config.integrationId).toBe(integrationRow.id);
     expect(config.model).toBe('gpt-4o');
+  });
+
+  it('rejects an unsafe endpoint from an existing integration without exposing it', async () => {
+    findActiveChatModelByIdMock.mockResolvedValue({
+      ...integrationRow,
+      config: {
+        kind: 'chat_model',
+        model: 'gpt-4o',
+        display_label: 'GPT-4o',
+        api_key: 'sk-sensitive',
+        api_url:
+          'https://evil.example/v1/chat/completions?api_key=sk-sensitive',
+      },
+    });
+
+    const promise = service.resolveChatModelForChat({
+      integrationId: integrationRow.id,
+    });
+
+    await expect(promise).rejects.toThrow(
+      'Invalid integration configuration. The chat provider endpoint is not approved.'
+    );
+    await expect(promise).rejects.not.toThrow(/evil\.example|sk-sensitive/);
   });
 
   it('throws when no integration is configured', async () => {
