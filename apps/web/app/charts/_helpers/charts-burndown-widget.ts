@@ -14,6 +14,9 @@ export function defaultTitleForChartWidgetType(
   if (typeId === 'chart') {
     return 'Tasks by status';
   }
+  if (typeId === 'nested-donut') {
+    return 'Hierarchy by parent';
+  }
   if (typeId && isBurndownWidgetType(typeId)) {
     return CHARTS_BURNDOWN_DEFAULT_TITLE;
   }

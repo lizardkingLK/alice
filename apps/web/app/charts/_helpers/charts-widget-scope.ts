@@ -6,6 +6,7 @@ import type {
 } from '@/app/charts/_components/charts.types';
 import type { ChartsWidgetFilterDraft } from '@/app/charts/_components/charts-sample.data';
 import { isBurndownWidgetType } from '@/app/charts/_helpers/charts-burndown-widget';
+import { isNestedDonutWidgetType } from '@/app/charts/_helpers/charts-nested-donut-widget';
 import { CHARTS_DEFAULT_QUICK_SELECTIONS } from '@/app/charts/_helpers/charts-widget-defaults';
 import { QUERY_FILTER_ALL_VALUE } from '@/hooks/use-query-filter';
 
@@ -21,9 +22,13 @@ export function isWorkspaceScoped(
   return Boolean(workspace?.scope?.projectId && workspace?.scope?.sprintId);
 }
 
-/** Widget types that carry project/sprint filters (chart + burndown). */
+/** Widget types that carry project/sprint filters (chart + nested + burndown). */
 export function widgetTypeRequiresScope(typeId: ChartWidgetTypeId): boolean {
-  return typeId === 'chart' || isBurndownWidgetType(typeId);
+  return (
+    typeId === 'chart' ||
+    isNestedDonutWidgetType(typeId) ||
+    isBurndownWidgetType(typeId)
+  );
 }
 
 /** Burndown must pick a concrete sprint; chart may use All sprints. */

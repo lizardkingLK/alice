@@ -25,7 +25,11 @@ import {
   Paperclip,
 } from '@repo/ui/lib/icons';
 import type { ChatModelOption } from '@repo/types';
-import type { ChatMessage } from './chat-client.types';
+import {
+  isCompactChatChrome,
+  type ChatClientVariant,
+  type ChatMessage,
+} from './chat-client.types';
 import type { ChatConversation } from '../_services/chat.mutations.client';
 import {
   ChatAttachmentTiles,
@@ -157,7 +161,7 @@ function ChatFrameHistoryToggle({
 
 type ChatFramePanelHeaderProps = {
   readonly isPage: boolean;
-  readonly variant: 'page' | 'drawer' | 'docked';
+  readonly variant: ChatClientVariant;
   readonly showHistory: boolean;
   readonly assistantIdentity: ReturnType<typeof useBoundChatAgent>;
   readonly chatModels: readonly ChatModelOption[];
@@ -194,30 +198,34 @@ function ChatFramePanelHeader({
   onSelectedIntegrationIdChange,
   onClose,
 }: Readonly<ChatFramePanelHeaderProps>) {
-  const isDocked = variant === 'docked';
+  const isCompact = isCompactChatChrome(variant);
+  const isWidget = variant === 'widget';
 
   return (
     <header
       className={cn(
-        isDocked ? CHAT_DOCKED_HEADER_CLASS : CHAT_PANEL_HEADER_CLASS,
-        'justify-between gap-3',
-        isDocked ? 'px-3' : 'sm:px-6'
+        isCompact ? CHAT_DOCKED_HEADER_CLASS : CHAT_PANEL_HEADER_CLASS,
+        isWidget ? 'justify-end gap-1 px-2' : 'justify-between gap-3',
+        isCompact && !isWidget ? 'px-3' : null,
+        !isCompact ? 'sm:px-6' : null
       )}
     >
-      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        {isPage ? (
-          <ChatFrameHistoryToggle
-            showHistory={showHistory}
-            onToggleHistory={onToggleHistory}
+      {isWidget ? null : (
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          {isPage ? (
+            <ChatFrameHistoryToggle
+              showHistory={showHistory}
+              onToggleHistory={onToggleHistory}
+            />
+          ) : null}
+          <ChatFrameHeaderIdentity
+            isPage={isPage}
+            identity={assistantIdentity}
+            onOpenGallery={onOpenGallery}
+            onOpenDetail={onOpenDetail}
           />
-        ) : null}
-        <ChatFrameHeaderIdentity
-          isPage={isPage}
-          identity={assistantIdentity}
-          onOpenGallery={onOpenGallery}
-          onOpenDetail={onOpenDetail}
-        />
-      </div>
+        </div>
+      )}
       <div className="flex shrink-0 items-center gap-1">
         <ChatClientHeaderActions
           variant={variant}
@@ -238,7 +246,7 @@ function ChatFramePanelHeader({
 }
 
 type ChatFrameComposerProps = {
-  readonly variant: 'page' | 'drawer' | 'docked';
+  readonly variant: ChatClientVariant;
   readonly pendingAttachments: PendingChatAttachment[];
   readonly inputValue: string;
   readonly isInputDisabled: boolean;
@@ -272,7 +280,7 @@ function ChatFrameComposer({
   onPaste,
   onInputChange,
 }: Readonly<ChatFrameComposerProps>) {
-  const isDocked = variant === 'docked';
+  const isCompact = isCompactChatChrome(variant);
   const isUploading = pendingAttachments.some((a) => a.isUploading);
   const canSend =
     (Boolean(inputValue.trim()) || pendingAttachments.length > 0) &&
@@ -281,7 +289,7 @@ function ChatFrameComposer({
 
   return (
     <div
-      className={cn('bg-muted/20 shrink-0', isDocked ? 'p-2.5' : 'p-3 sm:p-4')}
+      className={cn('bg-muted/20 shrink-0', isCompact ? 'p-2.5' : 'p-3 sm:p-4')}
     >
       <div className="mx-auto max-w-3xl">
         <ChatAttachmentTiles
@@ -293,7 +301,7 @@ function ChatFrameComposer({
           onSubmit={onFormSubmit}
           className={cn(
             'flex items-end',
-            isDocked ? 'gap-1.5' : 'gap-2 sm:gap-3'
+            isCompact ? 'gap-1.5' : 'gap-2 sm:gap-3'
           )}
         >
           <input
@@ -312,12 +320,12 @@ function ChatFrameComposer({
               <Button
                 type="button"
                 variant="ghost"
-                size={isDocked ? 'icon' : 'icon-lg'}
+                size={isCompact ? 'icon' : 'icon-lg'}
                 disabled={isInputDisabled}
                 onClick={() => fileInputRef.current?.click()}
                 aria-label="Attach files (JSON, CSV, etc.)"
               >
-                <Paperclip className={isDocked ? 'size-4' : 'size-5'} />
+                <Paperclip className={isCompact ? 'size-4' : 'size-5'} />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">
@@ -335,14 +343,14 @@ function ChatFrameComposer({
             placeholder="Enter your message..."
             className={cn(
               'bg-background flex-1 resize-none',
-              isDocked
+              isCompact
                 ? 'max-h-28 min-h-8 px-2.5 py-1.5 text-sm'
                 : 'max-h-40 min-h-10 px-3 py-2.5 sm:px-4'
             )}
           />
           <Button
             type="submit"
-            size={isDocked ? 'icon' : 'icon-lg'}
+            size={isCompact ? 'icon' : 'icon-lg'}
             disabled={!canSend}
             aria-label="Send message"
           >
@@ -356,7 +364,7 @@ function ChatFrameComposer({
 
 type ChatClientFrameProps = {
   readonly isPage: boolean;
-  readonly variant: 'page' | 'drawer' | 'docked';
+  readonly variant: ChatClientVariant;
   readonly chatBreadcrumbTrail: readonly DashboardBreadcrumbOverride[] | null;
   readonly isLoadingConversations: boolean;
   readonly isLoadingHistory: boolean;

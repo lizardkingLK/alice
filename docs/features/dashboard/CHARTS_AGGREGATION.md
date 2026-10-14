@@ -295,28 +295,34 @@ That is intentional for parity with backlog/sprint planning: children inherit th
 parent sprint (see work-items sprint inheritance). A sprint pie can show both an
 Epic and its Tasks as separate slices when grouped by **status** or **type**.
 
-### Multilevel / nested donut (proposal)
+### Nested donut (shipped)
 
-A sunburst-style chart (inner ring + outer ring), as in product explorations,
-could show:
+Catalog **`typeId: nested-donut`** — a two-ring hierarchy chart (not a
+`pieVariant` on Chart).
 
-| Ring  | Example grouping                          |
-| ----- | ----------------------------------------- |
-| Inner | Root work items in scope (e.g. Epics)     |
-| Outer | Direct children per inner slice (Stories) |
+| Ring | Membership |
+| ---- | ---------- |
+| 0 (inner) | Work items in scope whose parent is null or outside scope (promoted roots) |
+| 1 | Direct children in scope of ring-0 parents (`parentKey` = parent id) |
+| 2 (outer) | Direct children of ring-1 parents (e.g. Story → Subtask) |
 
-**Requirements before shipping:**
+Depth is capped at **3 rings** (Epic → Story → Subtask).
 
-- New analytics dimension (`hierarchy_level` or paired parent/child series), not
-  the flat rollup alone — likely a **second** hierarchy rollup table (same
-  trigger-maintained pattern as categorical + burndown)
-- Documented measure rules (count items vs sum story points; no double count)
-- Drilldown that respects parent–child links
-- UI behind chart type **Nested donut** with depth cap (likely 2 levels)
+**Measure (Values sidebar):** `item_count` (default) or `story_points`. Every
+node counts once; a parent’s own value is **not** the sum of its children. Outer
+arcs sum under each inner parent for layout.
 
-Until then, use **Type** / **State** labels on the existing pie or donut.
+**Storage:** `work_item_chart_hierarchy_rollups` — one row per active work item
+(trigger-maintained), separate from flat `work_item_chart_rollups`.
 
-**Do not implement nested donut until [open questions](#open-questions-before-nested--other-types) are answered.**
+**API:** `GET /api/v1/charts/analytics/hierarchy-series` and
+`.../hierarchy-drilldown` (`measure`, optional `rootWorkItemId` for dig,
+optional `ring` / `sliceKey` / `parentKey` for drilldown).
+
+**Dig navigation (UI):** Client keeps a `digPath` breadcrumb. Digging a
+`hasChildren` slice sets `rootWorkItemId` to that work-item id so ring 0 is
+its in-scope children. Leaves (and Table/Split via `preferDrilldown`) set
+`focusedSliceKey` for hierarchy drilldown instead of zooming.
 
 ---
 
@@ -469,18 +475,20 @@ be filled in the service from dates + estimated total if not stored.
 
 ---
 
-## Open questions (before nested / other types)
+## Open questions (resolved / remaining)
 
-Resolve before starting nested donut or non-burndown catalog types:
+Nested donut locks (shipped):
 
-1. **Nested as `pieVariant` on Chart vs new catalog `typeId`?**
-2. **Nested measure for v1:** `item_count` only (Tier 1 lock) or story points?
-3. **Counting rule:** count every node once vs leaves only; how do inner-ring
-   totals relate to outer (sum vs distinct parents)?
-4. **Hierarchy rollup grain:** parent_id + child dimensions vs
-   `hierarchy_level` rows — one table or two?
-5. **Data over time:** locked as burndown alias for this plan — confirm we will
-   **not** ship “created over time” under that catalog id without a rename.
+1. **Catalog:** new `typeId` **`nested-donut`** (not `pieVariant`).
+2. **Measure:** `item_count` and `story_points` via Values sidebar.
+3. **Counting:** every node once; outer children sum under each inner parent.
+4. **Grain:** one hierarchy rollup table (`work_item_chart_hierarchy_rollups`),
+   one row per work item with `parent_id`.
+
+Still open for other programs:
+
+5. **Data over time:** locked as burndown alias — do **not** ship “created over
+   time” under that catalog id without a rename.
 6. **Dashboard overview:** stay on live `computeBurndown` permanently, or move
    to `sprint_burndown_rollups` after Charts ships?
 
@@ -489,10 +497,10 @@ Resolve before starting nested donut or non-burndown catalog types:
 ## Non-goals (current Tier 1 window)
 
 - Neon / Render / Upstash / apps rename (Tier 2+)
-- Multilevel / nested donut series until open questions are locked
-- Story points on the **categorical** rollup
+- Story points on the **categorical** rollup (nested-donut has its own measure)
 - Postgres `REFRESH MATERIALIZED VIEW`
 - Overloading `work_item_chart_rollups` with burndown remaining/ideal
-- Shipping Numbers / Battery / Gantt / nested in the same burndown steps
+- Shipping Numbers / Battery / Gantt in the same delivery as nested-donut
 - Storing board JSON inside `saved_views.search` (use `charts.board_json` +
   typed `resource_*` on Views instead)
+- Nested depth beyond 3 rings / full sunburst (dig-zoom is shipped)
