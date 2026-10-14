@@ -29,6 +29,11 @@ const baseInput: ChatModelGenerateInput = {
       description: 'List accessible projects',
       parameters: { type: 'object', properties: {} },
     },
+    {
+      name: 'list_users',
+      description: 'List users',
+      parameters: { type: 'object', properties: {} },
+    },
   ],
 };
 
@@ -81,6 +86,14 @@ describe('OpenAiChatProvider', () => {
           function: {
             name: 'list_projects',
             description: 'List accessible projects',
+            parameters: { type: 'object', properties: {} },
+          },
+        },
+        {
+          type: 'function',
+          function: {
+            name: 'list_users',
+            description: 'List users',
             parameters: { type: 'object', properties: {} },
           },
         },

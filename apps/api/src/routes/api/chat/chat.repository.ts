@@ -209,11 +209,18 @@ export class ChatRepository {
     return (data || []) as ChatSprintSnapshot[];
   }
 
-  async listActiveSprintsSnapshot(): Promise<ChatSprintSnapshot[]> {
+  async listActiveSprintsSnapshot(
+    accessibleProjectIds: readonly string[]
+  ): Promise<ChatSprintSnapshot[]> {
+    if (accessibleProjectIds.length === 0) {
+      return [];
+    }
+
     const { data, error } = await this.db
       .from('sprints')
       .select('id, name, project_id, status')
-      .eq('status', 'active');
+      .eq('status', 'active')
+      .in('project_id', [...accessibleProjectIds]);
 
     if (error) throw error;
     return (data || []) as ChatSprintSnapshot[];

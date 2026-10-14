@@ -49,6 +49,10 @@ export class SpaceXAIChatProvider implements ChatModelProvider {
         }),
     });
 
-    return openAiChatCompletionResponseToChatLlmResponse(response, 'SpaceXAI');
+    return openAiChatCompletionResponseToChatLlmResponse(
+      response,
+      'SpaceXAI',
+      input.tools
+    );
   }
 }

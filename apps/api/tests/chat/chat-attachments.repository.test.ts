@@ -25,6 +25,7 @@ vi.mock('../../src/lib/prisma', () => ({
   prisma: {
     chat_attachments: {
       create: vi.fn(),
+      findFirst: vi.fn(),
       findUnique: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -261,7 +262,7 @@ describe('ChatAttachmentsRepository', () => {
 
     it('gets attachment by ID and generates new signed URL if expires_at is expired or null', async () => {
       const expiredDate = new Date(Date.now() - 3600 * 1000); // 1 hour ago
-      vi.mocked(prisma.chat_attachments.findUnique).mockResolvedValue({
+      vi.mocked(prisma.chat_attachments.findFirst).mockResolvedValue({
         id: 'attachment-uuid-1',
         user_id: 'user-uuid-1',
         file_name: 'doc.pdf',
@@ -274,7 +275,10 @@ describe('ChatAttachmentsRepository', () => {
 
       vi.mocked(prisma.chat_attachments.update).mockResolvedValue({} as never);
 
-      const result = await repository.getAttachmentById('attachment-uuid-1');
+      const result = await repository.getAttachmentById(
+        'user-uuid-1',
+        'attachment-uuid-1'
+      );
 
       expect(result).not.toBeNull();
       expect(result?.id).toBe('attachment-uuid-1');
@@ -282,9 +286,29 @@ describe('ChatAttachmentsRepository', () => {
       expect(result?.previewUrl).toBe('https://supabase.co/signed-url-test');
       expect(result?.downloadUrl).toBe('https://supabase.co/signed-url-test');
       expect(result?.expiresAt).toBeDefined();
+      expect(prisma.chat_attachments.findFirst).toHaveBeenCalledWith({
+        where: { id: 'attachment-uuid-1', user_id: 'user-uuid-1' },
+      });
       expect(prisma.chat_attachments.update).toHaveBeenCalledWith({
         where: { id: 'attachment-uuid-1' },
         data: { expires_at: expect.any(Date) },
+      });
+    });
+
+    it('does not return an attachment owned by another user', async () => {
+      vi.mocked(prisma.chat_attachments.findFirst).mockResolvedValue(null);
+
+      const result = await repository.getAttachmentById(
+        'requesting-user',
+        'attachment-uuid-1'
+      );
+
+      expect(result).toBeNull();
+      expect(prisma.chat_attachments.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: 'attachment-uuid-1',
+          user_id: 'requesting-user',
+        },
       });
     });
 

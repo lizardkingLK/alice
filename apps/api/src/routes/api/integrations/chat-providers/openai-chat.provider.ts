@@ -70,6 +70,10 @@ export class OpenAiChatProvider implements ChatModelProvider {
         }),
     });
 
-    return openAiChatCompletionResponseToChatLlmResponse(response, 'OpenAI');
+    return openAiChatCompletionResponseToChatLlmResponse(
+      response,
+      'OpenAI',
+      input.tools
+    );
   }
 }

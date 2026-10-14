@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ChatTurnRoles } from '@repo/types';
+import type { AliceChatTools } from '../../src/routes/api/chat/chat.route.types';
 import {
   aliceChatToolsToOpenAiTools,
   chatContentsToOpenAiMessages,
@@ -115,6 +116,26 @@ describe('chatContentsToOpenAiMessages', () => {
 });
 
 describe('openAiChatCompletionToChatLlmResponse', () => {
+  const toolSchemas: AliceChatTools = [
+    {
+      name: 'list_projects',
+      description: 'List projects',
+      parameters: { type: 'object' as const, properties: {} },
+    },
+    {
+      name: 'create_project',
+      description: 'Create a project',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          name: { type: 'string' },
+          key: { type: 'string' },
+        },
+        required: ['name', 'key'],
+      },
+    },
+  ];
+
   it('maps assistant text to ChatLlmResponse candidates', () => {
     expect(
       openAiChatCompletionToChatLlmResponse({
@@ -171,6 +192,132 @@ describe('openAiChatCompletionToChatLlmResponse', () => {
         },
       ],
     });
+  });
+
+  it('accepts an explicitly supplied empty object for a tool with no required arguments', () => {
+    expect(
+      openAiChatCompletionToChatLlmResponse(
+        {
+          choices: [
+            {
+              message: {
+                tool_calls: [
+                  {
+                    id: 'call_1',
+                    type: 'function',
+                    function: {
+                      name: 'list_projects',
+                      arguments: '{}',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        'SpaceXAI',
+        toolSchemas
+      ).candidates?.[0]?.content?.parts[0]?.functionCall?.args
+    ).toEqual({});
+  });
+
+  it.each([
+    ['', 'empty argument string'],
+    ['{"name":"Alice"}', 'missing required key'],
+    ['{"name":"Alice","key":42}', 'wrong argument type'],
+  ])('rejects %s before tool execution (%s)', (argumentsJson) => {
+    expect(() =>
+      openAiChatCompletionToChatLlmResponse(
+        {
+          choices: [
+            {
+              message: {
+                tool_calls: [
+                  {
+                    id: 'call_1',
+                    type: 'function',
+                    function: {
+                      name: 'create_project',
+                      arguments: argumentsJson,
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        'SpaceXAI',
+        toolSchemas
+      )
+    ).toThrow('SpaceXAI returned an invalid response.');
+  });
+
+  it('rejects duplicate tool-call ids in one provider response', () => {
+    expect(() =>
+      openAiChatCompletionToChatLlmResponse(
+        {
+          choices: [
+            {
+              message: {
+                tool_calls: [
+                  {
+                    id: 'call_duplicate',
+                    type: 'function',
+                    function: {
+                      name: 'list_projects',
+                      arguments: '{}',
+                    },
+                  },
+                  {
+                    id: 'call_duplicate',
+                    type: 'function',
+                    function: {
+                      name: 'list_projects',
+                      arguments: '{}',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        'SpaceXAI',
+        toolSchemas
+      )
+    ).toThrow('SpaceXAI returned an invalid response.');
+  });
+
+  it('accepts multiple valid tool calls with unique ids', () => {
+    const response = openAiChatCompletionToChatLlmResponse(
+      {
+        choices: [
+          {
+            message: {
+              tool_calls: [
+                {
+                  id: 'call_1',
+                  type: 'function',
+                  function: { name: 'list_projects', arguments: '{}' },
+                },
+                {
+                  id: 'call_2',
+                  type: 'function',
+                  function: { name: 'list_projects', arguments: '{}' },
+                },
+              ],
+            },
+          },
+        ],
+      },
+      'SpaceXAI',
+      toolSchemas
+    );
+
+    expect(
+      response.candidates?.[0]?.content?.parts.map(
+        (part) => part.functionCall?.id
+      )
+    ).toEqual(['call_1', 'call_2']);
   });
 
   it('preserves multiple tool-call ids across the following tool results', () => {

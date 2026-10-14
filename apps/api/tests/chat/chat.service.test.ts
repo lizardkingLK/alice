@@ -134,6 +134,315 @@ describe('Chat History Markdown Serialization', () => {
   });
 });
 
+describe('ChatService tool authorization', () => {
+  function createToolService(options: {
+    accessibleProjectIds: string[];
+    listSprintsByProject?: ReturnType<typeof vi.fn>;
+    inspectAndDeduplicate?: ReturnType<typeof vi.fn>;
+    createWorkItem?: ReturnType<typeof vi.fn>;
+  }) {
+    return new ChatService({
+      chat: {
+        listSprintsByProject: options.listSprintsByProject ?? vi.fn(),
+      } as never,
+      deduplicationAgent: {
+        inspectAndDeduplicate: options.inspectAndDeduplicate ?? vi.fn(),
+      } as never,
+      projectsRepository: {
+        listAccessibleProjectIds: vi
+          .fn()
+          .mockResolvedValue(options.accessibleProjectIds),
+        findById: vi.fn().mockResolvedValue({ key: 'ALICE' }),
+      } as never,
+      workItemService: {
+        createWorkItem: options.createWorkItem ?? vi.fn(),
+      } as never,
+      sprintsService: {} as never,
+      projectsService: {} as never,
+      integrationsService: {} as never,
+    });
+  }
+
+  it('allows an authorized user to list sprints in an accessible project', async () => {
+    const listSprintsByProject = vi.fn().mockResolvedValue([
+      {
+        id: 'sprint-1',
+        name: 'Sprint 1',
+        status: 'active',
+        start_date: null,
+        end_date: null,
+      },
+    ]);
+    const service = createToolService({
+      accessibleProjectIds: ['project-allowed'],
+      listSprintsByProject,
+    });
+
+    const [response] = await service.processFunctionCalls(
+      'trusted-user',
+      [
+        {
+          functionCall: {
+            name: 'list_sprints',
+            args: { projectId: 'project-allowed' },
+          },
+        },
+      ],
+      []
+    );
+
+    expect(listSprintsByProject).toHaveBeenCalledWith('project-allowed');
+    expect(response?.functionResponse?.response.result).toEqual([
+      expect.objectContaining({ id: 'sprint-1' }),
+    ]);
+  });
+
+  it('denies sprint reads outside the authenticated user projects', async () => {
+    const listSprintsByProject = vi.fn();
+    const service = createToolService({
+      accessibleProjectIds: ['project-allowed'],
+      listSprintsByProject,
+    });
+
+    const [response] = await service.processFunctionCalls(
+      'trusted-user',
+      [
+        {
+          functionCall: {
+            name: 'list_sprints',
+            args: { projectId: 'project-private' },
+          },
+        },
+      ],
+      []
+    );
+
+    expect(response?.functionResponse?.response.result).toEqual({
+      error: "You're not a member of this project.",
+    });
+    expect(listSprintsByProject).not.toHaveBeenCalled();
+  });
+
+  it('loads active sprint context only for accessible project ids', async () => {
+    const listUsersSnapshot = vi.fn().mockResolvedValue([]);
+    const listActiveSprintsSnapshot = vi.fn().mockResolvedValue([]);
+    const service = new ChatService({
+      chat: { listUsersSnapshot, listActiveSprintsSnapshot } as never,
+      projectsRepository: {} as never,
+      workItemService: {} as never,
+      sprintsService: {} as never,
+      projectsService: {} as never,
+      integrationsService: {} as never,
+    });
+
+    await service.loadWorkspaceContext(['project-allowed']);
+
+    expect(listActiveSprintsSnapshot).toHaveBeenCalledWith(['project-allowed']);
+  });
+
+  it('allows duplicate checks only after project access succeeds', async () => {
+    const report = { totalCount: 0, items: [] };
+    const inspectAndDeduplicate = vi.fn().mockResolvedValue(report);
+    const service = createToolService({
+      accessibleProjectIds: ['project-allowed'],
+      inspectAndDeduplicate,
+    });
+
+    const [response] = await service.processFunctionCalls(
+      'trusted-user',
+      [
+        {
+          functionCall: {
+            name: 'check_work_item_duplicates',
+            args: { projectId: 'project-allowed', items: [] },
+          },
+        },
+      ],
+      []
+    );
+
+    expect(inspectAndDeduplicate).toHaveBeenCalledWith('project-allowed', []);
+    expect(response?.functionResponse?.response.result).toBe(report);
+  });
+
+  it('denies duplicate reads outside the authenticated user projects', async () => {
+    const inspectAndDeduplicate = vi.fn();
+    const service = createToolService({
+      accessibleProjectIds: [],
+      inspectAndDeduplicate,
+    });
+
+    const [response] = await service.processFunctionCalls(
+      'trusted-user',
+      [
+        {
+          functionCall: {
+            name: 'check_work_item_duplicates',
+            args: { projectId: 'project-private', items: [] },
+          },
+        },
+      ],
+      []
+    );
+
+    expect(response?.functionResponse?.response.result).toEqual({
+      error: "You're not a member of this project.",
+    });
+    expect(inspectAndDeduplicate).not.toHaveBeenCalled();
+  });
+
+  it('denies batch-import reads and writes before processing an inaccessible project', async () => {
+    const createWorkItem = vi.fn();
+    const service = createToolService({
+      accessibleProjectIds: [],
+      createWorkItem,
+    });
+    vi.mocked(prisma.work_items.findMany).mockClear();
+    vi.mocked(prisma.work_items.update).mockClear();
+
+    const [response] = await service.processFunctionCalls(
+      'trusted-user',
+      [
+        {
+          functionCall: {
+            name: 'batch_import_work_items',
+            args: {
+              projectId: 'project-private',
+              items: [
+                {
+                  temporaryIdentifier: 'private-1',
+                  title: 'Private item',
+                  type: WorkItemTypeEnum.Task,
+                },
+              ],
+            },
+          },
+        },
+      ],
+      []
+    );
+
+    expect(response?.functionResponse?.response.result).toEqual({
+      error: "You're not a member of this project.",
+    });
+    expect(prisma.work_items.findMany).not.toHaveBeenCalled();
+    expect(prisma.work_items.update).not.toHaveBeenCalled();
+    expect(createWorkItem).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChatService attachment tool security', () => {
+  const attachment = {
+    id: 'attachment-1',
+    fileName: 'items.json',
+    fileSize: 100,
+    mimeType: 'application/json',
+    storagePath: 'chat-attachments/trusted-user/items.json',
+    url: 'https://supabase.co/storage/v1/object/sign/items.json?token=old',
+    fileType: ChatAttachmentFileTypeEnum.Json,
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+  };
+
+  function createAttachmentToolService(
+    getAttachmentById: ReturnType<typeof vi.fn>
+  ) {
+    return new ChatService({
+      chat: {} as never,
+      chatAttachments: { getAttachmentById } as never,
+      projectsRepository: {} as never,
+      workItemService: {} as never,
+      sprintsService: {} as never,
+      projectsService: {} as never,
+      integrationsService: {} as never,
+    });
+  }
+
+  it('reloads an allowed attachment for the authenticated user before fetching', async () => {
+    const originalFetch = globalThis.fetch;
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify([{ title: 'Allowed task', type: 'Task' }]))
+      );
+    globalThis.fetch = fetchMock;
+    const getAttachmentById = vi.fn().mockResolvedValue({
+      ...attachment,
+      url: 'https://supabase.co/storage/v1/object/sign/items.json?token=fresh',
+    });
+    const service = createAttachmentToolService(getAttachmentById);
+
+    try {
+      const [response] = await service.processFunctionCalls(
+        'trusted-user',
+        [
+          {
+            functionCall: {
+              name: 'parse_work_item_attachment',
+              args: { attachmentUrl: attachment.url },
+            },
+          },
+        ],
+        [],
+        [
+          {
+            id: 'message-1',
+            role: ChatRoles.User,
+            content: '',
+            attachments: [attachment],
+          },
+        ]
+      );
+
+      expect(getAttachmentById).toHaveBeenCalledWith(
+        'trusted-user',
+        'attachment-1'
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.objectContaining({ origin: 'https://supabase.co' }),
+        expect.objectContaining({ redirect: 'error' })
+      );
+      expect(response?.functionResponse?.response.result).toEqual(
+        expect.objectContaining({ totalItemsFound: 1 })
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('rejects a model-supplied URL that is not an attachment in chat history', async () => {
+    const originalFetch = globalThis.fetch;
+    const fetchMock = vi.fn();
+    globalThis.fetch = fetchMock;
+    const getAttachmentById = vi.fn();
+    const service = createAttachmentToolService(getAttachmentById);
+
+    try {
+      const [response] = await service.processFunctionCalls(
+        'trusted-user',
+        [
+          {
+            functionCall: {
+              name: 'parse_work_item_attachment',
+              args: { attachmentUrl: 'http://127.0.0.1/internal' },
+            },
+          },
+        ],
+        [],
+        []
+      );
+
+      expect(response?.functionResponse?.response.result).toEqual({
+        error:
+          'attachmentUrl could not be resolved from provided reference or chat history.',
+      });
+      expect(getAttachmentById).not.toHaveBeenCalled();
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
+
 describe('Dynamic Fields Schema Generation and Merging', () => {
   it('should generate fields from raw tool call fields', () => {
     const chatService = new ChatService({
@@ -318,9 +627,12 @@ describe('ChatService loadChatHistory with Expired Attachments', () => {
       integrationsService: {} as never,
     });
 
-    const loaded = await chatService.loadChatHistory('conv-1');
+    const loaded = await chatService.loadChatHistory('user-1', 'conv-1');
 
-    expect(getAttachmentByIdMock).toHaveBeenCalledWith('att-expired-1');
+    expect(getAttachmentByIdMock).toHaveBeenCalledWith(
+      'user-1',
+      'att-expired-1'
+    );
     expect(loaded).toHaveLength(1);
     expect(loaded[0]?.attachments?.[0]?.url).toBe(
       'https://storage.example.com/refreshed-url'
@@ -333,6 +645,7 @@ describe('ChatService loadChatHistory with Expired Attachments', () => {
 
 describe('ChatService batch_import_work_items', () => {
   const mockProjectsRepo = {
+    listAccessibleProjectIds: vi.fn().mockResolvedValue(['proj-1']),
     findById: vi
       .fn()
       .mockResolvedValue({ id: 'proj-1', key: 'ALICE', name: 'Alice Project' }),

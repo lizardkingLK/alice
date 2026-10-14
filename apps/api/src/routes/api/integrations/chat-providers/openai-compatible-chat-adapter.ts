@@ -1,5 +1,7 @@
 import { ChatTurnRoles } from '@repo/types';
 import type {
+  AliceChatTool,
+  AliceChatToolParameterProperty,
   AliceChatTools,
   ChatContentPart,
   ChatContentTurn,
@@ -39,6 +41,75 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function invalidResponse(providerLabel: string): Error {
   return new Error(`${providerLabel} returned an invalid response.`);
+}
+
+function objectMatchesToolSchema(
+  value: unknown,
+  schema: AliceChatToolParameterProperty
+): boolean {
+  if (!isRecord(value)) return false;
+  for (const requiredName of schema.required ?? []) {
+    if (!Object.hasOwn(value, requiredName)) return false;
+  }
+  for (const [propertyName, propertySchema] of Object.entries(
+    schema.properties ?? {}
+  )) {
+    if (
+      Object.hasOwn(value, propertyName) &&
+      !valueMatchesToolSchema(value[propertyName], propertySchema)
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function arrayMatchesToolSchema(
+  value: unknown,
+  schema: AliceChatToolParameterProperty
+): boolean {
+  return (
+    Array.isArray(value) &&
+    (!schema.items ||
+      value.every((item) => valueMatchesToolSchema(item, schema.items!)))
+  );
+}
+
+function valueMatchesToolSchema(
+  value: unknown,
+  schema: AliceChatToolParameterProperty
+): boolean {
+  if (schema.enum && !schema.enum.includes(value as string)) {
+    return false;
+  }
+
+  switch (schema.type) {
+    case 'string':
+      return typeof value === 'string';
+    case 'number':
+      return typeof value === 'number' && Number.isFinite(value);
+    case 'integer':
+      return typeof value === 'number' && Number.isInteger(value);
+    case 'boolean':
+      return typeof value === 'boolean';
+    case 'array':
+      return arrayMatchesToolSchema(value, schema);
+    case 'object':
+      return objectMatchesToolSchema(value, schema);
+    default:
+      return false;
+  }
+}
+
+function argumentsMatchToolSchema(
+  args: Record<string, unknown>,
+  tool: AliceChatTool
+): boolean {
+  if (!tool.parameters) {
+    return Object.keys(args).length === 0;
+  }
+
+  return valueMatchesToolSchema(args, tool.parameters);
 }
 
 /** Convert Alice tool declarations into Chat Completions function tools. */
@@ -153,7 +224,8 @@ export function chatContentsToOpenAiMessages(
 
 function parseToolCall(
   rawToolCall: unknown,
-  providerLabel: string
+  providerLabel: string,
+  tools?: AliceChatTools
 ): ChatContentPart {
   if (!isRecord(rawToolCall) || rawToolCall.type !== 'function') {
     throw invalidResponse(providerLabel);
@@ -172,12 +244,22 @@ function parseToolCall(
 
   let args: unknown;
   try {
-    args = JSON.parse(rawFunction.arguments || '{}');
+    if (rawFunction.arguments.trim().length === 0) {
+      throw invalidResponse(providerLabel);
+    }
+    args = JSON.parse(rawFunction.arguments);
   } catch {
     throw invalidResponse(providerLabel);
   }
   if (!isRecord(args)) {
     throw invalidResponse(providerLabel);
+  }
+
+  if (tools) {
+    const selectedTool = tools.find((tool) => tool.name === rawFunction.name);
+    if (!selectedTool || !argumentsMatchToolSchema(args, selectedTool)) {
+      throw invalidResponse(providerLabel);
+    }
   }
 
   return {
@@ -192,7 +274,8 @@ function parseToolCall(
 /** Validate and convert one Chat Completions response into Alice's shape. */
 export function openAiChatCompletionToChatLlmResponse(
   payload: unknown,
-  providerLabel = 'OpenAI-compatible provider'
+  providerLabel = 'OpenAI-compatible provider',
+  tools?: AliceChatTools
 ): ChatLlmResponse {
   if (!isRecord(payload) || !Array.isArray(payload.choices)) {
     throw invalidResponse(providerLabel);
@@ -218,8 +301,15 @@ export function openAiChatCompletionToChatLlmResponse(
   if (typeof message.content === 'string' && message.content.length > 0) {
     parts.push({ text: message.content });
   }
+  const seenToolCallIds = new Set<string>();
   for (const toolCall of message.tool_calls ?? []) {
-    parts.push(parseToolCall(toolCall, providerLabel));
+    const part = parseToolCall(toolCall, providerLabel, tools);
+    const toolCallId = part.functionCall?.id;
+    if (!toolCallId || seenToolCallIds.has(toolCallId)) {
+      throw invalidResponse(providerLabel);
+    }
+    seenToolCallIds.add(toolCallId);
+    parts.push(part);
   }
 
   if (parts.length === 0) {
@@ -241,7 +331,8 @@ export function openAiChatCompletionToChatLlmResponse(
 /** Parse JSON without exposing provider response content in thrown errors. */
 export async function openAiChatCompletionResponseToChatLlmResponse(
   response: Response,
-  providerLabel: string
+  providerLabel: string,
+  tools?: AliceChatTools
 ): Promise<ChatLlmResponse> {
   let payload: unknown;
   try {
@@ -249,5 +340,5 @@ export async function openAiChatCompletionResponseToChatLlmResponse(
   } catch {
     throw invalidResponse(providerLabel);
   }
-  return openAiChatCompletionToChatLlmResponse(payload, providerLabel);
+  return openAiChatCompletionToChatLlmResponse(payload, providerLabel, tools);
 }
