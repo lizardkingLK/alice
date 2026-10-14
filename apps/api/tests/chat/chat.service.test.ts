@@ -1017,6 +1017,7 @@ ALICE-2,Feature,Authentication Service,ALICE-1,high,Updated auth description,Sec
         [
           {
             functionCall: {
+              id: 'call_list_projects',
               name: 'list_projects',
               args: {},
             },
@@ -1027,6 +1028,7 @@ ALICE-2,Feature,Authentication Service,ALICE-1,high,Updated auth description,Sec
 
       expect(listProjectsForActorMock).toHaveBeenCalledWith('member-user-123');
       expect(parts).toHaveLength(1);
+      expect(parts[0]?.functionResponse?.id).toBe('call_list_projects');
       const result = parts[0]?.functionResponse?.response.result as {
         userRole: string;
         permissions: {

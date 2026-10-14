@@ -982,7 +982,7 @@ export class ChatService {
 
     return Promise.all(
       callable.map(async (call) => {
-        const { name, args } = call.functionCall;
+        const { id, name, args } = call.functionCall;
         let result: unknown;
 
         try {
@@ -1005,6 +1005,7 @@ export class ChatService {
 
         const part: ChatContentPart = {
           functionResponse: {
+            ...(id ? { id } : {}),
             name,
             response: { result },
           },

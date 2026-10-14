@@ -161,6 +161,7 @@ describe('openAiChatCompletionToChatLlmResponse', () => {
             parts: [
               {
                 functionCall: {
+                  id: 'call_1',
                   name: 'create_project',
                   args: { name: 'A', key: 'A' },
                 },
@@ -170,6 +171,105 @@ describe('openAiChatCompletionToChatLlmResponse', () => {
         },
       ],
     });
+  });
+
+  it('preserves multiple tool-call ids across the following tool results', () => {
+    const messages = chatContentsToOpenAiMessages('sys', [
+      {
+        role: ChatTurnRoles.Model,
+        parts: [
+          {
+            functionCall: {
+              id: 'call_projects',
+              name: 'list_projects',
+              args: {},
+            },
+          },
+          {
+            functionCall: {
+              id: 'call_users',
+              name: 'list_users',
+              args: {},
+            },
+          },
+        ],
+      },
+      {
+        role: ChatTurnRoles.User,
+        parts: [
+          {
+            functionResponse: {
+              id: 'call_projects',
+              name: 'list_projects',
+              response: { result: [{ id: 'p1' }] },
+            },
+          },
+          {
+            functionResponse: {
+              id: 'call_users',
+              name: 'list_users',
+              response: { result: [{ id: 'u1' }] },
+            },
+          },
+        ],
+      },
+    ]);
+
+    expect(messages[1]).toMatchObject({
+      tool_calls: [{ id: 'call_projects' }, { id: 'call_users' }],
+    });
+    expect(messages.slice(2)).toEqual([
+      {
+        role: 'tool',
+        tool_call_id: 'call_projects',
+        content: JSON.stringify([{ id: 'p1' }]),
+      },
+      {
+        role: 'tool',
+        tool_call_id: 'call_users',
+        content: JSON.stringify([{ id: 'u1' }]),
+      },
+    ]);
+  });
+
+  it.each([
+    {},
+    { choices: [] },
+    { choices: [{ message: { tool_calls: {} } }] },
+    {
+      choices: [
+        {
+          message: {
+            tool_calls: [
+              {
+                id: 'call_1',
+                type: 'function',
+                function: { name: 'list_projects', arguments: '{bad json' },
+              },
+            ],
+          },
+        },
+      ],
+    },
+    {
+      choices: [
+        {
+          message: {
+            tool_calls: [
+              {
+                id: 'call_1',
+                type: 'function',
+                function: { name: 'list_projects', arguments: '[]' },
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ])('rejects malformed provider responses safely', (payload) => {
+    expect(() => openAiChatCompletionToChatLlmResponse(payload)).toThrow(
+      'OpenAI-compatible provider returned an invalid response.'
+    );
   });
 });
 

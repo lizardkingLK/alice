@@ -7,7 +7,7 @@ import { fetchChatProviderWithRetries } from '../fetch-chat-provider-with-retrie
 import {
   aliceChatToolsToOpenAiTools,
   chatContentsToOpenAiMessages,
-  openAiChatCompletionToChatLlmResponse,
+  openAiChatCompletionResponseToChatLlmResponse,
   resolveSpaceXAIUserFacingError,
 } from './spacexai-openai-adapter';
 
@@ -49,7 +49,6 @@ export class SpaceXAIChatProvider implements ChatModelProvider {
         }),
     });
 
-    const payload: unknown = await response.json();
-    return openAiChatCompletionToChatLlmResponse(payload);
+    return openAiChatCompletionResponseToChatLlmResponse(response, 'SpaceXAI');
   }
 }
