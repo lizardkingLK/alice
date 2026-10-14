@@ -9,10 +9,12 @@ import type {
 export interface ChatContentPart {
   text?: string;
   functionCall?: {
+    id?: string;
     name: string;
     args?: Record<string, unknown>;
   };
   functionResponse?: {
+    id?: string;
     name: string;
     response: {
       result: unknown;

@@ -127,7 +127,10 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
       try {
         const list = await chatService.listConversations(req.userId!);
         if (list.length > 0 && list[0]) {
-          const history = await chatService.loadChatHistory(list[0].id);
+          const history = await chatService.loadChatHistory(
+            req.userId!,
+            list[0].id
+          );
           return res.json({ history, conversationId: list[0].id });
         }
         res.json({ history: [] });
@@ -156,7 +159,10 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
         if (!conversationId) {
           return;
         }
-        const history = await chatService.loadChatHistory(conversationId);
+        const history = await chatService.loadChatHistory(
+          req.userId!,
+          conversationId
+        );
         res.json({ history });
       } catch (error: unknown) {
         sendChatError(
@@ -325,8 +331,10 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
       }
 
       try {
-        const attachment =
-          await chatService.chatAttachments.getAttachmentById(attachmentId);
+        const attachment = await chatService.chatAttachments.getAttachmentById(
+          req.userId!,
+          attachmentId
+        );
         if (!attachment) {
           return res.status(404).json({ error: 'Attachment not found' });
         }

@@ -2,7 +2,6 @@ import {
   type ParsedWorkItemNode,
   ChatAttachmentFileTypeEnum,
 } from '@repo/types';
-import { sanitizeLog } from './chat.utils';
 import { parseJsonWorkItemDocument } from './chat-attachment-parser.json';
 import { parseDelimitedWorkItemDocument } from './chat-attachment-parser.delimited';
 import {
@@ -29,6 +28,85 @@ export {
 export { parseYamlWorkItemDocument } from './chat-attachment-parser.yaml';
 
 export type AttachmentParser = (content: string) => ParsedWorkItemNode[];
+
+const MAX_ATTACHMENT_DOWNLOAD_BYTES = 10 * 1024 * 1024;
+const ATTACHMENT_DOWNLOAD_TIMEOUT_MS = 10_000;
+
+class SafeAttachmentDownloadError extends Error {}
+
+function assertApprovedAttachmentUrl(
+  attachmentUrl: string,
+  approvedOrigin: string
+): URL {
+  let parsedUrl: URL;
+  let normalizedApprovedOrigin: string;
+  try {
+    parsedUrl = new URL(attachmentUrl);
+    normalizedApprovedOrigin = new URL(approvedOrigin).origin;
+  } catch {
+    throw new SafeAttachmentDownloadError('Attachment URL is invalid.');
+  }
+
+  if (
+    parsedUrl.origin !== normalizedApprovedOrigin ||
+    parsedUrl.username.length > 0 ||
+    parsedUrl.password.length > 0
+  ) {
+    throw new SafeAttachmentDownloadError('Attachment URL is not approved.');
+  }
+
+  return parsedUrl;
+}
+
+async function readResponseTextWithLimit(response: Response): Promise<string> {
+  const declaredLength = Number(response.headers.get('content-length'));
+  if (
+    Number.isFinite(declaredLength) &&
+    declaredLength > MAX_ATTACHMENT_DOWNLOAD_BYTES
+  ) {
+    throw new SafeAttachmentDownloadError('Attachment is too large to parse.');
+  }
+
+  if (!response.body) {
+    const content = await response.text();
+    if (Buffer.byteLength(content, 'utf8') > MAX_ATTACHMENT_DOWNLOAD_BYTES) {
+      throw new SafeAttachmentDownloadError(
+        'Attachment is too large to parse.'
+      );
+    }
+    return content;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let totalBytes = 0;
+  let content = '';
+  let sizeLimitExceeded = false;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_ATTACHMENT_DOWNLOAD_BYTES) {
+        sizeLimitExceeded = true;
+        break;
+      }
+      content += decoder.decode(value, { stream: true });
+    }
+
+    if (sizeLimitExceeded) {
+      await reader.cancel().catch(() => undefined);
+      throw new SafeAttachmentDownloadError(
+        'Attachment is too large to parse.'
+      );
+    }
+
+    return content + decoder.decode();
+  } finally {
+    reader.releaseLock();
+  }
+}
 
 export interface AttachmentParserEntry {
   readonly name: string;
@@ -101,25 +179,47 @@ export function parseAttachmentContent(
 export async function fetchAndParseWorkItemAttachment(
   attachmentUrl: string,
   fileName: string,
-  fileType: ChatAttachmentFileTypeEnum
+  fileType: ChatAttachmentFileTypeEnum,
+  approvedOrigin: string
 ): Promise<{
   items: ParsedWorkItemNode[];
   summary: string;
 }> {
   let textContent = '';
+  const approvedUrl = assertApprovedAttachmentUrl(
+    attachmentUrl,
+    approvedOrigin
+  );
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    ATTACHMENT_DOWNLOAD_TIMEOUT_MS
+  );
   try {
-    const response = await fetch(attachmentUrl);
-    if (!response.ok) {
-      throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+    const response = await fetch(approvedUrl, {
+      redirect: 'error',
+      signal: controller.signal,
+    });
+    if (response.status >= 300 && response.status < 400) {
+      throw new SafeAttachmentDownloadError(
+        'Attachment redirects are not allowed.'
+      );
     }
-    textContent = await response.text();
+    if (!response.ok) {
+      throw new SafeAttachmentDownloadError('Could not access attachment.');
+    }
+    textContent = await readResponseTextWithLimit(response);
   } catch (error: unknown) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error(
-      `Failed to download attachment from URL ${sanitizeLog(attachmentUrl)}:`,
-      sanitizeLog(errorMsg)
-    );
-    throw new Error(`Could not access attachment: ${errorMsg}`);
+    console.error('Failed to download an approved chat attachment.');
+    if (error instanceof SafeAttachmentDownloadError) {
+      throw error;
+    }
+    if (controller.signal.aborted) {
+      throw new SafeAttachmentDownloadError('Attachment download timed out.');
+    }
+    throw new SafeAttachmentDownloadError('Could not access attachment.');
+  } finally {
+    clearTimeout(timeout);
   }
 
   const parsedItems = parseAttachmentContent(textContent, fileName, fileType);

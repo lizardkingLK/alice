@@ -270,10 +270,11 @@ export class ChatAttachmentsRepository {
   }
 
   async getAttachmentById(
+    userId: string,
     attachmentId: string
   ): Promise<(ChatAttachmentWire & ChatAttachmentSignedUrls) | null> {
-    const attachmentRecord = await prisma.chat_attachments.findUnique({
-      where: { id: attachmentId },
+    const attachmentRecord = await prisma.chat_attachments.findFirst({
+      where: { id: attachmentId, user_id: userId },
     });
 
     if (attachmentRecord?.status !== 'active') {

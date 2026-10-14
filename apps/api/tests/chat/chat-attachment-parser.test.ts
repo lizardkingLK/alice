@@ -312,16 +312,16 @@ TASK-2\tFeature\tCI/CD Pipeline\tTASK-1\t8\tDevOps`;
       ];
 
       const originalFetch = globalThis.fetch;
-      globalThis.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        text: () => Promise.resolve(JSON.stringify(mockPayload)),
-      });
+      globalThis.fetch = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify(mockPayload)));
 
       try {
         const result = await fetchAndParseWorkItemAttachment(
-          'https://storage.example.com/chat-attachments/file.json?token=xyz',
+          'https://supabase.co/chat-attachments/file.json?token=xyz',
           'file.json',
-          ChatAttachmentFileTypeEnum.Json
+          ChatAttachmentFileTypeEnum.Json,
+          'https://supabase.co'
         );
 
         expect(result.items).toHaveLength(1);
@@ -338,16 +338,14 @@ TASK-2\tFeature\tCI/CD Pipeline\tTASK-1\t8\tDevOps`;
 | Task | Readme Documentation | low |`;
 
       const originalFetch = globalThis.fetch;
-      globalThis.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        text: () => Promise.resolve(mdContent),
-      });
+      globalThis.fetch = vi.fn().mockResolvedValue(new Response(mdContent));
 
       try {
         const result = await fetchAndParseWorkItemAttachment(
-          'https://storage.example.com/chat-attachments/tasks.md',
+          'https://supabase.co/chat-attachments/tasks.md',
           'tasks.md',
-          ChatAttachmentFileTypeEnum.Text
+          ChatAttachmentFileTypeEnum.Text,
+          'https://supabase.co'
         );
 
         expect(result.items).toHaveLength(1);
@@ -363,16 +361,14 @@ TASK-2\tFeature\tCI/CD Pipeline\tTASK-1\t8\tDevOps`;
 Pipe Task|Task|high`;
 
       const originalFetch = globalThis.fetch;
-      globalThis.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        text: () => Promise.resolve(pipeContent),
-      });
+      globalThis.fetch = vi.fn().mockResolvedValue(new Response(pipeContent));
 
       try {
         const result = await fetchAndParseWorkItemAttachment(
-          'https://storage.example.com/chat-attachments/items.txt',
+          'https://supabase.co/chat-attachments/items.txt',
           'items.txt',
-          ChatAttachmentFileTypeEnum.Text
+          ChatAttachmentFileTypeEnum.Text,
+          'https://supabase.co'
         );
 
         expect(result.items).toHaveLength(1);
@@ -389,16 +385,16 @@ Pipe Task|Task|high`;
   - Task: Setup React Native (estimate: 8, issuekey: MOB-2, customCol: Mobile)`;
 
       const originalFetch = globalThis.fetch;
-      globalThis.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        text: () => Promise.resolve(outlineContent),
-      });
+      globalThis.fetch = vi
+        .fn()
+        .mockResolvedValue(new Response(outlineContent));
 
       try {
         const result = await fetchAndParseWorkItemAttachment(
-          'https://storage.example.com/chat-attachments/outline.txt',
+          'https://supabase.co/chat-attachments/outline.txt',
           'outline.txt',
-          ChatAttachmentFileTypeEnum.Text
+          ChatAttachmentFileTypeEnum.Text,
+          'https://supabase.co'
         );
 
         expect(result.items).toHaveLength(2);
@@ -413,6 +409,161 @@ Pipe Task|Task|high`;
         expect(result.items[1]?.jiraIssueKey).toBe('MOB-2');
         expect(result.items[1]?.dynamicFields).toEqual({ customCol: 'Mobile' });
       } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    it('rejects an untrusted attachment URL before fetching it', async () => {
+      const originalFetch = globalThis.fetch;
+      const fetchMock = vi.fn();
+      globalThis.fetch = fetchMock;
+
+      try {
+        await expect(
+          fetchAndParseWorkItemAttachment(
+            'https://attacker.example/private.json',
+            'private.json',
+            ChatAttachmentFileTypeEnum.Json,
+            'https://supabase.co'
+          )
+        ).rejects.toThrow('Attachment URL is not approved.');
+        expect(fetchMock).not.toHaveBeenCalled();
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    it('rejects private-network destinations before fetching them', async () => {
+      const originalFetch = globalThis.fetch;
+      const fetchMock = vi.fn();
+      globalThis.fetch = fetchMock;
+
+      try {
+        await expect(
+          fetchAndParseWorkItemAttachment(
+            'http://127.0.0.1/internal',
+            'internal.json',
+            ChatAttachmentFileTypeEnum.Json,
+            'https://supabase.co'
+          )
+        ).rejects.toThrow('Attachment URL is not approved.');
+        expect(fetchMock).not.toHaveBeenCalled();
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    it('does not follow redirects', async () => {
+      const originalFetch = globalThis.fetch;
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(null, {
+          status: 302,
+          headers: { Location: 'http://127.0.0.1/internal' },
+        })
+      );
+      globalThis.fetch = fetchMock;
+
+      try {
+        await expect(
+          fetchAndParseWorkItemAttachment(
+            'https://supabase.co/chat-attachments/redirect',
+            'redirect.json',
+            ChatAttachmentFileTypeEnum.Json,
+            'https://supabase.co'
+          )
+        ).rejects.toThrow('Attachment redirects are not allowed.');
+        expect(fetchMock).toHaveBeenCalledWith(
+          expect.any(URL),
+          expect.objectContaining({ redirect: 'error' })
+        );
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    it('rejects attachments larger than the download limit', async () => {
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn().mockResolvedValue(
+        new Response('[]', {
+          headers: { 'Content-Length': String(10 * 1024 * 1024 + 1) },
+        })
+      );
+
+      try {
+        await expect(
+          fetchAndParseWorkItemAttachment(
+            'https://supabase.co/chat-attachments/large.json',
+            'large.json',
+            ChatAttachmentFileTypeEnum.Json,
+            'https://supabase.co'
+          )
+        ).rejects.toThrow('Attachment is too large to parse.');
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    it('stops streaming, cancels, and releases the reader when the size limit is exceeded', async () => {
+      const originalFetch = globalThis.fetch;
+      const read = vi.fn().mockResolvedValueOnce({
+        done: false,
+        value: new Uint8Array(10 * 1024 * 1024 + 1),
+      });
+      const cancel = vi.fn().mockRejectedValue(new Error('cancel failed'));
+      const releaseLock = vi.fn();
+      const response = {
+        headers: new Headers(),
+        body: {
+          getReader: () => ({ read, cancel, releaseLock }),
+        },
+        ok: true,
+        status: 200,
+      } as unknown as Response;
+      globalThis.fetch = vi.fn().mockResolvedValue(response);
+
+      try {
+        await expect(
+          fetchAndParseWorkItemAttachment(
+            'https://supabase.co/chat-attachments/streamed-large.json',
+            'streamed-large.json',
+            ChatAttachmentFileTypeEnum.Json,
+            'https://supabase.co'
+          )
+        ).rejects.toThrow('Attachment is too large to parse.');
+        expect(read).toHaveBeenCalledOnce();
+        expect(cancel).toHaveBeenCalledOnce();
+        expect(releaseLock).toHaveBeenCalledOnce();
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    it('aborts attachment downloads after the timeout', async () => {
+      vi.useFakeTimers();
+      const originalFetch = globalThis.fetch;
+      const fetchMock = vi.fn((_url: unknown, init?: RequestInit) => {
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new Error('request aborted'));
+          });
+        });
+      });
+      globalThis.fetch = fetchMock as typeof fetch;
+
+      try {
+        const download = fetchAndParseWorkItemAttachment(
+          'https://supabase.co/chat-attachments/slow.json',
+          'slow.json',
+          ChatAttachmentFileTypeEnum.Json,
+          'https://supabase.co'
+        );
+        const expectation = expect(download).rejects.toThrow(
+          'Attachment download timed out.'
+        );
+        await vi.advanceTimersByTimeAsync(10_000);
+        await expectation;
+      } finally {
+        vi.useRealTimers();
         globalThis.fetch = originalFetch;
       }
     });
