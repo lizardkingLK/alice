@@ -30,10 +30,10 @@ function TimeTrackingBar({
   fillClassName,
 }: Readonly<TimeTrackingBarProps>) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2 py-1.5">
       <div className="flex items-center justify-between gap-2 text-xs">
         <span className="text-muted-foreground">{label}</span>
-        <span className="text-foreground font-medium tabular-nums">
+        <span className="text-muted-foreground font-mono text-xs font-normal tabular-nums">
           {valueLabel}
         </span>
       </div>
@@ -47,16 +47,31 @@ function TimeTrackingBar({
   );
 }
 
+function formatAgainstEstimate(
+  valueHours: number,
+  estimatedHours: number,
+  hasEstimate: boolean
+): string {
+  const valueLabel = formatDuration(valueHours);
+  if (!hasEstimate) {
+    return valueLabel;
+  }
+  return `${valueLabel} / ${formatDuration(estimatedHours)}`;
+}
+
 type WorkItemTimeTrackingProps = {
   storyPoints: number | null | undefined;
   workLogs: WorkItemWorkLog[];
   onLogWorkClick?: () => void;
+  /** Solid fill for Remaining — typically workflow state indicator color. */
+  remainingFillClassName?: string;
 };
 
 export function WorkItemTimeTracking({
   storyPoints,
   workLogs,
   onLogWorkClick,
+  remainingFillClassName = 'bg-muted-foreground',
 }: Readonly<WorkItemTimeTrackingProps>) {
   const [open, setOpen] = useState(true);
 
@@ -69,17 +84,21 @@ export function WorkItemTimeTracking({
     ? summary.estimatedHours
     : Math.max(summary.loggedHours, 1);
 
-  const estimatedPercent = summary.hasEstimate ? 100 : 0;
   const remainingPercent = progressPercent(summary.remainingHours, scale);
   const loggedPercent = progressPercent(summary.loggedHours, scale);
 
-  const estimatedLabel = summary.hasEstimate
-    ? formatDuration(summary.estimatedHours)
-    : 'Not specified';
   const remainingLabel = summary.hasEstimate
-    ? formatDuration(summary.remainingHours)
+    ? formatAgainstEstimate(
+        summary.remainingHours,
+        summary.estimatedHours,
+        true
+      )
     : '—';
-  const loggedLabel = formatDuration(summary.loggedHours);
+  const loggedLabel = formatAgainstEstimate(
+    summary.loggedHours,
+    summary.estimatedHours,
+    summary.hasEstimate
+  );
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -115,18 +134,12 @@ export function WorkItemTimeTracking({
         ) : null}
       </div>
 
-      <CollapsibleContent className="space-y-3 pt-3">
-        <TimeTrackingBar
-          label="Estimated"
-          valueLabel={estimatedLabel}
-          percent={estimatedPercent}
-          fillClassName="bg-sky-400 dark:bg-sky-500"
-        />
+      <CollapsibleContent className="space-y-1 pt-2">
         <TimeTrackingBar
           label="Remaining"
           valueLabel={remainingLabel}
           percent={remainingPercent}
-          fillClassName="bg-amber-500"
+          fillClassName={remainingFillClassName}
         />
         <TimeTrackingBar
           label="Logged"

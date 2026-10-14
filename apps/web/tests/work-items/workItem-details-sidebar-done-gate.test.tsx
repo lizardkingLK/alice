@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import WorkItemSidebar from '@/app/work-items/_components/work-item-details/work-item-details-sidebar';
+import { DEFAULT_WORK_ITEM_DETAILS_PREFERENCES } from '@/app/work-items/_helpers/work-item-details-preferences';
 import { workItemFactory } from '../factories/workItem.factory';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import {
@@ -118,6 +119,8 @@ function renderSidebar({
       setDetailsOpen={vi.fn()}
       moreFieldsOpen={moreFieldsOpen}
       setMoreFieldsOpen={setMoreFieldsOpen}
+      preferences={DEFAULT_WORK_ITEM_DETAILS_PREFERENCES}
+      onPreferencesChange={vi.fn()}
       onWorkItemPatched={vi.fn()}
       currentUserRole={currentUserRole}
       readOnly={readOnly}

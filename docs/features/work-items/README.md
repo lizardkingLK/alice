@@ -76,6 +76,18 @@ The **Subtasks** section lists children (`parent_id = current item`). **Order by
 
 The in-page path above the title (`WorkItemPathBreadcrumb`) shows hierarchy ancestors when present: `PROJECT > Sprint > [Epic] … > [Type] SHORT_ID`. Ancestor segments link to the parent work-item details pages; the current item is not a link.
 
+### Details layout preferences (client)
+
+Per-user browser prefs (`alice:work-item-details-prefs:v1:<userId>` + cookie
+`alice_wi_details_prefs_v1`) control the summary banner tint (**state** vs
+**type**), title icon (**type** / **state** / **none**), optional sections
+(Details, Attachments, Development, Discussion, More fields, Subtasks, Linked
+issues), Details field rows, and More fields items (including short ID and
+created/updated/resolved dates). Defaults match the previous layout plus a
+**type** title icon. UI:
+`WorkItemDetailsConfigureForm` via sidebar **Configure** and
+**Settings → Preferences**. Cookie enables SSR without a banner flash.
+
 The dashboard shell breadcrumb on work-item detail is always project-scoped when the item has a `project_id`: `Dashboard → Projects → {project} → Work Items → {item}`. Entry query flags (`fromProject` / `fromAssignee`) are not used for that trail — use the browser back button for navigation history.
 
 ## List views (Flat vs Hierarchy)
