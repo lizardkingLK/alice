@@ -7,36 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
-
-const KEYBOARD_SHORTCUTS: ReadonlyArray<{
-  readonly keys: string;
-  readonly description: string;
-}> = [
-  {
-    keys: 'Esc',
-    description: 'Clear the selected state or transition.',
-  },
-  {
-    keys: 'Delete / Backspace',
-    description: 'Delete the selected state or transition without confirming.',
-  },
-  {
-    keys: 'Ctrl/Cmd + Z',
-    description: 'Undo the last designer change.',
-  },
-  {
-    keys: 'Ctrl/Cmd + X',
-    description: 'Cut the selected state (transitions are not kept).',
-  },
-  {
-    keys: 'Ctrl/Cmd + V',
-    description: 'Paste a cut state as a new state (no edges).',
-  },
-  {
-    keys: 'Ctrl/Cmd + N',
-    description: 'Add a new state and open Settings.',
-  },
-];
+import { WORKFLOW_DESIGNER_COMMANDS } from '@/app/projects/_helpers/workflow-designer-commands';
 
 type WorkflowDesignerHelpProps = {
   readonly open: boolean;
@@ -64,14 +35,17 @@ export function WorkflowDesignerHelp({
           <h3 className="text-foreground mb-3 text-sm font-semibold">
             Keyboard
           </h3>
+          <p className="text-muted-foreground mb-3 text-xs leading-relaxed">
+            Right-click the canvas for the same commands with shortcuts.
+          </p>
           <ul className="space-y-3">
-            {KEYBOARD_SHORTCUTS.map((shortcut) => (
-              <li key={shortcut.keys} className="space-y-1">
+            {WORKFLOW_DESIGNER_COMMANDS.map((command) => (
+              <li key={command.id} className="space-y-1">
                 <p className="text-foreground text-sm font-medium">
-                  {shortcut.keys}
+                  {command.keys}
                 </p>
                 <p className="text-muted-foreground text-xs leading-relaxed">
-                  {shortcut.description}
+                  {command.description}
                 </p>
               </li>
             ))}

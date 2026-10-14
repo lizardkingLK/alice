@@ -6,6 +6,7 @@ import {
   addStateToDocument,
   applyNodePositionsToDocument,
   canConnectWorkflowStates,
+  captureSelectedStateClipboard,
   captureStateClipboard,
   defaultStatePosition,
   makeStateTerminalInDocument,
@@ -289,5 +290,28 @@ describe('workflow-designer.layout', () => {
         (edge) => edge.from === pasted.stateId || edge.to === pasted.stateId
       )
     ).toBe(false);
+  });
+
+  it('captureSelectedStateClipboard only returns for state selections', () => {
+    // Arrange
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+
+    // Act / Assert
+    expect(
+      captureSelectedStateClipboard(workflow, {
+        kind: 'state',
+        stateId: WorkItemStatusEnum.Testing,
+      })
+    ).toEqual({
+      stateId: WorkItemStatusEnum.Testing,
+      clipboard: captureStateClipboard(workflow, WorkItemStatusEnum.Testing),
+    });
+    expect(
+      captureSelectedStateClipboard(workflow, {
+        kind: 'edge',
+        stateId: WorkItemStatusEnum.Testing,
+      })
+    ).toBeNull();
+    expect(captureSelectedStateClipboard(workflow, null)).toBeNull();
   });
 });
