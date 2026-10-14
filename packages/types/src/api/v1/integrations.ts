@@ -8,6 +8,7 @@ import {
   integrationConfigPatchSchema,
   integrationConfigPublicSchema,
   integrationConfigStoredSchema,
+  integrationIdentityValidationMessage,
 } from '../../integrations/config.js';
 import { emptyToUndefined } from './query-preprocess.js';
 
@@ -69,16 +70,32 @@ export const listIntegrationsQuerySchema = z.object({
 
 export type ListIntegrationsQuery = z.infer<typeof listIntegrationsQuerySchema>;
 
-export const createIntegrationBodySchema = z.object({
-  catalog_id: z.string().min(1),
-  category: integrationCategorySchema,
-  provider: z.string().min(1),
-  name: z.string().min(1),
-  status: integrationStatusSchema.optional(),
-  config: integrationConfigStoredSchema,
-  is_default: z.boolean().optional(),
-  sort_order: z.coerce.number().int().optional(),
-});
+export const createIntegrationBodySchema = z
+  .object({
+    catalog_id: z.string().min(1),
+    category: integrationCategorySchema,
+    provider: z.string().min(1),
+    name: z.string().min(1),
+    status: integrationStatusSchema.optional(),
+    config: integrationConfigStoredSchema,
+    is_default: z.boolean().optional(),
+    sort_order: z.coerce.number().int().optional(),
+  })
+  .superRefine((body, context) => {
+    const message = integrationIdentityValidationMessage({
+      catalogId: body.catalog_id,
+      category: body.category,
+      provider: body.provider,
+      configKind: body.config.kind,
+    });
+    if (message) {
+      context.addIssue({
+        code: 'custom',
+        message,
+        path: ['catalog_id'],
+      });
+    }
+  });
 
 export type CreateIntegrationBody = z.infer<typeof createIntegrationBodySchema>;
 

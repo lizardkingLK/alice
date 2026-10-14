@@ -36,6 +36,7 @@ export class SpaceXAIChatProvider implements ChatModelProvider {
       fetchOnce: () =>
         fetch(input.apiUrl, {
           method: 'POST',
+          redirect: 'error',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${input.apiKey}`,

@@ -19,6 +19,86 @@ export const integrationKindSchema = z.enum([
 
 export type IntegrationConfigKind = z.infer<typeof integrationKindSchema>;
 
+type IntegrationIdentityRule = {
+  readonly category: string;
+  readonly provider: string;
+  readonly configKind: IntegrationConfigKind;
+};
+
+/**
+ * Catalog identities accepted by the integration API.
+ *
+ * Keep this server-enforced mapping aligned with the static Settings catalog.
+ * It prevents a caller from pairing a trusted catalog id with a different
+ * provider, category, or secret-bearing config shape.
+ */
+const INTEGRATION_IDENTITY_RULES: Readonly<
+  Record<string, IntegrationIdentityRule>
+> = {
+  'alice-gemini': {
+    category: 'ai_agent',
+    provider: 'gemini',
+    configKind: 'chat_model',
+  },
+  'alice-spacexai': {
+    category: 'ai_agent',
+    provider: 'spacexai',
+    configKind: 'chat_model',
+  },
+  openai: {
+    category: 'ai_agent',
+    provider: 'openai',
+    configKind: 'chat_model',
+  },
+  anthropic: {
+    category: 'ai_agent',
+    provider: 'anthropic',
+    configKind: 'chat_model',
+  },
+  slack: {
+    category: 'communication',
+    provider: 'slack',
+    configKind: 'slack_workspace',
+  },
+  figma: {
+    category: 'design',
+    provider: 'figma',
+    configKind: 'figma_oauth',
+  },
+  github: {
+    category: 'productivity',
+    provider: 'github',
+    configKind: 'github_oauth',
+  },
+};
+
+export type IntegrationIdentityInput = {
+  readonly catalogId: string;
+  readonly category: string;
+  readonly provider: string;
+  readonly configKind: string;
+};
+
+/** Returns a safe validation message without echoing any credential data. */
+export function integrationIdentityValidationMessage(
+  input: IntegrationIdentityInput
+): string | null {
+  const rule = INTEGRATION_IDENTITY_RULES[input.catalogId];
+  if (!rule) {
+    return 'Unsupported integration catalog.';
+  }
+  if (rule.category !== input.category) {
+    return 'Integration category does not match its catalog.';
+  }
+  if (rule.provider !== input.provider) {
+    return 'Integration provider does not match its catalog.';
+  }
+  if (rule.configKind !== input.configKind) {
+    return 'Integration configuration kind does not match its catalog.';
+  }
+  return null;
+}
+
 /** Maps a secret key to its public `has_*` boolean field name. */
 export function integrationSecretHasKey(
   key: IntegrationSecretKey
@@ -31,7 +111,7 @@ const chatModelConfigStoredSchema = z.object({
   model: z.string().min(1),
   model_version: z.string().optional(),
   display_label: z.string().min(1),
-  api_url: z.string().min(1).optional(),
+  api_url: z.url().optional(),
   api_key: z.string().min(1).optional(),
 });
 

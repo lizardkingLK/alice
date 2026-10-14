@@ -6,7 +6,7 @@ type GeminiErrorPayload = {
   };
 };
 
-const SUGGESTED_MODEL_PATTERN = /use models\/([^\s,]+)/i;
+const SUGGESTED_MODEL_PATTERN = /use models\/(gemini-[a-z0-9._-]{1,80})/i;
 
 export function parseGeminiApiErrorMessage(
   errorBody: string

@@ -31,6 +31,17 @@ describe('integrationConfigStoredSchema', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it('rejects an API URL that is not an absolute URL', () => {
+    const result = integrationConfigStoredSchema.safeParse({
+      kind: 'chat_model',
+      model: 'gpt-4o',
+      display_label: 'GPT-4o',
+      api_url: '/v1/chat/completions',
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
 
 describe('withoutIntegrationConfigSecrets', () => {
@@ -90,6 +101,55 @@ describe('createIntegrationBodySchema', () => {
 
     expect(parsed.catalog_id).toBe('openai');
     expect(parsed.category).toBe('ai_agent');
+  });
+
+  it('rejects a provider that does not match the catalog', () => {
+    const result = createIntegrationBodySchema.safeParse({
+      catalog_id: 'openai',
+      category: 'ai_agent',
+      provider: 'anthropic',
+      name: 'Mismatched model',
+      config: {
+        kind: 'chat_model',
+        model: 'gpt-4o',
+        display_label: 'GPT-4o',
+        api_key: 'sk-test',
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a config kind that does not match the catalog', () => {
+    const result = createIntegrationBodySchema.safeParse({
+      catalog_id: 'openai',
+      category: 'ai_agent',
+      provider: 'openai',
+      name: 'Mismatched config',
+      config: {
+        kind: 'slack_workspace',
+        team_id: 'T01234567',
+        team_name: 'Alice HQ',
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects unsupported catalog ids', () => {
+    const result = createIntegrationBodySchema.safeParse({
+      catalog_id: 'custom-provider',
+      category: 'ai_agent',
+      provider: 'openai',
+      name: 'Custom model',
+      config: {
+        kind: 'chat_model',
+        model: 'gpt-4o',
+        display_label: 'GPT-4o',
+      },
+    });
+
+    expect(result.success).toBe(false);
   });
 });
 
