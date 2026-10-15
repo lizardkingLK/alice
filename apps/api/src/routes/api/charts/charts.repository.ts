@@ -351,9 +351,7 @@ export function buildHierarchyRings(
   rings.push({
     level: 0,
     slices: roots
-      .map((row) =>
-        toSlice(row, rootWorkItemId ? rootWorkItemId : undefined)
-      )
+      .map((row) => toSlice(row, rootWorkItemId))
       .sort(sortByValueDesc),
   });
 
@@ -559,7 +557,7 @@ export class ChartsRepository {
       .map((row) => row.work_item_id);
   }
 
-  private async listHierarchyRows(
+  private listHierarchyRows(
     query: ChartHierarchyScopedQuery
   ): Promise<HierarchyRollupRow[]> {
     const bucket_date = bucketDateWhere(query.from, query.to);
