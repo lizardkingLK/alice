@@ -38,4 +38,4 @@ See [Use the AI assistant](./use-ai-assistant.md).
 
 - [Create a work item](../work-items/create-work-item.md)
 - [Workflow designer](../board-and-planning/workflow-designer.md)
-- [Workspace integrations](../profile-and-settings/workspace-integrations.md) (admins — chat models)
+- [Workspace integrations](../profile-and-settings/workspace-integrations.md) (managers and admins — chat models)

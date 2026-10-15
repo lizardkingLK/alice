@@ -2,16 +2,16 @@
 
 Manage your identity, security, and preferences.
 
-**Audience:** All users (workspace integrations: admins)
+**Audience:** All users (workspace integrations: managers and admins)
 
 ---
 
 ## In this topic
 
-| Page                                                  | Who      | What you'll learn                    |
-| ----------------------------------------------------- | -------- | ------------------------------------ |
-| [Edit profile](./edit-profile.md)                     | Everyone | Name, avatar, cover, self-deactivate |
-| [Workspace integrations](./workspace-integrations.md) | Admin    | AI chat models and workspace tools   |
+| Page                                                  | Who           | What you'll learn                    |
+| ----------------------------------------------------- | ------------- | ------------------------------------ |
+| [Edit profile](./edit-profile.md)                     | Everyone      | Name, avatar, cover, self-deactivate |
+| [Workspace integrations](./workspace-integrations.md) | Manager/admin | AI chat models and workspace tools   |
 
 ---
 

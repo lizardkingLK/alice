@@ -135,6 +135,7 @@ PUSHER_SECRET="<Pusher secret>"
 PUSHER_CLUSTER="<Pusher cluster>"
 
 CRON_SECRET="<a non-empty local secret>"
+INTEGRATION_TOKEN_ENCRYPTION_KEY="<Base64 value that decodes to exactly 32 bytes>"
 
 STORAGE_BUCKET_ATTACHMENTS="alice_storage_attachments"
 STORAGE_BUCKET_CHAT_ATTACHMENTS="alice_storage_chat_attachments"
@@ -144,6 +145,15 @@ STORAGE_BUCKET_PROFILE_PICTURES="alice_storage_profile_pictures"
 STORAGE_BUCKET_PROJECT_COVERS="alice_storage_project_covers"
 STORAGE_BUCKET_PROJECT_LOGOS="alice_storage_project_logos"
 ```
+
+`INTEGRATION_TOKEN_ENCRYPTION_KEY` is a server-side secret used to encrypt
+stored integration credentials with AES-256-GCM. Its Base64-decoded value must
+contain exactly 32 bytes. It is optional for API startup but required before
+saving or reading encrypted integration credentials. Never expose it to the
+browser or commit a real value.
+
+Configure Gemini, xAI, OpenAI, and Anthropic API keys through **Settings →
+Integrations** instead of adding provider keys to shared environment examples.
 
 The Atlassian, GitHub, and integration-encryption variables are optional for
 startup. If you are not developing those integrations, remove or comment out
