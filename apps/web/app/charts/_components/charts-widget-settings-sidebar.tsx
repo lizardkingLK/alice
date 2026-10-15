@@ -605,8 +605,8 @@ function ValuesSection({
             selected={measure === 'story_points' ? 'Sum' : 'Count'}
           />
           <p className="text-muted-foreground mt-1.5 text-xs">
-            Every work item counts once. Outer-ring values sum under each
-            parent on the inner ring.
+            Every work item counts once. Outer-ring values sum under each parent
+            on the inner ring.
           </p>
         </div>
       </div>

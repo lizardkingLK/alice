@@ -57,15 +57,10 @@ import {
 
 const widgetById = Object.fromEntries(
   PRODUCTIVITY_WIDGET_CATALOG.map((widget) => [widget.id, widget])
-) as Record<
-  ProductivityWidgetId,
-  (typeof PRODUCTIVITY_WIDGET_CATALOG)[number]
->;
+) as Record<ProductivityWidgetId, (typeof PRODUCTIVITY_WIDGET_CATALOG)[number]>;
 
 type KpiId =
-  | 'my-work-assigned'
-  | 'my-work-pending-stories'
-  | 'my-work-in-progress';
+  'my-work-assigned' | 'my-work-pending-stories' | 'my-work-in-progress';
 
 function KpiWidget({
   id,
@@ -149,8 +144,7 @@ function AliceWidget() {
     logLabel: 'bootstrap Overview Alice widget',
   });
 
-  const ready =
-    conversations !== null && chatModels !== null && !isLoading;
+  const ready = conversations !== null && chatModels !== null && !isLoading;
 
   return (
     <DashboardWidgetShell
@@ -233,7 +227,9 @@ function DocsWidgetResults({
               aria-hidden
             />
             <span className="min-w-0">
-              <TruncatedText className="font-medium">{entry.title}</TruncatedText>
+              <TruncatedText className="font-medium">
+                {entry.title}
+              </TruncatedText>
               <span className="text-muted-foreground line-clamp-1 text-xs">
                 {entry.section}
                 {entry.excerpt ? ` · ${entry.excerpt}` : ''}
@@ -322,7 +318,12 @@ function DocsWidget({
             onOpenArticle={openArticle}
           />
 
-          <Button asChild variant="outline" size="sm" className="mt-auto w-full">
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="mt-auto w-full"
+          >
             <Link href="/docs">Open docs</Link>
           </Button>
         </div>
@@ -458,8 +459,7 @@ function PomodoroWidget({
   };
 
   const durationSeconds = durationMinutes * 60;
-  const progress =
-    durationSeconds === 0 ? 0 : 1 - remaining / durationSeconds;
+  const progress = durationSeconds === 0 ? 0 : 1 - remaining / durationSeconds;
 
   return (
     <DashboardWidgetShell title={meta.title} description={meta.description}>

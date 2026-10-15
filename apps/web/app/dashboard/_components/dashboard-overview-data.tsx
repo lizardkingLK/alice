@@ -37,34 +37,39 @@ export async function DashboardOverviewData({
     return <DashboardChartsSlider slides={[]} />;
   }
 
-  const [slides, projects, sprintsResult, productivityBootstrap, prefsBootstrap] =
-    await Promise.all([
-      safeServerFetch(
-        listDashboardChartSlides(dbUser.id),
-        [],
-        'fetch dashboard chart slides'
-      ),
-      safeServerFetch(
-        getAccessibleProjectList(dbUser.id),
-        [],
-        'fetch projects for dashboard slides'
-      ),
-      safeServerFetch(
-        getSprintsPaginatedServer('active', 1, 100),
-        EMPTY_ACTIVE_SPRINTS_PAGE,
-        'fetch sprints for dashboard slides'
-      ),
-      safeServerFetch(
-        getProductivityDashboardBootstrap(dbUser.id),
-        {
-          myWork: { assignedOpen: 0, pendingStories: 0, inProgress: 0 },
-          projects: [],
-          docs: [],
-        },
-        'fetch productivity dashboard bootstrap'
-      ),
-      readProductivityDashboardPreferencesBootstrap(),
-    ]);
+  const [
+    slides,
+    projects,
+    sprintsResult,
+    productivityBootstrap,
+    prefsBootstrap,
+  ] = await Promise.all([
+    safeServerFetch(
+      listDashboardChartSlides(dbUser.id),
+      [],
+      'fetch dashboard chart slides'
+    ),
+    safeServerFetch(
+      getAccessibleProjectList(dbUser.id),
+      [],
+      'fetch projects for dashboard slides'
+    ),
+    safeServerFetch(
+      getSprintsPaginatedServer('active', 1, 100),
+      EMPTY_ACTIVE_SPRINTS_PAGE,
+      'fetch sprints for dashboard slides'
+    ),
+    safeServerFetch(
+      getProductivityDashboardBootstrap(dbUser.id),
+      {
+        myWork: { assignedOpen: 0, pendingStories: 0, inProgress: 0 },
+        projects: [],
+        docs: [],
+      },
+      'fetch productivity dashboard bootstrap'
+    ),
+    readProductivityDashboardPreferencesBootstrap(),
+  ]);
 
   const activeProjects = filterActiveProjects(projects);
   const accessibleProjects = activeProjects.map((project) => ({

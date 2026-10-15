@@ -75,9 +75,7 @@ function toHierarchySeriesQuery(params: {
   return {
     ...(params.projectId ? { projectId: params.projectId } : {}),
     measure: params.measure,
-    ...(params.rootWorkItemId
-      ? { rootWorkItemId: params.rootWorkItemId }
-      : {}),
+    ...(params.rootWorkItemId ? { rootWorkItemId: params.rootWorkItemId } : {}),
     ...(params.sprintId ? { sprintId: params.sprintId } : {}),
     ...chartAnalyticsDimensionQueryFields(params.dimensionFilters),
   };

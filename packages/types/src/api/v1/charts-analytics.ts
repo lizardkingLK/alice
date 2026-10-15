@@ -145,10 +145,13 @@ const chartAnalyticsFilterFields = {
 const chartDateRangeRefine = <T extends { from?: string; to?: string }>(
   schema: z.ZodType<T>
 ) =>
-  schema.refine((query) => !(query.from && query.to) || query.from <= query.to, {
-    message: '`from` must be on or before `to`',
-    path: ['from'],
-  });
+  schema.refine(
+    (query) => !(query.from && query.to) || query.from <= query.to,
+    {
+      message: '`from` must be on or before `to`',
+      path: ['from'],
+    }
+  );
 
 export const chartSeriesQuerySchema = chartDateRangeRefine(
   z.object(chartAnalyticsFilterFields)
@@ -223,7 +226,8 @@ export type ChartHierarchyMeasure = (typeof CHART_HIERARCHY_MEASURES)[number];
  * (Epic → Story → Subtask). Depth capped at 3.
  */
 export const CHART_HIERARCHY_RING_LEVELS = [0, 1, 2] as const;
-export type ChartHierarchyRingLevel = (typeof CHART_HIERARCHY_RING_LEVELS)[number];
+export type ChartHierarchyRingLevel =
+  (typeof CHART_HIERARCHY_RING_LEVELS)[number];
 
 /** Max nested-donut depth (root + 2 descendant rings). */
 export const CHART_HIERARCHY_MAX_DEPTH = CHART_HIERARCHY_RING_LEVELS.length;

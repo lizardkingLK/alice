@@ -300,11 +300,11 @@ Epic and its Tasks as separate slices when grouped by **status** or **type**.
 Catalog **`typeId: nested-donut`** — a two-ring hierarchy chart (not a
 `pieVariant` on Chart).
 
-| Ring | Membership |
-| ---- | ---------- |
+| Ring      | Membership                                                                 |
+| --------- | -------------------------------------------------------------------------- |
 | 0 (inner) | Work items in scope whose parent is null or outside scope (promoted roots) |
-| 1 | Direct children in scope of ring-0 parents (`parentKey` = parent id) |
-| 2 (outer) | Direct children of ring-1 parents (e.g. Story → Subtask) |
+| 1         | Direct children in scope of ring-0 parents (`parentKey` = parent id)       |
+| 2 (outer) | Direct children of ring-1 parents (e.g. Story → Subtask)                   |
 
 Depth is capped at **3 rings** (Epic → Story → Subtask).
 
