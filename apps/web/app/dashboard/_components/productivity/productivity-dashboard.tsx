@@ -12,10 +12,7 @@ import {
   DASHBOARD_RESIZE_CONFIG,
   useStableDashboardGridWidth,
 } from '@/lib/dashboard-grid';
-import {
-  getLocalStorageJson,
-  setLocalStorageJson,
-} from '@/lib/local-storage';
+import { getLocalStorageJson, setLocalStorageJson } from '@/lib/local-storage';
 import { mergeStoredDashboardLayout } from '@/lib/dashboard-grid-layout';
 import { PRODUCTIVITY_DEFAULT_LAYOUT } from '@/app/dashboard/_components/productivity/productivity-catalog';
 import { ProductivityWidget } from '@/app/dashboard/_components/productivity/productivity-widgets';
@@ -83,7 +80,9 @@ export function ProductivityDashboard({
   if (enabledIds.length === 0) {
     return (
       <div className="border-border text-muted-foreground flex min-h-72 flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-6 py-12 text-center text-sm">
-        <p className="text-foreground font-medium">No productivity widgets on</p>
+        <p className="text-foreground font-medium">
+          No productivity widgets on
+        </p>
         <p>Turn widgets on from Customize.</p>
       </div>
     );

@@ -130,9 +130,7 @@ export class ChartsService {
       page: query.page,
       limit: query.limit,
       ...dimensionFilters,
-      ...(query.ring !== undefined
-        ? { ring: query.ring as 0 | 1 | 2 }
-        : {}),
+      ...(query.ring !== undefined ? { ring: query.ring as 0 | 1 | 2 } : {}),
       ...(query.sliceKey !== undefined ? { sliceKey: query.sliceKey } : {}),
       ...(query.parentKey !== undefined ? { parentKey: query.parentKey } : {}),
       ...(query.from ? { from: query.from } : {}),

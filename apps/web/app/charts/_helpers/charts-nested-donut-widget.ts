@@ -22,9 +22,5 @@ export function shouldDigHierarchySlice(options: {
   readonly hasChildren: boolean;
   readonly digEnabled: boolean;
 }): boolean {
-  return (
-    !options.preferDrilldown &&
-    options.hasChildren &&
-    options.digEnabled
-  );
+  return !options.preferDrilldown && options.hasChildren && options.digEnabled;
 }

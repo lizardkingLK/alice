@@ -201,8 +201,7 @@ export function ChartsNestedDonutPreview({
 
   const ringViews = useMemo(() => {
     return RING_GEOMETRY.map((geometry, level) => {
-      const raw =
-        rings?.find((ring) => ring.level === level)?.slices ?? [];
+      const raw = rings?.find((ring) => ring.level === level)?.slices ?? [];
       return {
         level: level as ChartHierarchyRingLevel,
         geometry,
@@ -217,10 +216,8 @@ export function ChartsNestedDonutPreview({
   }, [rings, sliceColors]);
 
   const allSlices = ringViews.flatMap((ring) => ring.slices);
-  const rootTotal = ringViews[0]?.slices.reduce(
-    (sum, slice) => sum + slice.value,
-    0
-  ) ?? 0;
+  const rootTotal =
+    ringViews[0]?.slices.reduce((sum, slice) => sum + slice.value, 0) ?? 0;
   const hasData = allSlices.length > 0;
 
   const config = useMemo(() => {
@@ -243,10 +240,7 @@ export function ChartsNestedDonutPreview({
         digEnabled: onDigPathChange != null,
       })
     ) {
-      onDigPathChange?.([
-        ...digPath,
-        { id: slice.key, label: slice.label },
-      ]);
+      onDigPathChange?.([...digPath, { id: slice.key, label: slice.label }]);
       return;
     }
     onDrilldownFocus?.(focusKeyForSlice(slice));
@@ -277,7 +271,7 @@ export function ChartsNestedDonutPreview({
           <button
             type="button"
             className={cn(
-              'hover:text-foreground max-w-28 truncate cursor-pointer rounded-sm px-1 py-0.5',
+              'hover:text-foreground max-w-28 cursor-pointer truncate rounded-sm px-1 py-0.5',
               digPath.length === 0 && 'text-foreground font-medium'
             )}
             onClick={() => {
@@ -292,7 +286,7 @@ export function ChartsNestedDonutPreview({
               <button
                 type="button"
                 className={cn(
-                  'hover:text-foreground max-w-28 truncate cursor-pointer rounded-sm px-1 py-0.5',
+                  'hover:text-foreground max-w-28 cursor-pointer truncate rounded-sm px-1 py-0.5',
                   index === digPath.length - 1 && 'text-foreground font-medium'
                 )}
                 title={step.label}

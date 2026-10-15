@@ -32,9 +32,7 @@ export function invalidateChartAnalyticsCaches(): void {
  * Bumps when {@link CHART_ANALYTICS_INVALIDATE_EVENT} fires.
  * Optional `externalEpoch` lets callers force a refetch without the event.
  */
-export function useChartAnalyticsInvalidateEpoch(
-  externalEpoch = 0
-): number {
+export function useChartAnalyticsInvalidateEpoch(externalEpoch = 0): number {
   const [invalidateEpoch, setInvalidateEpoch] = useState(0);
 
   useEffect(() => {
@@ -146,8 +144,7 @@ export function useCachedAnalyticsResource<T>(options: {
         setState({
           data: null,
           loading: false,
-          error:
-            error instanceof Error ? error.message : fallbackError,
+          error: error instanceof Error ? error.message : fallbackError,
         });
       });
 
@@ -156,14 +153,7 @@ export function useCachedAnalyticsResource<T>(options: {
     };
     // fetcher identity is intentionally omitted; callers pass stable deps via cacheKey/epoch.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey + epoch gate refetch
-  }, [
-    cache,
-    cacheKey,
-    enabled,
-    epoch,
-    fallbackError,
-    keepPreviousOnDisable,
-  ]);
+  }, [cache, cacheKey, enabled, epoch, fallbackError, keepPreviousOnDisable]);
 
   return state;
 }

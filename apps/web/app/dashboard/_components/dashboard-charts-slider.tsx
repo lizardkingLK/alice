@@ -278,9 +278,7 @@ export function DashboardChartsSlider({
   };
 
   const showSlider = slides.length > 1;
-  const customizeHref = activeSlide
-    ? `/charts/${activeSlide.id}`
-    : null;
+  const customizeHref = activeSlide ? `/charts/${activeSlide.id}` : null;
   const showCustomize = !hideCustomizeButton && Boolean(customizeHref);
   const showToolbar = showSlider || showCustomize;
 
@@ -318,7 +316,9 @@ export function DashboardChartsSlider({
                       title={tab.description}
                       onClick={() => goTo(tab.index)}
                     >
-                      <TruncatedText className="min-w-0">{tab.title}</TruncatedText>
+                      <TruncatedText className="min-w-0">
+                        {tab.title}
+                      </TruncatedText>
                     </Button>
                   ))}
                 </div>

@@ -255,7 +255,8 @@ export default function ChatClientHeaderActions({
 }: Readonly<ChatClientHeaderActionsProps>) {
   const hasModels = chatModels.length > 0;
   const isOverlayVariant = variant !== 'page';
-  const showCompactMenu = isOverlayVariant && (Boolean(onClose) || variant === 'widget');
+  const showCompactMenu =
+    isOverlayVariant && (Boolean(onClose) || variant === 'widget');
   const agentsGalleryButton =
     variant === 'page' && onOpenAgentsGallery ? (
       <Tooltip>

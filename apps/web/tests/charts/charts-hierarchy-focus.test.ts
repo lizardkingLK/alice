@@ -35,9 +35,7 @@ describe('charts hierarchy focus', () => {
       sliceKey: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
       parentKey: STORY,
     });
-    expect(grandchild).toBe(
-      `h2:${STORY}:cccccccc-cccc-4ccc-8ccc-cccccccccccc`
-    );
+    expect(grandchild).toBe(`h2:${STORY}:cccccccc-cccc-4ccc-8ccc-cccccccccccc`);
     expect(parseHierarchyFocus(grandchild)).toEqual({
       ring: 2,
       sliceKey: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',

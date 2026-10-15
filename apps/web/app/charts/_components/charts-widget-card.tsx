@@ -551,9 +551,7 @@ export function ChartsWidgetCard({
   const isNested = isNestedDonutWidgetType(typeId);
   const usesConfigDialog = isChart || isNested;
   const isBurndown = isBurndownWidgetType(typeId);
-  const [digPath, setDigPath] = useState<readonly ChartsHierarchyDigStep[]>(
-    []
-  );
+  const [digPath, setDigPath] = useState<readonly ChartsHierarchyDigStep[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);

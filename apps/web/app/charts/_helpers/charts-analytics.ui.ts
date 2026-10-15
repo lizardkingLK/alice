@@ -120,10 +120,7 @@ export function chartAnalyticsDimensionCacheKey(
 /** Spread onto series/drilldown query objects from widget dimension filters. */
 export function chartAnalyticsDimensionQueryFields(
   filters: ChartAnalyticsDimensionFilters | undefined
-): Pick<
-  ChartSeriesQuery,
-  'status' | 'type' | 'priority' | 'assigneeId'
-> {
+): Pick<ChartSeriesQuery, 'status' | 'type' | 'priority' | 'assigneeId'> {
   if (!filters) {
     return {};
   }
