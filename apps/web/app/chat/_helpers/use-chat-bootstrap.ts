@@ -39,6 +39,8 @@ export function useChatBootstrap(options?: {
   logLabelRef.current = logLabel;
   const preferNewChatRef = useRef(preferNewChat);
   preferNewChatRef.current = preferNewChat;
+  const inFlightRef = useRef(false);
+  const loadedRef = useRef(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [conversations, setConversations] = useState<ChatConversation[] | null>(
@@ -51,9 +53,11 @@ export function useChatBootstrap(options?: {
   const [chatModels, setChatModels] = useState<ChatModelOption[] | null>(null);
 
   const ensureLoaded = useCallback(async () => {
-    if (conversations && chatModels) return;
-    if (isLoading) return;
+    if (loadedRef.current || inFlightRef.current) {
+      return;
+    }
 
+    inFlightRef.current = true;
     setIsLoading(true);
     try {
       if (preferNewChatRef.current) {
@@ -69,19 +73,25 @@ export function useChatBootstrap(options?: {
         setActiveConversationId(bootstrap.activeConversationId);
         setMessages(bootstrap.messages);
       }
+      loadedRef.current = true;
     } catch (err) {
       console.error(`Failed to ${logLabelRef.current}:`, err);
       setConversations([]);
       setActiveConversationId(undefined);
       setMessages([]);
       setChatModels([]);
+      // Allow a later ensureLoaded (e.g. drawer reopen) to retry.
+      loadedRef.current = false;
     } finally {
+      inFlightRef.current = false;
       setIsLoading(false);
     }
-  }, [chatModels, conversations, isLoading]);
+  }, []);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
     ensureLoaded().catch(() => undefined);
   }, [enabled, ensureLoaded]);
 
