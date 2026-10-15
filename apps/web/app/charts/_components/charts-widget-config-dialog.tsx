@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import type { WorkItemStatus } from '@repo/types';
+import type { ChartSeriesLabelField, WorkItemStatus } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { DropdownMenuItem } from '@repo/ui/components/ui/dropdown-menu';
 import { Filter, LogOut, MoreHorizontal, Settings } from '@repo/ui/lib/icons';
@@ -19,7 +19,7 @@ import type {
   ChartsSliceColorToken,
   ChartsTableColumnId,
   ChartWidgetDisplaySettingsPatch,
-  ChartWidgetTypeId,
+  ChartWidgetMeasure,
   ChartWidgetViewMode,
   ChartsWidgetFiltersChangeHandler,
   ChartsWidgetLabelFieldChangeHandler,
@@ -28,6 +28,7 @@ import type {
 } from '@/app/charts/_components/charts.types';
 import { ChartsAdvancedFiltersPopover } from '@/app/charts/_components/charts-advanced-filters-popover';
 import { ChartsFullscreenDialogShell } from '@/app/charts/_components/charts-fullscreen-dialog-shell';
+import { ChartsNestedDonutPreview } from '@/app/charts/_components/charts-nested-donut-preview';
 import { ChartsStatusGroupedTable } from '@/app/charts/_components/charts-status-grouped-table';
 import { ChartsStatusPiePreview } from '@/app/charts/_components/charts-status-pie-preview';
 import { ChartsWidgetActionsMenu } from '@/app/charts/_components/charts-widget-actions-menu';
@@ -54,6 +55,8 @@ import {
   invalidateChartAnalyticsCaches,
   useChartWidgetAnalytics,
 } from '@/app/charts/_hooks/use-chart-widget-analytics';
+import { useChartWidgetHierarchyAnalytics } from '@/app/charts/_hooks/use-chart-widget-hierarchy-analytics';
+import type { ChartsHierarchyDigStep } from '@/app/charts/_helpers/charts-nested-donut-widget';
 import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form/work-item-form-dialog';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import type { Project as DbProject } from '@/app/projects/_types/projects.types';
@@ -73,10 +76,11 @@ type ChartsWidgetConfigDialogProps = {
   readonly initialSettingsOpen?: boolean;
   readonly filters?: ChartsWidgetFilterDraft | null;
   readonly scopeLocked?: boolean;
-  readonly typeId?: ChartWidgetTypeId;
   readonly viewMode?: ChartWidgetViewMode;
+  readonly settingsMode?: 'chart' | 'nested-donut';
   readonly pieVariant?: ChartPieVariant;
   readonly labelField?: ChartsLabelFieldId;
+  readonly measure?: ChartWidgetMeasure;
   readonly showValueAs?: 'value' | 'percent';
   readonly sortSlicesBy?:
     'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
@@ -84,15 +88,16 @@ type ChartsWidgetConfigDialogProps = {
   readonly visibleTableColumns?: readonly ChartsTableColumnId[];
   readonly sliceColors?: Readonly<Record<string, ChartsSliceColorToken>>;
   readonly focusedSliceKey?: string;
+  readonly digPath?: readonly ChartsHierarchyDigStep[];
+  onDigPathChange?: (
+    // eslint-disable-next-line no-unused-vars -- dig path
+    next: readonly ChartsHierarchyDigStep[]
+  ) => void;
   readonly accessibleProjects?: readonly ChartsProjectOption[];
   readonly accessibleSprints?: readonly ChartsSprintOption[];
   /** Accessible project members for Assignee options in the filter popover. */
   readonly assigneeMembers?: readonly ChartsSampleMember[];
   readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
-  readonly onScopeChange?: (
-    // eslint-disable-next-line no-unused-vars -- change locked scope
-    scope: { readonly projectId: string; readonly sprintId: string | null }
-  ) => void;
   readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
   readonly onPieVariantChange?: ChartsWidgetPieVariantChangeHandler;
   readonly onLabelFieldChange?: ChartsWidgetLabelFieldChangeHandler;
@@ -176,13 +181,9 @@ function ChartsWidgetConfigToolbar(props: {
   readonly onFiltersOpenChange: (open: boolean) => void;
   readonly filters: ChartsWidgetFilterDraft | null;
   readonly scopeLocked?: boolean;
-  readonly typeId?: ChartWidgetTypeId;
   readonly accessibleProjects: readonly ChartsProjectOption[];
   readonly accessibleSprints: readonly ChartsSprintOption[];
   readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
-  readonly onScopeChange?: NonNullable<
-    ChartsWidgetConfigDialogProps['onScopeChange']
-  >;
   readonly members: readonly ChartsSampleMember[];
   readonly viewMode: ChartWidgetViewMode;
   // eslint-disable-next-line no-unused-vars
@@ -213,9 +214,7 @@ function ChartsWidgetConfigToolbar(props: {
         onOpenChange={props.onFiltersOpenChange}
         appliedFilters={props.filters}
         scopeLocked={props.scopeLocked}
-        typeId={props.typeId}
         onApply={(draft) => props.onFiltersChange?.(draft)}
-        onScopeChange={props.onScopeChange}
         projects={props.accessibleProjects}
         sprints={props.accessibleSprints}
         members={props.members}
@@ -324,29 +323,228 @@ function ChartsWidgetConfigPreview(props: {
   return props.piePreview;
 }
 
+function resolveTableFocusedStatus(params: {
+  readonly isNested: boolean;
+  readonly hasSliceFocus: boolean;
+  readonly labelField: ChartsLabelFieldId;
+  readonly focusedSliceKey: string | undefined;
+}): WorkItemStatus | null {
+  if (
+    params.isNested ||
+    !params.hasSliceFocus ||
+    params.labelField !== 'status' ||
+    !params.focusedSliceKey
+  ) {
+    return null;
+  }
+  return params.focusedSliceKey as WorkItemStatus;
+}
+
+function resolveSettingsSliceOptions(params: {
+  readonly isNested: boolean;
+  readonly nestedRings:
+    | readonly {
+        readonly slices: readonly {
+          readonly key: string;
+          readonly label: string;
+        }[];
+      }[]
+    | null
+    | undefined;
+  readonly flatSlices:
+    | readonly { readonly key: string; readonly label: string }[]
+    | null
+    | undefined;
+}): readonly { readonly key: string; readonly label: string }[] {
+  if (params.isNested) {
+    return (
+      params.nestedRings?.flatMap((ring) =>
+        ring.slices.map((slice) => ({
+          key: slice.key,
+          label: slice.label,
+        }))
+      ) ?? []
+    );
+  }
+  return (
+    params.flatSlices?.map((slice) => ({
+      key: slice.key,
+      label: slice.label,
+    })) ?? []
+  );
+}
+
+function renderConfigPiePreview(params: {
+  readonly isNested: boolean;
+  readonly open: boolean;
+  readonly hierarchy: ReturnType<typeof useChartWidgetHierarchyAnalytics>;
+  readonly analytics: ReturnType<typeof useChartWidgetAnalytics>;
+  readonly seriesLabelField: ChartSeriesLabelField | null;
+  readonly hasSliceFocus: boolean;
+  readonly focusedSliceKey: string | undefined;
+  readonly digPath: readonly ChartsHierarchyDigStep[];
+  // eslint-disable-next-line no-unused-vars -- dig path
+  readonly onDigPathChange: (next: readonly ChartsHierarchyDigStep[]) => void;
+  readonly preferNestedDrilldown: boolean;
+  // eslint-disable-next-line no-unused-vars -- slice key
+  readonly onSliceToggle: (sliceKey: string) => void;
+  readonly showValueAs: 'value' | 'percent';
+  readonly sliceColors:
+    Readonly<Record<string, ChartsSliceColorToken>> | undefined;
+  readonly pieVariant: ChartPieVariant;
+  readonly sortSlicesBy:
+    'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
+  readonly showEmptySlices: boolean;
+}): ReactNode {
+  if (params.isNested) {
+    return (
+      <ChartsNestedDonutPreview
+        size="dialog"
+        rings={params.hierarchy.series?.rings ?? null}
+        loading={Boolean(params.open && params.hierarchy.seriesLoading)}
+        emptyMessage={params.hierarchy.seriesError ?? SCOPE_EMPTY_MESSAGE}
+        selectedFocusKey={params.hasSliceFocus ? params.focusedSliceKey : null}
+        digPath={params.digPath}
+        onDigPathChange={params.onDigPathChange}
+        preferDrilldown={params.preferNestedDrilldown}
+        onDrilldownFocus={params.onSliceToggle}
+        showValueAs={params.showValueAs}
+        sliceColors={params.sliceColors}
+      />
+    );
+  }
+  return (
+    <ChartsStatusPiePreview
+      size="dialog"
+      slices={params.analytics.series?.slices ?? null}
+      labelField={params.seriesLabelField ?? 'category'}
+      loading={Boolean(
+        params.open && params.seriesLabelField && params.analytics.seriesLoading
+      )}
+      emptyMessage={pieEmptyMessage({
+        hasSeriesLabel: Boolean(params.seriesLabelField),
+        seriesError: params.analytics.seriesError,
+      })}
+      pieVariant={params.pieVariant}
+      selectedSliceKey={params.hasSliceFocus ? params.focusedSliceKey : null}
+      onSliceClick={params.onSliceToggle}
+      showValueAs={params.showValueAs}
+      sortSlicesBy={params.sortSlicesBy}
+      showEmptySlices={params.showEmptySlices}
+      sliceColors={params.sliceColors}
+    />
+  );
+}
+
+function usePromoteChartSplitOnOpen(params: {
+  readonly open: boolean;
+  readonly isNested: boolean;
+  readonly viewMode: ChartWidgetViewMode;
+  readonly focusedSliceKey: string | undefined;
+  readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
+}): void {
+  const { open, isNested, viewMode, focusedSliceKey, onViewModeChange } =
+    params;
+  const promotedSplitOnOpenRef = useRef(false);
+  useEffect(() => {
+    if (!open) {
+      promotedSplitOnOpenRef.current = false;
+      return;
+    }
+    if (promotedSplitOnOpenRef.current || isNested) {
+      return;
+    }
+    promotedSplitOnOpenRef.current = true;
+    if (viewMode === 'chart') {
+      onViewModeChange?.('split', focusedSliceKey ?? null);
+    }
+  }, [focusedSliceKey, isNested, onViewModeChange, open, viewMode]);
+}
+
+function useChartsWidgetConfigSeries(params: {
+  readonly open: boolean;
+  readonly isNested: boolean;
+  readonly filters: ChartsWidgetFilterDraft | null;
+  readonly labelField: ChartsLabelFieldId;
+  readonly measure: ChartWidgetMeasure;
+  readonly viewMode: ChartWidgetViewMode;
+  readonly focusedSliceKey: string | undefined;
+  readonly digPath: readonly ChartsHierarchyDigStep[];
+}) {
+  const projectId = resolveChartAnalyticsProjectId(params.filters);
+  const sprintId = resolveChartAnalyticsSprintId(params.filters);
+  const dimensionFilters = useMemo(
+    () => resolveChartAnalyticsDimensionFilters(params.filters),
+    [params.filters]
+  );
+  const seriesLabelField = isChartSeriesLabelField(params.labelField)
+    ? params.labelField
+    : null;
+  const needsTable = params.viewMode === 'table' || params.viewMode === 'split';
+  const hasSliceFocus =
+    params.focusedSliceKey !== undefined && params.focusedSliceKey !== null;
+  const showAllStatusGroups = !hasSliceFocus;
+  const loadDrilldown = params.open && needsTable;
+  const digRootId = params.digPath.at(-1)?.id;
+  const drilldownLimit = showAllStatusGroups ? 100 : 50;
+  const focusedKey = hasSliceFocus ? params.focusedSliceKey : null;
+
+  const analytics = useChartWidgetAnalytics({
+    projectId: params.isNested ? undefined : projectId,
+    labelField: params.isNested ? null : seriesLabelField,
+    ...(sprintId ? { sprintId } : {}),
+    dimensionFilters,
+    focusedSliceKey: focusedKey,
+    loadDrilldown: params.isNested ? false : loadDrilldown,
+    drilldownLimit,
+  });
+  const hierarchy = useChartWidgetHierarchyAnalytics({
+    projectId: params.isNested ? projectId : undefined,
+    measure: params.measure,
+    ...(digRootId ? { rootWorkItemId: digRootId } : {}),
+    ...(sprintId ? { sprintId } : {}),
+    dimensionFilters,
+    focusedSliceKey: focusedKey,
+    loadDrilldown: params.isNested ? loadDrilldown : false,
+    drilldownLimit,
+  });
+
+  return {
+    projectId,
+    seriesLabelField,
+    hasSliceFocus,
+    loadDrilldown,
+    preferNestedDrilldown: needsTable,
+    analytics,
+    hierarchy,
+  };
+}
+
 export function ChartsWidgetConfigDialog({
   open,
   onOpenChange,
   title,
+  settingsMode = 'chart',
   initialFiltersOpen = false,
   initialSettingsOpen = false,
   filters = null,
   scopeLocked = false,
-  typeId = 'chart',
   viewMode = 'chart',
   pieVariant = 'donut',
   labelField = DEFAULT_CHARTS_LABEL_FIELD,
+  measure = 'item_count',
   showValueAs = 'percent',
   sortSlicesBy = 'value_desc',
   showEmptySlices = false,
   visibleTableColumns,
   sliceColors,
   focusedSliceKey,
+  digPath = [],
+  onDigPathChange,
   accessibleProjects = [],
   accessibleSprints = [],
   assigneeMembers = [],
   onFiltersChange,
-  onScopeChange,
   onViewModeChange,
   onPieVariantChange,
   onLabelFieldChange,
@@ -362,31 +560,25 @@ export function ChartsWidgetConfigDialog({
   const [searchQuery, setSearchQuery] = useState('');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<DbWorkItem | null>(null);
+  const isNested = settingsMode === 'nested-donut';
 
-  const projectId = resolveChartAnalyticsProjectId(filters);
-  const sprintId = resolveChartAnalyticsSprintId(filters);
-  const dimensionFilters = useMemo(
-    () => resolveChartAnalyticsDimensionFilters(filters),
-    [filters]
-  );
-  const seriesLabelField = isChartSeriesLabelField(labelField)
-    ? labelField
-    : null;
-  const needsTable = viewMode === 'table' || viewMode === 'split';
-  const hasSliceFocus =
-    focusedSliceKey !== undefined && focusedSliceKey !== null;
-  /** No slice selected → all status groups; slice selected → that scope only. */
-  const showAllStatusGroups = !hasSliceFocus;
-  const loadDrilldown = open && needsTable;
-
-  const analytics = useChartWidgetAnalytics({
+  const {
     projectId,
-    labelField: seriesLabelField,
-    ...(sprintId ? { sprintId } : {}),
-    dimensionFilters,
-    focusedSliceKey: hasSliceFocus ? focusedSliceKey : null,
+    seriesLabelField,
+    hasSliceFocus,
     loadDrilldown,
-    drilldownLimit: showAllStatusGroups ? 100 : 50,
+    preferNestedDrilldown,
+    analytics,
+    hierarchy,
+  } = useChartsWidgetConfigSeries({
+    open,
+    isNested,
+    filters,
+    labelField,
+    measure,
+    viewMode,
+    focusedSliceKey,
+    digPath,
   });
 
   const formProjects = useMemo(
@@ -422,23 +614,16 @@ export function ChartsWidgetConfigDialog({
 
   /**
    * On first open in chart-only layout, promote to split so the drilldown table
-   * is visible. Mark the open session handled either way so a later user choice
-   * of Chart is not immediately forced back to Split.
+   * is visible (status pie). Nested donut stays on Chart so dig-zoom remains
+   * available; users can switch to Split/Table for leaf drilldown.
    */
-  const promotedSplitOnOpenRef = useRef(false);
-  useEffect(() => {
-    if (!open) {
-      promotedSplitOnOpenRef.current = false;
-      return;
-    }
-    if (promotedSplitOnOpenRef.current) {
-      return;
-    }
-    promotedSplitOnOpenRef.current = true;
-    if (viewMode === 'chart') {
-      onViewModeChange?.('split', focusedSliceKey ?? null);
-    }
-  }, [focusedSliceKey, onViewModeChange, open, viewMode]);
+  usePromoteChartSplitOnOpen({
+    open,
+    isNested,
+    viewMode,
+    focusedSliceKey,
+    onViewModeChange,
+  });
 
   const handleSliceToggle = (sliceKey: string) => {
     const nextMode: ChartWidgetViewMode =
@@ -448,6 +633,13 @@ export function ChartsWidgetConfigDialog({
       return;
     }
     onViewModeChange?.('split', sliceKey);
+  };
+
+  const handleDigPathChange = (next: readonly ChartsHierarchyDigStep[]) => {
+    if (focusedSliceKey) {
+      onViewModeChange?.(viewMode, null);
+    }
+    onDigPathChange?.(next);
   };
 
   const openEditWorkItem = (item: ChartDrilldownTableItem) => {
@@ -476,48 +668,62 @@ export function ChartsWidgetConfigDialog({
     router.refresh();
   };
 
+  const drilldownLoading = isNested
+    ? hierarchy.drilldownLoading
+    : analytics.drilldownLoading;
+  const drilldownError = isNested
+    ? hierarchy.drilldownError
+    : analytics.drilldownError;
+
+  const nestedWorkItems = hierarchy.drilldown?.workItems;
+  const flatWorkItems = analytics.drilldown?.workItems;
   const tableItems = useMemo(() => {
-    const rows = (analytics.drilldown?.workItems ?? []).map(
-      workItemListRowToChartTableItem
-    );
+    const sourceRows = isNested
+      ? (nestedWorkItems ?? [])
+      : (flatWorkItems ?? []);
+    const rows = sourceRows.map(workItemListRowToChartTableItem);
     return filterChartDrilldownTableItems(rows, {
       search: searchQuery,
     });
-  }, [analytics.drilldown?.workItems, searchQuery]);
+  }, [flatWorkItems, isNested, nestedWorkItems, searchQuery]);
 
-  const tableFocusedStatus =
-    hasSliceFocus && labelField === 'status' && focusedSliceKey
-      ? (focusedSliceKey as WorkItemStatus)
-      : null;
+  const tableFocusedStatus = resolveTableFocusedStatus({
+    isNested,
+    hasSliceFocus,
+    labelField,
+    focusedSliceKey,
+  });
 
-  const piePreview = (
-    <ChartsStatusPiePreview
-      size="dialog"
-      slices={analytics.series?.slices ?? null}
-      labelField={seriesLabelField ?? 'category'}
-      loading={Boolean(open && seriesLabelField && analytics.seriesLoading)}
-      emptyMessage={pieEmptyMessage({
-        hasSeriesLabel: Boolean(seriesLabelField),
-        seriesError: analytics.seriesError,
-      })}
-      pieVariant={pieVariant}
-      selectedSliceKey={hasSliceFocus ? focusedSliceKey : null}
-      onSliceClick={handleSliceToggle}
-      showValueAs={showValueAs}
-      sortSlicesBy={sortSlicesBy}
-      showEmptySlices={showEmptySlices}
-      sliceColors={sliceColors}
-    />
-  );
+  const piePreview = renderConfigPiePreview({
+    isNested,
+    open,
+    hierarchy,
+    analytics,
+    seriesLabelField,
+    hasSliceFocus,
+    focusedSliceKey,
+    digPath,
+    onDigPathChange: handleDigPathChange,
+    preferNestedDrilldown,
+    onSliceToggle: handleSliceToggle,
+    showValueAs,
+    sliceColors,
+    pieVariant,
+    sortSlicesBy,
+    showEmptySlices,
+  });
 
   const tablePreview = (
     <ChartsStatusGroupedTable
       workItems={tableItems}
       focusedStatus={tableFocusedStatus}
       loading={Boolean(
-        open && seriesLabelField && loadDrilldown && analytics.drilldownLoading
+        open &&
+        loadDrilldown &&
+        drilldownLoading &&
+        (isNested || seriesLabelField)
       )}
-      emptyMessage={open ? (analytics.drilldownError ?? NO_MATCH_MESSAGE) : ''}
+      emptyMessage={open ? (drilldownError ?? NO_MATCH_MESSAGE) : ''}
       visibleColumns={visibleTableColumns}
       projects={accessibleProjects}
       onEditWorkItem={openEditWorkItem}
@@ -546,11 +752,9 @@ export function ChartsWidgetConfigDialog({
           onFiltersOpenChange={setFiltersOpen}
           filters={filters}
           scopeLocked={scopeLocked}
-          typeId={typeId}
           accessibleProjects={accessibleProjects}
           accessibleSprints={accessibleSprints}
           onFiltersChange={onFiltersChange}
-          onScopeChange={onScopeChange}
           members={assigneeMembers}
           viewMode={viewMode}
           onLayoutChange={(mode) => {
@@ -578,24 +782,28 @@ export function ChartsWidgetConfigDialog({
             />
           </div>
 
-          {settingsOpen && onPieVariantChange ? (
+          {settingsOpen && (onPieVariantChange || isNested) ? (
             <ChartsWidgetSettingsSidebar
               projectId={projectId}
+              settingsMode={settingsMode}
               pieVariant={pieVariant}
               labelField={labelField}
-              onPieVariantChange={onPieVariantChange}
+              measure={measure}
+              onPieVariantChange={onPieVariantChange ?? (() => {})}
               onLabelFieldChange={onLabelFieldChange}
+              onMeasureChange={(next) =>
+                onDisplaySettingsChange?.({ measure: next })
+              }
               showValueAs={showValueAs}
               sortSlicesBy={sortSlicesBy}
               showEmptySlices={showEmptySlices}
               visibleTableColumns={visibleTableColumns}
               sliceColors={sliceColors}
-              sliceOptions={
-                analytics.series?.slices.map((slice) => ({
-                  key: slice.key,
-                  label: slice.label,
-                })) ?? []
-              }
+              sliceOptions={resolveSettingsSliceOptions({
+                isNested,
+                nestedRings: hierarchy.series?.rings,
+                flatSlices: analytics.series?.slices,
+              })}
               onShowValueAsChange={(value) =>
                 onDisplaySettingsChange?.({ showValueAs: value })
               }

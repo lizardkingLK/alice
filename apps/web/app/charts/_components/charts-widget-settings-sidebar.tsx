@@ -46,18 +46,17 @@ import {
 } from '@repo/ui/lib/icons';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
-import type {
-  ChartPieVariant,
-  ChartsLabelFieldId,
-  ChartsShowValueAs,
-  ChartsSliceColorToken,
-  ChartsSortSlicesBy,
-  ChartsTableColumnId,
-} from '@/app/charts/_components/charts.types';
 import {
   CHARTS_TABLE_COLUMN_IDS,
   CHARTS_TABLE_COLUMN_LABELS,
   DEFAULT_CHARTS_VISIBLE_TABLE_COLUMNS,
+  type ChartPieVariant,
+  type ChartsLabelFieldId,
+  type ChartsShowValueAs,
+  type ChartsSliceColorToken,
+  type ChartsSortSlicesBy,
+  type ChartsTableColumnId,
+  type ChartWidgetMeasure,
 } from '@/app/charts/_components/charts.types';
 import { DEFAULT_CHARTS_LABEL_FIELD } from '@/app/charts/_components/charts-sample.data';
 import {
@@ -79,12 +78,20 @@ type ChartsSliceColorOption = {
 type ChartsWidgetSettingsSidebarProps = {
   /** Concrete project filter; null/undefined hides the State label column. */
   readonly projectId?: string | null;
+  /**
+   * `nested-donut` hides Chart type / Labels (hierarchy is fixed) and enables
+   * Count vs Story points in Values.
+   */
+  readonly settingsMode?: 'chart' | 'nested-donut';
   readonly pieVariant: ChartPieVariant;
   // eslint-disable-next-line no-unused-vars -- pie subtype change
   readonly onPieVariantChange: (variant: ChartPieVariant) => void;
   readonly labelField?: ChartsLabelFieldId;
   // eslint-disable-next-line no-unused-vars -- labels column change
   readonly onLabelFieldChange?: (field: ChartsLabelFieldId) => void;
+  readonly measure?: ChartWidgetMeasure;
+  // eslint-disable-next-line no-unused-vars -- values measure change
+  readonly onMeasureChange?: (measure: ChartWidgetMeasure) => void;
   readonly showValueAs?: ChartsShowValueAs;
   // eslint-disable-next-line no-unused-vars -- customize show-as change
   readonly onShowValueAsChange?: (value: ChartsShowValueAs) => void;
@@ -564,7 +571,48 @@ function LabelsSection({
   );
 }
 
-function ValuesSection() {
+function ValuesSection({
+  settingsMode = 'chart',
+  measure = 'item_count',
+  onMeasureChange,
+}: Readonly<{
+  settingsMode?: 'chart' | 'nested-donut';
+  measure?: ChartWidgetMeasure;
+  // eslint-disable-next-line no-unused-vars -- measure change
+  onMeasureChange?: (measure: ChartWidgetMeasure) => void;
+}>) {
+  if (settingsMode === 'nested-donut') {
+    const selected =
+      measure === 'story_points' ? 'Story points' : 'Count items';
+    return (
+      <div className="flex flex-col gap-3">
+        <div>
+          <StaticFieldLabel>Columns</StaticFieldLabel>
+          <SegmentedControl
+            options={['Count items', 'Story points']}
+            selected={selected}
+            onSelect={(option) => {
+              onMeasureChange?.(
+                option === 'Story points' ? 'story_points' : 'item_count'
+              );
+            }}
+          />
+        </div>
+        <div>
+          <StaticFieldLabel>Calculation</StaticFieldLabel>
+          <StaticSegmentedControl
+            options={[measure === 'story_points' ? 'Sum' : 'Count']}
+            selected={measure === 'story_points' ? 'Sum' : 'Count'}
+          />
+          <p className="text-muted-foreground mt-1.5 text-xs">
+            Every work item counts once. Outer-ring values sum under each
+            parent on the inner ring.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div>
@@ -851,10 +899,13 @@ function ColumnsSection({
 
 export function ChartsWidgetSettingsSidebar({
   projectId = null,
+  settingsMode = 'chart',
   pieVariant,
   onPieVariantChange,
   labelField = DEFAULT_CHARTS_LABEL_FIELD,
   onLabelFieldChange,
+  measure = 'item_count',
+  onMeasureChange,
   showValueAs = 'percent',
   onShowValueAsChange,
   sortSlicesBy = 'value_desc',
@@ -868,6 +919,7 @@ export function ChartsWidgetSettingsSidebar({
   onSliceColorsChange,
   className,
 }: Readonly<ChartsWidgetSettingsSidebarProps>) {
+  const isNested = settingsMode === 'nested-donut';
   return (
     <TooltipProvider>
       <aside
@@ -884,21 +936,29 @@ export function ChartsWidgetSettingsSidebar({
           </h2>
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
-          <SettingsSection title="Chart type">
-            <ChartTypeSection
-              pieVariant={pieVariant}
-              onPieVariantChange={onPieVariantChange}
-            />
-          </SettingsSection>
-          <SettingsSection title="Labels">
-            <LabelsSection
-              labelField={labelField}
-              projectId={projectId ?? null}
-              onLabelFieldChange={(field) => onLabelFieldChange?.(field)}
-            />
-          </SettingsSection>
+          {isNested ? null : (
+            <SettingsSection title="Chart type">
+              <ChartTypeSection
+                pieVariant={pieVariant}
+                onPieVariantChange={onPieVariantChange}
+              />
+            </SettingsSection>
+          )}
+          {isNested ? null : (
+            <SettingsSection title="Labels">
+              <LabelsSection
+                labelField={labelField}
+                projectId={projectId ?? null}
+                onLabelFieldChange={(field) => onLabelFieldChange?.(field)}
+              />
+            </SettingsSection>
+          )}
           <SettingsSection title="Values">
-            <ValuesSection />
+            <ValuesSection
+              settingsMode={settingsMode}
+              measure={measure}
+              onMeasureChange={onMeasureChange}
+            />
           </SettingsSection>
           <SettingsSection title="Customize">
             <CustomizeSection

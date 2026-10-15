@@ -11,7 +11,12 @@ const GENERIC_REQUEST_MESSAGE =
   'Alice AI service encountered an error while processing your request. Please try again in a few moments.';
 
 function isTransientHttpStatus(status: number): boolean {
-  return status === 429 || status === 503 || (status >= 500 && status <= 504);
+  return (
+    status === 429 ||
+    status === 529 ||
+    status === 503 ||
+    (status >= 500 && status <= 504)
+  );
 }
 
 export type ResolveChatProviderUserFacingError = (params: {
@@ -35,30 +40,27 @@ export type FetchChatProviderWithRetriesParams = {
 
 async function handleNetworkError(
   params: FetchChatProviderWithRetriesParams,
-  networkErr: unknown,
+  _networkErr: unknown,
   attempt: number,
   isLastAttempt: boolean,
   delay: number
 ): Promise<void> {
-  const errMessage =
-    networkErr instanceof Error ? networkErr.message : String(networkErr);
   logLlmProviderError(params.provider, {
     timestamp: new Date().toISOString(),
     status: 0,
-    statusText: 'Network error',
-    errorBody: errMessage,
     attempt,
     messagesCount: params.messagesCount,
+    responseBodyBytes: 0,
   });
 
   if (isLastAttempt) {
     throw new Error(
-      `Alice AI service is temporarily unavailable due to a network connection issue (${errMessage}). Please try again in a few moments.`
+      'Alice AI service is temporarily unavailable due to a network connection issue. Please try again in a few moments.'
     );
   }
 
   console.warn(
-    `${params.providerLabel} network error (${errMessage}). Retrying in ${delay}ms...`
+    `${params.providerLabel} network error. Retrying in ${delay}ms...`
   );
   await new Promise((resolve) => setTimeout(resolve, delay));
 }
@@ -74,10 +76,9 @@ async function handleTransientError(
   logLlmProviderError(params.provider, {
     timestamp: new Date().toISOString(),
     status: response.status,
-    statusText: response.statusText,
-    errorBody: errorText,
     attempt,
     messagesCount: params.messagesCount,
+    responseBodyBytes: Buffer.byteLength(errorText, 'utf8'),
   });
 
   if (isLastAttempt) {
@@ -101,10 +102,9 @@ async function handleNonOkResponse(
   logLlmProviderError(params.provider, {
     timestamp: new Date().toISOString(),
     status: response.status,
-    statusText: response.statusText,
-    errorBody: errorText,
     attempt,
     messagesCount: params.messagesCount,
+    responseBodyBytes: Buffer.byteLength(errorText, 'utf8'),
   });
 
   const userMessage = params.resolveUserFacingError({

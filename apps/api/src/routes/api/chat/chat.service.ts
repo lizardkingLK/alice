@@ -23,6 +23,7 @@ import {
   type WorkflowConfigEnvelope,
 } from '@repo/types/api/v1';
 import type { WorkItemService } from '../work-items/work-items.service';
+import { WorkItemAccessError } from '../work-items/work-items.errors';
 import type { SprintsService } from '../sprints/sprints.service';
 import type { ProjectsService } from '../projects/projects.service';
 import type { ProjectsRepository } from '../projects/projects.repository';
@@ -50,6 +51,7 @@ import {
   verifyWorkflowPatchToken,
 } from './workflow-patch-token';
 import { prisma } from '../../../lib/prisma';
+import { env } from '../../../config/env';
 import { Prisma } from '@repo/types/prisma';
 import { prismaAuditUpdate } from '../../../lib/prisma-audit';
 import { supabase } from '../../../lib/supabase';
@@ -78,7 +80,10 @@ export type ChatServiceDeps = {
     | 'getWorkflowConfig'
     | 'putWorkflowConfig'
   >;
-  projectsRepository: Pick<ProjectsRepository, 'listAll' | 'findById'>;
+  projectsRepository: Pick<
+    ProjectsRepository,
+    'listAll' | 'findById' | 'listAccessibleProjectIds'
+  >;
   integrationsService: Pick<IntegrationsService, 'resolveChatModelForChat'>;
 };
 
@@ -938,6 +943,17 @@ export class ChatService {
     return this.deps.chat;
   }
 
+  private async assertCanAccessProject(
+    userId: string,
+    projectId: string
+  ): Promise<void> {
+    const accessibleProjectIds =
+      await this.deps.projectsRepository.listAccessibleProjectIds(userId);
+    if (!accessibleProjectIds.includes(projectId)) {
+      throw new WorkItemAccessError();
+    }
+  }
+
   get chatAttachments(): ChatAttachmentsRepository {
     return this.chatAttachmentsRepository;
   }
@@ -982,7 +998,7 @@ export class ChatService {
 
     return Promise.all(
       callable.map(async (call) => {
-        const { name, args } = call.functionCall;
+        const { id, name, args } = call.functionCall;
         let result: unknown;
 
         try {
@@ -1005,6 +1021,7 @@ export class ChatService {
 
         const part: ChatContentPart = {
           functionResponse: {
+            ...(id ? { id } : {}),
             name,
             response: { result },
           },
@@ -1026,7 +1043,7 @@ export class ChatService {
       list_projects: () => this.handleListProjects(userId),
       create_project: () =>
         this.handleCreateProject(userId, args, toolActionsPerformed),
-      list_sprints: () => this.handleListSprints(args),
+      list_sprints: () => this.handleListSprints(userId, args),
       create_sprint: () =>
         this.handleCreateSprint(userId, args, toolActionsPerformed),
       list_users: () => this.chat.listUsersSnapshot(),
@@ -1044,9 +1061,9 @@ export class ChatService {
       create_work_item: () =>
         this.handleCreateWorkItem(userId, args, toolActionsPerformed),
       parse_work_item_attachment: () =>
-        this.handleParseWorkItemAttachment(args, history),
+        this.handleParseWorkItemAttachment(userId, args, history),
       check_work_item_duplicates: () =>
-        this.handleCheckWorkItemDuplicates(args, history),
+        this.handleCheckWorkItemDuplicates(userId, args, history),
       batch_import_work_items: () =>
         this.handleBatchImportWorkItems(
           userId,
@@ -1304,9 +1321,14 @@ export class ChatService {
   }
 
   private async handleListSprints(
+    userId: string,
     args: Record<string, unknown>
   ): Promise<unknown> {
     const projectId = typeof args.projectId === 'string' ? args.projectId : '';
+    if (!projectId) {
+      throw new Error('projectId is required');
+    }
+    await this.assertCanAccessProject(userId, projectId);
     const rows = await this.chat.listSprintsByProject(projectId);
     return rows.map((s) => ({
       id: s.id,
@@ -1392,14 +1414,15 @@ export class ChatService {
     return result;
   }
 
-  private resolveAttachment(
+  private async resolveAttachment(
+    userId: string,
     providedRef: string | undefined,
     history: StoredChatMessage[]
-  ): {
+  ): Promise<{
     url: string;
     fileName: string;
     fileType?: ChatAttachmentFileTypeEnum;
-  } | null {
+  } | null> {
     const allAttachments = history.flatMap((m) => m.attachments || []);
 
     let cleanRef = providedRef?.trim();
@@ -1415,50 +1438,64 @@ export class ChatService {
       (cleanRef.startsWith('http://') || cleanRef.startsWith('https://'))
     ) {
       const matched = allAttachments.find((a) => a.url === cleanRef);
-      return {
-        url: cleanRef,
-        fileName: matched?.fileName || 'attachment',
-        fileType: matched?.fileType,
-      };
+      if (!matched) {
+        return null;
+      }
+      const verified = await this.chatAttachmentsRepository.getAttachmentById(
+        userId,
+        matched.id
+      );
+      return verified
+        ? {
+            url: verified.url,
+            fileName: verified.fileName,
+            fileType: verified.fileType,
+          }
+        : null;
     }
 
+    let matchedAttachment: (typeof allAttachments)[number] | undefined;
     if (cleanRef) {
       const lower = cleanRef.toLowerCase();
-      const matched = allAttachments.find(
+      matchedAttachment = allAttachments.find(
         (a) =>
           a.fileName.toLowerCase() === lower ||
           a.fileName.toLowerCase().includes(lower) ||
           lower.includes(a.fileName.toLowerCase()) ||
           a.id.toLowerCase() === lower
       );
-      if (matched?.url) {
-        return {
-          url: matched.url,
-          fileName: matched.fileName,
-          fileType: matched.fileType,
-        };
-      }
     }
 
-    const latestAttachment = allAttachments.at(-1);
-    if (latestAttachment?.url) {
-      return {
-        url: latestAttachment.url,
-        fileName: latestAttachment.fileName,
-        fileType: latestAttachment.fileType,
-      };
+    matchedAttachment ??= cleanRef ? undefined : allAttachments.at(-1);
+    if (!matchedAttachment?.id) {
+      return null;
     }
 
-    return null;
+    const verified = await this.chatAttachmentsRepository.getAttachmentById(
+      userId,
+      matchedAttachment.id
+    );
+    return verified
+      ? {
+          url: verified.url,
+          fileName: verified.fileName,
+          fileType: verified.fileType,
+        }
+      : null;
   }
 
   private async handleParseWorkItemAttachment(
+    userId: string,
     args: Record<string, unknown>,
     history: StoredChatMessage[]
   ): Promise<unknown> {
     const rawAttachmentUrl =
       typeof args.attachmentUrl === 'string' ? args.attachmentUrl : undefined;
-    const resolved = this.resolveAttachment(rawAttachmentUrl, history);
+    const resolved = await this.resolveAttachment(
+      userId,
+      rawAttachmentUrl,
+      history
+    );
 
     if (!resolved?.url) {
       throw new Error(
@@ -1475,7 +1512,8 @@ export class ChatService {
     const { items, summary } = await fetchAndParseWorkItemAttachment(
       resolved.url,
       fileName,
-      fileType
+      fileType,
+      env.SUPABASE_URL
     );
 
     return {
@@ -1486,6 +1524,7 @@ export class ChatService {
   }
 
   private async handleCheckWorkItemDuplicates(
+    userId: string,
     args: Record<string, unknown>,
     history: StoredChatMessage[]
   ): Promise<unknown> {
@@ -1493,6 +1532,7 @@ export class ChatService {
     if (!projectId) {
       throw new Error('projectId is required');
     }
+    await this.assertCanAccessProject(userId, projectId);
 
     let itemsToAnalyze: ParsedWorkItemNode[] = [];
     if (Array.isArray(args.items) && args.items.length > 0) {
@@ -1500,12 +1540,17 @@ export class ChatService {
     } else {
       const rawAttachmentUrl =
         typeof args.attachmentUrl === 'string' ? args.attachmentUrl : undefined;
-      const resolved = this.resolveAttachment(rawAttachmentUrl, history);
+      const resolved = await this.resolveAttachment(
+        userId,
+        rawAttachmentUrl,
+        history
+      );
       if (resolved?.url) {
         const parsed = await fetchAndParseWorkItemAttachment(
           resolved.url,
           resolved.fileName,
-          resolved.fileType || ChatAttachmentFileTypeEnum.Other
+          resolved.fileType || ChatAttachmentFileTypeEnum.Other,
+          env.SUPABASE_URL
         );
         itemsToAnalyze = parsed.items;
       }
@@ -1520,6 +1565,7 @@ export class ChatService {
   }
 
   private async resolveItemsForImport(
+    userId: string,
     args: Record<string, unknown>,
     history: StoredChatMessage[]
   ): Promise<ParsedWorkItemNode[]> {
@@ -1529,7 +1575,11 @@ export class ChatService {
 
     const rawAttachmentUrl =
       typeof args.attachmentUrl === 'string' ? args.attachmentUrl : undefined;
-    const resolved = this.resolveAttachment(rawAttachmentUrl, history);
+    const resolved = await this.resolveAttachment(
+      userId,
+      rawAttachmentUrl,
+      history
+    );
     if (!resolved?.url) {
       throw new Error(
         'attachmentUrl could not be resolved from provided reference or chat history, and no items list was provided.'
@@ -1538,7 +1588,8 @@ export class ChatService {
     const parsed = await fetchAndParseWorkItemAttachment(
       resolved.url,
       resolved.fileName,
-      resolved.fileType || ChatAttachmentFileTypeEnum.Other
+      resolved.fileType || ChatAttachmentFileTypeEnum.Other,
+      env.SUPABASE_URL
     );
     return parsed.items;
   }
@@ -1598,7 +1649,9 @@ export class ChatService {
       throw new Error('projectId is required');
     }
 
-    const rawItems = await this.resolveItemsForImport(args, history);
+    await this.assertCanAccessProject(userId, projectId);
+
+    const rawItems = await this.resolveItemsForImport(userId, args, history);
     const { validItems, skippedItems } =
       this.filterAndValidateWorkItemHierarchy(rawItems, {
         skipInvalidHierarchy,
@@ -1727,6 +1780,7 @@ export class ChatService {
   }
 
   private async refreshAttachmentAtIndex(
+    userId: string,
     attachments: NonNullable<StoredChatMessage['attachments']>,
     index: number,
     now: number
@@ -1740,6 +1794,7 @@ export class ChatService {
 
     try {
       const refreshed = await this.chatAttachmentsRepository.getAttachmentById(
+        userId,
         att.id
       );
       if (refreshed) {
@@ -1756,6 +1811,7 @@ export class ChatService {
   }
 
   private async refreshExpiredAttachments(
+    userId: string,
     messages: StoredChatMessage[]
   ): Promise<boolean> {
     const now = Date.now();
@@ -1765,7 +1821,7 @@ export class ChatService {
         return [];
       }
       return attachments.map((_, index) =>
-        this.refreshAttachmentAtIndex(attachments, index, now)
+        this.refreshAttachmentAtIndex(userId, attachments, index, now)
       );
     });
 
@@ -1777,9 +1833,15 @@ export class ChatService {
     return results.some(Boolean);
   }
 
-  async loadChatHistory(conversationId: string): Promise<StoredChatMessage[]> {
+  async loadChatHistory(
+    userId: string,
+    conversationId: string
+  ): Promise<StoredChatMessage[]> {
     const messages = await this.fetchHistoryMessages(conversationId);
-    const hasRefreshedAny = await this.refreshExpiredAttachments(messages);
+    const hasRefreshedAny = await this.refreshExpiredAttachments(
+      userId,
+      messages
+    );
 
     this.historyCache.set(conversationId, messages);
 
@@ -1911,10 +1973,10 @@ export class ChatService {
     return updated;
   }
 
-  async loadWorkspaceContext() {
+  async loadWorkspaceContext(accessibleProjectIds: readonly string[]) {
     const [users, activeSprints] = await Promise.all([
       this.chat.listUsersSnapshot(),
-      this.chat.listActiveSprintsSnapshot(),
+      this.chat.listActiveSprintsSnapshot(accessibleProjectIds),
     ]);
     return { users, activeSprints };
   }
@@ -1955,12 +2017,14 @@ Active UI View Context:
       return { role, parts };
     });
 
-    const [actorProjectsSummary, workspace] = await Promise.all([
-      this.deps.projectsService.listProjectsForActor(userId).catch(() => null),
-      this.loadWorkspaceContext(),
-    ]);
+    const actorProjectsSummary = await this.deps.projectsService
+      .listProjectsForActor(userId)
+      .catch(() => null);
 
     const projects = actorProjectsSummary?.projects ?? [];
+    const workspace = await this.loadWorkspaceContext(
+      projects.map((project) => project.id)
+    );
     const { users, activeSprints: sprints } = workspace;
 
     const allAttachments = history.flatMap((m) => m.attachments || []);

@@ -82,6 +82,8 @@ describe('chatProviderDisplayLabel', () => {
   it('maps known provider slugs', () => {
     expect(chatProviderDisplayLabel('gemini')).toBe('Gemini');
     expect(chatProviderDisplayLabel('spacexai')).toBe('SpaceXAI');
+    expect(chatProviderDisplayLabel('openai')).toBe('OpenAI');
+    expect(chatProviderDisplayLabel('anthropic')).toBe('Anthropic');
   });
 
   it('title-cases unknown providers', () => {

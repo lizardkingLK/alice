@@ -28,6 +28,14 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@repo/ui/components/ui/dialog';
+import {
   FolderPlus,
   FolderEdit,
   Loader2,
@@ -38,6 +46,7 @@ import {
 import {
   CANONICAL_HIERARCHY_ORDER,
   initialSprintSchema,
+  isProductUsableUser,
   type WorkItemType,
 } from '@repo/types';
 import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
@@ -68,12 +77,20 @@ import {
   Step5Team,
   type Step5TeamProps,
 } from '@/app/projects/_components/project-form-team-step';
+import {
+  clearProjectCreationDraft,
+  PROJECT_CREATION_DRAFT_VERSION,
+  readProjectCreationDraft,
+  saveProjectCreationDraft,
+  type ProjectCreationDraft,
+} from '@/app/projects/_helpers/project-creation-draft-storage';
 
 interface ProjectFormProps {
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
   readonly projectToEdit?: Project | null;
   readonly users: User[];
+  readonly currentUserId?: string | null;
   // eslint-disable-next-line no-unused-vars
   readonly onProjectUpdated?: (project: Project) => void;
   // eslint-disable-next-line no-unused-vars
@@ -804,6 +821,156 @@ function getSubmitButtonContent(
   return isEditMode ? 'Save Changes' : 'Create Project';
 }
 
+function ProjectDraftCloseDialog({
+  open,
+  error,
+  onOpenChange,
+  onSave,
+  onDiscard,
+}: Readonly<{
+  open: boolean;
+  error: string | null;
+  // eslint-disable-next-line no-unused-vars
+  onOpenChange: (open: boolean) => void;
+  onSave: () => void;
+  onDiscard: () => void;
+}>) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent showCloseButton={false} dismissOnOutsideClick={false}>
+        <DialogHeader>
+          <DialogTitle>Save project draft?</DialogTitle>
+          <DialogDescription>
+            Save your progress to continue later, or discard your changes.
+          </DialogDescription>
+        </DialogHeader>
+
+        <FormAlertMessage message={error} isError />
+
+        <DialogFooter className="sm:justify-between">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Keep Editing
+          </Button>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <Button type="button" variant="destructive" onClick={onDiscard}>
+              Discard Changes
+            </Button>
+            <Button type="button" onClick={onSave}>
+              Save as Draft
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ProjectDraftRestoreDialog({
+  open,
+  onResume,
+  onStartFresh,
+}: Readonly<{
+  open: boolean;
+  onResume: () => void;
+  onStartFresh: () => void;
+}>) {
+  return (
+    <Dialog open={open}>
+      <DialogContent
+        showCloseButton={false}
+        dismissOnOutsideClick={false}
+        onEscapeKeyDown={(event) => event.preventDefault()}
+      >
+        <DialogHeader>
+          <DialogTitle>Resume saved project draft?</DialogTitle>
+          <DialogDescription>
+            Continue from your saved step, or start fresh. Starting fresh will
+            permanently discard the saved draft.
+          </DialogDescription>
+        </DialogHeader>
+
+        <DialogFooter>
+          <Button type="button" variant="destructive" onClick={onStartFresh}>
+            Start Fresh
+          </Button>
+          <Button type="button" onClick={onResume}>
+            Resume Draft
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function getRestoredPeople(
+  draft: ProjectCreationDraft,
+  users: User[]
+): {
+  selectedOwnerId: string;
+  teamManagerId: string;
+  teamMemberIds: string[];
+  hasUnavailablePeople: boolean;
+} {
+  const ownerIsAvailable = users.some(
+    (user) =>
+      user.id === draft.basicInfo.selectedOwnerId && user.role === 'manager'
+  );
+  const usableUsers = users.filter(isProductUsableUser);
+  const usableUserIds = new Set(usableUsers.map((user) => user.id));
+  const managerIds = new Set(
+    usableUsers
+      .filter((user) => user.role === 'admin' || user.role === 'manager')
+      .map((user) => user.id)
+  );
+  const selectedOwnerId = ownerIsAvailable
+    ? draft.basicInfo.selectedOwnerId
+    : '';
+  const teamManagerId = managerIds.has(draft.team.teamManagerId)
+    ? draft.team.teamManagerId
+    : '';
+  const teamMemberIds = [
+    ...new Set(
+      draft.team.teamMemberIds.filter((memberId) => usableUserIds.has(memberId))
+    ),
+  ];
+
+  return {
+    selectedOwnerId,
+    teamManagerId,
+    teamMemberIds,
+    hasUnavailablePeople:
+      selectedOwnerId !== draft.basicInfo.selectedOwnerId ||
+      teamManagerId !== draft.team.teamManagerId ||
+      teamMemberIds.length !== new Set(draft.team.teamMemberIds).size,
+  };
+}
+
+function getSafeDraftStep(
+  currentStep: ProjectCreationDraft['currentStep']
+): ProjectCreationDraft['currentStep'] {
+  return Math.min(
+    5,
+    Math.max(1, currentStep)
+  ) as ProjectCreationDraft['currentStep'];
+}
+
+function getProjectFormCardClass(
+  isMaximized: boolean,
+  isCloseConfirmationOpen: boolean
+) {
+  return cn(
+    'border-border bg-card text-card-foreground relative border shadow-2xl transition-all duration-200',
+    isMaximized
+      ? 'fixed inset-0 flex h-screen w-screen flex-col gap-0 overflow-hidden rounded-none'
+      : 'overflow-visible',
+    isMaximized && (isCloseConfirmationOpen ? 'z-40' : 'z-60')
+  );
+}
+
 function ProjectFormNavButtons({
   step,
   finalStep,
@@ -908,6 +1075,7 @@ export function ProjectForm({
   onSuccess,
   projectToEdit = null,
   users,
+  currentUserId,
   onProjectUpdated,
   onJiraImportToggle,
 }: Readonly<ProjectFormProps>) {
@@ -917,6 +1085,10 @@ export function ProjectForm({
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isCloseConfirmationOpen, setIsCloseConfirmationOpen] = useState(false);
+  const [draftSaveError, setDraftSaveError] = useState<string | null>(null);
+  const [availableDraft, setAvailableDraft] =
+    useState<ProjectCreationDraft | null>(null);
 
   const [name, setName] = useState(projectToEdit?.name ?? '');
   const [key, setKey] = useState(projectToEdit?.key ?? '');
@@ -977,6 +1149,223 @@ export function ProjectForm({
   const [teamMemberIds, setTeamMemberIds] = useState<string[]>([]);
 
   const finalStep = isEditMode ? 3 : 5;
+  const usesDefaultWorkItemTypes =
+    selectedWorkItemTypes.length === CANONICAL_HIERARCHY_ORDER.length &&
+    selectedWorkItemTypes.every(
+      (workItemType, index) => workItemType === CANONICAL_HIERARCHY_ORDER[index]
+    );
+  const hasCreateFormChanges =
+    !isEditMode &&
+    (step !== 1 ||
+      name !== '' ||
+      key !== '' ||
+      description !== '' ||
+      selectedOwnerId !== '' ||
+      status !== 'active' ||
+      (startDate !== '' && startDate !== getTodayDateString()) ||
+      endDate !== '' ||
+      !usesDefaultWorkItemTypes ||
+      importFromJira ||
+      jiraConnectionId !== '' ||
+      jiraProjectKey !== '' ||
+      enableGithub ||
+      githubOwner !== '' ||
+      githubRepoName !== '' ||
+      githubToken !== '' ||
+      createInitialSprint ||
+      sprintName !== '' ||
+      sprintGoal !== '' ||
+      sprintStartDate !== '' ||
+      sprintEndDate !== '' ||
+      createInitialTeam ||
+      teamName !== '' ||
+      teamDescription !== '' ||
+      teamManagerId !== '' ||
+      teamTechStack !== '' ||
+      teamMemberIds.length > 0);
+
+  const buildProjectCreationDraft = (): ProjectCreationDraft => ({
+    version: PROJECT_CREATION_DRAFT_VERSION,
+    currentStep: step as ProjectCreationDraft['currentStep'],
+    basicInfo: {
+      name,
+      key,
+      description,
+      selectedOwnerId,
+      status,
+      startDate,
+      endDate,
+      selectedWorkItemTypes,
+    },
+    imports: {
+      importFromJira,
+      jiraConnectionId,
+      jiraProjectKey,
+    },
+    sourceControl: {
+      enableGithub,
+      githubOwner,
+      githubRepoName,
+    },
+    sprint: {
+      createInitialSprint,
+      sprintName,
+      sprintGoal,
+      sprintStartDate,
+      sprintEndDate,
+    },
+    team: {
+      createInitialTeam,
+      teamName,
+      teamDescription,
+      teamManagerId,
+      teamTechStack,
+      teamMemberIds,
+    },
+  });
+
+  const resetCreateForm = () => {
+    setName('');
+    setKey('');
+    setDescription('');
+    setSelectedOwnerId('');
+    setStatus('active');
+    setStartDate(getTodayDateString());
+    setEndDate('');
+    setSelectedWorkItemTypes([...CANONICAL_HIERARCHY_ORDER]);
+    setStep(1);
+    setImportFromJira(false);
+    setJiraConnectionId('');
+    setJiraProjectKey('');
+    setEnableGithub(false);
+    setGithubOwner('');
+    setGithubRepoName('');
+    setGithubToken('');
+    setCreateInitialSprint(false);
+    setSprintName('');
+    setSprintGoal('');
+    setSprintStartDate('');
+    setSprintEndDate('');
+    setCreateInitialTeam(false);
+    setTeamName('');
+    setTeamDescription('');
+    setTeamManagerId('');
+    setTeamTechStack('');
+    setTeamMemberIds([]);
+    setMessage(null);
+    setIsError(false);
+    onJiraImportToggle?.(false);
+  };
+
+  const handleResumeDraft = () => {
+    if (!availableDraft || isEditMode) return;
+
+    const restoredPeople = getRestoredPeople(availableDraft, users);
+    setName(availableDraft.basicInfo.name);
+    setKey(availableDraft.basicInfo.key);
+    setDescription(availableDraft.basicInfo.description);
+    setSelectedOwnerId(restoredPeople.selectedOwnerId);
+    setStatus(availableDraft.basicInfo.status);
+    setStartDate(availableDraft.basicInfo.startDate);
+    setEndDate(availableDraft.basicInfo.endDate);
+    setSelectedWorkItemTypes([
+      ...availableDraft.basicInfo.selectedWorkItemTypes,
+    ]);
+    setImportFromJira(availableDraft.imports.importFromJira);
+    setJiraConnectionId(availableDraft.imports.jiraConnectionId);
+    setJiraProjectKey(availableDraft.imports.jiraProjectKey);
+    setEnableGithub(availableDraft.sourceControl.enableGithub);
+    setGithubOwner(availableDraft.sourceControl.githubOwner);
+    setGithubRepoName(availableDraft.sourceControl.githubRepoName);
+    setGithubToken('');
+    setCreateInitialSprint(availableDraft.sprint.createInitialSprint);
+    setSprintName(availableDraft.sprint.sprintName);
+    setSprintGoal(availableDraft.sprint.sprintGoal);
+    setSprintStartDate(availableDraft.sprint.sprintStartDate);
+    setSprintEndDate(availableDraft.sprint.sprintEndDate);
+    setCreateInitialTeam(availableDraft.team.createInitialTeam);
+    setTeamName(availableDraft.team.teamName);
+    setTeamDescription(availableDraft.team.teamDescription);
+    setTeamManagerId(restoredPeople.teamManagerId);
+    setTeamTechStack(availableDraft.team.teamTechStack);
+    setTeamMemberIds(restoredPeople.teamMemberIds);
+    setStep(getSafeDraftStep(availableDraft.currentStep));
+    onJiraImportToggle?.(availableDraft.imports.importFromJira);
+
+    if (restoredPeople.hasUnavailablePeople) {
+      setMessage(
+        'Some saved users are no longer available. Please select replacements.'
+      );
+      setIsError(true);
+    } else {
+      setMessage(null);
+      setIsError(false);
+    }
+    setAvailableDraft(null);
+  };
+
+  const clearCurrentUserDraft = (): boolean => {
+    try {
+      return clearProjectCreationDraft(currentUserId);
+    } catch {
+      return false;
+    }
+  };
+
+  const handleStartFresh = () => {
+    clearCurrentUserDraft();
+    resetCreateForm();
+    setAvailableDraft(null);
+  };
+
+  const handleCloseRequest = () => {
+    if (!onClose || isSubmitting) return;
+
+    if (isEditMode || isSuccess || !hasCreateFormChanges) {
+      onClose();
+      return;
+    }
+
+    setDraftSaveError(null);
+    setIsCloseConfirmationOpen(true);
+  };
+
+  const handleCloseDialogOpenChange = (open: boolean) => {
+    setIsCloseConfirmationOpen(open);
+    if (!open) {
+      setDraftSaveError(null);
+    }
+  };
+
+  const handleSaveDraft = () => {
+    if (!currentUserId?.trim()) {
+      setDraftSaveError('Unable to save the draft because no user was found.');
+      return;
+    }
+
+    const wasSaved = saveProjectCreationDraft(
+      currentUserId,
+      buildProjectCreationDraft()
+    );
+    if (!wasSaved) {
+      setDraftSaveError(
+        'Unable to save the draft. Please keep editing and try again.'
+      );
+      return;
+    }
+
+    setIsCloseConfirmationOpen(false);
+    setDraftSaveError(null);
+    onClose?.();
+  };
+
+  const handleDiscardChanges = () => {
+    clearCurrentUserDraft();
+    setIsCloseConfirmationOpen(false);
+    setDraftSaveError(null);
+    onClose?.();
+  };
+  const closeRequestHandler = onClose ? handleCloseRequest : undefined;
 
   const validateStep = (currentStep: number): boolean => {
     setMessage(null);
@@ -1054,6 +1443,15 @@ export function ProjectForm({
     setGithubToken('');
   }, [projectToEdit]);
 
+  useEffect(() => {
+    if (isEditMode) {
+      setAvailableDraft(null);
+      return;
+    }
+
+    setAvailableDraft(readProjectCreationDraft(currentUserId));
+  }, [currentUserId, isEditMode]);
+
   const handleProjectUpdate = async (projectData: CreateProjectInput) => {
     if (!projectToEdit) return;
     const expectedUpdatedAt = projectToEdit.updated_at;
@@ -1089,6 +1487,7 @@ export function ProjectForm({
 
   const handleProjectCreate = async (projectData: CreateProjectInput) => {
     const accepted = await createProject(projectData);
+    clearCurrentUserDraft();
     const hasJiraConfig = Boolean(jiraConnectionId && jiraProjectKey);
     const jiraHint =
       importFromJira && hasJiraConfig
@@ -1150,7 +1549,17 @@ export function ProjectForm({
     };
   };
 
-  const validateFinalStep = (): boolean => isEditMode || validateStep(step);
+  const validateFinalStep = (): boolean => {
+    if (isEditMode) return true;
+
+    for (const wizardStep of [1, 2, 3, 4, 5]) {
+      if (!validateStep(wizardStep)) {
+        setStep(wizardStep);
+        return false;
+      }
+    }
+    return true;
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1239,17 +1648,12 @@ export function ProjectForm({
 
   return (
     <Card
-      className={cn(
-        'border-border bg-card text-card-foreground relative border shadow-2xl transition-all duration-200',
-        isMaximized
-          ? 'fixed inset-0 z-60 flex h-screen w-screen flex-col gap-0 overflow-hidden rounded-none'
-          : 'overflow-visible'
-      )}
+      className={getProjectFormCardClass(isMaximized, isCloseConfirmationOpen)}
     >
       <ProjectFormWindowActions
         isMaximized={isMaximized}
         onToggleMaximize={() => setIsMaximized((value) => !value)}
-        onClose={onClose}
+        onClose={closeRequestHandler}
       />
 
       <CardHeader
@@ -1379,13 +1783,25 @@ export function ProjectForm({
               finalStep={finalStep}
               isBusy={isSubmitting || isSuccess}
               isMaximized={isMaximized}
-              onClose={onClose}
+              onClose={closeRequestHandler}
               onBack={() => setStep((s) => s - 1)}
               submitLabel={getSubmitButtonContent(isSubmitting, isEditMode)}
             />
           </div>
         </form>
       </CardContent>
+      <ProjectDraftCloseDialog
+        open={isCloseConfirmationOpen}
+        error={draftSaveError}
+        onOpenChange={handleCloseDialogOpenChange}
+        onSave={handleSaveDraft}
+        onDiscard={handleDiscardChanges}
+      />
+      <ProjectDraftRestoreDialog
+        open={availableDraft !== null}
+        onResume={handleResumeDraft}
+        onStartFresh={handleStartFresh}
+      />
     </Card>
   );
 }

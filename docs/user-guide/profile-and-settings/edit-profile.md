@@ -33,14 +33,24 @@ Update your name, profile photo, and cover image.
 
 ## Other settings tabs
 
-| Tab               | Examples                                                  |
-| ----------------- | --------------------------------------------------------- |
-| **Security**      | Password-related options; **Danger zone** self-deactivate |
-| **Notifications** | In-app notification preferences (where configured)        |
-| **Preferences**   | UI preferences (where configured)                         |
+| Tab               | Examples                                                   |
+| ----------------- | ---------------------------------------------------------- |
+| **Security**      | Password-related options; **Danger zone** self-deactivate  |
+| **Notifications** | In-app notification preferences (where configured)         |
+| **Preferences**   | Browser UI prefs (create dialog layout, work-item details) |
 
 **Integrations** appears only for **admins** — see
 [Workspace integrations](./workspace-integrations.md).
+
+### Preferences
+
+Under **Settings → Preferences**:
+
+- **Modern work item create** — compact create dialog vs full form
+- **Work item details** — banner color, title icon, and which sections/fields
+  appear on every work-item page (same as **Configure** on a work item)
+
+These stay in this browser only.
 
 ---
 

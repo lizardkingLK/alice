@@ -34,11 +34,6 @@ import { CircleHelp, X } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { FilterFieldNavItem } from '@/components/filter-field-nav-item';
 import { preventDismissForFloatingPortal } from '@/lib/dialog-outside-events';
-import {
-  ChartsWidgetScopeDialog,
-  type ChartsWidgetScopeSelection,
-} from '@/app/charts/_components/charts-widget-scope-dialog';
-import type { ChartWidgetTypeId } from '@/app/charts/_components/charts.types';
 import { clearDimensionFiltersKeepingScope } from '@/app/charts/_helpers/charts-widget-scope';
 import { CHARTS_DEFAULT_QUICK_SELECTIONS } from '@/app/charts/_helpers/charts-widget-defaults';
 import {
@@ -66,13 +61,8 @@ type ChartsAdvancedFiltersPopoverProps = {
   // eslint-disable-next-line no-unused-vars -- apply draft filters
   readonly onApply: (draft: ChartsWidgetFilterDraft) => void;
   readonly appliedFilters?: ChartsWidgetFilterDraft | null;
-  /** When true, project/sprint cannot be edited here — use Change scope. */
+  /** When true, project/sprint are workspace-locked (not editable here). */
   readonly scopeLocked?: boolean;
-  readonly typeId?: ChartWidgetTypeId;
-  readonly onScopeChange?: (
-    // eslint-disable-next-line no-unused-vars -- change locked scope
-    scope: ChartsWidgetScopeSelection
-  ) => void;
   readonly projects?: readonly ChartsProjectOption[];
   readonly sprints?: readonly ChartsSprintOption[];
   readonly members?: readonly ChartsSampleMember[];
@@ -227,23 +217,10 @@ function ChartsFilterSelect({
   );
 }
 
-function ScopeLockedHint({
-  onChangeScope,
-}: Readonly<{
-  readonly onChangeScope?: () => void;
-}>) {
+function ScopeLockedHint() {
   return (
     <p className="text-muted-foreground text-xs">
-      Project and sprint were set when this widget was created.{' '}
-      {onChangeScope ? (
-        <button
-          type="button"
-          className="text-primary hover:text-primary/80 cursor-pointer font-medium"
-          onClick={onChangeScope}
-        >
-          Change scope
-        </button>
-      ) : null}
+      Project and sprint are locked for this workspace.
     </p>
   );
 }
@@ -305,8 +282,6 @@ export function ChartsAdvancedFiltersPopover({
   onApply,
   appliedFilters = null,
   scopeLocked = false,
-  typeId = 'chart',
-  onScopeChange,
   projects = [],
   sprints = [],
   members = [],
@@ -327,7 +302,6 @@ export function ChartsAdvancedFiltersPopover({
   const [sprintId, setSprintId] = useState<string | undefined>(
     initial.sprintId
   );
-  const [changeScopeOpen, setChangeScopeOpen] = useState(false);
   const wasOpenRef = useRef(false);
 
   useEffect(() => {
@@ -518,68 +492,62 @@ export function ChartsAdvancedFiltersPopover({
   }, [quickOptions, quickSearch]);
 
   return (
-    <>
-      <Popover open={open} onOpenChange={onOpenChange} modal={false}>
-        <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-        <PopoverContent
-          align="start"
-          sideOffset={8}
-          collisionPadding={12}
-          className={cn(
-            // Cap to Radix available height so the popover stays in-viewport
-            // when the chart filter trigger sits near the bottom of the board.
-            'bg-popover text-popover-foreground border-border ring-foreground/10 flex max-h-[var(--radix-popover-content-available-height)] w-[min(92vw,36rem)] flex-col gap-0 overflow-hidden rounded-xl p-0 shadow-lg ring-1',
-            className
-          )}
-          onOpenAutoFocus={(event) => event.preventDefault()}
-          onCloseAutoFocus={(event) => event.preventDefault()}
-          onPointerDownOutside={preventDismissForFloatingPortal}
-          onInteractOutside={preventDismissForFloatingPortal}
-        >
-          <div className="border-border flex shrink-0 items-start justify-between gap-3 border-b px-4 py-3">
-            <div className="min-w-0 space-y-0.5">
-              <h3 className="text-sm font-semibold tracking-tight">
-                {mode === 'advanced' ? 'Advanced filters' : 'Quick filters'}
-              </h3>
-              <p className="text-muted-foreground flex items-center gap-1 text-xs">
-                Live counts use the selected project’s work-item rollups
-                <Tooltip delayDuration={400}>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      className="text-muted-foreground hover:text-foreground inline-flex cursor-pointer"
-                      aria-label="About chart filters"
-                    >
-                      <CircleHelp className="size-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    Pick a project to load the pie. Slice clicks open the table
-                    for that group.
-                  </TooltipContent>
-                </Tooltip>
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground h-8 shrink-0 cursor-pointer px-2 text-xs"
-              onClick={clearAll}
-            >
-              Clear all
-            </Button>
+    <Popover open={open} onOpenChange={onOpenChange} modal={false}>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+      <PopoverContent
+        align="start"
+        sideOffset={8}
+        collisionPadding={12}
+        className={cn(
+          // Cap to Radix available height so the popover stays in-viewport
+          // when the chart filter trigger sits near the bottom of the board.
+          'bg-popover text-popover-foreground border-border ring-foreground/10 flex max-h-[var(--radix-popover-content-available-height)] w-[min(92vw,36rem)] flex-col gap-0 overflow-hidden rounded-xl p-0 shadow-lg ring-1',
+          className
+        )}
+        onOpenAutoFocus={(event) => event.preventDefault()}
+        onCloseAutoFocus={(event) => event.preventDefault()}
+        onPointerDownOutside={preventDismissForFloatingPortal}
+        onInteractOutside={preventDismissForFloatingPortal}
+      >
+        <div className="border-border flex shrink-0 items-start justify-between gap-3 border-b px-4 py-3">
+          <div className="min-w-0 space-y-0.5">
+            <h3 className="text-sm font-semibold tracking-tight">
+              {mode === 'advanced' ? 'Advanced filters' : 'Quick filters'}
+            </h3>
+            <p className="text-muted-foreground flex items-center gap-1 text-xs">
+              Live counts use the selected project’s work-item rollups
+              <Tooltip delayDuration={400}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground inline-flex cursor-pointer"
+                    aria-label="About chart filters"
+                  >
+                    <CircleHelp className="size-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  Pick a project to load the pie. Slice clicks open the table
+                  for that group.
+                </TooltipContent>
+              </Tooltip>
+            </p>
           </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground h-8 shrink-0 cursor-pointer px-2 text-xs"
+            onClick={clearAll}
+          >
+            Clear all
+          </Button>
+        </div>
 
-          {mode === 'advanced' ? (
-            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-3">
-              {scopeLocked ? (
-                <ScopeLockedHint
-                  onChangeScope={
-                    onScopeChange ? () => setChangeScopeOpen(true) : undefined
-                  }
-                />
-              ) : null}
+        {mode === 'advanced' ? (
+          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-3">
+            {scopeLocked ? <ScopeLockedHint /> : null}
+            {!scopeLocked ? (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-muted-foreground w-14 shrink-0 text-xs font-medium">
                   Project
@@ -591,10 +559,11 @@ export function ChartsAdvancedFiltersPopover({
                   placeholder="All projects"
                   triggerClassName="min-w-0"
                   options={projectOptions}
-                  disabled={scopeLocked}
                 />
               </div>
+            ) : null}
 
+            {!scopeLocked ? (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-muted-foreground w-14 shrink-0 text-xs font-medium">
                   Sprint
@@ -606,257 +575,226 @@ export function ChartsAdvancedFiltersPopover({
                   placeholder="All sprints"
                   triggerClassName="min-w-0"
                   options={sprintOptions}
-                  disabled={scopeLocked || sprintSelectDisabled}
+                  disabled={sprintSelectDisabled}
                 />
               </div>
+            ) : null}
 
-              {rows.map((row, index) => {
-                const valueOptions = chartsFilterValueOptions(
-                  row.column,
-                  members
-                );
-                return (
-                  <div
-                    key={row.id}
-                    className="flex flex-wrap items-center gap-2"
+            {rows.map((row, index) => {
+              const valueOptions = chartsFilterValueOptions(
+                row.column,
+                members
+              );
+              return (
+                <div key={row.id} className="flex flex-wrap items-center gap-2">
+                  <span className="text-muted-foreground w-14 shrink-0 text-xs font-medium">
+                    {index === 0 ? 'Where' : 'And'}
+                  </span>
+                  <ChartsFilterSelect
+                    value={row.column}
+                    onValueChange={(value) =>
+                      updateRow(row.id, {
+                        column: value as ChartsFilterColumnId,
+                      })
+                    }
+                    ariaLabel={`Filter column ${index + 1}`}
+                    placeholder="Column"
+                    options={columnOptionsForRow(row.id, row.column)}
+                  />
+                  <ChartsFilterSelect
+                    value={row.condition}
+                    onValueChange={(value) =>
+                      updateRow(row.id, {
+                        condition: value as ChartsFilterCondition,
+                      })
+                    }
+                    ariaLabel={`Filter condition ${index + 1}`}
+                    placeholder="Condition"
                   >
-                    <span className="text-muted-foreground w-14 shrink-0 text-xs font-medium">
-                      {index === 0 ? 'Where' : 'And'}
-                    </span>
-                    <ChartsFilterSelect
-                      value={row.column}
-                      onValueChange={(value) =>
-                        updateRow(row.id, {
-                          column: value as ChartsFilterColumnId,
-                        })
-                      }
-                      ariaLabel={`Filter column ${index + 1}`}
-                      placeholder="Column"
-                      options={columnOptionsForRow(row.id, row.column)}
-                    />
-                    <ChartsFilterSelect
-                      value={row.condition}
-                      onValueChange={(value) =>
-                        updateRow(row.id, {
-                          condition: value as ChartsFilterCondition,
-                        })
-                      }
-                      ariaLabel={`Filter condition ${index + 1}`}
-                      placeholder="Condition"
-                    >
-                      <SelectItem value="is">Is</SelectItem>
-                      <SelectItem value="is-not">Is not</SelectItem>
-                      <SelectItem value="contains">Contains</SelectItem>
-                    </ChartsFilterSelect>
-                    <ChartsFilterSelect
-                      value={row.value || undefined}
-                      onValueChange={(value) => updateRow(row.id, { value })}
-                      ariaLabel={`Filter value ${index + 1}`}
-                      placeholder="Value"
-                      options={valueOptions}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label={`Remove filter ${index + 1}`}
-                      className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
-                      disabled={rows.length <= 1}
-                      onClick={() => removeRow(row.id)}
-                    >
-                      <X className="size-4" />
-                    </Button>
-                  </div>
-                );
-              })}
-
-              <div className="flex flex-wrap items-center gap-3 pt-1">
-                <button
-                  type="button"
-                  className={cn(
-                    'cursor-pointer text-xs font-medium',
-                    canAddFilter
-                      ? 'text-primary hover:text-primary/80'
-                      : 'text-muted-foreground cursor-not-allowed opacity-60'
-                  )}
-                  disabled={!canAddFilter}
-                  onClick={addFilterRow}
-                >
-                  + New filter
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="grid min-h-0 flex-1 grid-cols-[9rem_minmax(0,1fr)] overflow-hidden">
-              <nav
-                className="border-border flex flex-col gap-0.5 overflow-y-auto border-r p-2"
-                aria-label="Quick filter fields"
-              >
-                {scopeLocked && onScopeChange ? (
-                  <button
+                    <SelectItem value="is">Is</SelectItem>
+                    <SelectItem value="is-not">Is not</SelectItem>
+                    <SelectItem value="contains">Contains</SelectItem>
+                  </ChartsFilterSelect>
+                  <ChartsFilterSelect
+                    value={row.value || undefined}
+                    onValueChange={(value) => updateRow(row.id, { value })}
+                    ariaLabel={`Filter value ${index + 1}`}
+                    placeholder="Value"
+                    options={valueOptions}
+                  />
+                  <Button
                     type="button"
-                    className="text-muted-foreground hover:bg-muted/50 hover:text-foreground mb-1 cursor-pointer rounded-md px-2 py-1.5 text-left text-xs font-medium"
-                    onClick={() => setChangeScopeOpen(true)}
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Remove filter ${index + 1}`}
+                    className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+                    disabled={rows.length <= 1}
+                    onClick={() => removeRow(row.id)}
                   >
-                    Change scope
-                  </button>
-                ) : null}
-                {quickNavFields.map((field) => (
-                  <FilterFieldNavItem
-                    key={field.id}
-                    label={field.label}
-                    active={quickField === field.id}
-                    onSelect={() => {
-                      setQuickField(field.id);
-                      setQuickSearch('');
-                    }}
-                  />
-                ))}
-              </nav>
-              <div className="flex min-h-0 flex-col overflow-hidden">
-                <div className="shrink-0 p-3 pb-2">
-                  <Input
-                    value={quickSearch}
-                    onChange={(event) => setQuickSearch(event.target.value)}
-                    placeholder={`Search ${QUICK_FIELDS.find((field) => field.id === quickField)?.label.toLowerCase() ?? 'options'}`}
-                    className="h-9"
-                    aria-label="Search filter options"
-                  />
+                    <X className="size-4" />
+                  </Button>
                 </div>
-                {/*
-                Portaled Popover inside Dialog: body scroll-lock swallows wheel
-                events on native overflow. ScrollArea + stopPropagation matches
-                calendar overflow + registry filter panes.
-                Cap matches registry panes (24rem / h-96) but shrinks with
-                available popover height so Close/Apply stay in view.
-              */}
-                <ScrollArea
-                  type="always"
-                  className="h-[min(24rem,calc(var(--radix-popover-content-available-height,100dvh)-12rem))] min-h-0 w-full"
-                  onWheel={(event) => event.stopPropagation()}
-                >
-                  <div className="flex flex-col gap-0.5 px-3 pb-3">
-                    {quickField === 'sprint' && sprintSelectDisabled ? (
-                      <p className="text-muted-foreground px-2 py-2 text-xs">
-                        Pick a project first to choose a sprint.
-                      </p>
-                    ) : null}
-                    {filteredQuickOptions.map((option) => {
-                      const checked =
-                        quickSelections[quickField] === option.value;
-                      const optionId = `charts-quick-${quickField}-${option.value}`;
-                      return (
-                        <label
-                          key={option.value}
-                          htmlFor={optionId}
-                          className={cn(
-                            'hover:bg-muted/50 flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm',
-                            quickField === 'sprint' && sprintSelectDisabled
-                              ? 'cursor-not-allowed opacity-60'
-                              : 'cursor-pointer'
-                          )}
-                        >
-                          <Checkbox
-                            id={optionId}
-                            checked={checked}
-                            onCheckedChange={() => {
-                              applyQuickOptionSelection({
-                                field: quickField,
-                                value: option.value,
-                                setProjectScope,
-                                setSprintScope,
-                                setQuickSelections,
-                              });
-                            }}
-                            className="cursor-pointer"
-                            disabled={
-                              quickField === 'sprint' && sprintSelectDisabled
-                            }
-                          />
-                          <span
-                            className="min-w-0 flex-1 truncate"
-                            title={option.label}
-                          >
-                            {option.label}
-                          </span>
-                        </label>
-                      );
-                    })}
-                    {filteredQuickOptions.length === 0 ? (
-                      <p className="text-muted-foreground px-2 py-4 text-center text-xs">
-                        {quickField === 'sprint' && sprintSelectDisabled
-                          ? 'Pick a project to filter by sprint'
-                          : 'No matching options'}
-                      </p>
-                    ) : null}
-                  </div>
-                </ScrollArea>
-              </div>
-            </div>
-          )}
+              );
+            })}
 
-          <div className="border-border flex shrink-0 items-center justify-between gap-3 border-t px-4 py-3">
-            <button
-              type="button"
-              className="text-muted-foreground hover:text-foreground cursor-pointer text-xs font-medium"
-              onClick={() =>
-                setMode((prev) =>
-                  toggleChartsFilterMode(
-                    prev,
-                    scopeLocked,
-                    setRows,
-                    setQuickField,
-                    setQuickSearch,
-                    members
-                  )
-                )
-              }
-            >
-              {mode === 'advanced'
-                ? 'Switch to quick filters'
-                : 'Switch to advanced filters'}
-            </button>
-            <div className="flex items-center gap-2">
-              <Button
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 cursor-pointer"
-                onClick={() => onOpenChange(false)}
+                className={cn(
+                  'cursor-pointer text-xs font-medium',
+                  canAddFilter
+                    ? 'text-primary hover:text-primary/80'
+                    : 'text-muted-foreground cursor-not-allowed opacity-60'
+                )}
+                disabled={!canAddFilter}
+                onClick={addFilterRow}
               >
-                Close
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                className="h-8 cursor-pointer"
-                onClick={handleApply}
-              >
-                Apply
-              </Button>
+                + New filter
+              </button>
             </div>
           </div>
-        </PopoverContent>
-      </Popover>
+        ) : (
+          <div className="grid min-h-0 flex-1 grid-cols-[9rem_minmax(0,1fr)] overflow-hidden">
+            <nav
+              className="border-border flex flex-col gap-0.5 overflow-y-auto border-r p-2"
+              aria-label="Quick filter fields"
+            >
+              {quickNavFields.map((field) => (
+                <FilterFieldNavItem
+                  key={field.id}
+                  label={field.label}
+                  active={quickField === field.id}
+                  onSelect={() => {
+                    setQuickField(field.id);
+                    setQuickSearch('');
+                  }}
+                />
+              ))}
+            </nav>
+            <div className="flex min-h-0 flex-col overflow-hidden">
+              <div className="shrink-0 p-3 pb-2">
+                <Input
+                  value={quickSearch}
+                  onChange={(event) => setQuickSearch(event.target.value)}
+                  placeholder={`Search ${QUICK_FIELDS.find((field) => field.id === quickField)?.label.toLowerCase() ?? 'options'}`}
+                  className="h-9"
+                  aria-label="Search filter options"
+                />
+              </div>
+              {/*
+              Portaled Popover inside Dialog: body scroll-lock swallows wheel
+              events on native overflow. ScrollArea + stopPropagation matches
+              calendar overflow + registry filter panes.
+              Cap matches registry panes (24rem / h-96) but shrinks with
+              available popover height so Close/Apply stay in view.
+            */}
+              <ScrollArea
+                type="always"
+                className="h-[min(24rem,calc(var(--radix-popover-content-available-height,100dvh)-12rem))] min-h-0 w-full"
+                onWheel={(event) => event.stopPropagation()}
+              >
+                <div className="flex flex-col gap-0.5 px-3 pb-3">
+                  {quickField === 'sprint' && sprintSelectDisabled ? (
+                    <p className="text-muted-foreground px-2 py-2 text-xs">
+                      Pick a project first to choose a sprint.
+                    </p>
+                  ) : null}
+                  {filteredQuickOptions.map((option) => {
+                    const checked =
+                      quickSelections[quickField] === option.value;
+                    const optionId = `charts-quick-${quickField}-${option.value}`;
+                    return (
+                      <label
+                        key={option.value}
+                        htmlFor={optionId}
+                        className={cn(
+                          'hover:bg-muted/50 flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm',
+                          quickField === 'sprint' && sprintSelectDisabled
+                            ? 'cursor-not-allowed opacity-60'
+                            : 'cursor-pointer'
+                        )}
+                      >
+                        <Checkbox
+                          id={optionId}
+                          checked={checked}
+                          onCheckedChange={() => {
+                            applyQuickOptionSelection({
+                              field: quickField,
+                              value: option.value,
+                              setProjectScope,
+                              setSprintScope,
+                              setQuickSelections,
+                            });
+                          }}
+                          className="cursor-pointer"
+                          disabled={
+                            quickField === 'sprint' && sprintSelectDisabled
+                          }
+                        />
+                        <span
+                          className="min-w-0 flex-1 truncate"
+                          title={option.label}
+                        >
+                          {option.label}
+                        </span>
+                      </label>
+                    );
+                  })}
+                  {filteredQuickOptions.length === 0 ? (
+                    <p className="text-muted-foreground px-2 py-4 text-center text-xs">
+                      {quickField === 'sprint' && sprintSelectDisabled
+                        ? 'Pick a project to filter by sprint'
+                        : 'No matching options'}
+                    </p>
+                  ) : null}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+        )}
 
-      {onScopeChange ? (
-        <ChartsWidgetScopeDialog
-          open={changeScopeOpen}
-          onOpenChange={setChangeScopeOpen}
-          mode="change"
-          typeId={typeId}
-          projects={projects}
-          sprints={sprints}
-          initialScope={{
-            projectId: resolvedProjectId === 'all' ? '' : resolvedProjectId,
-            sprintId: sprintId ?? null,
-          }}
-          onConfirm={(scope) => {
-            onScopeChange(scope);
-            onOpenChange(false);
-          }}
-        />
-      ) : null}
-    </>
+        <div className="border-border flex shrink-0 items-center justify-between gap-3 border-t px-4 py-3">
+          <button
+            type="button"
+            className="text-muted-foreground hover:text-foreground cursor-pointer text-xs font-medium"
+            onClick={() =>
+              setMode((prev) =>
+                toggleChartsFilterMode(
+                  prev,
+                  scopeLocked,
+                  setRows,
+                  setQuickField,
+                  setQuickSearch,
+                  members
+                )
+              )
+            }
+          >
+            {mode === 'advanced'
+              ? 'Switch to quick filters'
+              : 'Switch to advanced filters'}
+          </button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 cursor-pointer"
+              onClick={() => onOpenChange(false)}
+            >
+              Close
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="h-8 cursor-pointer"
+              onClick={handleApply}
+            >
+              Apply
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }

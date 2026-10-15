@@ -61,6 +61,7 @@ export const ModelName = {
   activities: 'activities',
   sprint_burndown_rollups: 'sprint_burndown_rollups',
   work_item_chart_rollups: 'work_item_chart_rollups',
+  work_item_chart_hierarchy_rollups: 'work_item_chart_hierarchy_rollups',
   work_item_worklogs: 'work_item_worklogs',
   comments: 'comments',
   attachments: 'attachments',
@@ -281,6 +282,26 @@ export const Work_item_chart_rollupsScalarFieldEnum = {
 } as const
 
 export type Work_item_chart_rollupsScalarFieldEnum = (typeof Work_item_chart_rollupsScalarFieldEnum)[keyof typeof Work_item_chart_rollupsScalarFieldEnum]
+
+
+export const Work_item_chart_hierarchy_rollupsScalarFieldEnum = {
+  work_item_id: 'work_item_id',
+  parent_id: 'parent_id',
+  project_id: 'project_id',
+  sprint_id: 'sprint_id',
+  bucket_date: 'bucket_date',
+  status: 'status',
+  status_category: 'status_category',
+  workflow_id: 'workflow_id',
+  state_id: 'state_id',
+  type: 'type',
+  priority: 'priority',
+  assignee_id: 'assignee_id',
+  item_count: 'item_count',
+  story_points: 'story_points'
+} as const
+
+export type Work_item_chart_hierarchy_rollupsScalarFieldEnum = (typeof Work_item_chart_hierarchy_rollupsScalarFieldEnum)[keyof typeof Work_item_chart_hierarchy_rollupsScalarFieldEnum]
 
 
 export const Work_item_worklogsScalarFieldEnum = {

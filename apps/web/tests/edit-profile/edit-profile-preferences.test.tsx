@@ -15,7 +15,7 @@ describe('EditProfilePreferencesCard', () => {
   it('hydrates the modern create switch from localStorage', async () => {
     writeWorkItemCreateFormMode('modern');
 
-    render(<EditProfilePreferencesCard />);
+    render(<EditProfilePreferencesCard userId="user-1" />);
 
     const toggle = await screen.findByRole('switch', {
       name: /Modern work item create/i,
@@ -26,7 +26,7 @@ describe('EditProfilePreferencesCard', () => {
   });
 
   it('persists modern create when the switch is enabled', async () => {
-    render(<EditProfilePreferencesCard />);
+    render(<EditProfilePreferencesCard userId="user-1" />);
 
     const toggle = await screen.findByRole('switch', {
       name: /Modern work item create/i,
@@ -39,5 +39,13 @@ describe('EditProfilePreferencesCard', () => {
 
     expect(toggle).toBeChecked();
     expect(readWorkItemCreateFormMode()).toBe('modern');
+  });
+
+  it('shows work item details configure controls', async () => {
+    render(<EditProfilePreferencesCard userId="user-1" />);
+
+    expect(await screen.findByText('Work item details')).toBeInTheDocument();
+    expect(screen.getByLabelText('Type color')).toBeInTheDocument();
+    expect(screen.getByLabelText('Linked issues')).toBeInTheDocument();
   });
 });

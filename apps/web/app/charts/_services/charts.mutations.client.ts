@@ -1,6 +1,9 @@
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import { isSessionExpiredError } from '@/lib/errors/session-expired';
-import type { ChartWorkspaceRecord } from '@/app/charts/_components/charts.types';
+import type {
+  ChartWorkspaceRecord,
+  ChartWorkspaceScope,
+} from '@/app/charts/_components/charts.types';
 import {
   chartOwnershipForViewer,
   chartWorkspaceFromApiRow,
@@ -16,6 +19,7 @@ function boardJsonFromWorkspace(workspace: ChartWorkspaceRecord) {
   return {
     instances: workspace.instances,
     layout: workspace.layout,
+    scope: workspace.scope ?? null,
   };
 }
 
@@ -59,6 +63,7 @@ export async function createChartWorkspaceOnApi(params: {
   readonly description?: string | null;
   readonly showOnDashboard?: boolean;
   readonly dashboardSortOrder?: number;
+  readonly scope?: ChartWorkspaceScope | null;
   readonly viewerId: string;
 }): Promise<ChartWorkspaceRecord> {
   const result = await apiFetch<{ data: ChartApiRow }>('/api/charts', {
@@ -68,7 +73,11 @@ export async function createChartWorkspaceOnApi(params: {
       description: params.description ?? null,
       show_on_dashboard: params.showOnDashboard ?? false,
       dashboard_sort_order: params.dashboardSortOrder ?? 0,
-      board_json: { instances: [], layout: [] },
+      board_json: {
+        instances: [],
+        layout: [],
+        scope: params.scope ?? null,
+      },
     }),
   });
   return chartWorkspaceFromApiRow(

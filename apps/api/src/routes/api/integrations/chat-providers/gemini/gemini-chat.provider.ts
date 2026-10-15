@@ -31,6 +31,7 @@ export class GeminiChatProvider implements ChatModelProvider {
       fetchOnce: () =>
         fetch(url, {
           method: 'POST',
+          redirect: 'error',
           headers: {
             'Content-Type': 'application/json',
           },

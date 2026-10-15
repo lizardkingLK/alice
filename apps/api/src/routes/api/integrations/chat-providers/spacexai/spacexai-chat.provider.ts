@@ -7,7 +7,7 @@ import { fetchChatProviderWithRetries } from '../fetch-chat-provider-with-retrie
 import {
   aliceChatToolsToOpenAiTools,
   chatContentsToOpenAiMessages,
-  openAiChatCompletionToChatLlmResponse,
+  openAiChatCompletionResponseToChatLlmResponse,
   resolveSpaceXAIUserFacingError,
 } from './spacexai-openai-adapter';
 
@@ -36,6 +36,7 @@ export class SpaceXAIChatProvider implements ChatModelProvider {
       fetchOnce: () =>
         fetch(input.apiUrl, {
           method: 'POST',
+          redirect: 'error',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${input.apiKey}`,
@@ -48,7 +49,10 @@ export class SpaceXAIChatProvider implements ChatModelProvider {
         }),
     });
 
-    const payload: unknown = await response.json();
-    return openAiChatCompletionToChatLlmResponse(payload);
+    return openAiChatCompletionResponseToChatLlmResponse(
+      response,
+      'SpaceXAI',
+      input.tools
+    );
   }
 }

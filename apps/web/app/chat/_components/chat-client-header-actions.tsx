@@ -38,8 +38,10 @@ import {
   groupChatModelsByProvider,
 } from '@/app/chat/_services/chat-models-api.shared';
 
+import type { ChatClientVariant } from '@/app/chat/_components/chat-client.types';
+
 type ChatClientHeaderActionsProps = {
-  readonly variant: 'page' | 'drawer' | 'docked';
+  readonly variant: ChatClientVariant;
   readonly isPending: boolean;
   readonly chatModels: readonly ChatModelOption[];
   readonly selectedIntegrationId: string | undefined;
@@ -253,6 +255,7 @@ export default function ChatClientHeaderActions({
 }: Readonly<ChatClientHeaderActionsProps>) {
   const hasModels = chatModels.length > 0;
   const isOverlayVariant = variant !== 'page';
+  const showCompactMenu = isOverlayVariant && (Boolean(onClose) || variant === 'widget');
   const agentsGalleryButton =
     variant === 'page' && onOpenAgentsGallery ? (
       <Tooltip>
@@ -272,7 +275,7 @@ export default function ChatClientHeaderActions({
     ) : null;
 
   if (!hasModels) {
-    if (isOverlayVariant && onClose) {
+    if (showCompactMenu && onClose) {
       return (
         <Tooltip>
           <TooltipTrigger asChild>
@@ -308,7 +311,7 @@ export default function ChatClientHeaderActions({
     return agentsGalleryButton;
   }
 
-  if (isOverlayVariant && onClose) {
+  if (showCompactMenu) {
     return (
       <>
         <DropdownMenu>
@@ -344,20 +347,22 @@ export default function ChatClientHeaderActions({
             />
           </DropdownMenuContent>
         </DropdownMenu>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              aria-label="Close chat"
-            >
-              <X className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">Close</TooltipContent>
-        </Tooltip>
+        {onClose ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                aria-label="Close chat"
+              >
+                <X className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Close</TooltipContent>
+          </Tooltip>
+        ) : null}
       </>
     );
   }

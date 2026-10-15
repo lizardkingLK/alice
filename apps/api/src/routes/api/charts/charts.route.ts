@@ -1,6 +1,11 @@
 import { Router, type Response } from 'express';
-import { z } from 'zod';
-import { chartDrilldownQuerySchema, chartSeriesQuerySchema } from '@repo/types';
+import { z, type ZodType } from 'zod';
+import {
+  chartDrilldownQuerySchema,
+  chartHierarchyDrilldownQuerySchema,
+  chartHierarchySeriesQuerySchema,
+  chartSeriesQuerySchema,
+} from '@repo/types';
 import {
   requireApiAuth,
   type AuthenticatedRequest,
@@ -31,6 +36,27 @@ function sendError(res: Response, error: unknown, fallback: string) {
     status = 400;
   }
   res.status(status).json({ error: message });
+}
+
+function registerChartAnalyticsGet<T>(
+  router: Router,
+  path: string,
+  schema: ZodType<T>,
+  load: (userId: string, query: T) => Promise<unknown>,
+  fallbackMessage: string
+): void {
+  router.get(path, requireApiAuth, async (req: AuthenticatedRequest, res) => {
+    const validation = schema.safeParse(req.query);
+    if (!validation.success) {
+      return res.status(400).json({ error: z.treeifyError(validation.error) });
+    }
+    try {
+      const data = await load(req.userId!, validation.data);
+      res.json({ data });
+    } catch (error) {
+      sendError(res, error, fallbackMessage);
+    }
+  });
 }
 
 export function createChartsRouter(deps: ChartsRouterDeps) {
@@ -70,48 +96,33 @@ export function createChartsRouter(deps: ChartsRouterDeps) {
   );
 
   // Static analytics paths must be registered before `/:id`.
-  chartsRouter.get(
+  registerChartAnalyticsGet(
+    chartsRouter,
     '/analytics/series',
-    requireApiAuth,
-    async (req: AuthenticatedRequest, res) => {
-      const validation = chartSeriesQuerySchema.safeParse(req.query);
-      if (!validation.success) {
-        return res
-          .status(400)
-          .json({ error: z.treeifyError(validation.error) });
-      }
-      try {
-        const data = await chartsService.getSeries(
-          req.userId!,
-          validation.data
-        );
-        res.json({ data });
-      } catch (error) {
-        sendError(res, error, 'Failed to load chart series');
-      }
-    }
+    chartSeriesQuerySchema,
+    (userId, query) => chartsService.getSeries(userId, query),
+    'Failed to load chart series'
   );
-
-  chartsRouter.get(
+  registerChartAnalyticsGet(
+    chartsRouter,
     '/analytics/drilldown',
-    requireApiAuth,
-    async (req: AuthenticatedRequest, res) => {
-      const validation = chartDrilldownQuerySchema.safeParse(req.query);
-      if (!validation.success) {
-        return res
-          .status(400)
-          .json({ error: z.treeifyError(validation.error) });
-      }
-      try {
-        const data = await chartsService.getDrilldown(
-          req.userId!,
-          validation.data
-        );
-        res.json({ data });
-      } catch (error) {
-        sendError(res, error, 'Failed to load chart drilldown');
-      }
-    }
+    chartDrilldownQuerySchema,
+    (userId, query) => chartsService.getDrilldown(userId, query),
+    'Failed to load chart drilldown'
+  );
+  registerChartAnalyticsGet(
+    chartsRouter,
+    '/analytics/hierarchy-series',
+    chartHierarchySeriesQuerySchema,
+    (userId, query) => chartsService.getHierarchySeries(userId, query),
+    'Failed to load hierarchy chart series'
+  );
+  registerChartAnalyticsGet(
+    chartsRouter,
+    '/analytics/hierarchy-drilldown',
+    chartHierarchyDrilldownQuerySchema,
+    (userId, query) => chartsService.getHierarchyDrilldown(userId, query),
+    'Failed to load hierarchy chart drilldown'
   );
 
   chartsRouter.get(

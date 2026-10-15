@@ -14,6 +14,7 @@ import {
   normalizeBoardConfig,
   parseWorkflowConfigEnvelope,
   resolveWorkItemState,
+  resolveWorkflowForWorkItemType,
   resolveWorkflowGraphState,
   resolveWorkflowPlacementState,
   validateResolutionPayload,
@@ -225,9 +226,8 @@ export class WorkItemService {
   ): Promise<DbWorkItem> {
     await this.workItems.assertCanAccessProject(userId, input.project_id);
 
-    const { allowedTypes, hierarchy } = await this.getProjectAllowedTypes(
-      input.project_id
-    );
+    const { allowedTypes, hierarchy, workflowConfig } =
+      await this.getProjectAllowedTypes(input.project_id);
     if (!allowedTypes.includes(input.type)) {
       throw new WorkItemValidationError(
         `Work item type "${input.type}" is not allowed in this project`
@@ -251,9 +251,15 @@ export class WorkItemService {
       createInput.story_points
     );
 
+    const envelope = parseWorkflowConfigEnvelope(workflowConfig);
+    const workflowId = envelope
+      ? resolveWorkflowForWorkItemType(envelope, input.type).id
+      : undefined;
+
     const created = await this.workItems.create({
       ...createInput,
       createdBy: userId,
+      workflowId,
     });
 
     await this.activities?.recordCreated({

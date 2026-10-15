@@ -42,6 +42,7 @@ import type {
   ChartsSliceColorToken,
   ChartsTableColumnId,
   ChartWidgetDisplaySettingsPatch,
+  ChartWidgetMeasure,
   ChartWidgetTypeId,
   ChartWidgetViewMode,
   ChartsWidgetFiltersChangeHandler,
@@ -71,7 +72,14 @@ import {
   CHARTS_BURNDOWN_DEFAULT_TITLE,
   isBurndownWidgetType,
 } from '@/app/charts/_helpers/charts-burndown-widget';
+import {
+  CHARTS_NESTED_DONUT_DEFAULT_TITLE,
+  isNestedDonutWidgetType,
+  type ChartsHierarchyDigStep,
+} from '@/app/charts/_helpers/charts-nested-donut-widget';
+import { ChartsNestedDonutPreview } from '@/app/charts/_components/charts-nested-donut-preview';
 import { useChartWidgetAnalytics } from '@/app/charts/_hooks/use-chart-widget-analytics';
+import { useChartWidgetHierarchyAnalytics } from '@/app/charts/_hooks/use-chart-widget-hierarchy-analytics';
 import { useChartWidgetBurndown } from '@/app/charts/_hooks/use-chart-widget-burndown';
 import { BurndownLineChart } from '@/components/burndown-line-chart';
 import { BurndownScopeLabels } from '@/components/burndown-scope-labels';
@@ -196,6 +204,7 @@ type ChartsWidgetCardProps = {
   readonly viewMode?: ChartWidgetViewMode;
   readonly pieVariant?: ChartPieVariant;
   readonly labelField?: ChartsLabelFieldId;
+  readonly measure?: ChartWidgetMeasure;
   readonly showValueAs?: 'value' | 'percent';
   readonly sortSlicesBy?:
     'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
@@ -213,10 +222,6 @@ type ChartsWidgetCardProps = {
     meta: { readonly title: string; readonly description: string | null }
   ) => void;
   readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
-  readonly onScopeChange?: (
-    // eslint-disable-next-line no-unused-vars -- change locked scope
-    scope: { readonly projectId: string; readonly sprintId: string | null }
-  ) => void;
   readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
   readonly onPieVariantChange?: ChartsWidgetPieVariantChangeHandler;
   readonly onLabelFieldChange?: ChartsWidgetLabelFieldChangeHandler;
@@ -261,11 +266,13 @@ function ChartsWidgetCardBurndownBody({
 
 function ChartsWidgetCardChartBody({
   isChart,
+  isNested,
   isBurndown,
   Icon,
   description,
   seriesLabelField,
   analytics,
+  hierarchy,
   burndown,
   pieVariant,
   showValueAs,
@@ -274,15 +281,19 @@ function ChartsWidgetCardChartBody({
   sliceColors,
   configOpen,
   effectiveFocusedSliceKey,
+  digPath,
+  onDigPathChange,
   canClickSlices,
   onBoardSliceClick,
 }: Readonly<{
   isChart: boolean;
+  isNested: boolean;
   isBurndown: boolean;
   Icon?: ChartWidgetDefinition['icon'];
   description?: string;
   seriesLabelField: ChartSeriesLabelField | null;
   analytics: ReturnType<typeof useChartWidgetAnalytics>;
+  hierarchy: ReturnType<typeof useChartWidgetHierarchyAnalytics>;
   burndown: ReturnType<typeof useChartWidgetBurndown>;
   pieVariant?: ChartPieVariant;
   showValueAs: 'value' | 'percent';
@@ -291,12 +302,40 @@ function ChartsWidgetCardChartBody({
   sliceColors?: Readonly<Record<string, ChartsSliceColorToken>>;
   configOpen: boolean;
   effectiveFocusedSliceKey?: string;
+  digPath: readonly ChartsHierarchyDigStep[];
+  onDigPathChange: (
+    // eslint-disable-next-line no-unused-vars -- dig path
+    next: readonly ChartsHierarchyDigStep[]
+  ) => void;
   canClickSlices: boolean;
   // eslint-disable-next-line no-unused-vars -- slice click
   onBoardSliceClick: (sliceKey: string) => void;
 }>) {
   if (isBurndown) {
     return <ChartsWidgetCardBurndownBody burndown={burndown} />;
+  }
+
+  if (isNested) {
+    return (
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <ChartsNestedDonutPreview
+          size="card"
+          rings={hierarchy.series?.rings ?? null}
+          loading={hierarchy.seriesLoading}
+          emptyMessage={
+            hierarchy.seriesError ?? 'No work items in the selected scope'
+          }
+          showValueAs={showValueAs}
+          sliceColors={sliceColors}
+          selectedFocusKey={
+            configOpen ? (effectiveFocusedSliceKey ?? null) : null
+          }
+          digPath={digPath}
+          onDigPathChange={canClickSlices ? onDigPathChange : undefined}
+          onDrilldownFocus={canClickSlices ? onBoardSliceClick : undefined}
+        />
+      </div>
+    );
   }
 
   if (!isChart) {
@@ -340,26 +379,25 @@ function ChartsWidgetCardChartBody({
 
 function ChartsWidgetCardFilterControl({
   isChart,
+  isNested,
   isBurndown,
   title,
   filters,
   scopeLocked,
-  typeId,
   burndownFiltersOpen,
   onBurndownFiltersOpenChange,
   accessibleProjects,
   accessibleSprints,
   assigneeMembers,
   onFiltersChange,
-  onScopeChange,
   onOpenChartFilters,
 }: Readonly<{
   isChart: boolean;
+  isNested: boolean;
   isBurndown: boolean;
   title: string;
   filters?: ChartsWidgetFilterDraft;
   scopeLocked?: boolean;
-  typeId: ChartWidgetTypeId;
   burndownFiltersOpen: boolean;
   // eslint-disable-next-line no-unused-vars -- controlled open
   onBurndownFiltersOpenChange: (open: boolean) => void;
@@ -367,7 +405,6 @@ function ChartsWidgetCardFilterControl({
   accessibleSprints: readonly ChartsSprintOption[];
   assigneeMembers: readonly ChartsSampleMember[];
   onFiltersChange?: ChartsWidgetFiltersChangeHandler;
-  onScopeChange?: NonNullable<ChartsWidgetCardProps['onScopeChange']>;
   onOpenChartFilters: () => void;
 }>) {
   const filterButtonClassName = cn(
@@ -383,8 +420,6 @@ function ChartsWidgetCardFilterControl({
         onApply={(draft) => onFiltersChange?.(draft)}
         appliedFilters={filters ?? null}
         scopeLocked={scopeLocked}
-        typeId={typeId}
-        onScopeChange={onScopeChange}
         projects={accessibleProjects}
         sprints={accessibleSprints}
         members={assigneeMembers}
@@ -406,6 +441,10 @@ function ChartsWidgetCardFilterControl({
     );
   }
 
+  if (!isChart && !isNested) {
+    return null;
+  }
+
   return (
     <Tooltip delayDuration={400}>
       <TooltipTrigger asChild>
@@ -415,37 +454,63 @@ function ChartsWidgetCardFilterControl({
           size="icon-sm"
           aria-label={`Filter ${title}`}
           className={filterButtonClassName}
-          onClick={() => {
-            if (isChart) {
-              onOpenChartFilters();
-            }
-          }}
+          onClick={onOpenChartFilters}
           onMouseDown={(event) => event.stopPropagation()}
-          disabled={!isChart}
         >
           <Filter className="size-4" />
         </Button>
       </TooltipTrigger>
-      <TooltipContent side="bottom">
-        {isChart ? 'Filters' : 'Filters (chart widgets only for now)'}
-      </TooltipContent>
+      <TooltipContent side="bottom">Filters</TooltipContent>
     </Tooltip>
   );
 }
 
 function resolveWidgetSettingsHandler(params: {
   readonly isChart: boolean;
+  readonly isNested: boolean;
   readonly isBurndown: boolean;
   readonly openChartSettings: () => void;
   readonly openBurndownFilters: () => void;
 }): (() => void) | undefined {
-  if (params.isChart) {
+  if (params.isChart || params.isNested) {
     return params.openChartSettings;
   }
   if (params.isBurndown) {
     return params.openBurndownFilters;
   }
   return undefined;
+}
+
+function resolveWidgetDisplayTitle(params: {
+  readonly title: string;
+  readonly isBurndown: boolean;
+  readonly isNested: boolean;
+}): string {
+  const trimmed = params.title.trim();
+  if (trimmed) {
+    return trimmed;
+  }
+  if (params.isBurndown) {
+    return CHARTS_BURNDOWN_DEFAULT_TITLE;
+  }
+  if (params.isNested) {
+    return CHARTS_NESTED_DONUT_DEFAULT_TITLE;
+  }
+  return 'Widget';
+}
+
+function resolveFullscreenDescription(params: {
+  readonly description: string | null | undefined;
+  readonly catalogDescription?: string;
+  readonly isBurndown: boolean;
+}): string | null | undefined {
+  if (params.description) {
+    return params.description;
+  }
+  if (params.isBurndown) {
+    return 'Sprint remaining work versus the ideal line';
+  }
+  return params.catalogDescription;
 }
 
 export function ChartsWidgetCard({
@@ -459,6 +524,7 @@ export function ChartsWidgetCard({
   viewMode,
   pieVariant,
   labelField = DEFAULT_CHARTS_LABEL_FIELD,
+  measure = 'item_count',
   showValueAs = 'percent',
   sortSlicesBy = 'value_desc',
   showEmptySlices = false,
@@ -472,7 +538,6 @@ export function ChartsWidgetCard({
   onDuplicate,
   onRename,
   onFiltersChange,
-  onScopeChange,
   onViewModeChange,
   onPieVariantChange,
   onLabelFieldChange,
@@ -483,7 +548,12 @@ export function ChartsWidgetCard({
   className,
 }: Readonly<ChartsWidgetCardProps>) {
   const isChart = typeId === 'chart';
+  const isNested = isNestedDonutWidgetType(typeId);
+  const usesConfigDialog = isChart || isNested;
   const isBurndown = isBurndownWidgetType(typeId);
+  const [digPath, setDigPath] = useState<readonly ChartsHierarchyDigStep[]>(
+    []
+  );
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
@@ -516,7 +586,7 @@ export function ChartsWidgetCard({
     handleBoardSliceClick,
     handleConfigViewModeChange,
   } = useChartsWidgetCardConfig({
-    initialConfigOpen: isChart ? initialConfigOpen : false,
+    initialConfigOpen: usesConfigDialog ? initialConfigOpen : false,
     focusedSliceKey,
     viewMode,
     onViewModeChange,
@@ -544,7 +614,19 @@ export function ChartsWidgetCard({
     ...(sprintId ? { sprintId } : {}),
     dimensionFilters,
   });
+  const digRootId = digPath.at(-1)?.id;
+  const hierarchy = useChartWidgetHierarchyAnalytics({
+    projectId: isNested ? projectId : undefined,
+    measure,
+    ...(digRootId ? { rootWorkItemId: digRootId } : {}),
+    ...(sprintId ? { sprintId } : {}),
+    dimensionFilters,
+  });
   const burndown = useChartWidgetBurndown(isBurndown ? sprintId : undefined);
+
+  useEffect(() => {
+    setDigPath([]);
+  }, [projectId, sprintId, dimensionFilters, measure]);
 
   const scopeProjectName =
     accessibleProjects.find((project) => project.id === projectId)?.name ??
@@ -576,11 +658,15 @@ export function ChartsWidgetCard({
     setRenameOpen(false);
   };
 
-  const displayTitle =
-    title.trim() || (isBurndown ? CHARTS_BURNDOWN_DEFAULT_TITLE : 'Widget');
+  const displayTitle = resolveWidgetDisplayTitle({
+    title,
+    isBurndown,
+    isNested,
+  });
 
   const onSettings = resolveWidgetSettingsHandler({
     isChart,
+    isNested,
     isBurndown,
     openChartSettings: () => {
       openConfig({ withSettings: true });
@@ -593,11 +679,13 @@ export function ChartsWidgetCard({
   const body = (
     <ChartsWidgetCardChartBody
       isChart={isChart}
+      isNested={isNested}
       isBurndown={isBurndown}
       Icon={Icon}
       description={catalogDescription}
       seriesLabelField={seriesLabelField}
       analytics={analytics}
+      hierarchy={hierarchy}
       burndown={burndown}
       pieVariant={pieVariant}
       showValueAs={showValueAs}
@@ -606,7 +694,11 @@ export function ChartsWidgetCard({
       sliceColors={sliceColors}
       configOpen={configOpen}
       effectiveFocusedSliceKey={effectiveFocusedSliceKey}
-      canClickSlices={Boolean(seriesLabelField && onViewModeChange)}
+      digPath={digPath}
+      onDigPathChange={setDigPath}
+      canClickSlices={Boolean(
+        onViewModeChange && (isNested || seriesLabelField)
+      )}
       onBoardSliceClick={handleBoardSliceClick}
     />
   );
@@ -659,7 +751,7 @@ export function ChartsWidgetCard({
             </Tooltip>
           </div>
 
-          {isBurndown || isChart ? (
+          {usesConfigDialog || isBurndown ? (
             <BurndownScopeLabels
               projectName={scopeProjectName}
               sprintName={scopeSprintName}
@@ -667,21 +759,20 @@ export function ChartsWidgetCard({
             />
           ) : null}
 
-          {overviewChrome ? null : (
+          {!overviewChrome && (
             <ChartsWidgetCardFilterControl
               isChart={isChart}
+              isNested={isNested}
               isBurndown={isBurndown}
               title={displayTitle}
               filters={filters}
               scopeLocked={scopeLocked}
-              typeId={typeId}
               burndownFiltersOpen={burndownFiltersOpen}
               onBurndownFiltersOpenChange={setBurndownFiltersOpen}
               accessibleProjects={accessibleProjects}
               accessibleSprints={accessibleSprints}
               assigneeMembers={assigneeMembers}
               onFiltersChange={onFiltersChange}
-              onScopeChange={onScopeChange}
               onOpenChartFilters={() => {
                 openConfig({ withFilters: true });
               }}
@@ -691,7 +782,7 @@ export function ChartsWidgetCard({
           <ChartsWidgetActionsMenu
             open={menuOpen}
             onOpenChange={setMenuOpen}
-            showExport={isChart}
+            showExport={isChart || isNested}
             showDock={!overviewChrome}
             overviewChrome={overviewChrome}
             onRename={openRename}
@@ -702,7 +793,7 @@ export function ChartsWidgetCard({
               <DropdownMenuItem
                 className="cursor-pointer gap-2"
                 onSelect={() => {
-                  if (isChart) {
+                  if (usesConfigDialog) {
                     openConfig();
                   } else {
                     setFullscreenOpen(true);
@@ -802,30 +893,32 @@ export function ChartsWidgetCard({
         </DialogContent>
       </Dialog>
 
-      {isChart ? (
+      {usesConfigDialog ? (
         <ChartsWidgetConfigDialog
           open={configOpen}
           onOpenChange={handleConfigOpenChange}
           title={title}
+          settingsMode={isNested ? 'nested-donut' : 'chart'}
           initialFiltersOpen={configFiltersOpen}
           initialSettingsOpen={configSettingsOpen}
           filters={filters ?? null}
           scopeLocked={scopeLocked}
-          typeId={typeId}
           viewMode={viewMode}
           pieVariant={pieVariant}
           labelField={labelField}
+          measure={measure}
           showValueAs={showValueAs}
           sortSlicesBy={sortSlicesBy}
           showEmptySlices={showEmptySlices}
           visibleTableColumns={visibleTableColumns}
           sliceColors={sliceColors}
           focusedSliceKey={effectiveFocusedSliceKey}
+          digPath={digPath}
+          onDigPathChange={setDigPath}
           accessibleProjects={accessibleProjects}
           accessibleSprints={accessibleSprints}
           assigneeMembers={assigneeMembers}
           onFiltersChange={onFiltersChange}
-          onScopeChange={onScopeChange}
           onViewModeChange={handleConfigViewModeChange}
           onPieVariantChange={onPieVariantChange}
           onLabelFieldChange={onLabelFieldChange}
@@ -842,11 +935,11 @@ export function ChartsWidgetCard({
           onOpenChange={setFullscreenOpen}
           title={displayTitle}
           description={resolveChartsDescription({
-            description:
-              description ??
-              (isBurndown
-                ? 'Sprint remaining work versus the ideal line'
-                : catalogDescription),
+            description: resolveFullscreenDescription({
+              description,
+              catalogDescription,
+              isBurndown,
+            }),
             title: displayTitle,
             typeId,
           })}

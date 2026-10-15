@@ -96,16 +96,33 @@ After delete or leave from a board, Alice returns to the registry. Empty
 
 ---
 
+## Workspace scope
+
+When you **create** a workspace you can optionally **Lock to project and
+sprint** (both required). That makes a **scoped** board:
+
+- Board **Filter** is hidden; the header shows **Project · Sprint**
+- Every new Chart / burndown widget inherits that project and sprint
+- Widget filters hide project/sprint (other dimensions stay)
+- You cannot change the locked pair later — only **Mark as non-scoped** from
+  the workspace **⋯** menu (widgets keep their filter values and become
+  editable again)
+
+Without the lock, the workspace stays **mixed** (see Filter and Add widget
+below).
+
+---
+
 ## Board toolbar
 
 On `/charts/[id]`:
 
 - Breadcrumb **Charts** returns to the registry (the old **All workspaces**
   button is being removed)
-- **Filter** (**Shift+F**) sets project / sprint defaults that **prefill** the
-  create-scope dialog for new Chart / burndown widgets (check **Set as
-  default** on Project or Sprint, then Okay). Existing locked widgets are not
-  rewritten.
+- **Filter** (**Shift+F**) — **mixed** workspaces only — sets the **active**
+  project / sprint used when you insert Chart / burndown widgets. Check **Set
+  as default** to also save user defaults for next time. Scoped workspaces hide
+  this control.
 - **+** adds a widget or creates another workspace
 - A **Saving…** indicator (**coming soon**) appears top-right while the board
   syncs to your account
@@ -116,23 +133,42 @@ On `/charts/[id]`:
 
 1. On a board, select the **+** button.
 2. Choose **Add widget** for the catalog on the **current** workspace.
-3. Under Add widget, pick **Chart**, **Data over time** (sprint burndown), or
-   **More widgets** to browse the full catalog (Delivery → **Burndown** is the
-   same burndown widget). Other types still show **Coming soon**.
-4. For **Chart** and burndown widgets, choose **project** (required) and
-   **sprint** (required for burndown; optional for Chart). Workspace **Filter**
-   defaults prefill when set. That scope stays **locked** on the widget.
+3. Under Add widget, pick **Chart**, **Nested donut**, **Data over time**
+   (sprint burndown), or **More widgets** to browse the full catalog (Delivery →
+   **Burndown** is the same burndown widget). Other types still show
+   **Coming soon**.
+4. **Scoped** boards: Chart / Nested donut / burndown widgets are added with the
+   workspace project and sprint — no extra prompt.
+5. **Mixed** boards: those widgets use the **current board Filter** selection
+   (not only saved defaults). If Filter equals your defaults, they match. For
+   **burndown**, if Filter is missing a concrete project or sprint (for example
+   **All sprints**), you are asked to pick what is missing before the widget is
+   added.
 
-The card header shows **Project · Sprint** for Chart and burndown widgets.
-In filters, project and sprint are read-only; use **Change scope** to pick a
-new project/sprint (this resets status, assignee, type, and priority filters).
+The card header shows **Project · Sprint** for Chart, Nested donut, and burndown
+widgets when those filters are set.
+
+### Nested donut widget
+
+**Nested donut** shows up to three hierarchy rings (for example Epic → Story →
+Subtask): parents toward the center, descendants on the outer rings. Open
+**Widget settings → Values** to choose **Count items** or **Story points**.
+Each work item counts once; child slices belong to their parent on the ring
+inside.
+
+**Dig vs drilldown:** On the card (or fullscreen **Chart** layout), click a
+slice that still has children to **dig** — the rings re-root under that item
+and a breadcrumb (Back / Scope / parents) lets you zoom out. Click a leaf, or
+switch to **Split** / **Table**, to open the work-item list for that slice.
+Use the filter control on the card or in fullscreen to scope project/sprint
+like other chart widgets.
 
 ### Burndown widget
 
 **Data over time** and **Burndown** show remaining work versus the ideal line
 for a sprint (same math as Overview). The header shows **Project · Sprint**.
-Pick project and sprint when you add the widget; change them later via
-**Change scope** in filters.
+On a mixed board, set project and sprint in Filter first (or complete the
+prompt when sprint is All). On a scoped board, the workspace lock applies.
 
 ---
 

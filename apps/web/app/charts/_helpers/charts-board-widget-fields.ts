@@ -3,6 +3,7 @@ import type {
   ChartPieVariant,
   ChartsLabelFieldId,
   ChartWidgetDisplaySettingsPatch,
+  ChartWidgetMeasure,
   ChartWidgetViewMode,
 } from '@/app/charts/_components/charts.types';
 import { resolveChartAnalyticsProjectId } from '@/app/charts/_helpers/charts-analytics.ui';
@@ -29,6 +30,7 @@ type ChartInstanceFieldPatch = Partial<
     | 'focusedSliceKey'
     | 'pieVariant'
     | 'labelField'
+    | 'measure'
     | 'showValueAs'
     | 'sortSlicesBy'
     | 'showEmptySlices'
@@ -40,6 +42,7 @@ type ChartInstanceFieldPatch = Partial<
   readonly clearFocusedSliceKey?: boolean;
   readonly clearPieVariant?: boolean;
   readonly clearLabelField?: boolean;
+  readonly clearMeasure?: boolean;
   readonly clearShowValueAs?: boolean;
   readonly clearSortSlicesBy?: boolean;
   readonly clearShowEmptySlices?: boolean;
@@ -131,6 +134,15 @@ function withInstanceFields(
     'labelField',
     labelField,
     labelField === 'category'
+  );
+
+  const measure = patch.measure ?? item.measure;
+  assignUnlessCleared(
+    next,
+    patch.clearMeasure,
+    'measure',
+    measure,
+    measure === 'item_count' || measure == null
   );
 
   const showValueAs = patch.showValueAs ?? item.showValueAs;
@@ -291,12 +303,28 @@ function displaySettingsPatch(
   patch: ChartWidgetDisplaySettingsPatch
 ): ChartInstanceFieldPatch {
   const next: ChartInstanceFieldPatch = {};
+  applyMeasurePatch(patch, next);
   applyShowValueAsPatch(patch, next);
   applySortSlicesByPatch(patch, next);
   applyShowEmptySlicesPatch(patch, next);
   applyVisibleTableColumnsPatch(patch, next);
   applySliceColorsPatch(patch, next);
   return next;
+}
+
+function applyMeasurePatch(
+  patch: ChartWidgetDisplaySettingsPatch,
+  next: ChartInstanceFieldPatch
+): void {
+  if (patch.measure === undefined) {
+    return;
+  }
+  const measure: ChartWidgetMeasure | null = patch.measure;
+  if (measure == null || measure === 'item_count') {
+    Object.assign(next, { clearMeasure: true });
+    return;
+  }
+  Object.assign(next, { measure });
 }
 
 function applyShowValueAsPatch(

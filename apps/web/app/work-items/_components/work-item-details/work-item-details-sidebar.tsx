@@ -8,6 +8,7 @@ import {
   type WorkItemPatchFieldId,
   type WorkItemPatchMemberOption,
 } from '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog';
+import { WorkItemDetailsConfigureDialog } from '@/app/work-items/_components/work-item-details/work-item-details-configure-dialog';
 import type { WorkItemSprintOption } from '@/app/work-items/_helpers/work-item-sprint';
 import { IncompleteSubtasksDoneBlockedDialog } from '@/app/work-items/_components/work-item-subtasks/incomplete-subtasks-done-blocked-dialog';
 import { WorkItemResolutionDialog } from '@/app/work-items/_components/work-item-details/work-item-resolution-dialog';
@@ -22,6 +23,8 @@ import {
   extractDynamicFieldValues,
   patchWorkItemDynamicFields,
 } from '@/app/work-items/_helpers/work-item-dynamic-fields';
+import type { WorkItemDetailsPreferences } from '@/app/work-items/_helpers/work-item-details-preferences';
+import { formatWorkItemKey } from '@/app/work-items/_helpers/work-item-key';
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { useRealtime } from '@/components/realtime/realtime-provider';
 import { UserAvatar } from '@/components/user-avatar';
@@ -636,6 +639,228 @@ function EditableDueDateField({
   );
 }
 
+function SidebarDetailsFieldsSection({
+  workItem,
+  detailsOpen,
+  setDetailsOpen,
+  detailsFields,
+  assigneeIsOnline,
+  reporterIsOnline,
+  sprintDisplayName,
+  labels,
+  setActiveField,
+  readOnly,
+}: Readonly<{
+  readonly workItem: DbWorkItem;
+  readonly detailsOpen: boolean;
+  readonly setDetailsOpen: Dispatch<SetStateAction<boolean>>;
+  readonly detailsFields: WorkItemDetailsPreferences['detailsFields'];
+  readonly assigneeIsOnline: boolean;
+  readonly reporterIsOnline: boolean;
+  readonly sprintDisplayName: string | null;
+  readonly labels: readonly string[];
+  // eslint-disable-next-line no-unused-vars -- field edit callback
+  readonly setActiveField: (field: WorkItemPatchFieldId) => void;
+  readonly readOnly: boolean;
+}>) {
+  return (
+    <SidebarCollapsibleSection
+      title="Details"
+      open={detailsOpen}
+      onOpenChange={setDetailsOpen}
+    >
+      {detailsFields.assignee ? (
+        <DetailRow label="Assignee">
+          <EditableUserField
+            name={workItem.assignee?.name}
+            imageUrl={workItem.assignee?.profile_picture}
+            isOnline={assigneeIsOnline}
+            field="assignee_id"
+            onEdit={setActiveField}
+            readOnly={readOnly}
+          />
+        </DetailRow>
+      ) : null}
+      {detailsFields.reporter ? (
+        <DetailRow label="Reporter">
+          <EditableUserField
+            name={workItem.reporter?.name}
+            imageUrl={workItem.reporter?.profile_picture}
+            isOnline={reporterIsOnline}
+            field="reporter_id"
+            onEdit={setActiveField}
+            readOnly={readOnly}
+          />
+        </DetailRow>
+      ) : null}
+      {detailsFields.priority ? (
+        <DetailRow label="Priority">
+          <PriorityBadge priority={workItem.priority} />
+        </DetailRow>
+      ) : null}
+      {detailsFields.sprint ? (
+        <DetailRow label="Sprint">
+          <EditableSprintField
+            sprintName={sprintDisplayName}
+            onEdit={() => setActiveField('sprint_id')}
+            readOnly={readOnly || Boolean(workItem.parent_id)}
+          />
+        </DetailRow>
+      ) : null}
+      {detailsFields.dueDate ? (
+        <DetailRow label="Due date">
+          <EditableDueDateField
+            dueDate={workItem.due_date}
+            onEdit={() => setActiveField('due_date')}
+            readOnly={readOnly}
+          />
+        </DetailRow>
+      ) : null}
+      {detailsFields.labels ? (
+        <DetailRow label="Labels">
+          <EditableLabelsField
+            labels={labels}
+            onEdit={() => setActiveField('labels')}
+            readOnly={readOnly}
+          />
+        </DetailRow>
+      ) : null}
+    </SidebarCollapsibleSection>
+  );
+}
+
+function SidebarDevelopmentBlock({
+  workItem,
+  developmentOpen,
+  setDevelopmentOpen,
+  readOnly,
+  currentUserRole,
+}: Readonly<{
+  readonly workItem: DbWorkItem;
+  readonly developmentOpen: boolean;
+  readonly setDevelopmentOpen: Dispatch<SetStateAction<boolean>>;
+  readonly readOnly: boolean;
+  readonly currentUserRole?: string | null;
+}>) {
+  return (
+    <SidebarCollapsibleSection
+      title="Development"
+      open={developmentOpen}
+      onOpenChange={setDevelopmentOpen}
+      collapsedHint="Branches, PRs, builds, releases…"
+    >
+      <DevelopmentSection
+        workItem={workItem}
+        readOnly={readOnly}
+        currentUserRole={currentUserRole}
+      />
+
+      <DetailRow label="Releases">
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-2">
+              <Cloud className="text-muted-foreground size-3.5" />
+              Production
+            </span>
+            <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className="h-auto cursor-pointer px-0"
+          >
+            + Add feature flag
+          </Button>
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className="text-muted-foreground h-auto cursor-pointer px-0"
+          >
+            See all deployments
+          </Button>
+        </div>
+      </DetailRow>
+    </SidebarCollapsibleSection>
+  );
+}
+
+function SidebarMoreFieldsBlock({
+  workItem,
+  moreFieldsOpen,
+  setMoreFieldsOpen,
+  moreFieldsItems,
+  workLogs,
+  onLogWorkClick,
+  readOnly,
+  remainingFillClassName,
+}: Readonly<{
+  readonly workItem: DbWorkItem;
+  readonly moreFieldsOpen: boolean;
+  // eslint-disable-next-line no-unused-vars -- open-change callback
+  readonly setMoreFieldsOpen: (open: boolean) => void;
+  readonly moreFieldsItems: WorkItemDetailsPreferences['moreFieldsItems'];
+  readonly workLogs: WorkItemWorkLog[];
+  readonly onLogWorkClick?: () => void;
+  readonly readOnly: boolean;
+  readonly remainingFillClassName: string;
+}>) {
+  return (
+    <SidebarCollapsibleSection
+      title="More fields"
+      open={moreFieldsOpen}
+      onOpenChange={setMoreFieldsOpen}
+      collapsedHint="Time tracking, dates, short ID…"
+      contentClassName="text-muted-foreground space-y-3 pt-3 text-sm"
+    >
+      {moreFieldsItems.timeTracking ? (
+        <WorkItemTimeTracking
+          storyPoints={workItem.story_points}
+          workLogs={workLogs}
+          onLogWorkClick={readOnly ? undefined : onLogWorkClick}
+          remainingFillClassName={remainingFillClassName}
+        />
+      ) : null}
+
+      {moreFieldsItems.storyPoints ? (
+        <DetailRow label="Story points">
+          <span>{workItem.story_points ?? '—'}</span>
+        </DetailRow>
+      ) : null}
+
+      {moreFieldsItems.shortId ? (
+        <DetailRow label="Short ID">
+          <Badge
+            variant="outline"
+            className="text-muted-foreground font-mono text-xs font-medium"
+          >
+            {formatWorkItemKey(workItem)}
+          </Badge>
+        </DetailRow>
+      ) : null}
+
+      {moreFieldsItems.createdAt ? (
+        <DetailRow label="Created">
+          <span>{formatDate(workItem.created_at)}</span>
+        </DetailRow>
+      ) : null}
+
+      {moreFieldsItems.updatedAt ? (
+        <DetailRow label="Updated">
+          <span>{formatDate(workItem.updated_at)}</span>
+        </DetailRow>
+      ) : null}
+
+      {moreFieldsItems.resolvedAt && workItem.status === 'Done' ? (
+        <DetailRow label="Resolved">
+          <span>{formatDate(workItem.updated_at)}</span>
+        </DetailRow>
+      ) : null}
+    </SidebarCollapsibleSection>
+  );
+}
+
 export default function WorkItemSidebar({
   workItem,
   childStatuses = [],
@@ -647,6 +872,8 @@ export default function WorkItemSidebar({
   setDetailsOpen,
   moreFieldsOpen,
   setMoreFieldsOpen,
+  preferences,
+  onPreferencesChange,
   onWorkItemPatched,
   onLogWorkClick,
   readOnly = false,
@@ -663,6 +890,9 @@ export default function WorkItemSidebar({
   moreFieldsOpen: boolean;
   // eslint-disable-next-line no-unused-vars -- open-change callback
   setMoreFieldsOpen: (open: boolean) => void;
+  preferences: WorkItemDetailsPreferences;
+  // eslint-disable-next-line no-unused-vars -- preference change callback
+  onPreferencesChange: (next: WorkItemDetailsPreferences) => void;
   // eslint-disable-next-line no-unused-vars -- callback signature
   onWorkItemPatched: (updated: Partial<DbWorkItem>) => void;
   onLogWorkClick?: () => void;
@@ -673,6 +903,7 @@ export default function WorkItemSidebar({
   const [activeField, setActiveField] = useState<WorkItemPatchFieldId | null>(
     null
   );
+  const [configureOpen, setConfigureOpen] = useState(false);
   const [developmentOpen, setDevelopmentOpen] = useState(true);
   const [additionalFieldsOpen, setAdditionalFieldsOpen] = useState(true);
   const labels = parseWorkItemLabels(workItem.labels);
@@ -698,6 +929,30 @@ export default function WorkItemSidebar({
   const dynamicFieldValues = useMemo(() => {
     return extractDynamicFieldValues(workItem.description);
   }, [workItem.description]);
+
+  const remainingFillClassName = useMemo(() => {
+    const picker = resolveWorkItemStatePickerModel({
+      workflowConfig: project?.workflow_config,
+      workItemType: workItem.type,
+      status: workItem.status,
+      state: workItem.state,
+      boardColumnId: workItem.board_column_id,
+    });
+    const currentOption =
+      picker.options.find((option) => option.id === picker.currentStateId) ??
+      null;
+    return resolveStatePresentation({
+      category: currentOption?.category,
+      status: currentOption?.status ?? workItem.status,
+      stateName: picker.currentLabel,
+    }).indicatorClass;
+  }, [
+    project?.workflow_config,
+    workItem.type,
+    workItem.status,
+    workItem.state,
+    workItem.board_column_id,
+  ]);
 
   const [dynamicFieldsError, setDynamicFieldsError] = useState<string | null>(
     null
@@ -794,56 +1049,20 @@ export default function WorkItemSidebar({
         onPatched={onWorkItemPatched}
       />
 
-      <SidebarCollapsibleSection
-        title="Details"
-        open={detailsOpen}
-        onOpenChange={setDetailsOpen}
-      >
-        <DetailRow label="Assignee">
-          <EditableUserField
-            name={workItem.assignee?.name}
-            imageUrl={workItem.assignee?.profile_picture}
-            isOnline={assigneeIsOnline}
-            field="assignee_id"
-            onEdit={setActiveField}
-            readOnly={readOnly}
-          />
-        </DetailRow>
-        <DetailRow label="Reporter">
-          <EditableUserField
-            name={workItem.reporter?.name}
-            imageUrl={workItem.reporter?.profile_picture}
-            isOnline={reporterIsOnline}
-            field="reporter_id"
-            onEdit={setActiveField}
-            readOnly={readOnly}
-          />
-        </DetailRow>
-        <DetailRow label="Priority">
-          <PriorityBadge priority={workItem.priority} />
-        </DetailRow>
-        <DetailRow label="Sprint">
-          <EditableSprintField
-            sprintName={sprintDisplayName}
-            onEdit={() => setActiveField('sprint_id')}
-            readOnly={readOnly || Boolean(workItem.parent_id)}
-          />
-        </DetailRow>
-        <DetailRow label="Due date">
-          <EditableDueDateField
-            dueDate={workItem.due_date}
-            onEdit={() => setActiveField('due_date')}
-            readOnly={readOnly}
-          />
-        </DetailRow>
-        <DetailRow label="Labels">
-          <EditableLabelsField
-            labels={labels}
-            onEdit={() => setActiveField('labels')}
-            readOnly={readOnly}
-          />
-        </DetailRow>
-      </SidebarCollapsibleSection>
+      {preferences.sections.details ? (
+        <SidebarDetailsFieldsSection
+          workItem={workItem}
+          detailsOpen={detailsOpen}
+          setDetailsOpen={setDetailsOpen}
+          detailsFields={preferences.detailsFields}
+          assigneeIsOnline={assigneeIsOnline}
+          reporterIsOnline={reporterIsOnline}
+          sprintDisplayName={sprintDisplayName}
+          labels={labels}
+          setActiveField={setActiveField}
+          readOnly={readOnly}
+        />
+      ) : null}
 
       {hasValidDynamicFields && (
         <SidebarCollapsibleSection
@@ -869,79 +1088,48 @@ export default function WorkItemSidebar({
         </SidebarCollapsibleSection>
       )}
 
-      <SidebarCollapsibleSection
-        title="Development"
-        open={developmentOpen}
-        onOpenChange={setDevelopmentOpen}
-        collapsedHint="Branches, PRs, builds, releases…"
-      >
-        <DevelopmentSection
+      {preferences.sections.development ? (
+        <SidebarDevelopmentBlock
           workItem={workItem}
+          developmentOpen={developmentOpen}
+          setDevelopmentOpen={setDevelopmentOpen}
           readOnly={readOnly}
           currentUserRole={currentUserRole}
         />
+      ) : null}
 
-        <DetailRow label="Releases">
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-2">
-                <Cloud className="text-muted-foreground size-3.5" />
-                Production
-              </span>
-              <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              className="h-auto cursor-pointer px-0"
-            >
-              + Add feature flag
-            </Button>
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              className="text-muted-foreground h-auto cursor-pointer px-0"
-            >
-              See all deployments
-            </Button>
-          </div>
-        </DetailRow>
-      </SidebarCollapsibleSection>
-
-      <SidebarCollapsibleSection
-        title="More fields"
-        open={moreFieldsOpen}
-        onOpenChange={setMoreFieldsOpen}
-        collapsedHint="Time tracking, automation, reminders…"
-        contentClassName="text-muted-foreground space-y-3 pt-3 text-sm"
-      >
-        <WorkItemTimeTracking
-          storyPoints={workItem.story_points}
+      {preferences.sections.moreFields ? (
+        <SidebarMoreFieldsBlock
+          workItem={workItem}
+          moreFieldsOpen={moreFieldsOpen}
+          setMoreFieldsOpen={setMoreFieldsOpen}
+          moreFieldsItems={preferences.moreFieldsItems}
           workLogs={workLogs}
-          onLogWorkClick={readOnly ? undefined : onLogWorkClick}
+          onLogWorkClick={onLogWorkClick}
+          readOnly={readOnly}
+          remainingFillClassName={remainingFillClassName}
         />
-
-        <DetailRow label="Story points">
-          <span>{workItem.story_points ?? '—'}</span>
-        </DetailRow>
-      </SidebarCollapsibleSection>
-
-      <div className="text-muted-foreground space-y-1 px-1 text-xs">
-        <p>Created {formatDate(workItem.created_at)}</p>
-        <p>Updated {formatDate(workItem.updated_at)}</p>
-        {workItem.status === 'Done' ? (
-          <p>Resolved {formatDate(workItem.updated_at)}</p>
-        ) : null}
-      </div>
+      ) : null}
 
       <div className="flex justify-end">
-        <Button variant="ghost" size="sm" className="cursor-pointer">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="cursor-pointer"
+          onClick={() => setConfigureOpen(true)}
+        >
           <Settings data-icon="inline-start" />
           Configure
         </Button>
       </div>
+
+      <WorkItemDetailsConfigureDialog
+        open={configureOpen}
+        onOpenChange={setConfigureOpen}
+        value={preferences}
+        onChange={onPreferencesChange}
+      />
 
       {activeConfig ? (
         <WorkItemFieldPatchDialog

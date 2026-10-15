@@ -40,7 +40,7 @@ export function WorkItemTitleEditor({
           className
         )}
       >
-        <h1 className="min-w-0 flex-1 px-1.5 py-0.5 text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
+        <h1 className="text-foreground min-w-0 flex-1 px-1.5 py-0.5 text-2xl leading-tight font-semibold tracking-tight text-balance sm:text-3xl">
           {title}
         </h1>
         {readOnly ? null : (
@@ -48,7 +48,7 @@ export function WorkItemTitleEditor({
             type="button"
             variant="secondary"
             size="icon"
-            className="mt-1 shrink-0 cursor-pointer"
+            className="shrink-0 cursor-pointer self-center"
             aria-label="Edit title"
             onClick={() => setDialogOpen(true)}
           >

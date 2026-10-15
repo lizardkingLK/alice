@@ -467,6 +467,7 @@ export function ProjectRegistry({
           >
             <ProjectForm
               users={users}
+              currentUserId={currentUserId}
               onClose={() => {
                 setIsAddProjectOpen(false);
                 setIsAddWide(false);

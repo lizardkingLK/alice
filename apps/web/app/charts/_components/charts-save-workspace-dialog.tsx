@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
+import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -16,10 +17,22 @@ import {
   ChartsDescriptionField,
   useChartsAliceDescriptionSuggest,
 } from '@/app/charts/_components/charts-description-field';
+import {
+  chartsSprintFieldOptions,
+  type ChartsProjectOption,
+  type ChartsSprintOption,
+} from '@/app/charts/_components/charts-sample.data';
+import type { ChartWorkspaceScope } from '@/app/charts/_components/charts.types';
+import { SearchableSelect } from '@/components/searchable-select';
+
+const EMPTY_PROJECTS: readonly ChartsProjectOption[] = [];
+const EMPTY_SPRINTS: readonly ChartsSprintOption[] = [];
 
 export type ChartsSaveWorkspacePayload = {
   readonly title: string;
   readonly description: string | null;
+  /** When set, workspace is locked to this project + sprint. */
+  readonly scope?: ChartWorkspaceScope | null;
 };
 
 type ChartsSaveWorkspaceDialogProps = {
@@ -32,6 +45,9 @@ type ChartsSaveWorkspaceDialogProps = {
   readonly mode?: 'create' | 'save';
   /** Optional board summary for Alice suggest (widget list, etc.). */
   readonly aliceContext?: unknown;
+  /** Projects/sprints for create-time scope lock (create mode only). */
+  readonly projects?: readonly ChartsProjectOption[];
+  readonly sprints?: readonly ChartsSprintOption[];
   readonly onSave: (
     // eslint-disable-next-line no-unused-vars
     payload: ChartsSaveWorkspacePayload
@@ -45,11 +61,18 @@ export function ChartsSaveWorkspaceDialog({
   defaultDescription = null,
   mode = 'save',
   aliceContext,
+  projects = EMPTY_PROJECTS,
+  sprints = EMPTY_SPRINTS,
   onSave,
 }: Readonly<ChartsSaveWorkspaceDialogProps>) {
   const [title, setTitle] = useState(defaultTitle);
   const [description, setDescription] = useState(defaultDescription ?? '');
   const [pending, setPending] = useState(false);
+  const [lockScope, setLockScope] = useState(false);
+  const [projectId, setProjectId] = useState('');
+  const [sprintId, setSprintId] = useState('');
+  const [scopeError, setScopeError] = useState<string | null>(null);
+  const wasOpenRef = useRef(false);
   const { suggesting, suggestError, suggest, resetSuggestError } =
     useChartsAliceDescriptionSuggest({
       scope: 'workspace',
@@ -66,15 +89,93 @@ export function ChartsSaveWorkspaceDialog({
     return isCreate ? 'Create' : 'Save';
   })();
 
+  // Seed once when the dialog opens. Do not re-seed on parent re-renders —
+  // default `projects = []` used to be a new array every render and wiped edits.
   useEffect(() => {
-    if (!open) {
+    const justOpened = open && !wasOpenRef.current;
+    wasOpenRef.current = open;
+    if (!justOpened) {
       return;
     }
     setTitle(defaultTitle);
     setDescription(defaultDescription ?? '');
     setPending(false);
+    setLockScope(false);
+    setProjectId(projects[0]?.id ?? '');
+    setSprintId('');
+    setScopeError(null);
     resetSuggestError();
-  }, [open, defaultTitle, defaultDescription, resetSuggestError]);
+  }, [open, defaultTitle, defaultDescription, projects, resetSuggestError]);
+
+  const projectOptions = useMemo(
+    () =>
+      projects.map((project) => ({
+        value: project.id,
+        label: project.name,
+      })),
+    [projects]
+  );
+
+  const sprintOptions = useMemo(
+    () =>
+      chartsSprintFieldOptions(sprints, projectId).filter(
+        (option) => option.value !== 'all'
+      ),
+    [projectId, sprints]
+  );
+
+  useEffect(() => {
+    if (!lockScope || !projectId) {
+      return;
+    }
+    const stillValid = sprintOptions.some(
+      (option) => option.value === sprintId
+    );
+    if (!stillValid) {
+      setSprintId(sprintOptions[0]?.value ?? '');
+    }
+  }, [lockScope, projectId, sprintId, sprintOptions]);
+
+  const handleConfirm = () => {
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      return;
+    }
+
+    let scope: ChartWorkspaceScope | null = null;
+    if (isCreate && lockScope) {
+      if (!projectId) {
+        setScopeError('Select a project.');
+        return;
+      }
+      if (!sprintId) {
+        setScopeError('Select a sprint.');
+        return;
+      }
+      scope = { projectId, sprintId };
+    }
+
+    setPending(true);
+    Promise.resolve(
+      onSave({
+        title: trimmedTitle,
+        description: description.trim() || null,
+        ...(isCreate ? { scope } : {}),
+      })
+    )
+      .then(() => {
+        onOpenChange(false);
+      })
+      .catch(() => {
+        setPending(false);
+      });
+  };
+
+  const createDisabled =
+    !title.trim() ||
+    pending ||
+    suggesting ||
+    (lockScope && (!projectId || !sprintId || projects.length === 0));
 
   return (
     <Dialog
@@ -93,7 +194,7 @@ export function ChartsSaveWorkspaceDialog({
           </DialogTitle>
           <DialogDescription>
             {isCreate
-              ? 'Name the new chart workspace and optionally add a description.'
+              ? 'Name the workspace. Optionally lock it to one project and sprint so every widget inherits that scope.'
               : 'Update the name and description for this chart workspace.'}
           </DialogDescription>
         </DialogHeader>
@@ -122,8 +223,79 @@ export function ChartsSaveWorkspaceDialog({
             placeholder="What this workspace is for…"
             disabled={pending}
           />
+          {isCreate ? (
+            <div className="flex flex-col gap-3">
+              <label className="flex cursor-pointer items-start gap-2">
+                <Checkbox
+                  checked={lockScope}
+                  onCheckedChange={(checked) => {
+                    setLockScope(checked === true);
+                    setScopeError(null);
+                  }}
+                  disabled={pending || suggesting || projects.length === 0}
+                  className="mt-0.5"
+                />
+                <span className="space-y-0.5">
+                  <span className="text-sm leading-none font-medium">
+                    Lock to project and sprint
+                  </span>
+                  <span className="text-muted-foreground block text-xs">
+                    Hides board Filter and project/sprint on widgets. You can
+                    mark the workspace non-scoped later, but not change the
+                    locked pair.
+                  </span>
+                </span>
+              </label>
+              {lockScope ? (
+                <div className="flex flex-col gap-3 pl-6">
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="chart-workspace-scope-project">
+                      Project
+                    </Label>
+                    <SearchableSelect
+                      id="chart-workspace-scope-project"
+                      value={projectId}
+                      onValueChange={(next) => {
+                        setProjectId(next);
+                        setScopeError(null);
+                      }}
+                      placeholder="Select project"
+                      ariaLabel="Project"
+                      options={projectOptions}
+                      emptyText="No matching projects."
+                      disabled={pending || suggesting}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="chart-workspace-scope-sprint">Sprint</Label>
+                    <SearchableSelect
+                      id="chart-workspace-scope-sprint"
+                      value={sprintId}
+                      onValueChange={(next) => {
+                        setSprintId(next);
+                        setScopeError(null);
+                      }}
+                      disabled={!projectId || pending || suggesting}
+                      placeholder="Select sprint"
+                      ariaLabel="Sprint"
+                      options={sprintOptions.map((option) => ({
+                        value: option.value,
+                        label: option.label,
+                      }))}
+                      emptyText="No matching sprints."
+                    />
+                  </div>
+                  {scopeError ? (
+                    <p className="text-destructive text-sm" role="alert">
+                      {scopeError}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-2">
           <Button
             type="button"
             variant="outline"
@@ -136,22 +308,8 @@ export function ChartsSaveWorkspaceDialog({
           <Button
             type="button"
             className="cursor-pointer"
-            disabled={!title.trim() || pending || suggesting}
-            onClick={() => {
-              setPending(true);
-              Promise.resolve(
-                onSave({
-                  title: title.trim(),
-                  description: description.trim() || null,
-                })
-              )
-                .then(() => {
-                  onOpenChange(false);
-                })
-                .catch(() => {
-                  setPending(false);
-                });
-            }}
+            disabled={createDisabled}
+            onClick={handleConfirm}
           >
             {confirmLabel}
           </Button>

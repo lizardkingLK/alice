@@ -4,7 +4,11 @@ import {
   WorkItemStatusEnum,
   createSeededDefaultWorkflowConfig,
   parseWorkflowConfigEnvelope,
+  promoteWorkflowToDefault,
+  reclaimParentBindingsOntoForkedDefault,
+  removeWorkflowReclaimingBindings,
   resolveWorkflowConfig,
+  resolveWorkflowForWorkItemType,
   workflowConfigEnvelopeSchema,
 } from '@repo/types';
 
@@ -64,6 +68,10 @@ describe('workflowConfigEnvelopeSchema', () => {
 
   it('rejects overlapping type bindings', () => {
     const seeded = createSeededDefaultWorkflowConfig();
+    seeded.workflows[0] = {
+      ...seeded.workflows[0]!,
+      typeBindings: ['Story'],
+    };
     seeded.workflows.push({
       ...structuredClone(seeded.workflows[0]!),
       id: 'wf-bug',
@@ -72,6 +80,83 @@ describe('workflowConfigEnvelopeSchema', () => {
       typeBindings: ['Story'],
     });
     expect(workflowConfigEnvelopeSchema.safeParse(seeded).success).toBe(false);
+  });
+
+  it('promoteWorkflowToDefault moves previous default bindings onto the new default', () => {
+    const seeded = createSeededDefaultWorkflowConfig();
+    seeded.workflows[0] = {
+      ...seeded.workflows[0]!,
+      typeBindings: ['Story', 'Task'],
+    };
+    seeded.workflows.push({
+      ...structuredClone(seeded.workflows[0]!),
+      id: 'wf-fork',
+      title: 'Fork',
+      forkedFromId: DEFAULT_WORKFLOW_ID,
+      typeBindings: [],
+    });
+
+    const promoted = promoteWorkflowToDefault(seeded, 'wf-fork');
+
+    expect(promoted.defaultWorkflowId).toBe('wf-fork');
+    expect(
+      promoted.workflows.find((workflow) => workflow.id === 'wf-fork')
+        ?.typeBindings
+    ).toEqual(['Story', 'Task']);
+    expect(
+      promoted.workflows.find((workflow) => workflow.id === DEFAULT_WORKFLOW_ID)
+        ?.typeBindings
+    ).toEqual([]);
+    expect(resolveWorkflowForWorkItemType(promoted, 'Story').id).toBe(
+      'wf-fork'
+    );
+  });
+
+  it('reclaimParentBindingsOntoForkedDefault heals a fork already marked default', () => {
+    const seeded = createSeededDefaultWorkflowConfig();
+    seeded.workflows[0] = {
+      ...seeded.workflows[0]!,
+      typeBindings: ['Story'],
+    };
+    seeded.workflows.push({
+      ...structuredClone(seeded.workflows[0]!),
+      id: 'wf-fork',
+      title: 'Fork',
+      forkedFromId: DEFAULT_WORKFLOW_ID,
+      typeBindings: [],
+    });
+    seeded.defaultWorkflowId = 'wf-fork';
+
+    const { config, reclaimedFromWorkflowId } =
+      reclaimParentBindingsOntoForkedDefault(seeded);
+
+    expect(reclaimedFromWorkflowId).toBe(DEFAULT_WORKFLOW_ID);
+    expect(
+      config.workflows.find((workflow) => workflow.id === 'wf-fork')
+        ?.typeBindings
+    ).toEqual(['Story']);
+    expect(resolveWorkflowForWorkItemType(config, 'Story').id).toBe('wf-fork');
+  });
+
+  it('removeWorkflowReclaimingBindings moves deleted bindings onto the default', () => {
+    const seeded = createSeededDefaultWorkflowConfig();
+    seeded.workflows.push({
+      ...structuredClone(seeded.workflows[0]!),
+      id: 'wf-bug',
+      title: 'Bug board',
+      forkedFromId: DEFAULT_WORKFLOW_ID,
+      typeBindings: ['Issue'],
+    });
+
+    const next = removeWorkflowReclaimingBindings(seeded, 'wf-bug');
+
+    expect(next.workflows.some((workflow) => workflow.id === 'wf-bug')).toBe(
+      false
+    );
+    expect(
+      next.workflows.find((workflow) => workflow.id === DEFAULT_WORKFLOW_ID)
+        ?.typeBindings
+    ).toEqual(['Issue']);
   });
 
   it('rejects terminal states that still have outbound edges', () => {

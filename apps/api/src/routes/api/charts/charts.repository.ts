@@ -3,10 +3,15 @@ import {
   chartCategoryDisplayLabel,
   chartDrilldownItemSelect,
   chartRollupGroupColumn,
+  CHART_HIERARCHY_MAX_DEPTH,
   CHART_SERIES_NULL_SLICE_KEY,
   paginationMeta,
   parseWorkflowConfigEnvelope,
   type ChartDrilldownItemRow,
+  type ChartHierarchyMeasure,
+  type ChartHierarchyRing,
+  type ChartHierarchyRingLevel,
+  type ChartHierarchySlice,
   type ChartSeriesLabelField,
   type ChartSeriesSlice,
   type Database,
@@ -166,12 +171,19 @@ function workflowStateNameById(workflowConfig: unknown): Map<string, string> {
   return names;
 }
 
-function dimensionFiltersWhere(query: {
+type ChartDimensionFilterQuery = {
   readonly status?: WorkItemStatus;
   readonly type?: WorkItemType;
   readonly priority?: WorkItemPriority;
   readonly assigneeId?: string;
-}): Prisma.work_item_chart_rollupsWhereInput & Prisma.work_itemsWhereInput {
+};
+
+function dimensionFilterFields(query: ChartDimensionFilterQuery): {
+  status?: WorkItemStatus;
+  type?: WorkItemType;
+  priority?: WorkItemPriority;
+  assignee_id?: string | null;
+} {
   return {
     ...(query.status ? { status: query.status } : {}),
     ...(query.type ? { type: query.type } : {}),
@@ -185,6 +197,12 @@ function dimensionFiltersWhere(query: {
         }
       : {}),
   };
+}
+
+function dimensionFiltersWhere(
+  query: ChartDimensionFilterQuery
+): Prisma.work_item_chart_rollupsWhereInput & Prisma.work_itemsWhereInput {
+  return dimensionFilterFields(query);
 }
 
 function dimensionKey(value: string | null | undefined): string {
@@ -213,6 +231,153 @@ export type ChartDrilldownScopedQuery = ChartAnalyticsScopedQuery & {
   readonly page: number;
   readonly limit: number;
 };
+
+/** Hierarchy series/drilldown after service resolves accessible project scope. */
+export type ChartHierarchyScopedQuery = {
+  readonly projectIds: readonly string[];
+  readonly measure: ChartHierarchyMeasure;
+  /** Dig root: ring 0 = direct children of this work item. */
+  readonly rootWorkItemId?: string;
+  readonly from?: string;
+  readonly to?: string;
+  readonly sprintId?: string;
+  readonly status?: WorkItemStatus;
+  readonly type?: WorkItemType;
+  readonly priority?: WorkItemPriority;
+  readonly assigneeId?: string;
+};
+
+export type ChartHierarchyDrilldownScopedQuery = ChartHierarchyScopedQuery & {
+  readonly ring?: ChartHierarchyRingLevel;
+  readonly sliceKey?: string;
+  readonly parentKey?: string;
+  readonly page: number;
+  readonly limit: number;
+};
+
+type HierarchyRollupRow = {
+  work_item_id: string;
+  parent_id: string | null;
+  item_count: number;
+  story_points: number;
+};
+
+function hierarchyMeasureValue(
+  row: HierarchyRollupRow,
+  measure: ChartHierarchyMeasure
+): number {
+  return measure === 'story_points' ? row.story_points : row.item_count;
+}
+
+function emptyHierarchySeries(): {
+  rings: ChartHierarchyRing[];
+  totalValue: number;
+} {
+  return {
+    rings: Array.from({ length: CHART_HIERARCHY_MAX_DEPTH }, (_, level) => ({
+      level: level as ChartHierarchyRingLevel,
+      slices: [],
+    })),
+    totalValue: 0,
+  };
+}
+
+function emptyDrilldownPage(
+  page: number,
+  limit: number
+): {
+  workItems: ChartDrilldownItemRow[];
+  totalCount: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+} {
+  return {
+    workItems: [],
+    ...paginationMeta(0, page, limit),
+  };
+}
+
+/**
+ * Build nested series up to {@link CHART_HIERARCHY_MAX_DEPTH} rings.
+ * Without `rootWorkItemId`: promoted roots in scope.
+ * With dig root: ring 0 = that node's direct children (disk-analyzer style).
+ */
+export function buildHierarchyRings(
+  rows: readonly HierarchyRollupRow[],
+  titleById: ReadonlyMap<string, string>,
+  measure: ChartHierarchyMeasure,
+  rootWorkItemId?: string
+): { rings: ChartHierarchyRing[]; totalValue: number } {
+  const idsInScope = new Set(rows.map((row) => row.work_item_id));
+  const byParent = new Map<string, HierarchyRollupRow[]>();
+  for (const row of rows) {
+    if (row.parent_id == null || !idsInScope.has(row.parent_id)) {
+      continue;
+    }
+    const list = byParent.get(row.parent_id) ?? [];
+    list.push(row);
+    byParent.set(row.parent_id, list);
+  }
+
+  const toSlice = (
+    row: HierarchyRollupRow,
+    parentKey?: string
+  ): ChartHierarchySlice => {
+    const slice: ChartHierarchySlice = {
+      key: row.work_item_id,
+      label: titleById.get(row.work_item_id) ?? row.work_item_id,
+      value: hierarchyMeasureValue(row, measure),
+      hasChildren: (byParent.get(row.work_item_id)?.length ?? 0) > 0,
+    };
+    if (parentKey) {
+      return { ...slice, parentKey };
+    }
+    return slice;
+  };
+
+  const sortByValueDesc = (a: ChartHierarchySlice, b: ChartHierarchySlice) =>
+    b.value - a.value || a.label.localeCompare(b.label);
+
+  const roots = rootWorkItemId
+    ? (byParent.get(rootWorkItemId) ?? [])
+    : rows.filter(
+        (row) => row.parent_id == null || !idsInScope.has(row.parent_id)
+      );
+
+  const rings: ChartHierarchyRing[] = [];
+  let previousIds = new Set(roots.map((row) => row.work_item_id));
+
+  rings.push({
+    level: 0,
+    slices: roots
+      .map((row) => toSlice(row, rootWorkItemId))
+      .sort(sortByValueDesc),
+  });
+
+  for (let level = 1; level < CHART_HIERARCHY_MAX_DEPTH; level += 1) {
+    const levelRows: HierarchyRollupRow[] = [];
+    for (const parentId of previousIds) {
+      const children = byParent.get(parentId);
+      if (children) {
+        levelRows.push(...children);
+      }
+    }
+    rings.push({
+      level: level as ChartHierarchyRingLevel,
+      slices: levelRows
+        .map((row) => toSlice(row, row.parent_id ?? undefined))
+        .sort(sortByValueDesc),
+    });
+    previousIds = new Set(levelRows.map((row) => row.work_item_id));
+  }
+
+  const innerSlices = rings[0]?.slices ?? [];
+  return {
+    rings,
+    totalValue: innerSlices.reduce((sum, slice) => sum + slice.value, 0),
+  };
+}
 
 export class ChartsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
@@ -267,10 +432,7 @@ export class ChartsRepository {
     totalPages: number;
   }> {
     if (query.projectIds.length === 0) {
-      return {
-        workItems: [],
-        ...paginationMeta(0, query.page, query.limit),
-      };
+      return emptyDrilldownPage(query.page, query.limit);
     }
 
     const created_at = createdAtWhere(query.from, query.to);
@@ -283,22 +445,149 @@ export class ChartsRepository {
       ...sliceDimensionWhere(query.labelField, query.sliceKey),
     };
 
-    const skip = (query.page - 1) * query.limit;
+    return this.fetchDrilldownPage(where, query.page, query.limit);
+  }
+
+  async sumHierarchySeries(query: ChartHierarchyScopedQuery): Promise<{
+    rings: ChartHierarchyRing[];
+    totalValue: number;
+  }> {
+    if (query.projectIds.length === 0) {
+      return emptyHierarchySeries();
+    }
+
+    const rows = await this.listHierarchyRows(query);
+    if (rows.length === 0) {
+      return emptyHierarchySeries();
+    }
+
+    const titleById = await this.loadWorkItemTitles(
+      rows.map((row) => row.work_item_id)
+    );
+    return buildHierarchyRings(
+      rows,
+      titleById,
+      query.measure,
+      query.rootWorkItemId
+    );
+  }
+
+  async listHierarchyDrilldown(
+    query: ChartHierarchyDrilldownScopedQuery
+  ): Promise<{
+    workItems: ChartDrilldownItemRow[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    if (query.projectIds.length === 0) {
+      return emptyDrilldownPage(query.page, query.limit);
+    }
+
+    const rows = await this.listHierarchyRows(query);
+    const scopedIds = this.resolveHierarchyDrilldownIds(rows, query);
+    if (scopedIds.length === 0) {
+      return emptyDrilldownPage(query.page, query.limit);
+    }
+
+    return this.fetchDrilldownPage(
+      {
+        id: { in: scopedIds },
+        record_status: RecordStatus.active,
+      },
+      query.page,
+      query.limit
+    );
+  }
+
+  private async fetchDrilldownPage(
+    where: Prisma.work_itemsWhereInput,
+    page: number,
+    limit: number
+  ): Promise<{
+    workItems: ChartDrilldownItemRow[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const skip = (page - 1) * limit;
     const [workItems, totalCount] = await Promise.all([
       prisma.work_items.findMany({
         where,
         select: chartDrilldownItemSelect,
         orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
         skip,
-        take: query.limit,
+        take: limit,
       }),
       prisma.work_items.count({ where }),
     ]);
 
     return {
       workItems: workItems as ChartDrilldownItemRow[],
-      ...paginationMeta(totalCount, query.page, query.limit),
+      ...paginationMeta(totalCount, page, limit),
     };
+  }
+
+  private resolveHierarchyDrilldownIds(
+    rows: readonly HierarchyRollupRow[],
+    query: ChartHierarchyDrilldownScopedQuery
+  ): string[] {
+    if (query.sliceKey === undefined || query.ring === undefined) {
+      return rows.map((row) => row.work_item_id);
+    }
+
+    if (query.ring === 0) {
+      return rows
+        .filter((row) => row.work_item_id === query.sliceKey)
+        .map((row) => row.work_item_id);
+    }
+
+    return rows
+      .filter((row) => {
+        if (row.work_item_id !== query.sliceKey) {
+          return false;
+        }
+        if (query.parentKey && row.parent_id !== query.parentKey) {
+          return false;
+        }
+        return true;
+      })
+      .map((row) => row.work_item_id);
+  }
+
+  private listHierarchyRows(
+    query: ChartHierarchyScopedQuery
+  ): Promise<HierarchyRollupRow[]> {
+    const bucket_date = bucketDateWhere(query.from, query.to);
+    return prisma.work_item_chart_hierarchy_rollups.findMany({
+      where: {
+        project_id: projectIdWhere(query.projectIds),
+        ...(query.sprintId ? { sprint_id: query.sprintId } : {}),
+        ...(bucket_date ? { bucket_date } : {}),
+        ...dimensionFilterFields(query),
+      },
+      select: {
+        work_item_id: true,
+        parent_id: true,
+        item_count: true,
+        story_points: true,
+      },
+    });
+  }
+
+  private async loadWorkItemTitles(
+    workItemIds: readonly string[]
+  ): Promise<Map<string, string>> {
+    if (workItemIds.length === 0) {
+      return new Map();
+    }
+    const items = await prisma.work_items.findMany({
+      where: { id: { in: [...workItemIds] } },
+      select: { id: true, title: true },
+    });
+    return new Map(items.map((item) => [item.id, item.title]));
   }
 
   private async enrichSeriesLabels(

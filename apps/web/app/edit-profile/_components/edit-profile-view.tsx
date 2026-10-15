@@ -266,7 +266,9 @@ export function EditProfileView({
 
         {section === 'notifications' ? <NotificationsSection /> : null}
 
-        {section === 'preferences' ? <PreferencesSection /> : null}
+        {section === 'preferences' ? (
+          <PreferencesSection userId={userId} />
+        ) : null}
       </div>
 
       {section === 'general' ? (
@@ -673,6 +675,6 @@ function NotificationsSection() {
   );
 }
 
-function PreferencesSection() {
-  return <EditProfilePreferencesCard />;
+function PreferencesSection({ userId }: Readonly<{ readonly userId: string }>) {
+  return <EditProfilePreferencesCard userId={userId} />;
 }

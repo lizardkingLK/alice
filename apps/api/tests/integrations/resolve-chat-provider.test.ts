@@ -10,6 +10,14 @@ describe('resolveChatProvider', () => {
     expect(resolveChatProvider('spacexai').provider).toBe('spacexai');
   });
 
+  it('returns the OpenAI provider', () => {
+    expect(resolveChatProvider('openai').provider).toBe('openai');
+  });
+
+  it('returns the Anthropic provider', () => {
+    expect(resolveChatProvider('anthropic').provider).toBe('anthropic');
+  });
+
   it('throws for unknown providers', () => {
     expect(() => resolveChatProvider('unknown')).toThrow(
       'Unsupported chat provider: unknown'

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -60,27 +60,55 @@ export function WorkItemAttachmentUploadDialog({
     }
   }, [open]);
 
-  function handleDrop(accepted: File[], rejections: FileRejection[]) {
-    if (rejections.length > 0) {
-      toast.error('Some files were rejected (max 10 MB each).');
+  const enqueueFiles = useCallback(
+    (accepted: File[], rejections: FileRejection[]) => {
+      if (rejections.length > 0) {
+        toast.error('Some files were rejected (max 10 MB each).');
+      }
+
+      const withinLimit = accepted.filter(
+        (file) => file.size <= MAX_FILE_SIZE_BYTES
+      );
+      if (withinLimit.length < accepted.length) {
+        toast.error('Files must be 10 MB or smaller.');
+      }
+
+      if (withinLimit.length === 0) {
+        return;
+      }
+
+      setItems((prev) => [
+        ...prev,
+        ...withinLimit.map((file) => ({
+          id: itemId(file),
+          file,
+          status: 'pending' as ItemStatus,
+        })),
+      ]);
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!open || isUploading) {
+      return;
     }
 
-    const withinLimit = accepted.filter(
-      (file) => file.size <= MAX_FILE_SIZE_BYTES
-    );
-    if (withinLimit.length < accepted.length) {
-      toast.error('Files must be 10 MB or smaller.');
+    function onPaste(event: ClipboardEvent) {
+      const files = event.clipboardData?.files;
+      if (!files?.length) {
+        return;
+      }
+
+      event.preventDefault();
+      enqueueFiles(Array.from(files), []);
     }
 
-    setItems((prev) => [
-      ...prev,
-      ...withinLimit.map((file) => ({
-        id: itemId(file),
-        file,
-        status: 'pending' as ItemStatus,
-      })),
-    ]);
-  }
+    document.addEventListener('paste', onPaste);
+    return () => {
+      document.removeEventListener('paste', onPaste);
+    };
+  }, [open, isUploading, enqueueFiles]);
 
   function removeItem(id: string) {
     setItems((prev) => prev.filter((item) => item.id !== id));
@@ -99,24 +127,41 @@ export function WorkItemAttachmentUploadDialog({
     }
 
     setIsUploading(true);
-    let successCount = 0;
-
     for (const item of pending) {
       patchItem(item.id, { status: 'uploading', error: undefined });
-      try {
-        const result = await uploadWorkItemAttachment(item.file, workItemId);
-        if (result.attachment) {
-          onUploaded(result.attachment);
+    }
+
+    const results = await Promise.allSettled(
+      pending.map((item) => uploadWorkItemAttachment(item.file, workItemId))
+    );
+
+    let successCount = 0;
+    let failureCount = 0;
+
+    results.forEach((settled, index) => {
+      const item = pending[index];
+      if (!item) {
+        return;
+      }
+
+      if (settled.status === 'fulfilled') {
+        if (settled.value.attachment) {
+          onUploaded(settled.value.attachment);
         }
         patchItem(item.id, { status: 'success' });
         successCount += 1;
-      } catch (error) {
-        patchItem(item.id, {
-          status: 'error',
-          error: error instanceof Error ? error.message : 'Upload failed.',
-        });
+        return;
       }
-    }
+
+      patchItem(item.id, {
+        status: 'error',
+        error:
+          settled.reason instanceof Error
+            ? settled.reason.message
+            : 'Upload failed.',
+      });
+      failureCount += 1;
+    });
 
     setIsUploading(false);
 
@@ -128,8 +173,7 @@ export function WorkItemAttachmentUploadDialog({
       );
     }
 
-    const anyFailed = items.some((item) => item.status === 'error');
-    if (!anyFailed && successCount > 0) {
+    if (failureCount === 0 && successCount > 0) {
       onOpenChange(false);
     }
   }
@@ -142,16 +186,17 @@ export function WorkItemAttachmentUploadDialog({
         <DialogHeader>
           <DialogTitle>Add attachments</DialogTitle>
           <DialogDescription>
-            Drag and drop files or browse. Up to 10 MB each.
+            Drag and drop, browse, or paste files. Up to 10 MB each.
           </DialogDescription>
         </DialogHeader>
 
         <div className="w-full min-w-0 space-y-3 overflow-hidden py-1">
           <Dropzone
             multiple
-            onDrop={handleDrop}
+            onDrop={enqueueFiles}
             disabled={isUploading}
             className="min-h-32 max-w-full sm:min-h-36"
+            hint="or click to browse, or paste with Ctrl+V"
           />
 
           {items.length > 0 ? (

@@ -13,6 +13,8 @@ type DropzoneProps = Omit<DropzoneOptions, 'onDrop' | 'disabled'> & {
   onDrop: (acceptedFiles: File[], fileRejections: FileRejection[]) => void;
   className?: string;
   disabled?: boolean;
+  /** Overrides the default subtitle under “Drag and drop…”. Ignored when `children` is set. */
+  hint?: string;
   children?: React.ReactNode;
 };
 
@@ -24,6 +26,7 @@ function Dropzone({
   onDrop,
   className,
   disabled = false,
+  hint = 'or click to browse from your device',
   children,
   ...options
 }: DropzoneProps) {
@@ -60,9 +63,7 @@ function Dropzone({
                 ? 'Drop files to upload'
                 : 'Drag and drop files here'}
             </p>
-            <p className="text-muted-foreground text-xs sm:text-sm">
-              or click to browse from your device
-            </p>
+            <p className="text-muted-foreground text-xs sm:text-sm">{hint}</p>
           </div>
         </>
       )}

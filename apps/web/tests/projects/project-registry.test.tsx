@@ -45,12 +45,17 @@ vi.mock('@/app/projects/_components/project-form', () => ({
     onClose,
     onSuccess,
     projectToEdit,
+    currentUserId,
   }: {
     onClose?: () => void;
     onSuccess?: () => void;
     projectToEdit?: Project | null;
+    currentUserId?: string | null;
   }) => (
-    <div data-testid="mock-project-form">
+    <div
+      data-testid="mock-project-form"
+      data-current-user-id={currentUserId ?? ''}
+    >
       <span>
         Mock Project Form - {projectToEdit ? projectToEdit.name : 'Create'}
       </span>
@@ -255,6 +260,10 @@ describe('ProjectRegistry Component', () => {
     fireEvent.click(addBtn);
 
     expect(screen.getByTestId('mock-project-form')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-project-form')).toHaveAttribute(
+      'data-current-user-id',
+      'user-1'
+    );
     expect(screen.getByText('Mock Project Form - Create')).toBeInTheDocument();
   });
 
