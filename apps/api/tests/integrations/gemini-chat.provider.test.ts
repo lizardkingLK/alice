@@ -7,6 +7,77 @@ describe('GeminiChatProvider', () => {
     vi.unstubAllGlobals();
   });
 
+  it('sends Gemini history, system instructions, and tools and returns text', async () => {
+    const fetchMock = vi.fn(
+      async (_url: string, _init?: RequestInit) =>
+        new Response(
+          JSON.stringify({
+            candidates: [
+              {
+                content: {
+                  role: 'model',
+                  parts: [{ text: 'Gemini response' }],
+                },
+              },
+            ],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await new GeminiChatProvider().generateWithTools({
+      apiKey: 'gemini-test-key',
+      apiUrl:
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
+      model: 'gemini-3.6-flash',
+      contents: [
+        { role: 'user', parts: [{ text: 'Hello' }] },
+        { role: 'model', parts: [{ text: 'Hi' }] },
+      ],
+      systemInstruction: 'You are Alice.',
+      tools: [
+        {
+          name: 'list_projects',
+          description: 'List projects',
+          parameters: { type: 'object', properties: {} },
+        },
+      ],
+    });
+
+    expect(result.candidates?.[0]?.content?.parts).toEqual([
+      { text: 'Gemini response' },
+    ]);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toBe(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=gemini-test-key'
+    );
+    expect(init).toMatchObject({
+      method: 'POST',
+      redirect: 'error',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    expect(JSON.parse(String(init?.body))).toEqual({
+      contents: [
+        { role: 'user', parts: [{ text: 'Hello' }] },
+        { role: 'model', parts: [{ text: 'Hi' }] },
+      ],
+      systemInstruction: { parts: [{ text: 'You are Alice.' }] },
+      tools: [
+        {
+          functionDeclarations: [
+            {
+              name: 'list_projects',
+              description: 'List projects',
+              parameters: { type: 'OBJECT', properties: {} },
+            },
+          ],
+        },
+      ],
+    });
+  });
+
   it('throws ChatProviderError when Google reports a retired model', async () => {
     vi.stubGlobal(
       'fetch',
