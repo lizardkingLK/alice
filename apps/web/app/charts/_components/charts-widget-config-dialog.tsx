@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import type { WorkItemStatus } from '@repo/types';
+import type { ChartSeriesLabelField, WorkItemStatus } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { DropdownMenuItem } from '@repo/ui/components/ui/dropdown-menu';
 import { Filter, LogOut, MoreHorizontal, Settings } from '@repo/ui/lib/icons';
@@ -42,7 +42,6 @@ import {
   type ChartsSprintOption,
   type ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
-import type { ChartSeriesLabelField } from '@repo/types';
 import {
   filterChartDrilldownTableItems,
   isChartSeriesLabelField,
@@ -390,13 +389,11 @@ function renderConfigPiePreview(params: {
   // eslint-disable-next-line no-unused-vars -- slice key
   readonly onSliceToggle: (sliceKey: string) => void;
   readonly showValueAs: 'value' | 'percent';
-  readonly sliceColors: Readonly<Record<string, ChartsSliceColorToken>> | undefined;
+  readonly sliceColors:
+    Readonly<Record<string, ChartsSliceColorToken>> | undefined;
   readonly pieVariant: ChartPieVariant;
   readonly sortSlicesBy:
-    | 'value_desc'
-    | 'value_asc'
-    | 'label_asc'
-    | 'label_desc';
+    'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
   readonly showEmptySlices: boolean;
 }): ReactNode {
   if (params.isNested) {
@@ -406,9 +403,7 @@ function renderConfigPiePreview(params: {
         rings={params.hierarchy.series?.rings ?? null}
         loading={Boolean(params.open && params.hierarchy.seriesLoading)}
         emptyMessage={params.hierarchy.seriesError ?? SCOPE_EMPTY_MESSAGE}
-        selectedFocusKey={
-          params.hasSliceFocus ? params.focusedSliceKey : null
-        }
+        selectedFocusKey={params.hasSliceFocus ? params.focusedSliceKey : null}
         digPath={params.digPath}
         onDigPathChange={params.onDigPathChange}
         preferDrilldown={params.preferNestedDrilldown}
@@ -424,9 +419,7 @@ function renderConfigPiePreview(params: {
       slices={params.analytics.series?.slices ?? null}
       labelField={params.seriesLabelField ?? 'category'}
       loading={Boolean(
-        params.open &&
-          params.seriesLabelField &&
-          params.analytics.seriesLoading
+        params.open && params.seriesLabelField && params.analytics.seriesLoading
       )}
       emptyMessage={pieEmptyMessage({
         hasSeriesLabel: Boolean(params.seriesLabelField),
@@ -487,8 +480,7 @@ function useChartsWidgetConfigSeries(params: {
   const seriesLabelField = isChartSeriesLabelField(params.labelField)
     ? params.labelField
     : null;
-  const needsTable =
-    params.viewMode === 'table' || params.viewMode === 'split';
+  const needsTable = params.viewMode === 'table' || params.viewMode === 'split';
   const hasSliceFocus =
     params.focusedSliceKey !== undefined && params.focusedSliceKey !== null;
   const showAllStatusGroups = !hasSliceFocus;
@@ -643,9 +635,7 @@ export function ChartsWidgetConfigDialog({
     onViewModeChange?.('split', sliceKey);
   };
 
-  const handleDigPathChange = (
-    next: readonly ChartsHierarchyDigStep[]
-  ) => {
+  const handleDigPathChange = (next: readonly ChartsHierarchyDigStep[]) => {
     if (focusedSliceKey) {
       onViewModeChange?.(viewMode, null);
     }
@@ -729,9 +719,9 @@ export function ChartsWidgetConfigDialog({
       focusedStatus={tableFocusedStatus}
       loading={Boolean(
         open &&
-          loadDrilldown &&
-          drilldownLoading &&
-          (isNested || seriesLabelField)
+        loadDrilldown &&
+        drilldownLoading &&
+        (isNested || seriesLabelField)
       )}
       emptyMessage={open ? (drilldownError ?? NO_MATCH_MESSAGE) : ''}
       visibleColumns={visibleTableColumns}

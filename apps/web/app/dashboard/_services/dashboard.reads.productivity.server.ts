@@ -81,7 +81,11 @@ export async function getProductivityDashboardBootstrap(
       [],
       'fetch projects for productivity dashboard'
     ),
-    safeServerFetch(getDocsIndex(), [], 'fetch docs for productivity dashboard'),
+    safeServerFetch(
+      getDocsIndex(),
+      [],
+      'fetch docs for productivity dashboard'
+    ),
   ]);
 
   const active = filterActiveProjects(projects);

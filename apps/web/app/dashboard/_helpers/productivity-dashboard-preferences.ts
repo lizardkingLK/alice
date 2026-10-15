@@ -46,15 +46,16 @@ export const DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES: ProductivityDashboardPr
     },
   };
 
-export const PRODUCTIVITY_WIDGET_LABELS: Record<ProductivityWidgetId, string> = {
-  'my-work-assigned': 'Assigned to you',
-  'my-work-pending-stories': 'Pending stories',
-  'my-work-in-progress': 'In progress',
-  projects: 'Your projects',
-  alice: 'Alice',
-  docs: 'Docs',
-  pomodoro: 'Pomodoro',
-};
+export const PRODUCTIVITY_WIDGET_LABELS: Record<ProductivityWidgetId, string> =
+  {
+    'my-work-assigned': 'Assigned to you',
+    'my-work-pending-stories': 'Pending stories',
+    'my-work-in-progress': 'In progress',
+    projects: 'Your projects',
+    alice: 'Alice',
+    docs: 'Docs',
+    pomodoro: 'Pomodoro',
+  };
 
 function storageKey(userId: string): string {
   return `${STORAGE_PREFIX}${userId}`;

@@ -36,15 +36,15 @@ mode is available after you pin at least one board.
 
 A draggable, resizable home with live widgets:
 
-| Widget | What it shows |
-| --- | --- |
-| Assigned to you | Open work items assigned to you |
-| Pending stories | Open stories assigned to you |
-| In progress | Items in In Progress |
-| Your projects | Projects you belong to |
-| Alice | Live chat that always starts a new thread (open full chat from the card) |
-| Docs | Search the user guide; open a page in a dialog (fullscreen available) |
-| Pomodoro | Focus timer (5–60 minutes, default 25; duration is saved) |
+| Widget          | What it shows                                                            |
+| --------------- | ------------------------------------------------------------------------ |
+| Assigned to you | Open work items assigned to you                                          |
+| Pending stories | Open stories assigned to you                                             |
+| In progress     | Items in In Progress                                                     |
+| Your projects   | Projects you belong to                                                   |
+| Alice           | Live chat that always starts a new thread (open full chat from the card) |
+| Docs            | Search the user guide; open a page in a dialog (fullscreen available)    |
+| Pomodoro        | Focus timer (5–60 minutes, default 25; duration is saved)                |
 
 **Chart workspaces** mode is always available. If nothing is pinned yet, that
 mode shows a short tip and **Open Charts** instead of the slider.

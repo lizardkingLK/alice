@@ -17,8 +17,6 @@ import {
   type ChartAnalyticsDimensionFilters,
 } from '@/app/charts/_helpers/charts-analytics.ui';
 import {
-  CHART_ANALYTICS_INVALIDATE_EVENT,
-  invalidateChartAnalyticsCaches,
   registerChartAnalyticsCache,
   useCachedAnalyticsResource,
   useChartAnalyticsInvalidateEpoch,
@@ -27,7 +25,7 @@ import {
 export {
   CHART_ANALYTICS_INVALIDATE_EVENT,
   invalidateChartAnalyticsCaches,
-};
+} from '@/app/charts/_hooks/chart-widget-analytics-cache';
 
 type UseChartWidgetAnalyticsParams = {
   /**
@@ -151,8 +149,7 @@ export function useChartWidgetAnalytics(
   } = params;
 
   const epoch = useChartAnalyticsInvalidateEpoch(cacheEpoch);
-  const seriesEnabled =
-    projectId !== undefined && labelField != null;
+  const seriesEnabled = projectId !== undefined && labelField != null;
   const drilldownEnabled = seriesEnabled && loadDrilldown;
   const sliceKey = focusedSliceKey ?? undefined;
 
