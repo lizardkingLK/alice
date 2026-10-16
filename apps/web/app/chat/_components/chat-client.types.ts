@@ -1,3 +1,4 @@
+
 import type {
   ChatConversationSummaryWire,
   ChatMessageWire,
@@ -19,6 +20,8 @@ export function isCompactChatChrome(variant: ChatClientVariant): boolean {
 }
 
 export type ChatClientProps = {
+  /** Remounts conversation-scoped state without resetting model selection. */
+  readonly conversationStateKey?: string;
   readonly variant?: ChatClientVariant;
   readonly onClose?: () => void;
   /** Page-aware context (e.g. workflow designer draft) sent with each turn. */

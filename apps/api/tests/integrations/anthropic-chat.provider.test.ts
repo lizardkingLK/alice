@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { aliceChatTools } from '../../src/routes/api/chat/chat.route.data';
 
 const { logLlmProviderErrorMock } = vi.hoisted(() => ({
   logLlmProviderErrorMock: vi.fn(),
@@ -27,18 +28,9 @@ const baseInput: ChatModelGenerateInput = {
     { role: 'user', parts: [{ text: 'List projects' }] },
   ],
   systemInstruction: 'You are Alice.',
-  tools: [
-    {
-      name: 'list_projects',
-      description: 'List accessible projects',
-      parameters: { type: 'object', properties: {} },
-    },
-    {
-      name: 'list_users',
-      description: 'List users',
-      parameters: { type: 'object', properties: {} },
-    },
-  ],
+  tools: aliceChatTools.filter(
+    (tool) => tool.name === 'list_projects' || tool.name === 'list_users'
+  ),
 };
 
 function anthropicResponse(
@@ -110,13 +102,23 @@ describe('AnthropicChatProvider', () => {
       tools: [
         {
           name: 'list_projects',
-          description: 'List accessible projects',
-          input_schema: { type: 'object', properties: {} },
+          description:
+            'Retrieve all accessible projects available to the current user. Use this when the user asks to show or list projects, or to check if a project exists.',
+          input_schema: {
+            type: 'object',
+            properties: {},
+            additionalProperties: false,
+          },
         },
         {
           name: 'list_users',
-          description: 'List users',
-          input_schema: { type: 'object', properties: {} },
+          description:
+            'Retrieve list of all users in the system to find assignees.',
+          input_schema: {
+            type: 'object',
+            properties: {},
+            additionalProperties: false,
+          },
         },
       ],
     });
@@ -340,6 +342,9 @@ describe('AnthropicChatProvider', () => {
 
     await expect(
       new AnthropicChatProvider().generateWithTools(baseInput)
-    ).rejects.toThrow('Anthropic returned an invalid response.');
+    ).rejects.toMatchObject({
+      message: 'Anthropic returned an invalid response.',
+      category: 'invalid_json',
+    });
   });
 });

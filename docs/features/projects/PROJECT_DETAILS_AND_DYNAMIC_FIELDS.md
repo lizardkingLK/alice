@@ -557,7 +557,9 @@ Corrupted schemas or unknown component types **never crash the work-item view**.
 
 ## 8. Alice AI Assistant Integration
 
-Managers can configure custom dynamic fields using conversational natural language via Google Gemini (`apps/api/src/routes/api/chat/`).
+Managers can configure custom dynamic fields using conversational natural
+language through a configured Alice chat model
+(`apps/api/src/routes/api/chat/`).
 
 ### 8.1 User Flow
 
@@ -631,7 +633,7 @@ All core architecture requirements, user experience enhancements, automated unit
 - [x] **Initial Zero-Selection Default**: Configured `LoadTemplateDialog` so unconfigured projects start with 0 pre-selected templates.
 - [x] **Safe Removal Confirmation Dialog**: Implemented `ProjectFieldsErrorDialog` warning popup when deselecting templates with active work-item values.
 - [x] **Beautify & Validation**: Added one-click JSON beautification and real-time Zod meta-schema validation with auto-dismissing feedback banner.
-- [x] **Alice AI Assistant**: Integrated `GenerateFieldsAliceDialog` with Gemini chat backend for natural language schema generation.
+- [x] **Alice AI Assistant**: Integrated `GenerateFieldsAliceDialog` with the configured Alice chat model for natural language schema generation.
 - [x] **Typed Enums & Schemas**: Standardized `DynamicFieldTypeEnum`, `TemplateFieldCategoryEnum`, `TemplateFieldKeyEnum`, and Zod schemas in `@repo/types`.
 - [x] **Work-Item Storage & Integration**: Implemented TipTap ProseMirror document attribute storage (`doc.attrs.dynamicFields`), fallback text markers, and inline editing in `WorkItemSidebar`.
 - [x] **Non-Validation Invariant**: Enforced that dynamic fields are strictly optional metadata that never block work-item creation, edits, or status transitions.

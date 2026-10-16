@@ -47,7 +47,7 @@ async function ChatPageData({
 
   return (
     <ChatClient
-      key={`${conversationId ?? 'new'}:${agentId ?? ''}`}
+      conversationStateKey={`${conversationId ?? 'new'}:${agentId ?? ''}`}
       initialConversations={bootstrap.conversations}
       initialConversationId={bootstrap.activeConversationId}
       initialMessages={bootstrap.messages}

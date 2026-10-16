@@ -43,12 +43,12 @@ Related:
 
 ## Surfaces
 
-| Surface  | Route             | Role                                                                         |
-| -------- | ----------------- | ---------------------------------------------------------------------------- |
-| Profile  | `/profile`        | Identity + teams / worked-on; cover upload via dialog                        |
-| Settings | `/settings?tab=…` | General, Security, Notifications, Preferences; **Integrations** (admin only) |
+| Surface  | Route             | Role                                                                            |
+| -------- | ----------------- | ------------------------------------------------------------------------------- |
+| Profile  | `/profile`        | Identity + teams / worked-on; cover upload via dialog                           |
+| Settings | `/settings?tab=…` | General, Security, Notifications, Preferences; **Integrations** (manager/admin) |
 
-Integrations (admin-only) is documented in
+Integrations (manager/admin) is documented in
 [SETTINGS_INTEGRATIONS.md](../integrations/SETTINGS_INTEGRATIONS.md) and lives
 at `/settings?tab=integrations`.
 

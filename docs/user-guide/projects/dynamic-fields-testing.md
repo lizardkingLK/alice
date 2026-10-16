@@ -144,7 +144,7 @@ Verify that managers can describe custom fields in plain English and let Alice g
 4. Click `+ Security classification and compliance tier`:
    - The prompt textarea auto-populates.
 5. Click **Generate Schema**:
-   - A loading spinner displays while Alice communicates with the Gemini chat backend.
+   - A loading spinner displays while Alice communicates with the configured chat model.
    - When finished, the generated schema is merged into the editor and preview cards update to show **Security Classification** and **Compliance Tier**.
 
 ---

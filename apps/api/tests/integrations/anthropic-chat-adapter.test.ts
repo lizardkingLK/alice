@@ -1,8 +1,10 @@
 import { ChatTurnRoles } from '@repo/types';
 import { describe, expect, it } from 'vitest';
+import { aliceChatTools } from '../../src/routes/api/chat/chat.route.data';
 import type { AliceChatTools } from '../../src/routes/api/chat/chat.route.types';
 import {
   aliceChatToolsToAnthropicTools,
+  anthropicMessageResponseToChatLlmResponse,
   anthropicMessageToChatLlmResponse,
   chatContentsToAnthropicMessages,
 } from '../../src/routes/api/integrations/chat-providers/anthropic-chat-adapter';
@@ -11,7 +13,10 @@ const tools: AliceChatTools = [
   {
     name: 'list_projects',
     description: 'List accessible projects',
-    parameters: { type: 'object', properties: {} },
+  },
+  {
+    name: 'list_users',
+    description: 'List users',
   },
   {
     name: 'create_project',
@@ -42,13 +47,35 @@ function messageResponse(
   };
 }
 
+function capturedError(callback: () => unknown): unknown {
+  try {
+    callback();
+  } catch (error: unknown) {
+    return error;
+  }
+  throw new Error('Expected callback to throw.');
+}
+
 describe('aliceChatToolsToAnthropicTools', () => {
   it('maps Alice tools to Anthropic input_schema definitions', () => {
     expect(aliceChatToolsToAnthropicTools(tools)).toEqual([
       {
         name: 'list_projects',
         description: 'List accessible projects',
-        input_schema: { type: 'object', properties: {} },
+        input_schema: {
+          type: 'object',
+          properties: {},
+          additionalProperties: false,
+        },
+      },
+      {
+        name: 'list_users',
+        description: 'List users',
+        input_schema: {
+          type: 'object',
+          properties: {},
+          additionalProperties: false,
+        },
       },
       {
         name: 'create_project',
@@ -66,18 +93,24 @@ describe('aliceChatToolsToAnthropicTools', () => {
     ]);
   });
 
-  it('supplies an empty object schema when a tool has no parameters', () => {
-    expect(
-      aliceChatToolsToAnthropicTools([
-        { name: 'ping', description: 'Ping Alice' },
-      ])
-    ).toEqual([
-      {
-        name: 'ping',
-        description: 'Ping Alice',
-        input_schema: { type: 'object', properties: {} },
-      },
-    ]);
+  it('closes the schemas of production tools with no parameters', () => {
+    const parameterlessTools = aliceChatTools.filter(
+      (tool) => tool.name === 'list_projects' || tool.name === 'list_users'
+    );
+
+    expect(parameterlessTools).toHaveLength(2);
+    expect(parameterlessTools.every((tool) => !tool.parameters)).toBe(true);
+    expect(aliceChatToolsToAnthropicTools(parameterlessTools)).toEqual(
+      parameterlessTools.map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        input_schema: {
+          type: 'object',
+          properties: {},
+          additionalProperties: false,
+        },
+      }))
+    );
   });
 });
 
@@ -286,6 +319,84 @@ describe('chatContentsToAnthropicMessages', () => {
 });
 
 describe('anthropicMessageToChatLlmResponse', () => {
+  it.each(['list_projects', 'list_users'])(
+    'accepts an empty input object for production %s and preserves its id',
+    (toolName) => {
+      const result = anthropicMessageToChatLlmResponse(
+        messageResponse(
+          [
+            {
+              type: 'tool_use',
+              id: `toolu_${toolName}`,
+              name: toolName,
+              input: {},
+            },
+          ],
+          'tool_use'
+        ),
+        aliceChatTools
+      );
+
+      expect(result.candidates?.[0]?.content?.parts).toEqual([
+        {
+          functionCall: {
+            id: `toolu_${toolName}`,
+            name: toolName,
+            args: {},
+          },
+        },
+      ]);
+    }
+  );
+
+  it('rejects unexpected arguments for production list_projects', () => {
+    expect(
+      capturedError(() =>
+        anthropicMessageToChatLlmResponse(
+          messageResponse(
+            [
+              {
+                type: 'tool_use',
+                id: 'toolu_projects',
+                name: 'list_projects',
+                input: { assigned: true },
+              },
+            ],
+            'tool_use'
+          ),
+          aliceChatTools
+        )
+      )
+    ).toMatchObject({
+      message: 'Anthropic returned an invalid response.',
+      category: 'invalid_tool_arguments',
+    });
+  });
+
+  it('rejects unknown production tool names', () => {
+    expect(
+      capturedError(() =>
+        anthropicMessageToChatLlmResponse(
+          messageResponse(
+            [
+              {
+                type: 'tool_use',
+                id: 'toolu_unknown',
+                name: 'unknown_tool',
+                input: {},
+              },
+            ],
+            'tool_use'
+          ),
+          aliceChatTools
+        )
+      )
+    ).toMatchObject({
+      message: 'Anthropic returned an invalid response.',
+      category: 'unknown_tool',
+    });
+  });
+
   it('maps multiple text blocks', () => {
     expect(
       anthropicMessageToChatLlmResponse(
@@ -359,6 +470,7 @@ describe('anthropicMessageToChatLlmResponse', () => {
         'tool_use'
       ),
       'unknown tool',
+      'unknown_tool',
     ],
     [
       messageResponse(
@@ -373,6 +485,7 @@ describe('anthropicMessageToChatLlmResponse', () => {
         'tool_use'
       ),
       'missing required argument',
+      'invalid_tool_arguments',
     ],
     [
       messageResponse(
@@ -387,6 +500,7 @@ describe('anthropicMessageToChatLlmResponse', () => {
         'tool_use'
       ),
       'wrong argument type',
+      'invalid_tool_arguments',
     ],
     [
       messageResponse(
@@ -407,6 +521,7 @@ describe('anthropicMessageToChatLlmResponse', () => {
         'tool_use'
       ),
       'duplicate id',
+      'invalid_response_shape',
     ],
     [
       messageResponse(
@@ -414,19 +529,57 @@ describe('anthropicMessageToChatLlmResponse', () => {
         'tool_use'
       ),
       'missing id',
+      'invalid_response_shape',
     ],
-    [messageResponse([{ type: 'image', source: {} }]), 'unexpected block'],
-    [messageResponse([], 'end_turn'), 'empty content'],
-    [messageResponse([{ type: 'text', text: 'Done' }], 'tool_use'), 'bad stop'],
+    [
+      messageResponse([{ type: 'image', source: {} }]),
+      'unexpected block',
+      'unsupported_content_block',
+    ],
+    [messageResponse([], 'end_turn'), 'empty content', 'invalid_stop_reason'],
+    [
+      messageResponse([{ type: 'text', text: 'Done' }], 'tool_use'),
+      'bad stop',
+      'invalid_stop_reason',
+    ],
     [
       messageResponse([{ type: 'text', text: 'Paused' }], 'pause_turn'),
       'pause',
+      'invalid_stop_reason',
     ],
-    [{ type: 'message', content: [] }, 'missing required fields'],
-  ])('rejects malformed response safely: %s', (payload) => {
-    expect(() => anthropicMessageToChatLlmResponse(payload, tools)).toThrow(
-      'Anthropic returned an invalid response.'
-    );
+    [
+      { type: 'message', content: [] },
+      'missing required fields',
+      'invalid_response_shape',
+    ],
+  ])('rejects malformed response safely: %s', (payload, _label, category) => {
+    expect(
+      capturedError(() => anthropicMessageToChatLlmResponse(payload, tools))
+    ).toMatchObject({
+      message: 'Anthropic returned an invalid response.',
+      category,
+    });
+  });
+
+  it('categorizes invalid JSON without including response content', async () => {
+    const secret = 'sk-ant-response-secret';
+
+    await expect(
+      anthropicMessageResponseToChatLlmResponse(
+        new Response(`${secret} {`),
+        aliceChatTools
+      )
+    ).rejects.toMatchObject({
+      message: 'Anthropic returned an invalid response.',
+      category: 'invalid_json',
+    });
+
+    await expect(
+      anthropicMessageResponseToChatLlmResponse(
+        new Response(`${secret} {`),
+        aliceChatTools
+      )
+    ).rejects.not.toThrow(secret);
   });
 
   it('distinguishes token-limit responses', () => {

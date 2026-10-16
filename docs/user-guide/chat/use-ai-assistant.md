@@ -12,11 +12,15 @@ Chat with Alice to inspect and create workspace data.
 2. Optionally open **Agents** from the grid icon in the chat header to browse
    and customize role agents (see [Alice agents](./agents.md)).
 3. Optionally pick a **model** from the **Cpu** icon in the chat header (when
-   your admin configured models). Open a **provider** (for example Gemini or
-   SpaceXAI), then choose the model in the submenu.
+   your workspace has configured models). Models are grouped under **Gemini**,
+   **SpaceXAI**, **OpenAI**, or **Anthropic**; open a provider and choose a model
+   in its submenu. The workspace default is selected initially when available;
+   otherwise Alice selects the first active model.
 4. Use the **plus** icon to start a **new chat**. Admins also get **Configure AI
-   models** from that plus menu (opens Settings). Admins can mark the selected
-   model as the workspace default from the model menu.
+   models** from that plus menu (opens Settings) and can mark the selected model
+   as the workspace default from the model menu. Managers can configure models
+   and choose the workspace default from **Settings → Integrations**, although
+   the Chat-header management shortcuts are currently admin-only.
 5. Type a message in the composer and press **Enter** to send (**Shift+Enter**
    for a new line).
 6. Read Alice's reply on the left; your messages appear on the right.
@@ -26,7 +30,8 @@ conversation. Open the history sidebar to switch, **rename**, or delete past
 threads. When a conversation is open, the header breadcrumb shows
 **Dashboard → Chat →** that chat’s title.
 
-If no models are connected, Alice asks you to **add an AI model** first. If
+Only active integrations appear in the model menu. If no models are connected,
+Alice asks you to **add an AI model** first; contact a manager or admin. If
 models exist but you have no conversations yet, use **Create conversation**.
 
 ---
@@ -103,7 +108,7 @@ admin-only areas. Alice is focused exclusively on ALICE workspace management and
 ## Tips
 
 - Be specific about project names, types, and assignees.
-- If no model appears in the dropdown, ask an admin to configure chat models under
+- If no model appears in the dropdown, ask a manager or admin to configure chat models under
   [Workspace integrations](../profile-and-settings/workspace-integrations.md).
 - If chat says the API key was rejected or expired, ask an admin to update the
   key under [Workspace integrations](../profile-and-settings/workspace-integrations.md).

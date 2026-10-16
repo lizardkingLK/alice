@@ -40,6 +40,7 @@ vi.mock('../../src/lib/prisma', () => ({
 
 import {
   ChatRoles,
+  ChatTurnRoles,
   ChatAttachmentFileTypeEnum,
   WorkItemTypeEnum,
 } from '@repo/types';
@@ -328,6 +329,323 @@ describe('ChatService tool authorization', () => {
     expect(prisma.work_items.findMany).not.toHaveBeenCalled();
     expect(prisma.work_items.update).not.toHaveBeenCalled();
     expect(createWorkItem).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChatService tool-call orchestration', () => {
+  function createOrchestrationHarness() {
+    const listProjectsForActor = vi.fn().mockResolvedValue({
+      userRole: 'member',
+      permissions: ['read'],
+      totalCount: 1,
+      projects: [
+        {
+          id: 'project-allowed',
+          name: 'Allowed project',
+          key: 'ALLOW',
+          description: null,
+          status: 'active',
+        },
+      ],
+    });
+    const listUsersSnapshot = vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'user-1', name: 'Alice', email: 'a@test.dev' },
+      ]);
+    const listActiveSprintsSnapshot = vi.fn().mockResolvedValue([]);
+    const listSprintsByProject = vi.fn().mockResolvedValue([
+      {
+        id: 'sprint-1',
+        name: 'Sprint 1',
+        status: 'active',
+        start_date: null,
+        end_date: null,
+      },
+    ]);
+
+    const service = new ChatService({
+      chat: {
+        listUsersSnapshot,
+        listActiveSprintsSnapshot,
+        listSprintsByProject,
+      } as never,
+      projectsRepository: {
+        listAccessibleProjectIds: vi
+          .fn()
+          .mockResolvedValue(['project-allowed']),
+      } as never,
+      projectsService: { listProjectsForActor } as never,
+      workItemService: {} as never,
+      sprintsService: {} as never,
+      integrationsService: {} as never,
+    });
+
+    return {
+      service,
+      listProjectsForActor,
+      listUsersSnapshot,
+      listSprintsByProject,
+    };
+  }
+
+  const chatModel = {
+    integrationId: 'integration-1',
+    provider: 'openai',
+    model: 'gpt-4o',
+    apiKey: 'test-key',
+    apiUrl: 'https://api.openai.com/v1/chat/completions',
+  };
+
+  it('executes multiple tool rounds once and returns every result with its original id', async () => {
+    const {
+      service,
+      listProjectsForActor,
+      listUsersSnapshot,
+      listSprintsByProject,
+    } = createOrchestrationHarness();
+    const observedContents: unknown[] = [];
+    const responses = [
+      {
+        candidates: [
+          {
+            content: {
+              role: ChatTurnRoles.Model,
+              parts: [
+                {
+                  functionCall: {
+                    id: 'call-projects',
+                    name: 'list_projects',
+                    args: {},
+                  },
+                },
+                {
+                  functionCall: {
+                    id: 'call-users',
+                    name: 'list_users',
+                    args: {},
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        candidates: [
+          {
+            content: {
+              role: ChatTurnRoles.Model,
+              parts: [
+                {
+                  functionCall: {
+                    id: 'call-sprints',
+                    name: 'list_sprints',
+                    args: { projectId: 'project-allowed' },
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        candidates: [
+          {
+            content: {
+              role: ChatTurnRoles.Model,
+              parts: [{ text: 'All requested data is ready.' }],
+            },
+          },
+        ],
+      },
+    ];
+    let responseIndex = 0;
+    const callChatModelSpy = vi
+      .spyOn(service, 'callChatModelAPI')
+      .mockImplementation(async (_model, contents) => {
+        observedContents.push(structuredClone(contents));
+        return responses[responseIndex++]!;
+      });
+
+    const result = await service.generateChatResponse(
+      'trusted-user',
+      [{ id: 'message-1', role: ChatRoles.User, content: 'List everything' }],
+      chatModel
+    );
+
+    expect(result).toEqual({
+      responseText: 'All requested data is ready.',
+      toolActionsPerformed: [],
+    });
+    expect(callChatModelSpy).toHaveBeenCalledTimes(3);
+    expect(listProjectsForActor).toHaveBeenCalledTimes(2);
+    expect(listUsersSnapshot).toHaveBeenCalledTimes(2);
+    expect(listSprintsByProject).toHaveBeenCalledTimes(1);
+
+    const expectedFirstRoundToolResults = {
+      role: ChatTurnRoles.User,
+      parts: [
+        {
+          functionResponse: {
+            id: 'call-projects',
+            name: 'list_projects',
+            response: {
+              result: {
+                userRole: 'member',
+                permissions: ['read'],
+                totalCount: 1,
+                projects: [
+                  {
+                    id: 'project-allowed',
+                    name: 'Allowed project',
+                    key: 'ALLOW',
+                    description: null,
+                    status: 'active',
+                  },
+                ],
+              },
+            },
+          },
+        },
+        {
+          functionResponse: {
+            id: 'call-users',
+            name: 'list_users',
+            response: {
+              result: [{ id: 'user-1', name: 'Alice', email: 'a@test.dev' }],
+            },
+          },
+        },
+      ],
+    };
+    const expectedSecondRoundToolResults = {
+      role: ChatTurnRoles.User,
+      parts: [
+        {
+          functionResponse: {
+            id: 'call-sprints',
+            name: 'list_sprints',
+            response: {
+              result: [
+                {
+                  id: 'sprint-1',
+                  name: 'Sprint 1',
+                  status: 'active',
+                  start_date: null,
+                  end_date: null,
+                },
+              ],
+            },
+          },
+        },
+      ],
+    };
+
+    const secondRound = observedContents[1] as Array<unknown>;
+    expect(secondRound[0]).toEqual({
+      role: ChatTurnRoles.User,
+      parts: [{ text: 'List everything' }],
+    });
+    expect(secondRound[2]).toEqual(expectedFirstRoundToolResults);
+
+    const thirdRound = observedContents[2] as Array<unknown>;
+    expect(thirdRound[2]).toEqual(expectedFirstRoundToolResults);
+    expect(thirdRound[4]).toEqual(expectedSecondRoundToolResults);
+  });
+
+  it('stops after five tool rounds without starting a sixth provider call or tool execution', async () => {
+    const { service } = createOrchestrationHarness();
+    let providerCall = 0;
+    const callChatModelSpy = vi
+      .spyOn(service, 'callChatModelAPI')
+      .mockImplementation(async () => {
+        providerCall += 1;
+        return {
+          candidates: [
+            {
+              content: {
+                role: ChatTurnRoles.Model,
+                parts: [
+                  {
+                    functionCall: {
+                      id: `call-${providerCall}`,
+                      name: 'list_users',
+                      args: {},
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        };
+      });
+    const processFunctionCallsSpy = vi
+      .spyOn(service, 'processFunctionCalls')
+      .mockImplementation(async (_userId, calls) =>
+        calls.map((call) => ({
+          functionResponse: {
+            id: call.functionCall?.id,
+            name: call.functionCall?.name ?? 'unknown',
+            response: { result: [] },
+          },
+        }))
+      );
+
+    await service.generateChatResponse(
+      'trusted-user',
+      [{ id: 'message-1', role: ChatRoles.User, content: 'Keep going' }],
+      chatModel
+    );
+
+    expect(callChatModelSpy).toHaveBeenCalledTimes(5);
+    expect(processFunctionCallsSpy).toHaveBeenCalledTimes(5);
+    expect(
+      processFunctionCallsSpy.mock.calls.flatMap((call) => call[1])
+    ).toHaveLength(5);
+  });
+
+  it('returns a safe error for an unknown tool while preserving its call id', async () => {
+    const { service, listProjectsForActor, listUsersSnapshot } =
+      createOrchestrationHarness();
+    const actions: ToolAction[] = [];
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+
+    try {
+      const result = await service.processFunctionCalls(
+        'trusted-user',
+        [
+          {
+            functionCall: {
+              id: 'call-unknown',
+              name: 'delete_everything',
+              args: {},
+            },
+          },
+        ],
+        actions
+      );
+
+      expect(result).toEqual([
+        {
+          functionResponse: {
+            id: 'call-unknown',
+            name: 'delete_everything',
+            response: {
+              result: { error: 'Unknown function: delete_everything' },
+            },
+          },
+        },
+      ]);
+      expect(actions).toEqual([]);
+      expect(listProjectsForActor).not.toHaveBeenCalled();
+      expect(listUsersSnapshot).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).toHaveBeenCalledOnce();
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
   });
 });
 
