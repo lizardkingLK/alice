@@ -16,6 +16,20 @@ minimumReleaseAgeExclude:
   - '@turbo/windows-64@2.11.3 || 2.11.5'
   - '@turbo/windows-arm64@2.11.3 || 2.11.5'
   - turbo@2.11.3 || 2.11.5
+  - '@next/env@16.4.2'
+  - '@next/swc-darwin-arm64@16.4.2'
+  - '@next/swc-darwin-x64@16.4.2'
+  - '@next/swc-linux-arm64-gnu@16.4.2'
+  - '@next/swc-linux-arm64-musl@16.4.2'
+  - '@next/swc-linux-x64-gnu@16.4.2'
+  - '@next/swc-linux-x64-musl@16.4.2'
+  - '@next/swc-win32-arm64-msvc@16.4.2'
+  - '@next/swc-win32-x64-msvc@16.4.2'
+  - next@16.4.2
+  - qs@6.16.0
+  - qs@6.16.1
+  - proxy-addr@2.0.8
+  - multer@2.4.0
 
 overrides:
   js-yaml@>=4.0.0 <4.1.1: '>=4.1.1'
@@ -33,4 +47,7 @@ overrides:
   postcss@<8.5.10: '>=8.5.10'
   next@>=16.0.0 <16.2.5: '>=16.2.5'
   next@>=16.0.0 <16.2.6: '>=16.2.6'
+  next@>=16.0.0 <16.4.1: '>=16.4.1'
   js-yaml@<=4.1.1: '>=4.2.0'
+  qs@<6.16.0: '>=6.16.0'
+  proxy-addr@<2.0.8: '>=2.0.8'
