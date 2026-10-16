@@ -34,6 +34,11 @@ vi.mock('@repo/ui/components/ui/sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock(
+  '@repo/ui/components/ui/context-menu',
+  () => import('../mocks/context-menu')
+);
+
 vi.mock('@repo/ui/components/ui/flow-canvas', () => ({
   FlowCanvas: ({
     children,
@@ -151,7 +156,8 @@ describe('WorkflowDesignerWorkspace', () => {
           schemaVersion: 1,
           defaultWorkflowId: seeded.defaultWorkflowId,
         }),
-        '2026-01-01T00:00:00.000Z'
+        '2026-01-01T00:00:00.000Z',
+        undefined
       );
     });
     await waitFor(() => {
@@ -189,7 +195,7 @@ describe('WorkflowDesignerWorkspace', () => {
     );
   });
 
-  it('adds a state with Ctrl+N and opens Settings', () => {
+  it('adds a state with Ctrl+Alt+N and opens Settings', () => {
     const project = projectFactory.build({
       workflow_config: asWorkflowConfig(createSeededDefaultWorkflowConfig()),
     });
@@ -201,7 +207,7 @@ describe('WorkflowDesignerWorkspace', () => {
       />
     );
 
-    fireEvent.keyDown(window, { key: 'n', ctrlKey: true });
+    fireEvent.keyDown(window, { key: 'n', ctrlKey: true, altKey: true });
 
     expect(screen.getByTestId('workflow-settings-state')).toBeInTheDocument();
     expect(screen.getByLabelText(/^name$/i)).toHaveValue('New state');
@@ -277,9 +283,32 @@ describe('WorkflowDesignerWorkspace', () => {
       />
     );
     fireEvent.click(screen.getByTestId('workflow-designer-help-open'));
-    expect(screen.getByTestId('workflow-designer-help')).toBeInTheDocument();
+    const help = screen.getByTestId('workflow-designer-help');
+    expect(help).toBeInTheDocument();
     expect(screen.getByText(/workflow help/i)).toBeInTheDocument();
     expect(screen.getByText(/^keyboard$/i)).toBeInTheDocument();
+    expect(help).toHaveTextContent('Ctrl/Cmd + Alt + N');
+    expect(help).toHaveTextContent('Ctrl/Cmd + C');
+  });
+
+  it('renders the canvas context menu with shortcut labels', () => {
+    const project = projectFactory.build({ workflow_config: null });
+    render(
+      <WorkflowDesignerWorkspace
+        project={project}
+        canEdit
+        currentUserId="user-manager-1"
+      />
+    );
+    expect(
+      screen.getByTestId('workflow-designer-context-menu')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId('workflow-designer-context-addState')
+    ).toHaveTextContent('Ctrl/Cmd + Alt + N');
+    expect(
+      screen.getByTestId('workflow-designer-context-copyState')
+    ).toHaveTextContent('Ctrl/Cmd + C');
   });
 
   it('links Go to Board to the project kanban', () => {

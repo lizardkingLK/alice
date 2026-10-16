@@ -63,6 +63,8 @@ export type BoardActorContext = {
 
 export type CreateWorkItemRecord = WorkItemBody & {
   createdBy: string;
+  /** Project workflow resolved for this type; defaults to seeded id when omitted. */
+  workflowId?: string;
 };
 
 export type UpdateWorkItemRecord = WorkItemUpdateBody & {
@@ -377,6 +379,7 @@ export class WorkItemRepository {
     const synced = syncWorkItemStateForStatusChange({
       nextStatus: status,
       previousState: null,
+      workflowId: input.workflowId,
     });
 
     const created = await prisma.work_items.create({

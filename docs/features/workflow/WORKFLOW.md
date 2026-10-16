@@ -26,8 +26,9 @@ exist on disk; runtime reads fall back safely. Historical notes:
 - Safe fallback: null / unparsable / schema conflict → **seeded default**
   workflow (and default board behavior) so the project never hard-crashes.
 - Designer UI supports add/connect/delete, multi-workflow manage (Fork / Mark
-  default / Delete / Rename), keyboard shortcuts, undo, cut/paste states, live
-  Settings→node sync, Help, and Go to Board — Step 12.
+  default / Delete / Rename), keyboard shortcuts (add state: **Ctrl/Cmd+Alt+N**),
+  undo, copy/cut/paste states, canvas context menu, live Settings→node sync,
+  Help, and Go to Board — Step 12.
 - Alice docked chat can propose designer changes with **Apply / Reject**.
 
 ## Non-goals (MVP)
@@ -51,9 +52,22 @@ exist on disk; runtime reads fall back safely. Historical notes:
 | Member                                                                    | Use board / transitions per edge `allowAnyOf`; cannot edit workflow config                                   |
 
 - `workflow_config` holds an envelope with `defaultWorkflowId` + `workflows[]`.
-- Promoting a fork to default = **in-place swap** of `defaultWorkflowId`; the
-  previous default stays in the array until explicitly deleted.
+- Promoting a fork to default = **in-place swap** of `defaultWorkflowId` **plus**
+  moving the previous default’s `typeBindings` onto the new default (and
+  clearing the demoted workflow’s bindings). Work items whose
+  `state.workflowId` pointed at the previous default are reassigned to the new
+  default. The previous default stays in the array until explicitly deleted.
+- Deleting a non-default workflow **reclaims** its type bindings onto the
+  project default and reassigns its work items there.
+- Seeded default uses **empty** `typeBindings` (owns types via being default) so
+  fork + promote cannot leave types stuck on the parent.
 - Fork depth ≤ 1 (Zod + API).
+- **Save** that removes graph states still referenced by work items
+  (`state_workflow_id` + `state_id`) returns **409**
+  `WORKFLOW_ORPHANED_STATES` with per-state counts and remaining targets.
+  Retry the same PUT with `stateRemaps: [{ workflowId, fromStateId, toStateId
+}, …]` to move items, then persist. Removing whole workflows via Save is
+  rejected — use Delete workflow.
 
 ---
 

@@ -84,6 +84,10 @@ When you activate one or more **chat model** integrations:
 Disabled or otherwise inactive integrations are not available for selection.
 If no model is configured, contact a manager or admin.
 
+If Alice chat reports that the **API key was rejected** (invalid or expired),
+open the matching card here, paste a current key from the provider, and save.
+Users cannot fix this themselves — only admins manage workspace integrations.
+
 ---
 
 ## vs project integrations

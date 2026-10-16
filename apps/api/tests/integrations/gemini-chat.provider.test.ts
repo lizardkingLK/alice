@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ChatProviderError } from '../../src/routes/api/integrations/chat-providers/chat-provider.error';
+import { GEMINI_API_KEY_REJECTED_MESSAGE } from '../../src/routes/api/integrations/chat-providers/gemini/alice-chatbot-errors';
 import { GeminiChatProvider } from '../../src/routes/api/integrations/chat-providers/gemini/gemini-chat.provider';
 
 describe('GeminiChatProvider', () => {
@@ -119,5 +120,42 @@ describe('GeminiChatProvider', () => {
       expect.any(String),
       expect.objectContaining({ redirect: 'error' })
     );
+  });
+
+  it('throws ChatProviderError when Google rejects an expired API key', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+        text: async () =>
+          JSON.stringify({
+            error: {
+              code: 403,
+              message: 'API key expired. Please renew the API key.',
+              status: 'PERMISSION_DENIED',
+            },
+          }),
+      }))
+    );
+
+    const provider = new GeminiChatProvider();
+
+    await expect(
+      provider.generateWithTools({
+        apiKey: 'expired-key',
+        apiUrl:
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
+        model: 'gemini-2.5-flash-lite',
+        contents: [{ role: 'user', parts: [{ text: 'hello' }] }],
+        systemInstruction: 'You are Alice.',
+        tools: [],
+      })
+    ).rejects.toMatchObject({
+      name: 'ChatProviderError',
+      statusCode: 400,
+      message: GEMINI_API_KEY_REJECTED_MESSAGE,
+    } satisfies Partial<ChatProviderError>);
   });
 });

@@ -11,10 +11,17 @@ export type ActionItem = ChatToolActionWire;
 export type ChatMessage = ChatMessageWire;
 export type ChatConversation = ChatConversationSummaryWire;
 
+export type ChatClientVariant = 'page' | 'drawer' | 'docked' | 'widget';
+
+/** Docked shell + Overview widget share compact chrome (composer / header). */
+export function isCompactChatChrome(variant: ChatClientVariant): boolean {
+  return variant === 'docked' || variant === 'widget';
+}
+
 export type ChatClientProps = {
   /** Remounts conversation-scoped state without resetting model selection. */
   readonly conversationStateKey?: string;
-  readonly variant?: 'page' | 'drawer' | 'docked';
+  readonly variant?: ChatClientVariant;
   readonly onClose?: () => void;
   /** Page-aware context (e.g. workflow designer draft) sent with each turn. */
   readonly viewContext?: ChatViewContext | null;

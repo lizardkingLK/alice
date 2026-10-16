@@ -142,7 +142,7 @@ Reuse `apps/api/src/lib/file-helpers.ts` for upload / signed URL / existence che
 2. **Click** — if cache has URLs, try them; else mint and cache.
 3. **Expired** — broken preview → message + explicit regenerate (overwrite cache).
 4. **Gone (410)** — object missing → distinct "no longer available" state + **Remove attachment** (regenerate is hidden, since re-minting can't recover a deleted object).
-5. **Add** — top **Attach** button and section **+** both open a shared multi-file `Dropzone` dialog → sequential upload → local append + `router.refresh()`.
+5. **Add** — top **Attach** button and section **+** both open a shared multi-file `Dropzone` dialog (drag/drop, browse, or **Ctrl+V** / **Cmd+V** paste while open) → parallel upload (`Promise.allSettled`) → local append + `router.refresh()`.
 
 ---
 

@@ -1,7 +1,7 @@
 import type { ChatConversation, ChatMessage } from './chat-client.types';
 import { getChatHistory } from '../_services/chat.mutations.client';
 import { listChatModelsForChatClient } from '../_services/chat-models.reads.client';
-import { listChatConversationsAction } from '../_services/chat.reads.actions.server';
+import { listChatConversationsClient } from '../_services/chat.reads.client';
 import type { ChatModelOption } from '@repo/types';
 
 export type HistoryLoadResult = {
@@ -33,14 +33,26 @@ export async function loadConversationHistory(
 }
 
 /**
+ * List conversations and models without hydrating a thread (empty composer).
+ * Uses the browser Supabase client so Overview/dock bootstrap does not invoke
+ * a Server Action (cookie writes there re-render `/dashboard` under Suspense).
+ */
+export async function bootstrapChatShell(): Promise<
+  Pick<LatestChatBootstrap, 'conversations' | 'chatModels'>
+> {
+  const [conversations, chatModels] = await Promise.all([
+    listChatConversationsClient(),
+    listChatModelsForChatClient(),
+  ]);
+  return { conversations, chatModels };
+}
+
+/**
  * List conversations and hydrate the latest thread.
  * Shared by `/chat` client init and the floating drawer bootstrap.
  */
 export async function bootstrapLatestChat(): Promise<LatestChatBootstrap> {
-  const [conversations, chatModels] = await Promise.all([
-    listChatConversationsAction(),
-    listChatModelsForChatClient(),
-  ]);
+  const { conversations, chatModels } = await bootstrapChatShell();
   const latest = conversations[0];
 
   if (!latest) {

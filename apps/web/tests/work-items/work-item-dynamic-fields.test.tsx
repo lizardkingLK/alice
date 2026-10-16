@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import WorkItemSidebar from '@/app/work-items/_components/work-item-details/work-item-details-sidebar';
+import { DEFAULT_WORK_ITEM_DETAILS_PREFERENCES } from '@/app/work-items/_helpers/work-item-details-preferences';
 import {
   SafeDynamicFieldsSection,
   DynamicFieldsErrorBoundary,
@@ -116,6 +117,8 @@ describe('WorkItemSidebar Dynamic Fields', () => {
         setDetailsOpen={vi.fn()}
         moreFieldsOpen={false}
         setMoreFieldsOpen={vi.fn()}
+        preferences={DEFAULT_WORK_ITEM_DETAILS_PREFERENCES}
+        onPreferencesChange={vi.fn()}
         onWorkItemPatched={vi.fn()}
       />
     );
@@ -142,6 +145,8 @@ describe('WorkItemSidebar Dynamic Fields', () => {
         setDetailsOpen={vi.fn()}
         moreFieldsOpen={false}
         setMoreFieldsOpen={vi.fn()}
+        preferences={DEFAULT_WORK_ITEM_DETAILS_PREFERENCES}
+        onPreferencesChange={vi.fn()}
         onWorkItemPatched={vi.fn()}
       />
     );
@@ -165,6 +170,8 @@ describe('WorkItemSidebar Dynamic Fields', () => {
         setDetailsOpen={vi.fn()}
         moreFieldsOpen={false}
         setMoreFieldsOpen={vi.fn()}
+        preferences={DEFAULT_WORK_ITEM_DETAILS_PREFERENCES}
+        onPreferencesChange={vi.fn()}
         onWorkItemPatched={vi.fn()}
       />
     );
@@ -196,6 +203,8 @@ describe('WorkItemSidebar Dynamic Fields', () => {
         setDetailsOpen={vi.fn()}
         moreFieldsOpen={false}
         setMoreFieldsOpen={vi.fn()}
+        preferences={DEFAULT_WORK_ITEM_DETAILS_PREFERENCES}
+        onPreferencesChange={vi.fn()}
         onWorkItemPatched={onWorkItemPatched}
       />
     );
@@ -257,6 +266,8 @@ describe('WorkItemSidebar Dynamic Fields', () => {
         setDetailsOpen={vi.fn()}
         moreFieldsOpen={false}
         setMoreFieldsOpen={vi.fn()}
+        preferences={DEFAULT_WORK_ITEM_DETAILS_PREFERENCES}
+        onPreferencesChange={vi.fn()}
         onWorkItemPatched={onWorkItemPatched}
       />
     );
@@ -300,6 +311,8 @@ describe('WorkItemSidebar Dynamic Fields', () => {
         setDetailsOpen={vi.fn()}
         moreFieldsOpen={false}
         setMoreFieldsOpen={vi.fn()}
+        preferences={DEFAULT_WORK_ITEM_DETAILS_PREFERENCES}
+        onPreferencesChange={vi.fn()}
         onWorkItemPatched={vi.fn()}
       />
     );

@@ -3,6 +3,7 @@ import {
   expectedUpdatedAtSchema,
   updateProjectSchema as baseUpdateProjectSchema,
   workflowConfigEnvelopeSchema,
+  workflowStateRemapSchema,
 } from '@repo/types';
 import { z } from 'zod';
 
@@ -19,6 +20,8 @@ export const projectLockActionSchema = z.object({
 export const putWorkflowConfigSchema = z.object({
   expectedUpdatedAt: expectedUpdatedAtSchema,
   config: workflowConfigEnvelopeSchema,
+  /** Required when Save removes states that still have work items. */
+  stateRemaps: z.array(workflowStateRemapSchema).optional(),
 });
 
 export const forkWorkflowConfigSchema = z.object({

@@ -160,6 +160,7 @@ model users {
   reporting_lines     team_members[]    @relation("ReportingLine")
   assigned_work_items work_items[]      @relation("WorkItemAssignee")
   chart_rollup_assignments work_item_chart_rollups[] @relation("WorkItemChartRollupAssignee")
+  chart_hierarchy_rollup_assignments work_item_chart_hierarchy_rollups[] @relation("WorkItemChartHierarchyRollupAssignee")
   reported_work_items work_items[]      @relation("WorkItemReporter")
   comments            comments[]        @relation("CommentAuthor")
   attachments         attachments[]     @relation("AttachmentUploader")
@@ -238,9 +239,10 @@ model projects {
   teams                teams[]
   sprints              sprints[]
   work_items           work_items[]
-  chart_rollups        work_item_chart_rollups[]
-  burndown_rollups     sprint_burndown_rollups[]
-  saved_views          saved_views[]
+  chart_rollups           work_item_chart_rollups[]
+  chart_hierarchy_rollups work_item_chart_hierarchy_rollups[]
+  burndown_rollups        sprint_burndown_rollups[]
+  saved_views             saved_views[]
 }
 
 model project_members {
@@ -322,9 +324,10 @@ model sprints {
   project          projects                  @relation(fields: [project_id], references: [id], onDelete: Cascade)
   created_by_user  users?                    @relation("SprintCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user  users?                    @relation("SprintUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
-  work_items       work_items[]
-  chart_rollups    work_item_chart_rollups[]
-  burndown_rollups sprint_burndown_rollups[]
+  work_items              work_items[]
+  chart_rollups           work_item_chart_rollups[]
+  chart_hierarchy_rollups work_item_chart_hierarchy_rollups[]
+  burndown_rollups        sprint_burndown_rollups[]
 
   @@unique([project_id, name])
 }
@@ -374,6 +377,7 @@ model work_items {
   worklogs             work_item_worklogs[]
   activities           activities[]
   github_pull_requests github_pull_requests[]
+  chart_hierarchy_rollup work_item_chart_hierarchy_rollups?
 
   @@unique([project_id, jira_issue_key])
   @@index([record_status])
@@ -384,6 +388,7 @@ model work_items {
   @@index([project_id, status_category])
   @@index([project_id, state_id])
   @@index([created_at])
+  @@index([parent_id])
 }
 
 /// Append-only timeline of field changes, transitions, and side effects on a work item.
@@ -446,6 +451,34 @@ model work_item_chart_rollups {
   @@index([project_id, bucket_date])
   @@index([project_id, status_category])
   @@index([project_id, state_id])
+}
+
+/// One row per active work item for nested-donut charts (trigger-maintained).
+/// Inner/outer rings are assembled at read time from parent_id within scope.
+model work_item_chart_hierarchy_rollups {
+  work_item_id    String           @id @db.Uuid
+  parent_id       String?          @db.Uuid
+  project_id      String           @db.Uuid
+  sprint_id       String?          @db.Uuid
+  bucket_date     DateTime         @db.Date
+  status          WorkItemStatus
+  status_category String
+  workflow_id     String
+  state_id        String
+  type            WorkItemType
+  priority        WorkItemPriority
+  assignee_id     String?          @db.Uuid
+  item_count      Int              @default(1)
+  story_points    Int              @default(0)
+
+  work_item work_items @relation(fields: [work_item_id], references: [id], onDelete: Cascade)
+  project   projects   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  sprint    sprints?   @relation(fields: [sprint_id], references: [id], onDelete: SetNull)
+  assignee  users?     @relation("WorkItemChartHierarchyRollupAssignee", fields: [assignee_id], references: [id], onDelete: SetNull)
+
+  @@index([project_id, bucket_date])
+  @@index([project_id, parent_id])
+  @@index([project_id, sprint_id])
 }
 
 model work_item_worklogs {

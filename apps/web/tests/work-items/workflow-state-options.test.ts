@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { WorkItemStatusEnum } from '@repo/types';
+import { DEFAULT_WORKFLOW_ID, WorkItemStatusEnum } from '@repo/types';
 import { createSeededDefaultWorkflowConfig } from '@repo/types/api/v1';
 import {
   boardColumnIdForStateOption,
@@ -33,6 +33,36 @@ describe('resolveWorkItemStatePickerModel', () => {
     expect(
       model.options.find((option) => option.id === WorkItemStatusEnum.New)?.name
     ).toBe('Draft');
+  });
+
+  it('prefers the work item persisted workflow over type bindings', () => {
+    const envelope = createSeededDefaultWorkflowConfig();
+    const bound = structuredClone(envelope.workflows[0]!);
+    bound.id = 'wf-bound';
+    bound.title = 'Bound';
+    bound.typeBindings = ['Task'];
+    bound.graph.states = bound.graph.states.map((state) =>
+      state.id === WorkItemStatusEnum.New
+        ? { ...state, name: 'Bound New' }
+        : state
+    );
+    envelope.workflows.push(bound);
+
+    const model = resolveWorkItemStatePickerModel({
+      workflowConfig: envelope,
+      workItemType: 'Task',
+      status: WorkItemStatusEnum.New,
+      state: {
+        workflowId: DEFAULT_WORKFLOW_ID,
+        stateId: WorkItemStatusEnum.New,
+        category: 'todo',
+      },
+    });
+
+    expect(model.workflow?.id).toBe(DEFAULT_WORKFLOW_ID);
+    expect(
+      model.options.find((option) => option.id === WorkItemStatusEnum.New)?.name
+    ).not.toBe('Bound New');
   });
 
   it('falls back to legacy status enums without an envelope', () => {

@@ -70,6 +70,12 @@ export type sprint_burndown_rollups = Prisma.sprint_burndown_rollupsModel
  */
 export type work_item_chart_rollups = Prisma.work_item_chart_rollupsModel
 /**
+ * Model work_item_chart_hierarchy_rollups
+ * One row per active work item for nested-donut charts (trigger-maintained).
+ * Inner/outer rings are assembled at read time from parent_id within scope.
+ */
+export type work_item_chart_hierarchy_rollups = Prisma.work_item_chart_hierarchy_rollupsModel
+/**
  * Model work_item_worklogs
  * 
  */

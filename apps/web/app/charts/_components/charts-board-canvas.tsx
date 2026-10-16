@@ -412,6 +412,7 @@ function BoardCanvasBody({
               viewMode={entry?.instance.viewMode}
               pieVariant={entry?.instance.pieVariant}
               labelField={entry?.instance.labelField}
+              measure={entry?.instance.measure}
               showValueAs={entry?.instance.showValueAs}
               sortSlicesBy={entry?.instance.sortSlicesBy}
               showEmptySlices={entry?.instance.showEmptySlices}

@@ -407,6 +407,7 @@ export const ModelName = {
   activities: 'activities',
   sprint_burndown_rollups: 'sprint_burndown_rollups',
   work_item_chart_rollups: 'work_item_chart_rollups',
+  work_item_chart_hierarchy_rollups: 'work_item_chart_hierarchy_rollups',
   work_item_worklogs: 'work_item_worklogs',
   comments: 'comments',
   attachments: 'attachments',
@@ -437,7 +438,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "jira_connections" | "chat_conversations" | "chat_attachments" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "github_pull_requests" | "integrations"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "jira_connections" | "chat_conversations" | "chat_attachments" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "github_pull_requests" | "integrations"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1178,6 +1179,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.work_item_chart_rollupsCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.Work_item_chart_rollupsCountAggregateOutputType> | number
+        }
+      }
+    }
+    work_item_chart_hierarchy_rollups: {
+      payload: Prisma.$work_item_chart_hierarchy_rollupsPayload<ExtArgs>
+      fields: Prisma.work_item_chart_hierarchy_rollupsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.work_item_chart_hierarchy_rollupsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_hierarchy_rollupsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.work_item_chart_hierarchy_rollupsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_hierarchy_rollupsPayload>
+        }
+        findFirst: {
+          args: Prisma.work_item_chart_hierarchy_rollupsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_hierarchy_rollupsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.work_item_chart_hierarchy_rollupsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_hierarchy_rollupsPayload>
+        }
+        findMany: {
+          args: Prisma.work_item_chart_hierarchy_rollupsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_hierarchy_rollupsPayload>[]
+        }
+        create: {
+          args: Prisma.work_item_chart_hierarchy_rollupsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_hierarchy_rollupsPayload>
+        }
+        createMany: {
+          args: Prisma.work_item_chart_hierarchy_rollupsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.work_item_chart_hierarchy_rollupsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_hierarchy_rollupsPayload>[]
+        }
+        delete: {
+          args: Prisma.work_item_chart_hierarchy_rollupsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_hierarchy_rollupsPayload>
+        }
+        update: {
+          args: Prisma.work_item_chart_hierarchy_rollupsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_hierarchy_rollupsPayload>
+        }
+        deleteMany: {
+          args: Prisma.work_item_chart_hierarchy_rollupsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.work_item_chart_hierarchy_rollupsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.work_item_chart_hierarchy_rollupsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_hierarchy_rollupsPayload>[]
+        }
+        upsert: {
+          args: Prisma.work_item_chart_hierarchy_rollupsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_hierarchy_rollupsPayload>
+        }
+        aggregate: {
+          args: Prisma.Work_item_chart_hierarchy_rollupsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWork_item_chart_hierarchy_rollups>
+        }
+        groupBy: {
+          args: Prisma.work_item_chart_hierarchy_rollupsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Work_item_chart_hierarchy_rollupsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.work_item_chart_hierarchy_rollupsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Work_item_chart_hierarchy_rollupsCountAggregateOutputType> | number
         }
       }
     }
@@ -2519,6 +2594,26 @@ export const Work_item_chart_rollupsScalarFieldEnum = {
 export type Work_item_chart_rollupsScalarFieldEnum = (typeof Work_item_chart_rollupsScalarFieldEnum)[keyof typeof Work_item_chart_rollupsScalarFieldEnum]
 
 
+export const Work_item_chart_hierarchy_rollupsScalarFieldEnum = {
+  work_item_id: 'work_item_id',
+  parent_id: 'parent_id',
+  project_id: 'project_id',
+  sprint_id: 'sprint_id',
+  bucket_date: 'bucket_date',
+  status: 'status',
+  status_category: 'status_category',
+  workflow_id: 'workflow_id',
+  state_id: 'state_id',
+  type: 'type',
+  priority: 'priority',
+  assignee_id: 'assignee_id',
+  item_count: 'item_count',
+  story_points: 'story_points'
+} as const
+
+export type Work_item_chart_hierarchy_rollupsScalarFieldEnum = (typeof Work_item_chart_hierarchy_rollupsScalarFieldEnum)[keyof typeof Work_item_chart_hierarchy_rollupsScalarFieldEnum]
+
+
 export const Work_item_worklogsScalarFieldEnum = {
   id: 'id',
   work_item_id: 'work_item_id',
@@ -3302,6 +3397,7 @@ export type GlobalOmitConfig = {
   activities?: Prisma.activitiesOmit
   sprint_burndown_rollups?: Prisma.sprint_burndown_rollupsOmit
   work_item_chart_rollups?: Prisma.work_item_chart_rollupsOmit
+  work_item_chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsOmit
   work_item_worklogs?: Prisma.work_item_worklogsOmit
   comments?: Prisma.commentsOmit
   attachments?: Prisma.attachmentsOmit

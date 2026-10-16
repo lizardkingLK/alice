@@ -18,11 +18,31 @@ Update title, description, and fields on an existing item.
 
 On the detail page:
 
-- **Title** and **description** (rich text) in the main pane
-- **Status**, **assignee**, **reporter**, **sprint**, **due date**, and
-  **labels** in the Details sidebar (pencil to edit)
-- **Priority** and **story points** are shown in the sidebar (edit via the full
-  Edit dialog)
+- **Title** and **description** (rich text) in the main pane — a type (or state)
+  icon can sit beside the title
+- **Status** in the right sidebar (always available)
+- **Assignee**, **reporter**, **sprint**, **due date**, and **labels** in
+  **Details** (pencil to edit) when those rows are shown
+- **Priority** and **story points** in the sidebar (story points under
+  **More fields**; edit via the full Edit dialog)
+
+State and type pills are not repeated under the title — the status control and
+title icon cover that.
+
+## Customize the layout
+
+Use **Configure** at the bottom of the sidebar (or **Settings → Preferences**)
+to personalize the detail page for you on every project:
+
+| Area             | What you can change                                                                           |
+| ---------------- | --------------------------------------------------------------------------------------------- |
+| **Banner color** | Tint from **State color** or **Type color**                                                   |
+| **Title icon**   | **Type icon**, **State icon**, or **None**                                                    |
+| **Sections**     | Show/hide Details, Attachments, Development, Discussion, More fields, Subtasks, Linked issues |
+| **Details rows** | Show/hide individual Details fields (when Details is on)                                      |
+| **More fields**  | Short ID, created/updated/resolved dates, time tracking, story points                         |
+
+Choices stay in this browser only (not synced across devices).
 
 ## Edit from a dialog
 

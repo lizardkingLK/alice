@@ -495,18 +495,19 @@ work-item `activities` for project create.
 **Goal:** Managers can add states and connect transitions on the canvas (not
 Alice-only), and manage multiple workflows (Fork / Mark default / Delete /
 Rename) against existing workflow-config APIs. Designer UX includes keyboard
-shortcuts, undo, cut/paste states, live Settings→node sync, Help, and Go to
-Board.
+shortcuts, undo, copy/cut/paste states, canvas context menu, live
+Settings→node sync, Help, and Go to Board.
 
 ### Product behavior
 
-1. **Add state** — **Ctrl/Cmd+N** appends a `st-{uuid}` state (`New state`,
+1. **Add state** — **Ctrl/Cmd+Alt+N** appends a `st-{uuid}` state (`New state`,
    category `todo`) to the local draft, selects it, and opens Settings (no
-   wide Plus toolbar).
+   wide Plus toolbar). **Ctrl/Cmd+N** is avoided because browsers reserve it
+   for a new tab/window.
 2. **Connect edges** — Drag from a state’s handle to another’s (handles on all
    four sides). Chosen handles persist in `layout.edges`; otherwise the canvas
-   picks short sides (return edges use free top/bottom ports). Reverse edges
-   use the same smooth-step path with a warmer stroke. **Reconnect** an existing
+   picks short sides (return edges use free top/bottom ports). Forward edges
+   use the primary green stroke; reverse edges use a dark stroke. **Reconnect** an existing
    edge by dragging an endpoint to another handle on the same `from`/`to` pair
    (Settings on the edge are preserved).
    Rejects self-loops, duplicates, and exits from terminal states. New edges
@@ -517,27 +518,29 @@ Board.
 4. **Selection** — **Escape** clears the selected state/edge.
 5. **Undo** — **Ctrl/Cmd+Z** restores the previous draft snapshot (cap 50;
    cleared on Save / Discard / manage refresh).
-6. **Cut / paste** — **Ctrl/Cmd+X** / **V** for states only (no edges in
-   clipboard); paste creates a new state id at an offset.
-7. **Live Settings** — Name / category / flags update the canvas node without
+6. **Copy / cut / paste** — **Ctrl/Cmd+C** / **X** / **V** for states only
+   (no edges in clipboard); paste creates a new state id at an offset.
+7. **Context menu** — Right-click the canvas (or a state/edge) for the same
+   commands with shortcuts listed (shadcn `ContextMenu`).
+8. **Live Settings** — Name / category / flags update the canvas node without
    remounting.
-8. **Rename** — Inline title next to the workflow switcher (dirty → Save).
-9. **Fork / Mark default / Delete workflow** — Call existing APIs (save dirty
-   draft first). Switch to the new fork or remaining default after delete.
-   Cannot delete the only or default workflow without promoting another first.
-10. **Go to Board** — Toolbar Kanban link → `/board?project={id}`.
-11. **Workflow Help** — Help icon opens a dialog with a Keyboard shortcuts
-    section.
+9. **Rename** — Inline title next to the workflow switcher (dirty → Save).
+10. **Fork / Mark default / Delete workflow** — Call existing APIs (save dirty
+    draft first). Switch to the new fork or remaining default after delete.
+    Cannot delete the only or default workflow without promoting another first.
+11. **Go to Board** — Toolbar Kanban link → `/board?project={id}`.
+12. **Workflow Help** — Help icon opens a dialog with a Keyboard shortcuts
+    section (shared catalog with the context menu).
 
 ### As-built (Step 12)
 
-| Piece          | Location / change                                                                                 |
-| -------------- | ------------------------------------------------------------------------------------------------- |
-| Layout helpers | `addStateToDocument`, `addEdgeToDocument`, `remove*`, `canConnectWorkflowStates`, rename envelope |
-| Undo helper    | `workflow-designer.undo.ts` — envelope snapshot stack                                             |
-| Designer UI    | `nodesConnectable` + `onConnect`, manage chrome, delete in Settings, keyboard, Help, Go to Board  |
-| Client         | `forkProjectWorkflow`, `setDefaultProjectWorkflow`, `deleteProjectWorkflow`                       |
-| Docs           | User-guide workflow designer + this plan                                                          |
+| Piece          | Location / change                                                                                              |
+| -------------- | -------------------------------------------------------------------------------------------------------------- |
+| Layout helpers | `addStateToDocument`, `addEdgeToDocument`, `remove*`, `canConnectWorkflowStates`, rename envelope              |
+| Undo helper    | `workflow-designer.undo.ts` — envelope snapshot stack                                                          |
+| Designer UI    | `nodesConnectable` + `onConnect`, manage chrome, delete in Settings, keyboard, context menu, Help, Go to Board |
+| Client         | `forkProjectWorkflow`, `setDefaultProjectWorkflow`, `deleteProjectWorkflow`                                    |
+| Docs           | User-guide workflow designer + this plan                                                                       |
 
 ---
 

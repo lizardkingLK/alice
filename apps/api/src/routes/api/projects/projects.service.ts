@@ -14,13 +14,32 @@ import {
   type WorkItemTypeRemovalApplyResult,
   type WorkflowConfigEnvelope,
   type WorkflowDocument,
+  boardColumnIdForWorkflowState,
+  buildAvailableStatesByWorkflow,
+  buildWorkflowOrphanedStatesConflict,
   findWorkflowById,
+  findWorkflowState,
+  legacyStatusFromWorkItemState,
+  listRemovedWorkflowIds,
+  listRemovedWorkflowStates,
   mergeWorkflowEnvelopeIntoProjectConfig,
+  promoteWorkflowToDefault,
+  reclaimParentBindingsOntoForkedDefault,
+  removeWorkflowReclaimingBindings,
+  resolveWorkItemState,
   resolveWorkflowConfig,
+  validateWorkflowStateRemaps,
+  workItemStateToJson,
   workflowConfigEnvelopeSchema,
+  WORKFLOW_ORPHANED_STATES_CODE,
+  type WorkItemStatus,
+  type WorkflowOrphanedStateGroup,
+  type WorkflowStateCategory,
+  type WorkflowStateRemap,
 } from '@repo/types';
 import {
   NotificationType as NotificationTypeEnum,
+  Prisma,
   type ProjectStatus,
   type IntegrationStatus,
   type UserRole,
@@ -813,13 +832,55 @@ export class ProjectsService {
     actorId: string,
     projectId: string,
     envelope: WorkflowConfigEnvelope,
-    expectedUpdatedAt: string
+    expectedUpdatedAt: string,
+    stateRemaps?: readonly WorkflowStateRemap[]
   ) {
     await requireProjectManager(actorId);
     const project = await this.requireProjectRow(projectId);
+    const { config: previous } = resolveWorkflowConfig(project.workflow_config);
+    const { config: healed, reclaimedFromWorkflowId } =
+      reclaimParentBindingsOntoForkedDefault(envelope);
+
+    const removedWorkflowIds = listRemovedWorkflowIds(previous, healed);
+    if (removedWorkflowIds.length > 0) {
+      throw new WorkflowConfigError(
+        'Removing a workflow via Save is not supported. Use Delete workflow instead.'
+      );
+    }
+
+    const removedStates = listRemovedWorkflowStates(previous, healed);
+    if (removedStates.length > 0) {
+      const orphanGroups = await this.collectOrphanedStateGroups(
+        projectId,
+        removedStates
+      );
+      if (orphanGroups.length > 0) {
+        const remaps = stateRemaps ?? [];
+        const validated = validateWorkflowStateRemaps({
+          next: healed,
+          removedWithCounts: orphanGroups,
+          remaps,
+        });
+        if (!validated.ok) {
+          const conflict = buildWorkflowOrphanedStatesConflict({
+            groups: orphanGroups,
+            availableStatesByWorkflow: buildAvailableStatesByWorkflow(
+              healed,
+              orphanGroups.map((group) => group.workflowId)
+            ),
+          });
+          throw new WorkflowConfigError(conflict.message, 409, {
+            code: WORKFLOW_ORPHANED_STATES_CODE,
+            details: conflict,
+          });
+        }
+        await this.applyWorkflowStateRemaps(projectId, healed, remaps);
+      }
+    }
+
     const merged = mergeWorkflowEnvelopeIntoProjectConfig(
       project.workflow_config,
-      envelope
+      healed
     );
 
     const updated = await this.projectsRepository.update(
@@ -828,6 +889,14 @@ export class ProjectsService {
       actorId,
       expectedUpdatedAt
     );
+
+    if (reclaimedFromWorkflowId) {
+      await this.reassignWorkItemsToWorkflow(
+        projectId,
+        reclaimedFromWorkflowId,
+        healed.defaultWorkflowId
+      );
+    }
 
     return {
       config: resolveWorkflowConfig(updated.workflow_config).config,
@@ -907,10 +976,16 @@ export class ProjectsService {
       throw new WorkflowConfigError(`Workflow "${workflowId}" not found.`);
     }
 
-    const nextEnvelope = workflowConfigEnvelopeSchema.parse({
-      ...config,
-      defaultWorkflowId: workflowId,
-    });
+    const previousDefaultId = config.defaultWorkflowId;
+    const targetBefore = findWorkflowById(config, workflowId);
+    let nextEnvelope: WorkflowConfigEnvelope;
+    try {
+      nextEnvelope = promoteWorkflowToDefault(config, workflowId);
+    } catch (error) {
+      throw new WorkflowConfigError(
+        error instanceof Error ? error.message : 'Failed to mark default.'
+      );
+    }
     const merged = mergeWorkflowEnvelopeIntoProjectConfig(
       project.workflow_config,
       nextEnvelope
@@ -921,6 +996,20 @@ export class ProjectsService {
       { workflow_config: merged as ProjectWorkflowConfig },
       actorId,
       expectedUpdatedAt
+    );
+
+    const sourceWorkflowIds = new Set<string>([previousDefaultId]);
+    if (targetBefore?.forkedFromId) {
+      sourceWorkflowIds.add(targetBefore.forkedFromId);
+    }
+    await Promise.all(
+      [...sourceWorkflowIds].map((sourceId) =>
+        this.reassignWorkItemsToWorkflow(
+          projectId,
+          sourceId,
+          nextEnvelope.defaultWorkflowId
+        )
+      )
     );
 
     return {
@@ -939,26 +1028,14 @@ export class ProjectsService {
     const project = await this.requireProjectRow(projectId);
     const { config } = resolveWorkflowConfig(project.workflow_config);
 
-    if (!findWorkflowById(config, workflowId)) {
-      throw new WorkflowConfigError(`Workflow "${workflowId}" not found.`);
-    }
-    if (config.workflows.length <= 1) {
+    let nextEnvelope: WorkflowConfigEnvelope;
+    try {
+      nextEnvelope = removeWorkflowReclaimingBindings(config, workflowId);
+    } catch (error) {
       throw new WorkflowConfigError(
-        'Cannot delete the only workflow on a project.'
+        error instanceof Error ? error.message : 'Failed to delete workflow.'
       );
     }
-    if (config.defaultWorkflowId === workflowId) {
-      throw new WorkflowConfigError(
-        'Cannot delete the default workflow. Mark another workflow as default first.'
-      );
-    }
-
-    const nextEnvelope = workflowConfigEnvelopeSchema.parse({
-      ...config,
-      workflows: config.workflows.filter(
-        (workflow) => workflow.id !== workflowId
-      ),
-    });
     const merged = mergeWorkflowEnvelopeIntoProjectConfig(
       project.workflow_config,
       nextEnvelope
@@ -971,10 +1048,208 @@ export class ProjectsService {
       expectedUpdatedAt
     );
 
+    await this.reassignWorkItemsToWorkflow(
+      projectId,
+      workflowId,
+      config.defaultWorkflowId
+    );
+
     return {
       config: resolveWorkflowConfig(updated.workflow_config).config,
       updatedAt: updated.updated_at,
     };
+  }
+
+  private async collectOrphanedStateGroups(
+    projectId: string,
+    removedStates: ReturnType<typeof listRemovedWorkflowStates>
+  ): Promise<WorkflowOrphanedStateGroup[]> {
+    if (removedStates.length === 0) {
+      return [];
+    }
+
+    const counted = await Promise.all(
+      removedStates.map(async (removed) => {
+        const count = await prisma.work_items.count({
+          where: {
+            project_id: projectId,
+            state_workflow_id: removed.workflowId,
+            state_id: removed.stateId,
+          },
+        });
+        if (count <= 0) {
+          return null;
+        }
+        return {
+          ...removed,
+          affectedCount: count,
+        } satisfies WorkflowOrphanedStateGroup;
+      })
+    );
+    return counted.filter(
+      (group): group is WorkflowOrphanedStateGroup => group !== null
+    );
+  }
+
+  private async applyWorkflowStateRemaps(
+    projectId: string,
+    envelope: WorkflowConfigEnvelope,
+    remaps: readonly WorkflowStateRemap[]
+  ): Promise<void> {
+    const updatedAt = new Date().toISOString();
+    await Promise.all(
+      remaps.map(async (remap) => {
+        const workflow = findWorkflowById(envelope, remap.workflowId);
+        const target = workflow
+          ? findWorkflowState(workflow, remap.toStateId)
+          : null;
+        if (!workflow || !target) {
+          return;
+        }
+
+        const items = await this.findWorkItemsForWorkflowPlacement(projectId, {
+          state_workflow_id: remap.workflowId,
+          state_id: remap.fromStateId,
+        });
+        const status = legacyStatusFromWorkItemState({
+          workflowId: workflow.id,
+          stateId: target.id,
+          category: target.category,
+        });
+        const boardColumnId = boardColumnIdForWorkflowState(target);
+
+        await Promise.all(
+          items.map((item) =>
+            this.persistWorkItemWorkflowPlacement({
+              item,
+              lookupWorkflowId: remap.workflowId,
+              workflowId: workflow.id,
+              stateId: target.id,
+              category: target.category,
+              updatedAt,
+              status,
+              boardColumnId,
+            })
+          )
+        );
+      })
+    );
+  }
+
+  /**
+   * Point work items living on `fromWorkflowId` at `toWorkflowId` so Mark
+   * default / delete do not leave cards stuck on a demoted or removed graph.
+   */
+  private async reassignWorkItemsToWorkflow(
+    projectId: string,
+    fromWorkflowId: string,
+    toWorkflowId: string
+  ): Promise<void> {
+    if (fromWorkflowId === toWorkflowId) {
+      return;
+    }
+
+    const items = await this.findWorkItemsForWorkflowPlacement(projectId, {
+      state_workflow_id: fromWorkflowId,
+    });
+    if (items.length === 0) {
+      return;
+    }
+
+    const updatedAt = new Date().toISOString();
+    await Promise.all(
+      items.map((item) =>
+        this.persistWorkItemWorkflowPlacement({
+          item,
+          lookupWorkflowId: fromWorkflowId,
+          workflowId: toWorkflowId,
+          updatedAt,
+        })
+      )
+    );
+  }
+
+  private findWorkItemsForWorkflowPlacement(
+    projectId: string,
+    where: {
+      readonly state_workflow_id: string;
+      readonly state_id?: string;
+    }
+  ): Promise<
+    ReadonlyArray<{
+      id: string;
+      state: unknown;
+      status: WorkItemStatus;
+      board_column_id: string | null;
+    }>
+  > {
+    return prisma.work_items.findMany({
+      where: {
+        project_id: projectId,
+        state_workflow_id: where.state_workflow_id,
+        ...(where.state_id ? { state_id: where.state_id } : {}),
+      },
+      select: {
+        id: true,
+        state: true,
+        status: true,
+        board_column_id: true,
+      },
+    });
+  }
+
+  /**
+   * Dual-write `state` (+ optional status / board column) for a placement
+   * change. Omit `stateId` / `category` to keep the item’s current state on
+   * a new workflow id (Mark default / delete reclaim).
+   */
+  private persistWorkItemWorkflowPlacement(params: {
+    readonly item: {
+      readonly id: string;
+      readonly state: unknown;
+      readonly status: WorkItemStatus;
+      readonly board_column_id: string | null;
+    };
+    readonly lookupWorkflowId: string;
+    readonly workflowId: string;
+    readonly stateId?: string;
+    readonly category?: WorkflowStateCategory;
+    readonly updatedAt: string;
+    readonly status?: WorkItemStatus;
+    readonly boardColumnId?: string | null;
+  }): Promise<unknown> {
+    const previous = resolveWorkItemState({
+      state: params.item.state,
+      status: params.item.status,
+      boardColumnId: params.item.board_column_id,
+      workflowId: params.lookupWorkflowId,
+    });
+    const stateId = params.stateId ?? previous.stateId;
+    const category = params.category ?? previous.category;
+    const previousHistory = previous.historyByWorkflow ?? {};
+    const nextState = workItemStateToJson({
+      workflowId: params.workflowId,
+      stateId,
+      category,
+      historyByWorkflow: {
+        ...previousHistory,
+        [params.workflowId]: {
+          stateId,
+          updatedAt: params.updatedAt,
+        },
+      },
+    });
+
+    return prisma.work_items.update({
+      where: { id: params.item.id },
+      data: {
+        state: nextState as Prisma.InputJsonValue,
+        ...(params.status !== undefined ? { status: params.status } : {}),
+        ...(params.boardColumnId !== undefined
+          ? { board_column_id: params.boardColumnId }
+          : {}),
+      },
+    });
   }
 
   private async requireProjectRow(projectId: string): Promise<ProjectRow> {

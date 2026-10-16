@@ -11,6 +11,7 @@ import {
 } from '@/app/charts/_helpers/charts-board-layout';
 import {
   resolveFocusedSliceKey,
+  updateChartWidgetDisplaySettings,
   updateChartWidgetFilters,
   updateChartWidgetLabelField,
   updateChartWidgetPieVariant,
@@ -133,6 +134,13 @@ export function duplicateChartWidget(
     nextInstances = updateChartWidgetLabelField(
       copiedId,
       source.labelField,
+      nextInstances
+    );
+  }
+  if (source.measure && source.measure !== 'item_count') {
+    nextInstances = updateChartWidgetDisplaySettings(
+      copiedId,
+      { measure: source.measure },
       nextInstances
     );
   }

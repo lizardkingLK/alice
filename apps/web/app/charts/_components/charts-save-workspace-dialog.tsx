@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import {
@@ -24,6 +24,9 @@ import {
 } from '@/app/charts/_components/charts-sample.data';
 import type { ChartWorkspaceScope } from '@/app/charts/_components/charts.types';
 import { SearchableSelect } from '@/components/searchable-select';
+
+const EMPTY_PROJECTS: readonly ChartsProjectOption[] = [];
+const EMPTY_SPRINTS: readonly ChartsSprintOption[] = [];
 
 export type ChartsSaveWorkspacePayload = {
   readonly title: string;
@@ -58,8 +61,8 @@ export function ChartsSaveWorkspaceDialog({
   defaultDescription = null,
   mode = 'save',
   aliceContext,
-  projects = [],
-  sprints = [],
+  projects = EMPTY_PROJECTS,
+  sprints = EMPTY_SPRINTS,
   onSave,
 }: Readonly<ChartsSaveWorkspaceDialogProps>) {
   const [title, setTitle] = useState(defaultTitle);
@@ -69,6 +72,7 @@ export function ChartsSaveWorkspaceDialog({
   const [projectId, setProjectId] = useState('');
   const [sprintId, setSprintId] = useState('');
   const [scopeError, setScopeError] = useState<string | null>(null);
+  const wasOpenRef = useRef(false);
   const { suggesting, suggestError, suggest, resetSuggestError } =
     useChartsAliceDescriptionSuggest({
       scope: 'workspace',
@@ -85,8 +89,12 @@ export function ChartsSaveWorkspaceDialog({
     return isCreate ? 'Create' : 'Save';
   })();
 
+  // Seed once when the dialog opens. Do not re-seed on parent re-renders —
+  // default `projects = []` used to be a new array every render and wiped edits.
   useEffect(() => {
-    if (!open) {
+    const justOpened = open && !wasOpenRef.current;
+    wasOpenRef.current = open;
+    if (!justOpened) {
       return;
     }
     setTitle(defaultTitle);
@@ -287,7 +295,7 @@ export function ChartsSaveWorkspaceDialog({
             </div>
           ) : null}
         </div>
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-2">
           <Button
             type="button"
             variant="outline"

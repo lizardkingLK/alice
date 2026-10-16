@@ -18,6 +18,7 @@ function renderSettings(
       <WorkflowDesignerSettings
         selection={null}
         workflow={workflow}
+        isDefaultWorkflow
         canEdit
         teams={[]}
         members={[]}
@@ -41,6 +42,9 @@ describe('WorkflowDesignerSettings', () => {
     expect(screen.getByTestId('workflow-settings-empty')).toBeInTheDocument();
     expect(screen.getByText(/active workflow/i)).toBeInTheDocument();
     expect(
+      screen.getByText(/all unbound types \(default\)/i)
+    ).toBeInTheDocument();
+    expect(
       screen.queryByText(/select a state or transition/i)
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/nothing selected/i)).not.toBeInTheDocument();
@@ -56,6 +60,7 @@ describe('WorkflowDesignerSettings', () => {
       <WorkflowDesignerSettings
         selection={null}
         workflow={createSeededDefaultWorkflowConfig().workflows[0]!}
+        isDefaultWorkflow
         canEdit
         teams={[]}
         members={[]}

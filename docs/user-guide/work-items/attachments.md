@@ -10,8 +10,10 @@ Upload and download files on a work item.
 
 1. Open a work item (not **Done** — uploads are disabled on completed items).
 2. Select **Attach** in the header or attachments section.
-3. Choose a file from your device.
-4. Wait for upload to finish — the file appears in the attachments list.
+3. Drag and drop files, browse from your device, or paste with **Ctrl+V** /
+   **Cmd+V** while the dialog is open.
+4. Select **Upload**, then wait for upload to finish — the file appears in the
+   attachments list.
 
 ---
 

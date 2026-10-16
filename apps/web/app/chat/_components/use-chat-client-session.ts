@@ -14,7 +14,7 @@ import {
   bootstrapLatestChat,
   loadConversationHistory,
 } from './chat-client-bootstrap';
-import { listChatConversationsAction } from '../_services/chat.reads.actions.server';
+import { listChatConversationsClient } from '../_services/chat.reads.client';
 
 export async function hydrateActiveConversationIfNeeded(params: {
   readonly conversationId: string;
@@ -189,7 +189,7 @@ export function useChatProcessingPoll(params: {
 
     const intervalId = setInterval(async () => {
       try {
-        const latestConversations = await listChatConversationsAction();
+        const latestConversations = await listChatConversationsClient();
         setConversations(latestConversations);
 
         const currentInLatest = latestConversations.find(

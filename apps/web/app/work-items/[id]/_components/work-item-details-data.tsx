@@ -24,6 +24,7 @@ import { getDbUser } from '@/lib/auth';
 import { zeroCountsById } from '@/lib/db/query';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog';
+import { readWorkItemDetailsPreferencesBootstrap } from '@/app/work-items/_helpers/work-item-details-preferences-cookie.server';
 import type { WorkItemSprintOption } from '@/app/work-items/_helpers/work-item-sprint';
 
 type WorkItemDetailsDataProps = {
@@ -39,12 +40,14 @@ export async function WorkItemDetailsData({
     initialAttachments,
     initialActivities,
     dbUser,
+    detailsPreferencesBootstrap,
   ] = await Promise.all([
     getWorkItem(workItemId),
     getWorkItemDiscussion(workItemId),
     getWorkItemAttachments(workItemId),
     getWorkItemActivities(workItemId),
     getDbUser(),
+    readWorkItemDetailsPreferencesBootstrap(),
   ]);
 
   if (!workItem) {
@@ -176,6 +179,7 @@ export async function WorkItemDetailsData({
       projectMembers={memberOptions}
       projectSprints={sprintOptions}
       discussionWorkItems={discussionWorkItems}
+      initialDetailsPreferences={detailsPreferencesBootstrap.preferences}
     />
   );
 }

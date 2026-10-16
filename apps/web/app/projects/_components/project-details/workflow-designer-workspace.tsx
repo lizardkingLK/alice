@@ -5,16 +5,24 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   findWorkflowById,
+  isWorkflowOrphanedStatesConflict,
   resolveWorkflowConfig,
   upsertResolutionPreset,
+  WORKFLOW_ORPHANED_STATES_CODE,
   type ChatWorkflowViewContext,
   type WorkflowConfigEnvelope,
   type WorkflowDocument,
   type WorkflowEdge,
+  type WorkflowOrphanedStatesConflict,
   type WorkflowResolutionPreset,
   type WorkflowStateNode,
+  type WorkflowStateRemap,
 } from '@repo/types/api/v1';
 import { Button } from '@repo/ui/components/ui/button';
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+} from '@repo/ui/components/ui/context-menu';
 import {
   Dialog,
   DialogContent,
@@ -60,6 +68,7 @@ import {
 } from '@repo/ui/lib/icons';
 import { FormAlertMessage } from '@/components/form-alert-message';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { ApiError } from '@/lib/api/api-fetch.helper';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 import {
@@ -68,12 +77,14 @@ import {
   putProjectWorkflowConfig,
   setDefaultProjectWorkflow,
 } from '@/app/projects/_services/projects.workflow-config.client';
+import { WorkflowOrphanedStatesDialog } from '@/app/projects/_components/project-details/workflow-orphaned-states-dialog';
 import { WorkflowStateFlowNode } from '@/app/projects/_components/project-details/workflow-state-flow-node';
 import { WorkflowTransitionEdge } from '@/app/projects/_components/project-details/workflow-transition-edge';
 import {
   WorkflowDesignerSettings,
   type WorkflowDesignerSelection,
 } from '@/app/projects/_components/project-details/workflow-designer-settings';
+import { WorkflowDesignerContextMenuContent } from '@/app/projects/_components/project-details/workflow-designer-context-menu';
 import { WorkflowDesignerHelp } from '@/app/projects/_components/project-details/workflow-designer-help';
 import type { TransitionRuleTeamOption } from '@/app/projects/_components/project-details/transition-rule-permissions';
 import type { MemberCheckboxOption } from '@/components/member-checkbox-list';
@@ -85,7 +96,7 @@ import {
   addStateToDocument,
   applyNodePositionsToDocument,
   canConnectWorkflowStates,
-  captureStateClipboard,
+  captureSelectedStateClipboard,
   cloneWorkflowEnvelope,
   collectLayoutEdgeHandles,
   envelopesEqualForDesigner,
@@ -283,6 +294,12 @@ function WorkflowDesignerCanvas({
         onSelectionChange({ kind: 'state', stateId: node.id });
       }}
       onEdgeClick={(_event, edge) => {
+        onSelectionChange({ kind: 'edge', edgeId: edge.id });
+      }}
+      onNodeContextMenu={(_event, node) => {
+        onSelectionChange({ kind: 'state', stateId: node.id });
+      }}
+      onEdgeContextMenu={(_event, edge) => {
         onSelectionChange({ kind: 'edge', edgeId: edge.id });
       }}
       onNodeDoubleClick={(event, node) => {
@@ -657,24 +674,34 @@ export function WorkflowDesignerWorkspace({
     [pushUndo, updateActiveWorkflow]
   );
 
+  const handleCopyState = useCallback(() => {
+    if (!canEdit) {
+      return;
+    }
+    const selected = captureSelectedStateClipboard(
+      activeWorkflowRef.current,
+      selectionRef.current
+    );
+    if (!selected) {
+      return;
+    }
+    setStateClipboard(selected.clipboard);
+  }, [canEdit]);
+
   const handleCutState = useCallback(() => {
     if (!canEdit) {
       return;
     }
-    const currentSelection = selectionRef.current;
-    if (currentSelection?.kind !== 'state') {
-      return;
-    }
-    const clipboard = captureStateClipboard(
+    const selected = captureSelectedStateClipboard(
       activeWorkflowRef.current,
-      currentSelection.stateId
+      selectionRef.current
     );
-    if (!clipboard) {
+    if (!selected) {
       return;
     }
     const preview = removeStateFromDocument(
       activeWorkflowRef.current,
-      currentSelection.stateId
+      selected.stateId
     );
     if (!preview.ok) {
       toast.error(preview.reason);
@@ -682,7 +709,7 @@ export function WorkflowDesignerWorkspace({
     }
     pushUndo();
     updateActiveWorkflow(() => preview.document);
-    setStateClipboard(clipboard);
+    setStateClipboard(selected.clipboard);
     setSelection(null);
     setCanvasEpoch((epoch) => epoch + 1);
   }, [canEdit, pushUndo, updateActiveWorkflow]);
@@ -770,7 +797,28 @@ export function WorkflowDesignerWorkspace({
     [resetUndo, router]
   );
 
-  const performSave = async (): Promise<{
+  const [orphanConflict, setOrphanConflict] =
+    useState<WorkflowOrphanedStatesConflict | null>(null);
+  const [orphanDialogOpen, setOrphanDialogOpen] = useState(false);
+
+  const readOrphanConflict = (
+    error: unknown
+  ): WorkflowOrphanedStatesConflict | null => {
+    if (!(error instanceof ApiError)) {
+      return null;
+    }
+    if (error.code !== WORKFLOW_ORPHANED_STATES_CODE) {
+      return null;
+    }
+    if (isWorkflowOrphanedStatesConflict(error.details)) {
+      return error.details;
+    }
+    return null;
+  };
+
+  const performSave = async (
+    stateRemaps?: readonly WorkflowStateRemap[]
+  ): Promise<{
     readonly ok: boolean;
     readonly updatedAt: string;
   }> => {
@@ -781,7 +829,8 @@ export function WorkflowDesignerWorkspace({
     setMessage(null);
     try {
       const result = await runLockedMutationOrThrow({
-        mutate: () => putProjectWorkflowConfig(project.id, draft, updatedAt),
+        mutate: () =>
+          putProjectWorkflowConfig(project.id, draft, updatedAt, stateRemaps),
         handleMutationError,
         entityType: 'project',
         entityId: project.id,
@@ -792,6 +841,8 @@ export function WorkflowDesignerWorkspace({
       if (!result) {
         return { ok: false, updatedAt };
       }
+      setOrphanDialogOpen(false);
+      setOrphanConflict(null);
       commitSavedEnvelope({
         envelope: result.config,
         nextUpdatedAt: result.updatedAt,
@@ -800,6 +851,14 @@ export function WorkflowDesignerWorkspace({
       });
       return { ok: true, updatedAt: result.updatedAt };
     } catch (error) {
+      const conflict = readOrphanConflict(error);
+      if (conflict) {
+        setOrphanConflict(conflict);
+        setOrphanDialogOpen(true);
+        setMessage(conflict.message);
+        setMessageIsError(true);
+        return { ok: false, updatedAt };
+      }
       const detail =
         error instanceof Error ? error.message : 'Could not save the workflow.';
       setMessage(detail);
@@ -813,6 +872,23 @@ export function WorkflowDesignerWorkspace({
 
   const handleSaveClick = () => {
     performSave().catch((error: unknown) => {
+      const detail =
+        error instanceof Error ? error.message : 'Could not save the workflow.';
+      setMessage(detail);
+      setMessageIsError(true);
+      toast.error(detail);
+    });
+  };
+
+  const handleOrphanDiscard = () => {
+    setOrphanDialogOpen(false);
+    setOrphanConflict(null);
+    discardChanges();
+    toast.message('Workflow changes discarded.');
+  };
+
+  const handleOrphanConfirmRemap = (remaps: readonly WorkflowStateRemap[]) => {
+    performSave(remaps).catch((error: unknown) => {
       const detail =
         error instanceof Error ? error.message : 'Could not save the workflow.';
       setMessage(detail);
@@ -1004,22 +1080,38 @@ export function WorkflowDesignerWorkspace({
     handleDeleteEdge(current.edgeId);
   }, [handleDeleteEdge, handleDeleteState]);
 
+  const clearSelection = useCallback(() => {
+    setSelection(null);
+  }, []);
+
+  const contextMenuHandlers = useMemo(
+    () => ({
+      addState: handleAddState,
+      copyState: handleCopyState,
+      cutState: handleCutState,
+      pasteState: handlePasteState,
+      undo: handleUndo,
+      deleteSelection,
+      clearSelection,
+    }),
+    [
+      clearSelection,
+      deleteSelection,
+      handleAddState,
+      handleCopyState,
+      handleCutState,
+      handlePasteState,
+      handleUndo,
+    ]
+  );
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       handleWorkflowDesignerKeydown(event, {
         canEdit,
         manageBusy,
         hasSelection: Boolean(selectionRef.current),
-        handlers: {
-          clearSelection: () => {
-            setSelection(null);
-          },
-          undo: handleUndo,
-          addState: handleAddState,
-          cutState: handleCutState,
-          pasteState: handlePasteState,
-          deleteSelection,
-        },
+        handlers: contextMenuHandlers,
       });
     };
 
@@ -1027,15 +1119,7 @@ export function WorkflowDesignerWorkspace({
     return () => {
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [
-    canEdit,
-    deleteSelection,
-    handleAddState,
-    handleCutState,
-    handlePasteState,
-    handleUndo,
-    manageBusy,
-  ]);
+  }, [canEdit, contextMenuHandlers, manageBusy]);
 
   const boardHref = `/board?project=${project.id}`;
 
@@ -1226,24 +1310,37 @@ export function WorkflowDesignerWorkspace({
       </div>
 
       <div className="flex h-[min(560px,calc(100dvh-16rem))] min-h-80 gap-4 pb-2">
-        <div className="min-h-0 min-w-0 flex-1">
-          <ReactFlowProvider>
-            <WorkflowDesignerCanvas
-              key={`${activeWorkflow.id}:${canvasEpoch}`}
-              activeWorkflow={activeWorkflow}
-              canEdit={canEdit}
-              selection={selection}
-              onNodesSettled={handleNodesSettled}
-              onSelectionChange={setSelection}
-              onOpenSettings={handleOpenSettings}
-              onConnect={handleConnect}
-              onReconnect={handleReconnect}
-            />
-          </ReactFlowProvider>
-        </div>
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <div className="min-h-0 min-w-0 flex-1">
+              <ReactFlowProvider>
+                <WorkflowDesignerCanvas
+                  key={`${activeWorkflow.id}:${canvasEpoch}`}
+                  activeWorkflow={activeWorkflow}
+                  canEdit={canEdit}
+                  selection={selection}
+                  onNodesSettled={handleNodesSettled}
+                  onSelectionChange={setSelection}
+                  onOpenSettings={handleOpenSettings}
+                  onConnect={handleConnect}
+                  onReconnect={handleReconnect}
+                />
+              </ReactFlowProvider>
+            </div>
+          </ContextMenuTrigger>
+          <WorkflowDesignerContextMenuContent
+            canEdit={canEdit}
+            manageBusy={manageBusy}
+            hasSelection={Boolean(selection)}
+            hasStateSelection={selection?.kind === 'state'}
+            hasClipboard={Boolean(stateClipboard)}
+            handlers={contextMenuHandlers}
+          />
+        </ContextMenu>
         <WorkflowDesignerSettings
           selection={selection}
           workflow={activeWorkflow}
+          isDefaultWorkflow={isDefaultWorkflow}
           canEdit={canEdit}
           teams={teams}
           members={members}
@@ -1259,6 +1356,20 @@ export function WorkflowDesignerWorkspace({
       </div>
 
       <WorkflowDesignerHelp open={helpOpen} onOpenChange={setHelpOpen} />
+
+      <WorkflowOrphanedStatesDialog
+        conflict={orphanConflict}
+        open={orphanDialogOpen}
+        isSaving={isSaving}
+        onOpenChange={(open) => {
+          setOrphanDialogOpen(open);
+          if (!open) {
+            setOrphanConflict(null);
+          }
+        }}
+        onDiscard={handleOrphanDiscard}
+        onConfirmRemap={handleOrphanConfirmRemap}
+      />
 
       <Dialog open={deleteWorkflowOpen} onOpenChange={setDeleteWorkflowOpen}>
         <DialogContent data-testid="workflow-delete-confirm">

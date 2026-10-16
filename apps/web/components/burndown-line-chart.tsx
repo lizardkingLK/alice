@@ -161,6 +161,8 @@ export function BurndownLineChart({
                 strokeDasharray="4 4"
                 strokeWidth={2}
                 dot={false}
+                // Avoid Recharts 3.8 resize animation clipping the line end.
+                isAnimationActive={false}
               />
               <Line
                 type="monotone"
@@ -169,6 +171,7 @@ export function BurndownLineChart({
                 strokeWidth={2}
                 dot={{ r: 3 }}
                 activeDot={{ r: 5 }}
+                isAnimationActive={false}
               />
             </>
           ) : null}

@@ -2,7 +2,14 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type FormEvent,
+  type SetStateAction,
+} from 'react';
 import {
   getAllowedChildType,
   type WorkItemType,
@@ -11,6 +18,7 @@ import {
   type WorkItemActivity,
   type WorkItemWorkLog,
 } from '@repo/types';
+import type { JSONContent } from '@tiptap/react';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
 import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form/work-item-form-dialog';
@@ -69,11 +77,21 @@ import {
   type SubtaskSortDirection,
   type SubtaskSortField,
 } from '@/app/work-items/_helpers/work-item-sort-subtasks';
-import { buildActivityValueLookups } from '@/app/work-items/_helpers/work-item-activity-format';
+import {
+  buildActivityValueLookups,
+  type ActivityValueLookups,
+} from '@/app/work-items/_helpers/work-item-activity-format';
 import {
   readMoreFieldsOpen,
   writeMoreFieldsOpen,
 } from '@/app/work-items/_helpers/work-item-sidebar-storage';
+import {
+  DEFAULT_WORK_ITEM_DETAILS_PREFERENCES,
+  normalizeWorkItemDetailsPreferences,
+  readWorkItemDetailsPreferencesLocal,
+  writeWorkItemDetailsPreferences,
+  type WorkItemDetailsPreferences,
+} from '@/app/work-items/_helpers/work-item-details-preferences';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { CommentItem } from '@/app/comments/_services/comments.mutations.client';
 import type { CommentWorkItemOption } from '@/app/comments/_services/comments.mutations.shared';
@@ -159,18 +177,22 @@ function WorkItemArchivedBanner({
 
 function WorkItemDetailsActionStrip({
   readOnly,
+  canAttach,
   canCreateSubtask,
+  canLinkIssue,
   onAttach,
   onCreateSubtask,
 }: Readonly<{
   readonly readOnly: boolean;
+  readonly canAttach: boolean;
   readonly canCreateSubtask: boolean;
+  readonly canLinkIssue: boolean;
   readonly onAttach: () => void;
   readonly onCreateSubtask: () => void;
 }>) {
   return (
     <div className="flex flex-wrap items-center gap-1">
-      {readOnly ? null : (
+      {readOnly || !canAttach ? null : (
         <Button
           variant="ghost"
           size="sm"
@@ -192,7 +214,7 @@ function WorkItemDetailsActionStrip({
           Create subtask
         </Button>
       ) : null}
-      {readOnly ? null : (
+      {readOnly || !canLinkIssue ? null : (
         <Button variant="ghost" size="sm" className="cursor-pointer">
           <Link2 data-icon="inline-start" />
           Link issue
@@ -359,6 +381,200 @@ function WorkItemSubtasksSection({
   );
 }
 
+function WorkItemLinkedIssuesPlaceholder({
+  readOnly,
+}: Readonly<{ readonly readOnly: boolean }>) {
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold">Linked issues</h2>
+        {readOnly ? null : (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="cursor-pointer"
+            aria-label="Link issue"
+          >
+            <Plus />
+          </Button>
+        )}
+      </div>
+      <p className="text-muted-foreground text-sm">is blocked by</p>
+      <div
+        className={cn(
+          'text-muted-foreground flex h-16 items-center justify-center rounded-lg border border-dashed text-sm'
+        )}
+      >
+        No linked issues yet
+      </div>
+    </section>
+  );
+}
+
+/* eslint-disable no-unused-vars -- callback prop signatures */
+type WorkItemDetailsMainColumnProps = {
+  readonly workItem: DbWorkItem;
+  readonly isRecordReadOnly: boolean;
+  readonly isEditing: boolean;
+  readonly setEditing: Dispatch<SetStateAction<boolean>>;
+  readonly descriptionContent: JSONContent | null;
+  readonly onDescriptionSave: (content: JSONContent) => Promise<void>;
+  readonly sections: WorkItemDetailsPreferences['sections'];
+  readonly initialAttachments: readonly AttachmentWithUploader[];
+  readonly attachmentUploadOpen: boolean;
+  readonly setAttachmentUploadOpen: Dispatch<SetStateAction<boolean>>;
+  readonly showSubtasks: boolean;
+  readonly sortedChildWorkItems: readonly DbWorkItem[];
+  readonly childCommentCounts: Readonly<Record<string, number>>;
+  readonly childDonePercent: number;
+  readonly canCreateSubtask: boolean;
+  readonly subtaskSortField: SubtaskSortField;
+  readonly subtaskSortDirection: SubtaskSortDirection;
+  readonly setSubtaskSortField: Dispatch<SetStateAction<SubtaskSortField>>;
+  readonly setSubtaskSortDirection: Dispatch<
+    SetStateAction<SubtaskSortDirection>
+  >;
+  readonly onLinkExistingSubtask: () => void;
+  readonly onUnlinkSubtask: (child: SubtaskUnlinkTarget) => void;
+  readonly isUserOnline: (userId: string) => boolean;
+  readonly activityTab: WorkItemActivityTab;
+  readonly setActivityTab: Dispatch<SetStateAction<WorkItemActivityTab>>;
+  readonly initialComments: CommentItem[];
+  readonly initialActivities: WorkItemActivity[];
+  readonly activityLookups: ActivityValueLookups;
+  readonly discussionWorkItems: CommentWorkItemOption[];
+  readonly currentUserId?: string;
+  readonly workLogs: WorkItemWorkLog[];
+  readonly onAddWorkLogClick?: () => void;
+};
+/* eslint-enable no-unused-vars */
+
+function WorkItemDetailsMainColumn({
+  workItem,
+  isRecordReadOnly,
+  isEditing,
+  setEditing,
+  descriptionContent,
+  onDescriptionSave,
+  sections,
+  initialAttachments,
+  attachmentUploadOpen,
+  setAttachmentUploadOpen,
+  showSubtasks,
+  sortedChildWorkItems,
+  childCommentCounts,
+  childDonePercent,
+  canCreateSubtask,
+  subtaskSortField,
+  subtaskSortDirection,
+  setSubtaskSortField,
+  setSubtaskSortDirection,
+  onLinkExistingSubtask,
+  onUnlinkSubtask,
+  isUserOnline,
+  activityTab,
+  setActivityTab,
+  initialComments,
+  initialActivities,
+  activityLookups,
+  discussionWorkItems,
+  currentUserId,
+  workLogs,
+  onAddWorkLogClick,
+}: Readonly<WorkItemDetailsMainColumnProps>) {
+  return (
+    <div className="space-y-8 lg:col-span-3">
+      <section className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Description</h2>
+          {isRecordReadOnly ? null : (
+            <Button
+              variant="secondary"
+              size="icon"
+              className="cursor-pointer"
+              aria-label="Edit description"
+              onClick={() => setEditing((prev) => !prev)}
+            >
+              <PencilIcon />
+            </Button>
+          )}
+        </div>
+        {isEditing && !isRecordReadOnly ? (
+          <WorkItemDescriptionEditor
+            id={workItem.id}
+            initialContent={descriptionContent}
+            onSave={onDescriptionSave}
+            onCancel={() => setEditing(false)}
+          />
+        ) : (
+          <div className="min-w-0 overflow-x-auto">
+            <DescriptionView description={workItem.description} />
+          </div>
+        )}
+      </section>
+
+      {sections.attachments ? (
+        <>
+          <Separator />
+          <AttachmentsSection
+            workItemId={workItem.id}
+            initialAttachments={[...initialAttachments]}
+            uploadOpen={attachmentUploadOpen}
+            onUploadOpenChange={setAttachmentUploadOpen}
+            readOnly={isRecordReadOnly}
+          />
+        </>
+      ) : null}
+
+      {showSubtasks ? (
+        <>
+          <Separator />
+          <WorkItemSubtasksSection
+            items={sortedChildWorkItems}
+            childCommentCounts={childCommentCounts}
+            childDonePercent={childDonePercent}
+            canCreateSubtask={canCreateSubtask}
+            readOnly={isRecordReadOnly}
+            sortField={subtaskSortField}
+            sortDirection={subtaskSortDirection}
+            onSortFieldChange={setSubtaskSortField}
+            onSortDirectionChange={setSubtaskSortDirection}
+            onLinkExisting={onLinkExistingSubtask}
+            onUnlink={onUnlinkSubtask}
+            isUserOnline={isUserOnline}
+          />
+        </>
+      ) : null}
+
+      {sections.linkedIssues ? (
+        <>
+          <Separator />
+          <WorkItemLinkedIssuesPlaceholder readOnly={isRecordReadOnly} />
+        </>
+      ) : null}
+
+      {sections.discussion ? (
+        <>
+          <Separator />
+          <WorkItemActivityTabs
+            activeTab={activityTab}
+            onActiveTabChange={setActivityTab}
+            initialComments={initialComments}
+            initialActivities={initialActivities}
+            activityLookups={activityLookups}
+            workItem={workItem}
+            discussionWorkItems={discussionWorkItems}
+            currentUserId={currentUserId}
+            workLogs={workLogs}
+            onAddWorkLogClick={onAddWorkLogClick}
+            readOnly={isRecordReadOnly}
+          />
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 export default function WorkItemDetails({
   workItemDetails,
   childWorkItems = [],
@@ -375,6 +591,7 @@ export default function WorkItemDetails({
   projectMembers = [],
   projectSprints = [],
   discussionWorkItems: discussionWorkItemsProp = [],
+  initialDetailsPreferences = DEFAULT_WORK_ITEM_DETAILS_PREFERENCES,
 }: Readonly<{
   workItemDetails: DbWorkItem;
   childWorkItems?: DbWorkItem[];
@@ -395,11 +612,16 @@ export default function WorkItemDetails({
   projectMembers?: readonly WorkItemPatchMemberOption[];
   projectSprints?: readonly WorkItemSprintOption[];
   discussionWorkItems?: CommentWorkItemOption[];
+  initialDetailsPreferences?: WorkItemDetailsPreferences;
 }>) {
   const router = useRouter();
   const { isUserOnline } = useRealtime();
   const { handleMutationError } = useOptimisticLock();
   const [workItem, setWorkItem] = useState<DbWorkItem>(workItemDetails);
+  const [detailsPreferences, setDetailsPreferences] =
+    useState<WorkItemDetailsPreferences>(() =>
+      normalizeWorkItemDetailsPreferences(initialDetailsPreferences)
+    );
   const lifecycle = useWorkItemLifecycleActions({
     currentUserId,
     onError: (message) => {
@@ -447,11 +669,21 @@ export default function WorkItemDetails({
 
   useEffect(() => {
     setMoreFieldsOpen(readMoreFieldsOpen(currentUserId));
+    const stored = readWorkItemDetailsPreferencesLocal(currentUserId);
+    if (stored) {
+      setDetailsPreferences(stored);
+    }
   }, [currentUserId]);
 
   const handleMoreFieldsOpenChange = (open: boolean) => {
     setMoreFieldsOpen(open);
     writeMoreFieldsOpen(currentUserId, open);
+  };
+
+  const handleDetailsPreferencesChange = (next: WorkItemDetailsPreferences) => {
+    const normalized = normalizeWorkItemDetailsPreferences(next);
+    setDetailsPreferences(normalized);
+    writeWorkItemDetailsPreferences(currentUserId, normalized);
   };
 
   const allowedChildType = getAllowedChildType(workItem.type as WorkItemType);
@@ -515,9 +747,10 @@ export default function WorkItemDetails({
     ]
   );
 
-  const handleDescriptionUpdate = async (content: Json) => {
+  const handleDescriptionUpdate = async (content: JSONContent) => {
+    const descriptionJson = content as Json;
     const formData = new FormData();
-    formData.set('description', JSON.stringify(content));
+    formData.set('description', JSON.stringify(descriptionJson));
     const expectedUpdatedAt = workItem.updated_at;
 
     try {
@@ -528,7 +761,7 @@ export default function WorkItemDetails({
       );
       setWorkItem((prev) => ({
         ...prev,
-        description: content,
+        description: descriptionJson,
         updated_at: response.data?.updated_at ?? prev.updated_at,
       }));
       setEditing(false);
@@ -540,7 +773,7 @@ export default function WorkItemDetails({
         entityType: 'work_item',
         entityId: workItem.id,
         expectedUpdatedAt,
-        pendingFields: { description: content },
+        pendingFields: { description: descriptionJson },
         currentUserId,
       });
       if (locked) {
@@ -622,6 +855,7 @@ export default function WorkItemDetails({
         breadcrumb={
           <WorkItemPathBreadcrumb workItem={workItem} ancestors={ancestors} />
         }
+        preferences={detailsPreferences}
         onPatched={handleWorkItemPatched}
       />
 
@@ -649,117 +883,51 @@ export default function WorkItemDetails({
 
         <WorkItemDetailsActionStrip
           readOnly={isRecordReadOnly}
-          canCreateSubtask={canCreateSubtask}
+          canAttach={detailsPreferences.sections.attachments}
+          canCreateSubtask={
+            canCreateSubtask && detailsPreferences.sections.subtasks
+          }
+          canLinkIssue={detailsPreferences.sections.linkedIssues}
           onAttach={() => setAttachmentUploadOpen(true)}
           onCreateSubtask={() => setSubtaskDialogOpen(true)}
         />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-          {/* Main column */}
-          <div className="space-y-8 lg:col-span-3">
-            {/* Description */}
-            <section className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold">Description</h2>
-                {isRecordReadOnly ? null : (
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="cursor-pointer"
-                    aria-label="Edit description"
-                    onClick={() => setEditing((prev) => !prev)}
-                  >
-                    <PencilIcon />
-                  </Button>
-                )}
-              </div>
-              {isEditing && !isRecordReadOnly ? (
-                <WorkItemDescriptionEditor
-                  id={workItem.id}
-                  initialContent={descriptionContent}
-                  onSave={handleDescriptionUpdate}
-                  onCancel={() => setEditing(false)}
-                />
-              ) : (
-                <div className="min-w-0 overflow-x-auto">
-                  <DescriptionView description={workItem.description} />
-                </div>
-              )}
-            </section>
-
-            <Separator />
-
-            <AttachmentsSection
-              workItemId={workItem.id}
-              initialAttachments={initialAttachments}
-              uploadOpen={attachmentUploadOpen}
-              onUploadOpenChange={setAttachmentUploadOpen}
-              readOnly={isRecordReadOnly}
-            />
-
-            {allowedChildType ? (
-              <>
-                <Separator />
-                <WorkItemSubtasksSection
-                  items={sortedChildWorkItems}
-                  childCommentCounts={childCommentCounts}
-                  childDonePercent={childDonePercent}
-                  canCreateSubtask={canCreateSubtask}
-                  readOnly={isRecordReadOnly}
-                  sortField={subtaskSortField}
-                  sortDirection={subtaskSortDirection}
-                  onSortFieldChange={setSubtaskSortField}
-                  onSortDirectionChange={setSubtaskSortDirection}
-                  onLinkExisting={() => setLinkSubtaskDialogOpen(true)}
-                  onUnlink={setUnlinkTarget}
-                  isUserOnline={isUserOnline}
-                />
-              </>
-            ) : null}
-
-            <Separator />
-
-            {/* Linked issues */}
-            <section className="space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold">Linked issues</h2>
-                {isRecordReadOnly ? null : (
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="cursor-pointer"
-                    aria-label="Link issue"
-                  >
-                    <Plus />
-                  </Button>
-                )}
-              </div>
-              <p className="text-muted-foreground text-sm">is blocked by</p>
-              <div
-                className={cn(
-                  'text-muted-foreground flex h-16 items-center justify-center rounded-lg border border-dashed text-sm'
-                )}
-              >
-                No linked issues yet
-              </div>
-            </section>
-
-            <Separator />
-
-            <WorkItemActivityTabs
-              activeTab={activityTab}
-              onActiveTabChange={setActivityTab}
-              initialComments={initialComments}
-              initialActivities={initialActivities}
-              activityLookups={activityLookups}
-              workItem={workItem}
-              discussionWorkItems={discussionWorkItems}
-              currentUserId={currentUserId}
-              workLogs={workLogs}
-              onAddWorkLogClick={workLogClickHandler}
-              readOnly={isRecordReadOnly}
-            />
-          </div>
+          <WorkItemDetailsMainColumn
+            workItem={workItem}
+            isRecordReadOnly={isRecordReadOnly}
+            isEditing={isEditing}
+            setEditing={setEditing}
+            descriptionContent={descriptionContent}
+            onDescriptionSave={handleDescriptionUpdate}
+            sections={detailsPreferences.sections}
+            initialAttachments={initialAttachments}
+            attachmentUploadOpen={attachmentUploadOpen}
+            setAttachmentUploadOpen={setAttachmentUploadOpen}
+            showSubtasks={Boolean(
+              allowedChildType && detailsPreferences.sections.subtasks
+            )}
+            sortedChildWorkItems={sortedChildWorkItems}
+            childCommentCounts={childCommentCounts}
+            childDonePercent={childDonePercent}
+            canCreateSubtask={canCreateSubtask}
+            subtaskSortField={subtaskSortField}
+            subtaskSortDirection={subtaskSortDirection}
+            setSubtaskSortField={setSubtaskSortField}
+            setSubtaskSortDirection={setSubtaskSortDirection}
+            onLinkExistingSubtask={() => setLinkSubtaskDialogOpen(true)}
+            onUnlinkSubtask={setUnlinkTarget}
+            isUserOnline={isUserOnline}
+            activityTab={activityTab}
+            setActivityTab={setActivityTab}
+            initialComments={initialComments}
+            initialActivities={initialActivities}
+            activityLookups={activityLookups}
+            discussionWorkItems={discussionWorkItems}
+            currentUserId={currentUserId}
+            workLogs={workLogs}
+            onAddWorkLogClick={workLogClickHandler}
+          />
 
           {/* Sidebar */}
           <WorkItemSidebar
@@ -773,6 +941,8 @@ export default function WorkItemDetails({
             setDetailsOpen={setDetailsOpen}
             moreFieldsOpen={moreFieldsOpen}
             setMoreFieldsOpen={handleMoreFieldsOpenChange}
+            preferences={detailsPreferences}
+            onPreferencesChange={handleDetailsPreferencesChange}
             onWorkItemPatched={handleWorkItemPatched}
             onLogWorkClick={workLogClickHandler}
             readOnly={isRecordReadOnly}

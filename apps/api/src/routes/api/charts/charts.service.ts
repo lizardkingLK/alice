@@ -1,9 +1,14 @@
-import { ChartSharedNotification, NotificationBuilder } from '@repo/types';
-import type {
-  ChartDrilldownQuery,
-  ChartDrilldownResponse,
-  ChartSeriesQuery,
-  ChartSeriesResponse,
+import {
+  ChartSharedNotification,
+  NotificationBuilder,
+  type ChartDrilldownQuery,
+  type ChartDrilldownResponse,
+  type ChartHierarchyDrilldownQuery,
+  type ChartHierarchyDrilldownResponse,
+  type ChartHierarchySeriesQuery,
+  type ChartHierarchySeriesResponse,
+  type ChartSeriesQuery,
+  type ChartSeriesResponse,
 } from '@repo/types';
 import type { NotificationsRepository } from '../notifications/notifications.repository';
 import { ChartsRepository, type ChartRow } from './charts.repository';
@@ -73,6 +78,71 @@ export class ChartsService {
       projectId: responseProjectId,
       labelField: query.labelField,
       sliceKey: query.sliceKey ?? '',
+      ...page,
+    };
+  }
+
+  async getHierarchySeries(
+    actorId: string,
+    query: ChartHierarchySeriesQuery
+  ): Promise<ChartHierarchySeriesResponse> {
+    const { responseProjectId, projectIds } = await this.resolveProjectScope(
+      actorId,
+      query.projectId
+    );
+    const dimensionFilters = this.pickDimensionFilters(query);
+    const { rings, totalValue } =
+      await this.chartsRepository.sumHierarchySeries({
+        projectIds,
+        measure: query.measure,
+        ...dimensionFilters,
+        ...(query.rootWorkItemId
+          ? { rootWorkItemId: query.rootWorkItemId }
+          : {}),
+        ...(query.from ? { from: query.from } : {}),
+        ...(query.to ? { to: query.to } : {}),
+        ...(query.sprintId ? { sprintId: query.sprintId } : {}),
+      });
+    return {
+      projectId: responseProjectId,
+      measure: query.measure,
+      rootWorkItemId: query.rootWorkItemId ?? null,
+      ...(query.from ? { from: query.from } : {}),
+      ...(query.to ? { to: query.to } : {}),
+      ...(query.sprintId ? { sprintId: query.sprintId } : {}),
+      rings,
+      totalValue,
+    };
+  }
+
+  async getHierarchyDrilldown(
+    actorId: string,
+    query: ChartHierarchyDrilldownQuery
+  ): Promise<ChartHierarchyDrilldownResponse> {
+    const { responseProjectId, projectIds } = await this.resolveProjectScope(
+      actorId,
+      query.projectId
+    );
+    const dimensionFilters = this.pickDimensionFilters(query);
+    const page = await this.chartsRepository.listHierarchyDrilldown({
+      projectIds,
+      measure: query.measure,
+      page: query.page,
+      limit: query.limit,
+      ...dimensionFilters,
+      ...(query.ring !== undefined ? { ring: query.ring as 0 | 1 | 2 } : {}),
+      ...(query.sliceKey !== undefined ? { sliceKey: query.sliceKey } : {}),
+      ...(query.parentKey !== undefined ? { parentKey: query.parentKey } : {}),
+      ...(query.from ? { from: query.from } : {}),
+      ...(query.to ? { to: query.to } : {}),
+      ...(query.sprintId ? { sprintId: query.sprintId } : {}),
+    });
+    return {
+      projectId: responseProjectId,
+      measure: query.measure,
+      ring: query.ring !== undefined ? (query.ring as 0 | 1 | 2) : null,
+      sliceKey: query.sliceKey ?? '',
+      parentKey: query.parentKey ?? '',
       ...page,
     };
   }
@@ -215,7 +285,13 @@ export class ChartsService {
     }
   }
 
-  private pickDimensionFilters(query: ChartSeriesQuery | ChartDrilldownQuery): {
+  private pickDimensionFilters(
+    query:
+      | ChartSeriesQuery
+      | ChartDrilldownQuery
+      | ChartHierarchySeriesQuery
+      | ChartHierarchyDrilldownQuery
+  ): {
     status: ChartSeriesQuery['status'];
     type: ChartSeriesQuery['type'];
     priority: ChartSeriesQuery['priority'];

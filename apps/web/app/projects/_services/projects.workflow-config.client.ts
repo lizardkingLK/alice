@@ -1,5 +1,8 @@
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
-import type { WorkflowConfigEnvelope } from '@repo/types/api/v1';
+import type {
+  WorkflowConfigEnvelope,
+  WorkflowStateRemap,
+} from '@repo/types/api/v1';
 
 export type ProjectWorkflowConfigResponse = {
   readonly config: WorkflowConfigEnvelope;
@@ -27,13 +30,18 @@ export async function getProjectWorkflowConfig(
 export async function putProjectWorkflowConfig(
   projectId: string,
   config: WorkflowConfigEnvelope,
-  expectedUpdatedAt: string
+  expectedUpdatedAt: string,
+  stateRemaps?: readonly WorkflowStateRemap[]
 ): Promise<ProjectWorkflowConfigResponse> {
   return apiFetch<ProjectWorkflowConfigResponse>(
     `/api/projects/${projectId}/workflow-config`,
     {
       method: 'PUT',
-      body: JSON.stringify({ config, expectedUpdatedAt }),
+      body: JSON.stringify({
+        config,
+        expectedUpdatedAt,
+        ...(stateRemaps && stateRemaps.length > 0 ? { stateRemaps } : {}),
+      }),
     }
   );
 }

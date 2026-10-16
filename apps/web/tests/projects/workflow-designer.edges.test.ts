@@ -93,7 +93,8 @@ describe('workflow-designer.edges', () => {
       targetHandle: WORKFLOW_HANDLE.targetBottom,
       direction: 'reverse',
     });
-    expect(WORKFLOW_EDGE_STROKE.reverse).toContain('oklch');
+    expect(WORKFLOW_EDGE_STROKE.forward).toBe('var(--primary)');
+    expect(WORKFLOW_EDGE_STROKE.reverse).toBe('var(--foreground)');
   });
 
   it('honors persisted connect handles over smart routing', () => {

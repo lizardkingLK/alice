@@ -133,19 +133,35 @@ On `/charts/[id]`:
 
 1. On a board, select the **+** button.
 2. Choose **Add widget** for the catalog on the **current** workspace.
-3. Under Add widget, pick **Chart**, **Data over time** (sprint burndown), or
-   **More widgets** to browse the full catalog (Delivery → **Burndown** is the
-   same burndown widget). Other types still show **Coming soon**.
-4. **Scoped** boards: Chart / burndown widgets are added with the workspace
-   project and sprint — no extra prompt.
-5. **Mixed** boards: Chart / burndown widgets use the **current board Filter**
-   selection (not only saved defaults). If Filter equals your defaults, they
-   match. For **burndown**, if Filter is missing a concrete project or sprint
-   (for example **All sprints**), you are asked to pick what is missing before
-   the widget is added.
+3. Under Add widget, pick **Chart**, **Nested donut**, **Data over time**
+   (sprint burndown), or **More widgets** to browse the full catalog (Delivery →
+   **Burndown** is the same burndown widget). Other types still show
+   **Coming soon**.
+4. **Scoped** boards: Chart / Nested donut / burndown widgets are added with the
+   workspace project and sprint — no extra prompt.
+5. **Mixed** boards: those widgets use the **current board Filter** selection
+   (not only saved defaults). If Filter equals your defaults, they match. For
+   **burndown**, if Filter is missing a concrete project or sprint (for example
+   **All sprints**), you are asked to pick what is missing before the widget is
+   added.
 
-The card header shows **Project · Sprint** for Chart and burndown widgets when
-those filters are set.
+The card header shows **Project · Sprint** for Chart, Nested donut, and burndown
+widgets when those filters are set.
+
+### Nested donut widget
+
+**Nested donut** shows up to three hierarchy rings (for example Epic → Story →
+Subtask): parents toward the center, descendants on the outer rings. Open
+**Widget settings → Values** to choose **Count items** or **Story points**.
+Each work item counts once; child slices belong to their parent on the ring
+inside.
+
+**Dig vs drilldown:** On the card (or fullscreen **Chart** layout), click a
+slice that still has children to **dig** — the rings re-root under that item
+and a breadcrumb (Back / Scope / parents) lets you zoom out. Click a leaf, or
+switch to **Split** / **Table**, to open the work-item list for that slice.
+Use the filter control on the card or in fullscreen to scope project/sprint
+like other chart widgets.
 
 ### Burndown widget
 
