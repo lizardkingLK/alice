@@ -1,85 +1,39 @@
 import { apiFetch } from '@/lib/api/api-fetch.reads.use.server';
-import { createClient } from '@/lib/supabase/server';
-import {
-  applyListSearch,
-  runPaginatedSelect,
-  throwIfError,
-} from '@/lib/db/query';
 import { getCachedUserList } from '@/lib/cache/dropdown-cache';
+import { shouldReadViaApi } from '@/lib/data-retrieval.server';
+import { getUsersListPaginatedFromApi } from './users.reads.api.server';
+import { getUsersListPaginatedFromSupabase } from './users.reads.supabase.server';
 import { createUsersService } from './users.mutations.shared';
 import type { GetUsersPaginatedResponse, User } from './users.mutations.shared';
-import { filterProductUsableUsers } from '@repo/types';
 
 const service = createUsersService(apiFetch);
 
+export {
+  getActiveAdminCount,
+  getUsersList,
+} from './users.reads.supabase.server';
+
 /**
- * Reads query Supabase directly from the RSC layer to skip the `web → api`
- * hop. Mutations (create/update/toggle) still go through the API.
+ * Public server read facade — picks supabase-js (default) or Express GET
+ * based on `DATA_READS_VIA_API`. Mutations (create/update/toggle) go through
+ * the API (`service`).
  */
-
-export async function getUsersList(): Promise<User[]> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  throwIfError(error, 'failed to list users', 'Failed to list users');
-
-  return (data ?? []) as User[];
-}
-
 export async function getUsersListPaginated(
   page: number,
   limit: number,
   search = ''
 ): Promise<GetUsersPaginatedResponse> {
-  const supabase = await createClient();
+  if (shouldReadViaApi('users')) {
+    return getUsersListPaginatedFromApi(page, limit, search);
+  }
 
-  const query = applyListSearch(
-    supabase.from('users').select('*', { count: 'exact' }),
-    search,
-    ['name', 'email']
-  );
-
-  const { rows: users, ...meta } = await runPaginatedSelect<User>(
-    query,
-    page,
-    limit,
-    {
-      orderBy: 'created_at',
-      logLabel: 'failed to list users paginated',
-      errorMessage: 'Failed to list users',
-    }
-  );
-
-  return { users, ...meta };
-}
-
-/** Product-usable admins (active kill switch + active membership). */
-export async function getActiveAdminCount(): Promise<number> {
-  const supabase = await createClient();
-  const { count, error } = await filterProductUsableUsers(
-    supabase
-      .from('users')
-      .select('id', { count: 'exact', head: true })
-      .eq('role', 'admin')
-  );
-
-  throwIfError(
-    error,
-    'failed to count active admins',
-    'Failed to count active admins'
-  );
-
-  return count ?? 0;
+  return getUsersListPaginatedFromSupabase(page, limit, search);
 }
 
 /**
  * Active users for form dropdowns. Shared across requests via
  * `unstable_cache` (see `lib/cache/dropdown-cache.ts`); invalidated on
- * user mutations with `updateTag`.
+ * user mutations with `updateTag`. Supabase-only (no Express twin).
  */
 export async function getUserList(): Promise<User[]> {
   return (await getCachedUserList()) as User[];

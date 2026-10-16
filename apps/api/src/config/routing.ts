@@ -49,6 +49,7 @@ routesConfig.use('/api/users', users.router);
 routesConfig.use('/api/work-items', workItems.router);
 routesConfig.use('/api/worklogs', worklogs.router);
 
+routesConfig.use('/api/v1/access-allowlist', accessAllowlist.router);
 routesConfig.use('/api/v1/attachments', attachments.router);
 routesConfig.use('/api/v1/charts', charts.router);
 routesConfig.use('/api/v1/chat', chat.router);

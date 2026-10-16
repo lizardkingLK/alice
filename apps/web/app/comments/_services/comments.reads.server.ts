@@ -1,107 +1,38 @@
-import {
-  USER_PROJECTION_WITH_ROLE,
-  WORK_ITEM_ASSIGNEE_POSTGREST_SELECT,
-  projectRelationSelect,
-  userRelationSelect,
-} from '@repo/types';
-import { apiFetch } from '@/lib/api/api-fetch.reads.use.server';
-import { createClient } from '@/lib/supabase/server';
 import { getUser } from '@/lib/auth';
+import { apiFetch } from '@/lib/api/api-fetch.reads.use.server';
+import { shouldReadViaApi } from '@/lib/data-retrieval.server';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
-import {
-  aggregateCountsByKey,
-  throwIfError,
-  zeroCountsById,
-} from '@/lib/db/query';
-import {
-  createCommentsService,
-  mapCommentWorkItemOption,
-} from './comments.mutations.shared';
-import type {
-  CommentItem,
-  CommentWorkItemOption,
-  CommentWorkItemOptionRow,
-} from './comments.mutations.shared';
+import { listCommentsFromApi } from './comments.reads.api.server';
+import { listCommentsFromSupabase } from './comments.reads.supabase.server';
+import { createCommentsService } from './comments.mutations.shared';
+import type { CommentItem } from './comments.mutations.shared';
 
 const service = createCommentsService(apiFetch);
 
-const COMMENT_AUTHOR_SELECT = userRelationSelect(
-  'author',
-  'comments_author_id_fkey',
-  USER_PROJECTION_WITH_ROLE
-);
-
-const COMMENT_LIST_SELECT = `
-  *,
-  ${COMMENT_AUTHOR_SELECT},
-  work_item:work_items(id, title, type, ${projectRelationSelect()})
-`;
-
 /**
- * Direct Supabase read for comments (PERFORMANCE.md M1).
- * Optional `workItemId` scopes to a single discussion thread.
+ * Public server read facade — picks supabase-js (default) or Express GET
+ * based on `DATA_READS_VIA_API`. Optional `workItemId` scopes to one thread.
  */
 export async function listComments(
   workItemId?: string
 ): Promise<CommentItem[]> {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from('comments')
-    .select(COMMENT_LIST_SELECT)
-    .order('created_at', { ascending: false });
-
-  if (workItemId) {
-    query = query.eq('work_item_id', workItemId);
+  if (shouldReadViaApi('comments')) {
+    return listCommentsFromApi(workItemId);
   }
 
-  const { data, error } = await query;
-  throwIfError(
-    error,
-    'failed to list comments',
-    'Failed to retrieve comments list'
-  );
-
-  return (data ?? []) as unknown as CommentItem[];
+  return listCommentsFromSupabase(workItemId);
 }
 
-const COMMENT_WORK_ITEM_OPTION_SELECT = `
-  id, title, type, project_id, jira_issue_key, priority, description,
-  ${projectRelationSelect()},
-  ${WORK_ITEM_ASSIGNEE_POSTGREST_SELECT}
-`;
+/**
+ * Dropdown work-item options and batched comment counts stay on Supabase
+ * (not gated by `DATA_READS_VIA_API`).
+ */
+export {
+  getCommentCountsByWorkItemIds,
+  listCommentWorkItemOptions,
+} from './comments.reads.supabase.server';
 
-/** Work-item options for the comments compose/filter dropdown (direct RSC read). */
-export async function listCommentWorkItemOptions(
-  limit = 50,
-  options?: { projectId?: string }
-): Promise<CommentWorkItemOption[]> {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from('work_items')
-    .select(COMMENT_WORK_ITEM_OPTION_SELECT)
-    .eq('record_status', 'active')
-    .limit(limit);
-
-  if (options?.projectId) {
-    query = query.eq('project_id', options.projectId);
-  }
-
-  const { data, error } = await query;
-
-  throwIfError(
-    error,
-    'failed to list work items for comments',
-    'Failed to retrieve work items for comments'
-  );
-
-  return ((data ?? []) as unknown as CommentWorkItemOptionRow[]).map(
-    mapCommentWorkItemOption
-  );
-}
-
-/** M4.3 — work-item discussion thread via direct RSC read (no Express hop). */
+/** Work-item discussion thread — follows the `comments` read toggle. */
 export async function getWorkItemDiscussion(
   workItemId: string
 ): Promise<CommentItem[]> {
@@ -114,37 +45,6 @@ export async function getWorkItemDiscussion(
     listComments(workItemId),
     [],
     `fetch discussion for work item ${workItemId}`
-  );
-}
-
-/**
- * Active comment counts (including replies) keyed by work item id.
- * Used by the parent details subtasks list — one batched read, no N+1.
- */
-export async function getCommentCountsByWorkItemIds(
-  workItemIds: readonly string[]
-): Promise<Record<string, number>> {
-  const counts = zeroCountsById(workItemIds);
-  if (workItemIds.length === 0) {
-    return counts;
-  }
-
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('comments')
-    .select('work_item_id')
-    .in('work_item_id', [...workItemIds])
-    .eq('status', 'active');
-
-  throwIfError(
-    error,
-    'failed to count comments by work item',
-    'Failed to retrieve comment counts'
-  );
-
-  return aggregateCountsByKey(
-    counts,
-    (data ?? []).map((row) => row.work_item_id)
   );
 }
 
