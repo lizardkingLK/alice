@@ -88,6 +88,10 @@ If Alice chat reports that the **API key was rejected** (invalid or expired),
 open the matching card here, paste a current key from the provider, and save.
 Users cannot fix this themselves — only admins manage workspace integrations.
 
+If Alice chat reports that the **API key was rejected** (invalid or expired),
+open the matching card here, paste a current key from the provider, and save.
+Users cannot fix this themselves — only admins manage workspace integrations.
+
 ---
 
 ## vs project integrations
