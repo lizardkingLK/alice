@@ -12,6 +12,8 @@ export type ChatMessage = ChatMessageWire;
 export type ChatConversation = ChatConversationSummaryWire;
 
 export type ChatClientProps = {
+  /** Remounts conversation-scoped state without resetting model selection. */
+  readonly conversationStateKey?: string;
   readonly variant?: 'page' | 'drawer' | 'docked';
   readonly onClose?: () => void;
   /** Page-aware context (e.g. workflow designer draft) sent with each turn. */

@@ -48,9 +48,29 @@ import {
 } from './chat-client-support';
 
 export function ChatClient(props: Readonly<ChatClientProps>) {
+  const chatModelSelection = useWorkspaceChatModels(props.initialChatModels);
+
+  return (
+    <ChatClientConversationScope
+      key={props.conversationStateKey}
+      props={props}
+      chatModelSelection={chatModelSelection}
+    />
+  );
+}
+
+type ChatModelSelection = ReturnType<typeof useWorkspaceChatModels>;
+
+function ChatClientConversationScope({
+  props,
+  chatModelSelection,
+}: Readonly<{
+  props: Readonly<ChatClientProps>;
+  chatModelSelection: ChatModelSelection;
+}>) {
   return (
     <WorkflowProposalDismissProvider>
-      <ChatClientInner {...props} />
+      <ChatClientInner {...props} chatModelSelection={chatModelSelection} />
     </WorkflowProposalDismissProvider>
   );
 }
@@ -65,12 +85,14 @@ function ChatClientInner({
   initialConversations,
   initialConversationId,
   initialMessages,
-  initialChatModels,
   initialAgentId,
   initialHistoryOpen = true,
   currentUserId,
   currentUserRole,
-}: Readonly<ChatClientProps>) {
+  chatModelSelection,
+}: Readonly<
+  ChatClientProps & { readonly chatModelSelection: ChatModelSelection }
+>) {
   const { dismissProject } = useWorkflowProposalDismiss();
   const router = useRouter();
   const isPage = variant === 'page';
@@ -121,7 +143,7 @@ function ChatClientInner({
     setSelectedIntegrationId,
     isMarkingDefault,
     markSelectedAsDefault,
-  } = useWorkspaceChatModels(initialChatModels);
+  } = chatModelSelection;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
