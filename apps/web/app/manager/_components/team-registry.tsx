@@ -29,9 +29,11 @@ import { hardDeleteTeam } from './actions';
 import {
   softDeleteTeam as clientSoftDeleteTeam,
   restoreTeam as clientRestoreTeam,
+  type Team,
 } from '../_services/teams.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runRegistryLockedAction } from '@/lib/optimistic-lock/run-locked-mutation';
+import { replaceEntityInList } from '@/lib/replace-entity-in-list';
 import {
   Users,
   Shield,
@@ -51,7 +53,6 @@ import {
   registryActionsHeader,
 } from '@/components/registry-row-actions';
 import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
-import type { Team } from '../_services/teams.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import type {
   Project,
@@ -245,7 +246,12 @@ export function TeamRegistry({
   const [deleteMode, setDeleteMode] = useState<'soft' | 'hard'>('soft');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [localTeams, setLocalTeams] = useState(teams);
   const { handleMutationError } = useOptimisticLock();
+
+  useEffect(() => {
+    setLocalTeams(teams);
+  }, [teams]);
 
   const isManagerOrAdmin =
     currentUserRole === 'admin' || currentUserRole === 'manager';
@@ -365,10 +371,14 @@ export function TeamRegistry({
     setTeamToEdit(team);
   }, []);
 
+  const handleTeamUpdated = useCallback((updated: Team) => {
+    setLocalTeams((previous) => replaceEntityInList(previous, updated));
+  }, []);
+
   const columns = useMemo(() => TEAM_COLUMNS, []);
 
   const table = useReactTable({
-    data: teams,
+    data: localTeams,
     columns,
     getCoreRowModel: getCoreRowModel(),
     meta: {
@@ -473,10 +483,14 @@ export function TeamRegistry({
                 setIsAddTeamOpen(false);
                 setTeamToEdit(null);
               }}
+              onTeamUpdated={handleTeamUpdated}
               onSuccess={() => {
+                const wasEdit = teamToEdit !== null;
                 setIsAddTeamOpen(false);
                 setTeamToEdit(null);
-                router.refresh();
+                if (!wasEdit) {
+                  router.refresh();
+                }
               }}
             />
           </div>

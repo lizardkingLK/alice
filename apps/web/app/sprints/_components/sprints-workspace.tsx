@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
@@ -35,6 +35,7 @@ import {
 import { SprintsFilterDialog } from '@/app/sprints/_components/sprints-filter-dialog';
 import { SprintDeleteConfirmDialog } from './sprint-delete-confirm-dialog';
 import { buildWorkspaceFilterRedirectPath } from '@/app/board/_services/board.defaults.shared';
+import { replaceEntityInList } from '@/lib/replace-entity-in-list';
 
 const SPRINT_STATUS_TABS = [
   { id: SprintTabEnum.Active, label: 'Active', icon: CircleDot },
@@ -388,9 +389,14 @@ export function SprintsWorkspace({
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
   const [sprintToArchive, setSprintToArchive] = useState<Sprint | null>(null);
   const [sprintToDelete, setSprintToDelete] = useState<Sprint | null>(null);
+  const [localSprints, setLocalSprints] = useState(sprints);
+
+  useEffect(() => {
+    setLocalSprints(sprints);
+  }, [sprints]);
 
   const refreshOrPreviousPage = () => {
-    if (sprints.length === 1 && pagination.page > 1) {
+    if (localSprints.length === 1 && pagination.page > 1) {
       handlePageChange(pagination.page - 1);
       return;
     }
@@ -400,6 +406,10 @@ export function SprintsWorkspace({
   const handleSprintUpdated = (updated?: Sprint) => {
     if (updated && isSprintMovedFromTab(filterTab, updated.status)) {
       refreshOrPreviousPage();
+      return;
+    }
+    if (updated) {
+      setLocalSprints((previous) => replaceEntityInList(previous, updated));
       return;
     }
     router.refresh();
@@ -516,7 +526,7 @@ export function SprintsWorkspace({
 
         <div className="w-full">
           <SprintList
-            sprints={sprints}
+            sprints={localSprints}
             pagination={pagination}
             filterTab={filterTab}
             isAdmin={isAdmin}
