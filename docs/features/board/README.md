@@ -6,7 +6,7 @@ from the board unless a future workflow exposes an equivalent state.
 | Document                                               | Description                                                                                                                                  | Status                   |
 | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
 | [CUSTOM_BOARD_DESIGNER.md](./CUSTOM_BOARD_DESIGNER.md) | Historical custom column designer (v1/v2 `workflow_config` columns)                                                                          | **Retired / historical** |
-| [REALTIME_BOARD_MOVES.md](./REALTIME_BOARD_MOVES.md)   | Async / realtime status moves (pending stack, prefs, toast-on-409) — W6                                                                      | **Living**               |
+| [REALTIME_BOARD_MOVES.md](./REALTIME_BOARD_MOVES.md)   | Async / realtime status moves (pending stack, prefs, toast-on-409) — W6; extended by **W7** to backlog + calendar DnD                        | **Living**               |
 | —                                                      | Kanban board runtime — described in the [ARD](../../product/ARD.md) and [TRD](../../architecture/TRD.md); add dedicated notes here as needed | Living                   |
 
 > **Configuration successor:** [Workflow](../workflow/) is the only project
