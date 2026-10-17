@@ -19,20 +19,15 @@ export function statusUpdateFailureMessage(error: unknown): string {
   return 'Failed to update work item status.';
 }
 
+type BoardPlacementRow = Partial<DbWorkItem> & { id: string };
+
 type BoardStatusMoveHandlers = {
   readonly revert: () => void;
-  readonly sync: {
-    // eslint-disable-next-line no-unused-vars -- callback
-    (updated: DbWorkItem): void;
-  };
-  readonly applyConflictRow: {
-    // eslint-disable-next-line no-unused-vars -- callback
-    (row: Partial<DbWorkItem> & { id: string }): void;
-  };
-  readonly onFailure: {
-    // eslint-disable-next-line no-unused-vars -- callback
-    (message: string): void;
-  };
+  /* eslint-disable no-unused-vars -- handler callbacks */
+  readonly sync: (updated: DbWorkItem) => void;
+  readonly applyConflictRow: (row: BoardPlacementRow) => void;
+  readonly onFailure: (message: string) => void;
+  /* eslint-enable no-unused-vars */
 };
 
 export function handleBoardStatusMoveResponse(
