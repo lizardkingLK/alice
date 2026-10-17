@@ -8,14 +8,17 @@ allowBuilds:
   esbuild: true
   prisma: true
 
+# pnpm default minimumReleaseAge is 1440m (1 day). Fresh turbo patches are
+# blocked until then, which makes `@turbo/codemod update` fail with
+# "Expected: x.y.z / Installed: older". Exclude each new version (or wait 24h).
 minimumReleaseAgeExclude:
-  - '@turbo/darwin-64@2.11.3 || 2.11.5'
-  - '@turbo/darwin-arm64@2.11.3 || 2.11.5'
-  - '@turbo/linux-64@2.11.3 || 2.11.5'
-  - '@turbo/linux-arm64@2.11.3 || 2.11.5'
-  - '@turbo/windows-64@2.11.3 || 2.11.5'
-  - '@turbo/windows-arm64@2.11.3 || 2.11.5'
-  - turbo@2.11.3 || 2.11.5
+  - '@turbo/darwin-64@2.11.3 || 2.11.5 || 2.11.9'
+  - '@turbo/darwin-arm64@2.11.3 || 2.11.5 || 2.11.9'
+  - '@turbo/linux-64@2.11.3 || 2.11.5 || 2.11.9'
+  - '@turbo/linux-arm64@2.11.3 || 2.11.5 || 2.11.9'
+  - '@turbo/windows-64@2.11.3 || 2.11.5 || 2.11.9'
+  - '@turbo/windows-arm64@2.11.3 || 2.11.5 || 2.11.9'
+  - turbo@2.11.3 || 2.11.5 || 2.11.9
   - '@next/env@16.4.2'
   - '@next/swc-darwin-arm64@16.4.2'
   - '@next/swc-darwin-x64@16.4.2'
@@ -26,8 +29,7 @@ minimumReleaseAgeExclude:
   - '@next/swc-win32-arm64-msvc@16.4.2'
   - '@next/swc-win32-x64-msvc@16.4.2'
   - next@16.4.2
-  - qs@6.16.0
-  - qs@6.16.1
+  - qs@6.16.0 || 6.16.1
   - proxy-addr@2.0.8
   - multer@2.4.0
 
