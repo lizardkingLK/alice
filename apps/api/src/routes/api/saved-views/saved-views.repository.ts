@@ -1,13 +1,18 @@
 import {
   normalizeSavedViewSearch,
+  paginationMeta,
+  SAVED_VIEW_LIST_SEARCH_FIELDS,
+  savedViewListSelect,
   uniqueSavedViewIdsFromShares,
   type CreateSavedViewBody,
   type Database,
+  type ListSavedViewsQuery,
+  type PaginationMeta,
   type Tables,
   type UpdateSavedViewBody,
 } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { RecordStatus } from '@repo/types/prisma';
+import { RecordStatus, type Prisma } from '@repo/types/prisma';
 import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditCreate,
@@ -18,6 +23,10 @@ import { parseChartWorkspaceIdFromPathname } from './saved-views.chart-path';
 
 export type SavedViewRow = Tables<'saved_views'>;
 export type SavedViewShareRow = Tables<'saved_view_shares'>;
+
+export type SavedViewPaginatedList = {
+  views: SavedViewRow[];
+} & PaginationMeta;
 
 function toSavedViewRow(row: {
   id: string;
@@ -269,6 +278,80 @@ export class SavedViewsRepository {
       throw new Error(error.message);
     }
     return data ?? [];
+  }
+
+  /**
+   * Prisma-only paginated list (parity with web `getSavedViewsPaginated`).
+   * mine/archived → owner + status; shared → active shares for the user
+   * → unique view ids → active views.
+   */
+  async listPaginated(
+    actorId: string,
+    query: ListSavedViewsQuery
+  ): Promise<SavedViewPaginatedList> {
+    const { page, limit, search, tab } = query;
+
+    try {
+      const where = await this.buildListWhere(actorId, tab, search);
+      if (!where) {
+        return { views: [], ...paginationMeta(0, page, limit) };
+      }
+
+      const [rows, totalCount] = await Promise.all([
+        prisma.saved_views.findMany({
+          where,
+          select: savedViewListSelect,
+          orderBy: { updated_at: 'desc' },
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        prisma.saved_views.count({ where }),
+      ]);
+
+      return {
+        views: rows.map(toSavedViewRow),
+        ...paginationMeta(totalCount, page, limit),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to list saved views:', message);
+      throw new Error('Failed to list saved views');
+    }
+  }
+
+  /** Returns null when the shared tab has no active shares (empty page). */
+  private async buildListWhere(
+    actorId: string,
+    tab: ListSavedViewsQuery['tab'],
+    search: string | undefined
+  ): Promise<Prisma.saved_viewsWhereInput | null> {
+    const where: Prisma.saved_viewsWhereInput = {};
+
+    if (tab === 'shared') {
+      const shares = await prisma.saved_view_shares.findMany({
+        where: { user_id: actorId, status: RecordStatus.active },
+        select: { view_id: true },
+      });
+      const viewIds = uniqueSavedViewIdsFromShares(shares);
+      if (viewIds.length === 0) {
+        return null;
+      }
+      where.id = { in: viewIds };
+      where.status = RecordStatus.active;
+    } else {
+      where.owner_id = actorId;
+      where.status =
+        tab === 'archived' ? RecordStatus.archived : RecordStatus.active;
+    }
+
+    const term = search?.trim();
+    if (term) {
+      where.OR = SAVED_VIEW_LIST_SEARCH_FIELDS.map((field) => ({
+        [field]: { contains: term, mode: 'insensitive' as const },
+      }));
+    }
+
+    return where;
   }
 
   async getById(id: string): Promise<SavedViewRow | null> {

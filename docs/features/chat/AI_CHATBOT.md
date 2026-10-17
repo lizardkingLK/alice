@@ -455,23 +455,21 @@ No active chat model rows → `POST /api/chat` returns **400** with a configurat
 
 ## Reliability
 
-
 ## Reliability
 
-| Topic | Behavior |
-| --- | --- |
-| Streaming | None — full JSON response; UI shows a "Thinking..." state |
-| Transient provider errors | At most 3 attempts with exponential backoff for network failures, `429`, `529`, `503`, and `500`–`504`; safe metadata is appended to `alice-chatbot-errors.log` (gitignored) |
-| Invalid / expired API key | Provider returns a **400** `ChatProviderError` with Settings → Integrations guidance for recognized credential failures, avoiding the generic "Could not connect to the backend" path when JSON error mapping succeeds. |
-| HTTP timeouts | Express socket inactivity **120s** (`server.setTimeout`); chat `apiFetch` **90s**. A 15s socket timeout was destroying the POST mid-Gemini; Next's rewrite then returned a non-JSON 500 and the UI showed "Could not connect to the backend." |
-| Dropdown cache | After `create_project` (and related tools), chat calls `revalidateAfterChatActions` so `/sprints` Create Sprint is not stuck on the 60s `dropdown-projects` cache. See [PERFORMANCE.md](../../guides/PERFORMANCE.md) §2.7. |
-| Tool errors | Returned as function-response `{ error }`; loop may continue |
-| Provider errors | Known credential/model/request failures use provider-specific safe messages; provider response bodies are omitted from logs |
-| Rate limiting | No app-level chat quota beyond the shared provider retry behavior |
-| Request validation | `POST /api/v1/chat` uses the shared Zod request schema before model resolution or chat processing |
+| Topic                     | Behavior                                                                                                                                                                                                                                      |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Streaming                 | None — full JSON response; UI shows a "Thinking..." state                                                                                                                                                                                     |
+| Transient provider errors | At most 3 attempts with exponential backoff for network failures, `429`, `529`, `503`, and `500`–`504`; safe metadata is appended to `alice-chatbot-errors.log` (gitignored)                                                                  |
+| Invalid / expired API key | Provider returns a **400** `ChatProviderError` with Settings → Integrations guidance for recognized credential failures, avoiding the generic "Could not connect to the backend" path when JSON error mapping succeeds.                       |
+| HTTP timeouts             | Express socket inactivity **120s** (`server.setTimeout`); chat `apiFetch` **90s**. A 15s socket timeout was destroying the POST mid-Gemini; Next's rewrite then returned a non-JSON 500 and the UI showed "Could not connect to the backend." |
+| Dropdown cache            | After `create_project` (and related tools), chat calls `revalidateAfterChatActions` so `/sprints` Create Sprint is not stuck on the 60s `dropdown-projects` cache. See [PERFORMANCE.md](../../guides/PERFORMANCE.md) §2.7.                    |
+| Tool errors               | Returned as function-response `{ error }`; loop may continue                                                                                                                                                                                  |
+| Provider errors           | Known credential/model/request failures use provider-specific safe messages; provider response bodies are omitted from logs                                                                                                                   |
+| Rate limiting             | No app-level chat quota beyond the shared provider retry behavior                                                                                                                                                                             |
+| Request validation        | `POST /api/v1/chat` uses the shared Zod request schema before model resolution or chat processing                                                                                                                                             |
 
 ---
-
 
 ## Testing
 

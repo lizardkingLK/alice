@@ -1,21 +1,12 @@
 import { serializeWorkItemLabelsFilter, toDateOnly } from '@repo/types';
 import { ApiError } from '@/lib/api/api-fetch.helper';
 import { apiFetch } from '@/lib/api/api-fetch.reads.use.server';
+import { asIso } from '@/lib/api/wire-date';
 import type {
   DbWorkItem,
   GetWorkItemsPaginatedResponse,
   WorkItemListFilters,
 } from '@/app/work-items/_types/work-items.reads.types';
-
-function asIso(value: unknown): string {
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-  if (typeof value === 'string') {
-    return value;
-  }
-  return String(value);
-}
 
 function asDueDate(value: unknown): string | null {
   if (value == null || value === '') {

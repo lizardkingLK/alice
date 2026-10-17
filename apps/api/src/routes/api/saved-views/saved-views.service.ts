@@ -3,6 +3,7 @@ import {
   NotificationBuilder,
   ViewSharedNotification,
   type CreateSavedViewBody,
+  type ListSavedViewsQuery,
   type ShareSavedViewBody,
   type UpdateSavedViewBody,
 } from '@repo/types';
@@ -45,6 +46,10 @@ export class SavedViewsService {
 
   listOwned(ownerId: string, status: 'active' | 'archived') {
     return this.savedViewsRepository.listOwned(ownerId, status);
+  }
+
+  listSavedViewsPaginated(actorId: string, query: ListSavedViewsQuery) {
+    return this.savedViewsRepository.listPaginated(actorId, query);
   }
 
   listSharedWithMe(userId: string) {

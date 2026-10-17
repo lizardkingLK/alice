@@ -6,10 +6,12 @@ import {
   EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE,
   isOwnAllowlistDomainLockout,
   emailDomainFromAddress,
+  type ListAccessAllowlistQuery,
 } from '@repo/types';
 import {
   AccessAllowlistRepository,
   type AccessAllowlistKind,
+  type AccessAllowlistPaginatedList,
   type AccessAllowlistRow,
   type AccessAllowlistStatus,
 } from './access-allowlist.repository';
@@ -91,6 +93,14 @@ export class AccessAllowlistService {
     }
 
     return { actor, entry };
+  }
+
+  async listAccessAllowlistPaginated(
+    actorId: string,
+    query: ListAccessAllowlistQuery
+  ): Promise<AccessAllowlistPaginatedList> {
+    await requireAdmin(actorId);
+    return this.accessAllowlistRepository.listPaginated(query);
   }
 
   async createAccessAllowlist(

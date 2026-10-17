@@ -1,25 +1,19 @@
 import { apiFetch } from '@/lib/api/api-fetch.reads.use.server';
-import { createClient } from '@/lib/supabase/server';
+import { shouldReadViaApi } from '@/lib/data-retrieval.server';
+import { listTeamsPaginatedFromApi } from './teams.reads.api.server';
 import {
-  applyListSearch,
-  runPaginatedSelect,
-  throwIfError,
-} from '@/lib/db/query';
+  getActiveProjectTeamsFromSupabase,
+  listTeamsPaginatedFromSupabase,
+} from './teams.reads.supabase.server';
 import { createTeamsService } from './teams.mutations.shared';
 import type { GetTeamsPaginatedResponse, Team } from './teams.mutations.shared';
 
 const service = createTeamsService(apiFetch);
 
-const TEAM_LIST_SELECT =
-  '*, manager:users!teams_manager_id_fkey(id, name, email), members:team_members(*)';
-
-const TEAM_LIST_SEARCH_FIELDS = ['name', 'description', 'tech_stack'] as const;
-
 /**
- * Reads query Supabase directly from the RSC layer to skip the `web → api`
- * hop. Mutations still go through the API.
+ * Public server read facade — picks supabase-js (default) or Express GET
+ * based on `DATA_READS_VIA_API`. Mutations still go through the API.
  */
-
 export async function getTeamListPaginated(
   page: number,
   limit: number,
@@ -27,55 +21,22 @@ export async function getTeamListPaginated(
   search?: string,
   projectId?: string
 ): Promise<GetTeamsPaginatedResponse> {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from('teams')
-    .select(TEAM_LIST_SELECT, { count: 'exact' });
-
-  if (status) {
-    query = query.eq('status', status);
+  if (shouldReadViaApi('teams')) {
+    return listTeamsPaginatedFromApi(page, limit, status, search, projectId);
   }
 
-  query = applyListSearch(query, search, [...TEAM_LIST_SEARCH_FIELDS]);
-
-  if (projectId) {
-    query = query.eq('project_id', projectId);
-  }
-
-  const { rows: teams, ...meta } = await runPaginatedSelect<Team>(
-    query,
-    page,
-    limit,
-    {
-      orderBy: 'created_at',
-      logLabel: 'failed to list teams paginated',
-      errorMessage: 'Failed to retrieve teams list',
-    }
-  );
-
-  return { teams, ...meta };
+  return listTeamsPaginatedFromSupabase(page, limit, status, search, projectId);
 }
 
-/** Unpaginated active project teams for policy selectors. */
+/**
+ * Unpaginated active project teams for policy selectors.
+ * Supabase-only: `GET /api/teams` is paginated (max 100) and has no
+ * name-ordered unpaginated contract.
+ */
 export async function getActiveProjectTeams(
   projectId: string
 ): Promise<Team[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('teams')
-    .select(TEAM_LIST_SELECT)
-    .eq('project_id', projectId)
-    .eq('status', 'active')
-    .order('name', { ascending: true });
-
-  throwIfError(
-    error,
-    'failed to list active project teams',
-    'Failed to retrieve active project teams'
-  );
-
-  return (data ?? []) as unknown as Team[];
+  return getActiveProjectTeamsFromSupabase(projectId);
 }
 
 export const createTeam = service.createTeam;
