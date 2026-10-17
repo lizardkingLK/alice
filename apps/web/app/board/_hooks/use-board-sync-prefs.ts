@@ -13,21 +13,19 @@ export function useBoardSyncPrefs(userId: string | null | undefined): {
   // eslint-disable-next-line no-unused-vars -- setter
   readonly setPrefs: (next: BoardSyncPrefs) => void;
 } {
-  const [prefs, setPrefsState] = useState<BoardSyncPrefs>(
-    DEFAULT_BOARD_SYNC_PREFS
-  );
+  const [prefs, setPrefs] = useState<BoardSyncPrefs>(DEFAULT_BOARD_SYNC_PREFS);
 
   useEffect(() => {
-    setPrefsState(readBoardSyncPrefs(userId));
+    setPrefs(readBoardSyncPrefs(userId));
   }, [userId]);
 
-  const setPrefs = useCallback(
+  const commitPrefs = useCallback(
     (next: BoardSyncPrefs) => {
-      setPrefsState(next);
+      setPrefs(next);
       writeBoardSyncPrefs(userId, next);
     },
     [userId]
   );
 
-  return { prefs, setPrefs };
+  return { prefs, setPrefs: commitPrefs };
 }
