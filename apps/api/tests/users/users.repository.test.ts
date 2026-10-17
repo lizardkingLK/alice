@@ -4,8 +4,7 @@ vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
 });
 
-import type { Database } from '@repo/types';
-import { userListSelect } from '@repo/types';
+import { userListSelect, type Database } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { OptimisticLockError } from '../../src/lib/optimistic-lock';
 import { UsersRepository } from '../../src/routes/api/users/users.repository';
