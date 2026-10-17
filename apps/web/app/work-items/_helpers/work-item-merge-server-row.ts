@@ -20,3 +20,17 @@ export function mergeWorkItemServerRow(
     updated_at: nextUpdatedAt,
   };
 }
+
+/** Replace one row in a list by id; returns a new array only when found. */
+export function replaceWorkItemInList(
+  items: readonly DbWorkItem[],
+  updated: DbWorkItem
+): DbWorkItem[] {
+  const index = items.findIndex((item) => item.id === updated.id);
+  if (index < 0) {
+    return [...items];
+  }
+  const next = [...items];
+  next[index] = mergeWorkItemServerRow(items[index]!, updated);
+  return next;
+}

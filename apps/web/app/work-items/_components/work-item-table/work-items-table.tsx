@@ -15,6 +15,7 @@ import {
 } from '@repo/ui/components/ui/card';
 import { ClipboardPenLine } from '@repo/ui/lib/icons';
 import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form/work-item-form-dialog';
+import { replaceWorkItemInList } from '@/app/work-items/_helpers/work-item-merge-server-row';
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { WorkItemWorkspaceProps } from '@/app/work-items/_components/work-items-workspace';
 import { useWorkItemHierarchy } from '@/app/work-items/_hooks/use-work-item-hierarchy';
@@ -98,6 +99,12 @@ export default function WorkItemsTable({
     usePaginationNavigation(totalPages, limit);
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [workItems, setWorkItems] = useState<DbWorkItem[]>(initialWorkItems);
+
+  useEffect(() => {
+    setWorkItems(initialWorkItems);
+  }, [initialWorkItems]);
+
   const isActiveView = tab === 'active';
   const isAdmin = currentUserRole === 'admin';
   const canLinkSprintReport =
@@ -464,9 +471,10 @@ export default function WorkItemsTable({
     childrenByParentId,
     loadingIds,
     toggleExpand: handleToggleExpand,
+    patchWorkItem,
   } = useWorkItemHierarchy({
     enabled: isHierarchy,
-    roots: initialWorkItems,
+    roots: workItems,
     onError: reportHierarchyError,
   });
 
@@ -525,23 +533,35 @@ export default function WorkItemsTable({
     }
   };
 
-  const handleUpdated = useCallback(() => {
-    setError(null);
-    setDialogOpen(false);
-    clearItemToEditAfterClose();
-    router.refresh();
-  }, [router, clearItemToEditAfterClose]);
+  const handleFormSuccess = useCallback(
+    (workItem: DbWorkItem) => {
+      const wasEdit = itemToEdit !== null;
+      setError(null);
+      setDialogOpen(false);
+      clearItemToEditAfterClose();
+
+      if (wasEdit) {
+        setWorkItems((previous) => replaceWorkItemInList(previous, workItem));
+        patchWorkItem(workItem);
+        return;
+      }
+
+      // Create changes pagination totals / filters — keep RSC refresh.
+      router.refresh();
+    },
+    [clearItemToEditAfterClose, itemToEdit, patchWorkItem, router]
+  );
 
   const displayRows = useMemo<DisplayRow[]>(
     () =>
       buildWorkItemDisplayRows({
         isHierarchy,
-        roots: initialWorkItems,
+        roots: workItems,
         childrenByParentId,
         expandedIds,
         loadingIds,
       }),
-    [childrenByParentId, expandedIds, initialWorkItems, isHierarchy, loadingIds]
+    [childrenByParentId, expandedIds, isHierarchy, loadingIds, workItems]
   );
 
   const columns = useMemo(
@@ -630,7 +650,7 @@ export default function WorkItemsTable({
         hideLifecycleTabs={hideLifecycleTabs}
       />
 
-      <WorkItemsSearchResultsPanel search={search} items={initialWorkItems} />
+      <WorkItemsSearchResultsPanel search={search} items={workItems} />
 
       <Card className="border-border bg-card/50 backdrop-blur-md">
         <CardHeader>
@@ -679,7 +699,7 @@ export default function WorkItemsTable({
         lockProject={isProjectLocked}
         lockAssigneeId={lockedAssigneeId}
         onClose={() => handleDialogChange(false)}
-        onSuccess={() => handleUpdated()}
+        onSuccess={handleFormSuccess}
       />
 
       {lifecycle.itemToConfirm ? (
