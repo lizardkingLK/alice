@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadWorkItemChildrenAction } from '@/app/work-items/_components/work-item-registry/actions';
+import { replaceWorkItemInList } from '@/app/work-items/_helpers/work-item-merge-server-row';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 
 type UseWorkItemHierarchyOptions = {
@@ -39,11 +40,17 @@ export function useWorkItemHierarchy({
   >(() => new Map());
   const [loadingIds, setLoadingIds] = useState<Set<string>>(() => new Set());
 
+  /** Reset expand cache when the set of root ids changes (filters/nav), not on row edits. */
+  const rootIdsKey = useMemo(
+    () => roots.map((item) => item.id).join('\0'),
+    [roots]
+  );
+
   useEffect(() => {
     setExpandedIds(new Set());
     setChildrenByParentId(new Map());
     setLoadingIds(new Set());
-  }, [roots, enabled]);
+  }, [rootIdsKey, enabled]);
 
   const ensureChildrenLoaded = useCallback(
     async (parentId: string): Promise<DbWorkItem[]> => {
@@ -105,10 +112,27 @@ export function useWorkItemHierarchy({
     [ensureChildrenLoaded, expandedIds]
   );
 
+  const patchWorkItem = useCallback((updated: DbWorkItem) => {
+    setChildrenByParentId((previous) => {
+      let changed = false;
+      const next = new Map(previous);
+      for (const [parentId, children] of previous) {
+        const index = children.findIndex((child) => child.id === updated.id);
+        if (index < 0) {
+          continue;
+        }
+        next.set(parentId, replaceWorkItemInList(children, updated));
+        changed = true;
+      }
+      return changed ? next : previous;
+    });
+  }, []);
+
   return {
     expandedIds,
     childrenByParentId,
     loadingIds,
     toggleExpand,
+    patchWorkItem,
   };
 }

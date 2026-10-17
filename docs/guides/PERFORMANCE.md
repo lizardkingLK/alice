@@ -5,7 +5,7 @@ How Alice keeps dashboard pages fast, what has already been optimized, and the r
 | Field        | Value                                                                                      |
 | ------------ | ------------------------------------------------------------------------------------------ |
 | Status       | **Living**                                                                                 |
-| Last updated | 2026-10-17 (W5 measured; W6 realtime board shipped)                                        |
+| Last updated | 2026-10-17 (W5–W6 done; W4 first slice — work-items registry edit)                         |
 | Scope        | `apps/web` RSC data loading, `apps/api` auth + **mutation** latency, Express Prisma writes |
 
 Related:
@@ -633,16 +633,16 @@ Conflict (409) paths may still fetch the current row; the win is the **happy pat
 
 ### Roadmap (quick → large)
 
-| ID     | Work                                                                                       | Effort | Risk | Expected impact                                       | Status   |
-| ------ | ------------------------------------------------------------------------------------------ | ------ | ---- | ----------------------------------------------------- | -------- |
-| **W1** | Work-items: Prisma `fetchUpdated` + collapse duplicate access / pre-write `getById`        | S–M    | Low  | −1–2 PostgREST RTTs per PATCH / board move            | ✅ Done  |
-| **W2** | Work-items: parallelize / batch post-write activities + allocation worklog                 | M      | Med  | Lower wall time after status / field saves            | ✅ Done  |
-| **W3** | Shared pattern: Prisma (or slim) `fetchUpdated` across mutation repos                      | M–L    | Med  | Same happy-path win platform-wide                     | ✅ Done  |
-| **W5** | Board status fast path: status/`board_column_id` PATCH skips full coalesce + allocation    | M      | Med  | Cut multi-second board-move floor (measured ~9s warm) | ✅ Done  |
-| **W6** | Async board moves + realtime confirm (pending stack, prefs, toast-on-409)                  | M–L    | Med  | Instant drag UX; ~4–5s PATCH no longer blocks UI      | ✅ Done  |
-| **W4** | Client: prefer local entity sync over blanket `router.refresh()` on high-frequency patches | M      | Med  | Less full RSC remount after field saves               | 📋 Later |
+| ID     | Work                                                                                       | Effort | Risk | Expected impact                                       | Status         |
+| ------ | ------------------------------------------------------------------------------------------ | ------ | ---- | ----------------------------------------------------- | -------------- |
+| **W1** | Work-items: Prisma `fetchUpdated` + collapse duplicate access / pre-write `getById`        | S–M    | Low  | −1–2 PostgREST RTTs per PATCH / board move            | ✅ Done        |
+| **W2** | Work-items: parallelize / batch post-write activities + allocation worklog                 | M      | Med  | Lower wall time after status / field saves            | ✅ Done        |
+| **W3** | Shared pattern: Prisma (or slim) `fetchUpdated` across mutation repos                      | M–L    | Med  | Same happy-path win platform-wide                     | ✅ Done        |
+| **W5** | Board status fast path: status/`board_column_id` PATCH skips full coalesce + allocation    | M      | Med  | Cut multi-second board-move floor (measured ~9s warm) | ✅ Done        |
+| **W6** | Async board moves + realtime confirm (pending stack, prefs, toast-on-409)                  | M–L    | Med  | Instant drag UX; ~4–5s PATCH no longer blocks UI      | ✅ Done        |
+| **W4** | Client: prefer local entity sync over blanket `router.refresh()` on high-frequency patches | M      | Med  | Less full RSC remount after field saves               | ✅ First slice |
 
-**Order:** W1 → W2 → W3 → measure → **W5** → **W6** → W4. **M8 remaining read candidates** stay deferred until this track lands.
+**Order:** W1 → W2 → W3 → measure → **W5** → **W6** → **W4**. **M8 remaining read candidates** can resume after this write track.
 
 **Measured (board column PATCH TTFB):**
 
@@ -709,9 +709,13 @@ Full product doc: [REALTIME_BOARD_MOVES.md](../features/board/REALTIME_BOARD_MOV
 
 **Done:** Board settings sync prefs; pending attempts; toast-on-409 rebase; `useBoardWorkItemsRealtime` gated by prefs.
 
-### W4 — Client refresh hygiene (later)
+### W4 — Client refresh hygiene
 
-Board status moves already sync local state (`syncWorkItem`). High-frequency field dialogs / detail patches should prefer applying the mutation response locally; keep `router.refresh()` for structural changes (members, archive, create). After W6, board moves should rarely need `router.refresh()`.
+Board status moves already sync local state (`syncWorkItem`). High-frequency field dialogs / detail patches should prefer applying the mutation response locally; keep `router.refresh()` for structural changes (members, archive, create).
+
+**Done (first slice):** Work Items registry edit dialog — `onSuccess` merges the returned `DbWorkItem` into local table (+ hierarchy children) and **skips** `router.refresh()`. Create still refreshes (pagination / totals). Hierarchy expand state resets only when root **ids** change, not on content edits.
+
+**Optional later:** same pattern for sprints / projects / users / teams registries.
 
 ### Contributor patterns (writes)
 

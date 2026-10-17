@@ -90,7 +90,8 @@ vi.mock('@/app/work-items/_components/work-item-form/work-item-form', () => ({
     itemToEdit,
   }: {
     onClose?: () => void;
-    onSuccess?: () => void;
+    // eslint-disable-next-line no-unused-vars -- mock signature
+    onSuccess?: (workItem: DbWorkItem) => void;
     itemToEdit?: DbWorkItem | null;
   }) => (
     <div data-testid="mock-work-item-form">
@@ -100,7 +101,16 @@ vi.mock('@/app/work-items/_components/work-item-form/work-item-form', () => ({
       <button type="button" onClick={onClose}>
         Close Form
       </button>
-      <button type="button" onClick={onSuccess}>
+      <button
+        type="button"
+        onClick={() => {
+          onSuccess?.(
+            itemToEdit
+              ? { ...itemToEdit, title: `${itemToEdit.title} (edited)` }
+              : workItemFactory.build({ title: 'Created from form' })
+          );
+        }}
+      >
         Success Form
       </button>
     </div>
@@ -571,16 +581,33 @@ describe('WorkItemsTable', () => {
       'Editable item'
     );
 
-    // Act — success closes and refreshes
+    // Act — edit success syncs the row locally (no RSC refresh)
     fireEvent.click(screen.getByRole('button', { name: /Success Form/i }));
 
     // Assert
-    expect(mockRefresh).toHaveBeenCalled();
+    expect(mockRefresh).not.toHaveBeenCalled();
     await waitFor(() => {
       expect(
         screen.queryByTestId('mock-work-item-form')
       ).not.toBeInTheDocument();
     });
+    expect(screen.getByText(/Editable item \(edited\)/i)).toBeInTheDocument();
+  });
+
+  it('refreshes the registry after create success', async () => {
+    await renderTable({
+      initialWorkItems: [],
+      totalCount: 0,
+      totalPages: 1,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Add Work-Item/i }));
+    expect(await screen.findByTestId('mock-work-item-form')).toHaveTextContent(
+      'Create'
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Success Form/i }));
+
+    expect(mockRefresh).toHaveBeenCalled();
   });
 
   it('shows clear filters when URL has filters and clears them', async () => {
