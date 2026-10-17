@@ -4,8 +4,9 @@ Status: **Implemented**
 
 Conversational assistant for creating and inspecting projects, sprints, and
 work items. UI labels: **Alice** / sidebar **Alice**. System prompt
-name: **Alice Assistant**. Provider: **Google Gemini** (REST
-`generateContent` + function calling).
+name: **Alice Assistant**. Alice supports configured Google Gemini, xAI,
+OpenAI, and Anthropic models through a shared provider interface with tool
+calling.
 
 Related:
 
@@ -58,7 +59,8 @@ Related:
 
 Empty-state suggestions cover common flows (e.g. create a bug, list projects).
 Successful mutations can render **executed action** cards with deep links to
-the created entity. Header model: “Gemini 3.6” (dropdown).
+the created entity. The header model menu groups active configured models by
+provider.
 
 ### Composer
 
@@ -102,18 +104,21 @@ while create/select is still hydrating).
 
 ```text
 ChatClient / FloatingChatWidget
-  → apiFetch (Bearer JWT) → Express /api/chat
+  → apiFetch (Bearer JWT) → Express /api/v1/chat
     → requireApiAuth
+    → resolve selected integration row (or workspace default)
     → load/create chat_conversations row
     → inject workspace snapshot into system instruction
-    → Gemini generateContent (+ tools), up to 5 tool rounds
+    → resolve provider strategy
+    → provider API (+ tools), up to 5 provider/tool rounds
     → domain services (projects / sprints / work items / users)
     → upsert history markdown in Supabase Storage
     → JSON { reply, history, actions, conversationId, title }
 ```
 
-No Vercel AI SDK / OpenAI client — Gemini is called with `fetch` from
-`ChatService` (`chat.service.ts`).
+Provider strategies use direct `fetch` calls; Alice does not depend on a
+vendor SDK. `ChatService` keeps the provider-neutral conversation and tool
+shapes, while each strategy converts them to and from the vendor wire format.
 
 ### API routes
 
@@ -138,30 +143,32 @@ Mounted in `apps/api/src/config/routing.ts` as `/api/chat` and `/api/v1/chat`.
 
 ### Key files
 
-| Layer            | Path                                                                                              |
-| ---------------- | ------------------------------------------------------------------------------------------------- |
-| Page             | `apps/web/app/chat/page.tsx` (RSC bootstrap + Suspense)                                           |
-| Client UI        | `apps/web/app/chat/_components/chat-client.tsx`                                                   |
-| Attachment UI    | `apps/web/app/chat/_components/chat-attachment-tiles.tsx`                                         |
-| Attachment Link  | `apps/web/app/chat/_components/chat-attachment-link.tsx` (auto-refreshing signed URL link)        |
-| Action Cards     | `apps/web/app/chat/_components/chat-executed-action-card.tsx` (create, update, delete item cards) |
-| Cache Revalidate | `apps/web/lib/cache/revalidate-after-chat.ts` (instant cache eviction on mutations)               |
-| Client API       | `apps/web/app/chat/_services/chat-attachments.client.ts` (upload-session, finalize, mint, delete) |
-| Client Mutation  | `apps/web/app/chat/_services/chat.mutations.client.ts`                                            |
-| Server reads     | `apps/web/app/chat/_services/chat.reads.server.ts`                                                |
-| Launcher         | `apps/web/app/chat/_components/chat-launcher.tsx`                                                 |
-| App-shell dock   | `apps/web/app/chat/_components/docked-chat-panel.tsx` (via `chat-launcher.tsx`)                   |
-| Routes           | `createChatRouter` in `chat.route.ts` (mounted as `chat.router`)                                  |
-| Service          | `ChatService` in `chat.service.ts`                                                                |
-| Chat Repo        | `ChatRepository` in `chat.repository.ts` (`db` injected)                                          |
-| Attachment Repo  | `ChatAttachmentsRepository` in `chat-attachments.repository.ts` (Prisma + Storage)                |
-| Attachment Parse | `fetchAndParseWorkItemAttachment` in `chat-attachment-parser.ts`                                  |
-| Deduplication    | `WorkItemDeduplicationAgent` in `work-item-deduplication.agent.ts`                                |
-| Prompt + tools   | `apps/api/src/routes/api/chat/chat.route.data.ts`                                                 |
-| Schemas          | `apps/api/src/routes/api/chat/chat.schemas.ts` + `packages/types/src/api/v1/chat.ts`              |
-| Shared types     | `packages/types/src/chat-attachments.ts`                                                          |
-| Composition      | `apps/api/src/config/composition.ts` → `chat`                                                     |
-| Supabase client  | `apps/api/src/lib/supabase.ts` (`supabase` + re-exported `createClient`)                          |
+| Layer             | Path                                                                                              |
+| ----------------- | ------------------------------------------------------------------------------------------------- |
+| Page              | `apps/web/app/chat/page.tsx` (RSC bootstrap + Suspense)                                           |
+| Client UI         | `apps/web/app/chat/_components/chat-client.tsx`                                                   |
+| Attachment UI     | `apps/web/app/chat/_components/chat-attachment-tiles.tsx`                                         |
+| Attachment Link   | `apps/web/app/chat/_components/chat-attachment-link.tsx` (auto-refreshing signed URL link)        |
+| Action Cards      | `apps/web/app/chat/_components/chat-executed-action-card.tsx` (create, update, delete item cards) |
+| Cache Revalidate  | `apps/web/lib/cache/revalidate-after-chat.ts` (instant cache eviction on mutations)               |
+| Client API        | `apps/web/app/chat/_services/chat-attachments.client.ts` (upload-session, finalize, mint, delete) |
+| Client Mutation   | `apps/web/app/chat/_services/chat.mutations.client.ts`                                            |
+| Server reads      | `apps/web/app/chat/_services/chat.reads.server.ts`                                                |
+| Launcher          | `apps/web/app/chat/_components/chat-launcher.tsx`                                                 |
+| App-shell dock    | `apps/web/app/chat/_components/docked-chat-panel.tsx` (via `chat-launcher.tsx`)                   |
+| Routes            | `createChatRouter` in `chat.route.ts` (mounted as `chat.router`)                                  |
+| Service           | `ChatService` in `chat.service.ts`                                                                |
+| Chat Repo         | `ChatRepository` in `chat.repository.ts` (`db` injected)                                          |
+| Attachment Repo   | `ChatAttachmentsRepository` in `chat-attachments.repository.ts` (Prisma + Storage)                |
+| Attachment Parse  | `fetchAndParseWorkItemAttachment` in `chat-attachment-parser.ts`                                  |
+| Deduplication     | `WorkItemDeduplicationAgent` in `work-item-deduplication.agent.ts`                                |
+| Prompt + tools    | `apps/api/src/routes/api/chat/chat.route.data.ts`                                                 |
+| Provider registry | `apps/api/src/routes/api/integrations/chat-providers/resolve-chat-provider.ts`                    |
+| Provider adapters | `apps/api/src/routes/api/integrations/chat-providers/`                                            |
+| Schemas           | `apps/api/src/routes/api/chat/chat.schemas.ts` + `packages/types/src/api/v1/chat.ts`              |
+| Shared types      | `packages/types/src/chat-attachments.ts`                                                          |
+| Composition       | `apps/api/src/config/composition.ts` → `chat`                                                     |
+| Supabase client   | `apps/api/src/lib/supabase.ts` (`supabase` + re-exported `createClient`)                          |
 
 ### Data access
 
@@ -181,23 +188,66 @@ There are **no** `CHAT_SUPABASE_*` env vars and no second `createClient` for
 chat. Import `createClient` / `supabase` only from `lib/supabase.ts` when
 needed elsewhere in the API.
 
+### Provider resolution and conversation flow
+
+1. An authenticated user selects an active configured model in Alice Chat.
+2. The frontend sends that integration row's UUID as `integrationId`.
+3. The backend loads the active integration, validates its provider identity
+   and endpoint, and decrypts its API key in-process.
+4. `ChatService` resolves the provider strategy and sends the system
+   instruction, conversation history, and Alice tool declarations.
+5. The provider returns text, tool requests, or both.
+6. Alice validates provider tool-call structures and executes only known
+   server-side tools with the authenticated user's identity.
+7. Tool results are matched to their original call IDs and returned to the
+   provider for the next round.
+8. Alice returns the final assistant text and any executed action cards.
+
+| Provider       | API format                                                  | Authentication        |
+| -------------- | ----------------------------------------------------------- | --------------------- |
+| Google Gemini  | Native `generateContent`                                    | `key` query parameter |
+| xAI / SpaceXAI | OpenAI-compatible `/v1/chat/completions`                    | Bearer token          |
+| OpenAI         | Chat Completions `/v1/chat/completions`                     | Bearer token          |
+| Anthropic      | Messages `/v1/messages`, including `tool_use`/`tool_result` | `x-api-key` header    |
+
+Conversation history stays in Alice's `ChatContentTurn` shape inside
+`ChatService`. OpenAI and xAI convert it to system/user/assistant/tool
+messages. Anthropic keeps the system instruction separate and converts
+conversation turns to alternating user/assistant content blocks. Gemini uses
+Alice's structurally compatible contents directly.
+
+OpenAI/xAI and Anthropic validate returned tool names, IDs, duplicate IDs,
+JSON argument shapes, and declared parameter types before execution. Gemini
+tool arguments are checked by the individual handlers and domain services.
+Provider tool requests never receive direct database access or database
+credentials.
+
 ---
 
 ## Tools (function calling)
 
-Declared in `chat.route.data.ts` and executed server-side:
+The 13 tools are declared in `chat.route.data.ts` and executed server-side:
 
-| Tool                         | Effect                                                                                                      |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `list_projects`              | List projects (id, name, key)                                                                               |
-| `create_project`             | Create project via projects service                                                                         |
-| `list_sprints`               | List sprints for a `projectId`                                                                              |
-| `create_sprint`              | Create sprint via sprints service                                                                           |
-| `list_users`                 | List users (id, name, email) for assignee matching                                                          |
-| `create_work_item`           | Create single work item; maps chat types (bug → Issue, task → Task, story → Story)                          |
-| `parse_work_item_attachment` | Fetch and parse attached document (JSON, CSV, TSV, Markdown, Outline, YAML) into structured work item trees |
-| `check_work_item_duplicates` | Compare parsed items against existing project items to identify new vs duplicate items                      |
-| `batch_import_work_items`    | Bulk create or synchronize work items with hierarchy links, atomic rollback, and update/deletion controls   |
+| Tool                             | Effect                                                                                                      |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `list_projects`                  | List projects (id, name, key)                                                                               |
+| `create_project`                 | Create project via projects service                                                                         |
+| `list_sprints`                   | List sprints for a `projectId`                                                                              |
+| `create_sprint`                  | Create sprint via sprints service                                                                           |
+| `list_users`                     | List users (id, name, email) for assignee matching                                                          |
+| `get_workflow_config`            | Read the current workflow envelope, preferring a live designer draft when available                         |
+| `propose_workflow_patch`         | Create a reviewable workflow proposal; does not save until the user applies it                              |
+| `dismiss_workflow_proposal`      | Dismiss an unapplied workflow proposal without changing the canvas                                          |
+| `create_work_item`               | Create single work item; maps chat types (bug → Issue, task → Task, story → Story)                          |
+| `parse_work_item_attachment`     | Fetch and parse attached document (JSON, CSV, TSV, Markdown, Outline, YAML) into structured work item trees |
+| `check_work_item_duplicates`     | Compare parsed items against existing project items to identify new vs duplicate items                      |
+| `batch_import_work_items`        | Bulk create or synchronize work items with hierarchy links, atomic rollback, and update/deletion controls   |
+| `generate_project_fields_schema` | Generate a validated project dynamic-fields JSON schema                                                     |
+
+A provider may request multiple tools in one response. `ChatService` executes
+those calls concurrently, preserves each call ID, and returns each result with
+the correct tool name and ID. The updated history is sent back to the provider
+for another round. The loop allows at most five provider/tool rounds.
 
 ### Tool Arguments & Options for `batch_import_work_items`
 
@@ -350,6 +400,14 @@ Indexes on `user_id` and `conversation_id`. Managed exclusively via Prisma (`awa
 | Nav       | Platform item; no `/chat` minimum role in route policy → any authenticated role                    |
 | Mutations | Domain services still enforce their own rules (e.g. create project/sprint typically manager/admin) |
 
+`ChatService` passes the authenticated user ID into every tool execution.
+Project-sensitive reads check the user's accessible project IDs, mutation
+tools call the existing authorization-aware domain services, and workflow
+changes retain their manager/admin gates. Attachment tools resolve only active
+attachments owned by the current user. An AI provider can request a declared
+tool, but it cannot bypass these server-side checks or query the database
+directly.
+
 Confirm-before-create is **prompt-only**; the UI does not show a separate
 approval step before tool mutations run.
 
@@ -359,7 +417,13 @@ approval step before tool mutations run.
 
 ### Chat models (Phase 1 — live)
 
-Admins configure one or more **`integrations`** rows (category `ai_agent`, `config.kind = chat_model`) from **Settings → Integrations**. Alice Chat lists active rows via `GET /api/integrations/chat-models` and sends `integrationId` on `POST /api/chat`. Resolution order: explicit `integrationId` → workspace default row → **400** `"No chat model configured"`.
+Managers and admins configure one or more **`integrations`** rows (category
+`ai_agent`, `config.kind = chat_model`) from **Settings → Integrations**. Alice
+Chat lists active rows via `GET /api/v1/integrations/chat-models` and sends
+`integrationId` on `POST /api/v1/chat`. When `integrationId` is omitted, the
+backend uses the active workspace default. An explicitly selected missing or
+inactive integration returns **400** and is not replaced by the default. If no
+active default exists, the backend returns **400** `"No chat model configured"`.
 
 The header uses compact **icon buttons**: a **Cpu** control opens the
 **provider → model** nested menu (`DropdownMenuSub`); selection remains the
@@ -367,6 +431,8 @@ integration row UUID. A **Plus** control starts a new chat for members and
 managers; for **admins** it opens a menu with **New chat** and **Configure AI
 models** (Settings). Admins can also **Mark as workspace default** from the
 model menu when the selected integration is not already `is_default`.
+Managers can perform the same model configuration and default selection from
+Settings, but the current Chat-header management shortcuts are admin-only.
 
 See [SETTINGS_INTEGRATIONS.md](../integrations/SETTINGS_INTEGRATIONS.md).
 
@@ -389,16 +455,19 @@ No active chat model rows → `POST /api/chat` returns **400** with a configurat
 
 ## Reliability
 
-| Topic                     | Behavior                                                                                                                                                                                                                                                 |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Streaming                 | None — full JSON response; UI shows a “Thinking…” state                                                                                                                                                                                                  |
-| Chat provider 429 / 5xx   | Up to 3 retries with exponential backoff; errors appended to `alice-chatbot-errors.log` (gitignored)                                                                                                                                                     |
-| Invalid / expired API key | Provider returns a **400** `ChatProviderError` with Settings → Integrations guidance (Gemini: invalid/expired key messages and 401/403; SpaceXAI: 401/403). Avoids the generic “Could not connect to the backend” path when JSON error mapping succeeds. |
-| HTTP timeouts             | Express socket inactivity **120s** (`server.setTimeout`); chat `apiFetch` **90s**. A 15s socket timeout was destroying the POST mid-Gemini; Next’s rewrite then returned a non-JSON 500 and the UI showed “Could not connect to the backend.”            |
-| Dropdown cache            | After `create_project` (and related tools), chat calls `revalidateAfterChatActions` so `/sprints` Create Sprint is not stuck on the 60s `dropdown-projects` cache. See [PERFORMANCE.md](../../guides/PERFORMANCE.md) §2.7.                               |
-| Tool errors               | Returned as function-response `{ error }`; loop may continue                                                                                                                                                                                             |
-| Rate limiting             | No app-level chat quota beyond Gemini retries                                                                                                                                                                                                            |
-| Request validation        | Manual `messages` checks; no Zod body schema on the chat router yet                                                                                                                                                                                      |
+## Reliability
+
+| Topic                     | Behavior                                                                                                                                                                                                                                      |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Streaming                 | None — full JSON response; UI shows a "Thinking..." state                                                                                                                                                                                     |
+| Transient provider errors | At most 3 attempts with exponential backoff for network failures, `429`, `529`, `503`, and `500`–`504`; safe metadata is appended to `alice-chatbot-errors.log` (gitignored)                                                                  |
+| Invalid / expired API key | Provider returns a **400** `ChatProviderError` with Settings → Integrations guidance for recognized credential failures, avoiding the generic "Could not connect to the backend" path when JSON error mapping succeeds.                       |
+| HTTP timeouts             | Express socket inactivity **120s** (`server.setTimeout`); chat `apiFetch` **90s**. A 15s socket timeout was destroying the POST mid-Gemini; Next's rewrite then returned a non-JSON 500 and the UI showed "Could not connect to the backend." |
+| Dropdown cache            | After `create_project` (and related tools), chat calls `revalidateAfterChatActions` so `/sprints` Create Sprint is not stuck on the 60s `dropdown-projects` cache. See [PERFORMANCE.md](../../guides/PERFORMANCE.md) §2.7.                    |
+| Tool errors               | Returned as function-response `{ error }`; loop may continue                                                                                                                                                                                  |
+| Provider errors           | Known credential/model/request failures use provider-specific safe messages; provider response bodies are omitted from logs                                                                                                                   |
+| Rate limiting             | No app-level chat quota beyond the shared provider retry behavior                                                                                                                                                                             |
+| Request validation        | `POST /api/v1/chat` uses the shared Zod request schema before model resolution or chat processing                                                                                                                                             |
 
 ---
 
@@ -406,17 +475,22 @@ No active chat model rows → `POST /api/chat` returns **400** with a configurat
 
 ### Automated Test Coverage
 
-| Area                                   | Test File                                                   | Status  |
-| -------------------------------------- | ----------------------------------------------------------- | ------- |
-| Attachment repository & direct upload  | `apps/api/tests/chat/chat-attachments.repository.test.ts`   | Covered |
-| Attachment file parsing (JSON/CSV)     | `apps/api/tests/chat/chat-attachment-parser.test.ts`        | Covered |
-| Deduplication engine & recommendations | `apps/api/tests/chat/work-item-deduplication.agent.test.ts` | Covered |
-| Chat service orchestration & tools     | `apps/api/tests/chat/chat.service.test.ts`                  | Covered |
-| Chat API routes & auth                 | `apps/api/tests/chat/chat.route.test.ts`                    | Covered |
-| Web client upload & mutations          | `apps/web/tests/chat/chat-attachments.client.test.ts`       | Covered |
-| Web attachment tiles rendering         | `apps/web/tests/chat/chat-attachment-tiles.test.tsx`        | Covered |
-| Web attachment link auto-refresh       | `apps/web/tests/chat/chat-attachment-link.test.tsx`         | Covered |
-| Web full chat client UI                | `apps/web/tests/chat/chat-client.test.tsx`                  | Covered |
+| Area                                   | Test File                                                                                       | Status                   |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------ |
+| Attachment repository & direct upload  | `apps/api/tests/chat/chat-attachments.repository.test.ts`                                       | Covered                  |
+| Attachment file parsing (JSON/CSV)     | `apps/api/tests/chat/chat-attachment-parser.test.ts`                                            | Covered                  |
+| Deduplication engine & recommendations | `apps/api/tests/chat/work-item-deduplication.agent.test.ts`                                     | Covered                  |
+| Chat service orchestration & tools     | `apps/api/tests/chat/chat.service.test.ts`                                                      | Covered                  |
+| Chat API routes & auth                 | `apps/api/tests/chat/chat.route.test.ts`                                                        | Covered                  |
+| Provider registry and approved URLs    | `apps/api/tests/integrations/resolve-chat-provider.test.ts`, `chat-provider-endpoints.test.ts`  | Covered                  |
+| OpenAI provider and wire conversion    | `apps/api/tests/integrations/openai-chat.provider.test.ts`, `spacexai-openai-adapter.test.ts`   | Covered with mocked HTTP |
+| Anthropic provider and wire conversion | `apps/api/tests/integrations/anthropic-chat.provider.test.ts`, `anthropic-chat-adapter.test.ts` | Covered with mocked HTTP |
+| Gemini and xAI provider regressions    | `apps/api/tests/integrations/gemini-chat.provider.test.ts`, `spacexai-chat.provider.test.ts`    | Covered with mocked HTTP |
+| Integration model resolution/security  | `apps/api/tests/integrations/integrations.service.test.ts`, `integrations.route.test.ts`        | Covered                  |
+| Web client upload & mutations          | `apps/web/tests/chat/chat-attachments.client.test.ts`                                           | Covered                  |
+| Web attachment tiles rendering         | `apps/web/tests/chat/chat-attachment-tiles.test.tsx`                                            | Covered                  |
+| Web attachment link auto-refresh       | `apps/web/tests/chat/chat-attachment-link.test.tsx`                                             | Covered                  |
+| Web full chat client UI                | `apps/web/tests/chat/chat-client.test.tsx`                                                      | Covered                  |
 
 Run tests via:
 
@@ -434,22 +508,36 @@ For full step-by-step instructions for testing from the browser UI (with sample 
 
 ## Known limitations
 
-1. Drawer variant lacks the full-page conversation sidebar / New Chat controls.
-2. `GET /api/chat/:conversationId` loads Storage by id — keep ownership checks
+1. OpenAI uses Chat Completions, not the Responses API.
+2. Anthropic uses the Messages API with a fixed `max_tokens` value of `4096`;
+   extended thinking is not configured.
+3. Streaming is not supported. Provider responses are returned as complete
+   JSON payloads.
+4. The provider/tool loop is limited to five rounds. Reaching the limit
+   currently returns an empty assistant response.
+5. OpenAI and Anthropic have mocked automated coverage, but successful live
+   provider operation has not been confirmed.
+6. Model suggestions are static; Alice does not discover models from provider
+   APIs or validate credentials when a model is saved.
+7. Custom LLM proxies and Azure OpenAI endpoints are not supported; provider
+   calls are restricted to approved official hosts and paths.
+8. Drawer variant lacks the full-page conversation sidebar / New Chat controls.
+9. `GET /api/chat/:conversationId` loads Storage by id — keep ownership checks
    aligned with the conversation row’s `user_id` when changing this path.
-3. List tools and snapshot injection use broad workspace data (service-role /
-   all-users style reads) — treat as a privacy boundary for shared tenants.
-4. Work-item “key” in some tool results may be synthetic for display; prefer
-   deep links from action cards.
-5. Broader AI roadmap items (smart triage, NL search, Slack/Teams) are **Plan**
-   only and are not provided by this chatbot.
+10. List tools and snapshot injection use broad workspace data (service-role /
+    all-users style reads) — treat as a privacy boundary for shared tenants.
+11. Work-item “key” in some tool results may be synthetic for display; prefer
+    deep links from action cards.
+12. Broader AI roadmap items (smart triage, NL search, Slack/Teams) are **Plan**
+    only and are not provided by this chatbot.
 
 ---
 
 ## Phases (as built)
 
 1. Conversations table + Storage history format
-2. Gemini tools for list/create project, sprint, work item, users
+2. Provider tool calling for projects, sprints, work items, users, workflows,
+   attachments, imports, and project field schemas
 3. Full-page `/chat` + navbar launcher drawer on dashboard shell
 4. Action cards after successful mutations
 5. Document attachment processing (upload-session, Supabase Storage direct upload, JSON/CSV parsing, deduplication engine, batch work item import, and strict project scope guardrails)

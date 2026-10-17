@@ -1,57 +1,29 @@
-import { RecordStatusEnum } from '@repo/types';
 import { apiFetch } from '@/lib/api/api-fetch.reads.use.server';
-import { getDbUser } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
-import { paginationMeta } from '@/lib/db/pagination';
-import { applyListSearch, runPaginatedSelect } from '@/lib/db/query';
-import { isAdmin } from '@/lib/rbac/roles';
+import { shouldReadViaApi } from '@/lib/data-retrieval.server';
+import { listAccessAllowlistFromApi } from './access-allowlist.reads.api.server';
+import { listAccessAllowlistFromSupabase } from './access-allowlist.reads.supabase.server';
 import { createAccessAllowlistService } from './access-allowlist.mutations.shared';
 import type {
-  AccessAllowlistEntry,
   AccessAllowlistListParams,
   AccessAllowlistListResult,
 } from './access-allowlist.mutations.shared';
 
 const service = createAccessAllowlistService(apiFetch);
 
-const ALLOWLIST_SEARCH_FIELDS = ['value', 'label'] as const;
-
 /**
- * Reads query Supabase directly from the RSC layer to skip the `web → api`
- * hop. Mutations still go through the API. Admin-only (same as the old GET).
+ * Public server read facade — picks supabase-js (default) or Express GET
+ * based on `DATA_READS_VIA_API`. Admin-only on both paths: Supabase reader
+ * short-circuits to an empty page for non-admins, Express answers 403.
+ * Mutations go through the API (`service`).
  */
 export async function listAccessAllowlist(
   params: AccessAllowlistListParams = {}
 ): Promise<AccessAllowlistListResult> {
-  const {
-    status = RecordStatusEnum.active,
-    page = 1,
-    limit = 10,
-    search,
-  } = params;
-
-  const dbUser = await getDbUser();
-  if (!isAdmin(dbUser?.role)) {
-    return { items: [], ...paginationMeta(0, page, limit) };
+  if (shouldReadViaApi('access-allowlist')) {
+    return listAccessAllowlistFromApi(params);
   }
 
-  const supabase = await createClient();
-  let query = supabase.from('access_allowlist').select('*', { count: 'exact' });
-
-  if (status !== 'all') {
-    query = query.eq('status', status);
-  }
-
-  query = applyListSearch(query, search, [...ALLOWLIST_SEARCH_FIELDS]);
-
-  const { rows: items, ...meta } =
-    await runPaginatedSelect<AccessAllowlistEntry>(query, page, limit, {
-      orderBy: 'created_at',
-      logLabel: 'failed to list access allowlist',
-      errorMessage: 'Failed to list access allowlist',
-    });
-
-  return { items, ...meta };
+  return listAccessAllowlistFromSupabase(params);
 }
 
 export const createAccessAllowlistEntry = service.createAccessAllowlistEntry;

@@ -41,12 +41,32 @@ export type AnthropicTool = {
   input_schema: Record<string, unknown>;
 };
 
+export type AnthropicResponseRejectionCategory =
+  | 'invalid_json'
+  | 'invalid_response_shape'
+  | 'unknown_tool'
+  | 'invalid_tool_arguments'
+  | 'invalid_stop_reason'
+  | 'unsupported_content_block';
+
+export class AnthropicResponseError extends Error {
+  readonly category: AnthropicResponseRejectionCategory;
+
+  constructor(category: AnthropicResponseRejectionCategory) {
+    super('Anthropic returned an invalid response.');
+    this.name = 'AnthropicResponseError';
+    this.category = category;
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function invalidResponse(): Error {
-  return new Error('Anthropic returned an invalid response.');
+function invalidResponse(
+  category: AnthropicResponseRejectionCategory
+): AnthropicResponseError {
+  return new AnthropicResponseError(category);
 }
 
 function invalidConversation(): Error {
@@ -127,7 +147,7 @@ export function aliceChatToolsToAnthropicTools(
     description: tool.description,
     input_schema: tool.parameters
       ? { ...tool.parameters }
-      : { type: 'object', properties: {} },
+      : { type: 'object', properties: {}, additionalProperties: false },
   }));
 }
 
@@ -283,12 +303,15 @@ function parseToolUse(
     block.name.length === 0 ||
     !isRecord(block.input)
   ) {
-    throw invalidResponse();
+    throw invalidResponse('invalid_response_shape');
   }
 
   const selectedTool = tools.find((tool) => tool.name === block.name);
-  if (!selectedTool || !argumentsMatchToolSchema(block.input, selectedTool)) {
-    throw invalidResponse();
+  if (!selectedTool) {
+    throw invalidResponse('unknown_tool');
+  }
+  if (!argumentsMatchToolSchema(block.input, selectedTool)) {
+    throw invalidResponse('invalid_tool_arguments');
   }
 
   seenToolUseIds.add(block.id);
@@ -307,7 +330,7 @@ function assertNormalStopReason(
   toolUseCount: number
 ): void {
   if (stopReason === 'tool_use') {
-    if (toolUseCount === 0) throw invalidResponse();
+    if (toolUseCount === 0) throw invalidResponse('invalid_stop_reason');
     return;
   }
 
@@ -329,7 +352,7 @@ function assertNormalStopReason(
     textBlockCount === 0 ||
     toolUseCount > 0
   ) {
-    throw invalidResponse();
+    throw invalidResponse('invalid_stop_reason');
   }
 }
 
@@ -348,7 +371,7 @@ export function anthropicMessageToChatLlmResponse(
     payload.model.length === 0 ||
     !Array.isArray(payload.content)
   ) {
-    throw invalidResponse();
+    throw invalidResponse('invalid_response_shape');
   }
 
   const parts: ChatContentPart[] = [];
@@ -357,10 +380,14 @@ export function anthropicMessageToChatLlmResponse(
   let toolUseCount = 0;
 
   for (const rawBlock of payload.content) {
-    if (!isRecord(rawBlock)) throw invalidResponse();
+    if (!isRecord(rawBlock)) {
+      throw invalidResponse('invalid_response_shape');
+    }
 
     if (rawBlock.type === 'text') {
-      if (typeof rawBlock.text !== 'string') throw invalidResponse();
+      if (typeof rawBlock.text !== 'string') {
+        throw invalidResponse('invalid_response_shape');
+      }
       if (rawBlock.text.length > 0) {
         textBlockCount += 1;
         parts.push({ text: rawBlock.text });
@@ -374,7 +401,7 @@ export function anthropicMessageToChatLlmResponse(
       continue;
     }
 
-    throw invalidResponse();
+    throw invalidResponse('unsupported_content_block');
   }
 
   assertNormalStopReason(payload.stop_reason, textBlockCount, toolUseCount);
@@ -400,7 +427,7 @@ export async function anthropicMessageResponseToChatLlmResponse(
   try {
     payload = await response.json();
   } catch {
-    throw invalidResponse();
+    throw invalidResponse('invalid_json');
   }
 
   return anthropicMessageToChatLlmResponse(payload, tools);

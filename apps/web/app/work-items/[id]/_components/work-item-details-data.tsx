@@ -6,7 +6,7 @@ import {
   getWorkItemAncestors,
   getWorkItems,
 } from '@/app/work-items/_services/work-items.reads.server';
-import { getWorkItemAttachments } from '@/app/attachments/_services/attachments.reads.supabase.server';
+import { getWorkItemAttachments } from '@/app/attachments/_services/attachments.reads.server';
 import {
   getCommentCountsByWorkItemIds,
   getWorkItemDiscussion,
@@ -19,7 +19,7 @@ import {
 } from '@/app/projects/_services/projects.reads.server';
 import { EMPTY_ACTIVE_SPRINTS_PAGE } from '@/app/board/_services/board.reads.defaults.server';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
-import { getWorkItemWorkLogs } from '@/app/worklogs/_services/worklogs.reads.supabase.server';
+import { getWorkItemWorkLogs } from '@/app/worklogs/_services/worklogs.reads.server';
 import { getDbUser } from '@/lib/auth';
 import { zeroCountsById } from '@/lib/db/query';
 import { safeServerFetch } from '@/lib/safe-server-fetch';

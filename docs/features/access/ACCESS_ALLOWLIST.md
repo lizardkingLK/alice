@@ -421,8 +421,10 @@ Invitees should use the invite email or **Forgot password**.
 
 ## API / security notes
 
-- Admin registry list on `/users` is RSC (`listAccessAllowlist`, admin-gated);
-  mutations stay `POST/PUT/DELETE /api/access-allowlist`.
+- Admin registry list on `/users` is RSC (`listAccessAllowlist`, admin-gated)
+  by default. Optional Express twin: `GET /api/access-allowlist` (+ `/api/v1`)
+  when `DATA_READS_VIA_API=true` ([DATA_RETRIEVAL.md](../../architecture/DATA_RETRIEVAL.md)).
+  Mutations stay `POST/PUT/DELETE /api/access-allowlist`.
 - Allowlist status badge is **display-derived**: inactive/archived/deleted stay
   as stored; `active` + past `expires_at` (UTC) shows **expired** via
   `getAccessAllowlistDisplayStatus` (does not mutate the row).

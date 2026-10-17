@@ -11,6 +11,7 @@ import {
   accessAllowlistCreateSchema,
   accessAllowlistLockActionSchema,
   accessAllowlistUpdateSchema,
+  listAccessAllowlistQuerySchema,
 } from './access-allowlist.schemas';
 import { AccessAllowlistService } from './access-allowlist.service';
 
@@ -33,7 +34,31 @@ function routeError(
     return;
   }
 
+  if (message.startsWith('Unauthorized.')) {
+    res.status(403).json({ error: message });
+    return;
+  }
+
   res.status(500).json({ error: message });
+}
+
+function firstQueryValue(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (Array.isArray(value) && typeof value[0] === 'string') {
+    return value[0];
+  }
+  return undefined;
+}
+
+function listAccessAllowlistQueryFromRequest(query: Record<string, unknown>) {
+  return listAccessAllowlistQuerySchema.safeParse({
+    page: firstQueryValue(query.page),
+    limit: firstQueryValue(query.limit),
+    search: firstQueryValue(query.search),
+    status: firstQueryValue(query.status),
+  });
 }
 
 function readRouteId(req: AuthenticatedRequest): string | null {
@@ -49,6 +74,31 @@ export function createAccessAllowlistRouter(deps: AccessAllowlistRouterDeps) {
   const { accessAllowlistService } = deps;
 
   const accessAllowlistRouter: Router = Router();
+
+  accessAllowlistRouter.get(
+    '/',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const actorId = requireActorId(req);
+        const parsed = listAccessAllowlistQueryFromRequest(
+          req.query as Record<string, unknown>
+        );
+        if (!parsed.success) {
+          return res.status(400).json({ error: z.treeifyError(parsed.error) });
+        }
+
+        const result =
+          await accessAllowlistService.listAccessAllowlistPaginated(
+            actorId,
+            parsed.data
+          );
+        res.json(result);
+      } catch (error) {
+        routeError(res, error, 'Failed to list access allowlist');
+      }
+    }
+  );
 
   accessAllowlistRouter.post(
     '/',

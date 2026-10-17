@@ -71,19 +71,20 @@ Do **not** implement unused Express GETs with supabase-js. That would still leav
 Only domains on the allowlist can honor the toggle. Source of truth:
 `packages/types/src/data-retrieval.ts` → `DATA_RETRIEVAL_DOMAINS`.
 
-| Domain         | Express Prisma GET | Web `reads.supabase` + `reads.api` + facade | On allowlist | Notes                              |
-| -------------- | ------------------ | ------------------------------------------- | ------------ | ---------------------------------- |
-| **work-items** | Yes                | **Done**                                    | **Yes**      | Default stays SSR; toggle optional |
-| comments       | Partial / TBD      | Not wired                                   | No           |                                    |
-| projects       | Partial / TBD      | Not wired                                   | No           |                                    |
-| sprints        | Partial / TBD      | Not wired                                   | No           |                                    |
-| teams          | Partial / TBD      | Not wired                                   | No           |                                    |
-| users          | Partial / TBD      | Not wired                                   | No           |                                    |
-| saved-views    | Partial / TBD      | Not wired                                   | No           |                                    |
-| attachments    | List GET exists    | Not wired as domain toggle                  | No           | Nested under work-items UX         |
-| worklogs       | List GET exists    | Not wired as domain toggle                  | No           | Nested under work-items UX         |
+| Domain               | Express Prisma GET | Web `reads.supabase` + `reads.api` + facade | On allowlist | Notes                                               |
+| -------------------- | ------------------ | ------------------------------------------- | ------------ | --------------------------------------------------- |
+| **work-items**       | Yes                | **Done**                                    | **Yes**      | Default stays SSR; toggle optional                  |
+| **projects**         | Yes                | **Done**                                    | **Yes**      | List / detail / members                             |
+| **users**            | Yes                | **Done**                                    | **Yes**      | Paginated list                                      |
+| **teams**            | Yes                | **Done**                                    | **Yes**      | Paginated list                                      |
+| **sprints**          | Yes                | **Done**                                    | **Yes**      | List / detail (burndown stays separate)             |
+| **comments**         | Yes                | **Done**                                    | **Yes**      | List / discussion (API max page + multi-page fetch) |
+| **attachments**      | Yes (list)         | **Done**                                    | **Yes**      | Nested under work-item detail                       |
+| **worklogs**         | Yes (list)         | **Done**                                    | **Yes**      | Nested under work-item detail                       |
+| **saved-views**      | Yes (list)         | **Done**                                    | **Yes**      | Tabs mine / shared / archived                       |
+| **access-allowlist** | Yes (list)         | **Done**                                    | **Yes**      | Admin-gated list                                    |
 
-**Correct as of 2026-09-04:** the full dual-path rewrite (split supabase/api readers + `shouldReadViaApi` in the facade) has been done for **work-items only**.
+**Correct as of 2026-10-16:** dual-path rewrite (split supabase/api readers + `shouldReadViaApi` in the facade) is done for all product list/detail domains on `DATA_RETRIEVAL_DOMAINS`. Default remains SSR; production should keep `DATA_READS_VIA_API` off unless measuring the Express hop.
 
 ### Per-domain checklist — dual retrieval strategy
 
@@ -540,7 +541,7 @@ apps/web/.../work-items.mutations.client.ts
 | 4    | Health v1 as `/api/v1/health` (~1h)                                                                     | **Done** (alias `/api/health`; `GET /` is root status)                                                                                                                                                                                                                                                                         |
 | 4b   | Health v2 reference (`/api/v2/health`, shared repo, `HealthServiceV2`)                                  | **Done** (template for product v2)                                                                                                                                                                                                                                                                                             |
 | 5    | Product `/api/v1` aliases once GETs exist                                                               | **Started** (`/api/v1/attachments`, `/api/v1/worklogs`, `/api/v1/profile`, `/api/v1/saved-views`, `/api/v1/chat`, `/api/v1/integrations` aliases mounted)                                                                                                                                                                      |
-| 6    | Optional: point RSC at Express GETs via [DATA_RETRIEVAL.md](./DATA_RETRIEVAL.md) (`DATA_READS_VIA_API`) | **Started** — **work-items** dual readers + allowlist done (default **off**); other domains not wired — see [Domain status](#domain-status--rsc-dual-retrieval-data_reads_via_api)                                                                                                                                             |
+| 6    | Optional: point RSC at Express GETs via [DATA_RETRIEVAL.md](./DATA_RETRIEVAL.md) (`DATA_READS_VIA_API`) | **Done** — all product list/detail domains dual-wired + allowlisted (default **off**); see [Domain status](#domain-status--rsc-dual-retrieval-data_reads_via_api)                                                                                                                                                              |
 | 7    | Mark this doc **Living**                                                                                | After 4                                                                                                                                                                                                                                                                                                                        |
 
 ---

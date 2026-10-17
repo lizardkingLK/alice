@@ -7,9 +7,7 @@ import {
   type WorkItemWorkLogRowRaw,
 } from '@repo/types';
 
-export type { WorkItemWorkLog };
-
-export async function getWorkItemWorkLogs(
+export async function getWorkItemWorkLogsFromSupabase(
   workItemId: string
 ): Promise<WorkItemWorkLog[]> {
   const supabase = await createClient();

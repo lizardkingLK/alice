@@ -57,12 +57,21 @@ describe('getDataRetrievalStrategy / shouldReadViaApi', () => {
     expect(shouldReadViaApi('work-items')).toBe(false);
   });
 
-  it('switches allowlisted work-items to api when the flag is on', () => {
+  it('switches allowlisted domains to api when the flag is on', () => {
     process.env.DATA_READS_VIA_API = 'true';
     process.env.GITHUB_ACTIONS = 'false';
 
     expect(getDataRetrievalStrategy()).toBe('api');
     expect(shouldReadViaApi('work-items')).toBe(true);
+    expect(shouldReadViaApi('projects')).toBe(true);
+    expect(shouldReadViaApi('users')).toBe(true);
+    expect(shouldReadViaApi('teams')).toBe(true);
+    expect(shouldReadViaApi('sprints')).toBe(true);
+    expect(shouldReadViaApi('comments')).toBe(true);
+    expect(shouldReadViaApi('attachments')).toBe(true);
+    expect(shouldReadViaApi('worklogs')).toBe(true);
+    expect(shouldReadViaApi('saved-views')).toBe(true);
+    expect(shouldReadViaApi('access-allowlist')).toBe(true);
   });
 
   it('does not honor the flag in CI', () => {
@@ -75,9 +84,17 @@ describe('getDataRetrievalStrategy / shouldReadViaApi', () => {
 });
 
 describe('isDataRetrievalApiDomain', () => {
-  it('allowlists work-items only', () => {
+  it('allowlists product read domains with Express GET twins', () => {
     expect(isDataRetrievalApiDomain('work-items')).toBe(true);
-    expect(isDataRetrievalApiDomain('users')).toBe(false);
-    expect(isDataRetrievalApiDomain('projects')).toBe(false);
+    expect(isDataRetrievalApiDomain('users')).toBe(true);
+    expect(isDataRetrievalApiDomain('projects')).toBe(true);
+    expect(isDataRetrievalApiDomain('teams')).toBe(true);
+    expect(isDataRetrievalApiDomain('sprints')).toBe(true);
+    expect(isDataRetrievalApiDomain('comments')).toBe(true);
+    expect(isDataRetrievalApiDomain('attachments')).toBe(true);
+    expect(isDataRetrievalApiDomain('worklogs')).toBe(true);
+    expect(isDataRetrievalApiDomain('saved-views')).toBe(true);
+    expect(isDataRetrievalApiDomain('access-allowlist')).toBe(true);
+    expect(isDataRetrievalApiDomain('board')).toBe(false);
   });
 });
