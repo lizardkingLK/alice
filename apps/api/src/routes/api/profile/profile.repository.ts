@@ -47,6 +47,23 @@ export class ProfileRepository {
     }
   }
 
+  /** Post-mutation profile wire row via Prisma (ISO `updated_at`). */
+  async getMutationProfileUser(userId: string): Promise<ProfileUser | null> {
+    const row = await this.getProfileUserPrisma(userId);
+    if (!row) {
+      return null;
+    }
+    return {
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      role: row.role,
+      profile_picture: row.profile_picture,
+      cover_picture: row.cover_picture,
+      updated_at: row.updated_at.toISOString(),
+    };
+  }
+
   async updateOwnName(userId: string, input: UpdateOwnProfileBody) {
     const { count } = await prisma.users.updateMany({
       where: {
@@ -61,8 +78,8 @@ export class ProfileRepository {
 
     return resolveOptimisticPrismaUpdate({
       count,
-      fetchUpdated: () => this.getProfileUser(userId),
-      fetchCurrent: () => this.getProfileUser(userId),
+      fetchUpdated: () => this.getMutationProfileUser(userId),
+      fetchCurrent: () => this.getMutationProfileUser(userId),
       notFoundMessage: 'User profile not found.',
     });
   }

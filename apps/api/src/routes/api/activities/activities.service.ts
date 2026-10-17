@@ -1,11 +1,11 @@
-import type {
-  ActivityAction,
-  AttachmentActivityMeta,
-  EscalationResolvedMeta,
-  Json,
-  WorkflowTransitionMeta,
+import {
+  type ActivityAction,
+  type AttachmentActivityMeta,
+  type EscalationResolvedMeta,
+  type Json,
+  type WorkflowTransitionMeta,
+  serializeActivityValue,
 } from '@repo/types';
-import { serializeActivityValue } from '@repo/types';
 import {
   ActivitiesRepository,
   type InsertActivityInput,
@@ -16,6 +16,53 @@ export type FieldChangeDiff = {
   oldValue: unknown;
   newValue: unknown;
 };
+
+function toWorkflowTransitionRow(
+  workItemId: string,
+  actorId: string,
+  meta: WorkflowTransitionMeta
+): InsertActivityInput {
+  return {
+    workItemId,
+    actorId,
+    action: 'workflow_transition',
+    field: 'state',
+    oldValue: meta.fromStateId,
+    newValue: meta.toStateId,
+    meta: meta as unknown as Json,
+  };
+}
+
+function toEscalationResolvedRow(
+  workItemId: string,
+  actorId: string,
+  meta: EscalationResolvedMeta
+): InsertActivityInput {
+  return {
+    workItemId,
+    actorId,
+    action: 'escalation_resolved',
+    field: 'resolution',
+    oldValue: meta.fromStateId,
+    newValue: meta.toStateId,
+    meta: meta as unknown as Json,
+  };
+}
+
+function toFieldChangeRows(
+  workItemId: string,
+  actorId: string,
+  changes: FieldChangeDiff[]
+): InsertActivityInput[] {
+  return changes.map((change) => ({
+    workItemId,
+    actorId,
+    action: 'field_changed' as ActivityAction,
+    field: change.field,
+    oldValue: serializeActivityValue(change.oldValue),
+    newValue: serializeActivityValue(change.newValue),
+  }));
+}
 
 export class ActivitiesService {
   constructor(private readonly activities: ActivitiesRepository) {}
@@ -43,14 +90,7 @@ export class ActivitiesService {
     }
 
     await this.safeInsert(
-      params.changes.map((change) => ({
-        workItemId: params.workItemId,
-        actorId: params.actorId,
-        action: 'field_changed' as ActivityAction,
-        field: change.field,
-        oldValue: serializeActivityValue(change.oldValue),
-        newValue: serializeActivityValue(change.newValue),
-      }))
+      toFieldChangeRows(params.workItemId, params.actorId, params.changes)
     );
   }
 
@@ -60,15 +100,7 @@ export class ActivitiesService {
     meta: WorkflowTransitionMeta;
   }): Promise<void> {
     await this.safeInsert([
-      {
-        workItemId: params.workItemId,
-        actorId: params.actorId,
-        action: 'workflow_transition',
-        field: 'state',
-        oldValue: params.meta.fromStateId,
-        newValue: params.meta.toStateId,
-        meta: params.meta as unknown as Json,
-      },
+      toWorkflowTransitionRow(params.workItemId, params.actorId, params.meta),
     ]);
   }
 
@@ -78,16 +110,52 @@ export class ActivitiesService {
     meta: EscalationResolvedMeta;
   }): Promise<void> {
     await this.safeInsert([
-      {
-        workItemId: params.workItemId,
-        actorId: params.actorId,
-        action: 'escalation_resolved',
-        field: 'resolution',
-        oldValue: params.meta.fromStateId,
-        newValue: params.meta.toStateId,
-        meta: params.meta as unknown as Json,
-      },
+      toEscalationResolvedRow(params.workItemId, params.actorId, params.meta),
     ]);
+  }
+
+  /**
+   * One `createMany` for transition + escalation + field diffs on a PATCH.
+   * Prefer this over sequential `recordWorkflowTransition` / `recordFieldChanges`.
+   */
+  async recordWorkItemUpdate(params: {
+    workItemId: string;
+    actorId: string;
+    workflowTransition?: WorkflowTransitionMeta | null;
+    escalationResolved?: EscalationResolvedMeta | null;
+    fieldChanges: FieldChangeDiff[];
+  }): Promise<void> {
+    const rows: InsertActivityInput[] = [];
+
+    if (params.workflowTransition) {
+      rows.push(
+        toWorkflowTransitionRow(
+          params.workItemId,
+          params.actorId,
+          params.workflowTransition
+        )
+      );
+    }
+
+    if (params.escalationResolved) {
+      rows.push(
+        toEscalationResolvedRow(
+          params.workItemId,
+          params.actorId,
+          params.escalationResolved
+        )
+      );
+    }
+
+    rows.push(
+      ...toFieldChangeRows(
+        params.workItemId,
+        params.actorId,
+        params.fieldChanges
+      )
+    );
+
+    await this.safeInsert(rows);
   }
 
   async recordAttachmentAdded(params: {

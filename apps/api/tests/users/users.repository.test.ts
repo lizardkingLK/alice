@@ -5,12 +5,14 @@ vi.hoisted(() => {
 });
 
 import type { Database } from '@repo/types';
+import { userListSelect } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { OptimisticLockError } from '../../src/lib/optimistic-lock';
 import { UsersRepository } from '../../src/routes/api/users/users.repository';
 
-const { updateManyMock } = vi.hoisted(() => ({
+const { updateManyMock, findUniqueMock } = vi.hoisted(() => ({
   updateManyMock: vi.fn(),
+  findUniqueMock: vi.fn(),
 }));
 
 vi.mock('../../src/lib/prisma', () => ({
@@ -19,6 +21,7 @@ vi.mock('../../src/lib/prisma', () => ({
       create: vi.fn(),
       deleteMany: vi.fn(),
       updateMany: updateManyMock,
+      findUnique: findUniqueMock,
     },
   },
 }));
@@ -34,8 +37,12 @@ const baseUser = {
   role: 'member' as const,
   active: false,
   membership_status: 'active' as const,
-  created_at: '2026-01-01T00:00:00.000Z',
-  updated_at: '2026-08-31T06:00:00.123456+00:00',
+  profile_picture: null,
+  cover_picture: null,
+  created_at: new Date('2026-01-01T00:00:00.000Z'),
+  updated_at: new Date('2026-08-31T06:00:00.123Z'),
+  created_by: null,
+  updated_by: null,
 };
 
 describe('UsersRepository.update', () => {
@@ -47,7 +54,7 @@ describe('UsersRepository.update', () => {
 
   it('uses a millisecond range lock so Prisma matches Postgres microsecond timestamps', async () => {
     updateManyMock.mockResolvedValue({ count: 1 });
-    vi.spyOn(repository, 'findById').mockResolvedValue({
+    findUniqueMock.mockResolvedValue({
       ...baseUser,
       active: true,
     });
@@ -56,10 +63,15 @@ describe('UsersRepository.update', () => {
       'user-1',
       { active: true },
       'admin-1',
-      baseUser.updated_at
+      '2026-08-31T06:00:00.123456+00:00'
     );
 
     expect(result.active).toBe(true);
+    expect(result.updated_at).toBe('2026-08-31T06:00:00.123Z');
+    expect(findUniqueMock).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      select: userListSelect,
+    });
     const lockMs = new Date('2026-08-31T06:00:00.123456+00:00').getTime();
     expect(updateManyMock).toHaveBeenCalledWith({
       where: {
@@ -78,7 +90,7 @@ describe('UsersRepository.update', () => {
 
   it('throws OptimisticLockError when Prisma updateMany matches zero rows', async () => {
     updateManyMock.mockResolvedValue({ count: 0 });
-    vi.spyOn(repository, 'findById').mockResolvedValue(baseUser);
+    findUniqueMock.mockResolvedValue(baseUser);
 
     await expect(
       repository.update(
