@@ -26,8 +26,11 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { UserPlus, Loader2, X } from '@repo/ui/lib/icons';
-import type { User } from '../_services/users.mutations.client';
-import { createUser, updateUser } from '../_services/users.mutations.client';
+import {
+  createUser,
+  updateUser,
+  type User,
+} from '../_services/users.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import { resolveUserRoleLock } from '@/app/users/_helpers/user-role-lock';
@@ -38,6 +41,9 @@ interface UserFormProps {
   readonly activeAdminCount?: number;
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
+  /** Fired with the saved row on edit (create still uses `onSuccess` only). */
+  // eslint-disable-next-line no-unused-vars
+  readonly onUserUpdated?: (user: User) => void;
 }
 
 export function UserForm({
@@ -46,6 +52,7 @@ export function UserForm({
   activeAdminCount = 0,
   onClose,
   onSuccess,
+  onUserUpdated,
 }: Readonly<UserFormProps>) {
   const isEdit = !!user;
   const { handleMutationError } = useOptimisticLock();
@@ -99,6 +106,7 @@ export function UserForm({
         if (!updated) {
           return;
         }
+        onUserUpdated?.(updated);
         setMessage(`User details updated successfully!`);
       } else {
         const origin =
