@@ -5,8 +5,11 @@ import {
   getActiveProjectTeamsFromSupabase,
   listTeamsPaginatedFromSupabase,
 } from './teams.reads.supabase.server';
-import { createTeamsService } from './teams.mutations.shared';
-import type { GetTeamsPaginatedResponse, Team } from './teams.mutations.shared';
+import {
+  createTeamsService,
+  type GetTeamsPaginatedResponse,
+  type Team,
+} from './teams.mutations.shared';
 
 const service = createTeamsService(apiFetch);
 

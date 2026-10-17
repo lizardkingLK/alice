@@ -4,8 +4,10 @@ import { shouldReadViaApi } from '@/lib/data-retrieval.server';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import { listCommentsFromApi } from './comments.reads.api.server';
 import { listCommentsFromSupabase } from './comments.reads.supabase.server';
-import { createCommentsService } from './comments.mutations.shared';
-import type { CommentItem } from './comments.mutations.shared';
+import {
+  createCommentsService,
+  type CommentItem,
+} from './comments.mutations.shared';
 
 const service = createCommentsService(apiFetch);
 

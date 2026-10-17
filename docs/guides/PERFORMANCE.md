@@ -5,7 +5,7 @@ How Alice keeps dashboard pages fast, what has already been optimized, and the r
 | Field        | Value                                                                                      |
 | ------------ | ------------------------------------------------------------------------------------------ |
 | Status       | **Living**                                                                                 |
-| Last updated | 2026-10-16 (write track W1–W4; dual readers documented)                                    |
+| Last updated | 2026-10-17 (W5 measured; W6 realtime board shipped)                                        |
 | Scope        | `apps/web` RSC data loading, `apps/api` auth + **mutation** latency, Express Prisma writes |
 
 Related:
@@ -15,6 +15,7 @@ Related:
 - [architecture/API_VERSIONING.md](../architecture/API_VERSIONING.md) — domain status for Prisma GETs + allowlist
 - [auth/AUTHENTICATION.md](../auth/AUTHENTICATION.md) — session, token, and API auth flow
 - [guides/DATABASE.md](./DATABASE.md) — Supabase access patterns
+- [features/board/REALTIME_BOARD_MOVES.md](../features/board/REALTIME_BOARD_MOVES.md) — W6 async / realtime board moves (**Living**)
 
 ---
 
@@ -638,9 +639,10 @@ Conflict (409) paths may still fetch the current row; the win is the **happy pat
 | **W2** | Work-items: parallelize / batch post-write activities + allocation worklog                 | M      | Med  | Lower wall time after status / field saves            | ✅ Done  |
 | **W3** | Shared pattern: Prisma (or slim) `fetchUpdated` across mutation repos                      | M–L    | Med  | Same happy-path win platform-wide                     | ✅ Done  |
 | **W5** | Board status fast path: status/`board_column_id` PATCH skips full coalesce + allocation    | M      | Med  | Cut multi-second board-move floor (measured ~9s warm) | ✅ Done  |
+| **W6** | Async board moves + realtime confirm (pending stack, prefs, toast-on-409)                  | M–L    | Med  | Instant drag UX; ~4–5s PATCH no longer blocks UI      | ✅ Done  |
 | **W4** | Client: prefer local entity sync over blanket `router.refresh()` on high-frequency patches | M      | Med  | Less full RSC remount after field saves               | 📋 Later |
 
-**Order:** W1 → W2 → W3 → measure → **W5** → W4. **M8 remaining read candidates** stay deferred until this track lands.
+**Order:** W1 → W2 → W3 → measure → **W5** → **W6** → W4. **M8 remaining read candidates** stay deferred until this track lands.
 
 **Measured (board column PATCH TTFB):**
 
@@ -689,11 +691,27 @@ Board moves call `updateWorkItemStatus` (status + optional `board_column_id` + l
 - Skip allocation, type-change, parent/sprint hierarchy, and the route pre-`getWorkItem`.
 - Same Prisma `update` + batched activities as W1/W2 (no allocation worklog on pure status moves).
 
-Measure: warm board forward/back PATCH TTFB vs the ~9s baseline.
+Measure: warm board forward/back PATCH TTFB vs the ~9s baseline. **Done:** ~9s → ~4.6s warm.
+
+### W6 — Async / realtime board moves
+
+Full product doc: [REALTIME_BOARD_MOVES.md](../features/board/REALTIME_BOARD_MOVES.md).
+
+**Idea:** W5 made the PATCH faster; W6 stops the **UI** from waiting on it. Local place → background PATCH → confirm via `work_items` realtime (commit order wins). Preferences in localStorage: `realtime` (default) vs `static`; subscribe toggle under Board settings.
+
+| Outcome       | Realtime UX                                            |
+| ------------- | ------------------------------------------------------ |
+| Success       | Card already moved; dedupe channel echo                |
+| Invalid (4xx) | Existing move-blocked toast + revert pending attempt   |
+| Lock (409)    | Toast (not merge dialog) + rebase to winner’s live row |
+
+**Rules:** pending stack per work-item id; on conflict channel/server wins; API still awaits write (Vercel); primary sync = `work_items` channel. Silent inbox notifications remain deferred.
+
+**Done:** Board settings sync prefs; pending attempts; toast-on-409 rebase; `useBoardWorkItemsRealtime` gated by prefs.
 
 ### W4 — Client refresh hygiene (later)
 
-Board status moves already sync local state (`syncWorkItem`). High-frequency field dialogs / detail patches should prefer applying the mutation response locally; keep `router.refresh()` for structural changes (members, archive, create).
+Board status moves already sync local state (`syncWorkItem`). High-frequency field dialogs / detail patches should prefer applying the mutation response locally; keep `router.refresh()` for structural changes (members, archive, create). After W6, board moves should rarely need `router.refresh()`.
 
 ### Contributor patterns (writes)
 

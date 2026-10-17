@@ -4,8 +4,7 @@ vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
 });
 
-import type { Database } from '@repo/types';
-import { workItemListSelectWithDescription } from '@repo/types';
+import { workItemListSelectWithDescription, type Database } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   WorkItemRepository,
