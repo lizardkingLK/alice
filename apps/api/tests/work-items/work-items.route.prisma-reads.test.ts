@@ -18,11 +18,13 @@ const {
   getWorkItemDetailMock,
   getWorkItemMock,
   updateWorkItemMock,
+  updateWorkItemStatusMock,
 } = vi.hoisted(() => ({
   listWorkItemsPaginatedMock: vi.fn(),
   getWorkItemDetailMock: vi.fn(),
   getWorkItemMock: vi.fn(),
   updateWorkItemMock: vi.fn(),
+  updateWorkItemStatusMock: vi.fn(),
 }));
 
 vi.mock('../../src/middlewares/auth', async () => {
@@ -35,6 +37,7 @@ const workItemService = {
   getWorkItemDetail: getWorkItemDetailMock,
   getWorkItem: getWorkItemMock,
   updateWorkItem: updateWorkItemMock,
+  updateWorkItemStatus: updateWorkItemStatusMock,
 } as unknown as WorkItemService;
 
 const notificationsService = {
@@ -146,8 +149,7 @@ describe('work-items unused Prisma GET routes', () => {
       updated_at: '2026-08-01T00:00:00.000Z',
       created_at: '2026-08-01T00:00:00.000Z',
     };
-    getWorkItemMock.mockResolvedValue(row);
-    updateWorkItemMock.mockRejectedValue(new BoardMoveForbiddenError());
+    updateWorkItemStatusMock.mockRejectedValue(new BoardMoveForbiddenError());
 
     await withMountedRouter(
       '/api/work-items',
@@ -170,6 +172,8 @@ describe('work-items unused Prisma GET routes', () => {
           error: 'You do not have permission to perform this board movement.',
           code: BOARD_MOVE_FORBIDDEN_CODE,
         });
+        expect(updateWorkItemStatusMock).toHaveBeenCalled();
+        expect(updateWorkItemMock).not.toHaveBeenCalled();
       }
     );
   });
@@ -181,8 +185,9 @@ describe('work-items unused Prisma GET routes', () => {
       updated_at: '2026-08-01T00:00:00.000Z',
       created_at: '2026-08-01T00:00:00.000Z',
     };
-    getWorkItemMock.mockResolvedValue(row);
-    updateWorkItemMock.mockRejectedValue(new StatusTransitionForbiddenError());
+    updateWorkItemStatusMock.mockRejectedValue(
+      new StatusTransitionForbiddenError()
+    );
 
     await withMountedRouter(
       '/api/work-items',
@@ -206,6 +211,8 @@ describe('work-items unused Prisma GET routes', () => {
             'You do not have permission to perform this status transition.',
           code: STATUS_TRANSITION_FORBIDDEN_CODE,
         });
+        expect(updateWorkItemStatusMock).toHaveBeenCalled();
+        expect(updateWorkItemMock).not.toHaveBeenCalled();
       }
     );
   });
