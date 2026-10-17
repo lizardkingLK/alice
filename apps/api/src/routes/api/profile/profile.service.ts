@@ -19,7 +19,7 @@ export class ProfileService {
   }
 
   private async findProfileUser(userId: string): Promise<ProfileUser | null> {
-    return await this.profileRepository.getProfileUser(userId);
+    return await this.profileRepository.getMutationProfileUser(userId);
   }
 
   async updateOwnName(

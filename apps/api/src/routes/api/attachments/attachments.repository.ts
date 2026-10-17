@@ -23,6 +23,26 @@ export type CreateAttachmentInput = {
   mime_type: string;
 };
 
+function mapAttachmentMutationRow(
+  row: AttachmentListRow
+): AttachmentWithUploader {
+  return {
+    id: row.id,
+    work_item_id: row.work_item_id,
+    file_name: row.file_name,
+    file_size: row.file_size,
+    mime_type: row.mime_type,
+    storage_path: row.storage_path,
+    created_at: row.created_at.toISOString(),
+    updated_at: row.updated_at.toISOString(),
+    uploader_id: row.uploader_id,
+    status: row.status,
+    created_by: row.created_by,
+    updated_by: row.updated_by,
+    uploader: row.uploader,
+  };
+}
+
 export class AttachmentsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
@@ -41,6 +61,24 @@ export class AttachmentsRepository {
     return (data as AttachmentWithUploader | null) ?? null;
   }
 
+  /** Post-mutation / optimistic-lock row via Prisma (no PostgREST hop). */
+  async getMutationRowById(id: string): Promise<AttachmentWithUploader | null> {
+    try {
+      const row = await prisma.attachments.findUnique({
+        where: { id },
+        select: attachmentListSelect,
+      });
+      if (!row) {
+        return null;
+      }
+      return mapAttachmentMutationRow(row);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to get attachment mutation row:', message);
+      throw new Error('Failed to retrieve attachment');
+    }
+  }
+
   async create(input: CreateAttachmentInput): Promise<AttachmentWithUploader> {
     const created = await prisma.attachments.create({
       data: {
@@ -54,7 +92,7 @@ export class AttachmentsRepository {
       },
     });
 
-    const row = await this.getById(created.id);
+    const row = await this.getMutationRowById(created.id);
     if (!row) {
       throw new Error('Failed to create attachment');
     }
@@ -76,8 +114,8 @@ export class AttachmentsRepository {
 
     await resolveOptimisticPrismaUpdate({
       count,
-      fetchUpdated: () => this.getById(id),
-      fetchCurrent: () => this.getById(id),
+      fetchUpdated: () => this.getMutationRowById(id),
+      fetchCurrent: () => this.getMutationRowById(id),
       notFoundMessage: 'Attachment not found',
     });
   }

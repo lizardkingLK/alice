@@ -3,7 +3,7 @@ import { resolveBoardSourceColumn, type BoardColumn } from '@repo/types/api/v1';
 
 export function resolveItemColumnId(
   item: Pick<DbWorkItem, 'status' | 'board_column_id'>,
-  columns: BoardColumn[]
+  columns: readonly BoardColumn[]
 ): string | null {
   return resolveBoardSourceColumn(item, columns)?.id ?? null;
 }
@@ -29,7 +29,7 @@ export function resolveBoardMove(
 
 export function assignItemsToColumns(
   workItems: DbWorkItem[],
-  columns: BoardColumn[]
+  columns: readonly BoardColumn[]
 ): Map<string, DbWorkItem[]> {
   const result = new Map<string, DbWorkItem[]>();
   for (const column of columns) {

@@ -19,6 +19,7 @@ import {
   isBlockedPastDueDateChange,
   linkWorkItemGithubPrBodySchema,
   patchWorkItemBodySchema,
+  patchWorkItemStatusBodySchema,
   preprocessWorkItemMutationBody,
   workItemLifecycleActionBodySchema,
   type WorkItemUpdateBody,
@@ -26,6 +27,7 @@ import {
 import type { DbWorkItem } from './work-items.repository';
 import {
   coalescePatchField,
+  isStatusPlacementOnlyPatch,
   resolveBoardColumnPatchValue,
 } from './work-items.patch-utils';
 import { listWorkItemsQuerySchema, parseWorkItemLabels } from '@repo/types';
@@ -434,6 +436,30 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
           return res.status(400).json({
             data: null,
             error: 'Invalid JSON format provided for description field',
+          });
+        }
+
+        if (isStatusPlacementOnlyPatch(processedBody)) {
+          const statusParsed =
+            patchWorkItemStatusBodySchema.safeParse(processedBody);
+          if (!statusParsed.success) {
+            return res.status(400).json({
+              data: null,
+              error: z.treeifyError(statusParsed.error),
+            });
+          }
+
+          const { workItem, cascadedSprintDescendantIds } =
+            await workItemService.updateWorkItemStatus(
+              req.userId!,
+              req.params.id!,
+              statusParsed.data
+            );
+
+          return res.status(200).json({
+            data: workItem,
+            error: null,
+            cascadedSprintDescendantIds,
           });
         }
 

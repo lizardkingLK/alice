@@ -59,6 +59,35 @@ export class UsersRepository {
     return data as UserRow | null;
   }
 
+  /** Post-mutation / optimistic-lock row via Prisma (no PostgREST hop). */
+  async getMutationRowById(id: string): Promise<UserRow | null> {
+    try {
+      const row = await prisma.users.findUnique({
+        where: { id },
+        select: userListSelect,
+      });
+      if (!row) {
+        return null;
+      }
+      return {
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        role: row.role,
+        active: row.active,
+        membership_status: row.membership_status,
+        created_at: row.created_at.toISOString(),
+        updated_at: row.updated_at.toISOString(),
+        created_by: row.created_by,
+        updated_by: row.updated_by,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to get user mutation row:', message);
+      throw new Error('Failed to find user');
+    }
+  }
+
   /** Membership-active admins with kill switch on, other than `excludeUserId`. */
   async countOtherActiveAdmins(excludeUserId: string): Promise<number> {
     const { count, error } = await filterProductUsableUsers(
@@ -149,7 +178,7 @@ export class UsersRepository {
       },
     });
 
-    const row = await this.findById(created.id);
+    const row = await this.getMutationRowById(created.id);
     if (!row) {
       throw new Error('Database registration failed');
     }
@@ -174,8 +203,8 @@ export class UsersRepository {
 
     return resolveOptimisticPrismaUpdate({
       count,
-      fetchUpdated: () => this.findById(id),
-      fetchCurrent: () => this.findById(id),
+      fetchUpdated: () => this.getMutationRowById(id),
+      fetchCurrent: () => this.getMutationRowById(id),
       notFoundMessage: 'User not found',
     });
   }

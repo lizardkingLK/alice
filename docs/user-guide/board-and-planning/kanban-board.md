@@ -61,6 +61,22 @@ short form before the status changes.
 You can also change state from the work-item detail sidebar or the Work Items
 registry.
 
+### Board sync
+
+Open **Board settings** (grid icon on the board toolbar). Under **Board sync**:
+
+| Option                 | What it does                                                                                                                        |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Realtime** (default) | Cards update live when teammates move items. Your drag does not wait on the save request; the card stays fully opaque while saving. |
+| **Static**             | No live merge from others until you refresh or navigate. Pending saves dim the card (classic behavior).                             |
+| **Subscribe to moves** | Only in Realtime. Turn off to stop applying placement changes over the wire while keeping Realtime mode selected.                   |
+
+Preferences are stored in this browser for your account. If someone else moves
+the same card first, you get a short toast (**Someone else moved this item**)
+and the board shows their column — not a merge dialog. Live sync applies on
+**Board** (`/board`), not on the home dashboard. Engineers:
+[Realtime board moves](../../features/board/REALTIME_BOARD_MOVES.md).
+
 ---
 
 ## Filters

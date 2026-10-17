@@ -141,6 +141,27 @@ export class AccessAllowlistRepository {
     return data as AccessAllowlistRow | null;
   }
 
+  /** Post-mutation / optimistic-lock row via Prisma (no PostgREST hop). */
+  async getMutationRowById(id: string): Promise<AccessAllowlistRow | null> {
+    try {
+      const row = await prisma.access_allowlist.findUnique({
+        where: { id },
+        select: accessAllowlistListSelect,
+      });
+      if (!row) {
+        return null;
+      }
+      return toAccessAllowlistRow(row);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(
+        'error. failed to get access_allowlist mutation row:',
+        message
+      );
+      throw new Error('Failed to find access allowlist entry');
+    }
+  }
+
   async findActiveDomainByValue(
     domain: string
   ): Promise<AccessAllowlistRow | null> {
@@ -254,8 +275,8 @@ export class AccessAllowlistRepository {
 
     return resolveOptimisticPrismaUpdate({
       count,
-      fetchUpdated: () => this.findById(params.id),
-      fetchCurrent: () => this.findById(params.id),
+      fetchUpdated: () => this.getMutationRowById(params.id),
+      fetchCurrent: () => this.getMutationRowById(params.id),
       notFoundMessage: 'Access allowlist entry not found',
     });
   }
@@ -275,7 +296,7 @@ export class AccessAllowlistRepository {
       return;
     }
 
-    const current = await this.findById(params.id);
+    const current = await this.getMutationRowById(params.id);
     if (!current) {
       throw new Error('Access allowlist entry not found');
     }

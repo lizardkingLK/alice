@@ -7,9 +7,11 @@ import {
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '@/lib/api/api-fetch.helper';
+import { OPTIMISTIC_LOCK_ERROR_CODE } from '@repo/types';
 import { BOARD_MOVE_FORBIDDEN_CODE } from '@repo/types/api/v1';
 import { updateWorkItemStatus } from '@/app/work-items/_services/work-items.mutations.client';
 import { toast } from '@repo/ui/components/ui/sonner';
+import { BOARD_MOVE_CONFLICT_TITLE } from '@/app/board/_helpers/board-move-conflict-toast';
 import { KanbanBoard } from '@/app/board/_components/kanban-board';
 import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
 
@@ -21,9 +23,6 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/components/realtime/realtime-provider', () => ({
   useRealtime: () => ({ isUserOnline: () => false }),
 }));
-vi.mock('@/components/optimistic-lock/optimistic-lock-provider', () => ({
-  useOptimisticLock: () => ({ handleMutationError: vi.fn() }),
-}));
 vi.mock('@/app/board/_hooks/use-board-defaults-bootstrap', () => ({
   useBoardDefaultsBootstrap: () => ({
     savedPreference: null,
@@ -31,6 +30,14 @@ vi.mock('@/app/board/_hooks/use-board-defaults-bootstrap', () => ({
     urlFiltersActive: false,
     saveDefaults: vi.fn(),
     resetUrlFilters: vi.fn(),
+  }),
+}));
+vi.mock('@/lib/supabase/client', () => ({
+  createClient: () => ({
+    channel: () => ({
+      on: () => ({ subscribe: vi.fn() }),
+    }),
+    removeChannel: vi.fn(),
   }),
 }));
 vi.mock(
@@ -55,7 +62,7 @@ vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
   updateWorkItemStatus: vi.fn(),
 }));
 vi.mock('@repo/ui/components/ui/sonner', () => ({
-  toast: { error: vi.fn(), success: vi.fn() },
+  toast: { error: vi.fn(), success: vi.fn(), message: vi.fn() },
 }));
 
 const columns = [
@@ -146,5 +153,56 @@ describe('Kanban board policy denial', () => {
         'You do not have permission to perform this board movement.'
       )
     ).not.toBeInTheDocument();
+  });
+
+  it('toasts and rebases on optimistic lock 409 instead of a merge dialog', async () => {
+    vi.mocked(updateWorkItemStatus).mockRejectedValue(
+      new ApiError('Conflict', 409, {
+        code: OPTIMISTIC_LOCK_ERROR_CODE,
+        serverEntity: {
+          ...item,
+          status: 'Testing',
+          board_column_id: 'testing',
+          updated_at: '2026-09-11T00:00:00.000Z',
+        },
+      })
+    );
+
+    render(
+      <TooltipProvider>
+        <KanbanBoard
+          boardColumns={columns}
+          usesCustomBoardConfig
+          initialWorkItems={[item] as never}
+          projects={[]}
+          sprints={[]}
+          projectFilter="project-1"
+          sprintFilter=""
+          allowAllFilters
+          userId="actor-1"
+          needsClientBootstrap={false}
+        />
+      </TooltipProvider>
+    );
+
+    fireEvent.click(
+      within(screen.getByRole('region', { name: 'Development' })).getByText(
+        'Restricted move'
+      )
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Code Review' }));
+
+    await waitFor(() =>
+      expect(toast.message).toHaveBeenCalledWith(BOARD_MOVE_CONFLICT_TITLE, {
+        description: 'The board was updated to the latest placement.',
+      })
+    );
+    fireEvent.click(screen.getAllByRole('button', { name: 'Close' })[0]!);
+
+    expect(
+      within(screen.getByRole('region', { name: 'Testing' })).getByText(
+        'Restricted move'
+      )
+    ).toBeInTheDocument();
   });
 });

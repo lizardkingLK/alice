@@ -3,8 +3,11 @@ import { getCachedUserList } from '@/lib/cache/dropdown-cache';
 import { shouldReadViaApi } from '@/lib/data-retrieval.server';
 import { getUsersListPaginatedFromApi } from './users.reads.api.server';
 import { getUsersListPaginatedFromSupabase } from './users.reads.supabase.server';
-import { createUsersService } from './users.mutations.shared';
-import type { GetUsersPaginatedResponse, User } from './users.mutations.shared';
+import {
+  createUsersService,
+  type GetUsersPaginatedResponse,
+  type User,
+} from './users.mutations.shared';
 
 const service = createUsersService(apiFetch);
 
