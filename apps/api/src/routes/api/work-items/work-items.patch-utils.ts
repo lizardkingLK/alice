@@ -13,6 +13,24 @@ import type { DbWorkItem } from './work-items.repository';
 import type { WorkItemUpdateBody } from './work-items.schemas';
 import { WorkItemValidationError } from './work-items.errors';
 
+/** Board move / status PATCH — no other field keys present. */
+export function isStatusPlacementOnlyPatch(
+  body: Record<string, unknown>
+): boolean {
+  const keys = Object.keys(body);
+  const allowed = new Set([
+    'status',
+    'board_column_id',
+    'resolution',
+    'expectedUpdatedAt',
+  ]);
+  return (
+    keys.includes('status') &&
+    keys.includes('expectedUpdatedAt') &&
+    keys.every((key) => allowed.has(key))
+  );
+}
+
 /**
  * Prefer an explicit PATCH value (including `null`) over the stored field.
  * Must not use `??` — that would treat intentional `null` clears as "keep current".

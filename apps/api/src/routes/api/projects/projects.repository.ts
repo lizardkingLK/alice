@@ -418,6 +418,27 @@ export class ProjectsRepository {
     }
   }
 
+  /**
+   * Post-mutation / optimistic-lock row via Prisma (ISO dates, no secrets).
+   */
+  async getMutationRowById(id: string): Promise<ProjectRowWithOwner | null> {
+    const row = await this.getDetailById(id);
+    if (!row) {
+      return null;
+    }
+    const wired = {
+      ...row,
+      start_date: row.start_date
+        ? row.start_date.toISOString().split('T')[0]!
+        : null,
+      end_date: row.end_date ? row.end_date.toISOString().split('T')[0]! : null,
+      created_at: row.created_at.toISOString(),
+      updated_at: row.updated_at.toISOString(),
+      deleted_at: row.deleted_at?.toISOString() ?? null,
+    };
+    return withoutIntegrationSecrets(wired) as unknown as ProjectRowWithOwner;
+  }
+
   async listMembersPrisma(projectId: string): Promise<ProjectMemberRow[]> {
     try {
       return await prisma.project_members.findMany({
@@ -698,7 +719,7 @@ export class ProjectsRepository {
       }
     );
 
-    const row = await this.findById(created.id);
+    const row = await this.getMutationRowById(created.id);
     if (!row) {
       throw new Error('Database insertion failed');
     }
@@ -718,18 +739,8 @@ export class ProjectsRepository {
 
     return resolveOptimisticPrismaUpdate({
       count,
-      fetchUpdated: async () => {
-        const current = await this.findById(id);
-        return current
-          ? (withoutIntegrationSecrets(current) as unknown as ProjectRow)
-          : null;
-      },
-      fetchCurrent: async () => {
-        const current = await this.findById(id);
-        return current
-          ? (withoutIntegrationSecrets(current) as unknown as ProjectRow)
-          : null;
-      },
+      fetchUpdated: () => this.getMutationRowById(id),
+      fetchCurrent: () => this.getMutationRowById(id),
       notFoundMessage: 'Project not found',
     });
   }

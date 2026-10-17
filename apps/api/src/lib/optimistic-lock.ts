@@ -66,7 +66,8 @@ export async function resolveOptimisticUpdate<T>(options: {
 
 /**
  * After Prisma `updateMany` with `id` + `updated_at`, resolve the row or a 409.
- * `fetchUpdated` / `fetchCurrent` may still use supabase-js for joined DTOs.
+ * Prefer Prisma `select` / mapped wire rows for `fetchUpdated` / `fetchCurrent`
+ * (see PERFORMANCE.md §9 W1/W3).
  */
 export async function resolveOptimisticPrismaUpdate<T>(options: {
   readonly count: number;
