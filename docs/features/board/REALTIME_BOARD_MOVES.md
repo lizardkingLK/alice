@@ -142,8 +142,9 @@ moves.
 
 ## Related
 
-- [PERFORMANCE.md](../../guides/PERFORMANCE.md) — W5 + W6 done; **W7** reuses this pattern for backlog + calendar DnD
-- [REALTIME_DISCUSSION.md](../work-items/REALTIME_DISCUSSION.md) — planned details-tab feeds (after W7 + M8)
+- [PERFORMANCE.md](../../guides/PERFORMANCE.md) — W5–W7 done; W7 reuses this pattern for backlog + calendar DnD
+- Shared client: `apps/web/lib/work-items/use-work-items-realtime.ts`, `apply-realtime-work-item-row.ts`
+- [REALTIME_DISCUSSION.md](../work-items/REALTIME_DISCUSSION.md) — planned details-tab feeds (after M8)
 - [Kanban user guide](../../user-guide/board-and-planning/kanban-board.md)
 - [Notifications](../notifications/README.md) — silent inbox still planned
 - Optimistic locking (field merges): [optimistic-locking](../optimistic-locking/README.md) — board moves use toast, not that dialog

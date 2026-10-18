@@ -11,19 +11,35 @@ import {
 } from 'react';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { updateWorkItem } from '@/app/work-items/_services/work-items.mutations.client';
-import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { ApiError } from '@/lib/api/api-fetch.helper';
-import { runLockedMutation } from '@/lib/optimistic-lock/run-locked-mutation';
+import {
+  isBoardMoveOptimisticLockError,
+  readBoardMoveConflictServerRow,
+  toastWorkItemDnDConflict,
+} from '@/app/board/_helpers/board-move-conflict-toast';
+import {
+  applyRealtimeWorkItemRow,
+  mergeWorkItemRealtimeRow,
+} from '@/lib/work-items/apply-realtime-work-item-row';
+import { useWorkItemsRealtime } from '@/lib/work-items/use-work-items-realtime';
 import {
   PAST_DUE_DATE_MESSAGE,
   toLocalYYYYMMDD,
 } from '@/app/calendar/_components/calendar-utils';
+
+const DUE_DATE_FIELDS = ['due_date', 'updated_by'] as const;
+
+const CALENDAR_CONFLICT_TITLE = 'Someone else updated this item';
+const CALENDAR_CONFLICT_DESCRIPTION =
+  'The calendar was updated to the latest due date.';
 
 type UseCalendarDueDateDragOptions = {
   readonly localWorkItems: DbWorkItem[];
   readonly setLocalWorkItems: Dispatch<SetStateAction<DbWorkItem[]>>;
   readonly setItemToEdit: Dispatch<SetStateAction<DbWorkItem | null>>;
   readonly userId: string | null;
+  /** When set, filters the realtime channel to that project. */
+  readonly projectId?: string | null;
   /** Resolve items that may live outside the scheduled month cache (unscheduled). */
   // eslint-disable-next-line no-unused-vars -- resolve callback
   readonly resolveWorkItem?: (itemId: string) => DbWorkItem | undefined;
@@ -32,11 +48,16 @@ type UseCalendarDueDateDragOptions = {
   readonly onItemScheduled?: (itemId: string) => void;
 };
 
+function dueDateDay(value: string | null | undefined): string | null {
+  return value?.split('T')[0] ?? null;
+}
+
 export function useCalendarDueDateDrag({
   localWorkItems,
   setLocalWorkItems,
   setItemToEdit,
   userId,
+  projectId = null,
   resolveWorkItem,
   onItemScheduled,
 }: UseCalendarDueDateDragOptions) {
@@ -49,7 +70,6 @@ export function useCalendarDueDateDrag({
   );
   const suppressNextItemClickRef = useRef(false);
   const dueDateWarningClearTimerRef = useRef<number | null>(null);
-  const { handleMutationError } = useOptimisticLock();
 
   useEffect(() => {
     return () => {
@@ -123,6 +143,63 @@ export function useCalendarDueDateDrag({
     [onItemScheduled, resolveWorkItem, setItemToEdit, setLocalWorkItems]
   );
 
+  const applyDueDateRow = useCallback(
+    (row: Partial<DbWorkItem> & { id: string }, force = false) => {
+      setLocalWorkItems((previous) => {
+        if (force) {
+          const index = previous.findIndex((item) => item.id === row.id);
+          if (index < 0) {
+            const source = resolveWorkItem?.(row.id);
+            if (!source) {
+              return previous;
+            }
+            const merged = mergeWorkItemRealtimeRow(
+              source,
+              row,
+              DUE_DATE_FIELDS
+            );
+            if (merged.due_date) {
+              onItemScheduled?.(row.id);
+            }
+            return [merged, ...previous];
+          }
+          const next = [...previous];
+          next[index] = mergeWorkItemRealtimeRow(
+            previous[index]!,
+            row,
+            DUE_DATE_FIELDS
+          );
+          return next;
+        }
+        return (
+          applyRealtimeWorkItemRow(previous, row, DUE_DATE_FIELDS) ?? previous
+        );
+      });
+      setItemToEdit((previous) => {
+        if (!previous || previous.id !== row.id) {
+          return previous;
+        }
+        return mergeWorkItemRealtimeRow(previous, row, DUE_DATE_FIELDS);
+      });
+      setPendingDueDateIds((previous) => {
+        if (!previous.has(row.id)) {
+          return previous;
+        }
+        const next = new Set(previous);
+        next.delete(row.id);
+        return next;
+      });
+    },
+    [onItemScheduled, resolveWorkItem, setItemToEdit, setLocalWorkItems]
+  );
+
+  useWorkItemsRealtime({
+    enabled: Boolean(userId),
+    channelPrefix: 'calendar-work-items',
+    projectId: projectId || null,
+    onRow: applyDueDateRow,
+  });
+
   const applyDueDateChange = useCallback(
     (itemId: string, targetDate: string) => {
       const currentItem =
@@ -139,7 +216,7 @@ export function useCalendarDueDateDrag({
       }
 
       const previousDueDate = currentItem.due_date;
-      const previousDateOnly = previousDueDate?.split('T')[0] ?? null;
+      const previousDateOnly = dueDateDay(previousDueDate);
       if (previousDateOnly === targetDate) {
         return;
       }
@@ -156,38 +233,45 @@ export function useCalendarDueDateDrag({
       formData.set('due_date', targetDate);
       const expectedUpdatedAt = currentItem.updated_at;
 
-      runLockedMutation({
-        mutate: () => updateWorkItem(itemId, formData, expectedUpdatedAt),
-        handleMutationError,
-        entityType: 'work_item',
-        entityId: itemId,
-        expectedUpdatedAt,
-        pendingFields: { due_date: targetDate },
-        currentUserId: userId,
-      })
-        .then((result) => {
-          if (result.ok) {
-            const updated = result.data.data;
-            if (updated?.updated_at) {
-              syncWorkItemDueDate(
-                itemId,
-                updated.due_date?.split('T')[0] ?? targetDate,
-                updated.updated_at
-              );
-            }
+      updateWorkItem(itemId, formData, expectedUpdatedAt)
+        .then((response) => {
+          if (response.error || !response.data) {
+            syncWorkItemDueDate(itemId, previousDueDate);
+            showDueDateWarning(
+              typeof response.error === 'string'
+                ? response.error
+                : 'Failed to update work item due date.'
+            );
             return;
           }
-
-          if (result.conflict) {
+          const updated = response.data;
+          syncWorkItemDueDate(
+            itemId,
+            dueDateDay(updated.due_date) ?? targetDate,
+            updated.updated_at
+          );
+        })
+        .catch((error: unknown) => {
+          if (isBoardMoveOptimisticLockError(error)) {
+            toastWorkItemDnDConflict(
+              CALENDAR_CONFLICT_TITLE,
+              CALENDAR_CONFLICT_DESCRIPTION
+            );
+            const serverRow = readBoardMoveConflictServerRow(error);
+            if (serverRow) {
+              applyDueDateRow(serverRow, true);
+            } else {
+              syncWorkItemDueDate(itemId, previousDueDate);
+            }
             return;
           }
 
           syncWorkItemDueDate(itemId, previousDueDate);
           let message: string;
-          if (result.error instanceof ApiError) {
-            message = result.error.message;
-          } else if (result.error instanceof Error) {
-            message = result.error.message;
+          if (error instanceof ApiError) {
+            message = error.message;
+          } else if (error instanceof Error) {
+            message = error.message;
           } else {
             message = 'Failed to update work item due date.';
           }
@@ -202,13 +286,12 @@ export function useCalendarDueDateDrag({
         });
     },
     [
-      handleMutationError,
+      applyDueDateRow,
       localWorkItems,
       pendingDueDateIds,
       resolveWorkItem,
       showDueDateWarning,
       syncWorkItemDueDate,
-      userId,
     ]
   );
 

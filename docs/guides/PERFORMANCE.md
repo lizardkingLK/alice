@@ -5,7 +5,7 @@ How Alice keeps dashboard pages fast, what has already been optimized, and the r
 | Field        | Value                                                                                      |
 | ------------ | ------------------------------------------------------------------------------------------ |
 | Status       | **Living**                                                                                 |
-| Last updated | 2026-10-18 (W4–W6 done; next: W7 DnD realtime → M8 → discussion realtime)                  |
+| Last updated | 2026-10-18 (W7 DnD realtime done; next: M8 → discussion realtime)                          |
 | Scope        | `apps/web` RSC data loading, `apps/api` auth + **mutation** latency, Express Prisma writes |
 
 Related:
@@ -370,7 +370,7 @@ Targeting sub-1.5s. Ordered by impact-to-effort.
 
 **Shipped for existing features (2026-07-24 / 2026-08-14 / 2026-10-16).** Dashboard **reads** default to RSC supabase-js (M1). Matching Express **Prisma** list/detail GETs were restored as an optional twin for `DATA_READS_VIA_API` ([DATA_RETRIEVAL.md](../architecture/DATA_RETRIEVAL.md)) — see §6 **Plan (toggle)**. API **table mutations** use Prisma Client. Paginated RSC lists share `runPaginatedSelect`. New surfaces should adopt §3 patterns as they land. **Do not move RSC page reads onto Prisma by default.**
 
-**Current focus:** finish remaining write UX (**W7** DnD realtime), then resume **M8** read candidates. Work-item **discussion realtime** (comments / activity / work logs) is planned after M8 — see [REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md); it is UX sync, not a §9 write-latency item.
+**Current focus:** resume **M8** read candidates. **W7** (backlog + calendar DnD realtime) is done. Work-item **discussion realtime** (comments / activity / work logs) is planned after M8 — see [REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md); it is UX sync, not a §9 write-latency item.
 
 **RLS reminder:** M1 reads run with the `authenticated` role and RLS unenforced. Before enabling RLS, add SELECT policies for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members`. Dropdown cache (§2.7) uses the **service-role** client inside `unstable_cache` only.
 
@@ -565,7 +565,7 @@ Prefer in this order:
 
 Mutations already use Prisma in `apps/api`. Remaining latency on dashboard **reads** is still mostly PostgREST HTTP + how many round trips a navigation fires (Singapore → Sydney). The next **read** step is **not** “put Prisma in every `*.service.server.ts`.” It is to **name the queries where a TCP/SQL client would actually win**, prove it with timings, then change one path.
 
-**Priority note (2026-10-18):** ship **W7** (DnD realtime) before more M8 read rewrites. Core write-track items W1–W6 and W4 are done. Post-write supabase `getById` follow-ups were **W1 / W3**, not M8.
+**Priority note (2026-10-18):** **W7** (DnD realtime) is done — resume M8 read rewrites. Core write-track items W1–W7 are done. Post-write supabase `getById` follow-ups were **W1 / W3**, not M8.
 
 #### Inventory (2026-08-14) — `/backlog`, `/dashboard`, `/work-items`
 
@@ -642,11 +642,11 @@ Conflict (409) paths may still fetch the current row; the win is the **happy pat
 | **W5** | Board status fast path: status/`board_column_id` PATCH skips full coalesce + allocation    | M      | Med  | Cut multi-second board-move floor (measured ~9s warm) | ✅ Done |
 | **W6** | Async board moves + realtime confirm (pending stack, prefs, toast-on-409)                  | M–L    | Med  | Instant drag UX; ~4–5s PATCH no longer blocks UI      | ✅ Done |
 | **W4** | Client: prefer local entity sync over blanket `router.refresh()` on high-frequency patches | M      | Med  | Less full RSC remount after field saves               | ✅ Done |
-| **W7** | Extend W6-style async + `work_items` realtime to backlog DnD + calendar due-date DnD       | M      | Med  | Instant drag UX on those surfaces; reuse W6 channels  | 📋 Next |
+| **W7** | Extend W6-style async + `work_items` realtime to backlog DnD + calendar due-date DnD       | M      | Med  | Instant drag UX on those surfaces; reuse W6 channels  | ✅ Done |
 
-**Order (done):** W1 → W2 → W3 → measure → **W5** → **W6** → **W4**.
+**Order (done):** W1 → W2 → W3 → measure → **W5** → **W6** → **W4** → **W7**.
 
-**Order (remaining):** **W7** (backlog + calendar DnD realtime) → **M8** (remaining read candidates, §8.1) → **discussion realtime** ([REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md) — details feeds; not a write-latency ID).
+**Order (remaining):** **M8** (remaining read candidates, §8.1) → **discussion realtime** ([REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md) — details feeds; not a write-latency ID).
 
 **Measured (board column PATCH TTFB):**
 
@@ -725,16 +725,18 @@ Board status moves already sync local state (`syncWorkItem`). High-frequency fie
 
 Hierarchy expand state resets only when root **ids** change, not on content edits. Shared helper: `apps/web/lib/replace-entity-in-list.ts`.
 
-### W7 — Backlog + calendar DnD realtime (next)
+### W7 — Backlog + calendar DnD realtime
 
-Reuse the **W6** pattern ([REALTIME_BOARD_MOVES.md](../features/board/REALTIME_BOARD_MOVES.md)): optimistic local place → background PATCH → confirm / rebase via Supabase **`work_items`** realtime (same publication / channel family; commit order wins). Prefer adapting board pending-stack + toast-on-409 helpers over a second sync bus.
+Reuse the **W6** pattern ([REALTIME_BOARD_MOVES.md](../features/board/REALTIME_BOARD_MOVES.md)): optimistic local place → background PATCH → confirm / rebase via Supabase **`work_items`** realtime (same publication; commit order wins). Shared helpers: `useWorkItemsRealtime`, `applyRealtimeWorkItemRow` / `mergeWorkItemRealtimeRow`, `toastWorkItemDnDConflict`. DnD paths use **toast-on-409** (not the merge dialog).
 
-| Surface                    | Mutation shape                        | Client win                                      |
-| -------------------------- | ------------------------------------- | ----------------------------------------------- |
-| **Backlog** drag-and-drop  | Rank / sprint (or equivalent) patches | Drag returns before PATCH; multi-tab stays live |
-| **Calendar** due-date drag | `due_date` (day) patches              | Same async confirm; no blanket `router.refresh` |
+| Surface                    | Mutation                         | Client                                                               |
+| -------------------------- | -------------------------------- | -------------------------------------------------------------------- |
+| **Backlog** sprint DnD     | `sprint_id` (+ cascade children) | `backlog-work-items` channel; pending set; mismatch dialog unchanged |
+| **Calendar** due-date drag | `due_date`                       | `calendar-work-items` channel; past/Done guards unchanged            |
 
-**Out of scope for W7:** work-item details Discussion / Activity / Work Log feeds — that is the separate [discussion realtime](../features/work-items/REALTIME_DISCUSSION.md) plan after **M8**.
+**Done:** calendar + backlog fire-and-forget PATCH; 409 toast + rebase; live `work_items` UPDATE merge for `due_date` / `sprint_id`.
+
+**Out of scope for W7:** work-item details Discussion / Activity / Work Log feeds — [discussion realtime](../features/work-items/REALTIME_DISCUSSION.md) after **M8**. No rank/reorder field exists on backlog today.
 
 ### After W7 — M8, then discussion realtime
 
