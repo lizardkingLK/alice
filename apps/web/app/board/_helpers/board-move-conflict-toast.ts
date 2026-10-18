@@ -5,10 +5,18 @@ import { ApiError } from '@/lib/api/api-fetch.helper';
 
 export const BOARD_MOVE_CONFLICT_TITLE = 'Someone else moved this item';
 
+/** Toast for DnD / placement optimistic-lock conflicts (board, calendar, backlog). */
+export function toastWorkItemDnDConflict(
+  title: string,
+  description: string
+): void {
+  toast.message(title, { description });
+}
+
 export function toastBoardMoveConflict(
   description = 'The board was updated to the latest placement.'
 ): void {
-  toast.message(BOARD_MOVE_CONFLICT_TITLE, { description });
+  toastWorkItemDnDConflict(BOARD_MOVE_CONFLICT_TITLE, description);
 }
 
 export function isBoardMoveOptimisticLockError(

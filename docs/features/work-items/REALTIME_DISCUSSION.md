@@ -4,7 +4,7 @@
 | ----------- | --------------------------------------------------------------------------------------------- |
 | Status      | **Planned**                                                                                   |
 | Scope       | Work-item details tabs: Discussion (comments), Activity, Work Log — live sync without refresh |
-| Sequencing  | After **W7** (backlog + calendar DnD realtime) and **M8** — see PERFORMANCE.md §9             |
+| Sequencing  | After **W7** (done) and **M8** — see PERFORMANCE.md §9                                        |
 | Performance | Linked from [PERFORMANCE.md](../../guides/PERFORMANCE.md); **not** a §9 write-latency ID      |
 
 Work-item details already loads comments / activities / work logs in the initial
@@ -46,15 +46,15 @@ verify `supabase_realtime` publication includes each table (same lesson as W6
 
 ## Sequencing
 
-| Step | Work                                                        | Doc / track                                                                                 |
-| ---- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| 1    | **W7** — backlog DnD + calendar due-date DnD async/realtime | [PERFORMANCE.md §9 W7](../../guides/PERFORMANCE.md#w7--backlog--calendar-dnd-realtime-next) |
-| 2    | **M8** — remaining read hot-path inventory                  | [PERFORMANCE.md §8.1](../../guides/PERFORMANCE.md)                                          |
-| 3    | **This plan** — details discussion / activity / work-log RT | This document                                                                               |
+| Step | Work                                                        | Doc / track                                                                               |
+| ---- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 1    | **W7** — backlog DnD + calendar due-date DnD async/realtime | [PERFORMANCE.md §9 W7](../../guides/PERFORMANCE.md#w7--backlog--calendar-dnd-realtime) ✅ |
+| 2    | **M8** — remaining read hot-path inventory                  | [PERFORMANCE.md §8.1](../../guides/PERFORMANCE.md)                                        |
+| 3    | **This plan** — details discussion / activity / work-log RT | This document                                                                             |
 
 ## Related
 
 - [REALTIME_BOARD_MOVES.md](../board/REALTIME_BOARD_MOVES.md) — W6 pattern to reuse
 - [ACTIVITY.md](./ACTIVITY.md) — activity feed product notes (realtime was deferred here)
-- [PERFORMANCE.md](../../guides/PERFORMANCE.md) — W7 → M8 → this plan
+- [PERFORMANCE.md](../../guides/PERFORMANCE.md) — W7 done → M8 → this plan
 - Work-item details implementation: `apps/web/app/work-items/[id]/`
