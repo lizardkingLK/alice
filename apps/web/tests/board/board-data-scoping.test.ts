@@ -103,14 +103,11 @@ describe('BoardData project scoping', () => {
 
     expect(listAccessibleProjectIdsMock).toHaveBeenCalledWith('admin-1');
     expect(getAccessibleProjectListMock).toHaveBeenCalledWith('admin-1');
-    expect(getWorkItemsMock).toHaveBeenCalledWith(
-      {
-        projectId: undefined,
-        sprintId: undefined,
-        projectIds: ['proj-1', 'proj-2'],
-      },
-      { includeDescription: true }
-    );
+    expect(getWorkItemsMock).toHaveBeenCalledWith({
+      projectId: undefined,
+      sprintId: undefined,
+      projectIds: ['proj-1', 'proj-2'],
+    });
     expect(props.projects).toEqual(MOCK_ACCESSIBLE_PROJECTS);
     expect(props.sprints).toEqual(MOCK_SPRINTS);
     expect(props.allowAllFilters).toBe(true);
@@ -132,14 +129,11 @@ describe('BoardData project scoping', () => {
     };
 
     expect(listAccessibleProjectIdsMock).toHaveBeenCalledWith('member-1');
-    expect(getWorkItemsMock).toHaveBeenCalledWith(
-      {
-        projectId: undefined,
-        sprintId: undefined,
-        projectIds: ['proj-1'],
-      },
-      { includeDescription: true }
-    );
+    expect(getWorkItemsMock).toHaveBeenCalledWith({
+      projectId: undefined,
+      sprintId: undefined,
+      projectIds: ['proj-1'],
+    });
     expect(props.projects).toEqual([
       { id: 'proj-1', name: 'Project 1', status: 'active' },
     ]);

@@ -15,9 +15,11 @@ import type {
   WorkItemAncestor,
   WorkItemListFilters,
 } from '@/app/work-items/_types/work-items.reads.types';
-
-/** Max hops above a leaf Issue (Task → Story → Epic). */
-const MAX_ANCESTOR_DEPTH = 3;
+import {
+  flattenWorkItemAncestorEmbed,
+  WORK_ITEM_ANCESTOR_EMBED_SELECT,
+  type WorkItemAncestorEmbedRow,
+} from '@/app/work-items/_helpers/work-item-ancestors';
 
 // Structural shape of the Supabase builder's `.eq()` / `.is()` / `.in()` / `.or()`.
 /* eslint-disable no-unused-vars */
@@ -215,8 +217,8 @@ export async function getWorkItemFromSupabase(
 }
 
 /**
- * Walk `parent_id` upward and return ancestors root-first
- * (Epic → … → immediate parent). Caps at hierarchy depth.
+ * Load ancestors root-first (Epic → … → immediate parent) in one PostgREST
+ * round-trip via nested `parent` embeds (capped at hierarchy depth).
  */
 export async function getWorkItemAncestorsFromSupabase(
   parentId: string | null | undefined
@@ -226,30 +228,17 @@ export async function getWorkItemAncestorsFromSupabase(
   }
 
   const supabase = await createClient();
-  const chain: WorkItemAncestor[] = [];
-  let currentParentId: string | null = parentId;
+  const { data, error } = await supabase
+    .from('work_items')
+    .select(WORK_ITEM_ANCESTOR_EMBED_SELECT)
+    .eq('id', parentId)
+    .maybeSingle();
 
-  for (let depth = 0; depth < MAX_ANCESTOR_DEPTH && currentParentId; depth++) {
-    const { data, error } = await supabase
-      .from('work_items')
-      .select('id, type, title, parent_id')
-      .eq('id', currentParentId)
-      .maybeSingle();
+  throwIfError(
+    error,
+    'failed to get work-item ancestors',
+    'Failed to get work-item ancestors'
+  );
 
-    throwIfError(
-      error,
-      'failed to get work-item ancestors',
-      'Failed to get work-item ancestors'
-    );
-
-    if (!data) {
-      break;
-    }
-
-    const ancestor = data as WorkItemAncestor;
-    chain.push(ancestor);
-    currentParentId = ancestor.parent_id;
-  }
-
-  return chain.reverse();
+  return flattenWorkItemAncestorEmbed(data as WorkItemAncestorEmbedRow | null);
 }
