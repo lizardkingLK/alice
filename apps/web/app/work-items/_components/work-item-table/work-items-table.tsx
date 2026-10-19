@@ -75,6 +75,10 @@ export default function WorkItemsTable({
   projectMembersByProjectId,
   sprints = [],
   initialWorkItems,
+  initialChildrenByParentId,
+  searchPanelItems = [],
+  searchMatchIds = [],
+  hierarchyMode = 'tree',
   totalCount,
   page,
   limit,
@@ -124,7 +128,8 @@ export default function WorkItemsTable({
   const { setValue: setProjectFilterValue, allValue: projectAllValue } =
     projectQuery;
   const { setValue: setSprintFilterValue } = sprintQuery;
-  const isHierarchy = listView === 'hierarchy';
+  /** Hierarchy browse forest; search keeps a flat match table under the panel. */
+  const isHierarchy = listView === 'hierarchy' && hierarchyMode === 'tree';
   // Prefer server cookie bootstrap so the first paint matches saved prefs.
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
     () =>
@@ -333,6 +338,7 @@ export default function WorkItemsTable({
       return;
     }
     params.delete('search');
+    params.delete('focus');
     pushWorkItemParams(params);
   }, [pushWorkItemParams, searchParams, setSearchQuery]);
 
@@ -475,6 +481,7 @@ export default function WorkItemsTable({
   } = useWorkItemHierarchy({
     enabled: isHierarchy,
     roots: workItems,
+    initialChildrenByParentId,
     onError: reportHierarchyError,
   });
 
@@ -621,7 +628,7 @@ export default function WorkItemsTable({
         onClearSearch={handleClearSearch}
         isProjectLocked={isProjectLocked}
         isAssigneeLocked={isAssigneeLocked}
-        isHierarchy={isHierarchy}
+        listView={listView}
         tab={tab}
         onTabChange={handleTabChange}
         projects={projects}
@@ -650,7 +657,16 @@ export default function WorkItemsTable({
         hideLifecycleTabs={hideLifecycleTabs}
       />
 
-      <WorkItemsSearchResultsPanel search={search} items={workItems} />
+      <WorkItemsSearchResultsPanel
+        search={search}
+        items={workItems}
+        panelItems={
+          listView === 'hierarchy' && searchPanelItems.length > 0
+            ? searchPanelItems
+            : undefined
+        }
+        matchIds={searchMatchIds}
+      />
 
       <Card className="border-border bg-card/50 backdrop-blur-md">
         <CardHeader>

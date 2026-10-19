@@ -44,6 +44,9 @@ Rules enforced on API create/update when `parent_id` is set:
 - Child must be in the same project
 - Child `type` must match the table above
 - A work item cannot be its own parent
+- Child `sprint_id` must match the parent (including backlog / `null`).
+  Backlog drag-and-drop surfaces this as **Sprint follows parent** rather than
+  a project mismatch.
 
 ### Removing allowed types (project settings)
 

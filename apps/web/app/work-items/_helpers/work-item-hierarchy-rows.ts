@@ -27,7 +27,11 @@ export function flattenWorkItemHierarchyRows(
   const rows: WorkItemHierarchyDisplayRow[] = [];
 
   const visit = (item: DbWorkItem, depth: number) => {
-    const canExpand = workItemCanExpand(item.type);
+    const knownChildren = childrenByParentId.has(item.id);
+    const children = childrenByParentId.get(item.id) ?? [];
+    // Seeded empty (`[]`) → no chevron / no fetch. Unknown → lazy load.
+    const canExpand =
+      workItemCanExpand(item.type) && (!knownChildren || children.length > 0);
     const isExpanded = canExpand && expandedIds.has(item.id);
     const isLoading = loadingIds.has(item.id);
 
@@ -43,7 +47,6 @@ export function flattenWorkItemHierarchyRows(
       return;
     }
 
-    const children = childrenByParentId.get(item.id) ?? [];
     for (const child of children) {
       visit(child, depth + 1);
     }

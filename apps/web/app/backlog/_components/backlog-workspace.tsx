@@ -25,6 +25,7 @@ import {
   BacklogMismatchDialog,
   BacklogStartSprintDialog,
   BacklogErrorDialog,
+  type BacklogMismatchReason,
 } from '@/app/backlog/_components/backlog-dialogs';
 import {
   getBacklogIssuesPaneClass,
@@ -61,6 +62,7 @@ import {
   mergeWorkItemRealtimeRow,
 } from '@/lib/work-items/apply-realtime-work-item-row';
 import { useWorkItemsRealtime } from '@/lib/work-items/use-work-items-realtime';
+import { afterDialogClose } from '@/lib/dialog-close';
 
 const SPRINT_PLACEMENT_FIELDS = ['sprint_id', 'updated_by'] as const;
 
@@ -202,18 +204,34 @@ export function BacklogWorkspace({
   const [actionError, setActionError] = useState<string | null>(null);
   const [isActionPending, setIsActionPending] = useState(false);
   const [isMismatchOpen, setIsMismatchOpen] = useState(false);
+  const [mismatchReason, setMismatchReason] =
+    useState<BacklogMismatchReason | null>(null);
   const [isErrorOpen, setIsErrorOpen] = useState(false);
 
-  const isSprintDropMismatch = (
+  useEffect(() => {
+    if (isMismatchOpen) {
+      return;
+    }
+    return afterDialogClose(() => {
+      setMismatchReason(null);
+    });
+  }, [isMismatchOpen]);
+
+  const openMismatchDialog = (reason: BacklogMismatchReason) => {
+    setMismatchReason(reason);
+    setIsMismatchOpen(true);
+  };
+
+  const getSprintDropMismatchReason = (
     itemId: string | null,
     targetSprintId: string | null
-  ): boolean => {
+  ): BacklogMismatchReason | null => {
     if (!itemId) {
-      return false;
+      return null;
     }
     const draggedItem = workItems.find((item) => item.id === itemId);
     if (!draggedItem) {
-      return false;
+      return null;
     }
 
     if (draggedItem.parent_id) {
@@ -223,19 +241,22 @@ export function BacklogWorkspace({
       const parentSprintId = parent?.sprint_id ?? null;
       const nextSprintId = targetSprintId || null;
       if (!sameWorkItemSprintId(parentSprintId, nextSprintId)) {
-        return true;
+        return 'parent-sprint';
       }
     }
 
     if (!targetSprintId) {
-      return false;
+      return null;
     }
 
     const targetSprint = sprintList.find(
       (sprint) => sprint.id === targetSprintId
     );
     const sprintProjId = targetSprint?.project?.id;
-    return Boolean(sprintProjId && draggedItem.project_id !== sprintProjId);
+    if (sprintProjId && draggedItem.project_id !== sprintProjId) {
+      return 'project';
+    }
+    return null;
   };
 
   const restoreWorkItemAfterFailedMutation = (
@@ -332,7 +353,7 @@ export function BacklogWorkspace({
     e.preventDefault();
     const id = targetId || 'backlog';
 
-    if (isSprintDropMismatch(draggedItemId, targetId)) {
+    if (getSprintDropMismatchReason(draggedItemId, targetId)) {
       return;
     }
 
@@ -354,8 +375,9 @@ export function BacklogWorkspace({
         setDragOverTargetId(null);
         return;
       }
-      if (isSprintDropMismatch(itemId, targetId)) {
-        setIsMismatchOpen(true);
+      const dropMismatch = getSprintDropMismatchReason(itemId, targetId);
+      if (dropMismatch) {
+        openMismatchDialog(dropMismatch);
         setDraggedItemId(null);
         setDragOverTargetId(null);
         return;
@@ -769,7 +791,7 @@ export function BacklogWorkspace({
     // Check sprint project mismatch if sprint_id or project_id is updated
     for (const [field, value] of Object.entries(updates)) {
       if (checkProjectSprintMismatch(itemId, field, value)) {
-        setIsMismatchOpen(true);
+        openMismatchDialog('project');
         return;
       }
     }
@@ -1168,9 +1190,10 @@ export function BacklogWorkspace({
           onConfirm={confirmCompleteSprint}
         />
 
-        {/* Dialog: Project Mismatch Error */}
+        {/* Dialog: Sprint assignment mismatch */}
         <BacklogMismatchDialog
           open={isMismatchOpen}
+          reason={mismatchReason}
           onOpenChange={setIsMismatchOpen}
           onAcknowledge={() => setIsMismatchOpen(false)}
         />

@@ -368,9 +368,28 @@ export function BacklogCompleteSprintDialog({
   );
 }
 
+export type BacklogMismatchReason = 'project' | 'parent-sprint';
+
+const MISMATCH_COPY: Record<
+  BacklogMismatchReason,
+  { readonly title: string; readonly description: string }
+> = {
+  project: {
+    title: 'Project Mismatch',
+    description:
+      'This task cannot be assigned to this sprint because they belong to different projects.',
+  },
+  'parent-sprint': {
+    title: 'Sprint follows parent',
+    description:
+      "This item uses its parent's sprint. Move the parent, or unlink it, to plan it separately.",
+  },
+};
+
 /* eslint-disable no-unused-vars */
 type MismatchDialogProps = {
   readonly open: boolean;
+  readonly reason: BacklogMismatchReason | null;
   readonly onOpenChange: (open: boolean) => void;
   readonly onAcknowledge: () => void;
 };
@@ -378,9 +397,12 @@ type MismatchDialogProps = {
 
 export function BacklogMismatchDialog({
   open,
+  reason,
   onOpenChange,
   onAcknowledge,
 }: Readonly<MismatchDialogProps>) {
+  const copy = MISMATCH_COPY[reason ?? 'project'];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -395,12 +417,9 @@ export function BacklogMismatchDialog({
           <div className="bg-destructive/15 mb-2 rounded-full p-3">
             <AlertCircle className="text-destructive h-6 w-6 animate-bounce" />
           </div>
-          <DialogTitle className="text-lg font-bold">
-            Project Mismatch
-          </DialogTitle>
+          <DialogTitle className="text-lg font-bold">{copy.title}</DialogTitle>
           <DialogDescription className="text-muted-foreground text-xs">
-            This task cannot be assigned to this sprint because they belong to
-            different projects.
+            {copy.description}
           </DialogDescription>
         </DialogHeader>
 

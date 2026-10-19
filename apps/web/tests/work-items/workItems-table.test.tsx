@@ -128,6 +128,7 @@ async function waitForColumnsHydrated() {
 async function renderTable(
   overrides: Partial<{
     initialWorkItems: DbWorkItem[];
+    initialChildrenByParentId: Record<string, DbWorkItem[]>;
     currentUserId: string | null;
     currentUserRole: string;
     tab: 'active' | 'archived';
@@ -168,6 +169,7 @@ async function renderTable(
       initialWorkItems={
         overrides.initialWorkItems ?? workItemFactory.buildList(2)
       }
+      initialChildrenByParentId={overrides.initialChildrenByParentId}
       totalCount={pagination.totalCount}
       page={pagination.page}
       limit={pagination.limit}
@@ -678,6 +680,25 @@ describe('WorkItemsTable', () => {
     await waitFor(() => {
       expect(screen.queryByText('Child story')).not.toBeInTheDocument();
     });
+  });
+
+  it('expands from SSR-packed children without a network fetch', async () => {
+    const { epic, story } = arrangeEpicWithChildStory();
+
+    await renderTable({
+      initialWorkItems: [epic],
+      initialChildrenByParentId: { 'epic-1': [story] },
+      listView: 'hierarchy',
+      totalCount: 1,
+      totalPages: 1,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Expand subtasks/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Child story')).toBeInTheDocument();
+    });
+    expect(loadWorkItemChildrenAction).not.toHaveBeenCalled();
   });
 
   it('shows an error and re-collapses the row when child loading fails', async () => {

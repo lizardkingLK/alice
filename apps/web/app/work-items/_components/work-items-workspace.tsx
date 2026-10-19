@@ -4,7 +4,10 @@ import type { ProjectMembersByProjectId } from '@/app/projects/_services/project
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import WorkItemsTable from '@/app/work-items/_components/work-item-table/work-items-table';
 import type { WorkItemMemberLike } from '@/app/work-items/_helpers/work-item-member';
-import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import {
+  DbWorkItem,
+  type WorkItemAncestor,
+} from '@/app/work-items/_services/work-items.reads.server';
 import type { WorkItemListView } from '@/lib/search-params';
 
 export interface WorkItemWorkspaceProps {
@@ -14,6 +17,16 @@ export interface WorkItemWorkspaceProps {
   projectMembersByProjectId?: ProjectMembersByProjectId;
   sprints: Sprint[];
   initialWorkItems: DbWorkItem[];
+  /** Hierarchy view: children on the current page (expand without fetch). */
+  initialChildrenByParentId?: Record<string, DbWorkItem[]>;
+  /** Search results container tree (hits ∪ ancestors). */
+  searchPanelItems?: DbWorkItem[];
+  /** Ids that matched the current search term. */
+  searchMatchIds?: readonly string[];
+  /** Path hints keyed by work-item id. */
+  ancestorsById?: Record<string, WorkItemAncestor[]>;
+  /** Browse forest vs search mode from the hierarchy page reader. */
+  hierarchyMode?: 'tree' | 'search';
   totalCount: number;
   page: number;
   limit: number;

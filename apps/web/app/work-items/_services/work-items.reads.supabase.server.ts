@@ -10,6 +10,7 @@ import {
 } from '@repo/types';
 import type {
   DbWorkItem,
+  GetWorkItemsHierarchyPageResponse,
   GetWorkItemsOptions,
   GetWorkItemsPaginatedResponse,
   WorkItemAncestor,
@@ -20,6 +21,15 @@ import {
   WORK_ITEM_ANCESTOR_EMBED_SELECT,
   type WorkItemAncestorEmbedRow,
 } from '@/app/work-items/_helpers/work-item-ancestors';
+import { seedForestChildrenByParentId } from '@/app/work-items/_helpers/work-item-hierarchy-children';
+import {
+  HIERARCHY_FOREST_PAGE_SIZE,
+  indexWorkItemsById,
+} from '@/app/work-items/_helpers/work-item-hierarchy-forest';
+import {
+  buildHierarchyPageRpcArgs,
+  parseHierarchyPageRpcPayload,
+} from '@/app/work-items/_helpers/work-item-hierarchy-page-rpc';
 
 // Structural shape of the Supabase builder's `.eq()` / `.is()` / `.in()` / `.or()`.
 /* eslint-disable no-unused-vars */
@@ -66,13 +76,26 @@ function applyProjectFilters<Q extends WorkItemFilterable<Q>>(
 
 function applyParentIdFilter<Q extends WorkItemFilterable<Q>>(
   query: Q,
-  parentId: WorkItemListFilters['parentId']
+  filters: Pick<WorkItemListFilters, 'parentId' | 'parentIds'>
 ): Q {
-  if (parentId === null) {
+  if (filters.parentIds?.length) {
+    return query.in('parent_id', [...filters.parentIds]);
+  }
+  if (filters.parentId === null) {
     return query.is('parent_id', null);
   }
-  if (parentId) {
-    return query.eq('parent_id', parentId);
+  if (filters.parentId) {
+    return query.eq('parent_id', filters.parentId);
+  }
+  return query;
+}
+
+function applyIdsFilter<Q extends WorkItemFilterable<Q>>(
+  query: Q,
+  ids: WorkItemListFilters['ids']
+): Q {
+  if (ids?.length) {
+    return query.in('id', [...ids]);
   }
   return query;
 }
@@ -120,7 +143,8 @@ export function applyWorkItemFilters<Q extends WorkItemFilterable<Q>>(
 
   next = applySprintIdFilter(next, filters.sprintId);
   next = applyProjectFilters(next, filters);
-  next = applyParentIdFilter(next, filters.parentId);
+  next = applyParentIdFilter(next, filters);
+  next = applyIdsFilter(next, filters.ids);
 
   if (filters.type) {
     next = next.eq('type', filters.type);
@@ -148,15 +172,20 @@ export function applyWorkItemFilters<Q extends WorkItemFilterable<Q>>(
  */
 export async function getWorkItemsFromSupabase(
   filters?: WorkItemListFilters,
-  options?: GetWorkItemsOptions
+  options?: GetWorkItemsOptions & { readonly search?: string }
 ): Promise<DbWorkItem[]> {
   const supabase = await createClient();
   const includeDescription = options?.includeDescription ?? false;
 
-  const query = applyWorkItemFilters(
+  let query = applyWorkItemFilters(
     supabase.from('work_items').select(workItemListSelect(includeDescription)),
     filters
   );
+
+  const search = options?.search?.trim();
+  if (search) {
+    query = query.or(buildWorkItemSearchOrFilter(search));
+  }
 
   const { data, error } = await query.order('created_at', {
     ascending: false,
@@ -241,4 +270,107 @@ export async function getWorkItemAncestorsFromSupabase(
   );
 
   return flattenWorkItemAncestorEmbed(data as WorkItemAncestorEmbedRow | null);
+}
+
+function orderByIds(
+  ids: readonly string[],
+  byId: ReadonlyMap<string, DbWorkItem>
+): DbWorkItem[] {
+  const ordered: DbWorkItem[] = [];
+  for (const id of ids) {
+    const item = byId.get(id);
+    if (item) {
+      ordered.push(item);
+    }
+  }
+  return ordered;
+}
+
+/**
+ * Hierarchy page via `get_work_items_hierarchy_page` RPC + list-row hydrate.
+ * Returns null when the function is missing (pre-migrate) so callers can fall back.
+ */
+export async function getWorkItemsHierarchyPageFromRpc(
+  page: number,
+  limit: number,
+  search?: string,
+  filters?: WorkItemListFilters,
+  focusId?: string | null
+): Promise<GetWorkItemsHierarchyPageResponse | null> {
+  const supabase = await createClient();
+  const trimmedSearch = search?.trim() || null;
+  const pageSize = trimmedSearch
+    ? Math.max(1, limit)
+    : HIERARCHY_FOREST_PAGE_SIZE;
+
+  const { data, error } = await supabase.rpc('get_work_items_hierarchy_page', {
+    ...buildHierarchyPageRpcArgs({
+      page,
+      pageSize,
+      search: trimmedSearch,
+      focusId,
+      filters,
+    }),
+  });
+
+  if (error) {
+    // PGRST202 = function not in schema cache (migration not applied yet).
+    if (
+      error.code === 'PGRST202' ||
+      /could not find the function/i.test(error.message)
+    ) {
+      return null;
+    }
+    throwIfError(
+      error,
+      'failed to get work-items hierarchy page',
+      'Failed to list work-items hierarchy'
+    );
+  }
+
+  const payload = parseHierarchyPageRpcPayload(data);
+  if (!payload) {
+    return null;
+  }
+
+  const hydrateIds = [
+    ...new Set([
+      ...payload.table_ids,
+      ...payload.page_ids,
+      ...payload.panel_ids,
+    ]),
+  ];
+
+  const hydrated =
+    hydrateIds.length === 0
+      ? []
+      : await getWorkItemsFromSupabase({
+          ids: hydrateIds,
+          recordStatus: filters?.recordStatus,
+          projectId: filters?.projectId,
+          projectIds: filters?.projectIds,
+        });
+  const byId = indexWorkItemsById(hydrated);
+
+  const pageItems = orderByIds(payload.page_ids, byId);
+  const panelItems = orderByIds(payload.panel_ids, byId);
+  // Always seed every known id (including `[]`) so expand never refetches
+  // nodes already returned by the hierarchy page / panel.
+  const childrenByParentId = seedForestChildrenByParentId(
+    payload.mode === 'search' && panelItems.length > 0 ? panelItems : pageItems
+  );
+
+  return {
+    workItems: orderByIds(payload.table_ids, byId),
+    totalCount: payload.total_count,
+    page: payload.page,
+    limit: payload.limit,
+    totalPages: payload.total_pages,
+    childrenByParentId,
+    mode: payload.mode,
+    searchPanelItems: panelItems,
+    searchMatchIds: payload.match_ids,
+    ancestorsById: payload.ancestors_by_id,
+    focusId: payload.focus_id,
+  };
 }
