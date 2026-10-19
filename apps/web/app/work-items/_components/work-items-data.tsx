@@ -1,7 +1,9 @@
 import WorkItemsWorkspace from '@/app/work-items/_components/work-items-workspace';
 import {
+  getWorkItemsHierarchyPage,
   getWorkItemsPaginated,
   type DbWorkItem,
+  type WorkItemAncestor,
   type WorkItemListFilters,
 } from '@/app/work-items/_services/work-items.reads.server';
 import { needsWorkspaceProjectBootstrap } from '@/app/board/_helpers/workspace-defaults-shared';
@@ -33,6 +35,12 @@ const EMPTY_WORK_ITEMS = {
   page: 1,
   limit: 10,
   totalPages: 1,
+  childrenByParentId: {} as Record<string, DbWorkItem[]>,
+  mode: 'tree' as const,
+  searchPanelItems: [] as DbWorkItem[],
+  searchMatchIds: [] as string[],
+  ancestorsById: {} as Record<string, WorkItemAncestor[]>,
+  focusId: null as string | null,
 };
 
 type WorkItemsDataProps = {
@@ -153,11 +161,28 @@ export async function WorkItemsData({
         };
       }
 
-      return safeServerFetch(
+      if (listView === 'hierarchy') {
+        return safeServerFetch(
+          getWorkItemsHierarchyPage(page, limit, search, scoped),
+          EMPTY_WORK_ITEMS,
+          'fetch work items hierarchy page'
+        );
+      }
+
+      const flat = await safeServerFetch(
         getWorkItemsPaginated(page, limit, search, scoped),
         EMPTY_WORK_ITEMS,
         'fetch work items list'
       );
+      return {
+        ...flat,
+        childrenByParentId: {},
+        mode: 'tree' as const,
+        searchPanelItems: [],
+        searchMatchIds: [],
+        ancestorsById: {},
+        focusId: null,
+      };
     })(),
   ]);
 
@@ -181,6 +206,11 @@ export async function WorkItemsData({
       projectMembersByProjectId={membersByProjectId}
       sprints={sprints}
       initialWorkItems={workItemsResult.workItems}
+      initialChildrenByParentId={workItemsResult.childrenByParentId}
+      searchPanelItems={workItemsResult.searchPanelItems}
+      searchMatchIds={workItemsResult.searchMatchIds}
+      ancestorsById={workItemsResult.ancestorsById}
+      hierarchyMode={workItemsResult.mode}
       totalCount={workItemsResult.totalCount}
       page={workItemsResult.page}
       limit={workItemsResult.limit}

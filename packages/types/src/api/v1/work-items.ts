@@ -189,6 +189,10 @@ export type WorkItemPrismaListFilters = {
   /** Restrict to these projects (membership scope). Intersects with `projectId` when both set. */
   projectIds?: readonly string[];
   parentId?: string | null;
+  /** Direct children of these parents (hierarchy packed page). Ignores `parentId`. */
+  parentIds?: readonly string[];
+  /** Restrict to these work-item ids (ancestor backfill / focus). */
+  ids?: readonly string[];
   type?: WorkItemType;
   assigneeId?: string;
   labels?: string[];

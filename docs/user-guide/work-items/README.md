@@ -56,10 +56,22 @@ Right side (views and actions):
 | **Active** / **Archived** | Same icon segment style as Flat/Hierarchy (managers/admins on `/work-items`; members use **My Work**) |
 | **Add Work-Item**         | Open the create form                                                                                  |
 
-In hierarchy mode, use **Expand all** / **Collapse all** on the table for the
-current page.
+In hierarchy mode, the registry pages a **forest** of up to **100** rows
+(parents and children count together). If a large parent is split across pages,
+the next page shows that parent again with the remaining children so you can
+still expand locally.
 
-Select a row to open the item detail page.
+### Hierarchy + search
+
+When **Hierarchy** is on and you search:
+
+1. **Search results** (above the table) shows a **tree** of matches plus their
+   parents. Click any row to open that work item’s detail page (same as a normal
+   link — no extra list reload).
+2. The **table** below stays a **flat** list of matches, using your normal page
+   size (5 / 10 / 20 / …).
+
+Select a row in the table to open the item detail page as well.
 
 ---
 

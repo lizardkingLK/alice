@@ -2,11 +2,11 @@
 
 How Alice keeps dashboard pages fast, what has already been optimized, and the roadmap for further wins.
 
-| Field        | Value                                                                                      |
-| ------------ | ------------------------------------------------------------------------------------------ |
-| Status       | **Living**                                                                                 |
-| Last updated | 2026-10-18 (M8: board desc off + ancestors one-trip; next hierarchy list / discussion RT)  |
-| Scope        | `apps/web` RSC data loading, `apps/api` auth + **mutation** latency, Express Prisma writes |
+| Field        | Value                                                                                           |
+| ------------ | ----------------------------------------------------------------------------------------------- |
+| Status       | **Living**                                                                                      |
+| Last updated | 2026-10-19 (M8 hierarchy `get_work_items_hierarchy_page` RPC; next backlog RPC / discussion RT) |
+| Scope        | `apps/web` RSC data loading, `apps/api` auth + **mutation** latency, Express Prisma writes      |
 
 Related:
 
@@ -370,7 +370,7 @@ Targeting sub-1.5s. Ordered by impact-to-effort.
 
 **Shipped for existing features (2026-07-24 / 2026-08-14 / 2026-10-16).** Dashboard **reads** default to RSC supabase-js (M1). Matching Express **Prisma** list/detail GETs were restored as an optional twin for `DATA_READS_VIA_API` ([DATA_RETRIEVAL.md](../architecture/DATA_RETRIEVAL.md)) — see §6 **Plan (toggle)**. API **table mutations** use Prisma Client. Paginated RSC lists share `runPaginatedSelect`. New surfaces should adopt §3 patterns as they land. **Do not move RSC page reads onto Prisma by default.**
 
-**Current focus:** resume **M8** read candidates. **W7** (backlog + calendar DnD realtime) is done. Work-item **discussion realtime** (comments / activity / work logs) is planned after M8 — see [REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md); it is UX sync, not a §9 write-latency item.
+**Current focus:** remaining **M8** candidates (backlog RPC if still slow) then **discussion realtime**. Hierarchy list packed children + board desc + ancestors one-trip are done. See [REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md).
 
 **RLS reminder:** M1 reads run with the `authenticated` role and RLS unenforced. Before enabling RLS, add SELECT policies for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members`. Dropdown cache (§2.7) uses the **service-role** client inside `unstable_cache` only.
 
@@ -595,15 +595,16 @@ If a page is slow because it fires four independent simple `select`s, fix fan-ou
 
 #### Remaining candidates
 
-| Surface                      | Status after first slice                                                | Next if still slow                                                      | Where to look                                     |
-| ---------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------- |
-| `/backlog`                   | Description dropped; still 4 REST lists + unbounded rows                | Cap/filter items, or one `rpc` workspace query                          | `getBacklogWorkspace()`                           |
-| `/work-items` list           | Parallelized; no description JSON                                       | Re-measure TTFB; indexes on filter columns                              | `work-items-data.tsx`                             |
-| `/dashboard` burndown        | Series is 1 embed call (+ sprint list for the dropdown)                 | Confirm embed in Network; otherwise keep split fallback                 | `sprint-burndown.server.ts`                       |
-| `/board`                     | Parallelized; **no** description JSON on list load (card preview empty) | Optional plain-text preview column later                                | `board-data.tsx`                                  |
-| `/work-items/[id]`           | Ancestors: **one** nested PostgREST embed (was up to 3 sequential)      | Hierarchy **list** expand still lazy — next M8 slice                    | `getWorkItemAncestors` / `work-item-ancestors.ts` |
-| `/projects/[id]`             | Unchanged                                                               | Same fan-out pattern as backlog                                         | `getProjectWorkspace(id)`                         |
-| API joined reads after write | Moved to **§9 W1 / W3**                                                 | Return Prisma rows instead of supabase `getById` on mutation happy path | Repositories that `getById` after `prisma.*`      |
+| Surface                      | Status after first slice                                                                                                                      | Next if still slow                                                      | Where to look                                     |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------- |
+| `/backlog`                   | Description dropped; still 4 REST lists + unbounded rows                                                                                      | Cap/filter items, or one `rpc` workspace query                          | `getBacklogWorkspace()`                           |
+| `/work-items` list           | Parallelized; no description JSON                                                                                                             | Re-measure TTFB; indexes on filter columns                              | `work-items-data.tsx`                             |
+| `/dashboard` burndown        | Series is 1 embed call (+ sprint list for the dropdown)                                                                                       | Confirm embed in Network; otherwise keep split fallback                 | `sprint-burndown.server.ts`                       |
+| `/board`                     | Parallelized; **no** description JSON on list load (card preview empty)                                                                       | Optional plain-text preview column later                                | `board-data.tsx`                                  |
+| `/work-items/[id]`           | Ancestors: **one** nested PostgREST embed (was up to 3 sequential)                                                                            | —                                                                       | `getWorkItemAncestors` / `work-item-ancestors.ts` |
+| `/work-items?view=hierarchy` | **`get_work_items_hierarchy_page` RPC** (DFS / 100-row budget + search panel ids) + list-row hydrate by id; in-memory fallback if RPC missing | Apply `add_work_items_hierarchy_page_rpc`; re-measure TTFB              | `getWorkItemsHierarchyPageFromRpc` / migration    |
+| `/projects/[id]`             | Unchanged                                                                                                                                     | Same fan-out pattern as backlog                                         | `getProjectWorkspace(id)`                         |
+| API joined reads after write | Moved to **§9 W1 / W3**                                                                                                                       | Return Prisma rows instead of supabase `getById` on mutation happy path | Repositories that `getById` after `prisma.*`      |
 
 **Out of scope for M8:** Auth, Storage (chat history, attachment signed URLs), cron, GitHub proxy. Prisma does not replace those. Also out of scope: swapping Prisma into RSC **just** to share a client with API mutations. Post-write follow-up reads belong to the **write track (§9)**, not M8.
 
