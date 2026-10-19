@@ -4,6 +4,7 @@ import {
   listWorkItemsPaginatedFromApi,
 } from '@/app/work-items/_services/work-items.reads.api.server';
 import {
+  applyWorkItemFilters,
   getWorkItemAncestorsFromSupabase,
   getWorkItemFromSupabase,
   getWorkItemsFromSupabase,
@@ -24,9 +25,9 @@ export type {
   GetWorkItemsPaginatedResponse,
   WorkItemAncestor,
   WorkItemListFilters,
-} from '@/app/work-items/_types/work-items.reads.types';
+};
 
-export { applyWorkItemFilters } from '@/app/work-items/_services/work-items.reads.supabase.server';
+export { applyWorkItemFilters };
 
 /**
  * Public server read facade — picks supabase-js (default) or Express GET
@@ -64,8 +65,8 @@ export const getWorkItem = cache(
 );
 
 /**
- * Walk `parent_id` upward and return ancestors root-first
- * (Epic → … → immediate parent). Caps at hierarchy depth.
+ * Ancestors root-first (Epic → … → immediate parent) for the details path crumb.
+ * One PostgREST round-trip (nested parent embeds).
  */
 export async function getWorkItemAncestors(
   parentId: string | null | undefined

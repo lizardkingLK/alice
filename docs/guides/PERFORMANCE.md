@@ -5,7 +5,7 @@ How Alice keeps dashboard pages fast, what has already been optimized, and the r
 | Field        | Value                                                                                      |
 | ------------ | ------------------------------------------------------------------------------------------ |
 | Status       | **Living**                                                                                 |
-| Last updated | 2026-10-18 (W7 DnD realtime done; next: M8 → discussion realtime)                          |
+| Last updated | 2026-10-18 (M8: board desc off + ancestors one-trip; next hierarchy list / discussion RT)  |
 | Scope        | `apps/web` RSC data loading, `apps/api` auth + **mutation** latency, Express Prisma writes |
 
 Related:
@@ -576,7 +576,7 @@ Counted from RSC loaders (each `supabase.from().select()` ≈ one `rest/v1` call
 | `/work-items`         | 4 parallel, **then** paginated items    | List waited on dropdowns/sprints. `select(*)` pulled TipTap `description` JSON for every row.   | No — paginated list + embeds is fine. | Fetch items **in the same** `Promise.all`. List select omits `description` (`workItemListSelect(false)`).       |
 | `/backlog`            | 4 parallel unbounded `getWorkItems()`   | `select(*)` + assignee/reporter embeds for **all** items (description JSON is the payload hog). | Not yet — payload, not protocol.      | Default `getWorkItems()` omits `description`. Four lists stay parallel PostgREST (workspace SQL would be M8.2). |
 | `/dashboard` burndown | 1 sprint list + **3 sequential** series | Sprint → items → worklogs waterfall. Math is already in `computeBurndown` (JS).                 | No — would add a hop or need RPC.     | One nested PostgREST embed: sprint + `work_items` + `work_item_worklogs` (`sprint-burndown.server.ts`).         |
-| `/board` (same pass)  | projects + sprints, **then** all items  | Same unbounded list as backlog, plus description for card preview.                              | No                                    | Items fetched in parallel with projects/sprints. Board still opts into `includeDescription: true`.              |
+| `/board` (same pass)  | projects + sprints, **then** all items  | Same unbounded list as backlog, plus description for card preview.                              | No                                    | Items fetched in parallel with projects/sprints. Description JSON **omitted** on list load (M8).                |
 
 **Rank (latency × traffic, qualitative):** `/work-items` and `/backlog` first (every session); `/dashboard` burndown next (3 sequential REST → 1 embed); `/projects/[id]` not in this slice.
 
@@ -595,15 +595,15 @@ If a page is slow because it fires four independent simple `select`s, fix fan-ou
 
 #### Remaining candidates
 
-| Surface                      | Status after first slice                                    | Next if still slow                                                                     | Where to look                                |
-| ---------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------- |
-| `/backlog`                   | Description dropped; still 4 REST lists + unbounded rows    | Cap/filter items, or one `rpc` workspace query                                         | `getBacklogWorkspace()`                      |
-| `/work-items` list           | Parallelized; no description JSON                           | Re-measure TTFB; indexes on filter columns                                             | `work-items-data.tsx`                        |
-| `/dashboard` burndown        | Series is 1 embed call (+ sprint list for the dropdown)     | Confirm embed in Network; otherwise keep split fallback                                | `sprint-burndown.server.ts`                  |
-| `/board`                     | Parallelized; still ships description JSON for card preview | Plain-text preview column / omit description until sheet open                          | `board-data.tsx`                             |
-| `/work-items/[id]`           | Unchanged                                                   | Ancestor walk is up to 3 sequential `maybeSingle`s — candidate for one recursive query | `getWorkItemAncestors`                       |
-| `/projects/[id]`             | Unchanged                                                   | Same fan-out pattern as backlog                                                        | `getProjectWorkspace(id)`                    |
-| API joined reads after write | Moved to **§9 W1 / W3**                                     | Return Prisma rows instead of supabase `getById` on mutation happy path                | Repositories that `getById` after `prisma.*` |
+| Surface                      | Status after first slice                                                | Next if still slow                                                      | Where to look                                     |
+| ---------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------- |
+| `/backlog`                   | Description dropped; still 4 REST lists + unbounded rows                | Cap/filter items, or one `rpc` workspace query                          | `getBacklogWorkspace()`                           |
+| `/work-items` list           | Parallelized; no description JSON                                       | Re-measure TTFB; indexes on filter columns                              | `work-items-data.tsx`                             |
+| `/dashboard` burndown        | Series is 1 embed call (+ sprint list for the dropdown)                 | Confirm embed in Network; otherwise keep split fallback                 | `sprint-burndown.server.ts`                       |
+| `/board`                     | Parallelized; **no** description JSON on list load (card preview empty) | Optional plain-text preview column later                                | `board-data.tsx`                                  |
+| `/work-items/[id]`           | Ancestors: **one** nested PostgREST embed (was up to 3 sequential)      | Hierarchy **list** expand still lazy — next M8 slice                    | `getWorkItemAncestors` / `work-item-ancestors.ts` |
+| `/projects/[id]`             | Unchanged                                                               | Same fan-out pattern as backlog                                         | `getProjectWorkspace(id)`                         |
+| API joined reads after write | Moved to **§9 W1 / W3**                                                 | Return Prisma rows instead of supabase `getById` on mutation happy path | Repositories that `getById` after `prisma.*`      |
 
 **Out of scope for M8:** Auth, Storage (chat history, attachment signed URLs), cron, GitHub proxy. Prisma does not replace those. Also out of scope: swapping Prisma into RSC **just** to share a client with API mutations. Post-write follow-up reads belong to the **write track (§9)**, not M8.
 
