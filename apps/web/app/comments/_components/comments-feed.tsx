@@ -66,6 +66,8 @@ import {
   sortParentComments,
   toMentionWorkItems,
   scopeMentionWorkItems,
+  uniqueCommentsById,
+  upsertCommentById,
   type CommentsSortOrder,
   type CommentsStatusFilter,
 } from '@/app/comments/_components/comments-feed-helpers';
@@ -341,12 +343,14 @@ export function CommentsFeed({
 
   const filteredComments = useMemo(
     () =>
-      filterComments(comments, {
-        workItemId,
-        selectedWorkItemId,
-        selectedStatus,
-        searchQuery,
-      }),
+      uniqueCommentsById(
+        filterComments(comments, {
+          workItemId,
+          selectedWorkItemId,
+          selectedStatus,
+          searchQuery,
+        })
+      ),
     [comments, workItemId, selectedWorkItemId, selectedStatus, searchQuery]
   );
 
@@ -390,7 +394,8 @@ export function CommentsFeed({
       if (!res.success) {
         throw new Error(res.error || 'Failed to create comment');
       }
-      setComments((prev) => [res.data!, ...prev]);
+      // Upsert: realtime INSERT may have already prepended this id.
+      setComments((prev) => upsertCommentById(prev, res.data!));
       setShowNewCommentModal(false);
       setReplyingParentId(null);
     } catch (err) {
