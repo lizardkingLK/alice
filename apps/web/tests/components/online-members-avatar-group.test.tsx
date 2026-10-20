@@ -48,9 +48,7 @@ describe('OnlineMembersAvatarGroup', () => {
         isUserOnline={(id) => id === 'u1'}
       />
     );
-    expect(screen.getByLabelText('Online project members')).not.toHaveClass(
-      'rounded-full'
-    );
+    expect(screen.getByRole('group')).not.toHaveClass('rounded-full');
   });
 
   it('shows the online pill when two or more others are online', () => {
@@ -61,9 +59,7 @@ describe('OnlineMembersAvatarGroup', () => {
         isUserOnline={(id) => id === 'u1' || id === 'u2'}
       />
     );
-    expect(screen.getByLabelText('Online project members')).toHaveClass(
-      'rounded-full'
-    );
+    expect(screen.getByRole('group')).toHaveClass('rounded-full');
   });
 
   it('shows +n when more than three others are online', () => {

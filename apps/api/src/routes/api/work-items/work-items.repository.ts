@@ -1006,7 +1006,7 @@ export class WorkItemRepository {
   }
 
   async countRelatedLinks(workItemId: string): Promise<number> {
-    return prisma.work_item_links.count({
+    return await prisma.work_item_links.count({
       where: {
         OR: [{ source_id: workItemId }, { target_id: workItemId }],
       },
