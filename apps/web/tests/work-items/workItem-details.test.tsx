@@ -28,6 +28,19 @@ vi.mock('@/components/realtime/realtime-provider', () => ({
   useRealtime: () => ({ isUserOnline: isUserOnlineMock }),
 }));
 
+vi.mock('@/lib/supabase/client', () => {
+  const mockRealtimeChannel = {
+    on: vi.fn().mockReturnThis(),
+    subscribe: vi.fn(),
+  };
+  return {
+    createClient: vi.fn(() => ({
+      channel: vi.fn(() => mockRealtimeChannel),
+      removeChannel: vi.fn(),
+    })),
+  };
+});
+
 vi.mock('next/navigation', () => import('../mocks/next-navigation'));
 
 vi.mock('next/link', () => ({

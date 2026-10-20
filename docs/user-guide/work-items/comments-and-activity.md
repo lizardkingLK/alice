@@ -28,6 +28,9 @@ work item (scoped to that item's project).
 Mentions and replies can generate [notifications](../notifications/dashboard-inbox.md)
 for mentionable teammates.
 
+While you keep the work-item page open, new and edited comments from teammates
+(or another tab) appear in Discussion without refreshing the page.
+
 ---
 
 ## Activity tab
@@ -49,6 +52,9 @@ menu (list icon) to switch how history is shown:
 
 Your choice is remembered per work item in this browser.
 
+Field and workflow changes made by teammates while you stay on the page show up
+in Activity without a refresh.
+
 Use the maximize icon on the right of the Discussion \| Activity \| Work Log
 tab row to expand the whole section for long threads or history (same pattern
 as the description editor).
@@ -60,6 +66,8 @@ as the description editor).
 The **Work log** tab lists time logged against the item. Use the **+** on the
 Work Log tab bar (or **+** next to **Time Tracking** in the sidebar) to open the
 log-work dialog. Done or archived items may hide that control.
+
+New work-log entries from teammates appear live while the page stays open.
 
 ---
 

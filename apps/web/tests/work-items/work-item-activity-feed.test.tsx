@@ -153,7 +153,7 @@ describe('WorkItemActivityTabs maximize', () => {
         activeTab="activity"
         onActiveTabChange={() => {}}
         initialComments={[]}
-        initialActivities={[buildActivity()]}
+        activities={[buildActivity()]}
         workItem={
           {
             id: 'wi-1',
@@ -181,7 +181,7 @@ describe('WorkItemActivityTabs maximize', () => {
         activeTab="activity"
         onActiveTabChange={() => {}}
         initialComments={[]}
-        initialActivities={[buildActivity()]}
+        activities={[buildActivity()]}
         workItem={
           {
             id: 'wi-1',

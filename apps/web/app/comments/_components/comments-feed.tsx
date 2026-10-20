@@ -69,6 +69,12 @@ import {
   type CommentsSortOrder,
   type CommentsStatusFilter,
 } from '@/app/comments/_components/comments-feed-helpers';
+import {
+  applyRealtimeCommentChange,
+  type CommentRealtimeRow,
+} from '@/app/comments/_helpers/apply-realtime-comment-row';
+import { rowFromRealtimePayload } from '@/lib/realtime/realtime-change-row';
+import { useScopedTableRealtime } from '@/lib/realtime/use-scoped-table-realtime';
 
 type CommentsFeedProps = {
   initialComments: CommentItem[];
@@ -316,6 +322,20 @@ export function CommentsFeed({
         console.error('error. failed to load comment users', error);
       });
   }, [targetWorkItemId]);
+
+  useScopedTableRealtime<CommentRealtimeRow>({
+    enabled: Boolean(workItemId),
+    channelPrefix: 'wi-comments',
+    table: 'comments',
+    scopeKey: workItemId ?? '',
+    filter: workItemId ? `work_item_id=eq.${workItemId}` : undefined,
+    onChange: ({ eventType, new: nextRow, old: prevRow }) => {
+      setComments((prev) => {
+        const row = rowFromRealtimePayload(eventType, nextRow, prevRow);
+        return applyRealtimeCommentChange(prev, eventType, row, users) ?? prev;
+      });
+    },
+  });
 
   const stats = useMemo(() => computeCommentStats(comments), [comments]);
 
