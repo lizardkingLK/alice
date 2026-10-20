@@ -67,7 +67,7 @@ export function WorkItemsTableToolbar({
   onClearSearch,
   isProjectLocked,
   isAssigneeLocked,
-  isHierarchy,
+  listView,
   tab,
   onTabChange,
   projects,
@@ -99,7 +99,8 @@ export function WorkItemsTableToolbar({
   onClearSearch: () => void;
   isProjectLocked: boolean;
   isAssigneeLocked: boolean;
-  isHierarchy: boolean;
+  /** URL `view` — keeps Flat/Hierarchy switch in sync while searching. */
+  listView: WorkItemListView;
   tab: 'active' | 'archived';
   // eslint-disable-next-line no-unused-vars -- tab change callback
   onTabChange: (tab: 'active' | 'archived') => void;
@@ -182,7 +183,7 @@ export function WorkItemsTableToolbar({
 
       <div className="flex shrink-0 flex-wrap items-center gap-3 self-start">
         <WorkItemListViewToggle
-          listView={isHierarchy ? 'hierarchy' : 'flat'}
+          listView={listView}
           onListViewChange={onListViewChange}
         />
 

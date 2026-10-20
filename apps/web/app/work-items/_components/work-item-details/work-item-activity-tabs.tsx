@@ -40,7 +40,8 @@ type WorkItemActivityTabsProps = {
   // eslint-disable-next-line no-unused-vars -- callback signature
   onActiveTabChange: (tab: WorkItemActivityTab) => void;
   initialComments: CommentItem[];
-  initialActivities?: WorkItemActivity[];
+  /** Live activity feed (parent owns state + realtime merge). */
+  activities?: WorkItemActivity[];
   /** Resolve assignee/reporter/sprint ids in activity lines. */
   activityLookups?: ActivityValueLookups;
   workItem: DbWorkItem;
@@ -86,7 +87,7 @@ export function WorkItemActivityTabs({
   activeTab,
   onActiveTabChange,
   initialComments,
-  initialActivities = [],
+  activities = [],
   activityLookups,
   workItem,
   discussionWorkItems,
@@ -228,7 +229,7 @@ export function WorkItemActivityTabs({
 
         <TabsContent value="activity" className={tabPanelClassName}>
           <WorkItemActivityFeed
-            activities={initialActivities}
+            activities={activities}
             lookups={activityLookups}
             layout={activityLayout}
           />

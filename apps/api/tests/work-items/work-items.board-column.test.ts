@@ -142,6 +142,41 @@ describe('WorkItemService board-column validation', () => {
     }));
   });
 
+  it('skips a second project access check when the project is unchanged', async () => {
+    await service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK);
+
+    expect(requireProjectMemberMock).toHaveBeenCalledWith(
+      WORK_ITEM_ID,
+      ACTOR_ID
+    );
+    expect(assertCanAccessProjectMock).not.toHaveBeenCalled();
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        current: expect.objectContaining({ id: WORK_ITEM_ID }),
+      })
+    );
+  });
+
+  it('asserts access when the PATCH moves the item to another project', async () => {
+    const otherProject = 'project-other';
+    assertCanAccessProjectMock.mockRejectedValue(new WorkItemAccessError());
+
+    await expect(
+      service.updateWorkItem(
+        ACTOR_ID,
+        WORK_ITEM_ID,
+        updateInput({ project_id: otherProject }),
+        LOCK
+      )
+    ).rejects.toBeInstanceOf(WorkItemAccessError);
+
+    expect(assertCanAccessProjectMock).toHaveBeenCalledWith(
+      ACTOR_ID,
+      otherProject
+    );
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
   it('persists a valid same-status custom-column move', async () => {
     await expect(
       service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)

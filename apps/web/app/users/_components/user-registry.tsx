@@ -1,6 +1,12 @@
 'use client';
 
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import {
   type CellContext,
   type ColumnDef,
@@ -54,11 +60,14 @@ import { DismissibleError } from '@/components/dismissible-error';
 import { useRealtime } from '@/components/realtime/realtime-provider';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
-import { toggleUserActive } from '../_services/users.mutations.client';
-import type { User } from '../_services/users.mutations.client';
+import {
+  toggleUserActive,
+  type User,
+} from '../_services/users.mutations.client';
 import { UserForm } from './user-form';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutation } from '@/lib/optimistic-lock/run-locked-mutation';
+import { replaceEntityInList } from '@/lib/replace-entity-in-list';
 
 interface UserRegistryProps {
   readonly users: User[];
@@ -334,6 +343,11 @@ export function UserRegistry({
   const [deactivatingUser, setDeactivatingUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isTogglingActive, setIsTogglingActive] = useState(false);
+  const [localUsers, setLocalUsers] = useState(users);
+
+  useEffect(() => {
+    setLocalUsers(users);
+  }, [users]);
 
   const isAdmin = currentUserRole === 'admin';
   const { handleMutationError } = useOptimisticLock();
@@ -426,8 +440,12 @@ export function UserRegistry({
     [isAdmin]
   );
 
+  const handleUserUpdated = useCallback((updated: User) => {
+    setLocalUsers((previous) => replaceEntityInList(previous, updated));
+  }, []);
+
   const table = useReactTable({
-    data: users,
+    data: localUsers,
     columns,
     getCoreRowModel: getCoreRowModel(),
     meta: {
@@ -541,9 +559,9 @@ export function UserRegistry({
               currentUserId={currentUserId}
               activeAdminCount={activeAdminCount}
               onClose={() => setEditingUser(null)}
+              onUserUpdated={handleUserUpdated}
               onSuccess={() => {
                 setEditingUser(null);
-                router.refresh();
               }}
             />
           ) : null}

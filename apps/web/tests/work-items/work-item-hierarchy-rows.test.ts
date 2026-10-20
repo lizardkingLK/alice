@@ -98,4 +98,18 @@ describe('flattenWorkItemHierarchyRows', () => {
     expect(rows[0]?.canExpand).toBe(false);
     expect(rows[0]?.isExpanded).toBe(false);
   });
+
+  it('hides expand when children were seeded empty', () => {
+    const task = workItemFactory.build({
+      id: 'task-1',
+      type: 'Task',
+      parent_id: null,
+    });
+    const rows = flattenWorkItemHierarchyRows(
+      [task],
+      new Map([['task-1', []]]),
+      new Set()
+    );
+    expect(rows[0]?.canExpand).toBe(false);
+  });
 });

@@ -38,6 +38,7 @@ import {
   WorkItemGithubConfigStatusEnum,
   WORK_ITEM_GITHUB_STATUS_MESSAGES,
   type WorkItemGithubConfigStatus,
+  parseWorkItemLabels,
 } from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { env } from '../../../config/env';
@@ -56,7 +57,11 @@ import {
   sameNullable,
 } from './work-items.patch-utils';
 import { assertChildSprintMatchesParent } from './work-items-sprint-hierarchy';
-import { WorkItemBody, WorkItemUpdateBody } from './work-items.schemas';
+import {
+  WorkItemBody,
+  WorkItemUpdateBody,
+  type PatchWorkItemStatusBody,
+} from './work-items.schemas';
 import type { ActivitiesService } from '../activities/activities.service';
 import {
   BoardMoveForbiddenError,
@@ -272,22 +277,26 @@ export class WorkItemService {
       createInput.assignee_id ||
       createInput.story_points
     ) {
-      let sprintName: string = WorkItemDefaults.BACKLOG;
-      if (createInput.sprint_id) {
-        const sprint = await prisma.sprints.findUnique({
-          where: { id: createInput.sprint_id },
-          select: { name: true },
-        });
-        sprintName = sprint?.name || WorkItemDefaults.SPRINT;
-      }
-      let assigneeName: string = WorkItemDefaults.UNASSIGNED;
-      if (createInput.assignee_id) {
-        const assignee = await prisma.users.findUnique({
-          where: { id: createInput.assignee_id },
-          select: { name: true },
-        });
-        assigneeName = assignee?.name || WorkItemDefaults.USER;
-      }
+      const [sprint, assignee] = await Promise.all([
+        createInput.sprint_id
+          ? prisma.sprints.findUnique({
+              where: { id: createInput.sprint_id },
+              select: { name: true },
+            })
+          : Promise.resolve(null),
+        createInput.assignee_id
+          ? prisma.users.findUnique({
+              where: { id: createInput.assignee_id },
+              select: { name: true },
+            })
+          : Promise.resolve(null),
+      ]);
+      const sprintName = createInput.sprint_id
+        ? sprint?.name || WorkItemDefaults.SPRINT
+        : WorkItemDefaults.BACKLOG;
+      const assigneeName = createInput.assignee_id
+        ? assignee?.name || WorkItemDefaults.USER
+        : WorkItemDefaults.UNASSIGNED;
       const comment = `Allocation changed: Assigned to sprint ${sprintName}, Assignee set to ${assigneeName}, Story points set to ${createInput.story_points || 0}.`;
       await prisma.work_item_worklogs.create({
         data: {
@@ -323,8 +332,15 @@ export class WorkItemService {
     workItem: DbWorkItem;
     cascadedSprintDescendantIds: readonly string[];
   }> {
-    await this.workItems.requireProjectMember(workItemId, userId);
-    await this.workItems.assertCanAccessProject(userId, input.project_id);
+    const membership = await this.workItems.requireProjectMember(
+      workItemId,
+      userId
+    );
+    // requireProjectMember already asserted access to the item's project;
+    // only re-check when the PATCH moves the item to a different project.
+    if (input.project_id !== membership?.projectId) {
+      await this.workItems.assertCanAccessProject(userId, input.project_id);
+    }
 
     const current = await this.workItems.getById(workItemId);
 
@@ -422,6 +438,7 @@ export class WorkItemService {
       id: workItemId,
       updatedBy: userId,
       expectedUpdatedAt,
+      current,
       ...(graphPlacement?.stateOverride
         ? { stateOverride: graphPlacement.stateOverride }
         : {}),
@@ -445,30 +462,148 @@ export class WorkItemService {
         );
     }
 
+    const sideEffects: Promise<void>[] = [
+      this.recordUpdateActivities({
+        userId,
+        workItemId,
+        current,
+        nextInput,
+        workflow,
+        resolutionMeta,
+      }),
+    ];
+
+    if (sprintChanged || assigneeChanged || storyPointsChanged) {
+      sideEffects.push(
+        this.createWorkItemUpdateWorklog({
+          userId,
+          workItemId,
+          current,
+          sprintId,
+          assigneeId,
+          storyPoints,
+          sprintChanged,
+          assigneeChanged,
+          storyPointsChanged,
+        })
+      );
+    }
+
+    // Await the batch (Vercel freezes the isolate if the handler returns early).
+    await Promise.all(sideEffects);
+
+    return { workItem: updated, cascadedSprintDescendantIds };
+  }
+
+  /**
+   * Hot path for board column / status moves (`updateWorkItemStatus` client).
+   * Skips full-field coalesce, list-all project access, duplicate getById, and
+   * allocation checks when only placement changed.
+   */
+  async updateWorkItemStatus(
+    userId: string,
+    workItemId: string,
+    input: PatchWorkItemStatusBody
+  ): Promise<{
+    workItem: DbWorkItem;
+    cascadedSprintDescendantIds: readonly string[];
+  }> {
+    const current = await this.workItems.getMutationRowById(workItemId);
+    if (!current) {
+      throw new Error('Work item not found');
+    }
+
+    const [, workflowConfig] = await Promise.all([
+      this.workItems.assertCanAccessProjectId(userId, current.project_id),
+      this.workItems.getProjectWorkflowConfig(current.project_id),
+    ]);
+
+    const nextInput = this.buildStatusOnlyUpdateBody(current, input);
+    const workflow = this.resolveWorkflowValidation(
+      current,
+      nextInput,
+      workflowConfig,
+      null
+    );
+
+    let resolvedInput = nextInput;
+    const graphPlacement =
+      workflow.mode === 'workflow'
+        ? this.normalizeGraphWorkflowPlacement(current, nextInput, workflow)
+        : null;
+    if (graphPlacement) {
+      resolvedInput = graphPlacement.nextInput;
+    }
+
+    const resolutionMeta = this.assertWorkflowResolution(
+      workflow,
+      input.resolution
+    );
+
+    await this.assertResolvedTransitions(
+      userId,
+      current,
+      resolvedInput,
+      workItemId,
+      workflow
+    );
+
+    await this.assertResolvedLockAndDoneGates(
+      current,
+      resolvedInput,
+      workItemId,
+      workflow
+    );
+
+    const updated = await this.workItems.update({
+      ...resolvedInput,
+      id: workItemId,
+      updatedBy: userId,
+      expectedUpdatedAt: input.expectedUpdatedAt,
+      current,
+      ...(graphPlacement?.stateOverride
+        ? { stateOverride: graphPlacement.stateOverride }
+        : {}),
+    });
+
     await this.recordUpdateActivities({
       userId,
       workItemId,
       current,
-      nextInput,
+      nextInput: resolvedInput,
       workflow,
       resolutionMeta,
     });
 
-    if (sprintChanged || assigneeChanged || storyPointsChanged) {
-      await this.createWorkItemUpdateWorklog({
-        userId,
-        workItemId,
-        current,
-        sprintId,
-        assigneeId,
-        storyPoints,
-        sprintChanged,
-        assigneeChanged,
-        storyPointsChanged,
-      });
-    }
+    return { workItem: updated, cascadedSprintDescendantIds: [] };
+  }
 
-    return { workItem: updated, cascadedSprintDescendantIds };
+  private buildStatusOnlyUpdateBody(
+    current: DbWorkItem,
+    input: PatchWorkItemStatusBody
+  ): WorkItemUpdateBody {
+    const boardColumnId =
+      input.board_column_id !== undefined
+        ? input.board_column_id
+        : current.board_column_id;
+
+    return {
+      title: current.title,
+      project_id: current.project_id,
+      type: current.type as WorkItemType,
+      priority: current.priority as WorkItemUpdateBody['priority'],
+      assignee_id: current.assignee_id,
+      reporter_id: current.reporter_id ?? undefined,
+      due_date: current.due_date,
+      description: current.description as WorkItemUpdateBody['description'],
+      labels: parseWorkItemLabels(current.labels),
+      sprint_id: current.sprint_id,
+      story_points: current.story_points,
+      parent_id: current.parent_id,
+      jira_issue_key: current.jira_issue_key,
+      status: input.status,
+      board_column_id: boardColumnId,
+    };
   }
 
   private async applySprintInheritanceForCreate(
@@ -533,38 +668,36 @@ export class WorkItemService {
     const { userId, workItemId, current, nextInput, workflow, resolutionMeta } =
       params;
     let wroteWorkflowTransition = false;
+    let workflowTransition: {
+      fromStateId: string;
+      toStateId: string;
+      workflowId: string;
+      edgeId: string | null;
+    } | null = null;
 
     if (workflow.mode === 'workflow') {
       const { sourceState, destinationState, edge, workflow: doc } = workflow;
       if (sourceState.id !== destinationState.id) {
         wroteWorkflowTransition = true;
-        await this.activities.recordWorkflowTransition({
-          workItemId,
-          actorId: userId,
-          meta: {
-            fromStateId: sourceState.id,
-            toStateId: destinationState.id,
-            workflowId: doc.id,
-            edgeId: edge?.id ?? null,
-          },
-        });
-        if (resolutionMeta) {
-          await this.activities.recordEscalationResolved({
-            workItemId,
-            actorId: userId,
-            meta: resolutionMeta,
-          });
-        }
+        workflowTransition = {
+          fromStateId: sourceState.id,
+          toStateId: destinationState.id,
+          workflowId: doc.id,
+          edgeId: edge?.id ?? null,
+        };
       }
     }
 
     const fieldChanges = collectWorkItemFieldChanges(current, nextInput, {
       includeStatus: !wroteWorkflowTransition,
     });
-    await this.activities.recordFieldChanges({
+
+    await this.activities.recordWorkItemUpdate({
       workItemId,
       actorId: userId,
-      changes: fieldChanges,
+      workflowTransition,
+      escalationResolved: wroteWorkflowTransition ? resolutionMeta : null,
+      fieldChanges,
     });
   }
 
@@ -1092,39 +1225,46 @@ export class WorkItemService {
       assigneeChanged,
       storyPointsChanged,
     } = params;
-    let oldSprintName: string = WorkItemDefaults.BACKLOG;
-    if (current.sprint_id) {
-      const s = await prisma.sprints.findUnique({
-        where: { id: current.sprint_id },
-        select: { name: true },
-      });
-      oldSprintName = s?.name || WorkItemDefaults.SPRINT;
-    }
-    let newSprintName: string = WorkItemDefaults.BACKLOG;
-    if (sprintId) {
-      const s = await prisma.sprints.findUnique({
-        where: { id: sprintId },
-        select: { name: true },
-      });
-      newSprintName = s?.name || WorkItemDefaults.SPRINT;
-    }
 
-    let oldAssigneeName: string = WorkItemDefaults.UNASSIGNED;
-    if (current.assignee_id) {
-      const u = await prisma.users.findUnique({
-        where: { id: current.assignee_id },
-        select: { name: true },
-      });
-      oldAssigneeName = u?.name || WorkItemDefaults.USER;
-    }
-    let newAssigneeName: string = WorkItemDefaults.UNASSIGNED;
-    if (assigneeId) {
-      const u = await prisma.users.findUnique({
-        where: { id: assigneeId },
-        select: { name: true },
-      });
-      newAssigneeName = u?.name || WorkItemDefaults.USER;
-    }
+    const [oldSprint, newSprint, oldAssignee, newAssignee] = await Promise.all([
+      current.sprint_id
+        ? prisma.sprints.findUnique({
+            where: { id: current.sprint_id },
+            select: { name: true },
+          })
+        : Promise.resolve(null),
+      sprintId
+        ? prisma.sprints.findUnique({
+            where: { id: sprintId },
+            select: { name: true },
+          })
+        : Promise.resolve(null),
+      current.assignee_id
+        ? prisma.users.findUnique({
+            where: { id: current.assignee_id },
+            select: { name: true },
+          })
+        : Promise.resolve(null),
+      assigneeId
+        ? prisma.users.findUnique({
+            where: { id: assigneeId },
+            select: { name: true },
+          })
+        : Promise.resolve(null),
+    ]);
+
+    const oldSprintName = current.sprint_id
+      ? oldSprint?.name || WorkItemDefaults.SPRINT
+      : WorkItemDefaults.BACKLOG;
+    const newSprintName = sprintId
+      ? newSprint?.name || WorkItemDefaults.SPRINT
+      : WorkItemDefaults.BACKLOG;
+    const oldAssigneeName = current.assignee_id
+      ? oldAssignee?.name || WorkItemDefaults.USER
+      : WorkItemDefaults.UNASSIGNED;
+    const newAssigneeName = assigneeId
+      ? newAssignee?.name || WorkItemDefaults.USER
+      : WorkItemDefaults.UNASSIGNED;
 
     const commentParts = [];
     if (sprintChanged)

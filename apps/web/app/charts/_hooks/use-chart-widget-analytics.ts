@@ -12,10 +12,10 @@ import {
   fetchChartSeries,
 } from '@/app/charts/_services/charts.analytics.client';
 import {
-  chartAnalyticsDimensionCacheKey,
   chartAnalyticsDimensionQueryFields,
   type ChartAnalyticsDimensionFilters,
 } from '@/app/charts/_helpers/charts-analytics.ui';
+import { chartSeriesCacheKey } from '@/app/charts/_helpers/charts-series-cache-key';
 import {
   registerChartAnalyticsCache,
   useCachedAnalyticsResource,
@@ -26,6 +26,7 @@ export {
   CHART_ANALYTICS_INVALIDATE_EVENT,
   invalidateChartAnalyticsCaches,
 } from '@/app/charts/_hooks/chart-widget-analytics-cache';
+export { chartSeriesCacheKey };
 
 type UseChartWidgetAnalyticsParams = {
   /**
@@ -61,18 +62,18 @@ const drilldownCache = new Map<string, ChartDrilldownResponse>();
 registerChartAnalyticsCache(seriesCache);
 registerChartAnalyticsCache(drilldownCache);
 
-function seriesCacheKey(params: {
-  projectId: string | null;
-  labelField: string;
-  sprintId?: string;
-  dimensionFilters?: ChartAnalyticsDimensionFilters;
-}): string {
-  return [
-    params.projectId ?? 'all',
-    params.labelField,
-    params.sprintId ?? '',
-    chartAnalyticsDimensionCacheKey(params.dimensionFilters),
-  ].join('::');
+/** Seed series responses from RSC prefetch before widget hooks mount. */
+export function seedChartSeriesCache(
+  entries: readonly {
+    readonly cacheKey: string;
+    readonly series: ChartSeriesResponse;
+  }[]
+): void {
+  for (const entry of entries) {
+    if (!seriesCache.has(entry.cacheKey)) {
+      seriesCache.set(entry.cacheKey, entry.series);
+    }
+  }
 }
 
 function drilldownCacheKey(params: {
@@ -85,7 +86,7 @@ function drilldownCacheKey(params: {
   limit: number;
 }): string {
   return [
-    seriesCacheKey(params),
+    chartSeriesCacheKey(params),
     params.sliceKey ?? '*',
     String(params.page),
     String(params.limit),
@@ -154,7 +155,7 @@ export function useChartWidgetAnalytics(
   const sliceKey = focusedSliceKey ?? undefined;
 
   const seriesKey = seriesEnabled
-    ? seriesCacheKey({
+    ? chartSeriesCacheKey({
         projectId,
         labelField,
         sprintId,

@@ -146,6 +146,19 @@ export function isMissingRelationError(error: {
   );
 }
 
+/**
+ * True when an RPC is not in the PostgREST schema cache yet (migration pending).
+ * Callers can fall back to PostgREST readers instead of failing hard.
+ */
+export function isMissingRpcError(error: {
+  message?: string;
+  code?: string;
+}): boolean {
+  const code = error.code ?? '';
+  const message = error.message ?? '';
+  return code === 'PGRST202' || /could not find the function/i.test(message);
+}
+
 /** True when `.range(from, to)` starts past the last row (HTTP 416 / PGRST103). */
 export function isUnsatisfiableRangeError(error: {
   message?: string;

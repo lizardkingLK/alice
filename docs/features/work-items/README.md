@@ -6,6 +6,7 @@
 | [ATTACHMENTS.md](./ATTACHMENTS.md)                                  | Private Storage attachments, SSR list, signed URLs on click  | Implemented |
 | [LABELS.md](./LABELS.md)                                            | JSONB text-array labels, create/details edit, search UX      | Implemented |
 | [ACTIVITY.md](./ACTIVITY.md)                                        | Work-item activity timeline next to Discussion               | Plan        |
+| [REALTIME_DISCUSSION.md](./REALTIME_DISCUSSION.md)                  | Planned realtime for Discussion / Activity / Work Log tabs   | Planned     |
 
 > Workflow transitions and escalation resolutions will write to `activities`
 > when [Workflow](../workflow/) ships — see ACTIVITY.md extensions and
@@ -43,6 +44,9 @@ Rules enforced on API create/update when `parent_id` is set:
 - Child must be in the same project
 - Child `type` must match the table above
 - A work item cannot be its own parent
+- Child `sprint_id` must match the parent (including backlog / `null`).
+  Backlog drag-and-drop surfaces this as **Sprint follows parent** rather than
+  a project mismatch.
 
 ### Removing allowed types (project settings)
 

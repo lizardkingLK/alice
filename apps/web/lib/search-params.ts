@@ -25,6 +25,8 @@ export interface RawSearchParams {
   fromAssignee?: string;
   /** Work-items list layout: flat (default) or hierarchy (roots + expand). */
   view?: string;
+  /** Hierarchy search drilldown focus (`work_items.id`). */
+  focus?: string;
   /** Charts registry no longer uses these; kept for older bookmarked URLs. */
   ownership?: string;
   /** Charts registry no longer uses these; kept for older bookmarked URLs. */
@@ -101,6 +103,15 @@ export function parseWorkItemFilters(
 /** Work-items list view mode. Default is flat (all matching rows). */
 export function parseWorkItemListView(value?: string | null): WorkItemListView {
   return value === 'hierarchy' ? 'hierarchy' : 'flat';
+}
+
+/** Optional work-item id for hierarchy search drilldown (`?focus=`). */
+export function parseWorkItemFocusId(value?: string | null): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return null;
+  }
+  return trimmed;
 }
 
 /**

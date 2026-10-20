@@ -113,6 +113,45 @@ describe('ActivitiesService', () => {
     ]);
   });
 
+  it('batches transition, escalation, and field changes into one insertMany', async () => {
+    const service = new ActivitiesService(repository);
+
+    await service.recordWorkItemUpdate({
+      workItemId: 'wi-1',
+      actorId: 'user-1',
+      workflowTransition: {
+        fromStateId: 'st-new',
+        toStateId: 'st-done',
+        workflowId: 'wf-default',
+        edgeId: 'e-1',
+      },
+      escalationResolved: {
+        presetId: 'preset-1',
+        presetTitle: 'Close out',
+        outcomeId: 'ok',
+        outcomeLabel: 'Done',
+        fields: [],
+        workflowId: 'wf-default',
+        edgeId: 'e-1',
+        fromStateId: 'st-new',
+        toStateId: 'st-done',
+      },
+      fieldChanges: [{ field: 'title', oldValue: 'Old', newValue: 'New' }],
+    });
+
+    expect(insertManyMock).toHaveBeenCalledTimes(1);
+    expect(insertManyMock).toHaveBeenCalledWith([
+      expect.objectContaining({ action: 'workflow_transition' }),
+      expect.objectContaining({ action: 'escalation_resolved' }),
+      expect.objectContaining({
+        action: 'field_changed',
+        field: 'title',
+        oldValue: 'Old',
+        newValue: 'New',
+      }),
+    ]);
+  });
+
   it('records attachment added and removed', async () => {
     // Arrange
     const service = new ActivitiesService(repository);

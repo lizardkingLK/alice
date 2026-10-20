@@ -1,13 +1,7 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type DragEvent,
-} from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useState, type DragEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@repo/ui/lib/utils';
 import {
   AlertCircle,
@@ -37,12 +31,10 @@ import {
 import {
   parseWorkItemLabels,
   parseWorkItemLabelsFilterParam,
-  serializeWorkItemLabelsFilter,
 } from '@repo/types';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
 import {
   assignItemsToColumns,
-  resolveBoardMove,
   resolveItemColumnId,
 } from '@/app/board/_helpers/board-columns';
 import {
@@ -51,6 +43,9 @@ import {
 } from '@/app/board/_components/board-layout-menu';
 import { BoardGroupedColumnsView } from '@/app/board/_components/board-grouped-columns-view';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
+import { useBoardFilterActions } from '@/app/board/_hooks/use-board-filter-actions';
+import { useBoardStatusMoves } from '@/app/board/_hooks/use-board-status-moves';
+import { useBoardSyncPrefs } from '@/app/board/_hooks/use-board-sync-prefs';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
@@ -62,10 +57,6 @@ import {
   WorkItemsFilterDialog,
   type WorkItemsFilterFieldId,
 } from '@/app/work-items/_components/work-item-registry/work-items-filter-dialog';
-import {
-  applyWorkItemsProjectSprintDraftToSearchParams,
-  type WorkItemsFilterDraft,
-} from '@/app/work-items/_components/work-item-table/work-item-table-helpers';
 import type { FilterQuery } from '@/app/work-items/_components/work-item-table/work-items-table-types';
 import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
 import {
@@ -73,33 +64,19 @@ import {
   type WorkItemPriority,
 } from '@/app/work-items/_helpers/work-item-priority-ui';
 import { BOARD_STATUS_COLUMN_ACCENTS } from '@/app/work-items/_helpers/work-item-status';
-import { mergeWorkItemServerRow } from '@/app/work-items/_helpers/work-item-merge-server-row';
-import { updateWorkItemStatus } from '@/app/work-items/_services/work-items.mutations.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { AppliedFilterBadges } from '@/components/applied-filter-badges';
-import {
-  buildAppliedFilterBadgeItems,
-  planAppliedFilterRemovals,
-} from '@/components/applied-filter-badges.model';
+import { buildAppliedFilterBadgeItems } from '@/components/applied-filter-badges.model';
 import { SearchInput } from '@/components/search-input';
 import { AssigneeAvatarFilter } from '@/components/assignee-avatar-filter';
 import { UserAvatar } from '@/components/user-avatar';
 import { WorkItemPreviewCardBody } from '@/components/work-item-preview-card';
-import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { useRealtime } from '@/components/realtime/realtime-provider';
 import {
-  applyQueryFilterParam,
   QUERY_FILTER_ALL_VALUE,
   useQueryFilter,
 } from '@/hooks/use-query-filter';
-import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
-import { ApiError } from '@/lib/api/api-fetch.helper';
-import { toastWorkflowMoveBlocked } from '@/app/board/_helpers/workflow-move-blocked-toast';
-import {
-  BOARD_MOVE_FORBIDDEN_CODE,
-  type BoardColumn,
-  type BoardWorkflowTab,
-} from '@repo/types/api/v1';
+import { type BoardColumn, type BoardWorkflowTab } from '@repo/types/api/v1';
 
 type BoardStatus = BoardColumn['status'];
 
@@ -192,6 +169,445 @@ type KanbanBoardProps = {
   readonly needsClientBootstrap: boolean;
 };
 
+type BoardAssigneeOption = {
+  readonly id: string;
+  readonly name: string;
+  readonly profilePicture: string | null;
+};
+
+function resolveScopedProjectId(
+  projectValue: string,
+  projectAllValue: string
+): string | null {
+  if (!projectValue || projectValue === projectAllValue) {
+    return null;
+  }
+  return projectValue;
+}
+
+function projectsForCreate(
+  projects: readonly Project[],
+  projectValue: string,
+  projectAllValue: string
+): Project[] {
+  if (!projectValue || projectValue === projectAllValue) {
+    return [...projects];
+  }
+  return projects.filter((project) => project.id === projectValue);
+}
+
+function collectUniqueAssignees(
+  workItems: readonly DbWorkItem[]
+): BoardAssigneeOption[] {
+  const byId = new Map<string, BoardAssigneeOption>();
+  for (const item of workItems) {
+    if (!item.assignee_id || !item.assignee?.name) {
+      continue;
+    }
+    byId.set(item.assignee_id, {
+      id: item.assignee_id,
+      name: item.assignee.name,
+      profilePicture: item.assignee.profile_picture?.trim() || null,
+    });
+  }
+  return Array.from(byId.values());
+}
+
+function buildBoardAppliedFilterItems(params: {
+  readonly search: string;
+  readonly projectFilterActive: boolean;
+  readonly projectId: string;
+  readonly projects: readonly Project[];
+  readonly sprintFilterActive: boolean;
+  readonly sprintId: string;
+  readonly sprints: readonly Sprint[];
+  readonly priorityFilter: string;
+  readonly assigneeFilter: string | null;
+  readonly uniqueAssignees: readonly BoardAssigneeOption[];
+  readonly activeLabels: readonly string[];
+}) {
+  return buildAppliedFilterBadgeItems({
+    search: params.search,
+    project: params.projectFilterActive
+      ? {
+          id: params.projectId,
+          name:
+            params.projects.find((project) => project.id === params.projectId)
+              ?.name ?? params.projectId,
+        }
+      : null,
+    sprint: params.sprintFilterActive
+      ? {
+          id: params.sprintId,
+          name:
+            params.sprints.find((sprint) => sprint.id === params.sprintId)
+              ?.name ?? params.sprintId,
+        }
+      : null,
+    priority:
+      params.priorityFilter !== QUERY_FILTER_ALL_VALUE
+        ? {
+            id: params.priorityFilter,
+            name:
+              PRIORITY_LABELS[params.priorityFilter as WorkItemPriority] ??
+              formatLabelWithSpace(params.priorityFilter),
+          }
+        : null,
+    assignee: params.assigneeFilter
+      ? {
+          id: params.assigneeFilter,
+          name:
+            params.uniqueAssignees.find(
+              (assignee) => assignee.id === params.assigneeFilter
+            )?.name ?? 'Assignee',
+        }
+      : null,
+    labels: params.activeLabels,
+  });
+}
+
+function BoardStatusErrorBanner({
+  message,
+  onDismiss,
+}: Readonly<{
+  readonly message: string;
+  readonly onDismiss: () => void;
+}>) {
+  return (
+    <div className="bg-destructive/10 text-destructive border-destructive/20 flex shrink-0 items-start gap-2 rounded-lg border px-3 py-2 text-sm">
+      <AlertCircle className="mt-0.5 size-4 shrink-0" />
+      <div className="flex flex-1 items-start justify-between gap-3">
+        <p>{message}</p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          className="text-destructive hover:text-destructive"
+          onClick={onDismiss}
+        >
+          Dismiss
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function createWorkItemDialogDescription(
+  createStatus: BoardStatus | null
+): string {
+  if (!createStatus) {
+    return 'Create a work item.';
+  }
+  return `Create a work item in ${formatLabelWithSpace(createStatus)}.`;
+}
+
+function resolveCreateDialogProjects(
+  lockCreateProject: boolean,
+  createProjects: readonly Project[],
+  projects: readonly Project[]
+): Project[] {
+  if (lockCreateProject && createProjects[0]) {
+    return [...createProjects];
+  }
+  return [...projects];
+}
+
+function resolveDefaultSprintId(
+  sprintValue: string,
+  sprintAllValue: string
+): string | null {
+  if (sprintValue && sprintValue !== sprintAllValue) {
+    return sprintValue;
+  }
+  return null;
+}
+
+function BoardWorkItemPreviewDialog({
+  open,
+  onOpenChange,
+  selectedTask,
+  boardColumns,
+  pendingStatusIds,
+  isUserOnline,
+  onApplyStatusChange,
+}: Readonly<{
+  readonly open: boolean;
+  // eslint-disable-next-line no-unused-vars -- callback
+  readonly onOpenChange: (open: boolean) => void;
+  readonly selectedTask: DbWorkItem | null;
+  readonly boardColumns: readonly BoardColumn[];
+  readonly pendingStatusIds: ReadonlySet<string>;
+  // eslint-disable-next-line no-unused-vars -- callback
+  readonly isUserOnline: (userId: string) => boolean;
+  // eslint-disable-next-line no-unused-vars -- callback
+  readonly onApplyStatusChange: (id: string, column: BoardColumn) => void;
+}>) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="overflow-x-hidden sm:max-w-xl">
+        {selectedTask ? (
+          <>
+            <DialogHeader>
+              <div className="mb-1 flex items-center justify-between gap-3 pr-6">
+                <Badge variant="outline" className="font-mono">
+                  {shortId(selectedTask.id)}
+                </Badge>
+                <PriorityBadge priority={selectedTask.priority} />
+              </div>
+              <DialogTitle className="text-foreground text-xl">
+                {selectedTask.title}
+              </DialogTitle>
+              <DialogDescription>
+                Preview this work item or move it between board columns. Status
+                changes are saved immediately.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="min-w-0 space-y-5 text-sm">
+              <div className="space-y-2.5">
+                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Description
+                </p>
+                <div className="bg-muted/40 max-h-56 overflow-x-hidden overflow-y-auto rounded-lg border p-3">
+                  <DescriptionView
+                    description={selectedTask.description ?? null}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-muted/20 rounded-lg border p-3">
+                  <p className="text-muted-foreground mb-2.5 text-[10px] font-medium tracking-wide uppercase">
+                    Assignee
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <UserAvatar
+                      name={assigneeName(selectedTask)}
+                      imageUrl={selectedTask.assignee?.profile_picture}
+                      title={assigneeName(selectedTask)}
+                      isOnline={Boolean(
+                        selectedTask.assignee_id &&
+                        isUserOnline(selectedTask.assignee_id)
+                      )}
+                      className="size-6"
+                      fallbackClassName="bg-primary text-primary-foreground text-[10px] font-medium"
+                    />
+                    <span className="text-foreground text-xs font-medium">
+                      {assigneeName(selectedTask)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-muted/20 rounded-lg border p-3">
+                  <p className="text-muted-foreground mb-2.5 text-[10px] font-medium tracking-wide uppercase">
+                    Type
+                  </p>
+                  <WorkItemTypeBadge type={selectedTask.type} />
+                </div>
+
+                <div className="bg-muted/20 rounded-lg border p-3">
+                  <p className="text-muted-foreground mb-2.5 text-[10px] font-medium tracking-wide uppercase">
+                    Due date
+                  </p>
+                  <span className="text-foreground inline-flex items-center gap-1.5 text-xs font-medium">
+                    <Calendar className="text-primary size-3.5" />
+                    {selectedTask.due_date ?? 'Not set'}
+                  </span>
+                </div>
+
+                <div className="bg-muted/20 rounded-lg border p-3">
+                  <p className="text-muted-foreground mb-2.5 text-[10px] font-medium tracking-wide uppercase">
+                    Status
+                  </p>
+                  <WorkItemStatusBadge status={selectedTask.status} />
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Move to
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {boardColumns.map((column) => (
+                    <Button
+                      key={column.id}
+                      type="button"
+                      variant={
+                        resolveItemColumnId(selectedTask, boardColumns) ===
+                        column.id
+                          ? 'default'
+                          : 'outline'
+                      }
+                      size="sm"
+                      disabled={pendingStatusIds.has(selectedTask.id)}
+                      onClick={() =>
+                        onApplyStatusChange(selectedTask.id, column)
+                      }
+                    >
+                      {column.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 border-t pt-4 sm:justify-between">
+              <Button asChild variant="outline">
+                <a
+                  href={`/work-items/${selectedTask.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open details
+                  <SquareArrowOutUpRight />
+                </a>
+              </Button>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">
+                  Close
+                </Button>
+              </DialogClose>
+            </DialogFooter>
+          </>
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+type BoardClassicColumnsProps = {
+  readonly boardColumns: readonly BoardColumn[];
+  readonly columnItemsMap: ReadonlyMap<string, DbWorkItem[]>;
+  readonly activeDropCol: string | null;
+  readonly draggedTaskId: string | null;
+  readonly pendingStatusIds: ReadonlySet<string>;
+  readonly dimPendingCards: boolean;
+  // eslint-disable-next-line no-unused-vars -- callback
+  readonly onSelectItem: (item: DbWorkItem) => void;
+  // eslint-disable-next-line no-unused-vars -- callback
+  readonly onCreateInColumn: (column: BoardColumn) => void;
+  // eslint-disable-next-line no-unused-vars -- callback
+  readonly onItemDragStart: (event: DragEvent, id: string) => void;
+  readonly onItemDragEnd: () => void;
+  // eslint-disable-next-line no-unused-vars -- callback
+  readonly onColumnDragOver: (event: DragEvent, colId: string) => void;
+  readonly onColumnDragLeave: () => void;
+  // eslint-disable-next-line no-unused-vars -- callback
+  readonly onColumnDrop: (event: DragEvent, column: BoardColumn) => void;
+  // eslint-disable-next-line no-unused-vars -- callback
+  readonly isUserOnline: (userId: string) => boolean;
+};
+
+function BoardClassicColumns({
+  boardColumns,
+  columnItemsMap,
+  activeDropCol,
+  draggedTaskId,
+  pendingStatusIds,
+  dimPendingCards,
+  onSelectItem,
+  onCreateInColumn,
+  onItemDragStart,
+  onItemDragEnd,
+  onColumnDragOver,
+  onColumnDragLeave,
+  onColumnDrop,
+  isUserOnline,
+}: Readonly<BoardClassicColumnsProps>) {
+  return (
+    <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-1">
+      {boardColumns.map((column) => {
+        const columnItems = columnItemsMap.get(column.id) ?? [];
+        const isOver = activeDropCol === column.id;
+
+        return (
+          <section
+            key={column.id}
+            aria-label={column.name}
+            className={cn(
+              'bg-muted/25 flex h-full min-h-0 w-72 min-w-72 flex-1 flex-col rounded-xl border border-t-4 p-3 transition-colors',
+              BOARD_STATUS_COLUMN_ACCENTS[column.status],
+              isOver && 'border-primary bg-primary/5 border-dashed'
+            )}
+            onDragOver={(event) => onColumnDragOver(event, column.id)}
+            onDragLeave={onColumnDragLeave}
+            onDrop={(event) => onColumnDrop(event, column)}
+          >
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <WorkItemStatusBadge status={column.status} label={column.name} />
+              <div className="flex items-center gap-1.5">
+                <Badge variant="secondary">{columnItems.length}</Badge>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      size="icon-sm"
+                      variant="ghost"
+                      className="cursor-pointer"
+                      aria-label={`Create work item in ${column.name}`}
+                      onClick={() => onCreateInColumn(column)}
+                    >
+                      <Plus className="size-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Create in {column.name}</TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
+
+            <ScrollArea className="h-0 min-h-0 flex-1">
+              <div className="flex w-full flex-col gap-3 pb-1">
+                {columnItems.length === 0 ? (
+                  <div className="text-muted-foreground flex min-h-40 w-full flex-col items-center justify-center rounded-lg border border-dashed px-4 py-10 text-center text-xs">
+                    <FolderDot className="text-muted-foreground/50 mb-2 size-8 stroke-1" />
+                    No work items in this stage
+                  </div>
+                ) : (
+                  columnItems.map((item) => {
+                    const description = descriptionToPlainText(
+                      item.description ?? null
+                    );
+                    const isPendingDim =
+                      dimPendingCards && pendingStatusIds.has(item.id);
+
+                    return (
+                      <Card
+                        key={item.id}
+                        draggable
+                        onDragStart={(event) => onItemDragStart(event, item.id)}
+                        onDragEnd={onItemDragEnd}
+                        onClick={() => onSelectItem(item)}
+                        className={cn(
+                          'group w-full max-w-full min-w-0 cursor-grab border border-b-[3px] py-0 shadow-sm active:cursor-grabbing',
+                          (draggedTaskId === item.id || isPendingDim) &&
+                            'opacity-40'
+                        )}
+                      >
+                        <WorkItemPreviewCardBody
+                          title={item.title}
+                          type={item.type}
+                          priority={item.priority}
+                          descriptionPlain={description || null}
+                          assigneeName={assigneeName(item)}
+                          assigneeImageUrl={item.assignee?.profile_picture}
+                          isAssigneeOnline={Boolean(
+                            item.assignee_id && isUserOnline(item.assignee_id)
+                          )}
+                          titleClassName="group-hover:text-primary transition-colors"
+                        />
+                      </Card>
+                    );
+                  })
+                )}
+              </div>
+            </ScrollArea>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
 export function KanbanBoard({
   boardColumns,
   usesCustomBoardConfig,
@@ -209,10 +625,10 @@ export function KanbanBoard({
 }: Readonly<KanbanBoardProps>) {
   const { isUserOnline } = useRealtime();
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { handleMutationError } = useOptimisticLock();
   const { layout, setLayout } = useBoardLayout(userId);
+  const { prefs: syncPrefs, setPrefs: setSyncPrefs } =
+    useBoardSyncPrefs(userId);
   const [workItems, setWorkItems] = useState<DbWorkItem[]>(initialWorkItems);
   const [createStatus, setCreateStatus] = useState<BoardStatus | null>(null);
   const [search, setSearch] = useState('');
@@ -243,17 +659,19 @@ export function KanbanBoard({
     projectQuery;
   const { setValue: setSprintFilterValue } = sprintQuery;
   const { setValue: setLabelsFilterValue } = labelsQuery;
+  const realtimeProjectId = resolveScopedProjectId(
+    projectQuery.value,
+    projectAllValue
+  );
   const activeLabels = useMemo(
     () => parseWorkItemLabelsFilterParam(labelsQuery.value) ?? [],
     [labelsQuery.value]
   );
 
-  const createProjects = useMemo(() => {
-    if (!projectQuery.value || projectQuery.value === projectAllValue) {
-      return projects;
-    }
-    return projects.filter((project) => project.id === projectQuery.value);
-  }, [projectAllValue, projectQuery.value, projects]);
+  const createProjects = useMemo(
+    () => projectsForCreate(projects, projectQuery.value, projectAllValue),
+    [projectAllValue, projectQuery.value, projects]
+  );
 
   const lockCreateProject =
     createProjects.length === 1 &&
@@ -265,28 +683,24 @@ export function KanbanBoard({
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<DbWorkItem | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
-  const [pendingStatusIds, setPendingStatusIds] = useState<Set<string>>(
-    () => new Set()
+
+  const { pendingStatusIds, dimPendingCards, applyStatusChange } =
+    useBoardStatusMoves({
+      workItems,
+      setWorkItems,
+      setSelectedTask,
+      boardColumns,
+      usesCustomBoardConfig,
+      userId,
+      syncPrefs,
+      realtimeProjectId,
+      setStatusError,
+    });
+
+  const uniqueAssignees = useMemo(
+    () => collectUniqueAssignees(workItems),
+    [workItems]
   );
-
-  const uniqueAssignees = useMemo(() => {
-    const byId = new Map<
-      string,
-      { id: string; name: string; profilePicture: string | null }
-    >();
-
-    for (const item of workItems) {
-      if (item.assignee_id && item.assignee?.name) {
-        byId.set(item.assignee_id, {
-          id: item.assignee_id,
-          name: item.assignee.name,
-          profilePicture: item.assignee.profile_picture?.trim() || null,
-        });
-      }
-    }
-
-    return Array.from(byId.values());
-  }, [workItems]);
 
   const boardFilterFieldIds = useMemo(() => {
     const fields: WorkItemsFilterFieldId[] = [];
@@ -327,145 +741,38 @@ export function KanbanBoard({
     priorityFilter !== QUERY_FILTER_ALL_VALUE ||
     hasLabelsFilter;
 
-  const pushBoardParams = useCallback(
-    (params: URLSearchParams) => {
-      params.delete('page');
-      const query = params.toString();
-      router.push(query ? `${pathname}?${query}` : pathname);
-    },
-    [pathname, router]
-  );
-
-  const handleApplyFilters = useCallback(
-    (draft: WorkItemsFilterDraft) => {
-      setPriorityFilter(
-        !draft.priority || draft.priority === QUERY_FILTER_ALL_VALUE
-          ? QUERY_FILTER_ALL_VALUE
-          : draft.priority
-      );
-
-      const params = new URLSearchParams(searchParams.toString());
-
-      const canFilterProject = allowAllFilters || projects.length > 0;
-      if (canFilterProject) {
-        applyWorkItemsProjectSprintDraftToSearchParams(params, draft, {
-          allValue: projectAllValue,
-          applyProject: true,
-        });
-        if (!draft.project || draft.project === projectAllValue) {
-          setProjectFilterValue(projectAllValue);
-          setSprintFilterValue(sprintQuery.allValue);
-        } else {
-          setProjectFilterValue(draft.project);
-          setSprintFilterValue(
-            !draft.sprint || draft.sprint === projectAllValue
-              ? sprintQuery.allValue
-              : draft.sprint
-          );
-        }
-      } else {
-        applyWorkItemsProjectSprintDraftToSearchParams(params, draft, {
-          allValue: sprintQuery.allValue,
-          applyProject: false,
-        });
-        setSprintFilterValue(
-          !draft.sprint || draft.sprint === sprintQuery.allValue
-            ? sprintQuery.allValue
-            : draft.sprint
-        );
-      }
-
-      const labelsEncoded = serializeWorkItemLabelsFilter([...draft.labels]);
-      applyQueryFilterParam(
-        params,
-        'labels',
-        labelsEncoded || QUERY_FILTER_ALL_VALUE,
-        QUERY_FILTER_ALL_VALUE
-      );
-      setLabelsFilterValue(labelsEncoded || QUERY_FILTER_ALL_VALUE);
-
-      pushBoardParams(params);
-    },
-    [
+  const { handleApplyFilters, handleClearFilters, handleRemoveAppliedFilter } =
+    useBoardFilterActions({
       allowAllFilters,
+      projectsCount: projects.length,
       projectAllValue,
-      projects.length,
-      pushBoardParams,
-      searchParams,
-      setLabelsFilterValue,
+      sprintAllValue: sprintQuery.allValue,
+      activeLabels,
+      projectFilterActive,
+      sprintFilterActive,
+      hasLabelsFilter,
+      setSearch,
+      setPriorityFilter,
+      setAssigneeFilter,
       setProjectFilterValue,
       setSprintFilterValue,
-      sprintQuery.allValue,
-    ]
-  );
-
-  const handleClearFilters = useCallback(() => {
-    setSearch('');
-    setPriorityFilter(QUERY_FILTER_ALL_VALUE);
-    setAssigneeFilter(null);
-    setLabelsFilterValue(QUERY_FILTER_ALL_VALUE);
-
-    if (projectFilterActive || sprintFilterActive || hasLabelsFilter) {
-      setProjectFilterValue(projectAllValue);
-      setSprintFilterValue(sprintQuery.allValue);
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('project', projectAllValue);
-      params.delete('sprint');
-      params.delete('labels');
-      pushBoardParams(params);
-    }
-  }, [
-    hasLabelsFilter,
-    projectAllValue,
-    projectFilterActive,
-    pushBoardParams,
-    searchParams,
-    setLabelsFilterValue,
-    setProjectFilterValue,
-    setSprintFilterValue,
-    sprintFilterActive,
-    sprintQuery.allValue,
-  ]);
+      setLabelsFilterValue,
+    });
 
   const appliedFilterItems = useMemo(
     () =>
-      buildAppliedFilterBadgeItems({
+      buildBoardAppliedFilterItems({
         search,
-        project: projectFilterActive
-          ? {
-              id: projectQuery.value,
-              name:
-                projects.find((project) => project.id === projectQuery.value)
-                  ?.name ?? projectQuery.value,
-            }
-          : null,
-        sprint: sprintFilterActive
-          ? {
-              id: sprintQuery.value,
-              name:
-                sprints.find((sprint) => sprint.id === sprintQuery.value)
-                  ?.name ?? sprintQuery.value,
-            }
-          : null,
-        priority:
-          priorityFilter !== QUERY_FILTER_ALL_VALUE
-            ? {
-                id: priorityFilter,
-                name:
-                  PRIORITY_LABELS[priorityFilter as WorkItemPriority] ??
-                  formatLabelWithSpace(priorityFilter),
-              }
-            : null,
-        assignee: assigneeFilter
-          ? {
-              id: assigneeFilter,
-              name:
-                uniqueAssignees.find(
-                  (assignee) => assignee.id === assigneeFilter
-                )?.name ?? 'Assignee',
-            }
-          : null,
-        labels: activeLabels,
+        projectFilterActive,
+        projectId: projectQuery.value,
+        projects,
+        sprintFilterActive,
+        sprintId: sprintQuery.value,
+        sprints,
+        priorityFilter,
+        assigneeFilter,
+        uniqueAssignees,
+        activeLabels,
       }),
     [
       activeLabels,
@@ -479,88 +786,6 @@ export function KanbanBoard({
       sprintQuery.value,
       sprints,
       uniqueAssignees,
-    ]
-  );
-
-  const handleRemoveAppliedFilter = useCallback(
-    (chipIds: readonly string[]) => {
-      if (chipIds.length === 0) {
-        return;
-      }
-
-      const plan = planAppliedFilterRemovals(chipIds);
-      const params = new URLSearchParams(searchParams.toString());
-
-      if (plan.labelsToDrop.size > 0) {
-        const nextLabels = activeLabels.filter(
-          (label) => !plan.labelsToDrop.has(label)
-        );
-        const encoded = serializeWorkItemLabelsFilter(nextLabels);
-        setLabelsFilterValue(encoded || QUERY_FILTER_ALL_VALUE);
-        applyQueryFilterParam(
-          params,
-          'labels',
-          encoded || QUERY_FILTER_ALL_VALUE,
-          QUERY_FILTER_ALL_VALUE
-        );
-      }
-
-      if (plan.clearSearch) {
-        setSearch('');
-        params.delete('search');
-      }
-
-      if (plan.clearPriority) {
-        setPriorityFilter(QUERY_FILTER_ALL_VALUE);
-        applyQueryFilterParam(
-          params,
-          'priority',
-          QUERY_FILTER_ALL_VALUE,
-          QUERY_FILTER_ALL_VALUE
-        );
-      }
-
-      if (plan.clearAssignee) {
-        setAssigneeFilter(null);
-        applyQueryFilterParam(
-          params,
-          'assignee',
-          QUERY_FILTER_ALL_VALUE,
-          QUERY_FILTER_ALL_VALUE
-        );
-      }
-
-      if (plan.clearProject) {
-        setProjectFilterValue(projectAllValue);
-        setSprintFilterValue(sprintQuery.allValue);
-        params.set('project', projectAllValue);
-        params.delete('sprint');
-      }
-
-      if (plan.clearSprint && !plan.clearProject) {
-        setSprintFilterValue(sprintQuery.allValue);
-        applyQueryFilterParam(
-          params,
-          'sprint',
-          QUERY_FILTER_ALL_VALUE,
-          QUERY_FILTER_ALL_VALUE
-        );
-      }
-
-      pushBoardParams(params);
-    },
-    [
-      activeLabels,
-      projectAllValue,
-      pushBoardParams,
-      searchParams,
-      setAssigneeFilter,
-      setLabelsFilterValue,
-      setPriorityFilter,
-      setProjectFilterValue,
-      setSearch,
-      setSprintFilterValue,
-      sprintQuery.allValue,
     ]
   );
 
@@ -610,154 +835,6 @@ export function KanbanBoard({
     setActiveDropCol(null);
   };
 
-  const restorePlacement = (
-    id: string,
-    status: DbWorkItem['status'],
-    boardColumnId: string | null
-  ) => {
-    setWorkItems((previous) =>
-      previous.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              status,
-              board_column_id: boardColumnId,
-              // Keep lock token until the server row arrives via syncWorkItem.
-              updated_at: item.updated_at,
-            }
-          : item
-      )
-    );
-    setSelectedTask((previous) =>
-      previous?.id === id
-        ? {
-            ...previous,
-            status,
-            board_column_id: boardColumnId,
-            updated_at: previous.updated_at,
-          }
-        : previous
-    );
-  };
-
-  const syncWorkItem = (id: string, updated: DbWorkItem) => {
-    setWorkItems((previous) =>
-      previous.map((item) =>
-        item.id === id ? mergeWorkItemServerRow(item, updated) : item
-      )
-    );
-    setSelectedTask((previous) =>
-      previous?.id === id ? mergeWorkItemServerRow(previous, updated) : previous
-    );
-  };
-
-  const clearPendingStatus = (id: string) => {
-    setPendingStatusIds((previous) => {
-      const next = new Set(previous);
-      next.delete(id);
-      return next;
-    });
-  };
-
-  const reportStatusUpdateFailure = (error: unknown) => {
-    let message: string;
-    if (error instanceof Error && error.message.trim()) {
-      message = error.message;
-    } else if (typeof error === 'string' && error.trim()) {
-      message = error;
-    } else {
-      message = 'Failed to update work item status.';
-    }
-
-    setStatusError(message);
-  };
-
-  const applyStatusChange = (id: string, targetColumn: BoardColumn) => {
-    const currentItem = workItems.find((item) => item.id === id);
-    if (!currentItem) {
-      return;
-    }
-
-    const move = resolveBoardMove(
-      currentItem,
-      targetColumn,
-      usesCustomBoardConfig
-    );
-    if (!move) {
-      return;
-    }
-
-    if (pendingStatusIds.has(id)) {
-      return;
-    }
-
-    const previousStatus = currentItem.status;
-    const previousBoardColumnId = currentItem.board_column_id;
-    const sourceColumnName =
-      boardColumns.find(
-        (column) => column.id === resolveItemColumnId(currentItem, boardColumns)
-      )?.name ?? 'the current column';
-    setStatusError(null);
-    setPendingStatusIds((previous) => new Set(previous).add(id));
-    restorePlacement(id, move.status, move.board_column_id);
-
-    updateWorkItemStatus(
-      id,
-      move.status,
-      currentItem.updated_at,
-      move.board_column_id
-    )
-      .then((response) => {
-        if (response.error || !response.data) {
-          restorePlacement(id, previousStatus, previousBoardColumnId);
-          reportStatusUpdateFailure(
-            typeof response.error === 'string'
-              ? response.error
-              : 'Failed to update work item status.'
-          );
-          return;
-        }
-
-        syncWorkItem(id, response.data);
-      })
-      .catch(async (error) => {
-        restorePlacement(id, previousStatus, previousBoardColumnId);
-        if (
-          error instanceof ApiError &&
-          error.code === BOARD_MOVE_FORBIDDEN_CODE
-        ) {
-          toastWorkflowMoveBlocked(
-            `You do not have permission to move this item from ${sourceColumnName} to ${targetColumn.name}.`
-          );
-          return;
-        }
-        if (error instanceof ApiError && error.status === 400) {
-          toastWorkflowMoveBlocked(error.message);
-          return;
-        }
-        if (
-          await tryHandleLockedMutationError({
-            error,
-            handleMutationError,
-            entityType: 'work_item',
-            entityId: id,
-            expectedUpdatedAt: currentItem.updated_at,
-            pendingFields: {
-              status: move.status,
-              board_column_id: move.board_column_id,
-            },
-            currentUserId: userId,
-          })
-        ) {
-          return;
-        }
-        reportStatusUpdateFailure(error);
-      })
-      .finally(() => {
-        clearPendingStatus(id);
-      });
-  };
-
   const handleDrop = (event: DragEvent, targetColumn: BoardColumn) => {
     event.preventDefault();
     const id = event.dataTransfer.getData('text/plain') || draggedTaskId;
@@ -782,21 +859,10 @@ export function KanbanBoard({
       ) : null}
 
       {statusError ? (
-        <div className="bg-destructive/10 text-destructive border-destructive/20 flex shrink-0 items-start gap-2 rounded-lg border px-3 py-2 text-sm">
-          <AlertCircle className="mt-0.5 size-4 shrink-0" />
-          <div className="flex flex-1 items-start justify-between gap-3">
-            <p>{statusError}</p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              className="text-destructive hover:text-destructive"
-              onClick={() => setStatusError(null)}
-            >
-              Dismiss
-            </Button>
-          </div>
-        </div>
+        <BoardStatusErrorBanner
+          message={statusError}
+          onDismiss={() => setStatusError(null)}
+        />
       ) : null}
 
       <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -843,7 +909,12 @@ export function KanbanBoard({
           ) : null}
         </div>
 
-        <BoardLayoutMenu layout={layout} onLayoutChange={setLayout} />
+        <BoardLayoutMenu
+          layout={layout}
+          onLayoutChange={setLayout}
+          syncPrefs={syncPrefs}
+          onSyncPrefsChange={setSyncPrefs}
+        />
       </div>
 
       {layout === 'grouped' ? (
@@ -852,7 +923,7 @@ export function KanbanBoard({
           columnItemsMap={columnItemsMap}
           activeDropCol={activeDropCol}
           draggedTaskId={draggedTaskId}
-          pendingStatusIds={pendingStatusIds}
+          pendingStatusIds={dimPendingCards ? pendingStatusIds : new Set()}
           onSelectItem={(item) => {
             setSelectedTask(item);
             setIsDetailOpen(true);
@@ -865,235 +936,36 @@ export function KanbanBoard({
           onColumnDrop={handleDrop}
         />
       ) : (
-        <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-1">
-          {boardColumns.map((column) => {
-            const columnItems = columnItemsMap.get(column.id) ?? [];
-            const isOver = activeDropCol === column.id;
-
-            return (
-              <section
-                key={column.id}
-                aria-label={column.name}
-                className={cn(
-                  'bg-muted/25 flex h-full min-h-0 w-72 min-w-72 flex-1 flex-col rounded-xl border border-t-4 p-3 transition-colors',
-                  BOARD_STATUS_COLUMN_ACCENTS[column.status],
-                  isOver && 'border-primary bg-primary/5 border-dashed'
-                )}
-                onDragOver={(event) => handleDragOver(event, column.id)}
-                onDragLeave={handleDragLeave}
-                onDrop={(event) => handleDrop(event, column)}
-              >
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <WorkItemStatusBadge
-                    status={column.status}
-                    label={column.name}
-                  />
-                  <div className="flex items-center gap-1.5">
-                    <Badge variant="secondary">{columnItems.length}</Badge>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          size="icon-sm"
-                          variant="ghost"
-                          className="cursor-pointer"
-                          aria-label={`Create work item in ${column.name}`}
-                          onClick={() => setCreateStatus(column.status)}
-                        >
-                          <Plus className="size-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Create in {column.name}</TooltipContent>
-                    </Tooltip>
-                  </div>
-                </div>
-
-                <ScrollArea className="h-0 min-h-0 flex-1">
-                  <div className="flex w-full flex-col gap-3 pb-1">
-                    {columnItems.length === 0 ? (
-                      <div className="text-muted-foreground flex min-h-40 w-full flex-col items-center justify-center rounded-lg border border-dashed px-4 py-10 text-center text-xs">
-                        <FolderDot className="text-muted-foreground/50 mb-2 size-8 stroke-1" />
-                        No work items in this stage
-                      </div>
-                    ) : (
-                      columnItems.map((item) => {
-                        const description = descriptionToPlainText(
-                          item.description ?? null
-                        );
-
-                        return (
-                          <Card
-                            key={item.id}
-                            draggable
-                            onDragStart={(event) =>
-                              handleDragStart(event, item.id)
-                            }
-                            onDragEnd={handleDragEnd}
-                            onClick={() => {
-                              setSelectedTask(item);
-                              setIsDetailOpen(true);
-                            }}
-                            className={cn(
-                              'group w-full max-w-full min-w-0 cursor-grab border border-b-[3px] py-0 shadow-sm active:cursor-grabbing',
-                              (draggedTaskId === item.id ||
-                                pendingStatusIds.has(item.id)) &&
-                                'opacity-40'
-                            )}
-                          >
-                            <WorkItemPreviewCardBody
-                              title={item.title}
-                              type={item.type}
-                              priority={item.priority}
-                              descriptionPlain={description || null}
-                              assigneeName={assigneeName(item)}
-                              assigneeImageUrl={item.assignee?.profile_picture}
-                              isAssigneeOnline={Boolean(
-                                item.assignee_id &&
-                                isUserOnline(item.assignee_id)
-                              )}
-                              titleClassName="group-hover:text-primary transition-colors"
-                            />
-                          </Card>
-                        );
-                      })
-                    )}
-                  </div>
-                </ScrollArea>
-              </section>
-            );
-          })}
-        </div>
+        <BoardClassicColumns
+          boardColumns={boardColumns}
+          columnItemsMap={columnItemsMap}
+          activeDropCol={activeDropCol}
+          draggedTaskId={draggedTaskId}
+          pendingStatusIds={pendingStatusIds}
+          dimPendingCards={dimPendingCards}
+          onSelectItem={(item) => {
+            setSelectedTask(item);
+            setIsDetailOpen(true);
+          }}
+          onCreateInColumn={(column) => setCreateStatus(column.status)}
+          onItemDragStart={handleDragStart}
+          onItemDragEnd={handleDragEnd}
+          onColumnDragOver={handleDragOver}
+          onColumnDragLeave={handleDragLeave}
+          onColumnDrop={handleDrop}
+          isUserOnline={isUserOnline}
+        />
       )}
 
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="overflow-x-hidden sm:max-w-xl">
-          {selectedTask ? (
-            <>
-              <DialogHeader>
-                <div className="mb-1 flex items-center justify-between gap-3 pr-6">
-                  <Badge variant="outline" className="font-mono">
-                    {shortId(selectedTask.id)}
-                  </Badge>
-                  <PriorityBadge priority={selectedTask.priority} />
-                </div>
-                <DialogTitle className="text-foreground text-xl">
-                  {selectedTask.title}
-                </DialogTitle>
-                <DialogDescription>
-                  Preview this work item or move it between board columns.
-                  Status changes are saved immediately.
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="min-w-0 space-y-5 text-sm">
-                <div className="space-y-2.5">
-                  <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Description
-                  </p>
-                  <div className="bg-muted/40 max-h-56 overflow-x-hidden overflow-y-auto rounded-lg border p-3">
-                    <DescriptionView
-                      description={selectedTask.description ?? null}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-muted/20 rounded-lg border p-3">
-                    <p className="text-muted-foreground mb-2.5 text-[10px] font-medium tracking-wide uppercase">
-                      Assignee
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <UserAvatar
-                        name={assigneeName(selectedTask)}
-                        imageUrl={selectedTask.assignee?.profile_picture}
-                        title={assigneeName(selectedTask)}
-                        isOnline={Boolean(
-                          selectedTask.assignee_id &&
-                          isUserOnline(selectedTask.assignee_id)
-                        )}
-                        className="size-6"
-                        fallbackClassName="bg-primary text-primary-foreground text-[10px] font-medium"
-                      />
-                      <span className="text-foreground text-xs font-medium">
-                        {assigneeName(selectedTask)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="bg-muted/20 rounded-lg border p-3">
-                    <p className="text-muted-foreground mb-2.5 text-[10px] font-medium tracking-wide uppercase">
-                      Type
-                    </p>
-                    <WorkItemTypeBadge type={selectedTask.type} />
-                  </div>
-
-                  <div className="bg-muted/20 rounded-lg border p-3">
-                    <p className="text-muted-foreground mb-2.5 text-[10px] font-medium tracking-wide uppercase">
-                      Due date
-                    </p>
-                    <span className="text-foreground inline-flex items-center gap-1.5 text-xs font-medium">
-                      <Calendar className="text-primary size-3.5" />
-                      {selectedTask.due_date ?? 'Not set'}
-                    </span>
-                  </div>
-
-                  <div className="bg-muted/20 rounded-lg border p-3">
-                    <p className="text-muted-foreground mb-2.5 text-[10px] font-medium tracking-wide uppercase">
-                      Status
-                    </p>
-                    <WorkItemStatusBadge status={selectedTask.status} />
-                  </div>
-                </div>
-
-                <div className="space-y-2.5">
-                  <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Move to
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {boardColumns.map((column) => (
-                      <Button
-                        key={column.id}
-                        type="button"
-                        variant={
-                          resolveItemColumnId(selectedTask, boardColumns) ===
-                          column.id
-                            ? 'default'
-                            : 'outline'
-                        }
-                        size="sm"
-                        disabled={pendingStatusIds.has(selectedTask.id)}
-                        onClick={() =>
-                          applyStatusChange(selectedTask.id, column)
-                        }
-                      >
-                        {column.name}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <DialogFooter className="gap-2 border-t pt-4 sm:justify-between">
-                <Button asChild variant="outline">
-                  <a
-                    href={`/work-items/${selectedTask.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Open details
-                    <SquareArrowOutUpRight />
-                  </a>
-                </Button>
-                <DialogClose asChild>
-                  <Button type="button" variant="secondary">
-                    Close
-                  </Button>
-                </DialogClose>
-              </DialogFooter>
-            </>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+      <BoardWorkItemPreviewDialog
+        open={isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+        selectedTask={selectedTask}
+        boardColumns={boardColumns}
+        pendingStatusIds={pendingStatusIds}
+        isUserOnline={isUserOnline}
+        onApplyStatusChange={applyStatusChange}
+      />
 
       <WorkItemFormDialog
         open={createStatus !== null}
@@ -1103,23 +975,20 @@ export function KanbanBoard({
           }
         }}
         title="Create Work Item"
-        description={
-          createStatus
-            ? `Create a work item in ${formatLabelWithSpace(createStatus)}.`
-            : 'Create a work item.'
-        }
-        projects={
-          lockCreateProject && createProjects[0] ? createProjects : projects
-        }
+        description={createWorkItemDialogDescription(createStatus)}
+        projects={resolveCreateDialogProjects(
+          lockCreateProject,
+          createProjects,
+          projects
+        )}
         projectMembers={[]}
         lockProject={lockCreateProject}
         lockStatus={Boolean(createStatus)}
         defaultStatus={createStatus ?? undefined}
-        defaultSprintId={
-          sprintQuery.value && sprintQuery.value !== sprintQuery.allValue
-            ? sprintQuery.value
-            : null
-        }
+        defaultSprintId={resolveDefaultSprintId(
+          sprintQuery.value,
+          sprintQuery.allValue
+        )}
         onClose={() => setCreateStatus(null)}
         onSuccess={(created) => {
           setWorkItems((current) => [created, ...current]);

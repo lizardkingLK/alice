@@ -5,12 +5,17 @@ Per-user in-app inbox in the dashboard header bell.
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Status       | **Living**                                                    |
-| Last updated | 2026-09-10                                                    |
+| Last updated | 2026-10-17                                                    |
 | Scope        | Header inbox, `notifications` table, due-date and prune crons |
 
 ## Behavior
 
 - Each row belongs to one `user_id`. There is no “read by all users” flag.
+- **Deferred (post-W6):** optional `silent` (or equivalent) so board
+  status/move events can ride the notification pipeline without appearing in
+  the header inbox. Board sync itself uses `work_items` realtime (see
+  [REALTIME_BOARD_MOVES.md](../board/REALTIME_BOARD_MOVES.md)); silent inbox
+  rows are not required for that.
 - The dashboard header does **not** block page render on the inbox query.
   `NotificationInbox` loads the latest 50 active rows on the client after mount
   and can retry if the request fails (slow networks, timeouts).

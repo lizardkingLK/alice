@@ -10,12 +10,15 @@ import {
   WORKFLOW_DESIGNER_SETTINGS_COOKIE_NAME,
   parseWorkflowDesignerSettingsOpenCookie,
 } from '@/app/projects/_helpers/workflow-designer-settings-storage';
+import type { Project } from '@/app/projects/_services/projects.reads.server';
 import { getProjectWorkspace } from '@/app/projects/_services/projects.reads.workspace.server';
 import { readWorkItemTableColumnVisibilityBootstrap } from '@/app/work-items/_helpers/work-item-table-columns-cookie.server';
 import type { RawSearchParams } from '@/lib/search-params';
 
 type ProjectDetailsDataProps = {
   readonly projectId: string;
+  /** Shell-loaded project — avoids a second getProjectDetails inside the workspace. */
+  readonly project: Project;
   readonly searchParams: Promise<RawSearchParams>;
 };
 
@@ -36,12 +39,13 @@ async function readProjectPanelDefaults(): Promise<{
 
 export async function ProjectDetailsData({
   projectId,
+  project,
   searchParams,
 }: Readonly<ProjectDetailsDataProps>) {
   const resolvedSearchParams = await searchParams;
   const [workspace, columnVisibilityBootstrap, panelDefaults] =
     await Promise.all([
-      getProjectWorkspace(projectId, resolvedSearchParams),
+      getProjectWorkspace(projectId, resolvedSearchParams, { project }),
       readWorkItemTableColumnVisibilityBootstrap(),
       readProjectPanelDefaults(),
     ]);

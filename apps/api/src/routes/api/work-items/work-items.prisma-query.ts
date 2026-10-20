@@ -25,10 +25,16 @@ function applyProjectFilters(
     where.project_id = { in: [...filters.projectIds] };
   }
 
-  if (filters?.parentId === null) {
+  if (filters?.parentIds?.length) {
+    where.parent_id = { in: [...filters.parentIds] };
+  } else if (filters?.parentId === null) {
     where.parent_id = null;
   } else if (filters?.parentId) {
     where.parent_id = filters.parentId;
+  }
+
+  if (filters?.ids?.length) {
+    where.id = { in: [...filters.ids] };
   }
 }
 

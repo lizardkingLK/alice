@@ -2,18 +2,21 @@
 
 How Alice keeps dashboard pages fast, what has already been optimized, and the roadmap for further wins.
 
-| Field        | Value                                                      |
-| ------------ | ---------------------------------------------------------- |
-| Status       | **Living**                                                 |
-| Last updated | 2026-08-14 (M8 first slice: list payload + burndown embed) |
-| Scope        | `apps/web` RSC data loading, `apps/api` auth               |
+| Field        | Value                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------ |
+| Status       | **Living**                                                                                 |
+| Last updated | 2026-10-20 (discussion feeds realtime shipped; M8 first slice done)                        |
+| Scope        | `apps/web` RSC data loading, `apps/api` auth + **mutation** latency, Express Prisma writes |
 
 Related:
 
 - [architecture/TRD.md](../architecture/TRD.md) — system design and app boundaries
-- [architecture/DATA_RETRIEVAL.md](../architecture/DATA_RETRIEVAL.md) — app toggle to send list/detail through Express (reintroduces the hop)
+- [architecture/DATA_RETRIEVAL.md](../architecture/DATA_RETRIEVAL.md) — `DATA_READS_VIA_API` dual readers (SSR default; optional Express hop)
+- [architecture/API_VERSIONING.md](../architecture/API_VERSIONING.md) — domain status for Prisma GETs + allowlist
 - [auth/AUTHENTICATION.md](../auth/AUTHENTICATION.md) — session, token, and API auth flow
 - [guides/DATABASE.md](./DATABASE.md) — Supabase access patterns
+- [features/board/REALTIME_BOARD_MOVES.md](../features/board/REALTIME_BOARD_MOVES.md) — W6 async / realtime board moves (**Living**)
+- [features/work-items/REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md) — details-tab realtime (comments / activity / work logs; **not** a §9 latency milestone)
 
 ---
 
@@ -199,18 +202,27 @@ Paginated registry lists (`getUsersListPaginated`, `getProjectListPaginated`, et
 
 **Express-only mutations (chat):** `POST /api/chat` creates projects via the API, so it never runs `apps/web/app/projects/_components/actions.ts`. After `create_project`, the chat client must call `revalidateAfterChatActions` (`updateTag('dropdown-projects')`) and then `router.refresh()`. Do **not** `revalidatePath('/projects')` or `revalidatePath('/work-items')` from that action — those pages live in `(list)` route groups, and on-demand revalidate in Next 16 can cache a **404** for the list URL until the dev server restarts. Create Sprint lists **all active projects** (API allows admin/manager to create a sprint on any project). Do not filter the dropdown by `owner_id` — that hid chat-created projects owned by another user. Create Sprint also re-reads via `loadProjectsForSprintForm`.
 
-### 2.8 Backlog workspace loader (M4.1)
+### 2.8 Backlog workspace loader (M4.1 / M8.2)
 
-`/backlog` has the highest read fan-out (4 parallel Supabase calls). Data loading is centralized in `getBacklogWorkspace()` and streamed via Suspense:
+`/backlog` packs work items + active-tab sprints + team capacities in one
+`get_backlog_workspace_bundle` RPC (M8.2). Projects and users stay on the
+cached list readers. Assignees are enriched client-side from the member list
+(`enrichWorkItemsWithMemberAvatars`). If the RPC is missing (pre-migrate),
+`getBacklogWorkspace()` falls back to the previous three parallel PostgREST
+calls.
 
-| Piece              | Location                                                     |
-| ------------------ | ------------------------------------------------------------ |
-| Workspace loader   | `apps/web/app/backlog/_services/backlog.service.server.ts`   |
-| Async RSC boundary | `apps/web/app/backlog/_components/backlog-data.tsx`          |
-| Skeleton           | `apps/web/app/backlog/_components/backlog-page-skeleton.tsx` |
-| Route shell        | `apps/web/app/backlog/page.tsx` + `loading.tsx`              |
+| Piece              | Location                                                          |
+| ------------------ | ----------------------------------------------------------------- |
+| Workspace loader   | `apps/web/app/backlog/_services/backlog.reads.server.ts`          |
+| Bundle RPC caller  | `apps/web/app/backlog/_services/backlog.reads.supabase.server.ts` |
+| Migration          | `packages/db/prisma/migrations/add_backlog_workspace_bundle_rpc/` |
+| Async RSC boundary | `apps/web/app/backlog/_components/backlog-data.tsx`               |
+| Skeleton           | `apps/web/app/backlog/_components/backlog-page-skeleton.tsx`      |
+| Route shell        | `apps/web/app/backlog/page.tsx` + `loading.tsx`                   |
 
-Each read uses `safeServerFetch` (or `.catch` for sprints) so one failed query degrades gracefully instead of blanking the whole planning surface.
+Each read uses `safeServerFetch` (or `.catch` for sprints on the fallback path)
+so one failed query degrades gracefully instead of blanking the whole planning
+surface.
 
 ### 2.9 Work-item discussion SSR (M4.3)
 
@@ -237,16 +249,21 @@ Production stack colocated in APAC (2026-07-23):
 
 Serverless functions no longer execute in US-East while the database runs in Sydney — RSC/API Supabase reads use Singapore → Sydney instead of New York → Sydney.
 
-### 2.11 Project workspace loader (M4.2)
+### 2.11 Project workspace loader (M4.2 / M8)
 
-`/projects/[id]` fans out to details, members, users dropdown, and project-scoped work items. Loading is centralized and streamed:
+`/projects/[id]` packs project + members + badge counts in
+`get_project_workspace_bundle` (after ACL). The shell reuses its breadcrumb
+`getProject` so the workspace does not fetch the project twice. Tab list pages
+(work items / teams / sprints) stay on PostgREST. Users dropdown stays cached.
 
-| Piece              | Location                                                              |
-| ------------------ | --------------------------------------------------------------------- |
-| Workspace loader   | `apps/web/app/projects/_services/project-workspace.server.ts`         |
-| Async RSC boundary | `apps/web/app/projects/[id]/_components/project-details-data.tsx`     |
-| Skeleton           | `apps/web/app/projects/[id]/_components/project-details-skeleton.tsx` |
-| Route shell        | `apps/web/app/projects/[id]/page.tsx` + `loading.tsx`                 |
+| Piece              | Location                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| Workspace loader   | `apps/web/app/projects/_services/projects.reads.workspace.server.ts`                 |
+| Bundle RPC caller  | `apps/web/app/projects/_services/projects.reads.workspace-bundle.supabase.server.ts` |
+| Migration          | `packages/db/prisma/migrations/add_project_workspace_bundle_rpc/`                    |
+| Async RSC boundary | `apps/web/app/projects/[id]/_components/project-details-data.tsx`                    |
+| Skeleton           | `apps/web/app/projects/[id]/_components/project-details-skeleton.tsx`                |
+| Route shell        | `apps/web/app/projects/[id]/page.tsx` + `loading.tsx`                                |
 
 ### 2.12 Detail / board / profile streaming (M3 follow-on)
 
@@ -365,7 +382,9 @@ Targeting sub-1.5s. Ordered by impact-to-effort.
 | **M7** | Evaluate Prisma Client (or `pg`) vs PostgREST for hot queries — protocol win is real; full-app swap is not the default.       | L      | High    | High on _some_ queries; mixed for Alice   | 📋 Evaluated (§8)            |
 | **M8** | Inventory **critical hit areas** where Prisma Client (or `pg` / RPC) would beat PostgREST — measure first, swap one path.     | M      | Medium  | High only on named hot queries            | 🔄 First slice (§8.1)        |
 
-**Shipped for existing features (2026-07-24 / 2026-08-14).** Unused Express GET reads were removed, including the allowlist table list. API table mutations use Prisma Client. Paginated RSC lists share `runPaginatedSelect`. New surfaces should adopt §3 patterns as they land. **Do not move RSC page reads onto Prisma by default.** The next performance goal is M8: find the few reads that still hurt, then rewrite only those (§8.1).
+**Shipped for existing features (2026-07-24 / 2026-08-14 / 2026-10-16).** Dashboard **reads** default to RSC supabase-js (M1). Matching Express **Prisma** list/detail GETs were restored as an optional twin for `DATA_READS_VIA_API` ([DATA_RETRIEVAL.md](../architecture/DATA_RETRIEVAL.md)) — see §6 **Plan (toggle)**. API **table mutations** use Prisma Client. Paginated RSC lists share `runPaginatedSelect`. New surfaces should adopt §3 patterns as they land. **Do not move RSC page reads onto Prisma by default.**
+
+**Current focus:** optional M8 follow-ups (re-measure TTFB; nested-donut / other chart slide prefetch). Hierarchy + backlog/project workspace RPCs + dashboard first-slide chart series prefetch + **discussion feeds realtime** are done. See [REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md).
 
 **RLS reminder:** M1 reads run with the `authenticated` role and RLS unenforced. Before enabling RLS, add SELECT policies for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members`. Dropdown cache (§2.7) uses the **service-role** client inside `unstable_cache` only.
 
@@ -377,16 +396,16 @@ Classic M4 (“one Express workspace GET”) was superseded by named RSC loaders
 
 ### Audit
 
-| Route                                  | Parallel reads                           | Status      | Notes                                                |
-| -------------------------------------- | ---------------------------------------- | ----------- | ---------------------------------------------------- |
-| `/backlog`                             | 4 — projects, users, work items, sprints | ✅ Shipped  | `getBacklogWorkspace()` + Suspense                   |
-| `/projects/[id]`                       | 4 — details, members, users, work items  | ✅ Shipped  | `getProjectWorkspace(id)` + Suspense (§2.11)         |
-| `/work-items/[id]`                     | 2 — item + discussion                    | ✅ Shipped  | `getWorkItemDiscussion` + Suspense (§2.9 / §2.12)    |
-| `/manager`                             | 4                                        | N/A         | Dropdown caching (M5) + list Suspense sufficient     |
-| `/work-items`, `/projects`, `/sprints` | 3                                        | N/A         | M1 + Promise.all + M3                                |
-| `/board`                               | 1                                        | ✅ Streamed | Suspense + skeleton (§2.12); no multi-read fan-out   |
-| `/profile`                             | auth + teams + worked-on                 | ✅ Streamed | Suspense + skeleton (§2.12)                          |
-| `/dashboard`                           | 2 — sprints list + default burndown      | ✅ Streamed | `getDashboardBurndownBootstrap()` + Suspense (§2.12) |
+| Route                                  | Parallel reads                                          | Status      | Notes                                                    |
+| -------------------------------------- | ------------------------------------------------------- | ----------- | -------------------------------------------------------- |
+| `/backlog`                             | 2 cached lists + 1 workspace RPC (fallback: 3 REST)     | ✅ Shipped  | `getBacklogWorkspace()` + `get_backlog_workspace_bundle` |
+| `/projects/[id]`                       | shell project + ACL + workspace RPC (fallback parallel) | ✅ Shipped  | `get_project_workspace_bundle` + Suspense (§2.11)        |
+| `/work-items/[id]`                     | 2 — item + discussion                                   | ✅ Shipped  | `getWorkItemDiscussion` + Suspense (§2.9 / §2.12)        |
+| `/manager`                             | 4                                                       | N/A         | Dropdown caching (M5) + list Suspense sufficient         |
+| `/work-items`, `/projects`, `/sprints` | 3                                                       | N/A         | M1 + Promise.all + M3                                    |
+| `/board`                               | 1                                                       | ✅ Streamed | Suspense + skeleton (§2.12); no multi-read fan-out       |
+| `/profile`                             | auth + teams + worked-on                                | ✅ Streamed | Suspense + skeleton (§2.12)                              |
+| `/dashboard`                           | 2 — sprints list + default burndown                     | ✅ Streamed | `getDashboardBurndownBootstrap()` + Suspense (§2.12)     |
 
 ### Delivered
 
@@ -397,9 +416,9 @@ Classic M4 (“one Express workspace GET”) was superseded by named RSC loaders
 
 ---
 
-## 6. Unused API read paths (post-M1)
+## 6. API read paths (post-M1 + dual retrieval)
 
-After M1, dashboard **RSC pages** read from Supabase directly. The Express API remains the write path (Zod, audit, service-role). Unused list/detail **GET** handlers were removed (2026-08-14), including `GET /api/access-allowlist`. Remaining GETs are capability-kept (Storage, signed URLs, GitHub proxy, cron, health) or non-web — not leftover page table reads.
+After M1, dashboard **RSC pages** default to reading Supabase directly (no `web → api` hop). The Express API remains the **write** path (Zod, audit, service-role Prisma). Matching **list/detail GETs** were later restored as Prisma-only twins so RSC can opt in via `DATA_READS_VIA_API` ([DATA_RETRIEVAL.md](../architecture/DATA_RETRIEVAL.md)). Those GETs are **Plan (toggle)** below — not used by Next until the flag is on. Capability GETs (Storage, signed URLs, GitHub proxy, cron, health) stay mounted regardless.
 
 Legend:
 
@@ -473,24 +492,33 @@ Dynamic form reads that still need a round trip (project members on project sele
 
 1. ~~**Client forms** — stop read refetch via `projects.service.ts` / `sprints.service.ts`~~ ✅ Done (2026-07-22).
 2. ~~**Add `getSprint` server reader**~~ ✅ Done — `sprints.service.server.ts` mirrors `sprintsRepository.findById`.
-3. ~~**Remove unused Express GET handlers**~~ ✅ Done (2026-08-14). Remaining GETs: chat Storage history, attachment signed URLs, GitHub PR list, burndown (non-web), cron, health. Leftover **repository** list/paginated methods with no HTTP GET were removed; `projectsRepository.listAll` stays for chat tools. `GET /api/access-allowlist` removed with the RSC reader.
+3. ~~**Trim leftover repository-only list helpers with no HTTP twin**~~ ✅ Done (2026-08-14). Product list/detail GETs were later **restored** as Prisma twins + web dual readers (2026-10-16) — see **Plan (toggle)** rows above. Capability GETs always stayed: chat Storage, attachment signed URLs, GitHub, burndown, cron, health. `projectsRepository.listAll` stays for chat tools.
 4. ~~**Work-item members hook + chat drawer list**~~ ✅ Done (2026-08-14) — `fetchProjectMembersForForm` + `listChatConversationsAction`.
 5. ~~**Dedup paginated RSC lists**~~ ✅ Done (2026-08-14) — `runPaginatedSelect` in `apps/web/lib/db/query.ts` (allowlist list uses it).
-6. ~~**Move `GET /api/access-allowlist` to RSC**~~ ✅ Done (2026-08-14) — `listAccessAllowlist` in `accessAllowlist.service.server.ts`.
+6. ~~**Allowlist list on RSC + optional Express GET**~~ ✅ Done — default `listAccessAllowlist` SSR; `GET /api/access-allowlist` (+ `/api/v1`) is the Prisma twin for `DATA_READS_VIA_API`.
 
 ---
 
 ## 7. How to measure
 
-- **Chrome DevTools → Network:** `document` timing = server RSC time; split TTFB vs download. Watch for multiple sequential calls to `NEXT_PUBLIC_API_URL`.
+### Reads (RSC)
+
+- **Chrome DevTools → Network:** `document` timing = server RSC time; split TTFB vs download. Watch for multiple sequential calls to `NEXT_PUBLIC_API_URL` (only when `DATA_READS_VIA_API` is on).
 - **Vercel logs:** compare `web` vs `api` function durations for one navigation; look for 1–3s cold starts on API invocations.
-- **Before any Prisma / `pg` swap:** pick 2–3 slow pages, record TTFB + query count. Re-measure the same navigation after a _single_ hot path is rewritten. Do not treat “PostgREST is HTTP” as proof of a whole-app win. Candidate list and done-when: **M8** (§8.1).
+- **Before any Prisma / `pg` / RPC swap on a read path:** pick 2–3 slow pages, record TTFB + `rest/v1` call count. Re-measure the same navigation after a _single_ hot path is rewritten. Candidate list and done-when: **M8** (§8.1) — deferred while the **write track** (§9) is in progress.
+
+### Writes (mutations)
+
+- **Chrome DevTools → Network:** time the `PATCH`/`POST`/`PUT`/`DELETE` to `NEXT_PUBLIC_API_URL` (e.g. board status move → `PATCH /api/work-items/:id`, field save, comment create). Record waiting (TTFB) vs download.
+- **Vercel `api` logs:** function duration for that route before vs after a write-track change. Prefer a warm invocation when comparing (ignore first cold start).
+- **Before / after each W-step:** same action on the same entity (board move + one field patch is enough). Do not mix cold starts or unrelated side effects into the comparison.
+- **What “faster” means for W1/W3:** fewer PostgREST follow-ups after Prisma `updateMany` (happy path returns a Prisma-selected row). Conflict (409) may still fetch the current row.
 
 ---
 
 ## 8. PostgREST (`supabase-js`) vs Prisma Client (M7)
 
-Prisma already owns **schema and migrations** in `@repo/db`. Runtime **reads** in `apps/web` (and remaining API list/detail) use **`supabase-js` → PostgREST → Postgres`**. Express **table mutations** use Prisma Client over pooled `DATABASE_URL` (`apps/api/src/lib/prisma.ts`). That split is intentional ([DATABASE.md](./DATABASE.md), [TRD.md](../architecture/TRD.md)).
+Prisma already owns **schema and migrations** in `@repo/db`. Runtime **RSC / page reads** in `apps/web` default to **`supabase-js` → PostgREST → Postgres`**. Express **table mutations** use Prisma Client over pooled `DATABASE_URL` (`apps/api/src/lib/prisma.ts`). Express **list/detail GETs** (when mounted) are also Prisma — they are the optional twin for `DATA_READS_VIA_API`, not the default Next path. That split is intentional ([DATABASE.md](./DATABASE.md), [TRD.md](../architecture/TRD.md), [DATA_RETRIEVAL.md](../architecture/DATA_RETRIEVAL.md)).
 
 ### What the manager is describing (true)
 
@@ -549,18 +577,20 @@ Prefer in this order:
 
 ### 8.1 Prisma hot-path inventory (M8)
 
-Mutations already use Prisma in `apps/api`. Remaining latency on dashboard **reads** is still mostly PostgREST HTTP + how many round trips a navigation fires (Singapore → Sydney). The next step is **not** “put Prisma in every `*.service.server.ts`.” It is to **name the queries where a TCP/SQL client would actually win**, prove it with timings, then change one path.
+Mutations already use Prisma in `apps/api`. Remaining latency on dashboard **reads** is still mostly PostgREST HTTP + how many round trips a navigation fires (Singapore → Sydney). The next **read** step is **not** “put Prisma in every `*.service.server.ts`.” It is to **name the queries where a TCP/SQL client would actually win**, prove it with timings, then change one path.
+
+**Priority note (2026-10-18):** **W7** (DnD realtime) is done — resume M8 read rewrites. Core write-track items W1–W7 are done. Post-write supabase `getById` follow-ups were **W1 / W3**, not M8.
 
 #### Inventory (2026-08-14) — `/backlog`, `/dashboard`, `/work-items`
 
 Counted from RSC loaders (each `supabase.from().select()` ≈ one `rest/v1` call), not production TTFB. Auth `getDbUser()` is `cache()`d and omitted from the counts below.
 
-| Surface               | REST calls before                       | Bottleneck                                                                                      | Prisma in RSC?                        | What we did (first slice)                                                                                       |
-| --------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `/work-items`         | 4 parallel, **then** paginated items    | List waited on dropdowns/sprints. `select(*)` pulled TipTap `description` JSON for every row.   | No — paginated list + embeds is fine. | Fetch items **in the same** `Promise.all`. List select omits `description` (`workItemListSelect(false)`).       |
-| `/backlog`            | 4 parallel unbounded `getWorkItems()`   | `select(*)` + assignee/reporter embeds for **all** items (description JSON is the payload hog). | Not yet — payload, not protocol.      | Default `getWorkItems()` omits `description`. Four lists stay parallel PostgREST (workspace SQL would be M8.2). |
-| `/dashboard` burndown | 1 sprint list + **3 sequential** series | Sprint → items → worklogs waterfall. Math is already in `computeBurndown` (JS).                 | No — would add a hop or need RPC.     | One nested PostgREST embed: sprint + `work_items` + `work_item_worklogs` (`sprint-burndown.server.ts`).         |
-| `/board` (same pass)  | projects + sprints, **then** all items  | Same unbounded list as backlog, plus description for card preview.                              | No                                    | Items fetched in parallel with projects/sprints. Board still opts into `includeDescription: true`.              |
+| Surface               | REST calls before                       | Bottleneck                                                                                      | Prisma in RSC?                        | What we did (first slice)                                                                                             |
+| --------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `/work-items`         | 4 parallel, **then** paginated items    | List waited on dropdowns/sprints. `select(*)` pulled TipTap `description` JSON for every row.   | No — paginated list + embeds is fine. | Fetch items **in the same** `Promise.all`. List select omits `description` (`workItemListSelect(false)`).             |
+| `/backlog`            | 4 parallel unbounded `getWorkItems()`   | `select(*)` + assignee/reporter embeds for **all** items (description JSON is the payload hog). | Not yet — payload, not protocol.      | Description omitted; **M8.2** `get_backlog_workspace_bundle` packs WI + sprints + capacities (projects/users cached). |
+| `/dashboard` burndown | 1 sprint list + **3 sequential** series | Sprint → items → worklogs waterfall. Math is already in `computeBurndown` (JS).                 | No — would add a hop or need RPC.     | One nested PostgREST embed: sprint + `work_items` + `work_item_worklogs` (`sprint-burndown.server.ts`).               |
+| `/board` (same pass)  | projects + sprints, **then** all items  | Same unbounded list as backlog, plus description for card preview.                              | No                                    | Items fetched in parallel with projects/sprints. Description JSON **omitted** on list load (M8).                      |
 
 **Rank (latency × traffic, qualitative):** `/work-items` and `/backlog` first (every session); `/dashboard` burndown next (3 sequential REST → 1 embed); `/projects/[id]` not in this slice.
 
@@ -579,26 +609,161 @@ If a page is slow because it fires four independent simple `select`s, fix fan-ou
 
 #### Remaining candidates
 
-| Surface                      | Status after first slice                                    | Next if still slow                                                                     | Where to look                                |
-| ---------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------- |
-| `/backlog`                   | Description dropped; still 4 REST lists + unbounded rows    | Cap/filter items, or one `rpc` workspace query                                         | `getBacklogWorkspace()`                      |
-| `/work-items` list           | Parallelized; no description JSON                           | Re-measure TTFB; indexes on filter columns                                             | `work-items-data.tsx`                        |
-| `/dashboard` burndown        | Series is 1 embed call (+ sprint list for the dropdown)     | Confirm embed in Network; otherwise keep split fallback                                | `sprint-burndown.server.ts`                  |
-| `/board`                     | Parallelized; still ships description JSON for card preview | Plain-text preview column / omit description until sheet open                          | `board-data.tsx`                             |
-| `/work-items/[id]`           | Unchanged                                                   | Ancestor walk is up to 3 sequential `maybeSingle`s — candidate for one recursive query | `getWorkItemAncestors`                       |
-| `/projects/[id]`             | Unchanged                                                   | Same fan-out pattern as backlog                                                        | `getProjectWorkspace(id)`                    |
-| API joined reads still on JS | Unchanged                                                   | Return Prisma rows instead of supabase `getById` after writes                          | Repositories that `getById` after `prisma.*` |
+| Surface                      | Status after first slice                                                                                                                      | Next if still slow                                                      | Where to look                                     |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------- |
+| `/backlog`                   | **`get_backlog_workspace_bundle` RPC** (WI + sprints + capacities); projects/users cached; assignee enrich client-side                        | Re-measure TTFB after migrate; optional row cap later                   | `getBacklogWorkspaceBundleFromRpc` / migration    |
+| `/work-items` list           | Parallelized; no description JSON                                                                                                             | Re-measure TTFB; indexes on filter columns                              | `work-items-data.tsx`                             |
+| `/dashboard` burndown        | Series is 1 embed call (+ sprint list for the dropdown)                                                                                       | Confirm embed in Network; otherwise keep split fallback                 | `sprint-burndown.server.ts`                       |
+| `/board`                     | Parallelized; **no** description JSON on list load (card preview empty)                                                                       | Optional plain-text preview column later                                | `board-data.tsx`                                  |
+| `/work-items/[id]`           | Ancestors: **one** nested PostgREST embed (was up to 3 sequential)                                                                            | —                                                                       | `getWorkItemAncestors` / `work-item-ancestors.ts` |
+| `/work-items?view=hierarchy` | **`get_work_items_hierarchy_page` RPC** (DFS / 100-row budget + search panel ids) + list-row hydrate by id; in-memory fallback if RPC missing | Apply `add_work_items_hierarchy_page_rpc`; re-measure TTFB              | `getWorkItemsHierarchyPageFromRpc` / migration    |
+| `/projects/[id]`             | **`get_project_workspace_bundle` RPC** (project + members + badge counts); shell reuses project; tab lists stay PostgREST                     | Re-measure TTFB after migrate                                           | `getProjectWorkspaceBundleFromRpc` / migration    |
+| `/dashboard` charts          | Active slide **pie series RSC-prefetched** + client cache seed; productivity project list deduped                                             | Prefetch nested-donut / burndown; other slides on visit                 | `prefetchDashboardSlideChartSeries`               |
+| API joined reads after write | Moved to **§9 W1 / W3**                                                                                                                       | Return Prisma rows instead of supabase `getById` on mutation happy path | Repositories that `getById` after `prisma.*`      |
 
-**Out of scope for M8:** Auth, Storage (chat history, attachment signed URLs), cron, GitHub proxy. Prisma does not replace those. Also out of scope: swapping Prisma into RSC **just** to share a client with API mutations.
+**Out of scope for M8:** Auth, Storage (chat history, attachment signed URLs), cron, GitHub proxy. Prisma does not replace those. Also out of scope: swapping Prisma into RSC **just** to share a client with API mutations. Post-write follow-up reads belong to the **write track (§9)**, not M8.
 
-#### How to run the next measurement
+#### How to run the next measurement (reads — after write track)
 
-1. Record **document TTFB** and **`rest/v1` call count** on `/work-items`, `/backlog`, `/dashboard` after this slice (§7).
+1. Record **document TTFB** and **`rest/v1` call count** on `/work-items`, `/backlog`, `/dashboard` (§7).
 2. Rank leftover cost by **(latency × traffic)**.
-3. Next rewrite should be **one** of: index, `supabase.rpc` workspace query for `/backlog`, or an **API-side** Prisma/`pg` reader. Do not put Prisma in RSC until pooling/RLS is solved.
+3. Next **read** rewrite should be **one** of: index, `supabase.rpc` workspace query for `/backlog`, or an **API-side** Prisma/`pg` reader. Do not put Prisma in RSC until pooling/RLS is solved.
 
-#### Done when
+#### Done when (reads)
 
 - Production TTFB is recorded against the table above (replace qualitative rank with numbers).
 - At most **one** further read path is rewritten to Prisma/`pg`/RPC as a proof — or the inventory closes with “PostgREST + this slice is enough.”
 - `DATABASE.md` / TRD stay aligned: RSC default remains supabase-js; Prisma stays the Express mutation client unless a named exception is documented here.
+
+---
+
+## 9. Write performance track (current focus)
+
+Mutations already go **Browser → Express → Prisma** (Zod, audit, optimistic lock). After M1, that path is most authenticated API traffic. Remaining write latency is mostly:
+
+1. **PostgREST follow-ups** after a successful Prisma `updateMany` (`resolveOptimisticPrismaUpdate` → supabase `getById` for joined DTOs).
+2. **Duplicate pre-reads / access checks** on hot services (especially work-item PATCH / board moves).
+3. **Sequential side effects** after the critical write (activities, allocation worklogs, mention fan-out).
+4. **Client `router.refresh()`** after patches when local state could apply the response entity.
+
+Conflict (409) paths may still fetch the current row; the win is the **happy path**.
+
+### Roadmap (quick → large)
+
+| ID     | Work                                                                                       | Effort | Risk | Expected impact                                       | Status  |
+| ------ | ------------------------------------------------------------------------------------------ | ------ | ---- | ----------------------------------------------------- | ------- |
+| **W1** | Work-items: Prisma `fetchUpdated` + collapse duplicate access / pre-write `getById`        | S–M    | Low  | −1–2 PostgREST RTTs per PATCH / board move            | ✅ Done |
+| **W2** | Work-items: parallelize / batch post-write activities + allocation worklog                 | M      | Med  | Lower wall time after status / field saves            | ✅ Done |
+| **W3** | Shared pattern: Prisma (or slim) `fetchUpdated` across mutation repos                      | M–L    | Med  | Same happy-path win platform-wide                     | ✅ Done |
+| **W5** | Board status fast path: status/`board_column_id` PATCH skips full coalesce + allocation    | M      | Med  | Cut multi-second board-move floor (measured ~9s warm) | ✅ Done |
+| **W6** | Async board moves + realtime confirm (pending stack, prefs, toast-on-409)                  | M–L    | Med  | Instant drag UX; ~4–5s PATCH no longer blocks UI      | ✅ Done |
+| **W4** | Client: prefer local entity sync over blanket `router.refresh()` on high-frequency patches | M      | Med  | Less full RSC remount after field saves               | ✅ Done |
+| **W7** | Extend W6-style async + `work_items` realtime to backlog DnD + calendar due-date DnD       | M      | Med  | Instant drag UX on those surfaces; reuse W6 channels  | ✅ Done |
+
+**Order (done):** W1 → W2 → W3 → measure → **W5** → **W6** → **W4** → **W7**.
+
+**Order (remaining):** Optional M8 re-measure / chart-slide prefetch (§8.1). Discussion feeds realtime is **done** ([REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md)).
+
+**Measured (board column PATCH TTFB):**
+
+| When                   | Cold    | Warm      |
+| ---------------------- | ------- | --------- |
+| Before W5 (2026-10-16) | ~12–13s | ~9s       |
+| After W5 (2026-10-17)  | ~10.6s  | **~4.6s** |
+
+W5 roughly **halved** warm board-move latency by dropping duplicate list-all access + supabase pre-reads + allocation on status-only bodies. Remaining ~4–5s is still multi-RTT (scoped access, workflow, actor, write, activities) plus Sydney DB distance — further cuts need fewer sequential awaits or a dedicated status endpoint with a single packed query.
+
+### W1 — Work-items Prisma return + collapse pre-reads
+
+- Happy path after `prisma.work_items.updateMany`: return a Prisma-selected row mapped to the existing mutation DTO (same fields the UI already consumes).
+- Keep supabase join `getById` only where still required for **409** current-entity payload (or replace with Prisma detail select when shapes match).
+- In `updateWorkItem`: do not re-run `assertCanAccessProject` when `requireProjectMember` already asserted; share one pre-write current-row read between service and repo when safe.
+- Measure: §7 writes — board status move + one field patch.
+
+### W2 — Work-items side effects
+
+- Sprint cascade still completes **before** side effects that must see updated children.
+- After cascade: `Promise.all` independent activity recording vs allocation worklog where order allows.
+- Prefer one activity `createMany` (or equivalent) over sequential transition → escalation → field awaits.
+- Parallelize name lookups inside allocation worklog helpers.
+- Still **await** the batch (Vercel freezes the isolate if the handler returns early) — do not fire-and-forget required notifications / activities.
+
+### W3 — Shared lock return across domains
+
+Callers of `resolveOptimisticPrismaUpdate` (work-items, comments, projects, sprints, teams, users, attachments, access-allowlist, profile) should prefer Prisma `select` / mapped row for `fetchUpdated`. Roll out by join complexity; document any domain that must keep a supabase join for conflict payloads.
+
+### W5 — Board status / column fast path
+
+Board moves call `updateWorkItemStatus` (status + optional `board_column_id` + lock). Today that still hits the full `PATCH /:id` coalesce path:
+
+1. Route `getWorkItem` (membership list-all + supabase `getById`)
+2. Service `requireProjectMember` again + another `getById`
+3. Workflow load + transition checks
+4. `validateAllocation` even when assignee/sprint/points are unchanged
+5. Full field coalesce
+
+**Fast path:**
+
+- Detect status-placement-only bodies (`status`, optional `board_column_id` / `resolution`, `expectedUpdatedAt`).
+- One Prisma current-row load + **scoped** project access (owner ∪ member ∪ guest ACL for that id — not list-all projects).
+- Parallel workflow config load (Prisma).
+- Keep transition / lock / done / require-children gates.
+- Skip allocation, type-change, parent/sprint hierarchy, and the route pre-`getWorkItem`.
+- Same Prisma `update` + batched activities as W1/W2 (no allocation worklog on pure status moves).
+
+Measure: warm board forward/back PATCH TTFB vs the ~9s baseline. **Done:** ~9s → ~4.6s warm.
+
+### W6 — Async / realtime board moves
+
+Full product doc: [REALTIME_BOARD_MOVES.md](../features/board/REALTIME_BOARD_MOVES.md).
+
+**Idea:** W5 made the PATCH faster; W6 stops the **UI** from waiting on it. Local place → background PATCH → confirm via `work_items` realtime (commit order wins). Preferences in localStorage: `realtime` (default) vs `static`; subscribe toggle under Board settings.
+
+| Outcome       | Realtime UX                                            |
+| ------------- | ------------------------------------------------------ |
+| Success       | Card already moved; dedupe channel echo                |
+| Invalid (4xx) | Existing move-blocked toast + revert pending attempt   |
+| Lock (409)    | Toast (not merge dialog) + rebase to winner’s live row |
+
+**Rules:** pending stack per work-item id; on conflict channel/server wins; API still awaits write (Vercel); primary sync = `work_items` channel. Silent inbox notifications remain deferred.
+
+**Done:** Board settings sync prefs; pending attempts; toast-on-409 rebase; `useBoardWorkItemsRealtime` gated by prefs.
+
+### W4 — Client refresh hygiene
+
+Board status moves already sync local state (`syncWorkItem`). High-frequency field dialogs / detail patches should prefer applying the mutation response locally; keep `router.refresh()` for structural changes (members, archive, create).
+
+**Done:** Registry edit dialogs apply the mutation response locally and **skip** `router.refresh()`:
+
+- Work Items — merge into local table (+ hierarchy children). Create still refreshes.
+- Sprints — `replaceEntityInList` on in-tab edits; archive/restore that leave the current tab still refreshes.
+- Projects / Users / Teams — `onProjectUpdated` / `onUserUpdated` / `onTeamUpdated` merge into local table rows; create / archive / activate still refresh.
+
+Hierarchy expand state resets only when root **ids** change, not on content edits. Shared helper: `apps/web/lib/replace-entity-in-list.ts`.
+
+### W7 — Backlog + calendar DnD realtime
+
+Reuse the **W6** pattern ([REALTIME_BOARD_MOVES.md](../features/board/REALTIME_BOARD_MOVES.md)): optimistic local place → background PATCH → confirm / rebase via Supabase **`work_items`** realtime (same publication; commit order wins). Shared helpers: `useWorkItemsRealtime`, `applyRealtimeWorkItemRow` / `mergeWorkItemRealtimeRow`, `toastWorkItemDnDConflict`. DnD paths use **toast-on-409** (not the merge dialog).
+
+| Surface                    | Mutation                         | Client                                                               |
+| -------------------------- | -------------------------------- | -------------------------------------------------------------------- |
+| **Backlog** sprint DnD     | `sprint_id` (+ cascade children) | `backlog-work-items` channel; pending set; mismatch dialog unchanged |
+| **Calendar** due-date drag | `due_date`                       | `calendar-work-items` channel; past/Done guards unchanged            |
+
+**Done:** calendar + backlog fire-and-forget PATCH; 409 toast + rebase; live `work_items` UPDATE merge for `due_date` / `sprint_id`.
+
+**Out of scope for W7:** work-item details Discussion / Activity / Work Log feeds — shipped separately as [discussion realtime](../features/work-items/REALTIME_DISCUSSION.md). No rank/reorder field exists on backlog today.
+
+### After W7 — M8, then discussion realtime
+
+1. **M8** — first-slice RPCs / prefetch done; optional re-measure and further chart prefetch remain (§8.1).
+2. **Discussion realtime** — ✅ live comments, activities, and work logs on `/work-items/[id]` without `router.refresh`. See [REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md).
+
+### Contributor patterns (writes)
+
+1. **Happy path = Prisma row** — after `updateMany` / create, do not round-trip PostgREST just to rebuild the DTO when a Prisma `select` already can.
+2. **One access check** — reuse membership assertions; avoid duplicate project-access listings on the same request.
+3. **Batch side effects** — parallelize independent inserts; keep required awaits for Vercel.
+4. **Invalidate dropdowns narrowly** — `updateTag` only for users/projects lists that actually changed (§2.7).
+5. **Refresh the UI surgically** — local entity sync for field patches; full RSC refresh for structural navigation.
+6. **Async + realtime for DnD** — W6/W7: local place first, confirm on `work_items` channel; do not block the drag on PATCH TTFB.

@@ -6,6 +6,8 @@ import {
   type Json,
   commentListSelect,
   commentDetailSelect,
+  commentAuthorSelect,
+  commentWorkItemSelect,
   type CommentListRow,
   type CommentDetailRow,
   paginationMeta,
@@ -44,6 +46,22 @@ const COMMENT_WITH_RELATIONS = `
         work_item:work_items(id, title, type, ${projectRelationSelect()})
       `;
 
+const commentMutationSelect = {
+  id: true,
+  work_item_id: true,
+  author_id: true,
+  parent_id: true,
+  content: true,
+  edited: true,
+  status: true,
+  created_at: true,
+  updated_at: true,
+  created_by: true,
+  updated_by: true,
+  author: { select: commentAuthorSelect },
+  work_item: { select: commentWorkItemSelect },
+} as const;
+
 export class CommentsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
@@ -62,22 +80,51 @@ export class CommentsRepository {
     return data as unknown as CommentRow | null;
   }
 
+  /** Post-mutation / optimistic-lock row via Prisma (no PostgREST hop). */
+  async getMutationRowById(id: string): Promise<CommentRow | null> {
+    try {
+      const row = await prisma.comments.findUnique({
+        where: { id },
+        select: commentMutationSelect,
+      });
+      if (!row) {
+        return null;
+      }
+      return {
+        ...row,
+        content: row.content as Json,
+        created_at: row.created_at.toISOString(),
+        updated_at: row.updated_at.toISOString(),
+      } as unknown as CommentRow;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to get comment mutation row:', message);
+      throw new Error('Failed to retrieve comment');
+    }
+  }
+
   /** Narrow projection for optimistic-lock conflict payloads (no joined PII). */
   private async getLockSnapshotById(
     id: string
   ): Promise<{ id: string; status: string; updated_at: string } | null> {
-    const { data, error } = await this.db
-      .from('comments')
-      .select('id, status, updated_at')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (error) {
-      console.error('error. failed to load comment status:', error.message);
+    try {
+      const row = await prisma.comments.findUnique({
+        where: { id },
+        select: { id: true, status: true, updated_at: true },
+      });
+      if (!row) {
+        return null;
+      }
+      return {
+        id: row.id,
+        status: row.status,
+        updated_at: row.updated_at.toISOString(),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to load comment status:', message);
       throw new Error('Failed to retrieve comment');
     }
-
-    return data;
   }
 
   async create(input: {
@@ -96,7 +143,7 @@ export class CommentsRepository {
       },
     });
 
-    const row = await this.getById(created.id);
+    const row = await this.getMutationRowById(created.id);
     if (!row) {
       throw new Error('Failed to create comment');
     }
@@ -119,8 +166,8 @@ export class CommentsRepository {
 
     return resolveOptimisticPrismaUpdate({
       count,
-      fetchUpdated: () => this.getById(id),
-      fetchCurrent: () => this.getById(id),
+      fetchUpdated: () => this.getMutationRowById(id),
+      fetchCurrent: () => this.getMutationRowById(id),
       notFoundMessage: 'Comment not found',
     });
   }

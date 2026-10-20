@@ -128,14 +128,11 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
     activeTab === 'calendar' || accessibleIds.length === 0
       ? Promise.resolve([])
       : safeServerFetch(
-          getWorkItems(
-            {
-              projectId: scopedProjectId,
-              sprintId,
-              ...(scopedProjectId ? {} : { projectIds: accessibleIds }),
-            },
-            { includeDescription: true }
-          ),
+          getWorkItems({
+            projectId: scopedProjectId,
+            sprintId,
+            ...(scopedProjectId ? {} : { projectIds: accessibleIds }),
+          }),
           [],
           'fetch work items for board'
         ),

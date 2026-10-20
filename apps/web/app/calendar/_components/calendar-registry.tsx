@@ -141,6 +141,10 @@ export function CalendarRegistry({
     setLocalWorkItems,
     setItemToEdit,
     userId,
+    projectId:
+      projectQuery.value && projectQuery.value !== QUERY_FILTER_ALL_VALUE
+        ? projectQuery.value
+        : null,
     resolveWorkItem,
     onItemScheduled,
   });

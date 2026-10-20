@@ -82,6 +82,16 @@ import {
   type ActivityValueLookups,
 } from '@/app/work-items/_helpers/work-item-activity-format';
 import {
+  applyRealtimeActivityChange,
+  type ActivityRealtimeRow,
+} from '@/app/work-items/_helpers/apply-realtime-activity-row';
+import {
+  applyRealtimeWorkLogChange,
+  type WorkLogRealtimeRow,
+} from '@/app/work-items/_helpers/apply-realtime-work-log-row';
+import { rowFromRealtimePayload } from '@/lib/realtime/realtime-change-row';
+import { useScopedTableRealtime } from '@/lib/realtime/use-scoped-table-realtime';
+import {
   readMoreFieldsOpen,
   writeMoreFieldsOpen,
 } from '@/app/work-items/_helpers/work-item-sidebar-storage';
@@ -225,7 +235,8 @@ function WorkItemDetailsActionStrip({
   );
 }
 
-type SubtaskUnlinkTarget = Pick<
+/** Shared shape for linkable / unlinkable child refs on details. */
+type WorkItemChildRef = Pick<
   DbWorkItem,
   'id' | 'title' | 'type' | 'updated_at'
 >;
@@ -242,7 +253,7 @@ type WorkItemSubtasksSectionProps = {
   readonly onSortFieldChange: (field: SubtaskSortField) => void;
   readonly onSortDirectionChange: (direction: SubtaskSortDirection) => void;
   readonly onLinkExisting: () => void;
-  readonly onUnlink: (child: SubtaskUnlinkTarget) => void;
+  readonly onUnlink: (child: WorkItemChildRef) => void;
   readonly isUserOnline: (userId: string) => boolean;
 };
 /* eslint-enable no-unused-vars */
@@ -435,12 +446,12 @@ type WorkItemDetailsMainColumnProps = {
     SetStateAction<SubtaskSortDirection>
   >;
   readonly onLinkExistingSubtask: () => void;
-  readonly onUnlinkSubtask: (child: SubtaskUnlinkTarget) => void;
+  readonly onUnlinkSubtask: (child: WorkItemChildRef) => void;
   readonly isUserOnline: (userId: string) => boolean;
   readonly activityTab: WorkItemActivityTab;
   readonly setActivityTab: Dispatch<SetStateAction<WorkItemActivityTab>>;
   readonly initialComments: CommentItem[];
-  readonly initialActivities: WorkItemActivity[];
+  readonly activities: WorkItemActivity[];
   readonly activityLookups: ActivityValueLookups;
   readonly discussionWorkItems: CommentWorkItemOption[];
   readonly currentUserId?: string;
@@ -475,7 +486,7 @@ function WorkItemDetailsMainColumn({
   activityTab,
   setActivityTab,
   initialComments,
-  initialActivities,
+  activities,
   activityLookups,
   discussionWorkItems,
   currentUserId,
@@ -560,7 +571,7 @@ function WorkItemDetailsMainColumn({
             activeTab={activityTab}
             onActiveTabChange={setActivityTab}
             initialComments={initialComments}
-            initialActivities={initialActivities}
+            activities={activities}
             activityLookups={activityLookups}
             workItem={workItem}
             discussionWorkItems={discussionWorkItems}
@@ -575,32 +586,41 @@ function WorkItemDetailsMainColumn({
   );
 }
 
+const EMPTY_CHILD_WORK_ITEMS: DbWorkItem[] = [];
+const EMPTY_LINKABLE_WORK_ITEMS: readonly WorkItemChildRef[] = [];
+const EMPTY_ANCESTORS: readonly WorkItemAncestor[] = [];
+const EMPTY_COMMENTS: CommentItem[] = [];
+const EMPTY_ATTACHMENTS: AttachmentWithUploader[] = [];
+const EMPTY_ACTIVITIES: WorkItemActivity[] = [];
+const EMPTY_WORK_LOGS: WorkItemWorkLog[] = [];
+const EMPTY_PROJECT_MEMBERS: readonly WorkItemPatchMemberOption[] = [];
+const EMPTY_PROJECT_SPRINTS: readonly WorkItemSprintOption[] = [];
+const EMPTY_DISCUSSION_WORK_ITEMS: CommentWorkItemOption[] = [];
+const EMPTY_CHILD_COMMENT_COUNTS: Readonly<Record<string, number>> = {};
+
 export default function WorkItemDetails({
   workItemDetails,
-  childWorkItems = [],
-  childCommentCounts = {},
-  linkableWorkItems = [],
-  ancestors = [],
+  childWorkItems = EMPTY_CHILD_WORK_ITEMS,
+  childCommentCounts = EMPTY_CHILD_COMMENT_COUNTS,
+  linkableWorkItems = EMPTY_LINKABLE_WORK_ITEMS,
+  ancestors = EMPTY_ANCESTORS,
   project = null,
-  initialComments = [],
-  initialAttachments = [],
-  initialActivities = [],
-  initialWorkLogs = [],
+  initialComments = EMPTY_COMMENTS,
+  initialAttachments = EMPTY_ATTACHMENTS,
+  initialActivities = EMPTY_ACTIVITIES,
+  initialWorkLogs = EMPTY_WORK_LOGS,
   currentUserId,
   currentUserRole,
-  projectMembers = [],
-  projectSprints = [],
-  discussionWorkItems: discussionWorkItemsProp = [],
+  projectMembers = EMPTY_PROJECT_MEMBERS,
+  projectSprints = EMPTY_PROJECT_SPRINTS,
+  discussionWorkItems: discussionWorkItemsProp = EMPTY_DISCUSSION_WORK_ITEMS,
   initialDetailsPreferences = DEFAULT_WORK_ITEM_DETAILS_PREFERENCES,
 }: Readonly<{
   workItemDetails: DbWorkItem;
   childWorkItems?: DbWorkItem[];
   /** Active comment counts (incl. replies) keyed by child work item id. */
   childCommentCounts?: Readonly<Record<string, number>>;
-  linkableWorkItems?: readonly Pick<
-    DbWorkItem,
-    'id' | 'title' | 'type' | 'updated_at'
-  >[];
+  linkableWorkItems?: readonly WorkItemChildRef[];
   ancestors?: readonly WorkItemAncestor[];
   project?: DbProject | null;
   initialComments?: CommentItem[];
@@ -645,11 +665,12 @@ export default function WorkItemDetails({
     useState<SubtaskSortField>('none');
   const [subtaskSortDirection, setSubtaskSortDirection] =
     useState<SubtaskSortDirection>('asc');
-  const [unlinkTarget, setUnlinkTarget] = useState<Pick<
-    DbWorkItem,
-    'id' | 'title' | 'type' | 'updated_at'
-  > | null>(null);
+  const [unlinkTarget, setUnlinkTarget] = useState<WorkItemChildRef | null>(
+    null
+  );
   const [workLogs, setWorkLogs] = useState<WorkItemWorkLog[]>(initialWorkLogs);
+  const [activities, setActivities] =
+    useState<WorkItemActivity[]>(initialActivities);
   const [activityTab, setActivityTab] =
     useState<WorkItemActivityTab>('discussion');
   const [loggedHoursInput, setLoggedHoursInput] = useState<string>('');
@@ -665,6 +686,48 @@ export default function WorkItemDetails({
     entityId: workItem.id,
     userId: currentUserId,
     serverUpdatedAt: workItem.updated_at,
+  });
+
+  useEffect(() => {
+    setActivities(initialActivities);
+  }, [initialActivities]);
+
+  useEffect(() => {
+    setWorkLogs(initialWorkLogs);
+  }, [initialWorkLogs]);
+
+  useScopedTableRealtime<ActivityRealtimeRow>({
+    enabled: Boolean(workItem.id),
+    channelPrefix: 'wi-activities',
+    table: 'activities',
+    scopeKey: workItem.id,
+    filter: `work_item_id=eq.${workItem.id}`,
+    onChange: ({ eventType, new: nextRow, old: prevRow }) => {
+      setActivities((prev) => {
+        const row = rowFromRealtimePayload(eventType, nextRow, prevRow);
+        return (
+          applyRealtimeActivityChange(prev, eventType, row, projectMembers) ??
+          prev
+        );
+      });
+    },
+  });
+
+  useScopedTableRealtime<WorkLogRealtimeRow>({
+    enabled: Boolean(workItem.id),
+    channelPrefix: 'wi-worklogs',
+    table: 'work_item_worklogs',
+    scopeKey: workItem.id,
+    filter: `work_item_id=eq.${workItem.id}`,
+    onChange: ({ eventType, new: nextRow, old: prevRow }) => {
+      setWorkLogs((prev) => {
+        const row = rowFromRealtimePayload(eventType, nextRow, prevRow);
+        return (
+          applyRealtimeWorkLogChange(prev, eventType, row, projectMembers) ??
+          prev
+        );
+      });
+    },
   });
 
   useEffect(() => {
@@ -921,7 +984,7 @@ export default function WorkItemDetails({
             activityTab={activityTab}
             setActivityTab={setActivityTab}
             initialComments={initialComments}
-            initialActivities={initialActivities}
+            activities={activities}
             activityLookups={activityLookups}
             discussionWorkItems={discussionWorkItems}
             currentUserId={currentUserId}

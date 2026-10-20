@@ -45,12 +45,19 @@ vi.mock('@/lib/supabase/client', () => {
   const mockSelect = vi.fn().mockImplementation(() => mockQueryBuilder);
   const mockFrom = vi.fn().mockImplementation(() => ({ select: mockSelect }));
 
+  const mockRealtimeChannel = {
+    on: vi.fn().mockReturnThis(),
+    subscribe: vi.fn(),
+  };
+
   return {
     createClient: vi.fn(() => ({
       from: mockFrom,
       auth: {
         getUser: mockGetUser,
       },
+      channel: vi.fn(() => mockRealtimeChannel),
+      removeChannel: vi.fn(),
     })),
   };
 });
