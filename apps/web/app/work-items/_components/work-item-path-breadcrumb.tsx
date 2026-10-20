@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { Fragment } from 'react';
 import {
   Breadcrumb,
   BreadcrumbEllipsis,
@@ -55,6 +54,16 @@ export function WorkItemPathBreadcrumb({
   const projectId = workItem.project?.id;
   const sprintName = workItem.sprint?.name?.trim() ?? null;
   const hasSprint = Boolean(workItem.sprint_id && sprintName);
+  // Guard against duplicate ids (e.g. parent cycles) so React keys stay unique.
+  const uniqueAncestors: WorkItemAncestor[] = [];
+  const seenAncestorIds = new Set<string>();
+  for (const ancestor of ancestors) {
+    if (seenAncestorIds.has(ancestor.id)) {
+      continue;
+    }
+    seenAncestorIds.add(ancestor.id);
+    uniqueAncestors.push(ancestor);
+  }
 
   return (
     <Breadcrumb>
@@ -89,18 +98,16 @@ export function WorkItemPathBreadcrumb({
           )}
         </BreadcrumbItem>
 
-        {ancestors.map((ancestor) => (
-          <Fragment key={ancestor.id}>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem className="min-w-0">
-              <BreadcrumbLink asChild className="hover:text-primary min-w-0">
-                <Link href={`/work-items/${ancestor.id}`} className="min-w-0">
-                  <PathTypeChip type={ancestor.type} title={ancestor.title} />
-                </Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-          </Fragment>
-        ))}
+        {uniqueAncestors.flatMap((ancestor) => [
+          <BreadcrumbSeparator key={`sep-${ancestor.id}`} />,
+          <BreadcrumbItem key={ancestor.id} className="min-w-0">
+            <BreadcrumbLink asChild className="hover:text-primary min-w-0">
+              <Link href={`/work-items/${ancestor.id}`} className="min-w-0">
+                <PathTypeChip type={ancestor.type} title={ancestor.title} />
+              </Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>,
+        ])}
 
         <BreadcrumbSeparator />
 
