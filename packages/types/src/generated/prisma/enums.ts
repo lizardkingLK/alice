@@ -96,6 +96,13 @@ export const WorkItemPriority = {
 export type WorkItemPriority = (typeof WorkItemPriority)[keyof typeof WorkItemPriority]
 
 
+export const WorkItemLinkType = {
+  relates_to: 'relates_to'
+} as const
+
+export type WorkItemLinkType = (typeof WorkItemLinkType)[keyof typeof WorkItemLinkType]
+
+
 export const NotificationType = {
   assign: 'assign',
   status_change: 'status_change',

@@ -42,10 +42,15 @@ import {
   toastWorkflowMoveBlockedFromError,
   workflowMoveBlockedDescription,
 } from '@/app/board/_helpers/workflow-move-blocked-toast';
+import { LinkedIssuesRequireBlockedDialog } from '@/app/work-items/_components/work-item-links/linked-issues-require-blocked-dialog';
 import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels/work-item-labels-input';
 import { FormStatusAlerts } from '@/app/work-items/_components/work-item-form/work-item-form-alerts';
 import { toDateInputValue } from '@/app/work-items/_helpers/work-item-due-date';
 import { cn } from '@repo/ui/lib/utils';
+
+function isLinkedIssuesGateMessage(message: string): boolean {
+  return /linked issue/i.test(message);
+}
 
 export type WorkItemPatchFieldId =
   | 'assignee_id'
@@ -54,10 +59,11 @@ export type WorkItemPatchFieldId =
   | 'status'
   | 'labels'
   | 'sprint_id'
-  | 'due_date';
+  | 'due_date'
+  | 'story_points';
 
 export type WorkItemPatchFieldKind =
-  'user' | 'text' | 'status' | 'labels' | 'sprint' | 'date';
+  'user' | 'text' | 'status' | 'labels' | 'sprint' | 'date' | 'number';
 
 export type WorkItemPatchFieldConfig = {
   readonly field: WorkItemPatchFieldId;
@@ -129,6 +135,13 @@ export const WORK_ITEM_PATCH_FIELD_CONFIG: Record<
     description: 'Set or clear the due date for this work item.',
     label: 'Due date',
   },
+  story_points: {
+    field: 'story_points',
+    kind: 'number',
+    title: 'Change Story Points',
+    description: 'Set or clear story points for this work item.',
+    label: 'Story points',
+  },
 };
 
 export type WorkItemPatchMemberOption = {
@@ -195,6 +208,9 @@ function initialSelectedValue(
   if (kind === 'date') {
     return toDateInputValue(currentValue);
   }
+  if (kind === 'number') {
+    return currentValue ?? '';
+  }
   return currentValue ?? '';
 }
 
@@ -218,6 +234,7 @@ export function WorkItemFieldPatchDialog({
   const isLabelsField = fieldConfig.kind === 'labels';
   const isSprintField = fieldConfig.kind === 'sprint';
   const isDateField = fieldConfig.kind === 'date';
+  const isNumberField = fieldConfig.kind === 'number';
   const statusChoices: readonly WorkflowStateOption[] =
     stateOptions ?? legacyWorkflowStateOptions();
   const [selectedValue, setSelectedValue] = useState(
@@ -231,6 +248,9 @@ export function WorkItemFieldPatchDialog({
     success: string | null;
     error: string | null;
   } | null>(null);
+  const [linkedIssuesBlockedMessage, setLinkedIssuesBlockedMessage] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     if (!open) {
@@ -239,6 +259,7 @@ export function WorkItemFieldPatchDialog({
     setSelectedValue(initialSelectedValue(fieldConfig.kind, currentValue));
     setLabelsValue([...currentLabels]);
     setAlert(null);
+    setLinkedIssuesBlockedMessage(null);
     setIsPending(false);
     // Seed once when the dialog opens; a default `currentLabels = []` would
     // retrigger this effect every render and overflow the update depth.
@@ -405,6 +426,35 @@ export function WorkItemFieldPatchDialog({
     );
   };
 
+  const saveNumberField = async () => {
+    const nextRaw = selectedValue.trim();
+    if (nextRaw !== '' && !/^\d+$/.test(nextRaw)) {
+      setAlert({
+        success: null,
+        error: 'Story points must be a whole number.',
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set('story_points', nextRaw);
+    const response = await updateWorkItem(
+      workItemId,
+      formData,
+      expectedUpdatedAt
+    );
+
+    await finishWithInDialogSuccess(
+      `${fieldConfig.label} updated successfully.`,
+      {
+        story_points:
+          response.data?.story_points ??
+          (nextRaw === '' ? null : Number(nextRaw)),
+        updated_at: response.data?.updated_at,
+      }
+    );
+  };
+
   const saveByKind = async () => {
     switch (fieldConfig.kind) {
       case 'text':
@@ -421,6 +471,9 @@ export function WorkItemFieldPatchDialog({
         return;
       case 'date':
         await saveDateField();
+        return;
+      case 'number':
+        await saveNumberField();
         return;
       default:
         await saveUserField();
@@ -439,6 +492,10 @@ export function WorkItemFieldPatchDialog({
         return { sprint_id: sprintIdFromSelectValue(selectedValue) };
       case 'date':
         return { due_date: selectedValue.trim() || null };
+      case 'number': {
+        const raw = selectedValue.trim();
+        return { story_points: raw === '' ? null : Number(raw) };
+      }
       default:
         return {
           [fieldConfig.field]:
@@ -471,11 +528,17 @@ export function WorkItemFieldPatchDialog({
       const message =
         error instanceof Error ? error.message : 'Something went wrong.';
       if (fieldConfig.kind === 'status' && isWorkflowMoveBlockedError(error)) {
-        toastWorkflowMoveBlockedFromError(error);
-        setAlert({
-          success: null,
-          error: workflowMoveBlockedDescription(message),
-        });
+        const description = workflowMoveBlockedDescription(message);
+        if (isLinkedIssuesGateMessage(description)) {
+          setLinkedIssuesBlockedMessage(description);
+          onOpenChange(false);
+        } else {
+          toastWorkflowMoveBlockedFromError(error);
+          setAlert({
+            success: null,
+            error: description,
+          });
+        }
       } else {
         setAlert({ success: null, error: message });
       }
@@ -584,6 +647,27 @@ export function WorkItemFieldPatchDialog({
         }}
       />
     );
+  } else if (isNumberField) {
+    fieldControl = (
+      <Input
+        id={`patch-${fieldConfig.field}`}
+        type="number"
+        min={0}
+        step={1}
+        inputMode="numeric"
+        value={selectedValue}
+        disabled={isPending}
+        autoFocus
+        placeholder="—"
+        onChange={(event) => setSelectedValue(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            handleSave().catch(() => {});
+          }
+        }}
+      />
+    );
   } else {
     fieldControl = (
       <SearchableSelect
@@ -603,24 +687,36 @@ export function WorkItemFieldPatchDialog({
   }
 
   return (
-    <WorkItemActionDialog
-      open={open}
-      onOpenChange={onOpenChange}
-      title={fieldConfig.title}
-      description={fieldConfig.description}
-      isPending={isPending}
-      onSubmit={() => {
-        handleSave().catch(() => {});
-      }}
-    >
-      <div className="space-y-2">
-        <Label htmlFor={`patch-${fieldConfig.field}`}>
-          {fieldConfig.label}
-        </Label>
-        {fieldControl}
-      </div>
+    <>
+      <WorkItemActionDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        title={fieldConfig.title}
+        description={fieldConfig.description}
+        isPending={isPending}
+        onSubmit={() => {
+          handleSave().catch(() => {});
+        }}
+      >
+        <div className="space-y-2">
+          <Label htmlFor={`patch-${fieldConfig.field}`}>
+            {fieldConfig.label}
+          </Label>
+          {fieldControl}
+        </div>
 
-      <FormStatusAlerts error={alert?.error} success={alert?.success} />
-    </WorkItemActionDialog>
+        <FormStatusAlerts error={alert?.error} success={alert?.success} />
+      </WorkItemActionDialog>
+
+      <LinkedIssuesRequireBlockedDialog
+        open={Boolean(linkedIssuesBlockedMessage)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setLinkedIssuesBlockedMessage(null);
+          }
+        }}
+        message={linkedIssuesBlockedMessage ?? ''}
+      />
+    </>
   );
 }

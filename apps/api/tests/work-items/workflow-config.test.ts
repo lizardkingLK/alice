@@ -32,8 +32,24 @@ describe('workflowConfigEnvelopeSchema', () => {
       requiresEscalation: false,
       resolutionPresetId: null,
       requireChildren: 'off',
+      requireLinkedIssues: 'off',
     });
     expect(workflowConfigEnvelopeSchema.safeParse(seeded).success).toBe(false);
+  });
+
+  it('coerces legacy requireLinkedIssues match_parent_target to off', () => {
+    const seeded = createSeededDefaultWorkflowConfig();
+    const edge = seeded.workflows[0]!.graph.edges[0]!;
+    (edge as { requireLinkedIssues: string }).requireLinkedIssues =
+      'match_parent_target';
+    const parsed = workflowConfigEnvelopeSchema.safeParse(seeded);
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) {
+      return;
+    }
+    expect(parsed.data.workflows[0]?.graph.edges[0]?.requireLinkedIssues).toBe(
+      'off'
+    );
   });
 
   it('rejects duplicate directed edges', () => {
@@ -173,6 +189,7 @@ describe('workflowConfigEnvelopeSchema', () => {
       requiresEscalation: false,
       resolutionPresetId: null,
       requireChildren: 'off',
+      requireLinkedIssues: 'off',
     });
     expect(workflowConfigEnvelopeSchema.safeParse(seeded).success).toBe(false);
   });

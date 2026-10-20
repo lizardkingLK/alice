@@ -28,6 +28,7 @@ export * from './sprint-name.js';
 export * from './sprint-status.js';
 export * from './sprint-response.js';
 export * from './work-item-types.js';
+export * from './work-item-links.js';
 export * from './work-item-priorities.js';
 export * from './access-allowlist.js';
 export * from './access-request.js';

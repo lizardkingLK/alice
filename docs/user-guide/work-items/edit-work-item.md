@@ -24,7 +24,7 @@ On the detail page:
 - **Assignee**, **reporter**, **sprint**, **due date**, and **labels** in
   **Details** (pencil to edit) when those rows are shown
 - **Priority** and **story points** in the sidebar (story points under
-  **More fields**; edit via the full Edit dialog)
+  **More fields** — pencil to edit, same as due date)
 
 State and type pills are not repeated under the title — the status control and
 title icon cover that.
@@ -80,6 +80,23 @@ When status is **Done**:
 | **Unlink**           | Remove parent link (item becomes orphan again)           |
 
 You cannot move an item to **Done** while direct subtasks are incomplete.
+
+---
+
+## Linked issues
+
+| Action         | How                                                                   |
+| -------------- | --------------------------------------------------------------------- |
+| **Link issue** | Header button or **+** in Linked issues — pick any other project item |
+| **relates to** | Peer link only (not a parent/child hierarchy)                         |
+| **Unlink**     | Remove the relates-to link                                            |
+
+A project workflow can also require linked issues to be removed before a
+transition (**Unlink first**). See [Workflow designer](../board-and-planning/workflow-designer.md).
+
+Online teammates on the same project may appear as avatars beside the Discussion /
+Activity / Work Log maximize control (others only; hidden when nobody else is
+online).
 
 ---
 

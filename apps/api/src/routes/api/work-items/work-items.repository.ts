@@ -852,4 +852,164 @@ export class WorkItemRepository {
       where: { id: { in: workItemIds } },
     });
   }
+
+  private mapLinkRowToListItem(
+    workItemId: string,
+    row: {
+      id: string;
+      project_id: string;
+      source_id: string;
+      target_id: string;
+      link_type: string;
+      created_at: Date;
+      source: {
+        id: string;
+        title: string;
+        type: string;
+        status: string;
+        state: unknown;
+        updated_at: Date;
+      };
+      target: {
+        id: string;
+        title: string;
+        type: string;
+        status: string;
+        state: unknown;
+        updated_at: Date;
+      };
+    }
+  ) {
+    const related = row.source_id === workItemId ? row.target : row.source;
+    return {
+      id: row.id,
+      link_type: row.link_type as 'relates_to',
+      project_id: row.project_id,
+      related: {
+        id: related.id,
+        title: related.title,
+        type: related.type,
+        status: related.status,
+        state: related.state,
+        updated_at: related.updated_at.toISOString(),
+      },
+      created_at: row.created_at.toISOString(),
+    };
+  }
+
+  async listLinksForWorkItem(workItemId: string) {
+    const rows = await prisma.work_item_links.findMany({
+      where: {
+        OR: [{ source_id: workItemId }, { target_id: workItemId }],
+      },
+      include: {
+        source: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            status: true,
+            state: true,
+            updated_at: true,
+          },
+        },
+        target: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            status: true,
+            state: true,
+            updated_at: true,
+          },
+        },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+
+    return rows.map((row) => this.mapLinkRowToListItem(workItemId, row));
+  }
+
+  private readonly linkPeerInclude = {
+    source: {
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        status: true,
+        state: true,
+        updated_at: true,
+      },
+    },
+    target: {
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        status: true,
+        state: true,
+        updated_at: true,
+      },
+    },
+  } as const;
+
+  async findRelatesToLink(
+    sourceId: string,
+    targetId: string,
+    perspectiveWorkItemId: string
+  ) {
+    const row = await prisma.work_item_links.findUnique({
+      where: {
+        source_id_target_id_link_type: {
+          source_id: sourceId,
+          target_id: targetId,
+          link_type: 'relates_to',
+        },
+      },
+      include: this.linkPeerInclude,
+    });
+    return row ? this.mapLinkRowToListItem(perspectiveWorkItemId, row) : null;
+  }
+
+  async createRelatesToLink(input: {
+    projectId: string;
+    sourceId: string;
+    targetId: string;
+    createdBy: string;
+    perspectiveWorkItemId: string;
+  }) {
+    const created = await prisma.work_item_links.create({
+      data: {
+        project_id: input.projectId,
+        source_id: input.sourceId,
+        target_id: input.targetId,
+        link_type: 'relates_to',
+        created_by: input.createdBy,
+      },
+      include: this.linkPeerInclude,
+    });
+
+    return this.mapLinkRowToListItem(input.perspectiveWorkItemId, created);
+  }
+
+  async deleteLinkForWorkItem(
+    workItemId: string,
+    linkId: string
+  ): Promise<boolean> {
+    const result = await prisma.work_item_links.deleteMany({
+      where: {
+        id: linkId,
+        OR: [{ source_id: workItemId }, { target_id: workItemId }],
+      },
+    });
+    return result.count > 0;
+  }
+
+  async countRelatedLinks(workItemId: string): Promise<number> {
+    return prisma.work_item_links.count({
+      where: {
+        OR: [{ source_id: workItemId }, { target_id: workItemId }],
+      },
+    });
+  }
 }

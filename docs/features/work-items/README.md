@@ -137,9 +137,13 @@ A work item **cannot** move to **Done** while any **direct** child (`parent_id =
 - **UI (details sidebar):** choosing Done opens an acknowledgment dialog (`IncompleteSubtasksDoneBlockedDialog`) — OK only; no force-through. Complete or unlink incomplete children first.
 - **API:** `PATCH` that sets `status` to `Done` counts incomplete children and returns **400** (`WorkItemValidationError`) when the count is > 0. Already-Done items are not re-validated on no-op updates.
 
-### Incomplete blocker linked issues (planned)
+### Linked issues (`relates_to`)
 
-The same acknowledgment pattern will apply when linked issues with a **blocks** relationship are not Done. Not enforced yet — document only until link-type / blocker UX ships.
+Peer links live in `work_item_links` (canonical id order; type `relates_to` only).
+
+- **UI (details):** **Link issue** opens a project-wide picker; the Linked issues section lists peers under **relates to** with unlink confirm.
+- **API:** `GET/POST /api/work-items/:id/links`, `DELETE /api/work-items/:id/links/:linkId`.
+- **Workflow gate:** edge field `requireLinkedIssues` (`off` | `unlink_first`) — not a global Done/blocks rule. Details shows an acknowledgment dialog when a status change is blocked for linked issues; board toasts **Move blocked**.
 
 ### Done → read-only except Status (implemented)
 

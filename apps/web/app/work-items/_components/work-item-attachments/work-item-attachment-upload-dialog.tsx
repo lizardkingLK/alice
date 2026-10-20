@@ -232,6 +232,7 @@ export function WorkItemAttachmentUploadDialog({
                       size="icon-sm"
                       className="shrink-0 cursor-pointer"
                       aria-label={`Remove ${item.file.name}`}
+                      title={`Remove ${item.file.name}`}
                       onClick={() => removeItem(item.id)}
                     >
                       <X />

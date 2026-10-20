@@ -11,6 +11,7 @@ import {
 import { WorkItemDetailsConfigureDialog } from '@/app/work-items/_components/work-item-details/work-item-details-configure-dialog';
 import type { WorkItemSprintOption } from '@/app/work-items/_helpers/work-item-sprint';
 import { IncompleteSubtasksDoneBlockedDialog } from '@/app/work-items/_components/work-item-subtasks/incomplete-subtasks-done-blocked-dialog';
+import { LinkedIssuesRequireBlockedDialog } from '@/app/work-items/_components/work-item-links/linked-issues-require-blocked-dialog';
 import { WorkItemResolutionDialog } from '@/app/work-items/_components/work-item-details/work-item-resolution-dialog';
 import { hasIncompleteStatuses } from '@/app/work-items/_helpers/work-item-status';
 import {
@@ -158,6 +159,9 @@ function StatusDropdown({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [resolutionOpen, setResolutionOpen] = useState(false);
   const [blockedOpen, setBlockedOpen] = useState(false);
+  const [linkedIssuesBlockedMessage, setLinkedIssuesBlockedMessage] = useState<
+    string | null
+  >(null);
   const [isSavingResolution, setIsSavingResolution] = useState(false);
   const [pendingStateId, setPendingStateId] = useState(picker.currentStateId);
 
@@ -343,7 +347,14 @@ function StatusDropdown({
               setResolutionOpen(false);
             } catch (error) {
               if (isWorkflowMoveBlockedError(error)) {
-                toastWorkflowMoveBlockedFromError(error);
+                const message =
+                  error instanceof Error ? error.message : 'Move blocked';
+                if (/linked issue/i.test(message)) {
+                  setLinkedIssuesBlockedMessage(message);
+                  setResolutionOpen(false);
+                } else {
+                  toastWorkflowMoveBlockedFromError(error);
+                }
               } else {
                 toast.error(
                   error instanceof Error
@@ -362,6 +373,16 @@ function StatusDropdown({
         open={blockedOpen}
         onOpenChange={setBlockedOpen}
         incompleteCount={incompleteSubtaskCount}
+      />
+
+      <LinkedIssuesRequireBlockedDialog
+        open={Boolean(linkedIssuesBlockedMessage)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setLinkedIssuesBlockedMessage(null);
+          }
+        }}
+        message={linkedIssuesBlockedMessage ?? ''}
       />
     </>
   );
@@ -508,6 +529,7 @@ function DetailFieldEditButton({
       size="icon-sm"
       className={cn('cursor-pointer', className)}
       aria-label={ariaLabel}
+      title={ariaLabel}
       onClick={onClick}
     >
       <PencilIcon className="size-3.5" />
@@ -795,6 +817,7 @@ function SidebarMoreFieldsBlock({
   onLogWorkClick,
   readOnly,
   remainingFillClassName,
+  setActiveField,
 }: Readonly<{
   readonly workItem: DbWorkItem;
   readonly moreFieldsOpen: boolean;
@@ -805,6 +828,8 @@ function SidebarMoreFieldsBlock({
   readonly onLogWorkClick?: () => void;
   readonly readOnly: boolean;
   readonly remainingFillClassName: string;
+  // eslint-disable-next-line no-unused-vars -- field edit callback
+  readonly setActiveField: (field: WorkItemPatchFieldId) => void;
 }>) {
   return (
     <SidebarCollapsibleSection
@@ -825,7 +850,16 @@ function SidebarMoreFieldsBlock({
 
       {moreFieldsItems.storyPoints ? (
         <DetailRow label="Story points">
-          <span>{workItem.story_points ?? '—'}</span>
+          <EditableDetailTextField
+            displayText={
+              workItem.story_points == null
+                ? '—'
+                : String(workItem.story_points)
+            }
+            editAriaLabel="Edit story points"
+            onEdit={() => setActiveField('story_points')}
+            readOnly={readOnly}
+          />
         </DetailRow>
       ) : null}
 
@@ -1028,6 +1062,9 @@ export default function WorkItemSidebar({
     currentValue = workItem.sprint_id;
   } else if (activeField === 'due_date') {
     currentValue = workItem.due_date;
+  } else if (activeField === 'story_points') {
+    currentValue =
+      workItem.story_points == null ? null : String(workItem.story_points);
   }
 
   const sprintDisplayName =
@@ -1108,6 +1145,7 @@ export default function WorkItemSidebar({
           onLogWorkClick={onLogWorkClick}
           readOnly={readOnly}
           remainingFillClassName={remainingFillClassName}
+          setActiveField={setActiveField}
         />
       ) : null}
 
@@ -1232,6 +1270,10 @@ function BranchesRow({
                       copyToClipboard(b, b);
                     }}
                     className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+                    aria-label={
+                      copiedBranchId === b ? 'Copied' : `Copy branch ${b}`
+                    }
+                    title={copiedBranchId === b ? 'Copied' : 'Copy branch name'}
                   >
                     {copiedBranchId === b ? (
                       <Check className="h-3 w-3 text-emerald-500" />
@@ -1395,6 +1437,7 @@ function PRsRow({
                               onUnlink(pr.id);
                             }}
                             className="text-muted-foreground hover:text-destructive shrink-0 cursor-pointer"
+                            aria-label="Unlink PR"
                             title="Unlink PR"
                           >
                             <Trash className="h-3 w-3" />

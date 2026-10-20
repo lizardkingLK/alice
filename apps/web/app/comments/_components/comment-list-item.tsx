@@ -171,6 +171,7 @@ export function CommentListItem({
               variant="ghost"
               size="icon-sm"
               aria-label="Reply"
+              title="Reply"
               onClick={onStartReply}
             >
               <Reply className="size-3.5" />
@@ -180,6 +181,7 @@ export function CommentListItem({
               variant="ghost"
               size="icon-sm"
               aria-label="React"
+              title="React"
               onClick={() => onQuickEmoji?.('👍')}
             >
               <ThumbsUp className="size-3.5" />
@@ -189,6 +191,7 @@ export function CommentListItem({
               variant="ghost"
               size="icon-sm"
               aria-label="Add emoji"
+              title="Add emoji"
               onClick={() => onQuickEmoji?.('😊')}
             >
               <SmilePlus className="size-3.5" />
@@ -199,6 +202,7 @@ export function CommentListItem({
                 variant="ghost"
                 size="icon-sm"
                 aria-label="Edit"
+                title="Edit"
                 onClick={onStartEdit}
               >
                 <Pencil className="size-3.5" />
@@ -212,6 +216,7 @@ export function CommentListItem({
                     variant="ghost"
                     size="icon-sm"
                     aria-label="More actions"
+                    title="More actions"
                   >
                     <MoreHorizontal className="size-3.5" />
                   </Button>
