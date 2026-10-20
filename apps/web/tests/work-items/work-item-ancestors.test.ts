@@ -80,4 +80,52 @@ describe('flattenWorkItemAncestorEmbed', () => {
       { id: 'a', type: 'Issue', title: 'A', parent_id: 'b' },
     ]);
   });
+
+  it('stops when a parent cycle repeats an id', () => {
+    const row: WorkItemAncestorEmbedRow = {
+      id: 'task-1',
+      type: 'Task',
+      title: 'Task',
+      parent_id: 'story-1',
+      parent: {
+        id: 'story-1',
+        type: 'Story',
+        title: 'Story',
+        parent_id: 'task-1',
+        parent: {
+          id: 'task-1',
+          type: 'Task',
+          title: 'Task again',
+          parent_id: 'story-1',
+        },
+      },
+    };
+
+    expect(flattenWorkItemAncestorEmbed(row)).toEqual([
+      { id: 'story-1', type: 'Story', title: 'Story', parent_id: 'task-1' },
+      { id: 'task-1', type: 'Task', title: 'Task', parent_id: 'story-1' },
+    ]);
+  });
+
+  it('ignores array-shaped parent embeds (wrong FK direction)', () => {
+    const row = {
+      id: 'story-1',
+      type: 'Story' as const,
+      title: 'Story',
+      parent_id: 'epic-1',
+      // PostgREST child embed mistaken for parent
+      parent: [
+        {
+          id: 'task-1',
+          type: 'Task' as const,
+          title: 'Child task',
+          parent_id: 'story-1',
+        },
+      ],
+    } as unknown as WorkItemAncestorEmbedRow;
+
+    expect(flattenWorkItemAncestorEmbed(row)).toEqual([
+      { id: 'story-1', type: 'Story', title: 'Story', parent_id: 'epic-1' },
+    ]);
+  });
 });
