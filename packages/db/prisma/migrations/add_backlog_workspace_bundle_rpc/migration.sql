@@ -58,7 +58,7 @@ AS $$
         'sprints',
         COALESCE(
           (
-            SELECT jsonb_agg(sprint_row ORDER BY sprint_row.start_date DESC)
+            SELECT jsonb_agg(sprint_src.sprint_row ORDER BY sprint_src.start_date DESC)
             FROM (
               SELECT
                 jsonb_build_object(
