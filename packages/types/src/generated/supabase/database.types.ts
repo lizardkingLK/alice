@@ -1708,6 +1708,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_backlog_workspace_bundle: {
+        Args: { p_project_ids: string[] }
+        Returns: Json
+      }
       get_work_items_hierarchy_page: {
         Args: {
           p_assignee_id?: string | null
