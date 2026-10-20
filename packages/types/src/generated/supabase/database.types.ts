@@ -1712,6 +1712,10 @@ export type Database = {
         Args: { p_project_ids: string[] }
         Returns: Json
       }
+      get_project_workspace_bundle: {
+        Args: { p_project_id: string }
+        Returns: Json
+      }
       get_work_items_hierarchy_page: {
         Args: {
           p_assignee_id?: string | null

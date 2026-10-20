@@ -71,16 +71,27 @@ export async function getMyWorkOverviewStats(
   return { assignedOpen, pendingStories, inProgress };
 }
 
+export type GetProductivityDashboardBootstrapOptions = {
+  /**
+   * When the overview loader already fetched accessible projects, pass them
+   * here to avoid a second `getAccessibleProjectList` round trip.
+   */
+  readonly projects?: Awaited<ReturnType<typeof getAccessibleProjectList>>;
+};
+
 export async function getProductivityDashboardBootstrap(
-  userId: string
+  userId: string,
+  options?: GetProductivityDashboardBootstrapOptions
 ): Promise<ProductivityDashboardBootstrap> {
   const [myWork, projects, docsIndex] = await Promise.all([
     getMyWorkOverviewStats(userId),
-    safeServerFetch(
-      getAccessibleProjectList(userId),
-      [],
-      'fetch projects for productivity dashboard'
-    ),
+    options?.projects
+      ? Promise.resolve(options.projects)
+      : safeServerFetch(
+          getAccessibleProjectList(userId),
+          [],
+          'fetch projects for productivity dashboard'
+        ),
     safeServerFetch(
       getDocsIndex(),
       [],

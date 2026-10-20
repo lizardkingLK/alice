@@ -4,6 +4,7 @@ import { DashboardOverviewHome } from '@/app/dashboard/_components/dashboard-ove
 import { getDashboardBurndownBootstrap } from '@/app/dashboard/_services/dashboard.reads.burndown.server';
 import { getProductivityDashboardBootstrap } from '@/app/dashboard/_services/dashboard.reads.productivity.server';
 import { readProductivityDashboardPreferencesBootstrap } from '@/app/dashboard/_helpers/productivity-dashboard-preferences-cookie.server';
+import { prefetchDashboardSlideChartSeries } from '@/app/charts/_helpers/charts-dashboard-series-prefetch';
 import { listDashboardChartSlides } from '@/app/charts/_services/charts.reads.server';
 import { getDbUser } from '@/lib/auth';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
@@ -37,13 +38,7 @@ export async function DashboardOverviewData({
     return <DashboardChartsSlider slides={[]} />;
   }
 
-  const [
-    slides,
-    projects,
-    sprintsResult,
-    productivityBootstrap,
-    prefsBootstrap,
-  ] = await Promise.all([
+  const [slides, projects, sprintsResult, prefsBootstrap] = await Promise.all([
     safeServerFetch(
       listDashboardChartSlides(dbUser.id),
       [],
@@ -59,8 +54,12 @@ export async function DashboardOverviewData({
       EMPTY_ACTIVE_SPRINTS_PAGE,
       'fetch sprints for dashboard slides'
     ),
+    readProductivityDashboardPreferencesBootstrap(),
+  ]);
+
+  const [productivityBootstrap, prefetchedSeries] = await Promise.all([
     safeServerFetch(
-      getProductivityDashboardBootstrap(dbUser.id),
+      getProductivityDashboardBootstrap(dbUser.id, { projects }),
       {
         myWork: { assignedOpen: 0, pendingStories: 0, inProgress: 0 },
         projects: [],
@@ -68,7 +67,7 @@ export async function DashboardOverviewData({
       },
       'fetch productivity dashboard bootstrap'
     ),
-    readProductivityDashboardPreferencesBootstrap(),
+    prefetchDashboardSlideChartSeries(slides[0]),
   ]);
 
   const activeProjects = filterActiveProjects(projects);
@@ -96,6 +95,7 @@ export async function DashboardOverviewData({
       accessibleSprints={accessibleSprints}
       productivityBootstrap={productivityBootstrap}
       initialPreferences={prefsBootstrap.preferences}
+      prefetchedChartSeries={prefetchedSeries}
     />
   );
 }

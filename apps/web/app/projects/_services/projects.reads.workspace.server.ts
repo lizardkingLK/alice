@@ -28,12 +28,21 @@ import {
   type Project,
   type ProjectMemberWithUser,
 } from '@/app/projects/_services/projects.reads.server';
+import type { ProjectWorkspaceBundlePayload } from '@/app/projects/_helpers/project-workspace-bundle';
+import { getProjectWorkspaceBundleFromRpc } from '@/app/projects/_services/projects.reads.workspace-bundle.supabase.server';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
 import type {
   PaginatedSprints,
   Sprint,
 } from '@/app/sprints/_services/sprints.mutations.client';
 import { UserRoleEnum } from '@repo/types';
+
+export type GetProjectWorkspaceOptions = {
+  /** Shell-prefetched project — skips a second details read. */
+  readonly project?: Project | null;
+};
+
+type ProjectDetailsTab = ReturnType<typeof parseProjectDetailsTab>;
 
 const EMPTY_WORK_ITEMS = {
   workItems: [] as DbWorkItem[],
@@ -449,34 +458,39 @@ export type ProjectWorkspaceDenied = {
 export type ProjectWorkspaceResult =
   ProjectWorkspaceAllowed | ProjectWorkspaceDenied | null;
 
-/**
- * M4.2 — single RSC loader for the project detail surface
- * (details + members + users dropdown + project work items).
- * Gates heavy loads behind admin | owner | project_members.
- */
-export async function getProjectWorkspace(
-  projectId: string,
-  searchParams: RawSearchParams
-): Promise<ProjectWorkspaceResult> {
-  const [dbUser, project] = await Promise.all([
-    getDbUser(),
-    safeServerFetch(getProjectDetails(projectId), null, 'load project details'),
-  ]);
+type ProjectWorkspacePlan = {
+  readonly activeTab: ProjectDetailsTab;
+  readonly isWorkItemsTab: boolean;
+  readonly isSprintsTab: boolean;
+  readonly isDetailsTab: boolean;
+  readonly isManagerOrAdmin: boolean;
+  readonly page: number;
+  readonly limit: number;
+  readonly search: string;
+  readonly type: ReturnType<typeof parseWorkItemFilters>['type'];
+  readonly assigneeId: string | undefined;
+  readonly labels: string[] | undefined;
+  readonly sprintId: string | undefined;
+  readonly listView: ReturnType<typeof parseWorkItemListView>;
+  readonly teamStatus: ReturnType<typeof parseTeamStatusFilter>;
+  readonly shouldLoadSprints: boolean;
+  readonly shouldLoadTeams: boolean;
+  readonly shouldLoadWorkItems: boolean;
+  readonly shouldLoadUsers: boolean;
+  readonly sprintListStatus: 'active' | 'archived';
+  readonly sprintsLimit: number;
+  readonly sprintsPage: number;
+  readonly sprintsSearch: string | undefined;
+  readonly teamsPage: number;
+  readonly teamsLimit: number;
+  readonly teamsSearch: string | undefined;
+  readonly workItemRecordStatus: 'active' | 'archived';
+};
 
-  if (!project) {
-    return null;
-  }
-
-  if (!dbUser) {
-    return { access: 'denied', project };
-  }
-
-  const allowed = await canAccessProjectWorkspace(dbUser.id, projectId);
-  if (!allowed) {
-    console.warn('warn. project workspace access denied: role gate');
-    return { access: 'denied', project };
-  }
-
+function buildProjectWorkspacePlan(
+  searchParams: RawSearchParams,
+  role: string
+): ProjectWorkspacePlan {
   const requestedTab = parseProjectDetailsTab(searchParams.tab);
   const { page, limit, search } = parseStandardParams(searchParams, 10);
   const { type, assigneeId, labels, sprintId } =
@@ -484,42 +498,103 @@ export async function getProjectWorkspace(
   const listView = parseWorkItemListView(searchParams.view);
   const teamStatus = parseTeamStatusFilter(searchParams.teamStatus);
   const isManagerOrAdmin =
-    dbUser.role === UserRoleEnum.admin || dbUser.role === UserRoleEnum.manager;
+    role === UserRoleEnum.admin || role === UserRoleEnum.manager;
   const activeTab = resolveWorkspaceTab(requestedTab, isManagerOrAdmin);
   const isWorkItemsTab = activeTab === 'work-items';
   const isSprintsTab = activeTab === 'sprints' && isManagerOrAdmin;
-  const shouldLoadSprints = shouldFetchProjectSprints({
+  const isDetailsTab = activeTab === 'details';
+
+  return {
+    activeTab,
     isWorkItemsTab,
     isSprintsTab,
+    isDetailsTab,
     isManagerOrAdmin,
-    activeTab,
-  });
-  const shouldLoadTeams = shouldFetchProjectTeams({
-    activeTab,
-    isManagerOrAdmin,
-  });
-  const shouldLoadWorkItems = shouldFetchProjectWorkItems({ activeTab });
-  const shouldLoadUsers = shouldFetchAllUsers(activeTab);
-  const sprintListStatus = resolveSprintListStatusForTab(
-    isWorkItemsTab,
-    searchParams
-  );
-  const sprintsLimit = resolveSprintsFetchLimit(
-    isSprintsTab,
-    isWorkItemsTab,
-    limit
-  );
-  const sprintsPage = isSprintsTab ? page : 1;
-  const sprintsSearch = isSprintsTab ? search : undefined;
-  const teamsPage = activeTab === 'teams' ? page : 1;
-  const teamsLimit = activeTab === 'teams' ? limit : 1;
-  const teamsSearch = activeTab === 'teams' ? search : undefined;
-  const parsedRecordStatus = parseWorkItemRecordStatus(searchParams);
-  const workItemRecordStatus = resolveWorkItemRecordStatusForRole({
-    isManagerOrAdmin,
-    isWorkItemsTab,
-    parsedRecordStatus,
-  });
+    page,
+    limit,
+    search,
+    type,
+    assigneeId,
+    labels,
+    sprintId,
+    listView,
+    teamStatus,
+    shouldLoadSprints: shouldFetchProjectSprints({
+      isWorkItemsTab,
+      isSprintsTab,
+      isManagerOrAdmin,
+      activeTab,
+    }),
+    shouldLoadTeams: shouldFetchProjectTeams({
+      activeTab,
+      isManagerOrAdmin,
+    }),
+    shouldLoadWorkItems: shouldFetchProjectWorkItems({ activeTab }),
+    shouldLoadUsers: shouldFetchAllUsers(activeTab),
+    sprintListStatus: resolveSprintListStatusForTab(
+      isWorkItemsTab,
+      searchParams
+    ),
+    sprintsLimit: resolveSprintsFetchLimit(isSprintsTab, isWorkItemsTab, limit),
+    sprintsPage: isSprintsTab ? page : 1,
+    sprintsSearch: isSprintsTab ? search : undefined,
+    teamsPage: activeTab === 'teams' ? page : 1,
+    teamsLimit: activeTab === 'teams' ? limit : 1,
+    teamsSearch: activeTab === 'teams' ? search : undefined,
+    workItemRecordStatus: resolveWorkItemRecordStatusForRole({
+      isManagerOrAdmin,
+      isWorkItemsTab,
+      parsedRecordStatus: parseWorkItemRecordStatus(searchParams),
+    }),
+  };
+}
+
+function workItemsFromBundleCounts(totalCount: number): WorkItemsResult {
+  return {
+    workItems: [],
+    totalCount,
+    page: 1,
+    limit: 1,
+    totalPages: 1,
+  };
+}
+
+function teamsFromBundleCounts(totalCount: number): TeamsResult {
+  return {
+    teams: [],
+    totalCount,
+    page: 1,
+    limit: 1,
+    totalPages: 1,
+  };
+}
+
+function sprintsFromBundleCounts(totalCount: number): PaginatedSprints {
+  return {
+    sprints: [],
+    pagination: {
+      page: 1,
+      limit: 1,
+      totalCount,
+      totalPages: 1,
+    },
+  };
+}
+
+async function loadProjectWorkspaceSlices(options: {
+  readonly projectId: string;
+  readonly plan: ProjectWorkspacePlan;
+  readonly bundle: ProjectWorkspaceBundlePayload | null;
+}): Promise<{
+  readonly members: ProjectMemberWithUser[];
+  readonly allUsers: Awaited<ReturnType<typeof getUserList>>;
+  readonly workItemsResult: WorkItemsResult;
+  readonly teamsResult: TeamsResult;
+  readonly sprintsResult: PaginatedSprints;
+  readonly boardRuleTeams: Team[];
+}> {
+  const { projectId, plan, bundle } = options;
+  const useRpcCounts = Boolean(bundle) && plan.isDetailsTab;
 
   const [
     members,
@@ -529,78 +604,146 @@ export async function getProjectWorkspace(
     sprintsResult,
     boardRuleTeams,
   ] = await Promise.all([
-    safeServerFetch(
-      getProjectMembers(projectId),
-      [] as ProjectMemberWithUser[],
-      'load project members'
-    ),
-    fetchProjectUsers(shouldLoadUsers),
+    bundle
+      ? Promise.resolve(bundle.members)
+      : safeServerFetch(
+          getProjectMembers(projectId),
+          [] as ProjectMemberWithUser[],
+          'load project members'
+        ),
+    fetchProjectUsers(plan.shouldLoadUsers),
     fetchProjectWorkItemsBundle({
-      shouldLoad: shouldLoadWorkItems,
-      isWorkItemsTab,
-      page,
-      limit,
-      search,
+      shouldLoad: plan.shouldLoadWorkItems && !useRpcCounts,
+      isWorkItemsTab: plan.isWorkItemsTab,
+      page: plan.page,
+      limit: plan.limit,
+      search: plan.search,
       projectId,
-      type,
-      assigneeId,
-      labels,
-      sprintId,
-      recordStatus: workItemRecordStatus,
-      listView,
+      type: plan.type,
+      assigneeId: plan.assigneeId,
+      labels: plan.labels,
+      sprintId: plan.sprintId,
+      recordStatus: plan.workItemRecordStatus,
+      listView: plan.listView,
     }),
     fetchProjectTeamsBundle({
-      shouldLoad: shouldLoadTeams,
-      page: teamsPage,
-      limit: teamsLimit,
-      status: teamStatus,
-      search: teamsSearch,
+      shouldLoad: plan.shouldLoadTeams && !useRpcCounts,
+      page: plan.teamsPage,
+      limit: plan.teamsLimit,
+      status: plan.teamStatus,
+      search: plan.teamsSearch,
       projectId,
     }),
     fetchProjectSprintsBundle({
-      shouldLoad: shouldLoadSprints,
-      status: sprintListStatus,
-      page: sprintsPage,
-      limit: sprintsLimit,
-      search: sprintsSearch,
+      shouldLoad: plan.shouldLoadSprints && !useRpcCounts,
+      status: plan.sprintListStatus,
+      page: plan.sprintsPage,
+      limit: plan.sprintsLimit,
+      search: plan.sprintsSearch,
       projectId,
     }),
     fetchBoardRuleTeams(
-      activeTab === 'workflow' && isManagerOrAdmin,
+      plan.activeTab === 'workflow' && plan.isManagerOrAdmin,
       projectId
     ),
   ]);
 
+  if (!useRpcCounts || !bundle) {
+    return {
+      members,
+      allUsers,
+      workItemsResult,
+      teamsResult,
+      sprintsResult,
+      boardRuleTeams,
+    };
+  }
+
+  return {
+    members,
+    allUsers,
+    workItemsResult: workItemsFromBundleCounts(bundle.workItemTotal),
+    teamsResult: teamsFromBundleCounts(bundle.teamTotal),
+    sprintsResult: sprintsFromBundleCounts(bundle.sprintTotal),
+    boardRuleTeams,
+  };
+}
+
+/**
+ * M4.2 / M8 — RSC loader for the project detail surface.
+ * Prefers `get_project_workspace_bundle` for project + members + badge counts;
+ * tab list pages stay on PostgREST. Gates heavy loads behind ACL.
+ */
+export async function getProjectWorkspace(
+  projectId: string,
+  searchParams: RawSearchParams,
+  options?: GetProjectWorkspaceOptions
+): Promise<ProjectWorkspaceResult> {
+  const preloaded = options?.project ?? null;
+  const [dbUser, fetchedProject] = await Promise.all([
+    getDbUser(),
+    preloaded
+      ? Promise.resolve(preloaded)
+      : safeServerFetch(
+          getProjectDetails(projectId),
+          null,
+          'load project details'
+        ),
+  ]);
+
+  if (!fetchedProject) {
+    return null;
+  }
+
+  if (!dbUser) {
+    return { access: 'denied', project: fetchedProject };
+  }
+
+  const allowed = await canAccessProjectWorkspace(dbUser.id, projectId);
+  if (!allowed) {
+    console.warn('warn. project workspace access denied: role gate');
+    return { access: 'denied', project: fetchedProject };
+  }
+
+  const plan = buildProjectWorkspacePlan(searchParams, dbUser.role);
+  const bundle = await getProjectWorkspaceBundleFromRpc(projectId);
+  const project = preloaded ?? bundle?.project ?? fetchedProject;
+  const slices = await loadProjectWorkspaceSlices({
+    projectId,
+    plan,
+    bundle,
+  });
+
   return {
     access: 'allowed',
     project,
-    members,
-    allUsers,
+    members: slices.members,
+    allUsers: slices.allUsers,
     currentUserId: dbUser.id,
     currentUserRole: dbUser.role,
-    workItems: toWorkItemsPayload(workItemsResult, {
-      active: isWorkItemsTab,
-      defaultLimit: limit,
-      search,
-      typeFilter: type ?? '',
-      assigneeFilter: assigneeId ?? '',
-      sprintFilter: sprintId ?? '',
-      labelsFilter: labels ?? [],
-      listView,
-      tab: workItemRecordStatus,
+    workItems: toWorkItemsPayload(slices.workItemsResult, {
+      active: plan.isWorkItemsTab,
+      defaultLimit: plan.limit,
+      search: plan.search,
+      typeFilter: plan.type ?? '',
+      assigneeFilter: plan.assigneeId ?? '',
+      sprintFilter: plan.sprintId ?? '',
+      labelsFilter: plan.labels ?? [],
+      listView: plan.listView,
+      tab: plan.workItemRecordStatus,
     }),
-    teams: toTeamsPayload(teamsResult, {
-      active: activeTab === 'teams',
-      defaultLimit: limit,
-      search,
-      status: teamStatus,
+    teams: toTeamsPayload(slices.teamsResult, {
+      active: plan.activeTab === 'teams',
+      defaultLimit: plan.limit,
+      search: plan.search,
+      status: plan.teamStatus,
     }),
-    sprints: toSprintsPayload(sprintsResult, {
-      active: isSprintsTab || isWorkItemsTab,
-      defaultLimit: limit,
-      search,
-      filterTab: sprintListStatus,
+    sprints: toSprintsPayload(slices.sprintsResult, {
+      active: plan.isSprintsTab || plan.isWorkItemsTab,
+      defaultLimit: plan.limit,
+      search: plan.search,
+      filterTab: plan.sprintListStatus,
     }),
-    boardRuleTeams,
+    boardRuleTeams: slices.boardRuleTeams,
   };
 }
