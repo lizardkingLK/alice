@@ -1,5 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
-import { runPaginatedSelect, throwIfError } from '@/lib/db/query';
+import {
+  isMissingRpcError,
+  runPaginatedSelect,
+  throwIfError,
+} from '@/lib/db/query';
 import {
   workItemDetailPostgrestSelect,
   workItemListSelect,
@@ -314,11 +318,7 @@ export async function getWorkItemsHierarchyPageFromRpc(
   });
 
   if (error) {
-    // PGRST202 = function not in schema cache (migration not applied yet).
-    if (
-      error.code === 'PGRST202' ||
-      /could not find the function/i.test(error.message)
-    ) {
+    if (isMissingRpcError(error)) {
       return null;
     }
     throwIfError(

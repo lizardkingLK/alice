@@ -32,25 +32,6 @@ async function loadChildrenForParent(
   return result.children;
 }
 
-function initialExpandedRootIds(
-  roots: readonly DbWorkItem[],
-  children: ReadonlyMap<string, readonly DbWorkItem[]>
-): Set<string> {
-  // Focus drilldown is a single root with a seeded subtree — open it locally.
-  if (roots.length !== 1) {
-    return new Set();
-  }
-  const rootId = roots[0]?.id;
-  if (!rootId) {
-    return new Set();
-  }
-  const kids = children.get(rootId);
-  if (!kids?.length) {
-    return new Set();
-  }
-  return new Set([rootId]);
-}
-
 export function useWorkItemHierarchy({
   enabled,
   roots,
@@ -60,12 +41,7 @@ export function useWorkItemHierarchy({
   const [childrenByParentId, setChildrenByParentId] = useState<
     Map<string, DbWorkItem[]>
   >(() => childrenByParentIdToMap(initialChildrenByParentId));
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() =>
-    initialExpandedRootIds(
-      roots,
-      childrenByParentIdToMap(initialChildrenByParentId)
-    )
-  );
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [loadingIds, setLoadingIds] = useState<Set<string>>(() => new Set());
 
   /** Reset expand cache when the set of root ids changes (filters/nav), not on row edits. */
@@ -75,11 +51,10 @@ export function useWorkItemHierarchy({
   );
 
   useEffect(() => {
-    const seeded = childrenByParentIdToMap(initialChildrenByParentId);
-    setChildrenByParentId(seeded);
-    setExpandedIds(initialExpandedRootIds(roots, seeded));
+    setExpandedIds(new Set());
+    setChildrenByParentId(childrenByParentIdToMap(initialChildrenByParentId));
     setLoadingIds(new Set());
-  }, [rootIdsKey, enabled, initialChildrenByParentId, roots]);
+  }, [rootIdsKey, enabled, initialChildrenByParentId]);
 
   const ensureChildrenLoaded = useCallback(
     async (parentId: string): Promise<DbWorkItem[]> => {
