@@ -44,7 +44,11 @@ export default async function ProjectDetailsPage({
       projectId={id}
     >
       <Suspense fallback={<ProjectDetailsSkeleton sidebarOpen={sidebarOpen} />}>
-        <ProjectDetailsData projectId={id} searchParams={searchParams} />
+        <ProjectDetailsData
+          projectId={id}
+          project={project}
+          searchParams={searchParams}
+        />
       </Suspense>
     </DashboardShell>
   );

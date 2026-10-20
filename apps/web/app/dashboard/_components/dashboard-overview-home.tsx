@@ -19,6 +19,7 @@ import {
 } from '@/app/dashboard/_helpers/productivity-dashboard-preferences';
 import type { ProductivityDashboardBootstrap } from '@/app/dashboard/_types/productivity-dashboard.types';
 import type { ChartWorkspaceRecord } from '@/app/charts/_components/charts.types';
+import type { PrefetchedChartSeriesEntry } from '@/app/charts/_helpers/charts-series-cache-key';
 
 type DashboardOverviewHomeProps = {
   readonly userId: string;
@@ -34,6 +35,8 @@ type DashboardOverviewHomeProps = {
   }>;
   readonly productivityBootstrap: ProductivityDashboardBootstrap;
   readonly initialPreferences: ProductivityDashboardPreferences;
+  /** RSC-prefetched pie series for the first Overview chart slide. */
+  readonly prefetchedChartSeries?: readonly PrefetchedChartSeriesEntry[];
 };
 
 export function DashboardOverviewHome({
@@ -43,6 +46,7 @@ export function DashboardOverviewHome({
   accessibleSprints = [],
   productivityBootstrap,
   initialPreferences,
+  prefetchedChartSeries = [],
 }: Readonly<DashboardOverviewHomeProps>) {
   const hasChartSlides = slides.length > 0;
   const [preferences, setPreferences] =
@@ -111,6 +115,7 @@ export function DashboardOverviewHome({
             accessibleSprints={accessibleSprints}
             hideCustomizeButton
             onActiveSlideChange={setActiveChartSlideId}
+            prefetchedChartSeries={prefetchedChartSeries}
           />
         )}
       </div>

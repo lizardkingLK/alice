@@ -2,11 +2,11 @@
 
 How Alice keeps dashboard pages fast, what has already been optimized, and the roadmap for further wins.
 
-| Field        | Value                                                                                      |
-| ------------ | ------------------------------------------------------------------------------------------ |
-| Status       | **Living**                                                                                 |
-| Last updated | 2026-10-20 (M8.2 backlog `get_backlog_workspace_bundle` RPC; next discussion RT)           |
-| Scope        | `apps/web` RSC data loading, `apps/api` auth + **mutation** latency, Express Prisma writes |
+| Field        | Value                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------- |
+| Status       | **Living**                                                                                  |
+| Last updated | 2026-10-20 (M8 project workspace RPC + dashboard chart series prefetch; next discussion RT) |
+| Scope        | `apps/web` RSC data loading, `apps/api` auth + **mutation** latency, Express Prisma writes  |
 
 Related:
 
@@ -249,16 +249,21 @@ Production stack colocated in APAC (2026-07-23):
 
 Serverless functions no longer execute in US-East while the database runs in Sydney — RSC/API Supabase reads use Singapore → Sydney instead of New York → Sydney.
 
-### 2.11 Project workspace loader (M4.2)
+### 2.11 Project workspace loader (M4.2 / M8)
 
-`/projects/[id]` fans out to details, members, users dropdown, and project-scoped work items. Loading is centralized and streamed:
+`/projects/[id]` packs project + members + badge counts in
+`get_project_workspace_bundle` (after ACL). The shell reuses its breadcrumb
+`getProject` so the workspace does not fetch the project twice. Tab list pages
+(work items / teams / sprints) stay on PostgREST. Users dropdown stays cached.
 
-| Piece              | Location                                                              |
-| ------------------ | --------------------------------------------------------------------- |
-| Workspace loader   | `apps/web/app/projects/_services/project-workspace.server.ts`         |
-| Async RSC boundary | `apps/web/app/projects/[id]/_components/project-details-data.tsx`     |
-| Skeleton           | `apps/web/app/projects/[id]/_components/project-details-skeleton.tsx` |
-| Route shell        | `apps/web/app/projects/[id]/page.tsx` + `loading.tsx`                 |
+| Piece              | Location                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| Workspace loader   | `apps/web/app/projects/_services/projects.reads.workspace.server.ts`                 |
+| Bundle RPC caller  | `apps/web/app/projects/_services/projects.reads.workspace-bundle.supabase.server.ts` |
+| Migration          | `packages/db/prisma/migrations/add_project_workspace_bundle_rpc/`                    |
+| Async RSC boundary | `apps/web/app/projects/[id]/_components/project-details-data.tsx`                    |
+| Skeleton           | `apps/web/app/projects/[id]/_components/project-details-skeleton.tsx`                |
+| Route shell        | `apps/web/app/projects/[id]/page.tsx` + `loading.tsx`                                |
 
 ### 2.12 Detail / board / profile streaming (M3 follow-on)
 
@@ -379,7 +384,7 @@ Targeting sub-1.5s. Ordered by impact-to-effort.
 
 **Shipped for existing features (2026-07-24 / 2026-08-14 / 2026-10-16).** Dashboard **reads** default to RSC supabase-js (M1). Matching Express **Prisma** list/detail GETs were restored as an optional twin for `DATA_READS_VIA_API` ([DATA_RETRIEVAL.md](../architecture/DATA_RETRIEVAL.md)) — see §6 **Plan (toggle)**. API **table mutations** use Prisma Client. Paginated RSC lists share `runPaginatedSelect`. New surfaces should adopt §3 patterns as they land. **Do not move RSC page reads onto Prisma by default.**
 
-**Current focus:** **discussion realtime** after M8.2 backlog RPC. Hierarchy list packed children + backlog workspace RPC + board desc + ancestors one-trip are done. See [REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md).
+**Current focus:** **discussion realtime**. Hierarchy + backlog/project workspace RPCs + dashboard first-slide chart series prefetch are done. See [REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md).
 
 **RLS reminder:** M1 reads run with the `authenticated` role and RLS unenforced. Before enabling RLS, add SELECT policies for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members`. Dropdown cache (§2.7) uses the **service-role** client inside `unstable_cache` only.
 
@@ -391,16 +396,16 @@ Classic M4 (“one Express workspace GET”) was superseded by named RSC loaders
 
 ### Audit
 
-| Route                                  | Parallel reads                                      | Status      | Notes                                                    |
-| -------------------------------------- | --------------------------------------------------- | ----------- | -------------------------------------------------------- |
-| `/backlog`                             | 2 cached lists + 1 workspace RPC (fallback: 3 REST) | ✅ Shipped  | `getBacklogWorkspace()` + `get_backlog_workspace_bundle` |
-| `/projects/[id]`                       | 4 — details, members, users, work items             | ✅ Shipped  | `getProjectWorkspace(id)` + Suspense (§2.11)             |
-| `/work-items/[id]`                     | 2 — item + discussion                               | ✅ Shipped  | `getWorkItemDiscussion` + Suspense (§2.9 / §2.12)        |
-| `/manager`                             | 4                                                   | N/A         | Dropdown caching (M5) + list Suspense sufficient         |
-| `/work-items`, `/projects`, `/sprints` | 3                                                   | N/A         | M1 + Promise.all + M3                                    |
-| `/board`                               | 1                                                   | ✅ Streamed | Suspense + skeleton (§2.12); no multi-read fan-out       |
-| `/profile`                             | auth + teams + worked-on                            | ✅ Streamed | Suspense + skeleton (§2.12)                              |
-| `/dashboard`                           | 2 — sprints list + default burndown                 | ✅ Streamed | `getDashboardBurndownBootstrap()` + Suspense (§2.12)     |
+| Route                                  | Parallel reads                                          | Status      | Notes                                                    |
+| -------------------------------------- | ------------------------------------------------------- | ----------- | -------------------------------------------------------- |
+| `/backlog`                             | 2 cached lists + 1 workspace RPC (fallback: 3 REST)     | ✅ Shipped  | `getBacklogWorkspace()` + `get_backlog_workspace_bundle` |
+| `/projects/[id]`                       | shell project + ACL + workspace RPC (fallback parallel) | ✅ Shipped  | `get_project_workspace_bundle` + Suspense (§2.11)        |
+| `/work-items/[id]`                     | 2 — item + discussion                                   | ✅ Shipped  | `getWorkItemDiscussion` + Suspense (§2.9 / §2.12)        |
+| `/manager`                             | 4                                                       | N/A         | Dropdown caching (M5) + list Suspense sufficient         |
+| `/work-items`, `/projects`, `/sprints` | 3                                                       | N/A         | M1 + Promise.all + M3                                    |
+| `/board`                               | 1                                                       | ✅ Streamed | Suspense + skeleton (§2.12); no multi-read fan-out       |
+| `/profile`                             | auth + teams + worked-on                                | ✅ Streamed | Suspense + skeleton (§2.12)                              |
+| `/dashboard`                           | 2 — sprints list + default burndown                     | ✅ Streamed | `getDashboardBurndownBootstrap()` + Suspense (§2.12)     |
 
 ### Delivered
 
@@ -612,7 +617,8 @@ If a page is slow because it fires four independent simple `select`s, fix fan-ou
 | `/board`                     | Parallelized; **no** description JSON on list load (card preview empty)                                                                       | Optional plain-text preview column later                                | `board-data.tsx`                                  |
 | `/work-items/[id]`           | Ancestors: **one** nested PostgREST embed (was up to 3 sequential)                                                                            | —                                                                       | `getWorkItemAncestors` / `work-item-ancestors.ts` |
 | `/work-items?view=hierarchy` | **`get_work_items_hierarchy_page` RPC** (DFS / 100-row budget + search panel ids) + list-row hydrate by id; in-memory fallback if RPC missing | Apply `add_work_items_hierarchy_page_rpc`; re-measure TTFB              | `getWorkItemsHierarchyPageFromRpc` / migration    |
-| `/projects/[id]`             | Unchanged                                                                                                                                     | Same fan-out pattern as backlog                                         | `getProjectWorkspace(id)`                         |
+| `/projects/[id]`             | **`get_project_workspace_bundle` RPC** (project + members + badge counts); shell reuses project; tab lists stay PostgREST                     | Re-measure TTFB after migrate                                           | `getProjectWorkspaceBundleFromRpc` / migration    |
+| `/dashboard` charts          | Active slide **pie series RSC-prefetched** + client cache seed; productivity project list deduped                                             | Prefetch nested-donut / burndown; other slides on visit                 | `prefetchDashboardSlideChartSeries`               |
 | API joined reads after write | Moved to **§9 W1 / W3**                                                                                                                       | Return Prisma rows instead of supabase `getById` on mutation happy path | Repositories that `getById` after `prisma.*`      |
 
 **Out of scope for M8:** Auth, Storage (chat history, attachment signed URLs), cron, GitHub proxy. Prisma does not replace those. Also out of scope: swapping Prisma into RSC **just** to share a client with API mutations. Post-write follow-up reads belong to the **write track (§9)**, not M8.
