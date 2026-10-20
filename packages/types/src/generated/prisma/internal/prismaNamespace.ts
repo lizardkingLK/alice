@@ -404,6 +404,7 @@ export const ModelName = {
   team_members: 'team_members',
   sprints: 'sprints',
   work_items: 'work_items',
+  work_item_links: 'work_item_links',
   activities: 'activities',
   sprint_burndown_rollups: 'sprint_burndown_rollups',
   work_item_chart_rollups: 'work_item_chart_rollups',
@@ -438,7 +439,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "jira_connections" | "chat_conversations" | "chat_attachments" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "github_pull_requests" | "integrations"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "jira_connections" | "chat_conversations" | "chat_attachments" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "github_pull_requests" | "integrations"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -957,6 +958,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.work_itemsCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.Work_itemsCountAggregateOutputType> | number
+        }
+      }
+    }
+    work_item_links: {
+      payload: Prisma.$work_item_linksPayload<ExtArgs>
+      fields: Prisma.work_item_linksFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.work_item_linksFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_linksPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.work_item_linksFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_linksPayload>
+        }
+        findFirst: {
+          args: Prisma.work_item_linksFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_linksPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.work_item_linksFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_linksPayload>
+        }
+        findMany: {
+          args: Prisma.work_item_linksFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_linksPayload>[]
+        }
+        create: {
+          args: Prisma.work_item_linksCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_linksPayload>
+        }
+        createMany: {
+          args: Prisma.work_item_linksCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.work_item_linksCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_linksPayload>[]
+        }
+        delete: {
+          args: Prisma.work_item_linksDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_linksPayload>
+        }
+        update: {
+          args: Prisma.work_item_linksUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_linksPayload>
+        }
+        deleteMany: {
+          args: Prisma.work_item_linksDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.work_item_linksUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.work_item_linksUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_linksPayload>[]
+        }
+        upsert: {
+          args: Prisma.work_item_linksUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_linksPayload>
+        }
+        aggregate: {
+          args: Prisma.Work_item_linksAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWork_item_links>
+        }
+        groupBy: {
+          args: Prisma.work_item_linksGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Work_item_linksGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.work_item_linksCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Work_item_linksCountAggregateOutputType> | number
         }
       }
     }
@@ -2549,6 +2624,19 @@ export const Work_itemsScalarFieldEnum = {
 export type Work_itemsScalarFieldEnum = (typeof Work_itemsScalarFieldEnum)[keyof typeof Work_itemsScalarFieldEnum]
 
 
+export const Work_item_linksScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  source_id: 'source_id',
+  target_id: 'target_id',
+  link_type: 'link_type',
+  created_by: 'created_by',
+  created_at: 'created_at'
+} as const
+
+export type Work_item_linksScalarFieldEnum = (typeof Work_item_linksScalarFieldEnum)[keyof typeof Work_item_linksScalarFieldEnum]
+
+
 export const ActivitiesScalarFieldEnum = {
   id: 'id',
   work_item_id: 'work_item_id',
@@ -3098,6 +3186,20 @@ export type ListEnumWorkItemStatusFieldRefInput<$PrismaModel> = FieldRefInputTyp
 
 
 /**
+ * Reference to a field of type 'WorkItemLinkType'
+ */
+export type EnumWorkItemLinkTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WorkItemLinkType'>
+    
+
+
+/**
+ * Reference to a field of type 'WorkItemLinkType[]'
+ */
+export type ListEnumWorkItemLinkTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WorkItemLinkType[]'>
+    
+
+
+/**
  * Reference to a field of type 'ActivityAction'
  */
 export type EnumActivityActionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ActivityAction'>
@@ -3394,6 +3496,7 @@ export type GlobalOmitConfig = {
   team_members?: Prisma.team_membersOmit
   sprints?: Prisma.sprintsOmit
   work_items?: Prisma.work_itemsOmit
+  work_item_links?: Prisma.work_item_linksOmit
   activities?: Prisma.activitiesOmit
   sprint_burndown_rollups?: Prisma.sprint_burndown_rollupsOmit
   work_item_chart_rollups?: Prisma.work_item_chart_rollupsOmit

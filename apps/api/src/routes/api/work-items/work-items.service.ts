@@ -39,6 +39,10 @@ import {
   WORK_ITEM_GITHUB_STATUS_MESSAGES,
   type WorkItemGithubConfigStatus,
   parseWorkItemLabels,
+  canonicalWorkItemLinkPair,
+  createWorkItemLinkBodySchema,
+  type CreateWorkItemLinkBody,
+  type WorkItemLinkListItem,
 } from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { env } from '../../../config/env';
@@ -76,6 +80,7 @@ import {
 } from '../github/github.types';
 import { prisma } from '../../../lib/prisma';
 import { decryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
+import { Prisma } from '@repo/types/prisma';
 
 async function requireAdmin(actorId: string) {
   return await requireUserWithRole(
@@ -881,6 +886,7 @@ export class WorkItemService {
         workflow.edge,
         workflow.destinationState
       );
+      await this.assertWorkflowRequireLinkedIssues(workItemId, workflow.edge);
     }
   }
 
@@ -1182,6 +1188,24 @@ export class WorkItemService {
       if (mismatched > 0) {
         throw new WorkItemValidationError(
           `Cannot move while ${mismatched} subtask${mismatched === 1 ? ' is' : 's are'} not in the target state. Align children first.`
+        );
+      }
+    }
+  }
+
+  private async assertWorkflowRequireLinkedIssues(
+    workItemId: string,
+    edge: WorkflowEdge | null
+  ): Promise<void> {
+    if (!edge || edge.requireLinkedIssues === 'off') {
+      return;
+    }
+
+    if (edge.requireLinkedIssues === 'unlink_first') {
+      const linkCount = await this.workItems.countRelatedLinks(workItemId);
+      if (linkCount > 0) {
+        throw new WorkItemValidationError(
+          `Cannot move while ${linkCount} linked issue${linkCount === 1 ? ' remains' : 's remain'}. Unlink them first.`
         );
       }
     }
@@ -2021,5 +2045,105 @@ export class WorkItemService {
   ): Promise<void> {
     await this.workItems.requireProjectMember(workItemId, actorId);
     await this.workItems.unlinkPR(workItemId, prId);
+  }
+
+  async listWorkItemLinks(
+    actorId: string,
+    workItemId: string
+  ): Promise<WorkItemLinkListItem[]> {
+    await this.workItems.requireProjectMember(workItemId, actorId);
+    return this.workItems.listLinksForWorkItem(workItemId);
+  }
+
+  async createWorkItemLink(
+    actorId: string,
+    workItemId: string,
+    body: CreateWorkItemLinkBody
+  ): Promise<WorkItemLinkListItem> {
+    const parsed = createWorkItemLinkBodySchema.safeParse(body);
+    if (!parsed.success) {
+      throw new WorkItemValidationError('Invalid link payload');
+    }
+
+    await this.workItems.requireProjectMember(workItemId, actorId);
+
+    if (parsed.data.target_id === workItemId) {
+      throw new WorkItemValidationError('Cannot link a work item to itself');
+    }
+
+    const current = await this.workItems.getById(workItemId);
+    const targetRow = await prisma.work_items.findUnique({
+      where: { id: parsed.data.target_id },
+      select: {
+        id: true,
+        project_id: true,
+        record_status: true,
+      },
+    });
+    if (!targetRow) {
+      throw new WorkItemValidationError('Target work item not found');
+    }
+
+    if (current.project_id !== targetRow.project_id) {
+      throw new WorkItemValidationError(
+        'Linked issues must belong to the same project'
+      );
+    }
+
+    if (
+      current.record_status !== 'active' ||
+      targetRow.record_status !== 'active'
+    ) {
+      throw new WorkItemValidationError('Only active work items can be linked');
+    }
+
+    const { sourceId, targetId } = canonicalWorkItemLinkPair(
+      workItemId,
+      parsed.data.target_id
+    );
+
+    try {
+      return await this.workItems.createRelatesToLink({
+        projectId: current.project_id,
+        sourceId,
+        targetId,
+        createdBy: actorId,
+        perspectiveWorkItemId: workItemId,
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        // Idempotent: row already exists (e.g. unlink UI raced / stale client).
+        const existing = await this.workItems.findRelatesToLink(
+          sourceId,
+          targetId,
+          workItemId
+        );
+        if (existing) {
+          return existing;
+        }
+        throw new WorkItemValidationError(
+          'These work items are already linked'
+        );
+      }
+      throw error;
+    }
+  }
+
+  async deleteWorkItemLink(
+    actorId: string,
+    workItemId: string,
+    linkId: string
+  ): Promise<void> {
+    await this.workItems.requireProjectMember(workItemId, actorId);
+    const deleted = await this.workItems.deleteLinkForWorkItem(
+      workItemId,
+      linkId
+    );
+    if (!deleted) {
+      throw new WorkItemValidationError('Link not found');
+    }
   }
 }

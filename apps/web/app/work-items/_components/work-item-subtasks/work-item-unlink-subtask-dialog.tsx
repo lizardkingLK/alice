@@ -81,6 +81,7 @@ export function UnlinkSubtaskButton({
       size="icon-sm"
       className="text-muted-foreground hover:text-destructive cursor-pointer"
       aria-label="Unlink subtask"
+      title="Unlink subtask"
       onClick={onClick}
     >
       <Unlink2 />

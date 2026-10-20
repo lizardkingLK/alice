@@ -24,9 +24,11 @@ import {
 import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
 import {
   WORKFLOW_REQUIRE_CHILDREN,
+  WORKFLOW_REQUIRE_LINKED_ISSUES,
   type WorkflowDocument,
   type WorkflowEdge,
   type WorkflowRequireChildren,
+  type WorkflowRequireLinkedIssues,
   type WorkflowResolutionPreset,
   type WorkflowStateNode,
 } from '@repo/types/api/v1';
@@ -68,6 +70,7 @@ type WorkflowEdgeChangeHandler = (
     Pick<
       WorkflowEdge,
       | 'requireChildren'
+      | 'requireLinkedIssues'
       | 'allowAnyOf'
       | 'requiresEscalation'
       | 'resolutionPresetId'
@@ -121,6 +124,14 @@ const REQUIRE_CHILDREN_LABELS: Record<WorkflowRequireChildren, string> = {
   off: 'Off',
   all_complete: 'All complete',
   match_parent_target: 'Match parent target',
+};
+
+const REQUIRE_LINKED_ISSUES_LABELS: Record<
+  WorkflowRequireLinkedIssues,
+  string
+> = {
+  off: 'Off',
+  unlink_first: 'Unlink first',
 };
 
 function typeBindingsSummary(
@@ -493,6 +504,37 @@ function EdgeSettingsForm({
             {WORKFLOW_REQUIRE_CHILDREN.map((option) => (
               <SelectItem key={option} value={option}>
                 {REQUIRE_CHILDREN_LABELS[option]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <FieldLabel
+          htmlFor="workflow-edge-require-linked-issues"
+          label="Require linked issues"
+          tip="Off — no check. Unlink first — remove all relates-to peer links before this move. (Match-parent is not offered for linked issues — undirected peers would deadlock.)"
+        />
+        <Select
+          value={edge.requireLinkedIssues}
+          disabled={!canEdit}
+          onValueChange={(value) => {
+            if (!value) {
+              return;
+            }
+            onEdgeChange(edge.id, {
+              requireLinkedIssues: value as WorkflowRequireLinkedIssues,
+            });
+          }}
+        >
+          <SelectTrigger id="workflow-edge-require-linked-issues">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {WORKFLOW_REQUIRE_LINKED_ISSUES.map((option) => (
+              <SelectItem key={option} value={option}>
+                {REQUIRE_LINKED_ISSUES_LABELS[option]}
               </SelectItem>
             ))}
           </SelectContent>

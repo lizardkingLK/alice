@@ -75,6 +75,11 @@ export type sprints = Prisma.sprintsModel
  */
 export type work_items = Prisma.work_itemsModel
 /**
+ * Model work_item_links
+ * Undirected peer link; writers store canonical id order (source < target).
+ */
+export type work_item_links = Prisma.work_item_linksModel
+/**
  * Model activities
  * Append-only timeline of field changes, transitions, and side effects on a work item.
  */

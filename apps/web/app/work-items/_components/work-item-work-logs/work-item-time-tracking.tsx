@@ -127,6 +127,7 @@ export function WorkItemTimeTracking({
             size="icon-sm"
             className="cursor-pointer"
             aria-label="Log work"
+            title="Log work"
             onClick={onLogWorkClick}
           >
             <Plus />

@@ -14,6 +14,10 @@ import {
   type PatchWorkItemStatusBody,
   type WorkItemLifecycleActionBody,
 } from '@repo/types/api/v1';
+import {
+  createWorkItemLinkBodySchema,
+  type WorkItemLinkListItem,
+} from '@repo/types';
 import { ResponseDTO } from '@repo/types/connection';
 
 const workItemsPath = '/api/work-items';
@@ -147,4 +151,44 @@ export async function unlinkPR(
   await apiFetch<void>(`${workItemsPath}/${workItemId}/github/${prId}`, {
     method: 'DELETE',
   });
+}
+
+export async function createWorkItemLink(
+  workItemId: string,
+  targetId: string
+): Promise<WorkItemLinkListItem> {
+  const parsed = createWorkItemLinkBodySchema.safeParse({
+    target_id: targetId,
+  });
+  if (!parsed.success) {
+    throw new Error(formatZodError(parsed.error));
+  }
+
+  const result = await apiFetch<ResponseDTO<WorkItemLinkListItem>>(
+    `${workItemsPath}/${workItemId}/links`,
+    {
+      method: 'POST',
+      body: JSON.stringify(parsed.data),
+    }
+  );
+  if (!result.data) {
+    const message =
+      typeof result.error === 'string' && result.error.trim()
+        ? result.error
+        : 'Failed to create link';
+    throw new Error(message);
+  }
+  return result.data;
+}
+
+export async function deleteWorkItemLink(
+  workItemId: string,
+  linkId: string
+): Promise<void> {
+  await apiFetch<{ success: boolean }>(
+    `${workItemsPath}/${workItemId}/links/${linkId}`,
+    {
+      method: 'DELETE',
+    }
+  );
 }

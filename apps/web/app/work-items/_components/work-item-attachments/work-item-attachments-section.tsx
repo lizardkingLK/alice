@@ -671,6 +671,7 @@ export function AttachmentsSection({
             size="icon-sm"
             className="cursor-pointer"
             aria-label="Add attachment"
+            title="Add attachment"
             onClick={() => onUploadOpenChange(true)}
           >
             <Plus />

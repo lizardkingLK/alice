@@ -117,6 +117,16 @@ describe('workflow-designer.layout', () => {
     expect(patched?.allowAnyOf).toEqual([{ scope: 'role', role: 'manager' }]);
   });
 
+  it('patches edge requireLinkedIssues', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const edgeId = workflow.graph.edges[0]!.id;
+    const next = patchEdgeInDocument(workflow, edgeId, {
+      requireLinkedIssues: 'unlink_first',
+    });
+    const patched = next.graph.edges.find((edge) => edge.id === edgeId);
+    expect(patched?.requireLinkedIssues).toBe('unlink_first');
+  });
+
   it('updates layout handles on reconnect without changing graph edges', () => {
     // Arrange
     const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
@@ -224,6 +234,7 @@ describe('workflow-designer.layout', () => {
       requiresEscalation: false,
       resolutionPresetId: null,
       requireChildren: 'off',
+      requireLinkedIssues: 'off',
     });
   });
 

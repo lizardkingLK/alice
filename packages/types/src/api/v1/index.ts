@@ -35,6 +35,7 @@ export {
 export {
   WORKFLOW_CONFIG_SCHEMA_VERSION,
   WORKFLOW_REQUIRE_CHILDREN,
+  WORKFLOW_REQUIRE_LINKED_ISSUES,
   createSeededDefaultWorkflowConfig,
   findWorkflowById,
   mergeWorkflowEnvelopeIntoProjectConfig,
@@ -58,6 +59,7 @@ export {
   type WorkflowDocument,
   type WorkflowEdge,
   type WorkflowRequireChildren,
+  type WorkflowRequireLinkedIssues,
   type WorkflowResolutionPreset,
   type WorkflowStateNode,
 } from './workflow-config.js';

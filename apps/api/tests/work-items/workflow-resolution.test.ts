@@ -39,6 +39,7 @@ describe('workflow-resolution', () => {
       requiresEscalation: false,
       resolutionPresetId: 'preset-1',
       requireChildren: 'off' as const,
+      requireLinkedIssues: 'off' as const,
     };
     const source = {
       id: 'a',
