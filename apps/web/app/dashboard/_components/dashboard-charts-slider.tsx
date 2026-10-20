@@ -39,6 +39,8 @@ import type {
 } from '@/app/charts/_components/charts.types';
 import { syncChartWorkspaceToApi } from '@/app/charts/_services/charts.mutations.client';
 import { resolveChartsDescription } from '@/app/charts/_helpers/charts-description';
+import { ChartSeriesCacheSeed } from '@/app/charts/_components/chart-series-cache-seed';
+import type { PrefetchedChartSeriesEntry } from '@/app/charts/_helpers/charts-series-cache-key';
 
 type DashboardChartsSliderProps = {
   readonly slides: readonly ChartWorkspaceRecord[];
@@ -55,6 +57,8 @@ type DashboardChartsSliderProps = {
   readonly hideCustomizeButton?: boolean;
   // eslint-disable-next-line no-unused-vars -- active slide callback
   readonly onActiveSlideChange?: (slideId: string | null) => void;
+  /** RSC-prefetched pie series for the first slide (seeded into client cache). */
+  readonly prefetchedChartSeries?: readonly PrefetchedChartSeriesEntry[];
 };
 
 function DashboardChartsSliderEmpty() {
@@ -237,6 +241,7 @@ export function DashboardChartsSlider({
   accessibleSprints = [],
   hideCustomizeButton = false,
   onActiveSlideChange,
+  prefetchedChartSeries = [],
 }: Readonly<DashboardChartsSliderProps>) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [visited, setVisited] = useState<ReadonlySet<string>>(
@@ -283,104 +288,108 @@ export function DashboardChartsSlider({
   const showToolbar = showSlider || showCustomize;
 
   return (
-    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4">
-      {showToolbar ? (
-        <div
-          className={cn(
-            'flex w-full shrink-0 items-center gap-2',
-            showSlider ? undefined : 'justify-end'
-          )}
-        >
-          {showSlider ? (
-            <div className="flex min-w-0 flex-1 justify-center">
-              <div className="flex max-w-full min-w-0 items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-sm"
-                  className="shrink-0 cursor-pointer"
-                  disabled={safeIndex <= 0}
-                  aria-label="Previous workspace"
-                  onClick={() => goTo(safeIndex - 1)}
-                >
-                  <ChevronLeft className="size-4" />
-                </Button>
-                <div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
-                  {slideTabs.map((tab) => (
-                    <Button
-                      key={tab.id}
-                      type="button"
-                      variant={tab.index === safeIndex ? 'default' : 'outline'}
-                      size="sm"
-                      className="max-w-56 cursor-pointer"
-                      title={tab.description}
-                      onClick={() => goTo(tab.index)}
-                    >
-                      <TruncatedText className="min-w-0">
-                        {tab.title}
-                      </TruncatedText>
-                    </Button>
-                  ))}
+    <ChartSeriesCacheSeed entries={prefetchedChartSeries}>
+      <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4">
+        {showToolbar ? (
+          <div
+            className={cn(
+              'flex w-full shrink-0 items-center gap-2',
+              showSlider ? undefined : 'justify-end'
+            )}
+          >
+            {showSlider ? (
+              <div className="flex min-w-0 flex-1 justify-center">
+                <div className="flex max-w-full min-w-0 items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon-sm"
+                    className="shrink-0 cursor-pointer"
+                    disabled={safeIndex <= 0}
+                    aria-label="Previous workspace"
+                    onClick={() => goTo(safeIndex - 1)}
+                  >
+                    <ChevronLeft className="size-4" />
+                  </Button>
+                  <div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
+                    {slideTabs.map((tab) => (
+                      <Button
+                        key={tab.id}
+                        type="button"
+                        variant={
+                          tab.index === safeIndex ? 'default' : 'outline'
+                        }
+                        size="sm"
+                        className="max-w-56 cursor-pointer"
+                        title={tab.description}
+                        onClick={() => goTo(tab.index)}
+                      >
+                        <TruncatedText className="min-w-0">
+                          {tab.title}
+                        </TruncatedText>
+                      </Button>
+                    ))}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon-sm"
+                    className="shrink-0 cursor-pointer"
+                    disabled={safeIndex >= slides.length - 1}
+                    aria-label="Next workspace"
+                    onClick={() => goTo(safeIndex + 1)}
+                  >
+                    <ChevronRight className="size-4" />
+                  </Button>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-sm"
-                  className="shrink-0 cursor-pointer"
-                  disabled={safeIndex >= slides.length - 1}
-                  aria-label="Next workspace"
-                  onClick={() => goTo(safeIndex + 1)}
-                >
-                  <ChevronRight className="size-4" />
-                </Button>
               </div>
-            </div>
-          ) : null}
-          {showCustomize && customizeHref ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  asChild
-                  variant="ghost"
-                  size="icon-sm"
-                  className="shrink-0 cursor-pointer"
-                >
-                  <Link href={customizeHref} aria-label="Customize">
-                    <SlidersHorizontal className="size-4" />
-                  </Link>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Customize</TooltipContent>
-            </Tooltip>
-          ) : null}
-        </div>
-      ) : null}
+            ) : null}
+            {showCustomize && customizeHref ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="icon-sm"
+                    className="shrink-0 cursor-pointer"
+                  >
+                    <Link href={customizeHref} aria-label="Customize">
+                      <SlidersHorizontal className="size-4" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Customize</TooltipContent>
+              </Tooltip>
+            ) : null}
+          </div>
+        ) : null}
 
-      <div className="relative min-h-0 flex-1">
-        {slides.map((slide, index) => {
-          if (!visited.has(slide.id) && index !== safeIndex) {
-            return null;
-          }
-          return (
-            <div
-              key={slide.id}
-              className={cn(
-                'absolute inset-0 flex min-h-0 flex-col',
-                index === safeIndex
-                  ? 'z-10'
-                  : 'pointer-events-none invisible z-0'
-              )}
-              aria-hidden={index !== safeIndex}
-            >
-              <DashboardSlideBoard
-                slide={slide}
-                accessibleProjects={accessibleProjects}
-                accessibleSprints={accessibleSprints}
-              />
-            </div>
-          );
-        })}
+        <div className="relative min-h-0 flex-1">
+          {slides.map((slide, index) => {
+            if (!visited.has(slide.id) && index !== safeIndex) {
+              return null;
+            }
+            return (
+              <div
+                key={slide.id}
+                className={cn(
+                  'absolute inset-0 flex min-h-0 flex-col',
+                  index === safeIndex
+                    ? 'z-10'
+                    : 'pointer-events-none invisible z-0'
+                )}
+                aria-hidden={index !== safeIndex}
+              >
+                <DashboardSlideBoard
+                  slide={slide}
+                  accessibleProjects={accessibleProjects}
+                  accessibleSprints={accessibleSprints}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </ChartSeriesCacheSeed>
   );
 }

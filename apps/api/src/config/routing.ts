@@ -14,6 +14,7 @@ import {
   profile,
   projects,
   pusher,
+  reports,
   root,
   savedViews,
   sprints,
@@ -42,6 +43,7 @@ routesConfig.use('/api/notifications', notifications.router);
 routesConfig.use('/api/profile', profile.router);
 routesConfig.use('/api/projects', projects.router);
 routesConfig.use('/api/pusher', pusher.router);
+routesConfig.use('/api/reports', reports.router);
 routesConfig.use('/api/saved-views', savedViews.router);
 routesConfig.use('/api/sprints', sprints.router);
 routesConfig.use('/api/teams', teams.router);
@@ -49,6 +51,7 @@ routesConfig.use('/api/users', users.router);
 routesConfig.use('/api/work-items', workItems.router);
 routesConfig.use('/api/worklogs', worklogs.router);
 
+routesConfig.use('/api/v1/access-allowlist', accessAllowlist.router);
 routesConfig.use('/api/v1/attachments', attachments.router);
 routesConfig.use('/api/v1/charts', charts.router);
 routesConfig.use('/api/v1/chat', chat.router);
@@ -58,6 +61,7 @@ routesConfig.use('/api/v1/health', health.v1Router);
 routesConfig.use('/api/v1/integrations', integrations.router);
 routesConfig.use('/api/v1/profile', profile.router);
 routesConfig.use('/api/v1/projects', projects.router);
+routesConfig.use('/api/v1/reports', reports.router);
 routesConfig.use('/api/v1/saved-views', savedViews.router);
 routesConfig.use('/api/v1/sprints', sprints.router);
 routesConfig.use('/api/v1/teams', teams.router);

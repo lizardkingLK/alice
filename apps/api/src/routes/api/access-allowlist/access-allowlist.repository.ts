@@ -13,8 +13,12 @@ import {
 } from '../../../lib/optimistic-lock';
 import {
   Database,
+  accessAllowlistListSelect,
   isValidAccessAllowlistDomain,
   normalizeAccessAllowlistDomain,
+  paginationMeta,
+  type ListAccessAllowlistQuery,
+  type PaginationMeta,
   type Tables,
   type Json,
 } from '@repo/types';
@@ -27,6 +31,10 @@ import { SupabaseClient } from '@supabase/supabase-js';
 export type AccessAllowlistRow = Tables<'access_allowlist'>;
 export type AccessAllowlistKind = Tables<'access_allowlist'>['kind'];
 export type AccessAllowlistStatus = RecordStatus;
+
+export type AccessAllowlistPaginatedList = {
+  items: AccessAllowlistRow[];
+} & PaginationMeta;
 
 function normalizeEmail(value: string): string {
   return value.trim().toLowerCase();
@@ -69,6 +77,52 @@ function toAccessAllowlistRow(row: {
 export class AccessAllowlistRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
+  /**
+   * Prisma-only list for Express GET (parity with RSC `listAccessAllowlist`).
+   */
+  async listPaginated(
+    query: ListAccessAllowlistQuery
+  ): Promise<AccessAllowlistPaginatedList> {
+    const where: Prisma.access_allowlistWhereInput = {};
+
+    if (query.status !== 'all') {
+      where.status = query.status;
+    }
+
+    const term = query.search?.trim();
+    if (term) {
+      where.OR = [
+        { value: { contains: term, mode: 'insensitive' } },
+        { label: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+
+    const skip = (query.page - 1) * query.limit;
+    const take = query.limit;
+
+    try {
+      const [rows, totalCount] = await Promise.all([
+        prisma.access_allowlist.findMany({
+          where,
+          select: accessAllowlistListSelect,
+          orderBy: { created_at: 'desc' },
+          skip,
+          take,
+        }),
+        prisma.access_allowlist.count({ where }),
+      ]);
+
+      return {
+        items: rows.map((row) => toAccessAllowlistRow(row)),
+        ...paginationMeta(totalCount, query.page, query.limit),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to list access allowlist:', message);
+      throw new Error('Failed to list access allowlist');
+    }
+  }
+
   async findById(id: string): Promise<AccessAllowlistRow | null> {
     const { data, error } = await this.db
       .from('access_allowlist')
@@ -85,6 +139,27 @@ export class AccessAllowlistRepository {
     }
 
     return data as AccessAllowlistRow | null;
+  }
+
+  /** Post-mutation / optimistic-lock row via Prisma (no PostgREST hop). */
+  async getMutationRowById(id: string): Promise<AccessAllowlistRow | null> {
+    try {
+      const row = await prisma.access_allowlist.findUnique({
+        where: { id },
+        select: accessAllowlistListSelect,
+      });
+      if (!row) {
+        return null;
+      }
+      return toAccessAllowlistRow(row);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(
+        'error. failed to get access_allowlist mutation row:',
+        message
+      );
+      throw new Error('Failed to find access allowlist entry');
+    }
   }
 
   async findActiveDomainByValue(
@@ -200,8 +275,8 @@ export class AccessAllowlistRepository {
 
     return resolveOptimisticPrismaUpdate({
       count,
-      fetchUpdated: () => this.findById(params.id),
-      fetchCurrent: () => this.findById(params.id),
+      fetchUpdated: () => this.getMutationRowById(params.id),
+      fetchCurrent: () => this.getMutationRowById(params.id),
       notFoundMessage: 'Access allowlist entry not found',
     });
   }
@@ -221,7 +296,7 @@ export class AccessAllowlistRepository {
       return;
     }
 
-    const current = await this.findById(params.id);
+    const current = await this.getMutationRowById(params.id);
     if (!current) {
       throw new Error('Access allowlist entry not found');
     }

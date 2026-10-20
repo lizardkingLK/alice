@@ -275,6 +275,7 @@ export type usersWhereInput = {
   updated_sprints?: Prisma.SprintsListRelationFilter
   created_work_items?: Prisma.Work_itemsListRelationFilter
   updated_work_items?: Prisma.Work_itemsListRelationFilter
+  created_work_item_links?: Prisma.Work_item_linksListRelationFilter
   created_comments?: Prisma.CommentsListRelationFilter
   updated_comments?: Prisma.CommentsListRelationFilter
   created_attachments?: Prisma.AttachmentsListRelationFilter
@@ -347,6 +348,7 @@ export type usersOrderByWithRelationInput = {
   updated_sprints?: Prisma.sprintsOrderByRelationAggregateInput
   created_work_items?: Prisma.work_itemsOrderByRelationAggregateInput
   updated_work_items?: Prisma.work_itemsOrderByRelationAggregateInput
+  created_work_item_links?: Prisma.work_item_linksOrderByRelationAggregateInput
   created_comments?: Prisma.commentsOrderByRelationAggregateInput
   updated_comments?: Prisma.commentsOrderByRelationAggregateInput
   created_attachments?: Prisma.attachmentsOrderByRelationAggregateInput
@@ -422,6 +424,7 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   updated_sprints?: Prisma.SprintsListRelationFilter
   created_work_items?: Prisma.Work_itemsListRelationFilter
   updated_work_items?: Prisma.Work_itemsListRelationFilter
+  created_work_item_links?: Prisma.Work_item_linksListRelationFilter
   created_comments?: Prisma.CommentsListRelationFilter
   updated_comments?: Prisma.CommentsListRelationFilter
   created_attachments?: Prisma.AttachmentsListRelationFilter
@@ -530,6 +533,7 @@ export type usersCreateInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -600,6 +604,7 @@ export type usersUncheckedCreateInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -670,6 +675,7 @@ export type usersUpdateInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -740,6 +746,7 @@ export type usersUncheckedUpdateInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -1323,6 +1330,22 @@ export type usersUpdateOneWithoutUpdated_work_itemsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutUpdated_work_itemsInput, Prisma.usersUpdateWithoutUpdated_work_itemsInput>, Prisma.usersUncheckedUpdateWithoutUpdated_work_itemsInput>
 }
 
+export type usersCreateNestedOneWithoutCreated_work_item_linksInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutCreated_work_item_linksInput, Prisma.usersUncheckedCreateWithoutCreated_work_item_linksInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutCreated_work_item_linksInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersUpdateOneWithoutCreated_work_item_linksNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutCreated_work_item_linksInput, Prisma.usersUncheckedCreateWithoutCreated_work_item_linksInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutCreated_work_item_linksInput
+  upsert?: Prisma.usersUpsertWithoutCreated_work_item_linksInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutCreated_work_item_linksInput, Prisma.usersUpdateWithoutCreated_work_item_linksInput>, Prisma.usersUncheckedUpdateWithoutCreated_work_item_linksInput>
+}
+
 export type usersCreateNestedOneWithoutActivitiesInput = {
   create?: Prisma.XOR<Prisma.usersCreateWithoutActivitiesInput, Prisma.usersUncheckedCreateWithoutActivitiesInput>
   connectOrCreate?: Prisma.usersCreateOrConnectWithoutActivitiesInput
@@ -1869,6 +1892,7 @@ export type usersCreateWithoutCreated_usersInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -1938,6 +1962,7 @@ export type usersUncheckedCreateWithoutCreated_usersInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -2012,6 +2037,7 @@ export type usersCreateWithoutCreatorInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -2081,6 +2107,7 @@ export type usersUncheckedCreateWithoutCreatorInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -2160,6 +2187,7 @@ export type usersCreateWithoutUpdated_usersInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -2229,6 +2257,7 @@ export type usersUncheckedCreateWithoutUpdated_usersInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -2303,6 +2332,7 @@ export type usersCreateWithoutUpdaterInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -2372,6 +2402,7 @@ export type usersUncheckedCreateWithoutUpdaterInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -2462,6 +2493,7 @@ export type usersUpdateWithoutCreated_usersInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -2531,6 +2563,7 @@ export type usersUncheckedUpdateWithoutCreated_usersInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -2646,6 +2679,7 @@ export type usersUpdateWithoutUpdated_usersInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -2715,6 +2749,7 @@ export type usersUncheckedUpdateWithoutUpdated_usersInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -2800,6 +2835,7 @@ export type usersCreateWithoutOwned_projectsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -2869,6 +2905,7 @@ export type usersUncheckedCreateWithoutOwned_projectsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -2943,6 +2980,7 @@ export type usersCreateWithoutCreated_projectsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -3012,6 +3050,7 @@ export type usersUncheckedCreateWithoutCreated_projectsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -3086,6 +3125,7 @@ export type usersCreateWithoutUpdated_projectsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -3155,6 +3195,7 @@ export type usersUncheckedCreateWithoutUpdated_projectsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -3240,6 +3281,7 @@ export type usersUpdateWithoutOwned_projectsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -3309,6 +3351,7 @@ export type usersUncheckedUpdateWithoutOwned_projectsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -3389,6 +3432,7 @@ export type usersUpdateWithoutCreated_projectsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -3458,6 +3502,7 @@ export type usersUncheckedUpdateWithoutCreated_projectsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -3538,6 +3583,7 @@ export type usersUpdateWithoutUpdated_projectsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -3607,6 +3653,7 @@ export type usersUncheckedUpdateWithoutUpdated_projectsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -3676,6 +3723,7 @@ export type usersCreateWithoutProject_membershipsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -3745,6 +3793,7 @@ export type usersUncheckedCreateWithoutProject_membershipsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -3819,6 +3868,7 @@ export type usersCreateWithoutCreated_project_membersInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -3888,6 +3938,7 @@ export type usersUncheckedCreateWithoutCreated_project_membersInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -3962,6 +4013,7 @@ export type usersCreateWithoutUpdated_project_membersInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -4031,6 +4083,7 @@ export type usersUncheckedCreateWithoutUpdated_project_membersInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -4116,6 +4169,7 @@ export type usersUpdateWithoutProject_membershipsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -4185,6 +4239,7 @@ export type usersUncheckedUpdateWithoutProject_membershipsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -4265,6 +4320,7 @@ export type usersUpdateWithoutCreated_project_membersInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -4334,6 +4390,7 @@ export type usersUncheckedUpdateWithoutCreated_project_membersInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -4414,6 +4471,7 @@ export type usersUpdateWithoutUpdated_project_membersInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -4483,6 +4541,7 @@ export type usersUncheckedUpdateWithoutUpdated_project_membersInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -4552,6 +4611,7 @@ export type usersCreateWithoutManaged_teamsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -4621,6 +4681,7 @@ export type usersUncheckedCreateWithoutManaged_teamsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -4695,6 +4756,7 @@ export type usersCreateWithoutCreated_teamsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -4764,6 +4826,7 @@ export type usersUncheckedCreateWithoutCreated_teamsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -4838,6 +4901,7 @@ export type usersCreateWithoutUpdated_teamsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -4907,6 +4971,7 @@ export type usersUncheckedCreateWithoutUpdated_teamsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -4992,6 +5057,7 @@ export type usersUpdateWithoutManaged_teamsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -5061,6 +5127,7 @@ export type usersUncheckedUpdateWithoutManaged_teamsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -5141,6 +5208,7 @@ export type usersUpdateWithoutCreated_teamsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -5210,6 +5278,7 @@ export type usersUncheckedUpdateWithoutCreated_teamsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -5290,6 +5359,7 @@ export type usersUpdateWithoutUpdated_teamsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -5359,6 +5429,7 @@ export type usersUncheckedUpdateWithoutUpdated_teamsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -5428,6 +5499,7 @@ export type usersCreateWithoutTeam_membershipsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -5497,6 +5569,7 @@ export type usersUncheckedCreateWithoutTeam_membershipsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -5571,6 +5644,7 @@ export type usersCreateWithoutReporting_linesInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -5640,6 +5714,7 @@ export type usersUncheckedCreateWithoutReporting_linesInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -5714,6 +5789,7 @@ export type usersCreateWithoutCreated_team_membersInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -5783,6 +5859,7 @@ export type usersUncheckedCreateWithoutCreated_team_membersInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -5857,6 +5934,7 @@ export type usersCreateWithoutUpdated_team_membersInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -5926,6 +6004,7 @@ export type usersUncheckedCreateWithoutUpdated_team_membersInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -6011,6 +6090,7 @@ export type usersUpdateWithoutTeam_membershipsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -6080,6 +6160,7 @@ export type usersUncheckedUpdateWithoutTeam_membershipsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -6160,6 +6241,7 @@ export type usersUpdateWithoutReporting_linesInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -6229,6 +6311,7 @@ export type usersUncheckedUpdateWithoutReporting_linesInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -6309,6 +6392,7 @@ export type usersUpdateWithoutCreated_team_membersInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -6378,6 +6462,7 @@ export type usersUncheckedUpdateWithoutCreated_team_membersInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -6458,6 +6543,7 @@ export type usersUpdateWithoutUpdated_team_membersInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -6527,6 +6613,7 @@ export type usersUncheckedUpdateWithoutUpdated_team_membersInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -6596,6 +6683,7 @@ export type usersCreateWithoutCreated_sprintsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -6665,6 +6753,7 @@ export type usersUncheckedCreateWithoutCreated_sprintsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -6739,6 +6828,7 @@ export type usersCreateWithoutUpdated_sprintsInput = {
   created_sprints?: Prisma.sprintsCreateNestedManyWithoutCreated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -6808,6 +6898,7 @@ export type usersUncheckedCreateWithoutUpdated_sprintsInput = {
   created_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -6893,6 +6984,7 @@ export type usersUpdateWithoutCreated_sprintsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -6962,6 +7054,7 @@ export type usersUncheckedUpdateWithoutCreated_sprintsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -7042,6 +7135,7 @@ export type usersUpdateWithoutUpdated_sprintsInput = {
   created_sprints?: Prisma.sprintsUpdateManyWithoutCreated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -7111,6 +7205,7 @@ export type usersUncheckedUpdateWithoutUpdated_sprintsInput = {
   created_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -7180,6 +7275,7 @@ export type usersCreateWithoutAssigned_work_itemsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -7249,6 +7345,7 @@ export type usersUncheckedCreateWithoutAssigned_work_itemsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -7323,6 +7420,7 @@ export type usersCreateWithoutReported_work_itemsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -7392,6 +7490,7 @@ export type usersUncheckedCreateWithoutReported_work_itemsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -7466,6 +7565,7 @@ export type usersCreateWithoutCreated_work_itemsInput = {
   created_sprints?: Prisma.sprintsCreateNestedManyWithoutCreated_by_userInput
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -7535,6 +7635,7 @@ export type usersUncheckedCreateWithoutCreated_work_itemsInput = {
   created_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -7609,6 +7710,7 @@ export type usersCreateWithoutUpdated_work_itemsInput = {
   created_sprints?: Prisma.sprintsCreateNestedManyWithoutCreated_by_userInput
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -7678,6 +7780,7 @@ export type usersUncheckedCreateWithoutUpdated_work_itemsInput = {
   created_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -7763,6 +7866,7 @@ export type usersUpdateWithoutAssigned_work_itemsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -7832,6 +7936,7 @@ export type usersUncheckedUpdateWithoutAssigned_work_itemsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -7912,6 +8017,7 @@ export type usersUpdateWithoutReported_work_itemsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -7981,6 +8087,7 @@ export type usersUncheckedUpdateWithoutReported_work_itemsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -8061,6 +8168,7 @@ export type usersUpdateWithoutCreated_work_itemsInput = {
   created_sprints?: Prisma.sprintsUpdateManyWithoutCreated_by_userNestedInput
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -8130,6 +8238,7 @@ export type usersUncheckedUpdateWithoutCreated_work_itemsInput = {
   created_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -8210,6 +8319,7 @@ export type usersUpdateWithoutUpdated_work_itemsInput = {
   created_sprints?: Prisma.sprintsUpdateManyWithoutCreated_by_userNestedInput
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -8279,6 +8389,303 @@ export type usersUncheckedUpdateWithoutUpdated_work_itemsInput = {
   created_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersCreateWithoutCreated_work_item_linksInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
+  created_users?: Prisma.usersCreateNestedManyWithoutCreatorInput
+  updater?: Prisma.usersCreateNestedOneWithoutUpdated_usersInput
+  updated_users?: Prisma.usersCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutUserInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutActorInput
+  created_projects?: Prisma.projectsCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
+  jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersUncheckedCreateWithoutCreated_work_item_linksInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  created_users?: Prisma.usersUncheckedCreateNestedManyWithoutCreatorInput
+  updated_users?: Prisma.usersUncheckedCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersUncheckedCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersUncheckedCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutUserInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutActorInput
+  created_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersCreateOrConnectWithoutCreated_work_item_linksInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutCreated_work_item_linksInput, Prisma.usersUncheckedCreateWithoutCreated_work_item_linksInput>
+}
+
+export type usersUpsertWithoutCreated_work_item_linksInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutCreated_work_item_linksInput, Prisma.usersUncheckedUpdateWithoutCreated_work_item_linksInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutCreated_work_item_linksInput, Prisma.usersUncheckedCreateWithoutCreated_work_item_linksInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutCreated_work_item_linksInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutCreated_work_item_linksInput, Prisma.usersUncheckedUpdateWithoutCreated_work_item_linksInput>
+}
+
+export type usersUpdateWithoutCreated_work_item_linksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
+  created_users?: Prisma.usersUpdateManyWithoutCreatorNestedInput
+  updater?: Prisma.usersUpdateOneWithoutUpdated_usersNestedInput
+  updated_users?: Prisma.usersUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUpdateManyWithoutUserNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutActorNestedInput
+  created_projects?: Prisma.projectsUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersUncheckedUpdateWithoutCreated_work_item_linksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  created_users?: Prisma.usersUncheckedUpdateManyWithoutCreatorNestedInput
+  updated_users?: Prisma.usersUncheckedUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUncheckedUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUncheckedUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUncheckedUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUncheckedUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutUserNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutActorNestedInput
+  created_projects?: Prisma.projectsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -8348,6 +8755,7 @@ export type usersCreateWithoutActivitiesInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -8417,6 +8825,7 @@ export type usersUncheckedCreateWithoutActivitiesInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -8502,6 +8911,7 @@ export type usersUpdateWithoutActivitiesInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -8571,6 +8981,7 @@ export type usersUncheckedUpdateWithoutActivitiesInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -8640,6 +9051,7 @@ export type usersCreateWithoutChart_rollup_assignmentsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -8709,6 +9121,7 @@ export type usersUncheckedCreateWithoutChart_rollup_assignmentsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -8794,6 +9207,7 @@ export type usersUpdateWithoutChart_rollup_assignmentsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -8863,6 +9277,7 @@ export type usersUncheckedUpdateWithoutChart_rollup_assignmentsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -8932,6 +9347,7 @@ export type usersCreateWithoutChart_hierarchy_rollup_assignmentsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -9001,6 +9417,7 @@ export type usersUncheckedCreateWithoutChart_hierarchy_rollup_assignmentsInput =
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -9086,6 +9503,7 @@ export type usersUpdateWithoutChart_hierarchy_rollup_assignmentsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -9155,6 +9573,7 @@ export type usersUncheckedUpdateWithoutChart_hierarchy_rollup_assignmentsInput =
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -9224,6 +9643,7 @@ export type usersCreateWithoutWork_item_worklogsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -9293,6 +9713,7 @@ export type usersUncheckedCreateWithoutWork_item_worklogsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -9378,6 +9799,7 @@ export type usersUpdateWithoutWork_item_worklogsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -9447,6 +9869,7 @@ export type usersUncheckedUpdateWithoutWork_item_worklogsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -9516,6 +9939,7 @@ export type usersCreateWithoutCommentsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -9585,6 +10009,7 @@ export type usersUncheckedCreateWithoutCommentsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -9660,6 +10085,7 @@ export type usersCreateWithoutCreated_commentsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
   updated_attachments?: Prisma.attachmentsCreateNestedManyWithoutUpdated_by_userInput
@@ -9729,6 +10155,7 @@ export type usersUncheckedCreateWithoutCreated_commentsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -9803,6 +10230,7 @@ export type usersCreateWithoutUpdated_commentsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
   updated_attachments?: Prisma.attachmentsCreateNestedManyWithoutUpdated_by_userInput
@@ -9872,6 +10300,7 @@ export type usersUncheckedCreateWithoutUpdated_commentsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -9956,6 +10385,7 @@ export type usersUpdateWithoutCommentsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -10025,6 +10455,7 @@ export type usersUncheckedUpdateWithoutCommentsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -10106,6 +10537,7 @@ export type usersUpdateWithoutCreated_commentsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
   updated_attachments?: Prisma.attachmentsUpdateManyWithoutUpdated_by_userNestedInput
@@ -10175,6 +10607,7 @@ export type usersUncheckedUpdateWithoutCreated_commentsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -10255,6 +10688,7 @@ export type usersUpdateWithoutUpdated_commentsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
   updated_attachments?: Prisma.attachmentsUpdateManyWithoutUpdated_by_userNestedInput
@@ -10324,6 +10758,7 @@ export type usersUncheckedUpdateWithoutUpdated_commentsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -10392,6 +10827,7 @@ export type usersCreateWithoutAttachmentsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -10461,6 +10897,7 @@ export type usersUncheckedCreateWithoutAttachmentsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -10536,6 +10973,7 @@ export type usersCreateWithoutCreated_attachmentsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   updated_attachments?: Prisma.attachmentsCreateNestedManyWithoutUpdated_by_userInput
@@ -10605,6 +11043,7 @@ export type usersUncheckedCreateWithoutCreated_attachmentsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   updated_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -10679,6 +11118,7 @@ export type usersCreateWithoutUpdated_attachmentsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -10748,6 +11188,7 @@ export type usersUncheckedCreateWithoutUpdated_attachmentsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -10832,6 +11273,7 @@ export type usersUpdateWithoutAttachmentsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -10901,6 +11343,7 @@ export type usersUncheckedUpdateWithoutAttachmentsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -10982,6 +11425,7 @@ export type usersUpdateWithoutCreated_attachmentsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   updated_attachments?: Prisma.attachmentsUpdateManyWithoutUpdated_by_userNestedInput
@@ -11051,6 +11495,7 @@ export type usersUncheckedUpdateWithoutCreated_attachmentsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   updated_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -11131,6 +11576,7 @@ export type usersUpdateWithoutUpdated_attachmentsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -11200,6 +11646,7 @@ export type usersUncheckedUpdateWithoutUpdated_attachmentsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -11269,6 +11716,7 @@ export type usersCreateWithoutNotificationsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -11338,6 +11786,7 @@ export type usersUncheckedCreateWithoutNotificationsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -11412,6 +11861,7 @@ export type usersCreateWithoutCreated_notificationsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -11481,6 +11931,7 @@ export type usersUncheckedCreateWithoutCreated_notificationsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -11555,6 +12006,7 @@ export type usersCreateWithoutUpdated_notificationsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -11624,6 +12076,7 @@ export type usersUncheckedCreateWithoutUpdated_notificationsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -11709,6 +12162,7 @@ export type usersUpdateWithoutNotificationsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -11778,6 +12232,7 @@ export type usersUncheckedUpdateWithoutNotificationsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -11858,6 +12313,7 @@ export type usersUpdateWithoutCreated_notificationsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -11927,6 +12383,7 @@ export type usersUncheckedUpdateWithoutCreated_notificationsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -12007,6 +12464,7 @@ export type usersUpdateWithoutUpdated_notificationsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -12076,6 +12534,7 @@ export type usersUncheckedUpdateWithoutUpdated_notificationsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -12145,6 +12604,7 @@ export type usersCreateWithoutCreated_access_allowlistInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -12214,6 +12674,7 @@ export type usersUncheckedCreateWithoutCreated_access_allowlistInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -12288,6 +12749,7 @@ export type usersCreateWithoutUpdated_access_allowlistInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -12357,6 +12819,7 @@ export type usersUncheckedCreateWithoutUpdated_access_allowlistInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -12442,6 +12905,7 @@ export type usersUpdateWithoutCreated_access_allowlistInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -12511,6 +12975,7 @@ export type usersUncheckedUpdateWithoutCreated_access_allowlistInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -12591,6 +13056,7 @@ export type usersUpdateWithoutUpdated_access_allowlistInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -12660,6 +13126,7 @@ export type usersUncheckedUpdateWithoutUpdated_access_allowlistInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -12729,6 +13196,7 @@ export type usersCreateWithoutResolved_access_requestsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -12798,6 +13266,7 @@ export type usersUncheckedCreateWithoutResolved_access_requestsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -12883,6 +13352,7 @@ export type usersUpdateWithoutResolved_access_requestsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -12952,6 +13422,7 @@ export type usersUncheckedUpdateWithoutResolved_access_requestsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -13021,6 +13492,7 @@ export type usersCreateWithoutJira_connectionsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -13090,6 +13562,7 @@ export type usersUncheckedCreateWithoutJira_connectionsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -13175,6 +13648,7 @@ export type usersUpdateWithoutJira_connectionsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -13244,6 +13718,7 @@ export type usersUncheckedUpdateWithoutJira_connectionsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -13313,6 +13788,7 @@ export type usersCreateWithoutChat_conversationsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -13382,6 +13858,7 @@ export type usersUncheckedCreateWithoutChat_conversationsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -13467,6 +13944,7 @@ export type usersUpdateWithoutChat_conversationsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -13536,6 +14014,7 @@ export type usersUncheckedUpdateWithoutChat_conversationsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -13605,6 +14084,7 @@ export type usersCreateWithoutChat_attachmentsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -13674,6 +14154,7 @@ export type usersUncheckedCreateWithoutChat_attachmentsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -13759,6 +14240,7 @@ export type usersUpdateWithoutChat_attachmentsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -13828,6 +14310,7 @@ export type usersUncheckedUpdateWithoutChat_attachmentsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -13897,6 +14380,7 @@ export type usersCreateWithoutOwned_saved_viewsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -13966,6 +14450,7 @@ export type usersUncheckedCreateWithoutOwned_saved_viewsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -14040,6 +14525,7 @@ export type usersCreateWithoutCreated_saved_viewsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -14109,6 +14595,7 @@ export type usersUncheckedCreateWithoutCreated_saved_viewsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -14183,6 +14670,7 @@ export type usersCreateWithoutUpdated_saved_viewsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -14252,6 +14740,7 @@ export type usersUncheckedCreateWithoutUpdated_saved_viewsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -14337,6 +14826,7 @@ export type usersUpdateWithoutOwned_saved_viewsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -14406,6 +14896,7 @@ export type usersUncheckedUpdateWithoutOwned_saved_viewsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -14486,6 +14977,7 @@ export type usersUpdateWithoutCreated_saved_viewsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -14555,6 +15047,7 @@ export type usersUncheckedUpdateWithoutCreated_saved_viewsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -14635,6 +15128,7 @@ export type usersUpdateWithoutUpdated_saved_viewsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -14704,6 +15198,7 @@ export type usersUncheckedUpdateWithoutUpdated_saved_viewsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -14773,6 +15268,7 @@ export type usersCreateWithoutSaved_view_sharesInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -14842,6 +15338,7 @@ export type usersUncheckedCreateWithoutSaved_view_sharesInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -14916,6 +15413,7 @@ export type usersCreateWithoutCreated_saved_view_sharesInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -14985,6 +15483,7 @@ export type usersUncheckedCreateWithoutCreated_saved_view_sharesInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -15059,6 +15558,7 @@ export type usersCreateWithoutUpdated_saved_view_sharesInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -15128,6 +15628,7 @@ export type usersUncheckedCreateWithoutUpdated_saved_view_sharesInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -15213,6 +15714,7 @@ export type usersUpdateWithoutSaved_view_sharesInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -15282,6 +15784,7 @@ export type usersUncheckedUpdateWithoutSaved_view_sharesInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -15362,6 +15865,7 @@ export type usersUpdateWithoutCreated_saved_view_sharesInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -15431,6 +15935,7 @@ export type usersUncheckedUpdateWithoutCreated_saved_view_sharesInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -15511,6 +16016,7 @@ export type usersUpdateWithoutUpdated_saved_view_sharesInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -15580,6 +16086,7 @@ export type usersUncheckedUpdateWithoutUpdated_saved_view_sharesInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -15649,6 +16156,7 @@ export type usersCreateWithoutOwned_chartsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -15718,6 +16226,7 @@ export type usersUncheckedCreateWithoutOwned_chartsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -15792,6 +16301,7 @@ export type usersCreateWithoutCreated_chartsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -15861,6 +16371,7 @@ export type usersUncheckedCreateWithoutCreated_chartsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -15935,6 +16446,7 @@ export type usersCreateWithoutUpdated_chartsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -16004,6 +16516,7 @@ export type usersUncheckedCreateWithoutUpdated_chartsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -16089,6 +16602,7 @@ export type usersUpdateWithoutOwned_chartsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -16158,6 +16672,7 @@ export type usersUncheckedUpdateWithoutOwned_chartsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -16238,6 +16753,7 @@ export type usersUpdateWithoutCreated_chartsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -16307,6 +16823,7 @@ export type usersUncheckedUpdateWithoutCreated_chartsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -16387,6 +16904,7 @@ export type usersUpdateWithoutUpdated_chartsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -16456,6 +16974,7 @@ export type usersUncheckedUpdateWithoutUpdated_chartsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -16525,6 +17044,7 @@ export type usersCreateWithoutChart_sharesInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -16594,6 +17114,7 @@ export type usersUncheckedCreateWithoutChart_sharesInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -16668,6 +17189,7 @@ export type usersCreateWithoutCreated_chart_sharesInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -16737,6 +17259,7 @@ export type usersUncheckedCreateWithoutCreated_chart_sharesInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -16811,6 +17334,7 @@ export type usersCreateWithoutUpdated_chart_sharesInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -16880,6 +17404,7 @@ export type usersUncheckedCreateWithoutUpdated_chart_sharesInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -16965,6 +17490,7 @@ export type usersUpdateWithoutChart_sharesInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -17034,6 +17560,7 @@ export type usersUncheckedUpdateWithoutChart_sharesInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -17114,6 +17641,7 @@ export type usersUpdateWithoutCreated_chart_sharesInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -17183,6 +17711,7 @@ export type usersUncheckedUpdateWithoutCreated_chart_sharesInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -17263,6 +17792,7 @@ export type usersUpdateWithoutUpdated_chart_sharesInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -17332,6 +17862,7 @@ export type usersUncheckedUpdateWithoutUpdated_chart_sharesInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -17401,6 +17932,7 @@ export type usersCreateWithoutCreated_integrationsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -17470,6 +18002,7 @@ export type usersUncheckedCreateWithoutCreated_integrationsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -17544,6 +18077,7 @@ export type usersCreateWithoutUpdated_integrationsInput = {
   updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
@@ -17613,6 +18147,7 @@ export type usersUncheckedCreateWithoutUpdated_integrationsInput = {
   updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
   created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
@@ -17698,6 +18233,7 @@ export type usersUpdateWithoutCreated_integrationsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -17767,6 +18303,7 @@ export type usersUncheckedUpdateWithoutCreated_integrationsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -17847,6 +18384,7 @@ export type usersUpdateWithoutUpdated_integrationsInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -17916,6 +18454,7 @@ export type usersUncheckedUpdateWithoutUpdated_integrationsInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -18014,6 +18553,7 @@ export type usersUpdateWithoutCreatorInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -18083,6 +18623,7 @@ export type usersUncheckedUpdateWithoutCreatorInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -18167,6 +18708,7 @@ export type usersUpdateWithoutUpdaterInput = {
   updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
@@ -18236,6 +18778,7 @@ export type usersUncheckedUpdateWithoutUpdaterInput = {
   updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
   created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -18313,6 +18856,7 @@ export type UsersCountOutputType = {
   updated_sprints: number
   created_work_items: number
   updated_work_items: number
+  created_work_item_links: number
   created_comments: number
   updated_comments: number
   created_attachments: number
@@ -18370,6 +18914,7 @@ export type UsersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   updated_sprints?: boolean | UsersCountOutputTypeCountUpdated_sprintsArgs
   created_work_items?: boolean | UsersCountOutputTypeCountCreated_work_itemsArgs
   updated_work_items?: boolean | UsersCountOutputTypeCountUpdated_work_itemsArgs
+  created_work_item_links?: boolean | UsersCountOutputTypeCountCreated_work_item_linksArgs
   created_comments?: boolean | UsersCountOutputTypeCountCreated_commentsArgs
   updated_comments?: boolean | UsersCountOutputTypeCountUpdated_commentsArgs
   created_attachments?: boolean | UsersCountOutputTypeCountCreated_attachmentsArgs
@@ -18596,6 +19141,13 @@ export type UsersCountOutputTypeCountCreated_work_itemsArgs<ExtArgs extends runt
  */
 export type UsersCountOutputTypeCountUpdated_work_itemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.work_itemsWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountCreated_work_item_linksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.work_item_linksWhereInput
 }
 
 /**
@@ -18831,6 +19383,7 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   updated_sprints?: boolean | Prisma.users$updated_sprintsArgs<ExtArgs>
   created_work_items?: boolean | Prisma.users$created_work_itemsArgs<ExtArgs>
   updated_work_items?: boolean | Prisma.users$updated_work_itemsArgs<ExtArgs>
+  created_work_item_links?: boolean | Prisma.users$created_work_item_linksArgs<ExtArgs>
   created_comments?: boolean | Prisma.users$created_commentsArgs<ExtArgs>
   updated_comments?: boolean | Prisma.users$updated_commentsArgs<ExtArgs>
   created_attachments?: boolean | Prisma.users$created_attachmentsArgs<ExtArgs>
@@ -18944,6 +19497,7 @@ export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   updated_sprints?: boolean | Prisma.users$updated_sprintsArgs<ExtArgs>
   created_work_items?: boolean | Prisma.users$created_work_itemsArgs<ExtArgs>
   updated_work_items?: boolean | Prisma.users$updated_work_itemsArgs<ExtArgs>
+  created_work_item_links?: boolean | Prisma.users$created_work_item_linksArgs<ExtArgs>
   created_comments?: boolean | Prisma.users$created_commentsArgs<ExtArgs>
   updated_comments?: boolean | Prisma.users$updated_commentsArgs<ExtArgs>
   created_attachments?: boolean | Prisma.users$created_attachmentsArgs<ExtArgs>
@@ -19014,6 +19568,7 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     updated_sprints: Prisma.$sprintsPayload<ExtArgs>[]
     created_work_items: Prisma.$work_itemsPayload<ExtArgs>[]
     updated_work_items: Prisma.$work_itemsPayload<ExtArgs>[]
+    created_work_item_links: Prisma.$work_item_linksPayload<ExtArgs>[]
     created_comments: Prisma.$commentsPayload<ExtArgs>[]
     updated_comments: Prisma.$commentsPayload<ExtArgs>[]
     created_attachments: Prisma.$attachmentsPayload<ExtArgs>[]
@@ -19479,6 +20034,7 @@ export interface Prisma__usersClient<T, Null = never, ExtArgs extends runtime.Ty
   updated_sprints<T extends Prisma.users$updated_sprintsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$updated_sprintsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$sprintsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   created_work_items<T extends Prisma.users$created_work_itemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$created_work_itemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$work_itemsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   updated_work_items<T extends Prisma.users$updated_work_itemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$updated_work_itemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$work_itemsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  created_work_item_links<T extends Prisma.users$created_work_item_linksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$created_work_item_linksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$work_item_linksPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   created_comments<T extends Prisma.users$created_commentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$created_commentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$commentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   updated_comments<T extends Prisma.users$updated_commentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$updated_commentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$commentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   created_attachments<T extends Prisma.users$created_attachmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$created_attachmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$attachmentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -20632,6 +21188,30 @@ export type users$updated_work_itemsArgs<ExtArgs extends runtime.Types.Extension
   take?: number
   skip?: number
   distinct?: Prisma.Work_itemsScalarFieldEnum | Prisma.Work_itemsScalarFieldEnum[]
+}
+
+/**
+ * users.created_work_item_links
+ */
+export type users$created_work_item_linksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the work_item_links
+   */
+  select?: Prisma.work_item_linksSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the work_item_links
+   */
+  omit?: Prisma.work_item_linksOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.work_item_linksInclude<ExtArgs> | null
+  where?: Prisma.work_item_linksWhereInput
+  orderBy?: Prisma.work_item_linksOrderByWithRelationInput | Prisma.work_item_linksOrderByWithRelationInput[]
+  cursor?: Prisma.work_item_linksWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Work_item_linksScalarFieldEnum | Prisma.Work_item_linksScalarFieldEnum[]
 }
 
 /**

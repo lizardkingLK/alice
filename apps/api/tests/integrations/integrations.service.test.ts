@@ -274,6 +274,78 @@ describe('IntegrationsService', () => {
     expect(models.every((model) => !('api_key' in model))).toBe(true);
   });
 
+  it('keeps multiple models for one provider separate without exposing or replacing their keys', async () => {
+    const secondOpenAiRow = {
+      ...integrationRow,
+      id: '22222222-2222-4222-8222-222222222222',
+      name: 'GPT-4o mini',
+      config: {
+        kind: 'chat_model' as const,
+        model: 'gpt-4o-mini',
+        display_label: 'GPT-4o mini',
+        api_key: 'v1:second-encrypted-key',
+      },
+      is_default: true,
+      sort_order: 1,
+    };
+    listActiveChatModelsMock.mockResolvedValue([
+      integrationRow,
+      secondOpenAiRow,
+    ]);
+    findByIdMock.mockResolvedValue(secondOpenAiRow);
+    updateMock.mockImplementation(async (data) => ({
+      ...secondOpenAiRow,
+      name: data.name ?? secondOpenAiRow.name,
+      config: data.config ?? secondOpenAiRow.config,
+    }));
+
+    const models = await service.listChatModels('admin-1');
+    const updated = await service.patchIntegration(
+      'admin-1',
+      secondOpenAiRow.id,
+      {
+        name: 'GPT-4o mini production',
+        config: {
+          kind: 'chat_model',
+          display_label: 'GPT-4o mini production',
+        },
+      }
+    );
+
+    expect(models).toEqual([
+      expect.objectContaining({
+        id: integrationRow.id,
+        provider: 'openai',
+        model: 'gpt-4o',
+        is_default: false,
+      }),
+      expect.objectContaining({
+        id: secondOpenAiRow.id,
+        provider: 'openai',
+        model: 'gpt-4o-mini',
+        is_default: true,
+      }),
+    ]);
+    expect(models.every((model) => !('api_key' in model))).toBe(true);
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: secondOpenAiRow.id,
+        config: expect.objectContaining({
+          model: 'gpt-4o-mini',
+          display_label: 'GPT-4o mini production',
+          api_key: 'v1:second-encrypted-key',
+        }),
+      })
+    );
+    expect(updated.config).toMatchObject({
+      model: 'gpt-4o-mini',
+      display_label: 'GPT-4o mini production',
+      has_api_key: true,
+    });
+    expect(updated.config).not.toHaveProperty('api_key');
+    expect(integrationRow.config.api_key).toBe('v1:encrypted');
+  });
+
   it('preserves existing secrets when patch omits api_key', async () => {
     findByIdMock.mockResolvedValue(integrationRow);
     updateMock.mockImplementation(async (data) => ({
@@ -370,6 +442,17 @@ describe('IntegrationsService.resolveChatModelForChat', () => {
       apiKey: 'sk-test',
       apiUrl: 'https://api.openai.com/v1/chat/completions',
     });
+  });
+
+  it('rejects an inactive integration selected by id without falling back to the default', async () => {
+    findActiveChatModelByIdMock.mockResolvedValue(null);
+
+    await expect(
+      service.resolveChatModelForChat({ integrationId: integrationRow.id })
+    ).rejects.toThrow('Chat model integration not found or inactive');
+
+    expect(findActiveChatModelByIdMock).toHaveBeenCalledWith(integrationRow.id);
+    expect(findDefaultActiveChatModelMock).not.toHaveBeenCalled();
   });
 
   it('uses the workspace default integration when integrationId is omitted', async () => {

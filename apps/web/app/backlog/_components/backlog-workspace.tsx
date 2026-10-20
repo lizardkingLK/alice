@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, HelpCircle } from '@repo/ui/lib/icons';
 import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
 
@@ -9,8 +9,10 @@ import { useBacklogLayout } from '@/app/backlog/_components/backlog-layout-menu'
 import { BacklogToolbar } from '@/app/backlog/_components/backlog-toolbar';
 import { useBacklogProjectDefaults } from '@/app/backlog/_hooks/use-backlog-project-defaults';
 import { buildAppliedFilterBadgeItems } from '@/components/applied-filter-badges.model';
-import { PRIORITY_LABELS } from '@/app/work-items/_helpers/work-item-priority-ui';
-import type { WorkItemPriority } from '@/app/work-items/_helpers/work-item-priority-ui';
+import {
+  PRIORITY_LABELS,
+  type WorkItemPriority,
+} from '@/app/work-items/_helpers/work-item-priority-ui';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
 import { BacklogSprintCard } from '@/app/backlog/_components/backlog-sprint-card';
 import { BacklogPanel } from '@/app/backlog/_components/backlog-panel';
@@ -23,6 +25,7 @@ import {
   BacklogMismatchDialog,
   BacklogStartSprintDialog,
   BacklogErrorDialog,
+  type BacklogMismatchReason,
 } from '@/app/backlog/_components/backlog-dialogs';
 import {
   getBacklogIssuesPaneClass,
@@ -49,6 +52,23 @@ import { updateWorkItem } from '@/app/work-items/_services/work-items.mutations.
 import { resolveWorkItemMember } from '@/app/work-items/_helpers/work-item-member';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutation } from '@/lib/optimistic-lock/run-locked-mutation';
+import {
+  isBoardMoveOptimisticLockError,
+  readBoardMoveConflictServerRow,
+  toastWorkItemDnDConflict,
+} from '@/app/board/_helpers/board-move-conflict-toast';
+import {
+  applyRealtimeWorkItemRow,
+  mergeWorkItemRealtimeRow,
+} from '@/lib/work-items/apply-realtime-work-item-row';
+import { useWorkItemsRealtime } from '@/lib/work-items/use-work-items-realtime';
+import { afterDialogClose } from '@/lib/dialog-close';
+
+const SPRINT_PLACEMENT_FIELDS = ['sprint_id', 'updated_by'] as const;
+
+const BACKLOG_CONFLICT_TITLE = 'Someone else moved this item';
+const BACKLOG_CONFLICT_DESCRIPTION =
+  'The backlog was updated to the latest sprint assignment.';
 
 function sameWorkItemSprintId(
   a: string | null | undefined,
@@ -165,6 +185,9 @@ export function BacklogWorkspace({
   const [isBacklogCollapsed, setIsBacklogCollapsed] = useState(false);
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dragOverTargetId, setDragOverTargetId] = useState<string | null>(null); // sprint ID or 'backlog'
+  const [pendingSprintMoveIds, setPendingSprintMoveIds] = useState<Set<string>>(
+    () => new Set()
+  );
 
   // Selection state for Slide-out Details panel
   const [selectedItem, setSelectedItem] = useState<DbWorkItem | null>(null);
@@ -181,18 +204,34 @@ export function BacklogWorkspace({
   const [actionError, setActionError] = useState<string | null>(null);
   const [isActionPending, setIsActionPending] = useState(false);
   const [isMismatchOpen, setIsMismatchOpen] = useState(false);
+  const [mismatchReason, setMismatchReason] =
+    useState<BacklogMismatchReason | null>(null);
   const [isErrorOpen, setIsErrorOpen] = useState(false);
 
-  const isSprintDropMismatch = (
+  useEffect(() => {
+    if (isMismatchOpen) {
+      return;
+    }
+    return afterDialogClose(() => {
+      setMismatchReason(null);
+    });
+  }, [isMismatchOpen]);
+
+  const openMismatchDialog = (reason: BacklogMismatchReason) => {
+    setMismatchReason(reason);
+    setIsMismatchOpen(true);
+  };
+
+  const getSprintDropMismatchReason = (
     itemId: string | null,
     targetSprintId: string | null
-  ): boolean => {
+  ): BacklogMismatchReason | null => {
     if (!itemId) {
-      return false;
+      return null;
     }
     const draggedItem = workItems.find((item) => item.id === itemId);
     if (!draggedItem) {
-      return false;
+      return null;
     }
 
     if (draggedItem.parent_id) {
@@ -202,19 +241,22 @@ export function BacklogWorkspace({
       const parentSprintId = parent?.sprint_id ?? null;
       const nextSprintId = targetSprintId || null;
       if (!sameWorkItemSprintId(parentSprintId, nextSprintId)) {
-        return true;
+        return 'parent-sprint';
       }
     }
 
     if (!targetSprintId) {
-      return false;
+      return null;
     }
 
     const targetSprint = sprintList.find(
       (sprint) => sprint.id === targetSprintId
     );
     const sprintProjId = targetSprint?.project?.id;
-    return Boolean(sprintProjId && draggedItem.project_id !== sprintProjId);
+    if (sprintProjId && draggedItem.project_id !== sprintProjId) {
+      return 'project';
+    }
+    return null;
   };
 
   const restoreWorkItemAfterFailedMutation = (
@@ -251,8 +293,58 @@ export function BacklogWorkspace({
     );
   };
 
+  const applySprintRealtimeRow = useCallback(
+    (row: Partial<DbWorkItem> & { id: string }, force = false) => {
+      setWorkItems((previous) => {
+        if (force) {
+          const index = previous.findIndex((item) => item.id === row.id);
+          if (index < 0) {
+            return previous;
+          }
+          const next = [...previous];
+          next[index] = mergeWorkItemRealtimeRow(
+            previous[index]!,
+            row,
+            SPRINT_PLACEMENT_FIELDS
+          );
+          return next;
+        }
+        return (
+          applyRealtimeWorkItemRow(previous, row, SPRINT_PLACEMENT_FIELDS) ??
+          previous
+        );
+      });
+      setSelectedItem((previous) => {
+        if (!previous || previous.id !== row.id) {
+          return previous;
+        }
+        return mergeWorkItemRealtimeRow(previous, row, SPRINT_PLACEMENT_FIELDS);
+      });
+      setPendingSprintMoveIds((previous) => {
+        if (!previous.has(row.id)) {
+          return previous;
+        }
+        const next = new Set(previous);
+        next.delete(row.id);
+        return next;
+      });
+    },
+    []
+  );
+
+  useWorkItemsRealtime({
+    enabled: Boolean(currentUserId),
+    channelPrefix: 'backlog-work-items',
+    projectId: projectFilter !== 'all' ? projectFilter : null,
+    onRow: applySprintRealtimeRow,
+  });
+
   // Helper: Drag-and-Drop Handlers
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
+    if (pendingSprintMoveIds.has(itemId)) {
+      e.preventDefault();
+      return;
+    }
     e.dataTransfer.setData('text/plain', itemId);
     setDraggedItemId(itemId);
   };
@@ -261,7 +353,7 @@ export function BacklogWorkspace({
     e.preventDefault();
     const id = targetId || 'backlog';
 
-    if (isSprintDropMismatch(draggedItemId, targetId)) {
+    if (getSprintDropMismatchReason(draggedItemId, targetId)) {
       return;
     }
 
@@ -278,8 +370,14 @@ export function BacklogWorkspace({
     e.preventDefault();
     const itemId = e.dataTransfer.getData('text/plain') || draggedItemId;
     if (itemId) {
-      if (isSprintDropMismatch(itemId, targetId)) {
-        setIsMismatchOpen(true);
+      if (pendingSprintMoveIds.has(itemId)) {
+        setDraggedItemId(null);
+        setDragOverTargetId(null);
+        return;
+      }
+      const dropMismatch = getSprintDropMismatchReason(itemId, targetId);
+      if (dropMismatch) {
+        openMismatchDialog(dropMismatch);
         setDraggedItemId(null);
         setDragOverTargetId(null);
         return;
@@ -311,63 +409,67 @@ export function BacklogWorkspace({
             .map((item) => [item.id, item.sprint_id] as const)
         );
         const expectedUpdatedAt = draggedItem.updated_at;
-        runLockedMutation({
-          mutate: () => updateWorkItem(itemId, formData, expectedUpdatedAt),
-          handleMutationError,
-          entityType: 'work_item',
-          entityId: itemId,
-          expectedUpdatedAt,
-          pendingFields: { sprint_id: targetId },
-          currentUserId,
-        })
-          .then((result) => {
-            if (result.ok) {
-              const updated = result.data.data;
-              const serverCascade =
-                result.data.cascadedSprintDescendantIds ?? cascadeIds;
-              if (updated) {
-                syncWorkItemFromServer(itemId, updated);
-              }
-              const nextSprintId = updated?.sprint_id ?? targetId;
-              setWorkItems((prev) =>
-                applySprintIdsToItems(prev, serverCascade, nextSprintId)
-              );
-              return;
+        setPendingSprintMoveIds((previous) => new Set(previous).add(itemId));
+
+        const revertSprintMove = () => {
+          setWorkItems((prev) => restoreSprintIdsFromMap(previousById, prev));
+          setSelectedItem((prev) => {
+            if (!prev) {
+              return prev;
             }
-            if (!result.conflict) {
-              setWorkItems((prev) =>
-                restoreSprintIdsFromMap(previousById, prev)
-              );
-              setSelectedItem((prev) => {
-                if (!prev) {
-                  return prev;
-                }
-                const restored = restoreSprintIdsFromMap(previousById, [prev]);
-                return restored[0] ?? prev;
-              });
+            const restored = restoreSprintIdsFromMap(previousById, [prev]);
+            return restored[0] ?? prev;
+          });
+        };
+
+        updateWorkItem(itemId, formData, expectedUpdatedAt)
+          .then((response) => {
+            if (response.error || !response.data) {
+              revertSprintMove();
               setActionError(
-                result.error instanceof Error
-                  ? result.error.message
+                typeof response.error === 'string'
+                  ? response.error
                   : 'Failed to update work item sprint.'
               );
               setIsErrorOpen(true);
+              return;
             }
+            const updated = response.data;
+            const serverCascade =
+              response.cascadedSprintDescendantIds ?? cascadeIds;
+            syncWorkItemFromServer(itemId, updated);
+            const nextSprintId = updated.sprint_id ?? targetId;
+            setWorkItems((prev) =>
+              applySprintIdsToItems(prev, serverCascade, nextSprintId)
+            );
           })
           .catch((error: unknown) => {
-            setWorkItems((prev) => restoreSprintIdsFromMap(previousById, prev));
-            setSelectedItem((prev) => {
-              if (!prev) {
-                return prev;
+            if (isBoardMoveOptimisticLockError(error)) {
+              toastWorkItemDnDConflict(
+                BACKLOG_CONFLICT_TITLE,
+                BACKLOG_CONFLICT_DESCRIPTION
+              );
+              const serverRow = readBoardMoveConflictServerRow(error);
+              revertSprintMove();
+              if (serverRow) {
+                applySprintRealtimeRow(serverRow, true);
               }
-              const restored = restoreSprintIdsFromMap(previousById, [prev]);
-              return restored[0] ?? prev;
-            });
+              return;
+            }
+            revertSprintMove();
             setActionError(
               error instanceof Error
                 ? error.message
                 : 'Failed to update work item sprint.'
             );
             setIsErrorOpen(true);
+          })
+          .finally(() => {
+            setPendingSprintMoveIds((previous) => {
+              const next = new Set(previous);
+              next.delete(itemId);
+              return next;
+            });
           });
       }
     }
@@ -689,7 +791,7 @@ export function BacklogWorkspace({
     // Check sprint project mismatch if sprint_id or project_id is updated
     for (const [field, value] of Object.entries(updates)) {
       if (checkProjectSprintMismatch(itemId, field, value)) {
-        setIsMismatchOpen(true);
+        openMismatchDialog('project');
         return;
       }
     }
@@ -1088,9 +1190,10 @@ export function BacklogWorkspace({
           onConfirm={confirmCompleteSprint}
         />
 
-        {/* Dialog: Project Mismatch Error */}
+        {/* Dialog: Sprint assignment mismatch */}
         <BacklogMismatchDialog
           open={isMismatchOpen}
+          reason={mismatchReason}
           onOpenChange={setIsMismatchOpen}
           onAcknowledge={() => setIsMismatchOpen(false)}
         />

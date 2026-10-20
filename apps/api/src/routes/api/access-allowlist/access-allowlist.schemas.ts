@@ -1,4 +1,7 @@
-export { accessAllowlistCreateSchema } from '@repo/types';
+export {
+  accessAllowlistCreateSchema,
+  listAccessAllowlistQuerySchema,
+} from '@repo/types';
 import {
   accessAllowlistUpdateSchema as baseAccessAllowlistUpdateSchema,
   expectedUpdatedAtSchema,

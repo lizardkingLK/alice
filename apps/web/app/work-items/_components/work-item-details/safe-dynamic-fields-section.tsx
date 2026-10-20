@@ -357,6 +357,7 @@ function NumberDynamicEditor({
         variant="secondary"
         className="size-7 shrink-0 cursor-pointer"
         aria-label="Save value"
+        title="Save value"
         onClick={handleSave}
       >
         <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -367,6 +368,7 @@ function NumberDynamicEditor({
         variant="ghost"
         className="text-muted-foreground size-7 shrink-0 cursor-pointer"
         aria-label="Cancel"
+        title="Cancel"
         onClick={onDone}
       >
         <X className="size-3.5" />
@@ -525,6 +527,7 @@ function TextDynamicEditor({
         variant="secondary"
         className="size-7 shrink-0 cursor-pointer"
         aria-label="Save value"
+        title="Save value"
         onClick={handleSave}
       >
         <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -535,6 +538,7 @@ function TextDynamicEditor({
         variant="ghost"
         className="text-muted-foreground size-7 shrink-0 cursor-pointer"
         aria-label="Cancel"
+        title="Cancel"
         onClick={onDone}
       >
         <X className="size-3.5" />
@@ -721,6 +725,7 @@ function DynamicFieldRow({
                 size="icon-sm"
                 className="cursor-pointer opacity-0 transition-opacity group-hover:opacity-100"
                 aria-label={`Edit ${title}`}
+                title={`Edit ${title}`}
                 onClick={() => setIsEditing(true)}
               >
                 <PencilIcon className="size-3.5" />

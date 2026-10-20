@@ -40,8 +40,7 @@ const {
   countIncompleteChildrenMock,
   countChildrenNotInTargetStateMock,
   recordCreatedMock,
-  recordFieldChangesMock,
-  recordWorkflowTransitionMock,
+  recordWorkItemUpdateMock,
 } = vi.hoisted(() => ({
   assertCanAccessProjectMock: vi.fn(),
   getByIdMock: vi.fn(),
@@ -54,8 +53,7 @@ const {
   countIncompleteChildrenMock: vi.fn(),
   countChildrenNotInTargetStateMock: vi.fn(),
   recordCreatedMock: vi.fn(),
-  recordFieldChangesMock: vi.fn(),
-  recordWorkflowTransitionMock: vi.fn(),
+  recordWorkItemUpdateMock: vi.fn(),
 }));
 
 const repository = {
@@ -77,8 +75,7 @@ const repository = {
 
 const activities = {
   recordCreated: recordCreatedMock,
-  recordFieldChanges: recordFieldChangesMock,
-  recordWorkflowTransition: recordWorkflowTransitionMock,
+  recordWorkItemUpdate: recordWorkItemUpdateMock,
 } as unknown as ActivitiesService;
 
 const service = new WorkItemService(repository, undefined, activities);
@@ -156,8 +153,7 @@ describe('WorkItemService activity writers', () => {
     });
     createMock.mockResolvedValue({ ...currentWorkItem, id: 'created-1' });
     recordCreatedMock.mockResolvedValue(undefined);
-    recordFieldChangesMock.mockResolvedValue(undefined);
-    recordWorkflowTransitionMock.mockResolvedValue(undefined);
+    recordWorkItemUpdateMock.mockResolvedValue(undefined);
 
     // Spy getProjectAllowedTypes via prototype — service calls private method path
     vi.spyOn(
@@ -232,20 +228,16 @@ describe('WorkItemService activity writers', () => {
     );
 
     // Assert
-    expect(recordWorkflowTransitionMock).toHaveBeenCalledWith(
+    expect(recordWorkItemUpdateMock).toHaveBeenCalledWith(
       expect.objectContaining({
         workItemId: WORK_ITEM_ID,
         actorId: ACTOR_ID,
-        meta: expect.objectContaining({
+        workflowTransition: expect.objectContaining({
           fromStateId: fromState.id,
           toStateId: toState.id,
           workflowId: workflow.id,
         }),
-      })
-    );
-    expect(recordFieldChangesMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        changes: expect.not.arrayContaining([
+        fieldChanges: expect.not.arrayContaining([
           expect.objectContaining({ field: 'status' }),
         ]),
       })
@@ -283,10 +275,10 @@ describe('WorkItemService activity writers', () => {
     );
 
     // Assert
-    expect(recordWorkflowTransitionMock).not.toHaveBeenCalled();
-    expect(recordFieldChangesMock).toHaveBeenCalledWith(
+    expect(recordWorkItemUpdateMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        changes: expect.arrayContaining([
+        workflowTransition: null,
+        fieldChanges: expect.arrayContaining([
           expect.objectContaining({
             field: 'title',
             oldValue: 'Graph move',

@@ -30,19 +30,65 @@ import {
 import { Users, Loader2, X } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import type { User } from '@/app/users/_services/users.mutations.client';
-import { createTeam, updateTeam } from '../_services/teams.mutations.client';
+import {
+  createTeam,
+  updateTeam,
+  type Team,
+} from '../_services/teams.mutations.client';
 import type {
   Project,
   ProjectMembersByProjectId,
 } from '@/app/projects/_services/projects.mutations.shared';
-import type { Team } from '../_services/teams.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
+import type { Tables } from '@repo/types';
+
+function buildLocalTeamAfterUpdate(options: {
+  readonly teamToEdit: Team;
+  readonly updated: Tables<'teams'>;
+  readonly users: User[];
+  readonly selectedMemberIds: string[];
+  readonly memberCapacities: Record<string, number>;
+  readonly memberAllocations: Record<string, number>;
+}): Team {
+  const {
+    teamToEdit,
+    updated,
+    users,
+    selectedMemberIds,
+    memberCapacities,
+    memberAllocations,
+  } = options;
+
+  let nextManager = teamToEdit.manager;
+  if (updated.manager_id !== teamToEdit.manager_id) {
+    const match = users.find((u) => u.id === updated.manager_id);
+    nextManager = match
+      ? { id: match.id, name: match.name, email: match.email }
+      : null;
+  }
+
+  return {
+    ...teamToEdit,
+    ...updated,
+    manager: nextManager,
+    members: selectedMemberIds.map((userId) => ({
+      team_id: teamToEdit.id,
+      user_id: userId,
+      capacity: memberCapacities[userId] ?? 40,
+      allocation: memberAllocations[userId] ?? 100,
+      status: 'active' as const,
+    })),
+  };
+}
 
 interface TeamFormProps {
   readonly className?: string;
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
+  /** Fired with the mutation row on edit (create still uses `onSuccess` only). */
+  // eslint-disable-next-line no-unused-vars
+  readonly onTeamUpdated?: (team: Team) => void;
   readonly teamToEdit?: Team | null;
   readonly users: User[];
   readonly activeProjects: Project[];
@@ -54,6 +100,7 @@ export function TeamForm({
   className,
   onClose,
   onSuccess,
+  onTeamUpdated,
   teamToEdit = null,
   users,
   activeProjects,
@@ -296,6 +343,16 @@ export function TeamForm({
         if (!updated) {
           return;
         }
+        onTeamUpdated?.(
+          buildLocalTeamAfterUpdate({
+            teamToEdit,
+            updated,
+            users,
+            selectedMemberIds,
+            memberCapacities,
+            memberAllocations,
+          })
+        );
         setMessage('The team configuration has been successfully updated.');
       } else {
         await createTeam(teamData);

@@ -66,9 +66,17 @@ import {
   sortParentComments,
   toMentionWorkItems,
   scopeMentionWorkItems,
+  uniqueCommentsById,
+  upsertCommentById,
   type CommentsSortOrder,
   type CommentsStatusFilter,
 } from '@/app/comments/_components/comments-feed-helpers';
+import {
+  applyRealtimeCommentChange,
+  type CommentRealtimeRow,
+} from '@/app/comments/_helpers/apply-realtime-comment-row';
+import { rowFromRealtimePayload } from '@/lib/realtime/realtime-change-row';
+import { useScopedTableRealtime } from '@/lib/realtime/use-scoped-table-realtime';
 
 type CommentsFeedProps = {
   initialComments: CommentItem[];
@@ -317,16 +325,32 @@ export function CommentsFeed({
       });
   }, [targetWorkItemId]);
 
+  useScopedTableRealtime<CommentRealtimeRow>({
+    enabled: Boolean(workItemId),
+    channelPrefix: 'wi-comments',
+    table: 'comments',
+    scopeKey: workItemId ?? '',
+    filter: workItemId ? `work_item_id=eq.${workItemId}` : undefined,
+    onChange: ({ eventType, new: nextRow, old: prevRow }) => {
+      setComments((prev) => {
+        const row = rowFromRealtimePayload(eventType, nextRow, prevRow);
+        return applyRealtimeCommentChange(prev, eventType, row, users) ?? prev;
+      });
+    },
+  });
+
   const stats = useMemo(() => computeCommentStats(comments), [comments]);
 
   const filteredComments = useMemo(
     () =>
-      filterComments(comments, {
-        workItemId,
-        selectedWorkItemId,
-        selectedStatus,
-        searchQuery,
-      }),
+      uniqueCommentsById(
+        filterComments(comments, {
+          workItemId,
+          selectedWorkItemId,
+          selectedStatus,
+          searchQuery,
+        })
+      ),
     [comments, workItemId, selectedWorkItemId, selectedStatus, searchQuery]
   );
 
@@ -370,7 +394,8 @@ export function CommentsFeed({
       if (!res.success) {
         throw new Error(res.error || 'Failed to create comment');
       }
-      setComments((prev) => [res.data!, ...prev]);
+      // Upsert: realtime INSERT may have already prepended this id.
+      setComments((prev) => upsertCommentById(prev, res.data!));
       setShowNewCommentModal(false);
       setReplyingParentId(null);
     } catch (err) {

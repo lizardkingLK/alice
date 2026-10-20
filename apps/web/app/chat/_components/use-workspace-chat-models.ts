@@ -22,6 +22,10 @@ export function useWorkspaceChatModels(initialChatModels?: ChatModelOption[]) {
 
   useEffect(() => {
     if (initialChatModels !== undefined) {
+      setChatModels(initialChatModels);
+      setSelectedIntegrationId((current) =>
+        resolveSelectedChatIntegrationId(initialChatModels, current)
+      );
       return;
     }
 

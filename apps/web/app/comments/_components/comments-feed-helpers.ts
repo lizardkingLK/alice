@@ -25,6 +25,36 @@ export function computeCommentStats(comments: CommentItem[]) {
   };
 }
 
+/** Keep the first occurrence of each comment id. */
+export function uniqueCommentsById(
+  comments: readonly CommentItem[]
+): CommentItem[] {
+  const seen = new Set<string>();
+  const unique: CommentItem[] = [];
+  for (const comment of comments) {
+    if (seen.has(comment.id)) {
+      continue;
+    }
+    seen.add(comment.id);
+    unique.push(comment);
+  }
+  return unique;
+}
+
+/** Prepend a comment, or replace the existing row with the same id. */
+export function upsertCommentById(
+  comments: readonly CommentItem[],
+  comment: CommentItem
+): CommentItem[] {
+  const index = comments.findIndex((row) => row.id === comment.id);
+  if (index >= 0) {
+    const next = [...comments];
+    next[index] = comment;
+    return next;
+  }
+  return [comment, ...comments];
+}
+
 export function filterComments(
   comments: CommentItem[],
   filters: CommentsFeedFilters

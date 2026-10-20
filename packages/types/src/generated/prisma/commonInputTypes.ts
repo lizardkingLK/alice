@@ -467,6 +467,23 @@ export type EnumWorkItemStatusWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumWorkItemStatusFilter<$PrismaModel>
 }
 
+export type EnumWorkItemLinkTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.WorkItemLinkType | Prisma.EnumWorkItemLinkTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.WorkItemLinkType[] | Prisma.ListEnumWorkItemLinkTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WorkItemLinkType[] | Prisma.ListEnumWorkItemLinkTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWorkItemLinkTypeFilter<$PrismaModel> | $Enums.WorkItemLinkType
+}
+
+export type EnumWorkItemLinkTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.WorkItemLinkType | Prisma.EnumWorkItemLinkTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.WorkItemLinkType[] | Prisma.ListEnumWorkItemLinkTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WorkItemLinkType[] | Prisma.ListEnumWorkItemLinkTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWorkItemLinkTypeWithAggregatesFilter<$PrismaModel> | $Enums.WorkItemLinkType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumWorkItemLinkTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumWorkItemLinkTypeFilter<$PrismaModel>
+}
+
 export type EnumActivityActionFilter<$PrismaModel = never> = {
   equals?: $Enums.ActivityAction | Prisma.EnumActivityActionFieldRefInput<$PrismaModel>
   in?: $Enums.ActivityAction[] | Prisma.ListEnumActivityActionFieldRefInput<$PrismaModel>
@@ -1107,6 +1124,23 @@ export type NestedEnumWorkItemStatusWithAggregatesFilter<$PrismaModel = never> =
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumWorkItemStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumWorkItemStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumWorkItemLinkTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.WorkItemLinkType | Prisma.EnumWorkItemLinkTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.WorkItemLinkType[] | Prisma.ListEnumWorkItemLinkTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WorkItemLinkType[] | Prisma.ListEnumWorkItemLinkTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWorkItemLinkTypeFilter<$PrismaModel> | $Enums.WorkItemLinkType
+}
+
+export type NestedEnumWorkItemLinkTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.WorkItemLinkType | Prisma.EnumWorkItemLinkTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.WorkItemLinkType[] | Prisma.ListEnumWorkItemLinkTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WorkItemLinkType[] | Prisma.ListEnumWorkItemLinkTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWorkItemLinkTypeWithAggregatesFilter<$PrismaModel> | $Enums.WorkItemLinkType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumWorkItemLinkTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumWorkItemLinkTypeFilter<$PrismaModel>
 }
 
 export type NestedEnumActivityActionFilter<$PrismaModel = never> = {

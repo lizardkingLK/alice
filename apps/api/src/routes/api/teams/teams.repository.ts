@@ -35,6 +35,43 @@ export type ActiveProjectTeam = {
   readonly name: string;
 };
 
+/** Scalar team columns for mutation / lock follow-ups (no manager/member embeds). */
+const teamMutationSelect = {
+  id: true,
+  name: true,
+  description: true,
+  manager_id: true,
+  project_id: true,
+  tech_stack: true,
+  status: true,
+  created_at: true,
+  updated_at: true,
+  created_by: true,
+  updated_by: true,
+} as const;
+
+type TeamMutationPrismaRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  manager_id: string;
+  project_id: string | null;
+  tech_stack: string | null;
+  status: TeamRow['status'];
+  created_at: Date;
+  updated_at: Date;
+  created_by: string | null;
+  updated_by: string | null;
+};
+
+function mapTeamRow(team: TeamMutationPrismaRow): TeamRow {
+  return {
+    ...team,
+    created_at: team.created_at.toISOString(),
+    updated_at: team.updated_at.toISOString(),
+  };
+}
+
 async function insertTeamMembers(
   teamId: string,
   members: {
@@ -148,7 +185,7 @@ export class TeamsRepository {
   }
 
   async listActiveByProject(projectId: string): Promise<ActiveProjectTeam[]> {
-    return prisma.teams.findMany({
+    return await prisma.teams.findMany({
       where: { project_id: projectId, status: RecordStatus.active },
       select: { id: true, name: true },
       orderBy: { name: Prisma.SortOrder.asc },
@@ -175,28 +212,12 @@ export class TeamsRepository {
     try {
       const team = await prisma.teams.findFirst({
         where,
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          manager_id: true,
-          project_id: true,
-          tech_stack: true,
-          status: true,
-          created_at: true,
-          updated_at: true,
-          created_by: true,
-          updated_by: true,
-        },
+        select: teamMutationSelect,
       });
 
       if (!team) return null;
 
-      return {
-        ...team,
-        created_at: team.created_at.toISOString(),
-        updated_at: team.updated_at.toISOString(),
-      };
+      return mapTeamRow(team);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error('error. failed to get team by name:', message);
@@ -205,16 +226,20 @@ export class TeamsRepository {
   }
 
   async findById(id: string): Promise<TeamRow | null> {
-    const { data, error } = await this.db
-      .from('teams')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-    if (error) {
-      console.error('database query error find team by id:', error.message);
+    try {
+      const team = await prisma.teams.findUnique({
+        where: { id },
+        select: teamMutationSelect,
+      });
+      if (!team) {
+        return null;
+      }
+      return mapTeamRow(team);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('database query error find team by id:', message);
       throw new Error('Failed to locate team by id');
     }
-    return data;
   }
 
   async create(
@@ -327,19 +352,25 @@ export class TeamsRepository {
     teamId: string,
     userId: string
   ): Promise<TeamMemberRow | null> {
-    const { data, error } = await this.db
-      .from('team_members')
-      .select('*')
-      .eq('team_id', teamId)
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (error) {
-      console.error('database query error find team member:', error.message);
+    try {
+      const member = await prisma.team_members.findUnique({
+        where: {
+          team_id_user_id: { team_id: teamId, user_id: userId },
+        },
+      });
+      if (!member) {
+        return null;
+      }
+      return {
+        ...member,
+        created_at: member.created_at.toISOString(),
+        updated_at: member.updated_at.toISOString(),
+      } as TeamMemberRow;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('database query error find team member:', message);
       throw new Error('Failed to locate team member');
     }
-
-    return data;
   }
 
   async updateMember(

@@ -6,6 +6,7 @@ import {
 } from '../../../middlewares/auth';
 import {
   createSavedViewSchema,
+  listSavedViewsQuerySchema,
   shareSavedViewSchema,
   updateSavedViewSchema,
 } from './saved-views.schemas';
@@ -14,6 +15,25 @@ import { SavedViewsService } from './saved-views.service';
 export type SavedViewsRouterDeps = {
   savedViewsService: SavedViewsService;
 };
+
+function firstQueryValue(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (Array.isArray(value) && typeof value[0] === 'string') {
+    return value[0];
+  }
+  return undefined;
+}
+
+function listSavedViewsQueryFromRequest(query: Record<string, unknown>) {
+  return listSavedViewsQuerySchema.safeParse({
+    page: firstQueryValue(query.page),
+    limit: firstQueryValue(query.limit),
+    search: firstQueryValue(query.search),
+    tab: firstQueryValue(query.tab),
+  });
+}
 
 function sendError(res: Response, error: unknown, fallback: string) {
   const message = error instanceof Error ? error.message : fallback;
@@ -51,6 +71,31 @@ export function createSavedViewsRouter(deps: SavedViewsRouterDeps) {
       }
     };
   }
+
+  savedViewsRouter.get(
+    '/',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const validation = listSavedViewsQueryFromRequest(
+        req.query as Record<string, unknown>
+      );
+      if (!validation.success) {
+        return res
+          .status(400)
+          .json({ error: z.treeifyError(validation.error) });
+      }
+
+      try {
+        const result = await savedViewsService.listSavedViewsPaginated(
+          req.userId!,
+          validation.data
+        );
+        res.json(result);
+      } catch (error) {
+        sendError(res, error, 'Failed to list saved views');
+      }
+    }
+  );
 
   savedViewsRouter.post(
     '/',

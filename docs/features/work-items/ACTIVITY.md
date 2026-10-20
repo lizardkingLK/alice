@@ -270,24 +270,24 @@ Realtime (optional v1):
 7. **Fullscreen:** maximize/minimize the whole Discussion \| Activity section
    (mirror description editor pattern) for full-fidelity conversation and
    observation.
-8. Optional Realtime subscription.
+8. Realtime subscription — tracked in [REALTIME_DISCUSSION.md](./REALTIME_DISCUSSION.md) (after W7 + M8).
 9. Optional trigger safety net; docs → **Living**.
 
 ---
 
 ## Locked decisions
 
-| Topic          | Decision                                                               |
-| -------------- | ---------------------------------------------------------------------- |
-| UI layout      | Tabs: Discussion \| Activity \| Work Log (tab bar is section chrome)   |
-| Fullscreen     | Maximize/minimize whole section (`Maximize2` / `Minimize2`, `ml-auto`) |
-| Tab counts     | Labels only in v1 (no badges)                                          |
-| Comment events | Discussion-only — no `commented` activity rows in v1                   |
-| Value storage  | Store ids / raw values; resolve actor labels on read                   |
-| Writers        | API-first (`ActivitiesService`); no triggers in v1                     |
-| Description    | Opaque “description updated”                                           |
-| Realtime       | Deferred (workflow N8)                                                 |
-| Escalation     | `escalation_resolved` action reserved; writer lands in Workflow Step 6 |
+| Topic          | Decision                                                                   |
+| -------------- | -------------------------------------------------------------------------- |
+| UI layout      | Tabs: Discussion \| Activity \| Work Log (tab bar is section chrome)       |
+| Fullscreen     | Maximize/minimize whole section (`Maximize2` / `Minimize2`, `ml-auto`)     |
+| Tab counts     | Labels only in v1 (no badges)                                              |
+| Comment events | Discussion-only — no `commented` activity rows in v1                       |
+| Value storage  | Store ids / raw values; resolve actor labels on read                       |
+| Writers        | API-first (`ActivitiesService`); no triggers in v1                         |
+| Description    | Opaque “description updated”                                               |
+| Realtime       | Planned after W7 + M8 — [REALTIME_DISCUSSION.md](./REALTIME_DISCUSSION.md) |
+| Escalation     | `escalation_resolved` action reserved; writer lands in Workflow Step 6     |
 
 ## As-built (Step 5)
 

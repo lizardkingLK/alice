@@ -341,6 +341,7 @@ export function patchEdgeInDocument(
     Pick<
       WorkflowEdge,
       | 'requireChildren'
+      | 'requireLinkedIssues'
       | 'allowAnyOf'
       | 'requiresEscalation'
       | 'resolutionPresetId'
@@ -479,6 +480,7 @@ export function addEdgeToDocument(
     requiresEscalation: false,
     resolutionPresetId: null,
     requireChildren: 'off',
+    requireLinkedIssues: 'off',
   };
 
   const withGraph: WorkflowDocument = {

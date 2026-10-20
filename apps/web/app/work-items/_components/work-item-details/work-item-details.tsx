@@ -8,14 +8,17 @@ import {
   useState,
   type Dispatch,
   type FormEvent,
+  type ReactNode,
   type SetStateAction,
 } from 'react';
 import {
   getAllowedChildType,
   type WorkItemType,
+  type WorkItemStatus,
   type AttachmentWithUploader,
   type Json,
   type WorkItemActivity,
+  type WorkItemLinkListItem,
   type WorkItemWorkLog,
 } from '@repo/types';
 import type { JSONContent } from '@tiptap/react';
@@ -45,7 +48,6 @@ import {
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
 import {
-  ChevronDown,
   Link2,
   MessageSquare,
   Paperclip,
@@ -68,6 +70,11 @@ import {
   UnlinkSubtaskButton,
   WorkItemUnlinkSubtaskDialog,
 } from '@/app/work-items/_components/work-item-subtasks/work-item-unlink-subtask-dialog';
+import { WorkItemLinkIssueDialog } from '@/app/work-items/_components/work-item-links/work-item-link-issue-dialog';
+import {
+  UnlinkIssueButton,
+  WorkItemUnlinkIssueDialog,
+} from '@/app/work-items/_components/work-item-links/work-item-unlink-issue-dialog';
 import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog';
 import type { WorkItemSprintOption } from '@/app/work-items/_helpers/work-item-sprint';
 import { formatWorkItemKey } from '@/app/work-items/_helpers/work-item-key';
@@ -81,6 +88,16 @@ import {
   buildActivityValueLookups,
   type ActivityValueLookups,
 } from '@/app/work-items/_helpers/work-item-activity-format';
+import {
+  applyRealtimeActivityChange,
+  type ActivityRealtimeRow,
+} from '@/app/work-items/_helpers/apply-realtime-activity-row';
+import {
+  applyRealtimeWorkLogChange,
+  type WorkLogRealtimeRow,
+} from '@/app/work-items/_helpers/apply-realtime-work-log-row';
+import { rowFromRealtimePayload } from '@/lib/realtime/realtime-change-row';
+import { useScopedTableRealtime } from '@/lib/realtime/use-scoped-table-realtime';
 import {
   readMoreFieldsOpen,
   writeMoreFieldsOpen,
@@ -97,6 +114,7 @@ import { CommentItem } from '@/app/comments/_services/comments.mutations.client'
 import type { CommentWorkItemOption } from '@/app/comments/_services/comments.mutations.shared';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
+import { OnlineMembersAvatarGroup } from '@/components/online-members-avatar-group';
 import { useRealtime } from '@/components/realtime/realtime-provider';
 import { UserAvatar } from '@/components/user-avatar';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
@@ -182,6 +200,7 @@ function WorkItemDetailsActionStrip({
   canLinkIssue,
   onAttach,
   onCreateSubtask,
+  onLinkIssue,
 }: Readonly<{
   readonly readOnly: boolean;
   readonly canAttach: boolean;
@@ -189,6 +208,7 @@ function WorkItemDetailsActionStrip({
   readonly canLinkIssue: boolean;
   readonly onAttach: () => void;
   readonly onCreateSubtask: () => void;
+  readonly onLinkIssue: () => void;
 }>) {
   return (
     <div className="flex flex-wrap items-center gap-1">
@@ -215,17 +235,22 @@ function WorkItemDetailsActionStrip({
         </Button>
       ) : null}
       {readOnly || !canLinkIssue ? null : (
-        <Button variant="ghost" size="sm" className="cursor-pointer">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="cursor-pointer"
+          onClick={onLinkIssue}
+        >
           <Link2 data-icon="inline-start" />
           Link issue
-          <ChevronDown data-icon="inline-end" />
         </Button>
       )}
     </div>
   );
 }
 
-type SubtaskUnlinkTarget = Pick<
+/** Shared shape for linkable / unlinkable child refs on details. */
+type WorkItemChildRef = Pick<
   DbWorkItem,
   'id' | 'title' | 'type' | 'updated_at'
 >;
@@ -242,7 +267,7 @@ type WorkItemSubtasksSectionProps = {
   readonly onSortFieldChange: (field: SubtaskSortField) => void;
   readonly onSortDirectionChange: (direction: SubtaskSortDirection) => void;
   readonly onLinkExisting: () => void;
-  readonly onUnlink: (child: SubtaskUnlinkTarget) => void;
+  readonly onUnlink: (child: WorkItemChildRef) => void;
   readonly isUserOnline: (userId: string) => boolean;
 };
 /* eslint-enable no-unused-vars */
@@ -278,6 +303,7 @@ function WorkItemSubtasksSection({
               size="icon-sm"
               className="cursor-pointer"
               aria-label="Link existing subtask"
+              title="Link existing subtask"
               onClick={onLinkExisting}
             >
               <Plus />
@@ -381,9 +407,26 @@ function WorkItemSubtasksSection({
   );
 }
 
-function WorkItemLinkedIssuesPlaceholder({
+type LinkedIssueUnlinkTarget = {
+  readonly linkId: string;
+  readonly relatedTitle: string;
+};
+
+/* eslint-disable no-unused-vars -- callback prop signatures */
+type WorkItemLinkedIssuesSectionProps = {
+  readonly links: readonly WorkItemLinkListItem[];
+  readonly readOnly: boolean;
+  readonly onLinkIssue: () => void;
+  readonly onUnlink: (target: LinkedIssueUnlinkTarget) => void;
+};
+/* eslint-enable no-unused-vars */
+
+function WorkItemLinkedIssuesSection({
+  links,
   readOnly,
-}: Readonly<{ readonly readOnly: boolean }>) {
+  onLinkIssue,
+  onUnlink,
+}: Readonly<WorkItemLinkedIssuesSectionProps>) {
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between gap-2">
@@ -394,19 +437,75 @@ function WorkItemLinkedIssuesPlaceholder({
             size="icon-sm"
             className="cursor-pointer"
             aria-label="Link issue"
+            title="Link issue"
+            onClick={onLinkIssue}
           >
             <Plus />
           </Button>
         )}
       </div>
-      <p className="text-muted-foreground text-sm">is blocked by</p>
-      <div
-        className={cn(
-          'text-muted-foreground flex h-16 items-center justify-center rounded-lg border border-dashed text-sm'
-        )}
-      >
-        No linked issues yet
-      </div>
+      <p className="text-muted-foreground text-sm">relates to</p>
+      {links.length === 0 ? (
+        <div
+          className={cn(
+            'text-muted-foreground flex h-16 items-center justify-center rounded-lg border border-dashed text-sm'
+          )}
+        >
+          No linked issues yet
+        </div>
+      ) : (
+        <div className="rounded-lg border">
+          <Table className="min-w-xl table-fixed">
+            <colgroup>
+              <col className="w-28" />
+              <col />
+              <col className="w-28" />
+              <col className="w-10" />
+            </colgroup>
+            <TableBody>
+              {links.map((link) => (
+                <TableRow
+                  key={link.id}
+                  className="hover:bg-muted/40 border-border"
+                >
+                  <TableCell className="px-3 py-2.5">
+                    <Badge variant="outline" className="font-mono text-[10px]">
+                      {formatWorkItemKey({ id: link.related.id })}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="max-w-0 p-0 whitespace-normal">
+                    <Link
+                      href={`/work-items/${link.related.id}`}
+                      className="hover:text-primary block min-w-0 px-2 py-2.5"
+                    >
+                      <TruncatedText className="text-sm">
+                        {link.related.title}
+                      </TruncatedText>
+                    </Link>
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5">
+                    <WorkItemStatusBadge
+                      status={link.related.status as WorkItemStatus}
+                    />
+                  </TableCell>
+                  <TableCell className="px-1 py-2.5">
+                    {readOnly ? null : (
+                      <UnlinkIssueButton
+                        onClick={() =>
+                          onUnlink({
+                            linkId: link.id,
+                            relatedTitle: link.related.title,
+                          })
+                        }
+                      />
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </section>
   );
 }
@@ -435,17 +534,21 @@ type WorkItemDetailsMainColumnProps = {
     SetStateAction<SubtaskSortDirection>
   >;
   readonly onLinkExistingSubtask: () => void;
-  readonly onUnlinkSubtask: (child: SubtaskUnlinkTarget) => void;
+  readonly onUnlinkSubtask: (child: WorkItemChildRef) => void;
+  readonly linkedIssues: readonly WorkItemLinkListItem[];
+  readonly onLinkIssue: () => void;
+  readonly onUnlinkIssue: (target: LinkedIssueUnlinkTarget) => void;
   readonly isUserOnline: (userId: string) => boolean;
   readonly activityTab: WorkItemActivityTab;
   readonly setActivityTab: Dispatch<SetStateAction<WorkItemActivityTab>>;
   readonly initialComments: CommentItem[];
-  readonly initialActivities: WorkItemActivity[];
+  readonly activities: WorkItemActivity[];
   readonly activityLookups: ActivityValueLookups;
   readonly discussionWorkItems: CommentWorkItemOption[];
   readonly currentUserId?: string;
   readonly workLogs: WorkItemWorkLog[];
   readonly onAddWorkLogClick?: () => void;
+  readonly onlineMembersSlot?: ReactNode;
 };
 /* eslint-enable no-unused-vars */
 
@@ -471,16 +574,20 @@ function WorkItemDetailsMainColumn({
   setSubtaskSortDirection,
   onLinkExistingSubtask,
   onUnlinkSubtask,
+  linkedIssues,
+  onLinkIssue,
+  onUnlinkIssue,
   isUserOnline,
   activityTab,
   setActivityTab,
   initialComments,
-  initialActivities,
+  activities,
   activityLookups,
   discussionWorkItems,
   currentUserId,
   workLogs,
   onAddWorkLogClick,
+  onlineMembersSlot,
 }: Readonly<WorkItemDetailsMainColumnProps>) {
   return (
     <div className="space-y-8 lg:col-span-3">
@@ -493,6 +600,7 @@ function WorkItemDetailsMainColumn({
               size="icon"
               className="cursor-pointer"
               aria-label="Edit description"
+              title="Edit description"
               onClick={() => setEditing((prev) => !prev)}
             >
               <PencilIcon />
@@ -549,7 +657,12 @@ function WorkItemDetailsMainColumn({
       {sections.linkedIssues ? (
         <>
           <Separator />
-          <WorkItemLinkedIssuesPlaceholder readOnly={isRecordReadOnly} />
+          <WorkItemLinkedIssuesSection
+            links={linkedIssues}
+            readOnly={isRecordReadOnly}
+            onLinkIssue={onLinkIssue}
+            onUnlink={onUnlinkIssue}
+          />
         </>
       ) : null}
 
@@ -560,7 +673,7 @@ function WorkItemDetailsMainColumn({
             activeTab={activityTab}
             onActiveTabChange={setActivityTab}
             initialComments={initialComments}
-            initialActivities={initialActivities}
+            activities={activities}
             activityLookups={activityLookups}
             workItem={workItem}
             discussionWorkItems={discussionWorkItems}
@@ -568,6 +681,7 @@ function WorkItemDetailsMainColumn({
             workLogs={workLogs}
             onAddWorkLogClick={onAddWorkLogClick}
             readOnly={isRecordReadOnly}
+            onlineMembersSlot={onlineMembersSlot}
           />
         </>
       ) : null}
@@ -575,32 +689,51 @@ function WorkItemDetailsMainColumn({
   );
 }
 
+const EMPTY_CHILD_WORK_ITEMS: DbWorkItem[] = [];
+const EMPTY_LINKABLE_WORK_ITEMS: readonly WorkItemChildRef[] = [];
+const EMPTY_LINKED_ISSUES: readonly WorkItemLinkListItem[] = [];
+const EMPTY_LINKABLE_ISSUES: readonly {
+  id: string;
+  title: string;
+  type: string;
+}[] = [];
+const EMPTY_ANCESTORS: readonly WorkItemAncestor[] = [];
+const EMPTY_COMMENTS: CommentItem[] = [];
+const EMPTY_ATTACHMENTS: AttachmentWithUploader[] = [];
+const EMPTY_ACTIVITIES: WorkItemActivity[] = [];
+const EMPTY_WORK_LOGS: WorkItemWorkLog[] = [];
+const EMPTY_PROJECT_MEMBERS: readonly WorkItemPatchMemberOption[] = [];
+const EMPTY_PROJECT_SPRINTS: readonly WorkItemSprintOption[] = [];
+const EMPTY_DISCUSSION_WORK_ITEMS: CommentWorkItemOption[] = [];
+const EMPTY_CHILD_COMMENT_COUNTS: Readonly<Record<string, number>> = {};
+
 export default function WorkItemDetails({
   workItemDetails,
-  childWorkItems = [],
-  childCommentCounts = {},
-  linkableWorkItems = [],
-  ancestors = [],
+  childWorkItems = EMPTY_CHILD_WORK_ITEMS,
+  childCommentCounts = EMPTY_CHILD_COMMENT_COUNTS,
+  linkableWorkItems = EMPTY_LINKABLE_WORK_ITEMS,
+  initialLinkedIssues = EMPTY_LINKED_ISSUES,
+  linkableIssues = EMPTY_LINKABLE_ISSUES,
+  ancestors = EMPTY_ANCESTORS,
   project = null,
-  initialComments = [],
-  initialAttachments = [],
-  initialActivities = [],
-  initialWorkLogs = [],
+  initialComments = EMPTY_COMMENTS,
+  initialAttachments = EMPTY_ATTACHMENTS,
+  initialActivities = EMPTY_ACTIVITIES,
+  initialWorkLogs = EMPTY_WORK_LOGS,
   currentUserId,
   currentUserRole,
-  projectMembers = [],
-  projectSprints = [],
-  discussionWorkItems: discussionWorkItemsProp = [],
+  projectMembers = EMPTY_PROJECT_MEMBERS,
+  projectSprints = EMPTY_PROJECT_SPRINTS,
+  discussionWorkItems: discussionWorkItemsProp = EMPTY_DISCUSSION_WORK_ITEMS,
   initialDetailsPreferences = DEFAULT_WORK_ITEM_DETAILS_PREFERENCES,
 }: Readonly<{
   workItemDetails: DbWorkItem;
   childWorkItems?: DbWorkItem[];
   /** Active comment counts (incl. replies) keyed by child work item id. */
   childCommentCounts?: Readonly<Record<string, number>>;
-  linkableWorkItems?: readonly Pick<
-    DbWorkItem,
-    'id' | 'title' | 'type' | 'updated_at'
-  >[];
+  linkableWorkItems?: readonly WorkItemChildRef[];
+  initialLinkedIssues?: readonly WorkItemLinkListItem[];
+  linkableIssues?: readonly { id: string; title: string; type: string }[];
   ancestors?: readonly WorkItemAncestor[];
   project?: DbProject | null;
   initialComments?: CommentItem[];
@@ -641,15 +774,22 @@ export default function WorkItemDetails({
   const [attachmentUploadOpen, setAttachmentUploadOpen] = useState(false);
   const [subtaskDialogOpen, setSubtaskDialogOpen] = useState(false);
   const [linkSubtaskDialogOpen, setLinkSubtaskDialogOpen] = useState(false);
+  const [linkIssueDialogOpen, setLinkIssueDialogOpen] = useState(false);
+  const [linkedIssues, setLinkedIssues] =
+    useState<readonly WorkItemLinkListItem[]>(initialLinkedIssues);
+  const [linkCandidatePool, setLinkCandidatePool] = useState(linkableIssues);
   const [subtaskSortField, setSubtaskSortField] =
     useState<SubtaskSortField>('none');
   const [subtaskSortDirection, setSubtaskSortDirection] =
     useState<SubtaskSortDirection>('asc');
-  const [unlinkTarget, setUnlinkTarget] = useState<Pick<
-    DbWorkItem,
-    'id' | 'title' | 'type' | 'updated_at'
-  > | null>(null);
+  const [unlinkTarget, setUnlinkTarget] = useState<WorkItemChildRef | null>(
+    null
+  );
+  const [unlinkIssueTarget, setUnlinkIssueTarget] =
+    useState<LinkedIssueUnlinkTarget | null>(null);
   const [workLogs, setWorkLogs] = useState<WorkItemWorkLog[]>(initialWorkLogs);
+  const [activities, setActivities] =
+    useState<WorkItemActivity[]>(initialActivities);
   const [activityTab, setActivityTab] =
     useState<WorkItemActivityTab>('discussion');
   const [loggedHoursInput, setLoggedHoursInput] = useState<string>('');
@@ -665,6 +805,56 @@ export default function WorkItemDetails({
     entityId: workItem.id,
     userId: currentUserId,
     serverUpdatedAt: workItem.updated_at,
+  });
+
+  useEffect(() => {
+    setActivities(initialActivities);
+  }, [initialActivities]);
+
+  useEffect(() => {
+    setWorkLogs(initialWorkLogs);
+  }, [initialWorkLogs]);
+
+  useEffect(() => {
+    setLinkedIssues(initialLinkedIssues);
+  }, [initialLinkedIssues]);
+
+  useEffect(() => {
+    setLinkCandidatePool(linkableIssues);
+  }, [linkableIssues]);
+
+  useScopedTableRealtime<ActivityRealtimeRow>({
+    enabled: Boolean(workItem.id),
+    channelPrefix: 'wi-activities',
+    table: 'activities',
+    scopeKey: workItem.id,
+    filter: `work_item_id=eq.${workItem.id}`,
+    onChange: ({ eventType, new: nextRow, old: prevRow }) => {
+      setActivities((prev) => {
+        const row = rowFromRealtimePayload(eventType, nextRow, prevRow);
+        return (
+          applyRealtimeActivityChange(prev, eventType, row, projectMembers) ??
+          prev
+        );
+      });
+    },
+  });
+
+  useScopedTableRealtime<WorkLogRealtimeRow>({
+    enabled: Boolean(workItem.id),
+    channelPrefix: 'wi-worklogs',
+    table: 'work_item_worklogs',
+    scopeKey: workItem.id,
+    filter: `work_item_id=eq.${workItem.id}`,
+    onChange: ({ eventType, new: nextRow, old: prevRow }) => {
+      setWorkLogs((prev) => {
+        const row = rowFromRealtimePayload(eventType, nextRow, prevRow);
+        return (
+          applyRealtimeWorkLogChange(prev, eventType, row, projectMembers) ??
+          prev
+        );
+      });
+    },
   });
 
   useEffect(() => {
@@ -839,6 +1029,47 @@ export default function WorkItemDetails({
     router.refresh();
   };
 
+  const handleIssueLinked = (link: WorkItemLinkListItem) => {
+    setLinkedIssues((prev) => [
+      link,
+      ...prev.filter((item) => item.id !== link.id),
+    ]);
+    setLinkIssueDialogOpen(false);
+  };
+
+  const handleIssueUnlinked = (linkId: string) => {
+    const removed = linkedIssues.find((link) => link.id === linkId);
+    setLinkedIssues((prev) => prev.filter((item) => item.id !== linkId));
+    if (removed) {
+      setLinkCandidatePool((prev) => {
+        if (prev.some((item) => item.id === removed.related.id)) {
+          return prev;
+        }
+        return [
+          ...prev,
+          {
+            id: removed.related.id,
+            title: removed.related.title,
+            type: removed.related.type,
+          },
+        ];
+      });
+    }
+    setUnlinkIssueTarget(null);
+  };
+
+  const linkedIssueIds = useMemo(
+    () => new Set(linkedIssues.map((link) => link.related.id)),
+    [linkedIssues]
+  );
+  const availableLinkableIssues = useMemo(
+    () =>
+      linkCandidatePool.filter(
+        (item) => item.id !== workItem.id && !linkedIssueIds.has(item.id)
+      ),
+    [linkCandidatePool, linkedIssueIds, workItem.id]
+  );
+
   const assigneeOnline = workItem.assignee_id
     ? isUserOnline(workItem.assignee_id)
     : false;
@@ -890,6 +1121,7 @@ export default function WorkItemDetails({
           canLinkIssue={detailsPreferences.sections.linkedIssues}
           onAttach={() => setAttachmentUploadOpen(true)}
           onCreateSubtask={() => setSubtaskDialogOpen(true)}
+          onLinkIssue={() => setLinkIssueDialogOpen(true)}
         />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
@@ -917,16 +1149,30 @@ export default function WorkItemDetails({
             setSubtaskSortDirection={setSubtaskSortDirection}
             onLinkExistingSubtask={() => setLinkSubtaskDialogOpen(true)}
             onUnlinkSubtask={setUnlinkTarget}
+            linkedIssues={linkedIssues}
+            onLinkIssue={() => setLinkIssueDialogOpen(true)}
+            onUnlinkIssue={setUnlinkIssueTarget}
             isUserOnline={isUserOnline}
             activityTab={activityTab}
             setActivityTab={setActivityTab}
             initialComments={initialComments}
-            initialActivities={initialActivities}
+            activities={activities}
             activityLookups={activityLookups}
             discussionWorkItems={discussionWorkItems}
             currentUserId={currentUserId}
             workLogs={workLogs}
             onAddWorkLogClick={workLogClickHandler}
+            onlineMembersSlot={
+              <OnlineMembersAvatarGroup
+                members={projectMembers.map((member) => ({
+                  id: member.id,
+                  name: member.name,
+                  profilePicture: member.profile_picture,
+                }))}
+                currentUserId={currentUserId}
+                isUserOnline={isUserOnline}
+              />
+            }
           />
 
           {/* Sidebar */}
@@ -1009,6 +1255,31 @@ export default function WorkItemDetails({
             childUpdatedAt={unlinkTarget.updated_at}
             parentType={workItem.type as WorkItemType}
             onUnlinked={handleSubtaskUnlinked}
+          />
+        ) : null}
+
+        {detailsPreferences.sections.linkedIssues ? (
+          <WorkItemLinkIssueDialog
+            open={linkIssueDialogOpen}
+            onOpenChange={setLinkIssueDialogOpen}
+            workItemId={workItem.id}
+            candidates={availableLinkableIssues}
+            onLinked={handleIssueLinked}
+          />
+        ) : null}
+
+        {unlinkIssueTarget ? (
+          <WorkItemUnlinkIssueDialog
+            open
+            onOpenChange={(open) => {
+              if (!open) {
+                setUnlinkIssueTarget(null);
+              }
+            }}
+            workItemId={workItem.id}
+            linkId={unlinkIssueTarget.linkId}
+            relatedTitle={unlinkIssueTarget.relatedTitle}
+            onUnlinked={handleIssueUnlinked}
           />
         ) : null}
       </div>

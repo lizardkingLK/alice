@@ -6,7 +6,7 @@ import {
   getWorkItemAncestors,
   getWorkItems,
 } from '@/app/work-items/_services/work-items.reads.server';
-import { getWorkItemAttachments } from '@/app/attachments/_services/attachments.reads.supabase.server';
+import { getWorkItemAttachments } from '@/app/attachments/_services/attachments.reads.server';
 import {
   getCommentCountsByWorkItemIds,
   getWorkItemDiscussion,
@@ -19,7 +19,8 @@ import {
 } from '@/app/projects/_services/projects.reads.server';
 import { EMPTY_ACTIVE_SPRINTS_PAGE } from '@/app/board/_services/board.reads.defaults.server';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
-import { getWorkItemWorkLogs } from '@/app/worklogs/_services/worklogs.reads.supabase.server';
+import { getWorkItemWorkLogs } from '@/app/worklogs/_services/worklogs.reads.server';
+import { getWorkItemLinks } from '@/app/work-items/_services/work-item-links.reads.server';
 import { getDbUser } from '@/lib/auth';
 import { zeroCountsById } from '@/lib/db/query';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
@@ -58,51 +59,78 @@ export async function WorkItemDetailsData({
   const childRecordStatus =
     workItem.record_status === 'archived' ? 'archived' : 'active';
 
-  const [initialWorkLogs, childWorkItems, project, ancestors, linkableRaw] =
-    await Promise.all([
-      safeServerFetch(
-        getWorkItemWorkLogs(workItemId),
-        [],
-        'fetch work logs for work item details'
-      ),
-      safeServerFetch(
-        getWorkItems({
-          parentId: workItemId,
-          recordStatus: childRecordStatus,
-        }),
-        [],
-        'fetch subtasks for work item details'
-      ),
-      workItem.project_id
-        ? safeServerFetch(
-            getProject(workItem.project_id),
-            null,
-            'fetch project for work item details'
-          )
-        : Promise.resolve(null),
-      safeServerFetch(
-        getWorkItemAncestors(workItem.parent_id),
-        [],
-        'fetch ancestors for work item details'
-      ),
-      allowedChildType && workItem.project_id
-        ? safeServerFetch(
-            getWorkItems({
-              projectId: workItem.project_id,
-              type: allowedChildType,
-              parentId: null,
-              recordStatus: 'active',
-            }),
-            [],
-            'fetch linkable subtask candidates'
-          )
-        : Promise.resolve([]),
-    ]);
+  const [
+    initialWorkLogs,
+    childWorkItems,
+    project,
+    ancestors,
+    linkableRaw,
+    initialLinkedIssues,
+    projectWorkItemsRaw,
+  ] = await Promise.all([
+    safeServerFetch(
+      getWorkItemWorkLogs(workItemId),
+      [],
+      'fetch work logs for work item details'
+    ),
+    safeServerFetch(
+      getWorkItems({
+        parentId: workItemId,
+        recordStatus: childRecordStatus,
+      }),
+      [],
+      'fetch subtasks for work item details'
+    ),
+    workItem.project_id
+      ? safeServerFetch(
+          getProject(workItem.project_id),
+          null,
+          'fetch project for work item details'
+        )
+      : Promise.resolve(null),
+    safeServerFetch(
+      getWorkItemAncestors(workItem.parent_id),
+      [],
+      'fetch ancestors for work item details'
+    ),
+    allowedChildType && workItem.project_id
+      ? safeServerFetch(
+          getWorkItems({
+            projectId: workItem.project_id,
+            type: allowedChildType,
+            parentId: null,
+            recordStatus: 'active',
+          }),
+          [],
+          'fetch linkable subtask candidates'
+        )
+      : Promise.resolve([]),
+    getWorkItemLinks(workItemId),
+    workItem.project_id
+      ? safeServerFetch(
+          getWorkItems({
+            projectId: workItem.project_id,
+            recordStatus: 'active',
+          }),
+          [],
+          'fetch project work items for link candidates'
+        )
+      : Promise.resolve([]),
+  ]);
 
   const childIds = new Set(childWorkItems.map((child) => child.id));
   const linkableWorkItems = linkableRaw.filter(
     (item) => item.id !== workItemId && !childIds.has(item.id)
   );
+  // Include currently linked peers — the client filters them out from the
+  // picker using live linkedIssues state so unlink → re-link works without refresh.
+  const linkableIssues = projectWorkItemsRaw
+    .filter((item) => item.id !== workItemId)
+    .map((item) => ({
+      id: item.id,
+      title: item.title,
+      type: item.type,
+    }));
 
   const [
     projectMembers,
@@ -168,6 +196,8 @@ export async function WorkItemDetailsData({
       childWorkItems={childWorkItems}
       childCommentCounts={childCommentCounts}
       linkableWorkItems={linkableWorkItems}
+      initialLinkedIssues={initialLinkedIssues}
+      linkableIssues={linkableIssues}
       ancestors={ancestors}
       project={project}
       initialComments={initialComments}

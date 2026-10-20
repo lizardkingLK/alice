@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useMemo,
   useState,
   useTransition,
@@ -68,6 +69,7 @@ import { UserRoleEnum } from '@repo/types';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import { cn } from '@repo/ui/lib/utils';
 import { formatMonthYear } from '@/app/_shared/utility';
+import { replaceEntityInList } from '@/lib/replace-entity-in-list';
 
 interface ProjectRegistryProps {
   readonly projects: Project[];
@@ -268,6 +270,11 @@ export function ProjectRegistry({
   const [deleteMode, setDeleteMode] = useState<'soft' | 'hard'>('soft');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [localProjects, setLocalProjects] = useState(projects);
+
+  useEffect(() => {
+    setLocalProjects(projects);
+  }, [projects]);
 
   const isManagerOrAdmin =
     currentUserRole === UserRoleEnum.admin ||
@@ -365,8 +372,12 @@ export function ProjectRegistry({
 
   const columns = useMemo(() => PROJECT_COLUMNS, []);
 
+  const handleProjectUpdated = useCallback((updated: Project) => {
+    setLocalProjects((previous) => replaceEntityInList(previous, updated));
+  }, []);
+
   const table = useReactTable({
-    data: projects,
+    data: localProjects,
     columns,
     getCoreRowModel: getCoreRowModel(),
     meta: {
@@ -494,9 +505,9 @@ export function ProjectRegistry({
               users={users}
               projectToEdit={projectToEdit}
               onClose={() => setProjectToEdit(null)}
+              onProjectUpdated={handleProjectUpdated}
               onSuccess={() => {
                 setProjectToEdit(null);
-                router.refresh();
               }}
             />
           </div>

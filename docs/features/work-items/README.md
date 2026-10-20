@@ -6,6 +6,7 @@
 | [ATTACHMENTS.md](./ATTACHMENTS.md)                                  | Private Storage attachments, SSR list, signed URLs on click  | Implemented |
 | [LABELS.md](./LABELS.md)                                            | JSONB text-array labels, create/details edit, search UX      | Implemented |
 | [ACTIVITY.md](./ACTIVITY.md)                                        | Work-item activity timeline next to Discussion               | Plan        |
+| [REALTIME_DISCUSSION.md](./REALTIME_DISCUSSION.md)                  | Planned realtime for Discussion / Activity / Work Log tabs   | Planned     |
 
 > Workflow transitions and escalation resolutions will write to `activities`
 > when [Workflow](../workflow/) ships — see ACTIVITY.md extensions and
@@ -16,7 +17,7 @@ Quick links:
 - Implementation: `apps/web/app/work-items/`
 - Client services: `apps/web/app/work-items/_services/workItem.service.client.ts`
 - Server reads: `apps/web/app/work-items/_services/workItem.service.server.ts`
-- Retrieval toggle: [DATA_RETRIEVAL.md](../../architecture/DATA_RETRIEVAL.md) + [API_VERSIONING.md](../../architecture/API_VERSIONING.md) — **work-items** has dual readers (`reads.supabase` / `reads.api`); default remains SSR unless `DATA_READS_VIA_API=true`
+- Retrieval toggle: [DATA_RETRIEVAL.md](../../architecture/DATA_RETRIEVAL.md) + [API_VERSIONING.md](../../architecture/API_VERSIONING.md) — dual readers (`reads.supabase` / `reads.api`) for work-items and other product domains; default remains SSR unless `DATA_READS_VIA_API=true`
 - API: `apps/api/src/routes/api/work-items/`
 - Schema: `work_items` in `packages/db/prisma/schema.prisma`
 - Shared hierarchy helpers: `packages/types/src/work-item-types.ts`
@@ -43,6 +44,9 @@ Rules enforced on API create/update when `parent_id` is set:
 - Child must be in the same project
 - Child `type` must match the table above
 - A work item cannot be its own parent
+- Child `sprint_id` must match the parent (including backlog / `null`).
+  Backlog drag-and-drop surfaces this as **Sprint follows parent** rather than
+  a project mismatch.
 
 ### Removing allowed types (project settings)
 
@@ -133,9 +137,13 @@ A work item **cannot** move to **Done** while any **direct** child (`parent_id =
 - **UI (details sidebar):** choosing Done opens an acknowledgment dialog (`IncompleteSubtasksDoneBlockedDialog`) — OK only; no force-through. Complete or unlink incomplete children first.
 - **API:** `PATCH` that sets `status` to `Done` counts incomplete children and returns **400** (`WorkItemValidationError`) when the count is > 0. Already-Done items are not re-validated on no-op updates.
 
-### Incomplete blocker linked issues (planned)
+### Linked issues (`relates_to`)
 
-The same acknowledgment pattern will apply when linked issues with a **blocks** relationship are not Done. Not enforced yet — document only until link-type / blocker UX ships.
+Peer links live in `work_item_links` (canonical id order; type `relates_to` only).
+
+- **UI (details):** **Link issue** opens a project-wide picker; the Linked issues section lists peers under **relates to** with unlink confirm.
+- **API:** `GET/POST /api/work-items/:id/links`, `DELETE /api/work-items/:id/links/:linkId`.
+- **Workflow gate:** edge field `requireLinkedIssues` (`off` | `unlink_first`) — not a global Done/blocks rule. Details shows an acknowledgment dialog when a status change is blocked for linked issues; board toasts **Move blocked**.
 
 ### Done → read-only except Status (implemented)
 

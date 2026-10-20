@@ -228,6 +228,10 @@ Named forms live in `resolutionPresets[]` on each workflow document.
 
 `requireChildren`: `off` | `all_complete` | `match_parent_target`.
 
+`requireLinkedIssues`: `off` | `unlink_first` (peer `relates_to` links only;
+default `off`). Legacy `match_parent_target` coerces to `off` on parse — that
+option was removed because undirected peers can deadlock.
+
 Fallback: `null`, parse failure, or Zod failure → **seeded default** workflow
 document (and default board lanes). Optional manager-only soft notice later.
 

@@ -43,12 +43,19 @@ vi.mock('@/lib/supabase/client', () => {
       Promise.resolve({ data: { user: null }, error: null })
     );
 
+  const mockRealtimeChannel = {
+    on: vi.fn().mockReturnThis(),
+    subscribe: vi.fn(),
+  };
+
   return {
     createClient: vi.fn(() => ({
       from: mockFrom,
       auth: {
         getUser: mockGetUser,
       },
+      channel: vi.fn(() => mockRealtimeChannel),
+      removeChannel: vi.fn(),
     })),
   };
 });

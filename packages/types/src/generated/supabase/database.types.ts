@@ -1708,6 +1708,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_backlog_workspace_bundle: {
+        Args: { p_project_ids: string[] }
+        Returns: Json
+      }
+      get_project_workspace_bundle: {
+        Args: { p_project_id: string }
+        Returns: Json
+      }
+      get_work_items_hierarchy_page: {
+        Args: {
+          p_assignee_id?: string | null
+          p_focus_id?: string | null
+          p_labels?: Json | null
+          p_page?: number
+          p_page_size?: number
+          p_project_id?: string | null
+          p_project_ids?: string[] | null
+          p_record_status?: string
+          p_search?: string | null
+          p_sprint_id?: string | null
+          p_sprint_is_null?: boolean
+          p_type?: Database["public"]["Enums"]["WorkItemType"] | null
+        }
+        Returns: Json
+      }
       deactivate_user_guarded: {
         Args: {
           p_actor_id: string

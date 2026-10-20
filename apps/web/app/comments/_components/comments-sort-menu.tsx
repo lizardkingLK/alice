@@ -28,6 +28,7 @@ export function CommentsSortMenu({
           variant="ghost"
           size="icon-sm"
           aria-label="Sort comments"
+          title="Sort comments"
           aria-pressed={sortOrder === 'newest'}
         >
           <ArrowUpDown className="size-4" />

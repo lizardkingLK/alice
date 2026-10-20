@@ -24,6 +24,16 @@ export const WORKFLOW_REQUIRE_CHILDREN = [
 export type WorkflowRequireChildren =
   (typeof WORKFLOW_REQUIRE_CHILDREN)[number];
 
+/**
+ * Gate peer `relates_to` links on a transition (not hierarchy).
+ * No `match_parent_target` — undirected peers would deadlock if both edges wait.
+ * Legacy saved `match_parent_target` values coerce to `off` on parse.
+ */
+export const WORKFLOW_REQUIRE_LINKED_ISSUES = ['off', 'unlink_first'] as const;
+
+export type WorkflowRequireLinkedIssues =
+  (typeof WORKFLOW_REQUIRE_LINKED_ISSUES)[number];
+
 const workItemTypeSchema = z.enum(Constants.public.Enums.WorkItemType);
 
 const workflowStateCategorySchema = z.enum(WORKFLOW_STATE_CATEGORIES);
@@ -68,6 +78,10 @@ export const workflowEdgeSchema = z
     requiresEscalation: z.boolean().default(false),
     resolutionPresetId: z.string().trim().min(1).nullable().default(null),
     requireChildren: z.enum(WORKFLOW_REQUIRE_CHILDREN).default('off'),
+    requireLinkedIssues: z.preprocess(
+      (value) => (value === 'match_parent_target' ? 'off' : value),
+      z.enum(WORKFLOW_REQUIRE_LINKED_ISSUES).default('off')
+    ),
   })
   .superRefine((edge, context) => {
     if (edge.from === edge.to) {
@@ -422,6 +436,7 @@ function seededDefaultEdges(): WorkflowEdge[] {
       requiresEscalation: false,
       resolutionPresetId: null,
       requireChildren: to === WorkItemStatusEnum.Done ? 'all_complete' : 'off',
+      requireLinkedIssues: 'off',
     });
   }
 
@@ -434,6 +449,7 @@ function seededDefaultEdges(): WorkflowEdge[] {
     requiresEscalation: false,
     resolutionPresetId: null,
     requireChildren: 'off',
+    requireLinkedIssues: 'off',
   });
 
   return forward;

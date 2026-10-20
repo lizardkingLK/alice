@@ -6,12 +6,18 @@ const {
   verifyConversationOwnerMock,
   deleteConversationMock,
   resolveChatModelForChatMock,
+  setProcessingStatusMock,
+  saveChatHistoryMock,
+  processChatAsyncMock,
 } = vi.hoisted(() => ({
   listConversationsMock: vi.fn(),
   loadChatHistoryMock: vi.fn(),
   verifyConversationOwnerMock: vi.fn(),
   deleteConversationMock: vi.fn(),
   resolveChatModelForChatMock: vi.fn(),
+  setProcessingStatusMock: vi.fn(),
+  saveChatHistoryMock: vi.fn(),
+  processChatAsyncMock: vi.fn(),
 }));
 
 vi.mock('../../src/middlewares/auth', async () => {
@@ -26,6 +32,9 @@ vi.mock('../../src/routes/api/chat/chat.service', () => {
     verifyConversationOwner = verifyConversationOwnerMock;
     deleteConversation = deleteConversationMock;
     resolveChatModelForChat = resolveChatModelForChatMock;
+    setProcessingStatus = setProcessingStatusMock;
+    saveChatHistory = saveChatHistoryMock;
+    processChatAsync = processChatAsyncMock;
   }
 
   return { ChatService, sanitizeLog: (value: string) => value };
@@ -42,6 +51,9 @@ const chatService = {
   verifyConversationOwner: verifyConversationOwnerMock,
   deleteConversation: deleteConversationMock,
   resolveChatModelForChat: resolveChatModelForChatMock,
+  setProcessingStatus: setProcessingStatusMock,
+  saveChatHistory: saveChatHistoryMock,
+  processChatAsync: processChatAsyncMock,
 } as unknown as ChatService;
 
 const chatRouter = createChatRouter({ chatService });
@@ -53,6 +65,9 @@ describe('chat routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     verifyConversationOwnerMock.mockResolvedValue(true);
+    setProcessingStatusMock.mockResolvedValue(undefined);
+    saveChatHistoryMock.mockResolvedValue(undefined);
+    processChatAsyncMock.mockResolvedValue(undefined);
   });
 
   it('returns 400 for invalid post bodies', async () => {
@@ -141,5 +156,115 @@ describe('chat routes', () => {
       expect(response.status).toBe(400);
       expect(body.error).toBe('No chat model configured');
     });
+  });
+
+  it('starts background processing for an owned existing conversation with the selected model', async () => {
+    const chatModelConfig = {
+      integrationId,
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      apiKey: 'test-key',
+      apiUrl: 'https://api.anthropic.com/v1/messages',
+    };
+    resolveChatModelForChatMock.mockResolvedValue(chatModelConfig);
+
+    await withMountedRouter('/api/v1/chat', chatRouter, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/v1/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            { id: 'message-1', role: 'user', content: 'Continue this chat' },
+          ],
+          conversationId,
+          integrationId,
+        }),
+      });
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body).toMatchObject({
+        reply: 'Processing request...',
+        conversationId,
+        is_processing: true,
+        actions: [],
+        history: [
+          {
+            id: 'message-1',
+            role: 'user',
+            content: 'Continue this chat',
+            actions: [],
+          },
+        ],
+      });
+    });
+
+    expect(resolveChatModelForChatMock).toHaveBeenCalledWith({
+      integrationId,
+      legacyModelId: undefined,
+    });
+    expect(verifyConversationOwnerMock).toHaveBeenCalledWith(
+      MOCK_AUTH_USER_ID,
+      conversationId
+    );
+    expect(setProcessingStatusMock).toHaveBeenCalledWith(conversationId, true);
+    expect(saveChatHistoryMock).toHaveBeenCalledWith(
+      conversationId,
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'message-1',
+          role: 'user',
+          content: 'Continue this chat',
+        }),
+      ])
+    );
+    expect(processChatAsyncMock).toHaveBeenCalledWith(
+      MOCK_AUTH_USER_ID,
+      conversationId,
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'message-1',
+          content: 'Continue this chat',
+        }),
+      ]),
+      chatModelConfig,
+      undefined
+    );
+  });
+
+  it('rejects an existing-conversation message from a non-owner before saving or processing', async () => {
+    resolveChatModelForChatMock.mockResolvedValue({
+      integrationId,
+      provider: 'openai',
+      model: 'gpt-4o',
+      apiKey: 'test-key',
+      apiUrl: 'https://api.openai.com/v1/chat/completions',
+    });
+    verifyConversationOwnerMock.mockResolvedValue(false);
+
+    await withMountedRouter('/api/v1/chat', chatRouter, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/v1/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: 'Unauthorized message' }],
+          conversationId,
+          integrationId,
+        }),
+      });
+
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({
+        error: 'Access denied: You do not own this conversation.',
+      });
+    });
+
+    expect(verifyConversationOwnerMock).toHaveBeenCalledWith(
+      MOCK_AUTH_USER_ID,
+      conversationId
+    );
+    expect(setProcessingStatusMock).not.toHaveBeenCalled();
+    expect(saveChatHistoryMock).not.toHaveBeenCalled();
+    expect(processChatAsyncMock).not.toHaveBeenCalled();
   });
 });

@@ -1,16 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { throwIfError } from '@/lib/db/query';
-import { getUser } from '@/lib/auth';
-import { safeServerFetch } from '@/lib/safe-server-fetch';
 import { ATTACHMENT_SELECT, type AttachmentWithUploader } from '@repo/types';
-
-export type { AttachmentWithUploader };
 
 /**
  * Direct Supabase RSC reader for work-item attachment metadata.
  * No signed URLs — mint those on click via the attachments API.
  */
-async function fetchWorkItemAttachments(
+export async function fetchWorkItemAttachmentsFromSupabase(
   workItemId: string
 ): Promise<AttachmentWithUploader[]> {
   const supabase = await createClient();
@@ -28,20 +24,4 @@ async function fetchWorkItemAttachments(
   );
 
   return (data as AttachmentWithUploader[] | null) ?? [];
-}
-
-/** SSR entry — empty when unsigned-in; soft-falls back on query failure. */
-export async function getWorkItemAttachments(
-  workItemId: string
-): Promise<AttachmentWithUploader[]> {
-  const user = await getUser();
-  if (!user) {
-    return [];
-  }
-
-  return safeServerFetch(
-    fetchWorkItemAttachments(workItemId),
-    [],
-    `fetch attachments for work item ${workItemId}`
-  );
 }

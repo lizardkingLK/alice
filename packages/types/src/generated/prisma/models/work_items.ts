@@ -386,6 +386,8 @@ export type work_itemsWhereInput = {
   activities?: Prisma.ActivitiesListRelationFilter
   github_pull_requests?: Prisma.Github_pull_requestsListRelationFilter
   chart_hierarchy_rollup?: Prisma.XOR<Prisma.Work_item_chart_hierarchy_rollupsNullableScalarRelationFilter, Prisma.work_item_chart_hierarchy_rollupsWhereInput> | null
+  links_as_source?: Prisma.Work_item_linksListRelationFilter
+  links_as_target?: Prisma.Work_item_linksListRelationFilter
 }
 
 export type work_itemsOrderByWithRelationInput = {
@@ -429,6 +431,8 @@ export type work_itemsOrderByWithRelationInput = {
   activities?: Prisma.activitiesOrderByRelationAggregateInput
   github_pull_requests?: Prisma.github_pull_requestsOrderByRelationAggregateInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsOrderByWithRelationInput
+  links_as_source?: Prisma.work_item_linksOrderByRelationAggregateInput
+  links_as_target?: Prisma.work_item_linksOrderByRelationAggregateInput
 }
 
 export type work_itemsWhereUniqueInput = Prisma.AtLeast<{
@@ -476,6 +480,8 @@ export type work_itemsWhereUniqueInput = Prisma.AtLeast<{
   activities?: Prisma.ActivitiesListRelationFilter
   github_pull_requests?: Prisma.Github_pull_requestsListRelationFilter
   chart_hierarchy_rollup?: Prisma.XOR<Prisma.Work_item_chart_hierarchy_rollupsNullableScalarRelationFilter, Prisma.work_item_chart_hierarchy_rollupsWhereInput> | null
+  links_as_source?: Prisma.Work_item_linksListRelationFilter
+  links_as_target?: Prisma.Work_item_linksListRelationFilter
 }, "id" | "project_id_jira_issue_key">
 
 export type work_itemsOrderByWithAggregationInput = {
@@ -578,6 +584,8 @@ export type work_itemsCreateInput = {
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsUncheckedCreateInput = {
@@ -614,6 +622,8 @@ export type work_itemsUncheckedCreateInput = {
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsUpdateInput = {
@@ -650,6 +660,8 @@ export type work_itemsUpdateInput = {
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateInput = {
@@ -686,6 +698,8 @@ export type work_itemsUncheckedUpdateInput = {
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsCreateManyInput = {
@@ -1204,6 +1218,34 @@ export type work_itemsUncheckedUpdateManyWithoutParentNestedInput = {
   deleteMany?: Prisma.work_itemsScalarWhereInput | Prisma.work_itemsScalarWhereInput[]
 }
 
+export type work_itemsCreateNestedOneWithoutLinks_as_sourceInput = {
+  create?: Prisma.XOR<Prisma.work_itemsCreateWithoutLinks_as_sourceInput, Prisma.work_itemsUncheckedCreateWithoutLinks_as_sourceInput>
+  connectOrCreate?: Prisma.work_itemsCreateOrConnectWithoutLinks_as_sourceInput
+  connect?: Prisma.work_itemsWhereUniqueInput
+}
+
+export type work_itemsCreateNestedOneWithoutLinks_as_targetInput = {
+  create?: Prisma.XOR<Prisma.work_itemsCreateWithoutLinks_as_targetInput, Prisma.work_itemsUncheckedCreateWithoutLinks_as_targetInput>
+  connectOrCreate?: Prisma.work_itemsCreateOrConnectWithoutLinks_as_targetInput
+  connect?: Prisma.work_itemsWhereUniqueInput
+}
+
+export type work_itemsUpdateOneRequiredWithoutLinks_as_sourceNestedInput = {
+  create?: Prisma.XOR<Prisma.work_itemsCreateWithoutLinks_as_sourceInput, Prisma.work_itemsUncheckedCreateWithoutLinks_as_sourceInput>
+  connectOrCreate?: Prisma.work_itemsCreateOrConnectWithoutLinks_as_sourceInput
+  upsert?: Prisma.work_itemsUpsertWithoutLinks_as_sourceInput
+  connect?: Prisma.work_itemsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.work_itemsUpdateToOneWithWhereWithoutLinks_as_sourceInput, Prisma.work_itemsUpdateWithoutLinks_as_sourceInput>, Prisma.work_itemsUncheckedUpdateWithoutLinks_as_sourceInput>
+}
+
+export type work_itemsUpdateOneRequiredWithoutLinks_as_targetNestedInput = {
+  create?: Prisma.XOR<Prisma.work_itemsCreateWithoutLinks_as_targetInput, Prisma.work_itemsUncheckedCreateWithoutLinks_as_targetInput>
+  connectOrCreate?: Prisma.work_itemsCreateOrConnectWithoutLinks_as_targetInput
+  upsert?: Prisma.work_itemsUpsertWithoutLinks_as_targetInput
+  connect?: Prisma.work_itemsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.work_itemsUpdateToOneWithWhereWithoutLinks_as_targetInput, Prisma.work_itemsUpdateWithoutLinks_as_targetInput>, Prisma.work_itemsUncheckedUpdateWithoutLinks_as_targetInput>
+}
+
 export type work_itemsCreateNestedOneWithoutActivitiesInput = {
   create?: Prisma.XOR<Prisma.work_itemsCreateWithoutActivitiesInput, Prisma.work_itemsUncheckedCreateWithoutActivitiesInput>
   connectOrCreate?: Prisma.work_itemsCreateOrConnectWithoutActivitiesInput
@@ -1321,6 +1363,8 @@ export type work_itemsCreateWithoutAssigneeInput = {
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsUncheckedCreateWithoutAssigneeInput = {
@@ -1356,6 +1400,8 @@ export type work_itemsUncheckedCreateWithoutAssigneeInput = {
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsCreateOrConnectWithoutAssigneeInput = {
@@ -1401,6 +1447,8 @@ export type work_itemsCreateWithoutReporterInput = {
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsUncheckedCreateWithoutReporterInput = {
@@ -1436,6 +1484,8 @@ export type work_itemsUncheckedCreateWithoutReporterInput = {
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsCreateOrConnectWithoutReporterInput = {
@@ -1481,6 +1531,8 @@ export type work_itemsCreateWithoutCreated_by_userInput = {
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsUncheckedCreateWithoutCreated_by_userInput = {
@@ -1516,6 +1568,8 @@ export type work_itemsUncheckedCreateWithoutCreated_by_userInput = {
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsCreateOrConnectWithoutCreated_by_userInput = {
@@ -1561,6 +1615,8 @@ export type work_itemsCreateWithoutUpdated_by_userInput = {
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsUncheckedCreateWithoutUpdated_by_userInput = {
@@ -1596,6 +1652,8 @@ export type work_itemsUncheckedCreateWithoutUpdated_by_userInput = {
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsCreateOrConnectWithoutUpdated_by_userInput = {
@@ -1737,6 +1795,8 @@ export type work_itemsCreateWithoutProjectInput = {
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsUncheckedCreateWithoutProjectInput = {
@@ -1772,6 +1832,8 @@ export type work_itemsUncheckedCreateWithoutProjectInput = {
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsCreateOrConnectWithoutProjectInput = {
@@ -1833,6 +1895,8 @@ export type work_itemsCreateWithoutSprintInput = {
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsUncheckedCreateWithoutSprintInput = {
@@ -1868,6 +1932,8 @@ export type work_itemsUncheckedCreateWithoutSprintInput = {
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsCreateOrConnectWithoutSprintInput = {
@@ -1929,6 +1995,8 @@ export type work_itemsCreateWithoutChildrenInput = {
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsUncheckedCreateWithoutChildrenInput = {
@@ -1964,6 +2032,8 @@ export type work_itemsUncheckedCreateWithoutChildrenInput = {
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsCreateOrConnectWithoutChildrenInput = {
@@ -2004,6 +2074,8 @@ export type work_itemsCreateWithoutParentInput = {
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsUncheckedCreateWithoutParentInput = {
@@ -2039,6 +2111,8 @@ export type work_itemsUncheckedCreateWithoutParentInput = {
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsCreateOrConnectWithoutParentInput = {
@@ -2095,6 +2169,8 @@ export type work_itemsUpdateWithoutChildrenInput = {
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateWithoutChildrenInput = {
@@ -2130,6 +2206,8 @@ export type work_itemsUncheckedUpdateWithoutChildrenInput = {
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUpsertWithWhereUniqueWithoutParentInput = {
@@ -2146,6 +2224,334 @@ export type work_itemsUpdateWithWhereUniqueWithoutParentInput = {
 export type work_itemsUpdateManyWithWhereWithoutParentInput = {
   where: Prisma.work_itemsScalarWhereInput
   data: Prisma.XOR<Prisma.work_itemsUpdateManyMutationInput, Prisma.work_itemsUncheckedUpdateManyWithoutParentInput>
+}
+
+export type work_itemsCreateWithoutLinks_as_sourceInput = {
+  id?: string
+  title: string
+  type: $Enums.WorkItemType
+  priority?: $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  due_date?: Date | string | null
+  story_points?: number | null
+  status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
+  record_status?: $Enums.RecordStatus
+  done_at?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  jira_issue_key?: string | null
+  project: Prisma.projectsCreateNestedOneWithoutWork_itemsInput
+  sprint?: Prisma.sprintsCreateNestedOneWithoutWork_itemsInput
+  parent?: Prisma.work_itemsCreateNestedOneWithoutChildrenInput
+  children?: Prisma.work_itemsCreateNestedManyWithoutParentInput
+  assignee?: Prisma.usersCreateNestedOneWithoutAssigned_work_itemsInput
+  reporter?: Prisma.usersCreateNestedOneWithoutReported_work_itemsInput
+  created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_work_itemsInput
+  updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_work_itemsInput
+  comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
+  attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
+  worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
+  github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
+  chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
+}
+
+export type work_itemsUncheckedCreateWithoutLinks_as_sourceInput = {
+  id?: string
+  project_id: string
+  sprint_id?: string | null
+  parent_id?: string | null
+  title: string
+  type: $Enums.WorkItemType
+  priority?: $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  assignee_id?: string | null
+  reporter_id?: string | null
+  due_date?: Date | string | null
+  story_points?: number | null
+  status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
+  record_status?: $Enums.RecordStatus
+  done_at?: Date | string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  jira_issue_key?: string | null
+  children?: Prisma.work_itemsUncheckedCreateNestedManyWithoutParentInput
+  comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
+  attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
+  worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
+  github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
+}
+
+export type work_itemsCreateOrConnectWithoutLinks_as_sourceInput = {
+  where: Prisma.work_itemsWhereUniqueInput
+  create: Prisma.XOR<Prisma.work_itemsCreateWithoutLinks_as_sourceInput, Prisma.work_itemsUncheckedCreateWithoutLinks_as_sourceInput>
+}
+
+export type work_itemsCreateWithoutLinks_as_targetInput = {
+  id?: string
+  title: string
+  type: $Enums.WorkItemType
+  priority?: $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  due_date?: Date | string | null
+  story_points?: number | null
+  status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
+  record_status?: $Enums.RecordStatus
+  done_at?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  jira_issue_key?: string | null
+  project: Prisma.projectsCreateNestedOneWithoutWork_itemsInput
+  sprint?: Prisma.sprintsCreateNestedOneWithoutWork_itemsInput
+  parent?: Prisma.work_itemsCreateNestedOneWithoutChildrenInput
+  children?: Prisma.work_itemsCreateNestedManyWithoutParentInput
+  assignee?: Prisma.usersCreateNestedOneWithoutAssigned_work_itemsInput
+  reporter?: Prisma.usersCreateNestedOneWithoutReported_work_itemsInput
+  created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_work_itemsInput
+  updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_work_itemsInput
+  comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
+  attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
+  worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
+  github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
+  chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+}
+
+export type work_itemsUncheckedCreateWithoutLinks_as_targetInput = {
+  id?: string
+  project_id: string
+  sprint_id?: string | null
+  parent_id?: string | null
+  title: string
+  type: $Enums.WorkItemType
+  priority?: $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  assignee_id?: string | null
+  reporter_id?: string | null
+  due_date?: Date | string | null
+  story_points?: number | null
+  status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
+  record_status?: $Enums.RecordStatus
+  done_at?: Date | string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  jira_issue_key?: string | null
+  children?: Prisma.work_itemsUncheckedCreateNestedManyWithoutParentInput
+  comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
+  attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
+  worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
+  github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+}
+
+export type work_itemsCreateOrConnectWithoutLinks_as_targetInput = {
+  where: Prisma.work_itemsWhereUniqueInput
+  create: Prisma.XOR<Prisma.work_itemsCreateWithoutLinks_as_targetInput, Prisma.work_itemsUncheckedCreateWithoutLinks_as_targetInput>
+}
+
+export type work_itemsUpsertWithoutLinks_as_sourceInput = {
+  update: Prisma.XOR<Prisma.work_itemsUpdateWithoutLinks_as_sourceInput, Prisma.work_itemsUncheckedUpdateWithoutLinks_as_sourceInput>
+  create: Prisma.XOR<Prisma.work_itemsCreateWithoutLinks_as_sourceInput, Prisma.work_itemsUncheckedCreateWithoutLinks_as_sourceInput>
+  where?: Prisma.work_itemsWhereInput
+}
+
+export type work_itemsUpdateToOneWithWhereWithoutLinks_as_sourceInput = {
+  where?: Prisma.work_itemsWhereInput
+  data: Prisma.XOR<Prisma.work_itemsUpdateWithoutLinks_as_sourceInput, Prisma.work_itemsUncheckedUpdateWithoutLinks_as_sourceInput>
+}
+
+export type work_itemsUpdateWithoutLinks_as_sourceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
+  record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  jira_issue_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  project?: Prisma.projectsUpdateOneRequiredWithoutWork_itemsNestedInput
+  sprint?: Prisma.sprintsUpdateOneWithoutWork_itemsNestedInput
+  parent?: Prisma.work_itemsUpdateOneWithoutChildrenNestedInput
+  children?: Prisma.work_itemsUpdateManyWithoutParentNestedInput
+  assignee?: Prisma.usersUpdateOneWithoutAssigned_work_itemsNestedInput
+  reporter?: Prisma.usersUpdateOneWithoutReported_work_itemsNestedInput
+  created_by_user?: Prisma.usersUpdateOneWithoutCreated_work_itemsNestedInput
+  updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_work_itemsNestedInput
+  comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
+  attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
+  worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
+  github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
+}
+
+export type work_itemsUncheckedUpdateWithoutLinks_as_sourceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  assignee_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reporter_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
+  record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  jira_issue_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  children?: Prisma.work_itemsUncheckedUpdateManyWithoutParentNestedInput
+  comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
+  attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
+  worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
+  github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
+}
+
+export type work_itemsUpsertWithoutLinks_as_targetInput = {
+  update: Prisma.XOR<Prisma.work_itemsUpdateWithoutLinks_as_targetInput, Prisma.work_itemsUncheckedUpdateWithoutLinks_as_targetInput>
+  create: Prisma.XOR<Prisma.work_itemsCreateWithoutLinks_as_targetInput, Prisma.work_itemsUncheckedCreateWithoutLinks_as_targetInput>
+  where?: Prisma.work_itemsWhereInput
+}
+
+export type work_itemsUpdateToOneWithWhereWithoutLinks_as_targetInput = {
+  where?: Prisma.work_itemsWhereInput
+  data: Prisma.XOR<Prisma.work_itemsUpdateWithoutLinks_as_targetInput, Prisma.work_itemsUncheckedUpdateWithoutLinks_as_targetInput>
+}
+
+export type work_itemsUpdateWithoutLinks_as_targetInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
+  record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  jira_issue_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  project?: Prisma.projectsUpdateOneRequiredWithoutWork_itemsNestedInput
+  sprint?: Prisma.sprintsUpdateOneWithoutWork_itemsNestedInput
+  parent?: Prisma.work_itemsUpdateOneWithoutChildrenNestedInput
+  children?: Prisma.work_itemsUpdateManyWithoutParentNestedInput
+  assignee?: Prisma.usersUpdateOneWithoutAssigned_work_itemsNestedInput
+  reporter?: Prisma.usersUpdateOneWithoutReported_work_itemsNestedInput
+  created_by_user?: Prisma.usersUpdateOneWithoutCreated_work_itemsNestedInput
+  updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_work_itemsNestedInput
+  comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
+  attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
+  worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
+  github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+}
+
+export type work_itemsUncheckedUpdateWithoutLinks_as_targetInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  assignee_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reporter_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
+  record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  jira_issue_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  children?: Prisma.work_itemsUncheckedUpdateManyWithoutParentNestedInput
+  comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
+  attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
+  worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
+  github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
 }
 
 export type work_itemsCreateWithoutActivitiesInput = {
@@ -2181,6 +2587,8 @@ export type work_itemsCreateWithoutActivitiesInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsUncheckedCreateWithoutActivitiesInput = {
@@ -2216,6 +2624,8 @@ export type work_itemsUncheckedCreateWithoutActivitiesInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsCreateOrConnectWithoutActivitiesInput = {
@@ -2267,6 +2677,8 @@ export type work_itemsUpdateWithoutActivitiesInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateWithoutActivitiesInput = {
@@ -2302,6 +2714,8 @@ export type work_itemsUncheckedUpdateWithoutActivitiesInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsCreateWithoutChart_hierarchy_rollupInput = {
@@ -2337,6 +2751,8 @@ export type work_itemsCreateWithoutChart_hierarchy_rollupInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsUncheckedCreateWithoutChart_hierarchy_rollupInput = {
@@ -2372,6 +2788,8 @@ export type work_itemsUncheckedCreateWithoutChart_hierarchy_rollupInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsCreateOrConnectWithoutChart_hierarchy_rollupInput = {
@@ -2423,6 +2841,8 @@ export type work_itemsUpdateWithoutChart_hierarchy_rollupInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateWithoutChart_hierarchy_rollupInput = {
@@ -2458,6 +2878,8 @@ export type work_itemsUncheckedUpdateWithoutChart_hierarchy_rollupInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsCreateWithoutWorklogsInput = {
@@ -2493,6 +2915,8 @@ export type work_itemsCreateWithoutWorklogsInput = {
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsUncheckedCreateWithoutWorklogsInput = {
@@ -2528,6 +2952,8 @@ export type work_itemsUncheckedCreateWithoutWorklogsInput = {
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsCreateOrConnectWithoutWorklogsInput = {
@@ -2579,6 +3005,8 @@ export type work_itemsUpdateWithoutWorklogsInput = {
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateWithoutWorklogsInput = {
@@ -2614,6 +3042,8 @@ export type work_itemsUncheckedUpdateWithoutWorklogsInput = {
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsCreateWithoutCommentsInput = {
@@ -2649,6 +3079,8 @@ export type work_itemsCreateWithoutCommentsInput = {
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsUncheckedCreateWithoutCommentsInput = {
@@ -2684,6 +3116,8 @@ export type work_itemsUncheckedCreateWithoutCommentsInput = {
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsCreateOrConnectWithoutCommentsInput = {
@@ -2735,6 +3169,8 @@ export type work_itemsUpdateWithoutCommentsInput = {
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateWithoutCommentsInput = {
@@ -2770,6 +3206,8 @@ export type work_itemsUncheckedUpdateWithoutCommentsInput = {
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsCreateWithoutAttachmentsInput = {
@@ -2805,6 +3243,8 @@ export type work_itemsCreateWithoutAttachmentsInput = {
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsUncheckedCreateWithoutAttachmentsInput = {
@@ -2840,6 +3280,8 @@ export type work_itemsUncheckedCreateWithoutAttachmentsInput = {
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsCreateOrConnectWithoutAttachmentsInput = {
@@ -2891,6 +3333,8 @@ export type work_itemsUpdateWithoutAttachmentsInput = {
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateWithoutAttachmentsInput = {
@@ -2926,6 +3370,8 @@ export type work_itemsUncheckedUpdateWithoutAttachmentsInput = {
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsCreateWithoutGithub_pull_requestsInput = {
@@ -2961,6 +3407,8 @@ export type work_itemsCreateWithoutGithub_pull_requestsInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsUncheckedCreateWithoutGithub_pull_requestsInput = {
@@ -2996,6 +3444,8 @@ export type work_itemsUncheckedCreateWithoutGithub_pull_requestsInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
 
 export type work_itemsCreateOrConnectWithoutGithub_pull_requestsInput = {
@@ -3047,6 +3497,8 @@ export type work_itemsUpdateWithoutGithub_pull_requestsInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateWithoutGithub_pull_requestsInput = {
@@ -3082,6 +3534,8 @@ export type work_itemsUncheckedUpdateWithoutGithub_pull_requestsInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsCreateManyAssigneeInput = {
@@ -3229,6 +3683,8 @@ export type work_itemsUpdateWithoutAssigneeInput = {
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateWithoutAssigneeInput = {
@@ -3264,6 +3720,8 @@ export type work_itemsUncheckedUpdateWithoutAssigneeInput = {
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateManyWithoutAssigneeInput = {
@@ -3327,6 +3785,8 @@ export type work_itemsUpdateWithoutReporterInput = {
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateWithoutReporterInput = {
@@ -3362,6 +3822,8 @@ export type work_itemsUncheckedUpdateWithoutReporterInput = {
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateManyWithoutReporterInput = {
@@ -3425,6 +3887,8 @@ export type work_itemsUpdateWithoutCreated_by_userInput = {
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateWithoutCreated_by_userInput = {
@@ -3460,6 +3924,8 @@ export type work_itemsUncheckedUpdateWithoutCreated_by_userInput = {
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateManyWithoutCreated_by_userInput = {
@@ -3523,6 +3989,8 @@ export type work_itemsUpdateWithoutUpdated_by_userInput = {
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateWithoutUpdated_by_userInput = {
@@ -3558,6 +4026,8 @@ export type work_itemsUncheckedUpdateWithoutUpdated_by_userInput = {
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateManyWithoutUpdated_by_userInput = {
@@ -3649,6 +4119,8 @@ export type work_itemsUpdateWithoutProjectInput = {
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateWithoutProjectInput = {
@@ -3684,6 +4156,8 @@ export type work_itemsUncheckedUpdateWithoutProjectInput = {
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateManyWithoutProjectInput = {
@@ -3775,6 +4249,8 @@ export type work_itemsUpdateWithoutSprintInput = {
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateWithoutSprintInput = {
@@ -3810,6 +4286,8 @@ export type work_itemsUncheckedUpdateWithoutSprintInput = {
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateManyWithoutSprintInput = {
@@ -3901,6 +4379,8 @@ export type work_itemsUpdateWithoutParentInput = {
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateWithoutParentInput = {
@@ -3936,6 +4416,8 @@ export type work_itemsUncheckedUpdateWithoutParentInput = {
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   github_pull_requests?: Prisma.github_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
 
 export type work_itemsUncheckedUpdateManyWithoutParentInput = {
@@ -3978,6 +4460,8 @@ export type Work_itemsCountOutputType = {
   worklogs: number
   activities: number
   github_pull_requests: number
+  links_as_source: number
+  links_as_target: number
 }
 
 export type Work_itemsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3987,6 +4471,8 @@ export type Work_itemsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extens
   worklogs?: boolean | Work_itemsCountOutputTypeCountWorklogsArgs
   activities?: boolean | Work_itemsCountOutputTypeCountActivitiesArgs
   github_pull_requests?: boolean | Work_itemsCountOutputTypeCountGithub_pull_requestsArgs
+  links_as_source?: boolean | Work_itemsCountOutputTypeCountLinks_as_sourceArgs
+  links_as_target?: boolean | Work_itemsCountOutputTypeCountLinks_as_targetArgs
 }
 
 /**
@@ -4041,6 +4527,20 @@ export type Work_itemsCountOutputTypeCountGithub_pull_requestsArgs<ExtArgs exten
   where?: Prisma.github_pull_requestsWhereInput
 }
 
+/**
+ * Work_itemsCountOutputType without action
+ */
+export type Work_itemsCountOutputTypeCountLinks_as_sourceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.work_item_linksWhereInput
+}
+
+/**
+ * Work_itemsCountOutputType without action
+ */
+export type Work_itemsCountOutputTypeCountLinks_as_targetArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.work_item_linksWhereInput
+}
+
 
 export type work_itemsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -4083,6 +4583,8 @@ export type work_itemsSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   activities?: boolean | Prisma.work_items$activitiesArgs<ExtArgs>
   github_pull_requests?: boolean | Prisma.work_items$github_pull_requestsArgs<ExtArgs>
   chart_hierarchy_rollup?: boolean | Prisma.work_items$chart_hierarchy_rollupArgs<ExtArgs>
+  links_as_source?: boolean | Prisma.work_items$links_as_sourceArgs<ExtArgs>
+  links_as_target?: boolean | Prisma.work_items$links_as_targetArgs<ExtArgs>
   _count?: boolean | Prisma.Work_itemsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["work_items"]>
 
@@ -4203,6 +4705,8 @@ export type work_itemsInclude<ExtArgs extends runtime.Types.Extensions.InternalA
   activities?: boolean | Prisma.work_items$activitiesArgs<ExtArgs>
   github_pull_requests?: boolean | Prisma.work_items$github_pull_requestsArgs<ExtArgs>
   chart_hierarchy_rollup?: boolean | Prisma.work_items$chart_hierarchy_rollupArgs<ExtArgs>
+  links_as_source?: boolean | Prisma.work_items$links_as_sourceArgs<ExtArgs>
+  links_as_target?: boolean | Prisma.work_items$links_as_targetArgs<ExtArgs>
   _count?: boolean | Prisma.Work_itemsCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type work_itemsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -4241,6 +4745,8 @@ export type $work_itemsPayload<ExtArgs extends runtime.Types.Extensions.Internal
     activities: Prisma.$activitiesPayload<ExtArgs>[]
     github_pull_requests: Prisma.$github_pull_requestsPayload<ExtArgs>[]
     chart_hierarchy_rollup: Prisma.$work_item_chart_hierarchy_rollupsPayload<ExtArgs> | null
+    links_as_source: Prisma.$work_item_linksPayload<ExtArgs>[]
+    links_as_target: Prisma.$work_item_linksPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -4684,6 +5190,8 @@ export interface Prisma__work_itemsClient<T, Null = never, ExtArgs extends runti
   activities<T extends Prisma.work_items$activitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$activitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$activitiesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   github_pull_requests<T extends Prisma.work_items$github_pull_requestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$github_pull_requestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$github_pull_requestsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   chart_hierarchy_rollup<T extends Prisma.work_items$chart_hierarchy_rollupArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$chart_hierarchy_rollupArgs<ExtArgs>>): Prisma.Prisma__work_item_chart_hierarchy_rollupsClient<runtime.Types.Result.GetResult<Prisma.$work_item_chart_hierarchy_rollupsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  links_as_source<T extends Prisma.work_items$links_as_sourceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$links_as_sourceArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$work_item_linksPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  links_as_target<T extends Prisma.work_items$links_as_targetArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$links_as_targetArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$work_item_linksPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5414,6 +5922,54 @@ export type work_items$chart_hierarchy_rollupArgs<ExtArgs extends runtime.Types.
    */
   include?: Prisma.work_item_chart_hierarchy_rollupsInclude<ExtArgs> | null
   where?: Prisma.work_item_chart_hierarchy_rollupsWhereInput
+}
+
+/**
+ * work_items.links_as_source
+ */
+export type work_items$links_as_sourceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the work_item_links
+   */
+  select?: Prisma.work_item_linksSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the work_item_links
+   */
+  omit?: Prisma.work_item_linksOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.work_item_linksInclude<ExtArgs> | null
+  where?: Prisma.work_item_linksWhereInput
+  orderBy?: Prisma.work_item_linksOrderByWithRelationInput | Prisma.work_item_linksOrderByWithRelationInput[]
+  cursor?: Prisma.work_item_linksWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Work_item_linksScalarFieldEnum | Prisma.Work_item_linksScalarFieldEnum[]
+}
+
+/**
+ * work_items.links_as_target
+ */
+export type work_items$links_as_targetArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the work_item_links
+   */
+  select?: Prisma.work_item_linksSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the work_item_links
+   */
+  omit?: Prisma.work_item_linksOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.work_item_linksInclude<ExtArgs> | null
+  where?: Prisma.work_item_linksWhereInput
+  orderBy?: Prisma.work_item_linksOrderByWithRelationInput | Prisma.work_item_linksOrderByWithRelationInput[]
+  cursor?: Prisma.work_item_linksWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Work_item_linksScalarFieldEnum | Prisma.Work_item_linksScalarFieldEnum[]
 }
 
 /**

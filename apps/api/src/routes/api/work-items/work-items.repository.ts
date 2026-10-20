@@ -19,8 +19,16 @@ import {
   paginationMeta,
   type UserRole,
   RecordStatusEnum,
+  toDateOnly,
+  normalizedAllowlistProjectKeysFromValue,
+  resolveProjectIdsFromAllowlistValue,
 } from '@repo/types';
-import { Prisma, RecordStatus, UserMembershipStatus } from '@repo/types/prisma';
+import {
+  AccessAllowlistKind,
+  Prisma,
+  RecordStatus,
+  UserMembershipStatus,
+} from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { listAccessibleProjectIds } from '../../../lib/project-access';
 import { prisma } from '../../../lib/prisma';
@@ -40,6 +48,24 @@ import {
 } from './work-items.prisma-query';
 
 export type DbWorkItem = Tables<'work_items'>;
+
+/**
+ * Map a Prisma mutation select (assignee/reporter embeds) to the PostgREST
+ * wire shape mutation callers already consume (`DbWorkItem` + people embeds).
+ */
+export function mapPrismaWorkItemMutationRow(
+  row: WorkItemListRowWithDescription
+): DbWorkItem {
+  return {
+    ...row,
+    due_date: row.due_date
+      ? (toDateOnly(row.due_date.toISOString()) as string)
+      : null,
+    done_at: row.done_at?.toISOString() ?? null,
+    created_at: row.created_at.toISOString(),
+    updated_at: row.updated_at.toISOString(),
+  } as unknown as DbWorkItem;
+}
 
 export interface DbGithubPullRequest {
   id: string;
@@ -77,6 +103,11 @@ export type UpdateWorkItemRecord = WorkItemUpdateBody & {
    * `board_column_id`.
    */
   stateOverride?: WorkItemState;
+  /**
+   * Pre-loaded row from the service. When set, skips a duplicate supabase
+   * `getById` before `updateMany`.
+   */
+  current?: DbWorkItem;
 };
 
 const ASSIGNEE_SELECT = userRelationSelect('assignee', 'assignee_id');
@@ -100,6 +131,87 @@ export class WorkItemRepository {
     const accessible = await this.listAccessibleProjectIds(actorId);
     if (!accessible.includes(projectId)) {
       throw new WorkItemAccessError();
+    }
+  }
+
+  /**
+   * Scoped project access for hot mutations (board status). Checks owner ∪
+   * active membership ∪ guest email ACL for **this** project id only — does
+   * not list every accessible project.
+   */
+  async assertCanAccessProjectId(
+    actorId: string,
+    projectId: string
+  ): Promise<void> {
+    try {
+      const user = await prisma.users.findFirst({
+        where: {
+          id: actorId,
+          active: true,
+          membership_status: UserMembershipStatus.active,
+        },
+        select: {
+          email: true,
+          owned_projects: {
+            where: { id: projectId },
+            select: { id: true },
+            take: 1,
+          },
+          project_memberships: {
+            where: { project_id: projectId, status: RecordStatus.active },
+            select: { project_id: true },
+            take: 1,
+          },
+        },
+      });
+
+      if (!user) {
+        throw new WorkItemAccessError();
+      }
+
+      const allowlist = await prisma.access_allowlist.findFirst({
+        where: {
+          status: RecordStatus.active,
+          kind: AccessAllowlistKind.email,
+          value: user.email.trim().toLowerCase(),
+        },
+        select: { allowed_project_ids: true },
+      });
+
+      if (allowlist) {
+        const keys = normalizedAllowlistProjectKeysFromValue(
+          allowlist.allowed_project_ids
+        );
+        if (keys.length === 0) {
+          throw new WorkItemAccessError();
+        }
+        const matched = await prisma.projects.findMany({
+          where: { key: { in: keys } },
+          select: { id: true, key: true },
+        });
+        const allowedIds = resolveProjectIdsFromAllowlistValue(
+          allowlist.allowed_project_ids,
+          matched
+        );
+        if (!allowedIds.includes(projectId)) {
+          throw new WorkItemAccessError();
+        }
+        return;
+      }
+
+      if (
+        user.owned_projects.length === 0 &&
+        user.project_memberships.length === 0
+      ) {
+        throw new WorkItemAccessError();
+      }
+    } catch (error) {
+      if (error instanceof WorkItemAccessError) {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed scoped project access check:', message);
+      throw new Error('Failed to authorize project access');
     }
   }
 
@@ -130,8 +242,8 @@ export class WorkItemRepository {
   }
 
   /**
-   * Unused Express list path (Prisma). Do not call from mutation/lock flows —
-   * those still use supabase-js `getById`.
+   * Express list path (Prisma). Optional twin for `DATA_READS_VIA_API`.
+   * Mutation happy-path returns use {@link getMutationRowById}.
    */
   async listPaginated(input: {
     filters?: WorkItemPrismaListFilters;
@@ -172,8 +284,7 @@ export class WorkItemRepository {
   }
 
   /**
-   * Unused Express detail path (Prisma). Mutation optimistic-lock still uses
-   * supabase-js `getById`.
+   * Express detail path (Prisma). Optional twin for `DATA_READS_VIA_API`.
    */
   async getDetailById(workItemId: string): Promise<WorkItemDetailRow | null> {
     try {
@@ -188,6 +299,31 @@ export class WorkItemRepository {
     }
   }
 
+  /**
+   * Post-mutation / optimistic-lock row via Prisma (no PostgREST hop).
+   * Select matches assignee/reporter embeds used by supabase `getById`.
+   */
+  async getMutationRowById(workItemId: string): Promise<DbWorkItem | null> {
+    try {
+      const row = await prisma.work_items.findUnique({
+        where: { id: workItemId },
+        select: workItemListSelectWithDescription,
+      });
+      if (!row) {
+        return null;
+      }
+      return mapPrismaWorkItemMutationRow(row);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to get work-item mutation row:', message);
+      throw new Error('Failed to get work-item');
+    }
+  }
+
+  /**
+   * Pre-write reads and legacy callers — supabase-js with people embeds.
+   * Prefer {@link getMutationRowById} after Prisma writes.
+   */
   async getById(workItemId: string): Promise<DbWorkItem> {
     const { data, error } = await this.db
       .from('work_items')
@@ -206,25 +342,25 @@ export class WorkItemRepository {
   async getProjectWorkflowConfig(
     projectId: string
   ): Promise<Tables<'projects'>['workflow_config']> {
-    const { data, error } = await this.db
-      .from('projects')
-      .select('workflow_config')
-      .eq('id', projectId)
-      .maybeSingle();
+    try {
+      const data = await prisma.projects.findUnique({
+        where: { id: projectId },
+        select: { workflow_config: true },
+      });
 
-    if (error) {
-      console.error(
-        'error. failed to load project workflow config:',
-        error.message
-      );
+      if (!data) {
+        throw new WorkItemAccessError();
+      }
+
+      return data.workflow_config as Tables<'projects'>['workflow_config'];
+    } catch (error) {
+      if (error instanceof WorkItemAccessError) {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to load project workflow config:', message);
       throw new Error('Failed to validate board column');
     }
-
-    if (!data) {
-      throw new WorkItemAccessError();
-    }
-
-    return data.workflow_config;
   }
 
   /** Resolve all actor facts needed by a board rule in one database query. */
@@ -407,7 +543,7 @@ export class WorkItemRepository {
       },
     });
 
-    const row = await this.getById(created.id);
+    const row = await this.getMutationRowById(created.id);
     if (!row) {
       throw new Error('Failed to create work-item');
     }
@@ -415,7 +551,7 @@ export class WorkItemRepository {
   }
 
   async update(input: UpdateWorkItemRecord): Promise<DbWorkItem> {
-    const current = await this.getById(input.id);
+    const current = input.current ?? (await this.getById(input.id));
 
     const previousState = current
       ? resolveWorkItemState({
@@ -480,8 +616,8 @@ export class WorkItemRepository {
 
     return resolveOptimisticPrismaUpdate({
       count,
-      fetchUpdated: () => this.getById(input.id),
-      fetchCurrent: () => this.getById(input.id),
+      fetchUpdated: () => this.getMutationRowById(input.id),
+      fetchCurrent: () => this.getMutationRowById(input.id),
       notFoundMessage: 'Work item not found',
     });
   }
@@ -682,8 +818,8 @@ export class WorkItemRepository {
 
     return resolveOptimisticPrismaUpdate({
       count,
-      fetchUpdated: () => this.getById(rootId),
-      fetchCurrent: () => this.getById(rootId),
+      fetchUpdated: () => this.getMutationRowById(rootId),
+      fetchCurrent: () => this.getMutationRowById(rootId),
       notFoundMessage: 'Work item not found',
     });
   }
@@ -714,6 +850,166 @@ export class WorkItemRepository {
     }
     await prisma.work_items.deleteMany({
       where: { id: { in: workItemIds } },
+    });
+  }
+
+  private mapLinkRowToListItem(
+    workItemId: string,
+    row: {
+      id: string;
+      project_id: string;
+      source_id: string;
+      target_id: string;
+      link_type: string;
+      created_at: Date;
+      source: {
+        id: string;
+        title: string;
+        type: string;
+        status: string;
+        state: unknown;
+        updated_at: Date;
+      };
+      target: {
+        id: string;
+        title: string;
+        type: string;
+        status: string;
+        state: unknown;
+        updated_at: Date;
+      };
+    }
+  ) {
+    const related = row.source_id === workItemId ? row.target : row.source;
+    return {
+      id: row.id,
+      link_type: row.link_type as 'relates_to',
+      project_id: row.project_id,
+      related: {
+        id: related.id,
+        title: related.title,
+        type: related.type,
+        status: related.status,
+        state: related.state,
+        updated_at: related.updated_at.toISOString(),
+      },
+      created_at: row.created_at.toISOString(),
+    };
+  }
+
+  async listLinksForWorkItem(workItemId: string) {
+    const rows = await prisma.work_item_links.findMany({
+      where: {
+        OR: [{ source_id: workItemId }, { target_id: workItemId }],
+      },
+      include: {
+        source: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            status: true,
+            state: true,
+            updated_at: true,
+          },
+        },
+        target: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            status: true,
+            state: true,
+            updated_at: true,
+          },
+        },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+
+    return rows.map((row) => this.mapLinkRowToListItem(workItemId, row));
+  }
+
+  private readonly linkPeerInclude = {
+    source: {
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        status: true,
+        state: true,
+        updated_at: true,
+      },
+    },
+    target: {
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        status: true,
+        state: true,
+        updated_at: true,
+      },
+    },
+  } as const;
+
+  async findRelatesToLink(
+    sourceId: string,
+    targetId: string,
+    perspectiveWorkItemId: string
+  ) {
+    const row = await prisma.work_item_links.findUnique({
+      where: {
+        source_id_target_id_link_type: {
+          source_id: sourceId,
+          target_id: targetId,
+          link_type: 'relates_to',
+        },
+      },
+      include: this.linkPeerInclude,
+    });
+    return row ? this.mapLinkRowToListItem(perspectiveWorkItemId, row) : null;
+  }
+
+  async createRelatesToLink(input: {
+    projectId: string;
+    sourceId: string;
+    targetId: string;
+    createdBy: string;
+    perspectiveWorkItemId: string;
+  }) {
+    const created = await prisma.work_item_links.create({
+      data: {
+        project_id: input.projectId,
+        source_id: input.sourceId,
+        target_id: input.targetId,
+        link_type: 'relates_to',
+        created_by: input.createdBy,
+      },
+      include: this.linkPeerInclude,
+    });
+
+    return this.mapLinkRowToListItem(input.perspectiveWorkItemId, created);
+  }
+
+  async deleteLinkForWorkItem(
+    workItemId: string,
+    linkId: string
+  ): Promise<boolean> {
+    const result = await prisma.work_item_links.deleteMany({
+      where: {
+        id: linkId,
+        OR: [{ source_id: workItemId }, { target_id: workItemId }],
+      },
+    });
+    return result.count > 0;
+  }
+
+  async countRelatedLinks(workItemId: string): Promise<number> {
+    return await prisma.work_item_links.count({
+      where: {
+        OR: [{ source_id: workItemId }, { target_id: workItemId }],
+      },
     });
   }
 }

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
+  listSavedViewsPaginatedMock,
   createMock,
   updateMock,
   archiveMock,
@@ -9,6 +10,7 @@ const {
   deleteShareMock,
   shareMock,
 } = vi.hoisted(() => ({
+  listSavedViewsPaginatedMock: vi.fn(),
   createMock: vi.fn(),
   updateMock: vi.fn(),
   archiveMock: vi.fn(),
@@ -25,6 +27,7 @@ vi.mock('../../src/middlewares/auth', async () => {
 
 vi.mock('../../src/routes/api/saved-views/saved-views.service', () => {
   class SavedViewsService {
+    listSavedViewsPaginated = listSavedViewsPaginatedMock;
     create = createMock;
     update = updateMock;
     archive = archiveMock;
@@ -45,6 +48,7 @@ import { withMountedRouter } from '../helpers/route-test.harness';
 const savedViewsMount = '/api/v1/saved-views';
 
 const savedViewsService = {
+  listSavedViewsPaginated: listSavedViewsPaginatedMock,
   create: createMock,
   update: updateMock,
   archive: archiveMock,
@@ -90,6 +94,40 @@ async function requestSavedViews(
 describe('savedViews routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('lists saved views with parsed query params', async () => {
+    const listResult = {
+      views: [savedViewWire],
+      totalCount: 1,
+      page: 2,
+      limit: 5,
+      totalPages: 1,
+    };
+    listSavedViewsPaginatedMock.mockResolvedValue(listResult);
+
+    await withSavedViewsRouter(async (baseUrl) => {
+      const { response, body } = await requestSavedViews(
+        baseUrl,
+        '?page=2&limit=5&tab=shared&search=backlog'
+      );
+
+      expect(response.status).toBe(200);
+      expect(body).toEqual(listResult);
+      expect(listSavedViewsPaginatedMock).toHaveBeenCalledWith(
+        MOCK_AUTH_USER_ID,
+        { page: 2, limit: 5, tab: 'shared', search: 'backlog' }
+      );
+    });
+  });
+
+  it('returns 400 for invalid list query params', async () => {
+    await withSavedViewsRouter(async (baseUrl) => {
+      const { response } = await requestSavedViews(baseUrl, '?tab=bogus');
+
+      expect(response.status).toBe(400);
+      expect(listSavedViewsPaginatedMock).not.toHaveBeenCalled();
+    });
   });
 
   it('creates a saved view with a validated body', async () => {

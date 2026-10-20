@@ -1,17 +1,17 @@
 # Data retrieval strategy (SSR vs Express)
 
-Status: **Plan** (helper + work-items gate implemented; default `ssr`)  
-Last updated: 2026-08-18  
+Status: **Implemented** (all product list/detail domains allowlisted; default `ssr`)  
+Last updated: 2026-10-16  
 Scope: `apps/web` server reads; Express Prisma GETs in `apps/api`
 
-Alice has **two ways to load list/detail data**. Mutations stay on Express either way.
+Alice has **two ways to load list/detail data**. Mutations stay on Express either way (including optimistic-lock follow-up reads).
 
-| Strategy  | Path                                               | Today                                                              |
-| --------- | -------------------------------------------------- | ------------------------------------------------------------------ |
-| **`ssr`** | RSC → supabase-js → Postgres                       | **Default** (no extra hop)                                         |
-| **`api`** | RSC → `apiFetch` → Express GET → Prisma → Postgres | Implemented for work-items, **not called** until this toggle is on |
+| Strategy  | Path                                               | Today                                                                          |
+| --------- | -------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **`ssr`** | RSC → supabase-js → Postgres                       | **Default** (no extra hop)                                                     |
+| **`api`** | RSC → `apiFetch` → Express GET → Prisma → Postgres | Wired for all `DATA_RETRIEVAL_DOMAINS`; **not called** until this toggle is on |
 
-This is an **app toggle** (one deploy-time boolean for the whole product), not a per-feature flag service. Work-items is the first domain that **honors** it. Other domains keep SSR until they have a Prisma GET **and** are added to the code allowlist.
+This is an **app toggle** (one deploy-time boolean for the whole product), not a per-feature flag service. Domains on the code allowlist honor it; keep production unset/`false` unless measuring the Express hop on Preview.
 
 Related:
 
@@ -87,7 +87,17 @@ Production `true` still reintroduces the Express hop ([PERFORMANCE.md](../guides
 
 ```ts
 type DataRetrievalStrategy = 'ssr' | 'api';
-type DataRetrievalDomain = 'work-items'; // grow this union as GETs land
+type DataRetrievalDomain =
+  | 'work-items'
+  | 'projects'
+  | 'users'
+  | 'teams'
+  | 'sprints'
+  | 'comments'
+  | 'attachments'
+  | 'worklogs'
+  | 'saved-views'
+  | 'access-allowlist';
 
 function getDataRetrievalStrategy(): DataRetrievalStrategy;
 function shouldReadViaApi(domain: DataRetrievalDomain): boolean;
@@ -97,11 +107,9 @@ Rules:
 
 1. `getDataRetrievalStrategy()` maps the boolean → `'ssr' | 'api'`.
 2. `shouldReadViaApi(domain)` is `strategy === 'api' && ALLOWED_DOMAINS.has(domain)`.
-3. **First allowlist entry:** `'work-items'` only.
+3. **Allowlist source of truth:** `DATA_RETRIEVAL_DOMAINS` in `@repo/types` (see table in [API_VERSIONING.md](./API_VERSIONING.md)).
 4. A domain **not** on the allowlist always uses SSR, even if the boolean is true.
 5. Call `shouldReadViaApi` at the **top** of each opted-in server reader — not in layouts, not inside supabase query builders, not in Express.
-
-That is how one app toggle is limited to work-items without a second env var.
 
 ---
 
@@ -262,14 +270,14 @@ Two implementations will drift unless:
 
 ## Rollout
 
-| Step | Work                                           | Status                                 |
-| ---- | ---------------------------------------------- | -------------------------------------- |
-| 0    | This plan                                      | Done                                   |
-| 1    | Helper + types + tests                         | **Done** (work-items allowlist)        |
-| 2    | Gate work-items list/detail (default `ssr`)    | **Done**                               |
-| 3    | Optional Preview env `DATA_READS_VIA_API=true` | After 2 is green                       |
-| 4    | More domains as Prisma GETs land               | Later                                  |
-| 5    | Production `true`                              | Explicit perf decision — not automatic |
+| Step | Work                                           | Status                                |
+| ---- | ---------------------------------------------- | ------------------------------------- |
+| 0    | This plan                                      | Done                                  |
+| 1    | Helper + types + tests                         | **Done**                              |
+| 2    | Gate work-items list/detail (default `ssr`)    | **Done**                              |
+| 3    | Optional Preview env `DATA_READS_VIA_API=true` | Ops / measurement                     |
+| 4    | More domains as Prisma GETs land               | **Done** (all list/detail domains)    |
+| 5    | Production `true`                              | Explicit perf decision — keep **off** |
 
 ---
 

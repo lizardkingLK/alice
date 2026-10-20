@@ -34,6 +34,7 @@ export function WorkItemActivityLayoutMenu({
           variant="ghost"
           size="icon-sm"
           aria-label="Change activity layout"
+          title="Change activity layout"
         >
           <LayoutList className="size-4" />
         </Button>

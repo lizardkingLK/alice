@@ -38,12 +38,16 @@ import { DashboardWidgetShell } from '@/app/dashboard/_components/dashboard-widg
 import { PRODUCTIVITY_WIDGET_CATALOG } from '@/app/dashboard/_components/productivity/productivity-catalog';
 import {
   clampPomodoroMinutes,
+  hydratePomodoroState,
+  pomodoroPrimaryActionLabel,
   POMODORO_DEFAULT_MINUTES,
   POMODORO_MAX_MINUTES,
   POMODORO_MIN_MINUTES,
+  POMODORO_PERSIST_INTERVAL_MS,
   POMODORO_STEP_MINUTES,
-  readPomodoroPreference,
-  writePomodoroPreference,
+  readPomodoroStoredState,
+  writePomodoroStoredState,
+  type PomodoroPhase,
 } from '@/app/dashboard/_helpers/pomodoro-preference';
 import type { ProductivityWidgetId } from '@/app/dashboard/_helpers/productivity-dashboard-preferences';
 import type { ProductivityDashboardBootstrap } from '@/app/dashboard/_types/productivity-dashboard.types';
@@ -412,15 +416,45 @@ function PomodoroWidget({
     POMODORO_DEFAULT_MINUTES
   );
   const [remaining, setRemaining] = useState(POMODORO_DEFAULT_MINUTES * 60);
-  const [running, setRunning] = useState(false);
+  const [phase, setPhase] = useState<PomodoroPhase>('idle');
   const [hydrated, setHydrated] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const remainingRef = useRef(remaining);
+  const durationRef = useRef(durationMinutes);
+  remainingRef.current = remaining;
+  durationRef.current = durationMinutes;
+  const running = phase === 'running';
+
+  const persistSession = useCallback(
+    (next: {
+      readonly phase: PomodoroPhase;
+      readonly remainingSeconds: number;
+      readonly durationMinutes?: number;
+    }) => {
+      writePomodoroStoredState(userId, {
+        durationMinutes: next.durationMinutes ?? durationRef.current,
+        phase: next.phase,
+        remainingSeconds: next.remainingSeconds,
+        savedAtMs: Date.now(),
+      });
+    },
+    [userId]
+  );
 
   useEffect(() => {
-    const preference = readPomodoroPreference(userId);
-    setDurationMinutes(preference.durationMinutes);
-    setRemaining(preference.durationMinutes * 60);
+    const stored = readPomodoroStoredState(userId);
+    const hydratedState = hydratePomodoroState(stored);
+    setDurationMinutes(hydratedState.durationMinutes);
+    setRemaining(hydratedState.remainingSeconds);
+    setPhase(hydratedState.phase);
     setHydrated(true);
+    // Re-stamp so the next catch-up window starts from open time.
+    writePomodoroStoredState(userId, {
+      durationMinutes: hydratedState.durationMinutes,
+      phase: hydratedState.phase,
+      remainingSeconds: hydratedState.remainingSeconds,
+      savedAtMs: Date.now(),
+    });
   }, [userId]);
 
   const clearTick = useCallback(() => {
@@ -439,22 +473,41 @@ function PomodoroWidget({
       setRemaining((previous) => {
         if (previous <= 1) {
           clearTick();
-          setRunning(false);
+          setPhase('idle');
+          persistSession({ phase: 'idle', remainingSeconds: 0 });
           return 0;
         }
         return previous - 1;
       });
     }, 1000);
     return clearTick;
-  }, [running, clearTick]);
+  }, [running, clearTick, persistSession]);
+
+  useEffect(() => {
+    if (!hydrated || !running) {
+      return;
+    }
+    const id = setInterval(() => {
+      persistSession({
+        phase: 'running',
+        remainingSeconds: remainingRef.current,
+      });
+    }, POMODORO_PERSIST_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [hydrated, running, persistSession]);
 
   const applyDuration = (nextMinutes: number) => {
     const clamped = clampPomodoroMinutes(nextMinutes);
+    const nextRemaining = clamped * 60;
     setDurationMinutes(clamped);
-    setRemaining(clamped * 60);
-    setRunning(false);
+    setRemaining(nextRemaining);
+    setPhase('idle');
     if (hydrated) {
-      writePomodoroPreference(userId, { durationMinutes: clamped });
+      persistSession({
+        phase: 'idle',
+        remainingSeconds: nextRemaining,
+        durationMinutes: clamped,
+      });
     }
   };
 
@@ -521,10 +574,24 @@ function PomodoroWidget({
             size="sm"
             className="cursor-pointer"
             onClick={() => {
-              if (remaining === 0) {
-                setRemaining(durationMinutes * 60);
+              if (running) {
+                setPhase('paused');
+                persistSession({
+                  phase: 'paused',
+                  remainingSeconds: remainingRef.current,
+                });
+                return;
               }
-              setRunning((previous) => !previous);
+              const nextRemaining =
+                remaining === 0 ? durationMinutes * 60 : remaining;
+              if (remaining === 0) {
+                setRemaining(nextRemaining);
+              }
+              setPhase('running');
+              persistSession({
+                phase: 'running',
+                remainingSeconds: nextRemaining,
+              });
             }}
           >
             {running ? (
@@ -532,7 +599,7 @@ function PomodoroWidget({
             ) : (
               <Play className="size-4" />
             )}
-            {running ? 'Pause' : 'Start'}
+            {pomodoroPrimaryActionLabel(phase)}
           </Button>
           <Button
             type="button"
@@ -540,8 +607,13 @@ function PomodoroWidget({
             size="sm"
             className="cursor-pointer"
             onClick={() => {
-              setRunning(false);
-              setRemaining(durationMinutes * 60);
+              const nextRemaining = durationMinutes * 60;
+              setPhase('idle');
+              setRemaining(nextRemaining);
+              persistSession({
+                phase: 'idle',
+                remainingSeconds: nextRemaining,
+              });
             }}
           >
             <RotateCcw className="size-4" />
