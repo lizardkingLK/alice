@@ -71,6 +71,11 @@ enum WorkItemPriority {
   highest
 }
 
+/// Peer relations between work items (not hierarchy / parent_id).
+enum WorkItemLinkType {
+  relates_to
+}
+
 enum NotificationType {
   assign
   status_change
@@ -179,6 +184,7 @@ model users {
   updated_sprints         sprints[]         @relation("SprintUpdatedBy")
   created_work_items      work_items[]      @relation("WorkItemCreatedBy")
   updated_work_items      work_items[]      @relation("WorkItemUpdatedBy")
+  created_work_item_links work_item_links[] @relation("WorkItemLinkCreatedBy")
   created_comments        comments[]        @relation("CommentCreatedBy")
   updated_comments        comments[]        @relation("CommentUpdatedBy")
   created_attachments     attachments[]     @relation("AttachmentCreatedBy")
@@ -239,6 +245,7 @@ model projects {
   teams                teams[]
   sprints              sprints[]
   work_items           work_items[]
+  work_item_links      work_item_links[]
   chart_rollups           work_item_chart_rollups[]
   chart_hierarchy_rollups work_item_chart_hierarchy_rollups[]
   burndown_rollups        sprint_burndown_rollups[]
@@ -378,6 +385,8 @@ model work_items {
   activities           activities[]
   github_pull_requests github_pull_requests[]
   chart_hierarchy_rollup work_item_chart_hierarchy_rollups?
+  links_as_source      work_item_links[] @relation("WorkItemLinkSource")
+  links_as_target      work_item_links[] @relation("WorkItemLinkTarget")
 
   @@unique([project_id, jira_issue_key])
   @@index([record_status])
@@ -389,6 +398,27 @@ model work_items {
   @@index([project_id, state_id])
   @@index([created_at])
   @@index([parent_id])
+}
+
+/// Undirected peer link; writers store canonical id order (source < target).
+model work_item_links {
+  id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id String          @db.Uuid
+  source_id  String          @db.Uuid
+  target_id  String          @db.Uuid
+  link_type  WorkItemLinkType @default(relates_to)
+  created_by String?         @db.Uuid
+  created_at DateTime        @default(now()) @db.Timestamptz(6)
+
+  project projects   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  source  work_items @relation("WorkItemLinkSource", fields: [source_id], references: [id], onDelete: Cascade)
+  target  work_items @relation("WorkItemLinkTarget", fields: [target_id], references: [id], onDelete: Cascade)
+  created_by_user users? @relation("WorkItemLinkCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+
+  @@unique([source_id, target_id, link_type])
+  @@index([project_id])
+  @@index([source_id])
+  @@index([target_id])
 }
 
 /// Append-only timeline of field changes, transitions, and side effects on a work item.

@@ -30,7 +30,11 @@ import {
   isStatusPlacementOnlyPatch,
   resolveBoardColumnPatchValue,
 } from './work-items.patch-utils';
-import { listWorkItemsQuerySchema, parseWorkItemLabels } from '@repo/types';
+import {
+  createWorkItemLinkBodySchema,
+  listWorkItemsQuerySchema,
+  parseWorkItemLabels,
+} from '@repo/types';
 
 type PatchUpdateWorkItemPayload = z.infer<typeof patchWorkItemBodySchema>;
 
@@ -356,6 +360,68 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
         const message =
           error instanceof Error ? error.message : 'Failed to unlink GitHub PR';
         res.status(500).json({ error: message });
+      }
+    }
+  );
+
+  workItemsRouter.get(
+    '/:id/links',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const links = await workItemService.listWorkItemLinks(
+          req.userId!,
+          req.params.id!
+        );
+        res.json({ data: links, error: null });
+      } catch (error) {
+        if (error instanceof WorkItemAccessError) {
+          return res.status(403).json({ data: null, error: error.message });
+        }
+        const message =
+          error instanceof Error ? error.message : 'Failed to list links';
+        res.status(500).json({ data: null, error: message });
+      }
+    }
+  );
+
+  workItemsRouter.post(
+    '/:id/links',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsed = createWorkItemLinkBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res
+          .status(400)
+          .json({ data: null, error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        const link = await workItemService.createWorkItemLink(
+          req.userId!,
+          req.params.id!,
+          parsed.data
+        );
+        res.status(201).json({ data: link, error: null });
+      } catch (error) {
+        sendWorkItemMutationError(res, error, 'Failed to create link');
+      }
+    }
+  );
+
+  workItemsRouter.delete(
+    '/:id/links/:linkId',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        await workItemService.deleteWorkItemLink(
+          req.userId!,
+          req.params.id!,
+          req.params.linkId!
+        );
+        res.json({ success: true });
+      } catch (error) {
+        sendWorkItemMutationError(res, error, 'Failed to delete link');
       }
     }
   );

@@ -219,6 +219,7 @@ describe('WorkItemService workflow graph transitions', () => {
       requiresEscalation: false,
       resolutionPresetId: null,
       requireChildren: 'off',
+      requireLinkedIssues: 'off',
     });
     getProjectWorkflowConfigMock.mockResolvedValue(envelope);
     getByIdMock.mockResolvedValue({

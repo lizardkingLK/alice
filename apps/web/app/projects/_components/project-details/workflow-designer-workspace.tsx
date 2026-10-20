@@ -521,6 +521,7 @@ export function WorkflowDesignerWorkspace({
         Pick<
           WorkflowEdge,
           | 'requireChildren'
+          | 'requireLinkedIssues'
           | 'allowAnyOf'
           | 'requiresEscalation'
           | 'resolutionPresetId'

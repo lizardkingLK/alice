@@ -50,6 +50,7 @@ export function WorkItemTitleEditor({
             size="icon"
             className="shrink-0 cursor-pointer self-center"
             aria-label="Edit title"
+            title="Edit title"
             onClick={() => setDialogOpen(true)}
           >
             <PencilIcon />

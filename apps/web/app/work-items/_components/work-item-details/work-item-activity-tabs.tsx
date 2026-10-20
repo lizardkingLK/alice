@@ -26,7 +26,13 @@ import {
 } from '@repo/ui/components/ui/tabs';
 import { Maximize2, Minimize2, Plus } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 
 export type WorkItemActivityTab = 'discussion' | 'activity' | 'work-log';
 
@@ -51,6 +57,8 @@ type WorkItemActivityTabsProps = {
   onAddWorkLogClick?: () => void;
   /** When true, hide work-log add control (Done work items). Discussion stays available. */
   readOnly?: boolean;
+  /** Unified online presence strip — sits left of the maximize control. */
+  onlineMembersSlot?: ReactNode;
 };
 
 /**
@@ -95,6 +103,7 @@ export function WorkItemActivityTabs({
   workLogs,
   onAddWorkLogClick,
   readOnly = false,
+  onlineMembersSlot,
 }: Readonly<WorkItemActivityTabsProps>) {
   const captureScrollBeforeTabChange = usePreserveScrollOnTabChange(activeTab);
   const [commentsSortOrder, setCommentsSortOrder] =
@@ -191,27 +200,30 @@ export function WorkItemActivityTabs({
               variant="ghost"
               className="cursor-pointer"
               aria-label="Log work"
+              title="Log work"
               onClick={onAddWorkLogClick}
             >
               <Plus className="h-4 w-4" />
             </Button>
           ) : null}
 
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            className="ml-auto"
-            title={isMaximized ? 'Minimize section' : 'Maximize section'}
-            aria-label={isMaximized ? 'Minimize section' : 'Maximize section'}
-            onClick={() => setIsMaximized((prev) => !prev)}
-          >
-            {isMaximized ? (
-              <Minimize2 className="h-4 w-4" />
-            ) : (
-              <Maximize2 className="h-4 w-4" />
-            )}
-          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            {onlineMembersSlot}
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              title={isMaximized ? 'Minimize section' : 'Maximize section'}
+              aria-label={isMaximized ? 'Minimize section' : 'Maximize section'}
+              onClick={() => setIsMaximized((prev) => !prev)}
+            >
+              {isMaximized ? (
+                <Minimize2 className="h-4 w-4" />
+              ) : (
+                <Maximize2 className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </div>
 
         <TabsContent value="discussion" className={tabPanelClassName}>
