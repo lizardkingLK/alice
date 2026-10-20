@@ -12,7 +12,7 @@ export type WorkLogRealtimeRow = {
   readonly logged_hours: number;
   readonly logged_at: string;
   readonly comment: string | null;
-  readonly status?: 'active' | 'archived' | string;
+  readonly status?: 'active' | 'archived';
 };
 
 export type WorkLogUserLookup = RealtimeUserLookup;
