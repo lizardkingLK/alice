@@ -76,6 +76,9 @@ import { createIntegrationsRouter } from '../routes/api/integrations/integration
 import { pusher as pusherClient } from '../lib/pusher';
 import { PusherService } from '../routes/api/pusher/pusher.service';
 import { createPusherRouter } from '../routes/api/pusher/pusher.route';
+import { ReportsRepository } from '../routes/api/reports/reports.repository';
+import { ReportsService } from '../routes/api/reports/reports.service';
+import { createReportsRouter } from '../routes/api/reports/reports.route';
 
 function createRootConfig() {
   const router = createRootRouter();
@@ -473,6 +476,14 @@ export const savedViews = createSavedViewsConfig(
 
 export const integrations = createIntegrationsConfig();
 export const pusher = createPusherConfig(users.usersRepository);
+function createReportsConfig() {
+  const reportsRepository = new ReportsRepository(supabase);
+  const reportsService = new ReportsService(reportsRepository);
+  const router = createReportsRouter({ reportsService });
+  return { reportsRepository, reportsService, router };
+}
+
+export const reports = createReportsConfig();
 export const chat = createChatConfig(
   workItems.workItemService,
   sprints.sprintsService,
