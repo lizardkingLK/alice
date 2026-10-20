@@ -2,11 +2,11 @@
 
 How Alice keeps dashboard pages fast, what has already been optimized, and the roadmap for further wins.
 
-| Field        | Value                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------- |
-| Status       | **Living**                                                                                  |
-| Last updated | 2026-10-20 (M8 project workspace RPC + dashboard chart series prefetch; next discussion RT) |
-| Scope        | `apps/web` RSC data loading, `apps/api` auth + **mutation** latency, Express Prisma writes  |
+| Field        | Value                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------ |
+| Status       | **Living**                                                                                 |
+| Last updated | 2026-10-20 (discussion feeds realtime shipped; M8 first slice done)                        |
+| Scope        | `apps/web` RSC data loading, `apps/api` auth + **mutation** latency, Express Prisma writes |
 
 Related:
 
@@ -16,7 +16,7 @@ Related:
 - [auth/AUTHENTICATION.md](../auth/AUTHENTICATION.md) — session, token, and API auth flow
 - [guides/DATABASE.md](./DATABASE.md) — Supabase access patterns
 - [features/board/REALTIME_BOARD_MOVES.md](../features/board/REALTIME_BOARD_MOVES.md) — W6 async / realtime board moves (**Living**)
-- [features/work-items/REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md) — planned details-tab realtime (comments / activity / work logs; **not** a §9 latency milestone)
+- [features/work-items/REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md) — details-tab realtime (comments / activity / work logs; **not** a §9 latency milestone)
 
 ---
 
@@ -384,7 +384,7 @@ Targeting sub-1.5s. Ordered by impact-to-effort.
 
 **Shipped for existing features (2026-07-24 / 2026-08-14 / 2026-10-16).** Dashboard **reads** default to RSC supabase-js (M1). Matching Express **Prisma** list/detail GETs were restored as an optional twin for `DATA_READS_VIA_API` ([DATA_RETRIEVAL.md](../architecture/DATA_RETRIEVAL.md)) — see §6 **Plan (toggle)**. API **table mutations** use Prisma Client. Paginated RSC lists share `runPaginatedSelect`. New surfaces should adopt §3 patterns as they land. **Do not move RSC page reads onto Prisma by default.**
 
-**Current focus:** **discussion realtime**. Hierarchy + backlog/project workspace RPCs + dashboard first-slide chart series prefetch are done. See [REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md).
+**Current focus:** optional M8 follow-ups (re-measure TTFB; nested-donut / other chart slide prefetch). Hierarchy + backlog/project workspace RPCs + dashboard first-slide chart series prefetch + **discussion feeds realtime** are done. See [REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md).
 
 **RLS reminder:** M1 reads run with the `authenticated` role and RLS unenforced. Before enabling RLS, add SELECT policies for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members`. Dropdown cache (§2.7) uses the **service-role** client inside `unstable_cache` only.
 
@@ -662,7 +662,7 @@ Conflict (409) paths may still fetch the current row; the win is the **happy pat
 
 **Order (done):** W1 → W2 → W3 → measure → **W5** → **W6** → **W4** → **W7**.
 
-**Order (remaining):** Re-measure M8 surfaces (§8.1) → **discussion realtime** ([REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md) — details feeds; not a write-latency ID).
+**Order (remaining):** Optional M8 re-measure / chart-slide prefetch (§8.1). Discussion feeds realtime is **done** ([REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md)).
 
 **Measured (board column PATCH TTFB):**
 
@@ -752,12 +752,12 @@ Reuse the **W6** pattern ([REALTIME_BOARD_MOVES.md](../features/board/REALTIME_B
 
 **Done:** calendar + backlog fire-and-forget PATCH; 409 toast + rebase; live `work_items` UPDATE merge for `due_date` / `sprint_id`.
 
-**Out of scope for W7:** work-item details Discussion / Activity / Work Log feeds — [discussion realtime](../features/work-items/REALTIME_DISCUSSION.md) after **M8**. No rank/reorder field exists on backlog today.
+**Out of scope for W7:** work-item details Discussion / Activity / Work Log feeds — shipped separately as [discussion realtime](../features/work-items/REALTIME_DISCUSSION.md). No rank/reorder field exists on backlog today.
 
 ### After W7 — M8, then discussion realtime
 
-1. **M8** — resume Prisma / RPC hot-path inventory for remaining read candidates (§8.1).
-2. **Discussion realtime** — live comments, activities, and work logs on `/work-items/[id]` without `router.refresh` (those tabs are not refreshed by registry W4). Product plan only: [REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md).
+1. **M8** — first-slice RPCs / prefetch done; optional re-measure and further chart prefetch remain (§8.1).
+2. **Discussion realtime** — ✅ live comments, activities, and work logs on `/work-items/[id]` without `router.refresh`. See [REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md).
 
 ### Contributor patterns (writes)
 

@@ -1,60 +1,71 @@
-# Realtime discussion feeds (planned)
+# Realtime discussion feeds
 
 | Field       | Value                                                                                         |
 | ----------- | --------------------------------------------------------------------------------------------- |
-| Status      | **Planned**                                                                                   |
+| Status      | **Living**                                                                                    |
 | Scope       | Work-item details tabs: Discussion (comments), Activity, Work Log — live sync without refresh |
-| Sequencing  | After **W7** (done) and **M8** — see PERFORMANCE.md §9                                        |
+| Sequencing  | After **W7** and **M8** first slice — see PERFORMANCE.md §9                                   |
 | Performance | Linked from [PERFORMANCE.md](../../guides/PERFORMANCE.md); **not** a §9 write-latency ID      |
 
-Work-item details already loads comments / activities / work logs in the initial
-RSC payload. Registry and board **`router.refresh()`** paths do **not** reload
-those feeds — so multi-tab or collaborator updates stay stale until a full
-navigation. This plan adds Supabase realtime subscriptions so those tabs update
-asynchronously, in the same spirit as [W6 board moves](../board/REALTIME_BOARD_MOVES.md).
+Work-item details loads comments / activities / work logs in the initial RSC
+payload. Registry and board **`router.refresh()`** paths do **not** reload those
+feeds. While `/work-items/[id]` is open, Alice subscribes to Supabase
+`postgres_changes` so collaborator (and multi-tab) updates merge into local feed
+state — same spirit as [W6 board moves](../board/REALTIME_BOARD_MOVES.md).
 
-## Goals
+## Behavior
 
-- Subscribe to relevant table events while the details page (or discussion
-  section) is mounted.
-- Merge channel payloads into local feed state — **no** blanket
-  `router.refresh()` for ordinary create/edit/archive of comments, activities,
-  or work logs.
-- Prefer the same client realtime stack already used for board / W7
-  (`work_items` and related publications) rather than inventing a second bus.
-- Keep Express mutations awaited (Vercel); realtime is confirm / fan-in for
-  other clients and optional echo dedupe for the actor.
+- Subscribe while the details page is mounted (all three feeds). **No** board-style
+  sync prefs (`realtime` / `static`).
+- Merge channel payloads into local list state — **no** blanket `router.refresh()`
+  for ordinary create / edit / archive of comments, activities, or work logs.
+- Express mutations stay awaited (Vercel); realtime is fan-in for other clients
+  and echo dedupe for the actor.
+- Channel rows are flat table payloads (no embeds). Author / actor / user names
+  are resolved from already-loaded client user lists (comment users, project
+  members). Missing users fall back to “Unknown”.
+
+## Channels
+
+| Feed       | Table                | Channel prefix  | Filter                 | Events                 |
+| ---------- | -------------------- | --------------- | ---------------------- | ---------------------- |
+| Discussion | `comments`           | `wi-comments`   | `work_item_id=eq.<id>` | INSERT, UPDATE, DELETE |
+| Activity   | `activities`         | `wi-activities` | `work_item_id=eq.<id>` | INSERT, UPDATE, DELETE |
+| Work Log   | `work_item_worklogs` | `wi-worklogs`   | `work_item_id=eq.<id>` | INSERT, UPDATE, DELETE |
+
+Publication migration:
+`packages/db/prisma/migrations/add_discussion_feeds_realtime_publication/`
+(idempotent `ALTER PUBLICATION supabase_realtime ADD TABLE …`).
+
+## Merge rules
+
+| Feed       | Helper                        | Notes                                                                |
+| ---------- | ----------------------------- | -------------------------------------------------------------------- |
+| Discussion | `applyRealtimeCommentChange`  | Upsert by id; UPDATE requires newer `updated_at`; DELETE removes     |
+| Activity   | `applyRealtimeActivityChange` | Prepend INSERT; skip duplicate id; cap at `ACTIVITY_FEED_LIMIT`      |
+| Work Log   | `applyRealtimeWorkLogChange`  | Prepend INSERT; UPDATE replace; archived/inactive status removes row |
+
+Shared subscriber: `apps/web/lib/realtime/use-scoped-table-realtime.ts`
+(modeled on `useWorkItemsRealtime`).
+
+## Wiring
+
+| Feed       | Owner                                                      |
+| ---------- | ---------------------------------------------------------- |
+| Discussion | `CommentsFeed` when `workItemId` is set                    |
+| Activity   | `WorkItemDetails` state + channel → `WorkItemActivityTabs` |
+| Work Log   | `WorkItemDetails` existing `workLogs` state + channel      |
 
 ## Non-goals
 
 - Replacing W4 local merge on registry field edits.
-- Making discussion realtime a board-move style “pending drag” stack (feeds are
-  append/update lists, not spatial DnD).
-- Silent inbox notifications (still deferred; see notifications README).
-
-## Candidate channels
-
-| Feed       | Likely tables / events                         | Notes                                     |
-| ---------- | ---------------------------------------------- | ----------------------------------------- |
-| Discussion | `comments` (and replies) scoped by work-item   | Filter by `work_item_id` on the open page |
-| Activity   | `activities` scoped by work-item               | Complements [ACTIVITY.md](./ACTIVITY.md)  |
-| Work Log   | work-log / allocation rows scoped by work-item | Align with existing worklog reader shapes |
-
-Exact filter keys and publication membership land at implementation time —
-verify `supabase_realtime` publication includes each table (same lesson as W6
-`work_items` publication migration).
-
-## Sequencing
-
-| Step | Work                                                        | Doc / track                                                                               |
-| ---- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| 1    | **W7** — backlog DnD + calendar due-date DnD async/realtime | [PERFORMANCE.md §9 W7](../../guides/PERFORMANCE.md#w7--backlog--calendar-dnd-realtime) ✅ |
-| 2    | **M8** — remaining read hot-path inventory                  | [PERFORMANCE.md §8.1](../../guides/PERFORMANCE.md)                                        |
-| 3    | **This plan** — details discussion / activity / work-log RT | This document                                                                             |
+- Board-move style pending drag stacks (feeds are append/update lists).
+- Silent inbox notifications (still deferred).
+- Per-event refetch-by-id for embeds.
 
 ## Related
 
-- [REALTIME_BOARD_MOVES.md](../board/REALTIME_BOARD_MOVES.md) — W6 pattern to reuse
-- [ACTIVITY.md](./ACTIVITY.md) — activity feed product notes (realtime was deferred here)
-- [PERFORMANCE.md](../../guides/PERFORMANCE.md) — W7 done → M8 → this plan
-- Work-item details implementation: `apps/web/app/work-items/[id]/`
+- [REALTIME_BOARD_MOVES.md](../board/REALTIME_BOARD_MOVES.md) — W6 pattern reused
+- [ACTIVITY.md](./ACTIVITY.md) — activity feed product notes
+- [PERFORMANCE.md](../../guides/PERFORMANCE.md) — sequencing
+- User guide: [Comments and activity](../../user-guide/work-items/comments-and-activity.md)
