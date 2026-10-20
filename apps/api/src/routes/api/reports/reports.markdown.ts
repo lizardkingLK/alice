@@ -7,10 +7,10 @@ import { UPCOMING_DEADLINE_DAYS } from './reports.aggregation';
 
 function escapeMarkdown(value: string): string {
   return value
-    .replaceAll('\\', '\\\\')
-    .replaceAll('[', '\\[')
-    .replaceAll(']', '\\]')
-    .replaceAll(/([*_`|])/g, '\\$1')
+    .replaceAll('\\', String.raw`\\`)
+    .replaceAll('[', String.raw`\[`)
+    .replaceAll(']', String.raw`\]`)
+    .replaceAll(/([*_`|])/g, String.raw`\$1`)
     .replaceAll(/\s+/g, ' ')
     .trim();
 }
