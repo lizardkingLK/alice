@@ -56,16 +56,15 @@ export function OnlineMembersAvatarGroup({
   const showOnlinePill = onlineOthers.length > 1;
 
   return (
-    <div
+    <fieldset
       className={cn(
-        'inline-flex items-center',
+        'm-0 inline-flex min-w-0 items-center border-0 p-0',
         showOnlinePill &&
           'border-primary/25 bg-primary/15 rounded-full border py-0.5 pr-1.5 pl-1',
         className
       )}
-      role="group"
-      aria-label="Online project members"
     >
+      <legend className="sr-only">Online project members</legend>
       <AvatarGroup
         className={cn(
           '*:data-[slot=avatar]:ring-background',
@@ -116,6 +115,6 @@ export function OnlineMembersAvatarGroup({
           </Tooltip>
         ) : null}
       </AvatarGroup>
-    </div>
+    </fieldset>
   );
 }

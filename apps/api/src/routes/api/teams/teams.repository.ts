@@ -185,7 +185,7 @@ export class TeamsRepository {
   }
 
   async listActiveByProject(projectId: string): Promise<ActiveProjectTeam[]> {
-    return prisma.teams.findMany({
+    return await prisma.teams.findMany({
       where: { project_id: projectId, status: RecordStatus.active },
       select: { id: true, name: true },
       orderBy: { name: Prisma.SortOrder.asc },
