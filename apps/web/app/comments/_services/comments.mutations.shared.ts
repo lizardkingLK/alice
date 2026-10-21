@@ -1,5 +1,8 @@
 import type { Json, Tables } from '@repo/types';
-import { commentContentToPlainText } from '@repo/types';
+import {
+  commentContentToPlainText,
+  jiraIssueKeyFromPmExternal,
+} from '@repo/types';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 import { ResponseDTO } from '@repo/types/connection';
 
@@ -17,9 +20,10 @@ export type CommentWorkItem = Pick<
 /** Row shape returned by the comments dropdown work-items query. */
 export type CommentWorkItemOptionRow = Pick<
   Tables<'work_items'>,
-  'id' | 'title' | 'type' | 'project_id' | 'jira_issue_key' | 'priority'
+  'id' | 'title' | 'type' | 'project_id' | 'pm_external' | 'priority'
 > & {
   description?: Json | null;
+  jira_issue_key?: string | null;
   project?: Pick<Tables<'projects'>, 'name' | 'key'> | null;
   assignee?: Pick<Tables<'users'>, 'id' | 'name' | 'profile_picture'> | null;
 };
@@ -40,7 +44,9 @@ export type CommentWorkItemOption = Pick<
 export function mapCommentWorkItemOption(
   row: CommentWorkItemOptionRow
 ): CommentWorkItemOption {
-  const issueKey = row.jira_issue_key?.trim();
+  const issueKey =
+    row.jira_issue_key?.trim() ||
+    jiraIssueKeyFromPmExternal(row.pm_external)?.trim();
   const plain = commentContentToPlainText(row.description ?? null).trim();
   return {
     id: row.id,

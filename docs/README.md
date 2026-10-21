@@ -18,6 +18,7 @@ Central docs for **Alice**.
 | [product/ROADMAP.md](./product/ROADMAP.md)                                 | Product roadmap (AI, integrations)                  | Plan   |
 | [architecture/TRD.md](./architecture/TRD.md)                               | Engineering / architecture                          | Living |
 | [guides/DATABASE.md](./guides/DATABASE.md)                                 | Anyone touching schema or migrations                | Living |
+| [guides/RLS_HYBRID_ROLLOUT.md](./guides/RLS_HYBRID_ROLLOUT.md)             | Hybrid RLS / PostgREST lockdown plan                | Living |
 | [guides/TESTING_DEVELOPMENT_FLOW.md](./guides/TESTING_DEVELOPMENT_FLOW.md) | Anyone developing features & running unit/e2e tests | Living |
 
 ---

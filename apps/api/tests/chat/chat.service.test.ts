@@ -1173,7 +1173,7 @@ describe('ChatService batch_import_work_items', () => {
       {
         id: 'existing-story-id',
         title: 'Design UI',
-        jira_issue_key: 'ALICE-001',
+        pm_external: { vendor: 'jira', issue_key: 'ALICE-001' },
         type: WorkItemTypeEnum.Story,
         status: 'New',
         parent_id: 'old-epic-id',
@@ -1182,7 +1182,7 @@ describe('ChatService batch_import_work_items', () => {
       {
         id: 'new-parent-feature-id',
         title: 'Feature Container',
-        jira_issue_key: 'ALICE-002',
+        pm_external: { vendor: 'jira', issue_key: 'ALICE-002' },
         type: WorkItemTypeEnum.Feature,
         status: 'New',
         parent_id: null,
@@ -1255,7 +1255,7 @@ describe('ChatService batch_import_work_items', () => {
       {
         id: 'item-to-keep',
         title: 'Keep Item',
-        jira_issue_key: 'ALICE-1',
+        pm_external: { vendor: 'jira', issue_key: 'ALICE-1' },
         type: WorkItemTypeEnum.Story,
         status: 'New',
         parent_id: null,
@@ -1264,7 +1264,7 @@ describe('ChatService batch_import_work_items', () => {
       {
         id: 'item-to-remove',
         title: 'Omitted Item',
-        jira_issue_key: 'ALICE-2',
+        pm_external: { vendor: 'jira', issue_key: 'ALICE-2' },
         type: WorkItemTypeEnum.Story,
         status: 'New',
         parent_id: null,
@@ -1334,7 +1334,7 @@ describe('ChatService batch_import_work_items', () => {
       {
         id: 'parent-1',
         title: 'Parent Epic',
-        jira_issue_key: 'ALICE-1',
+        pm_external: { vendor: 'jira', issue_key: 'ALICE-1' },
         type: WorkItemTypeEnum.Epic,
         status: 'New',
         parent_id: null,
@@ -1343,7 +1343,7 @@ describe('ChatService batch_import_work_items', () => {
       {
         id: 'child-1',
         title: 'Child Task',
-        jira_issue_key: 'ALICE-2',
+        pm_external: { vendor: 'jira', issue_key: 'ALICE-2' },
         type: WorkItemTypeEnum.Task,
         status: 'New',
         parent_id: null,
@@ -1423,7 +1423,7 @@ describe('ChatService batch_import_work_items', () => {
       {
         id: 'uuid-epic-1',
         title: 'Core Infrastructure',
-        jira_issue_key: 'ALICE-1',
+        pm_external: { vendor: 'jira', issue_key: 'ALICE-1' },
         type: WorkItemTypeEnum.Epic,
         status: 'In Progress',
         parent_id: null,
@@ -1432,7 +1432,7 @@ describe('ChatService batch_import_work_items', () => {
       {
         id: 'uuid-feature-2',
         title: 'Authentication Service',
-        jira_issue_key: 'ALICE-2',
+        pm_external: { vendor: 'jira', issue_key: 'ALICE-2' },
         type: WorkItemTypeEnum.Feature,
         status: 'New',
         parent_id: null,

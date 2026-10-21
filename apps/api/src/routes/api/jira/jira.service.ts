@@ -1,5 +1,5 @@
 import { mapToWorkItemType, UserRoleEnum, utcNow } from '@repo/types';
-import { JiraConnectionStatus } from '@repo/types/prisma';
+import { ProjectManagementConnectionStatus } from '@repo/types/prisma';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { env } from '../../../config/env';
 import {
@@ -143,23 +143,27 @@ export class JiraService {
     );
     const sitesToSave = jiraSites.length > 0 ? jiraSites : resources;
 
-    let primaryResult: JiraConnectionDto | null = null;
-    for (const site of sitesToSave) {
-      const saved = await this.jiraRepository.upsertByUserAndCloud({
-        user_id: userId,
-        cloud_id: site.id,
-        site_url: site.url,
-        account_email: null,
-        refresh_token_enc: encryptSecret(refreshToken),
-        access_token_enc: encryptSecret(tokens.access_token),
-        access_token_expires_at: expiresAt,
-        scopes: tokens.scope ?? site.scopes.join(' '),
-        status: JiraConnectionStatus.active,
-      });
-      primaryResult ??= saved;
-    }
+    const savedResults = await Promise.all(
+      sitesToSave.map((site) =>
+        this.jiraRepository.upsertByUserAndCloud({
+          user_id: userId,
+          cloud_id: site.id,
+          site_url: site.url,
+          account_email: null,
+          refresh_token_enc: encryptSecret(refreshToken),
+          access_token_enc: encryptSecret(tokens.access_token),
+          access_token_expires_at: expiresAt,
+          scopes: tokens.scope ?? site.scopes.join(' '),
+          status: ProjectManagementConnectionStatus.active,
+        })
+      )
+    );
 
-    return primaryResult!;
+    const primaryResult = savedResults[0];
+    if (!primaryResult) {
+      throw new Error('Failed to persist Jira OAuth connection.');
+    }
+    return primaryResult;
   }
 
   async listConnections(actorId: string): Promise<JiraConnectionDto[]> {
@@ -339,7 +343,7 @@ export class JiraService {
 
     if (!response.ok) {
       await this.jiraRepository.updateTokens(connection.id, {
-        status: JiraConnectionStatus.expired,
+        status: ProjectManagementConnectionStatus.expired,
       });
       const errorText = await response.text();
       throw new Error(
@@ -357,7 +361,7 @@ export class JiraService {
       refresh_token_enc: nextRefresh,
       access_token_enc: encryptSecret(tokens.access_token),
       access_token_expires_at: expiresAt,
-      status: JiraConnectionStatus.active,
+      status: ProjectManagementConnectionStatus.active,
     });
 
     return tokens.access_token;

@@ -1,232 +1,257 @@
-import { prisma } from '../../../lib/prisma';
 import {
-  prismaAuditCreateWithoutStatus,
-  prismaAuditUpdate,
-} from '../../../lib/prisma-audit';
+  buildGithubProviderConfig,
+  tryParseGithubProviderConfig,
+} from '@repo/types';
 import {
-  IntegrationCategory,
-  IntegrationStatus,
-  Prisma,
+  VersionControlConnectionStatus,
+  VersionControlVendor,
   UserRole,
-  type integrations,
+  type Prisma,
 } from '@repo/types/prisma';
+import { prisma } from '../../../lib/prisma';
 
-export const GITHUB_PROVIDER = 'github';
-export const GITHUB_CATALOG_ID = 'github';
+const PUBLIC_SELECT = {
+  id: true,
+  user_id: true,
+  vendor: true,
+  external_id: true,
+  display_label: true,
+  provider_config: true,
+  scopes: true,
+  status: true,
+  created_at: true,
+  updated_at: true,
+  user: { select: { id: true, name: true, role: true } },
+} as const;
 
-export type IntegrationWithCreator = integrations & {
-  created_by_user?: {
-    id: string;
-    name: string;
-    role: UserRole;
-  } | null;
+const FULL_SELECT = {
+  ...PUBLIC_SELECT,
+  refresh_token_enc: true,
+  access_token_enc: true,
+  access_token_expires_at: true,
+} as const;
+
+export type VcConnectionPublic = {
+  id: string;
+  user_id: string;
+  vendor: VersionControlVendor;
+  external_id: string;
+  display_label: string | null;
+  provider_config: Prisma.JsonValue;
+  scopes: string;
+  status: VersionControlConnectionStatus;
+  created_at: Date;
+  updated_at: Date;
+  user: { id: string; name: string; role: UserRole } | null;
+};
+
+export type VcConnectionFull = VcConnectionPublic & {
+  refresh_token_enc: string;
+  access_token_enc: string | null;
+  access_token_expires_at: Date | null;
+};
+
+export type UpsertGithubConnectionInput = {
+  userId: string;
+  externalId: string;
+  displayLabel: string;
+  providerConfig: ReturnType<typeof buildGithubProviderConfig>;
+  refreshTokenEnc: string;
+  accessTokenEnc: string | null;
+  accessTokenExpiresAt: Date | null;
+  scopes: string;
+  status?: VersionControlConnectionStatus;
 };
 
 export class GithubRepository {
-  async findActive(userId?: string): Promise<IntegrationWithCreator | null> {
+  async findActive(userId?: string): Promise<VcConnectionFull | null> {
     if (userId) {
-      const userIntegration = await prisma.integrations.findFirst({
+      const userRow = await prisma.version_control_connections.findFirst({
         where: {
-          provider: GITHUB_PROVIDER,
-          status: IntegrationStatus.active,
-          created_by: userId,
+          vendor: VersionControlVendor.github,
+          status: VersionControlConnectionStatus.active,
+          user_id: userId,
         },
-        include: {
-          created_by_user: {
-            select: { id: true, name: true, role: true },
-          },
-        },
+        select: FULL_SELECT,
         orderBy: { updated_at: 'desc' },
       });
-      if (userIntegration) {
-        return userIntegration;
+      if (userRow) {
+        return userRow;
       }
     }
 
-    return prisma.integrations.findFirst({
+    return prisma.version_control_connections.findFirst({
       where: {
-        provider: GITHUB_PROVIDER,
-        status: IntegrationStatus.active,
+        vendor: VersionControlVendor.github,
+        status: VersionControlConnectionStatus.active,
       },
-      include: {
-        created_by_user: {
-          select: { id: true, name: true, role: true },
-        },
-      },
+      select: FULL_SELECT,
       orderBy: { updated_at: 'desc' },
     });
   }
 
-  async findActiveAdminConnection(): Promise<IntegrationWithCreator | null> {
-    return prisma.integrations.findFirst({
+  findActiveAdminConnection(): Promise<VcConnectionFull | null> {
+    return prisma.version_control_connections.findFirst({
       where: {
-        provider: GITHUB_PROVIDER,
-        status: IntegrationStatus.active,
-        created_by_user: {
-          role: UserRole.admin,
-        },
+        vendor: VersionControlVendor.github,
+        status: VersionControlConnectionStatus.active,
+        user: { role: UserRole.admin },
       },
-      include: {
-        created_by_user: {
-          select: { id: true, name: true, role: true },
-        },
-      },
+      select: FULL_SELECT,
       orderBy: { updated_at: 'desc' },
     });
   }
 
-  async getUserById(userId: string) {
+  getUserById(userId: string) {
     return prisma.users.findUnique({
       where: { id: userId },
       select: { id: true, name: true, role: true },
     });
   }
 
-  async listByUserId(userId: string): Promise<IntegrationWithCreator[]> {
-    return prisma.integrations.findMany({
+  listByUserId(userId: string): Promise<VcConnectionPublic[]> {
+    return prisma.version_control_connections.findMany({
       where: {
-        provider: GITHUB_PROVIDER,
-        status: IntegrationStatus.active,
-        created_by: userId,
+        vendor: VersionControlVendor.github,
+        status: VersionControlConnectionStatus.active,
+        user_id: userId,
       },
-      include: {
-        created_by_user: {
-          select: { id: true, name: true, role: true },
-        },
-      },
+      select: PUBLIC_SELECT,
       orderBy: { updated_at: 'desc' },
     });
   }
 
-  async listAllActive(): Promise<IntegrationWithCreator[]> {
-    return prisma.integrations.findMany({
+  listAllActive(): Promise<VcConnectionPublic[]> {
+    return prisma.version_control_connections.findMany({
       where: {
-        provider: GITHUB_PROVIDER,
-        status: IntegrationStatus.active,
+        vendor: VersionControlVendor.github,
+        status: VersionControlConnectionStatus.active,
       },
-      include: {
-        created_by_user: {
-          select: { id: true, name: true, role: true },
-        },
-      },
+      select: PUBLIC_SELECT,
       orderBy: { updated_at: 'desc' },
     });
   }
 
-  async findById(id: string): Promise<IntegrationWithCreator | null> {
-    return prisma.integrations.findUnique({
-      where: { id },
-      include: {
-        created_by_user: {
-          select: { id: true, name: true, role: true },
-        },
-      },
+  findById(id: string): Promise<VcConnectionFull | null> {
+    return prisma.version_control_connections.findFirst({
+      where: { id, vendor: VersionControlVendor.github },
+      select: FULL_SELECT,
     });
   }
 
-  async findByIdForUser(
+  findByIdForUser(
     id: string,
     userId: string
-  ): Promise<IntegrationWithCreator | null> {
-    return prisma.integrations.findFirst({
+  ): Promise<VcConnectionFull | null> {
+    return prisma.version_control_connections.findFirst({
       where: {
         id,
-        provider: GITHUB_PROVIDER,
-        created_by: userId,
+        user_id: userId,
+        vendor: VersionControlVendor.github,
       },
-      include: {
-        created_by_user: {
-          select: { id: true, name: true, role: true },
-        },
-      },
+      select: FULL_SELECT,
     });
   }
 
-  async upsertConnection(data: {
-    userId: string;
-    name: string;
-    config: Prisma.InputJsonValue;
-    status?: IntegrationStatus;
-  }): Promise<integrations> {
-    const existing = await prisma.integrations.findFirst({
+  async upsertConnection(
+    data: UpsertGithubConnectionInput
+  ): Promise<VcConnectionFull> {
+    const existing = await prisma.version_control_connections.findFirst({
       where: {
-        provider: GITHUB_PROVIDER,
-        created_by: data.userId,
+        vendor: VersionControlVendor.github,
+        user_id: data.userId,
+        external_id: data.externalId,
       },
-      orderBy: { updated_at: 'desc' },
+      select: { id: true },
     });
 
+    const payload = {
+      display_label: data.displayLabel,
+      provider_config: data.providerConfig as Prisma.InputJsonValue,
+      refresh_token_enc: data.refreshTokenEnc,
+      access_token_enc: data.accessTokenEnc,
+      access_token_expires_at: data.accessTokenExpiresAt,
+      scopes: data.scopes,
+      status: data.status ?? VersionControlConnectionStatus.active,
+      updated_at: new Date(),
+    };
+
     if (existing) {
-      return prisma.integrations.update({
+      return prisma.version_control_connections.update({
         where: { id: existing.id },
-        data: {
-          name: data.name,
-          config: data.config,
-          status: data.status ?? IntegrationStatus.active,
-          ...prismaAuditUpdate(data.userId),
-        },
+        data: payload,
+        select: FULL_SELECT,
       });
     }
 
-    return prisma.integrations.create({
+    return prisma.version_control_connections.create({
       data: {
-        catalog_id: GITHUB_CATALOG_ID,
-        category: IntegrationCategory.productivity,
-        provider: GITHUB_PROVIDER,
-        name: data.name,
-        status: data.status ?? IntegrationStatus.active,
-        config: data.config,
-        is_default: false,
-        sort_order: 0,
-        ...prismaAuditCreateWithoutStatus(data.userId),
+        user_id: data.userId,
+        vendor: VersionControlVendor.github,
+        external_id: data.externalId,
+        ...payload,
       },
+      select: FULL_SELECT,
     });
   }
 
-  async updateConfig(
+  async updateTokens(
     id: string,
-    config: Prisma.InputJsonValue,
-    status?: IntegrationStatus,
-    actorId?: string
-  ): Promise<integrations> {
-    return prisma.integrations.update({
+    data: {
+      accessTokenEnc: string;
+      refreshTokenEnc?: string | null;
+      accessTokenExpiresAt: Date | null;
+      scopes?: string;
+      providerConfigPatch?: Record<string, unknown>;
+    }
+  ): Promise<VcConnectionFull> {
+    const current = await this.findById(id);
+    const mergedConfig = {
+      ...tryParseGithubProviderConfig(current?.provider_config),
+      ...data.providerConfigPatch,
+    };
+
+    return prisma.version_control_connections.update({
       where: { id },
       data: {
-        config,
-        ...(status ? { status } : {}),
-        ...(actorId ? prismaAuditUpdate(actorId) : { updated_at: new Date() }),
+        access_token_enc: data.accessTokenEnc,
+        ...(data.refreshTokenEnc !== undefined
+          ? { refresh_token_enc: data.refreshTokenEnc ?? '' }
+          : {}),
+        access_token_expires_at: data.accessTokenExpiresAt,
+        ...(data.scopes ? { scopes: data.scopes } : {}),
+        provider_config: mergedConfig as Prisma.InputJsonValue,
+        updated_at: new Date(),
       },
+      select: FULL_SELECT,
     });
   }
 
   async updateStatus(
     id: string,
-    status: IntegrationStatus,
-    actorId?: string
+    status: VersionControlConnectionStatus
   ): Promise<void> {
-    await prisma.integrations.update({
+    await prisma.version_control_connections.update({
       where: { id },
-      data: {
-        status,
-        ...(actorId ? prismaAuditUpdate(actorId) : { updated_at: new Date() }),
-      },
+      data: { status, updated_at: new Date() },
     });
   }
 
-  async deleteById(id: string, actorId: string): Promise<boolean> {
-    const existing = await prisma.integrations.findFirst({
-      where: { id, provider: GITHUB_PROVIDER },
+  async deleteById(id: string): Promise<boolean> {
+    const existing = await prisma.version_control_connections.findFirst({
+      where: { id, vendor: VersionControlVendor.github },
+      select: { id: true },
     });
 
     if (!existing) {
       return false;
     }
 
-    await prisma.integrations.update({
+    await prisma.version_control_connections.update({
       where: { id },
       data: {
-        status: IntegrationStatus.disabled,
-        ...prismaAuditUpdate(actorId),
+        status: VersionControlConnectionStatus.revoked,
+        updated_at: new Date(),
       },
     });
 

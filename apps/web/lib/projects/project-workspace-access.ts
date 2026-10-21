@@ -1,7 +1,6 @@
 import { getActiveMemberProjectIds } from '@/app/board/_services/board.reads.defaults.server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@repo/types';
 import {
   resolveProjectIdsFromAllowlistValue,
   normalizedAllowlistProjectKeysFromValue,
@@ -70,11 +69,7 @@ export async function canAccessProjectWorkspace(
   }
 
   try {
-    const supabase = await createClient();
-    const guestProjectIds = await resolveAllowedProjectIdsFromAcl(
-      supabase,
-      userId
-    );
+    const guestProjectIds = await resolveAllowedProjectIdsFromAcl(userId);
     if (guestProjectIds !== null) {
       return guestProjectIds.includes(projectId);
     }
@@ -93,10 +88,12 @@ export async function canAccessProjectWorkspace(
 }
 
 async function resolveAllowedProjectIdsFromAcl(
-  supabase: SupabaseClient<Database>,
   userId: string
 ): Promise<string[] | null> {
-  const { data: userRow } = await supabase
+  // Allowlist is service-role only (RLS hybrid P0). Session client cannot read it.
+  const admin = createAdminClient();
+
+  const { data: userRow } = await admin
     .from('users')
     .select('email')
     .eq('id', userId)
@@ -106,7 +103,7 @@ async function resolveAllowedProjectIdsFromAcl(
     return null;
   }
 
-  const { data: allowlistRecord } = await supabase
+  const { data: allowlistRecord } = await admin
     .from('access_allowlist')
     .select('allowed_project_ids')
     .eq('status', 'active')
@@ -126,7 +123,7 @@ async function resolveAllowedProjectIdsFromAcl(
   }
 
   try {
-    const { data: matchedProjects } = await supabase
+    const { data: matchedProjects } = await admin
       .from('projects')
       .select('id, key')
       .in('key', normalizedKeys);
@@ -171,10 +168,8 @@ export async function listAccessibleProjectIds(
       ownedIds = (data ?? []).map((row) => row.id);
     }
 
-    const allowedProjectIdsFromAcl = await resolveAllowedProjectIdsFromAcl(
-      supabase,
-      userId
-    );
+    const allowedProjectIdsFromAcl =
+      await resolveAllowedProjectIdsFromAcl(userId);
     if (allowedProjectIdsFromAcl !== null) {
       return allowedProjectIdsFromAcl;
     }

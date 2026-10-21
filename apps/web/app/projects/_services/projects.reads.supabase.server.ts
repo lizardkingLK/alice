@@ -1,4 +1,8 @@
-import { USER_PROJECTION_WITH_ROLE, userRelationSelect } from '@repo/types';
+import {
+  USER_PROJECTION_WITH_ROLE,
+  userRelationSelect,
+  mapProjectRowForWire,
+} from '@repo/types';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getDbUser, getUser } from '@/lib/auth';
@@ -11,7 +15,6 @@ import {
   zeroCountsById,
 } from '@/lib/db/query';
 import { listAccessibleProjectIds } from '@/lib/projects/project-workspace-access';
-import { withoutIntegrationSecrets } from '@/lib/projects/sanitize-project-secrets';
 import {
   ProjectStatusEnum,
   type ProjectStatusTab,
@@ -31,12 +34,41 @@ const PROJECT_MEMBER_USER_SELECT = userRelationSelect(
   USER_PROJECTION_WITH_ROLE
 );
 
+/** Explicit columns — avoids pulling future secret columns via `select('*')`. */
+const PROJECT_SESSION_COLUMNS = [
+  'id',
+  'name',
+  'key',
+  'description',
+  'status',
+  'owner_id',
+  'start_date',
+  'end_date',
+  'pm_connection_id',
+  'pm_external',
+  'vc_connection_id',
+  'vc_external',
+  'logo_url',
+  'cover_picture',
+  'attributes_config',
+  'workflow_config',
+  'created_by',
+  'created_at',
+  'updated_by',
+  'updated_at',
+  'deleted_at',
+].join(', ');
+
 type ProjectRowWithSecrets = Project & {
   github_token?: string | null;
+  pm_connection_id?: string | null;
+  pm_external?: unknown;
+  vc_connection_id?: string | null;
+  vc_external?: unknown;
 };
 
 function sanitizeProjectRow(row: ProjectRowWithSecrets): Project {
-  return withoutIntegrationSecrets(row) as Project;
+  return mapProjectRowForWire(row) as Project;
 }
 
 /**
@@ -63,7 +95,7 @@ export async function getProjectListPaginatedFromSupabase(
 
   let query = supabase
     .from('projects')
-    .select(`*, ${OWNER_SELECT}`, { count: 'exact' });
+    .select(`${PROJECT_SESSION_COLUMNS}, ${OWNER_SELECT}`, { count: 'exact' });
 
   query = query.in('id', accessibleIds);
 
@@ -102,7 +134,7 @@ export async function getProjectFromSupabase(id: string): Promise<Project> {
 
   const { data, error } = await supabase
     .from('projects')
-    .select(`*, ${OWNER_SELECT}`)
+    .select(`${PROJECT_SESSION_COLUMNS}, ${OWNER_SELECT}`)
     .eq('id', id)
     .maybeSingle();
 

@@ -29,14 +29,14 @@ describe('WorkItemDeduplicationAgent', () => {
       {
         id: 'existing-uuid-1',
         title: 'Implement Dark Mode',
-        jira_issue_key: 'UI-10',
+        pm_external: { vendor: 'jira', issue_key: 'UI-10' },
         type: 'Story',
         status: 'Done',
       },
       {
         id: 'existing-uuid-2',
         title: 'Migrate PostgreSQL Database',
-        jira_issue_key: 'DB-20',
+        pm_external: { vendor: 'jira', issue_key: 'DB-20' },
         type: 'Task',
         status: 'InProgress',
       },
@@ -128,7 +128,7 @@ describe('WorkItemDeduplicationAgent', () => {
       {
         id: 'parent-1',
         title: 'Authentication Epic',
-        jira_issue_key: 'AUTH-1',
+        pm_external: { vendor: 'jira', issue_key: 'AUTH-1' },
         type: 'Epic',
         status: 'InProgress',
         parent_id: null,
@@ -136,7 +136,7 @@ describe('WorkItemDeduplicationAgent', () => {
       {
         id: 'child-1',
         title: 'Login Page',
-        jira_issue_key: 'AUTH-2',
+        pm_external: { vendor: 'jira', issue_key: 'AUTH-2' },
         type: 'Story',
         status: 'Open',
         parent_id: 'parent-1',
@@ -144,7 +144,7 @@ describe('WorkItemDeduplicationAgent', () => {
       {
         id: 'child-2',
         title: 'Forgot Password',
-        jira_issue_key: 'AUTH-3',
+        pm_external: { vendor: 'jira', issue_key: 'AUTH-3' },
         type: 'Story',
         status: 'Open',
         parent_id: 'parent-1',

@@ -47,7 +47,7 @@ export const WORK_ITEM_REPORTER_POSTGREST_SELECT = userRelationSelect(
  * Field list must stay aligned with `workItemListSelect` keys.
  */
 export const WORK_ITEM_LIST_POSTGREST_COLUMNS =
-  'id, project_id, sprint_id, parent_id, title, type, priority, labels, assignee_id, reporter_id, due_date, story_points, status, state, board_column_id, record_status, done_at, created_by, created_at, updated_by, updated_at, jira_issue_key' as const;
+  'id, project_id, sprint_id, parent_id, title, type, priority, labels, assignee_id, reporter_id, due_date, story_points, status, state, board_column_id, record_status, done_at, created_by, created_at, updated_by, updated_at, pm_external' as const;
 
 /** PostgREST select for list/board reads (optional TipTap description). */
 export function workItemListPostgrestSelect(
@@ -101,7 +101,7 @@ export const workItemListSelect = {
   created_at: true,
   updated_by: true,
   updated_at: true,
-  jira_issue_key: true,
+  pm_external: true,
   assignee: { select: workItemUserSelect },
   reporter: { select: workItemUserSelect },
 } as const;
@@ -167,6 +167,8 @@ export type WorkItemReadRow = Omit<
   description?: WorkItemListWithDescriptionWireRow['description'];
   project?: WorkItemDetailWireRow['project'];
   sprint?: WorkItemDetailWireRow['sprint'];
+  /** Wire alias mapped from `pm_external` (Jira issue key). */
+  jira_issue_key?: string | null;
 };
 
 /** Minimal ancestor fields for the in-page hierarchy path. */

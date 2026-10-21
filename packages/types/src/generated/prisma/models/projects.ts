@@ -38,10 +38,8 @@ export type ProjectsMinAggregateOutputType = {
   created_at: Date | null
   updated_by: string | null
   updated_at: Date | null
-  jira_project_key: string | null
-  jira_connection_id: string | null
-  github_repo: string | null
-  github_token: string | null
+  pm_connection_id: string | null
+  vc_connection_id: string | null
   logo_url: string | null
   cover_picture: string | null
 }
@@ -60,10 +58,8 @@ export type ProjectsMaxAggregateOutputType = {
   created_at: Date | null
   updated_by: string | null
   updated_at: Date | null
-  jira_project_key: string | null
-  jira_connection_id: string | null
-  github_repo: string | null
-  github_token: string | null
+  pm_connection_id: string | null
+  vc_connection_id: string | null
   logo_url: string | null
   cover_picture: string | null
 }
@@ -84,10 +80,10 @@ export type ProjectsCountAggregateOutputType = {
   created_at: number
   updated_by: number
   updated_at: number
-  jira_project_key: number
-  jira_connection_id: number
-  github_repo: number
-  github_token: number
+  pm_connection_id: number
+  pm_external: number
+  vc_connection_id: number
+  vc_external: number
   logo_url: number
   cover_picture: number
   _all: number
@@ -108,10 +104,8 @@ export type ProjectsMinAggregateInputType = {
   created_at?: true
   updated_by?: true
   updated_at?: true
-  jira_project_key?: true
-  jira_connection_id?: true
-  github_repo?: true
-  github_token?: true
+  pm_connection_id?: true
+  vc_connection_id?: true
   logo_url?: true
   cover_picture?: true
 }
@@ -130,10 +124,8 @@ export type ProjectsMaxAggregateInputType = {
   created_at?: true
   updated_by?: true
   updated_at?: true
-  jira_project_key?: true
-  jira_connection_id?: true
-  github_repo?: true
-  github_token?: true
+  pm_connection_id?: true
+  vc_connection_id?: true
   logo_url?: true
   cover_picture?: true
 }
@@ -154,10 +146,10 @@ export type ProjectsCountAggregateInputType = {
   created_at?: true
   updated_by?: true
   updated_at?: true
-  jira_project_key?: true
-  jira_connection_id?: true
-  github_repo?: true
-  github_token?: true
+  pm_connection_id?: true
+  pm_external?: true
+  vc_connection_id?: true
+  vc_external?: true
   logo_url?: true
   cover_picture?: true
   _all?: true
@@ -251,10 +243,10 @@ export type ProjectsGroupByOutputType = {
   created_at: Date
   updated_by: string | null
   updated_at: Date
-  jira_project_key: string | null
-  jira_connection_id: string | null
-  github_repo: string | null
-  github_token: string | null
+  pm_connection_id: string | null
+  pm_external: runtime.JsonValue | null
+  vc_connection_id: string | null
+  vc_external: runtime.JsonValue | null
   logo_url: string | null
   cover_picture: string | null
   _count: ProjectsCountAggregateOutputType | null
@@ -296,16 +288,17 @@ export type projectsWhereInput = {
   created_at?: Prisma.DateTimeFilter<"projects"> | Date | string
   updated_by?: Prisma.UuidNullableFilter<"projects"> | string | null
   updated_at?: Prisma.DateTimeFilter<"projects"> | Date | string
-  jira_project_key?: Prisma.StringNullableFilter<"projects"> | string | null
-  jira_connection_id?: Prisma.UuidNullableFilter<"projects"> | string | null
-  github_repo?: Prisma.StringNullableFilter<"projects"> | string | null
-  github_token?: Prisma.StringNullableFilter<"projects"> | string | null
+  pm_connection_id?: Prisma.UuidNullableFilter<"projects"> | string | null
+  pm_external?: Prisma.JsonNullableFilter<"projects">
+  vc_connection_id?: Prisma.UuidNullableFilter<"projects"> | string | null
+  vc_external?: Prisma.JsonNullableFilter<"projects">
   logo_url?: Prisma.StringNullableFilter<"projects"> | string | null
   cover_picture?: Prisma.StringNullableFilter<"projects"> | string | null
   owner?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   created_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   updated_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
-  jira_connection?: Prisma.XOR<Prisma.Jira_connectionsNullableScalarRelationFilter, Prisma.jira_connectionsWhereInput> | null
+  pm_connection?: Prisma.XOR<Prisma.Project_management_connectionsNullableScalarRelationFilter, Prisma.project_management_connectionsWhereInput> | null
+  vc_connection?: Prisma.XOR<Prisma.Version_control_connectionsNullableScalarRelationFilter, Prisma.version_control_connectionsWhereInput> | null
   members?: Prisma.Project_membersListRelationFilter
   teams?: Prisma.TeamsListRelationFilter
   sprints?: Prisma.SprintsListRelationFilter
@@ -333,16 +326,17 @@ export type projectsOrderByWithRelationInput = {
   created_at?: Prisma.SortOrder
   updated_by?: Prisma.SortOrderInput | Prisma.SortOrder
   updated_at?: Prisma.SortOrder
-  jira_project_key?: Prisma.SortOrderInput | Prisma.SortOrder
-  jira_connection_id?: Prisma.SortOrderInput | Prisma.SortOrder
-  github_repo?: Prisma.SortOrderInput | Prisma.SortOrder
-  github_token?: Prisma.SortOrderInput | Prisma.SortOrder
+  pm_connection_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  pm_external?: Prisma.SortOrderInput | Prisma.SortOrder
+  vc_connection_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  vc_external?: Prisma.SortOrderInput | Prisma.SortOrder
   logo_url?: Prisma.SortOrderInput | Prisma.SortOrder
   cover_picture?: Prisma.SortOrderInput | Prisma.SortOrder
   owner?: Prisma.usersOrderByWithRelationInput
   created_by_user?: Prisma.usersOrderByWithRelationInput
   updated_by_user?: Prisma.usersOrderByWithRelationInput
-  jira_connection?: Prisma.jira_connectionsOrderByWithRelationInput
+  pm_connection?: Prisma.project_management_connectionsOrderByWithRelationInput
+  vc_connection?: Prisma.version_control_connectionsOrderByWithRelationInput
   members?: Prisma.project_membersOrderByRelationAggregateInput
   teams?: Prisma.teamsOrderByRelationAggregateInput
   sprints?: Prisma.sprintsOrderByRelationAggregateInput
@@ -373,16 +367,17 @@ export type projectsWhereUniqueInput = Prisma.AtLeast<{
   created_at?: Prisma.DateTimeFilter<"projects"> | Date | string
   updated_by?: Prisma.UuidNullableFilter<"projects"> | string | null
   updated_at?: Prisma.DateTimeFilter<"projects"> | Date | string
-  jira_project_key?: Prisma.StringNullableFilter<"projects"> | string | null
-  jira_connection_id?: Prisma.UuidNullableFilter<"projects"> | string | null
-  github_repo?: Prisma.StringNullableFilter<"projects"> | string | null
-  github_token?: Prisma.StringNullableFilter<"projects"> | string | null
+  pm_connection_id?: Prisma.UuidNullableFilter<"projects"> | string | null
+  pm_external?: Prisma.JsonNullableFilter<"projects">
+  vc_connection_id?: Prisma.UuidNullableFilter<"projects"> | string | null
+  vc_external?: Prisma.JsonNullableFilter<"projects">
   logo_url?: Prisma.StringNullableFilter<"projects"> | string | null
   cover_picture?: Prisma.StringNullableFilter<"projects"> | string | null
   owner?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   created_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   updated_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
-  jira_connection?: Prisma.XOR<Prisma.Jira_connectionsNullableScalarRelationFilter, Prisma.jira_connectionsWhereInput> | null
+  pm_connection?: Prisma.XOR<Prisma.Project_management_connectionsNullableScalarRelationFilter, Prisma.project_management_connectionsWhereInput> | null
+  vc_connection?: Prisma.XOR<Prisma.Version_control_connectionsNullableScalarRelationFilter, Prisma.version_control_connectionsWhereInput> | null
   members?: Prisma.Project_membersListRelationFilter
   teams?: Prisma.TeamsListRelationFilter
   sprints?: Prisma.SprintsListRelationFilter
@@ -410,10 +405,10 @@ export type projectsOrderByWithAggregationInput = {
   created_at?: Prisma.SortOrder
   updated_by?: Prisma.SortOrderInput | Prisma.SortOrder
   updated_at?: Prisma.SortOrder
-  jira_project_key?: Prisma.SortOrderInput | Prisma.SortOrder
-  jira_connection_id?: Prisma.SortOrderInput | Prisma.SortOrder
-  github_repo?: Prisma.SortOrderInput | Prisma.SortOrder
-  github_token?: Prisma.SortOrderInput | Prisma.SortOrder
+  pm_connection_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  pm_external?: Prisma.SortOrderInput | Prisma.SortOrder
+  vc_connection_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  vc_external?: Prisma.SortOrderInput | Prisma.SortOrder
   logo_url?: Prisma.SortOrderInput | Prisma.SortOrder
   cover_picture?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.projectsCountOrderByAggregateInput
@@ -440,10 +435,10 @@ export type projectsScalarWhereWithAggregatesInput = {
   created_at?: Prisma.DateTimeWithAggregatesFilter<"projects"> | Date | string
   updated_by?: Prisma.UuidNullableWithAggregatesFilter<"projects"> | string | null
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"projects"> | Date | string
-  jira_project_key?: Prisma.StringNullableWithAggregatesFilter<"projects"> | string | null
-  jira_connection_id?: Prisma.UuidNullableWithAggregatesFilter<"projects"> | string | null
-  github_repo?: Prisma.StringNullableWithAggregatesFilter<"projects"> | string | null
-  github_token?: Prisma.StringNullableWithAggregatesFilter<"projects"> | string | null
+  pm_connection_id?: Prisma.UuidNullableWithAggregatesFilter<"projects"> | string | null
+  pm_external?: Prisma.JsonNullableWithAggregatesFilter<"projects">
+  vc_connection_id?: Prisma.UuidNullableWithAggregatesFilter<"projects"> | string | null
+  vc_external?: Prisma.JsonNullableWithAggregatesFilter<"projects">
   logo_url?: Prisma.StringNullableWithAggregatesFilter<"projects"> | string | null
   cover_picture?: Prisma.StringNullableWithAggregatesFilter<"projects"> | string | null
 }
@@ -461,15 +456,15 @@ export type projectsCreateInput = {
   deleted_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
-  jira_project_key?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
-  jira_connection?: Prisma.jira_connectionsCreateNestedOneWithoutProjectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
   members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
@@ -497,10 +492,10 @@ export type projectsUncheckedCreateInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -527,15 +522,15 @@ export type projectsUpdateInput = {
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
-  jira_connection?: Prisma.jira_connectionsUpdateOneWithoutProjectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
   members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
@@ -563,10 +558,10 @@ export type projectsUncheckedUpdateInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -596,10 +591,10 @@ export type projectsCreateManyInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
 }
@@ -617,9 +612,8 @@ export type projectsUpdateManyMutationInput = {
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -640,10 +634,10 @@ export type projectsUncheckedUpdateManyInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -674,10 +668,10 @@ export type projectsCountOrderByAggregateInput = {
   created_at?: Prisma.SortOrder
   updated_by?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
-  jira_project_key?: Prisma.SortOrder
-  jira_connection_id?: Prisma.SortOrder
-  github_repo?: Prisma.SortOrder
-  github_token?: Prisma.SortOrder
+  pm_connection_id?: Prisma.SortOrder
+  pm_external?: Prisma.SortOrder
+  vc_connection_id?: Prisma.SortOrder
+  vc_external?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   cover_picture?: Prisma.SortOrder
 }
@@ -696,10 +690,8 @@ export type projectsMaxOrderByAggregateInput = {
   created_at?: Prisma.SortOrder
   updated_by?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
-  jira_project_key?: Prisma.SortOrder
-  jira_connection_id?: Prisma.SortOrder
-  github_repo?: Prisma.SortOrder
-  github_token?: Prisma.SortOrder
+  pm_connection_id?: Prisma.SortOrder
+  vc_connection_id?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   cover_picture?: Prisma.SortOrder
 }
@@ -718,10 +710,8 @@ export type projectsMinOrderByAggregateInput = {
   created_at?: Prisma.SortOrder
   updated_by?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
-  jira_project_key?: Prisma.SortOrder
-  jira_connection_id?: Prisma.SortOrder
-  github_repo?: Prisma.SortOrder
-  github_token?: Prisma.SortOrder
+  pm_connection_id?: Prisma.SortOrder
+  vc_connection_id?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   cover_picture?: Prisma.SortOrder
 }
@@ -984,45 +974,87 @@ export type projectsUpdateOneRequiredWithoutChart_hierarchy_rollupsNestedInput =
   update?: Prisma.XOR<Prisma.XOR<Prisma.projectsUpdateToOneWithWhereWithoutChart_hierarchy_rollupsInput, Prisma.projectsUpdateWithoutChart_hierarchy_rollupsInput>, Prisma.projectsUncheckedUpdateWithoutChart_hierarchy_rollupsInput>
 }
 
-export type projectsCreateNestedManyWithoutJira_connectionInput = {
-  create?: Prisma.XOR<Prisma.projectsCreateWithoutJira_connectionInput, Prisma.projectsUncheckedCreateWithoutJira_connectionInput> | Prisma.projectsCreateWithoutJira_connectionInput[] | Prisma.projectsUncheckedCreateWithoutJira_connectionInput[]
-  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutJira_connectionInput | Prisma.projectsCreateOrConnectWithoutJira_connectionInput[]
-  createMany?: Prisma.projectsCreateManyJira_connectionInputEnvelope
+export type projectsCreateNestedManyWithoutPm_connectionInput = {
+  create?: Prisma.XOR<Prisma.projectsCreateWithoutPm_connectionInput, Prisma.projectsUncheckedCreateWithoutPm_connectionInput> | Prisma.projectsCreateWithoutPm_connectionInput[] | Prisma.projectsUncheckedCreateWithoutPm_connectionInput[]
+  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutPm_connectionInput | Prisma.projectsCreateOrConnectWithoutPm_connectionInput[]
+  createMany?: Prisma.projectsCreateManyPm_connectionInputEnvelope
   connect?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
 }
 
-export type projectsUncheckedCreateNestedManyWithoutJira_connectionInput = {
-  create?: Prisma.XOR<Prisma.projectsCreateWithoutJira_connectionInput, Prisma.projectsUncheckedCreateWithoutJira_connectionInput> | Prisma.projectsCreateWithoutJira_connectionInput[] | Prisma.projectsUncheckedCreateWithoutJira_connectionInput[]
-  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutJira_connectionInput | Prisma.projectsCreateOrConnectWithoutJira_connectionInput[]
-  createMany?: Prisma.projectsCreateManyJira_connectionInputEnvelope
+export type projectsUncheckedCreateNestedManyWithoutPm_connectionInput = {
+  create?: Prisma.XOR<Prisma.projectsCreateWithoutPm_connectionInput, Prisma.projectsUncheckedCreateWithoutPm_connectionInput> | Prisma.projectsCreateWithoutPm_connectionInput[] | Prisma.projectsUncheckedCreateWithoutPm_connectionInput[]
+  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutPm_connectionInput | Prisma.projectsCreateOrConnectWithoutPm_connectionInput[]
+  createMany?: Prisma.projectsCreateManyPm_connectionInputEnvelope
   connect?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
 }
 
-export type projectsUpdateManyWithoutJira_connectionNestedInput = {
-  create?: Prisma.XOR<Prisma.projectsCreateWithoutJira_connectionInput, Prisma.projectsUncheckedCreateWithoutJira_connectionInput> | Prisma.projectsCreateWithoutJira_connectionInput[] | Prisma.projectsUncheckedCreateWithoutJira_connectionInput[]
-  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutJira_connectionInput | Prisma.projectsCreateOrConnectWithoutJira_connectionInput[]
-  upsert?: Prisma.projectsUpsertWithWhereUniqueWithoutJira_connectionInput | Prisma.projectsUpsertWithWhereUniqueWithoutJira_connectionInput[]
-  createMany?: Prisma.projectsCreateManyJira_connectionInputEnvelope
+export type projectsUpdateManyWithoutPm_connectionNestedInput = {
+  create?: Prisma.XOR<Prisma.projectsCreateWithoutPm_connectionInput, Prisma.projectsUncheckedCreateWithoutPm_connectionInput> | Prisma.projectsCreateWithoutPm_connectionInput[] | Prisma.projectsUncheckedCreateWithoutPm_connectionInput[]
+  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutPm_connectionInput | Prisma.projectsCreateOrConnectWithoutPm_connectionInput[]
+  upsert?: Prisma.projectsUpsertWithWhereUniqueWithoutPm_connectionInput | Prisma.projectsUpsertWithWhereUniqueWithoutPm_connectionInput[]
+  createMany?: Prisma.projectsCreateManyPm_connectionInputEnvelope
   set?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
   disconnect?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
   delete?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
   connect?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
-  update?: Prisma.projectsUpdateWithWhereUniqueWithoutJira_connectionInput | Prisma.projectsUpdateWithWhereUniqueWithoutJira_connectionInput[]
-  updateMany?: Prisma.projectsUpdateManyWithWhereWithoutJira_connectionInput | Prisma.projectsUpdateManyWithWhereWithoutJira_connectionInput[]
+  update?: Prisma.projectsUpdateWithWhereUniqueWithoutPm_connectionInput | Prisma.projectsUpdateWithWhereUniqueWithoutPm_connectionInput[]
+  updateMany?: Prisma.projectsUpdateManyWithWhereWithoutPm_connectionInput | Prisma.projectsUpdateManyWithWhereWithoutPm_connectionInput[]
   deleteMany?: Prisma.projectsScalarWhereInput | Prisma.projectsScalarWhereInput[]
 }
 
-export type projectsUncheckedUpdateManyWithoutJira_connectionNestedInput = {
-  create?: Prisma.XOR<Prisma.projectsCreateWithoutJira_connectionInput, Prisma.projectsUncheckedCreateWithoutJira_connectionInput> | Prisma.projectsCreateWithoutJira_connectionInput[] | Prisma.projectsUncheckedCreateWithoutJira_connectionInput[]
-  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutJira_connectionInput | Prisma.projectsCreateOrConnectWithoutJira_connectionInput[]
-  upsert?: Prisma.projectsUpsertWithWhereUniqueWithoutJira_connectionInput | Prisma.projectsUpsertWithWhereUniqueWithoutJira_connectionInput[]
-  createMany?: Prisma.projectsCreateManyJira_connectionInputEnvelope
+export type projectsUncheckedUpdateManyWithoutPm_connectionNestedInput = {
+  create?: Prisma.XOR<Prisma.projectsCreateWithoutPm_connectionInput, Prisma.projectsUncheckedCreateWithoutPm_connectionInput> | Prisma.projectsCreateWithoutPm_connectionInput[] | Prisma.projectsUncheckedCreateWithoutPm_connectionInput[]
+  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutPm_connectionInput | Prisma.projectsCreateOrConnectWithoutPm_connectionInput[]
+  upsert?: Prisma.projectsUpsertWithWhereUniqueWithoutPm_connectionInput | Prisma.projectsUpsertWithWhereUniqueWithoutPm_connectionInput[]
+  createMany?: Prisma.projectsCreateManyPm_connectionInputEnvelope
   set?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
   disconnect?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
   delete?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
   connect?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
-  update?: Prisma.projectsUpdateWithWhereUniqueWithoutJira_connectionInput | Prisma.projectsUpdateWithWhereUniqueWithoutJira_connectionInput[]
-  updateMany?: Prisma.projectsUpdateManyWithWhereWithoutJira_connectionInput | Prisma.projectsUpdateManyWithWhereWithoutJira_connectionInput[]
+  update?: Prisma.projectsUpdateWithWhereUniqueWithoutPm_connectionInput | Prisma.projectsUpdateWithWhereUniqueWithoutPm_connectionInput[]
+  updateMany?: Prisma.projectsUpdateManyWithWhereWithoutPm_connectionInput | Prisma.projectsUpdateManyWithWhereWithoutPm_connectionInput[]
+  deleteMany?: Prisma.projectsScalarWhereInput | Prisma.projectsScalarWhereInput[]
+}
+
+export type projectsCreateNestedManyWithoutVc_connectionInput = {
+  create?: Prisma.XOR<Prisma.projectsCreateWithoutVc_connectionInput, Prisma.projectsUncheckedCreateWithoutVc_connectionInput> | Prisma.projectsCreateWithoutVc_connectionInput[] | Prisma.projectsUncheckedCreateWithoutVc_connectionInput[]
+  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutVc_connectionInput | Prisma.projectsCreateOrConnectWithoutVc_connectionInput[]
+  createMany?: Prisma.projectsCreateManyVc_connectionInputEnvelope
+  connect?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
+}
+
+export type projectsUncheckedCreateNestedManyWithoutVc_connectionInput = {
+  create?: Prisma.XOR<Prisma.projectsCreateWithoutVc_connectionInput, Prisma.projectsUncheckedCreateWithoutVc_connectionInput> | Prisma.projectsCreateWithoutVc_connectionInput[] | Prisma.projectsUncheckedCreateWithoutVc_connectionInput[]
+  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutVc_connectionInput | Prisma.projectsCreateOrConnectWithoutVc_connectionInput[]
+  createMany?: Prisma.projectsCreateManyVc_connectionInputEnvelope
+  connect?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
+}
+
+export type projectsUpdateManyWithoutVc_connectionNestedInput = {
+  create?: Prisma.XOR<Prisma.projectsCreateWithoutVc_connectionInput, Prisma.projectsUncheckedCreateWithoutVc_connectionInput> | Prisma.projectsCreateWithoutVc_connectionInput[] | Prisma.projectsUncheckedCreateWithoutVc_connectionInput[]
+  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutVc_connectionInput | Prisma.projectsCreateOrConnectWithoutVc_connectionInput[]
+  upsert?: Prisma.projectsUpsertWithWhereUniqueWithoutVc_connectionInput | Prisma.projectsUpsertWithWhereUniqueWithoutVc_connectionInput[]
+  createMany?: Prisma.projectsCreateManyVc_connectionInputEnvelope
+  set?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
+  disconnect?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
+  delete?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
+  connect?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
+  update?: Prisma.projectsUpdateWithWhereUniqueWithoutVc_connectionInput | Prisma.projectsUpdateWithWhereUniqueWithoutVc_connectionInput[]
+  updateMany?: Prisma.projectsUpdateManyWithWhereWithoutVc_connectionInput | Prisma.projectsUpdateManyWithWhereWithoutVc_connectionInput[]
+  deleteMany?: Prisma.projectsScalarWhereInput | Prisma.projectsScalarWhereInput[]
+}
+
+export type projectsUncheckedUpdateManyWithoutVc_connectionNestedInput = {
+  create?: Prisma.XOR<Prisma.projectsCreateWithoutVc_connectionInput, Prisma.projectsUncheckedCreateWithoutVc_connectionInput> | Prisma.projectsCreateWithoutVc_connectionInput[] | Prisma.projectsUncheckedCreateWithoutVc_connectionInput[]
+  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutVc_connectionInput | Prisma.projectsCreateOrConnectWithoutVc_connectionInput[]
+  upsert?: Prisma.projectsUpsertWithWhereUniqueWithoutVc_connectionInput | Prisma.projectsUpsertWithWhereUniqueWithoutVc_connectionInput[]
+  createMany?: Prisma.projectsCreateManyVc_connectionInputEnvelope
+  set?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
+  disconnect?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
+  delete?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
+  connect?: Prisma.projectsWhereUniqueInput | Prisma.projectsWhereUniqueInput[]
+  update?: Prisma.projectsUpdateWithWhereUniqueWithoutVc_connectionInput | Prisma.projectsUpdateWithWhereUniqueWithoutVc_connectionInput[]
+  updateMany?: Prisma.projectsUpdateManyWithWhereWithoutVc_connectionInput | Prisma.projectsUpdateManyWithWhereWithoutVc_connectionInput[]
   deleteMany?: Prisma.projectsScalarWhereInput | Prisma.projectsScalarWhereInput[]
 }
 
@@ -1055,14 +1087,14 @@ export type projectsCreateWithoutOwnerInput = {
   deleted_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
-  jira_project_key?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
-  jira_connection?: Prisma.jira_connectionsCreateNestedOneWithoutProjectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
   members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
@@ -1089,10 +1121,10 @@ export type projectsUncheckedCreateWithoutOwnerInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -1129,14 +1161,14 @@ export type projectsCreateWithoutCreated_by_userInput = {
   deleted_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
-  jira_project_key?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
-  jira_connection?: Prisma.jira_connectionsCreateNestedOneWithoutProjectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
   members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
@@ -1163,10 +1195,10 @@ export type projectsUncheckedCreateWithoutCreated_by_userInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -1203,14 +1235,14 @@ export type projectsCreateWithoutUpdated_by_userInput = {
   deleted_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
-  jira_project_key?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
-  jira_connection?: Prisma.jira_connectionsCreateNestedOneWithoutProjectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
   members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
@@ -1237,10 +1269,10 @@ export type projectsUncheckedCreateWithoutUpdated_by_userInput = {
   created_by?: string | null
   created_at?: Date | string
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -1299,10 +1331,10 @@ export type projectsScalarWhereInput = {
   created_at?: Prisma.DateTimeFilter<"projects"> | Date | string
   updated_by?: Prisma.UuidNullableFilter<"projects"> | string | null
   updated_at?: Prisma.DateTimeFilter<"projects"> | Date | string
-  jira_project_key?: Prisma.StringNullableFilter<"projects"> | string | null
-  jira_connection_id?: Prisma.UuidNullableFilter<"projects"> | string | null
-  github_repo?: Prisma.StringNullableFilter<"projects"> | string | null
-  github_token?: Prisma.StringNullableFilter<"projects"> | string | null
+  pm_connection_id?: Prisma.UuidNullableFilter<"projects"> | string | null
+  pm_external?: Prisma.JsonNullableFilter<"projects">
+  vc_connection_id?: Prisma.UuidNullableFilter<"projects"> | string | null
+  vc_external?: Prisma.JsonNullableFilter<"projects">
   logo_url?: Prisma.StringNullableFilter<"projects"> | string | null
   cover_picture?: Prisma.StringNullableFilter<"projects"> | string | null
 }
@@ -1352,15 +1384,15 @@ export type projectsCreateWithoutMembersInput = {
   deleted_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
-  jira_project_key?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
-  jira_connection?: Prisma.jira_connectionsCreateNestedOneWithoutProjectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
   teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
   work_items?: Prisma.work_itemsCreateNestedManyWithoutProjectInput
@@ -1387,10 +1419,10 @@ export type projectsUncheckedCreateWithoutMembersInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   teams?: Prisma.teamsUncheckedCreateNestedManyWithoutProjectInput
@@ -1432,15 +1464,15 @@ export type projectsUpdateWithoutMembersInput = {
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
-  jira_connection?: Prisma.jira_connectionsUpdateOneWithoutProjectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
   teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
   work_items?: Prisma.work_itemsUpdateManyWithoutProjectNestedInput
@@ -1467,10 +1499,10 @@ export type projectsUncheckedUpdateWithoutMembersInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   teams?: Prisma.teamsUncheckedUpdateManyWithoutProjectNestedInput
@@ -1496,15 +1528,15 @@ export type projectsCreateWithoutTeamsInput = {
   deleted_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
-  jira_project_key?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
-  jira_connection?: Prisma.jira_connectionsCreateNestedOneWithoutProjectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
   members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
   work_items?: Prisma.work_itemsCreateNestedManyWithoutProjectInput
@@ -1531,10 +1563,10 @@ export type projectsUncheckedCreateWithoutTeamsInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -1576,15 +1608,15 @@ export type projectsUpdateWithoutTeamsInput = {
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
-  jira_connection?: Prisma.jira_connectionsUpdateOneWithoutProjectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
   members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
   work_items?: Prisma.work_itemsUpdateManyWithoutProjectNestedInput
@@ -1611,10 +1643,10 @@ export type projectsUncheckedUpdateWithoutTeamsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -1640,15 +1672,15 @@ export type projectsCreateWithoutSprintsInput = {
   deleted_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
-  jira_project_key?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
-  jira_connection?: Prisma.jira_connectionsCreateNestedOneWithoutProjectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
   members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
   work_items?: Prisma.work_itemsCreateNestedManyWithoutProjectInput
@@ -1675,10 +1707,10 @@ export type projectsUncheckedCreateWithoutSprintsInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -1720,15 +1752,15 @@ export type projectsUpdateWithoutSprintsInput = {
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
-  jira_connection?: Prisma.jira_connectionsUpdateOneWithoutProjectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
   members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
   work_items?: Prisma.work_itemsUpdateManyWithoutProjectNestedInput
@@ -1755,10 +1787,10 @@ export type projectsUncheckedUpdateWithoutSprintsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -1784,15 +1816,15 @@ export type projectsCreateWithoutWork_itemsInput = {
   deleted_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
-  jira_project_key?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
-  jira_connection?: Prisma.jira_connectionsCreateNestedOneWithoutProjectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
   members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
@@ -1819,10 +1851,10 @@ export type projectsUncheckedCreateWithoutWork_itemsInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -1864,15 +1896,15 @@ export type projectsUpdateWithoutWork_itemsInput = {
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
-  jira_connection?: Prisma.jira_connectionsUpdateOneWithoutProjectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
   members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
@@ -1899,10 +1931,10 @@ export type projectsUncheckedUpdateWithoutWork_itemsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -1928,15 +1960,15 @@ export type projectsCreateWithoutWork_item_linksInput = {
   deleted_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
-  jira_project_key?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
-  jira_connection?: Prisma.jira_connectionsCreateNestedOneWithoutProjectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
   members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
@@ -1963,10 +1995,10 @@ export type projectsUncheckedCreateWithoutWork_item_linksInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2008,15 +2040,15 @@ export type projectsUpdateWithoutWork_item_linksInput = {
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
-  jira_connection?: Prisma.jira_connectionsUpdateOneWithoutProjectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
   members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
@@ -2043,10 +2075,10 @@ export type projectsUncheckedUpdateWithoutWork_item_linksInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2072,15 +2104,15 @@ export type projectsCreateWithoutBurndown_rollupsInput = {
   deleted_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
-  jira_project_key?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
-  jira_connection?: Prisma.jira_connectionsCreateNestedOneWithoutProjectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
   members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
@@ -2107,10 +2139,10 @@ export type projectsUncheckedCreateWithoutBurndown_rollupsInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2152,15 +2184,15 @@ export type projectsUpdateWithoutBurndown_rollupsInput = {
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
-  jira_connection?: Prisma.jira_connectionsUpdateOneWithoutProjectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
   members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
@@ -2187,10 +2219,10 @@ export type projectsUncheckedUpdateWithoutBurndown_rollupsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2216,15 +2248,15 @@ export type projectsCreateWithoutChart_rollupsInput = {
   deleted_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
-  jira_project_key?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
-  jira_connection?: Prisma.jira_connectionsCreateNestedOneWithoutProjectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
   members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
@@ -2251,10 +2283,10 @@ export type projectsUncheckedCreateWithoutChart_rollupsInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2296,15 +2328,15 @@ export type projectsUpdateWithoutChart_rollupsInput = {
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
-  jira_connection?: Prisma.jira_connectionsUpdateOneWithoutProjectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
   members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
@@ -2331,10 +2363,10 @@ export type projectsUncheckedUpdateWithoutChart_rollupsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2360,15 +2392,15 @@ export type projectsCreateWithoutChart_hierarchy_rollupsInput = {
   deleted_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
-  jira_project_key?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
-  jira_connection?: Prisma.jira_connectionsCreateNestedOneWithoutProjectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
   members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
@@ -2395,10 +2427,10 @@ export type projectsUncheckedCreateWithoutChart_hierarchy_rollupsInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2440,15 +2472,15 @@ export type projectsUpdateWithoutChart_hierarchy_rollupsInput = {
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
-  jira_connection?: Prisma.jira_connectionsUpdateOneWithoutProjectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
   members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
@@ -2475,10 +2507,10 @@ export type projectsUncheckedUpdateWithoutChart_hierarchy_rollupsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2491,7 +2523,7 @@ export type projectsUncheckedUpdateWithoutChart_hierarchy_rollupsInput = {
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
-export type projectsCreateWithoutJira_connectionInput = {
+export type projectsCreateWithoutPm_connectionInput = {
   id?: string
   name: string
   key: string
@@ -2504,14 +2536,14 @@ export type projectsCreateWithoutJira_connectionInput = {
   deleted_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
-  jira_project_key?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
   members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
@@ -2523,7 +2555,7 @@ export type projectsCreateWithoutJira_connectionInput = {
   saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
 }
 
-export type projectsUncheckedCreateWithoutJira_connectionInput = {
+export type projectsUncheckedCreateWithoutPm_connectionInput = {
   id?: string
   name: string
   key: string
@@ -2539,9 +2571,9 @@ export type projectsUncheckedCreateWithoutJira_connectionInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2555,30 +2587,120 @@ export type projectsUncheckedCreateWithoutJira_connectionInput = {
   saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
 }
 
-export type projectsCreateOrConnectWithoutJira_connectionInput = {
+export type projectsCreateOrConnectWithoutPm_connectionInput = {
   where: Prisma.projectsWhereUniqueInput
-  create: Prisma.XOR<Prisma.projectsCreateWithoutJira_connectionInput, Prisma.projectsUncheckedCreateWithoutJira_connectionInput>
+  create: Prisma.XOR<Prisma.projectsCreateWithoutPm_connectionInput, Prisma.projectsUncheckedCreateWithoutPm_connectionInput>
 }
 
-export type projectsCreateManyJira_connectionInputEnvelope = {
-  data: Prisma.projectsCreateManyJira_connectionInput | Prisma.projectsCreateManyJira_connectionInput[]
+export type projectsCreateManyPm_connectionInputEnvelope = {
+  data: Prisma.projectsCreateManyPm_connectionInput | Prisma.projectsCreateManyPm_connectionInput[]
   skipDuplicates?: boolean
 }
 
-export type projectsUpsertWithWhereUniqueWithoutJira_connectionInput = {
+export type projectsUpsertWithWhereUniqueWithoutPm_connectionInput = {
   where: Prisma.projectsWhereUniqueInput
-  update: Prisma.XOR<Prisma.projectsUpdateWithoutJira_connectionInput, Prisma.projectsUncheckedUpdateWithoutJira_connectionInput>
-  create: Prisma.XOR<Prisma.projectsCreateWithoutJira_connectionInput, Prisma.projectsUncheckedCreateWithoutJira_connectionInput>
+  update: Prisma.XOR<Prisma.projectsUpdateWithoutPm_connectionInput, Prisma.projectsUncheckedUpdateWithoutPm_connectionInput>
+  create: Prisma.XOR<Prisma.projectsCreateWithoutPm_connectionInput, Prisma.projectsUncheckedCreateWithoutPm_connectionInput>
 }
 
-export type projectsUpdateWithWhereUniqueWithoutJira_connectionInput = {
+export type projectsUpdateWithWhereUniqueWithoutPm_connectionInput = {
   where: Prisma.projectsWhereUniqueInput
-  data: Prisma.XOR<Prisma.projectsUpdateWithoutJira_connectionInput, Prisma.projectsUncheckedUpdateWithoutJira_connectionInput>
+  data: Prisma.XOR<Prisma.projectsUpdateWithoutPm_connectionInput, Prisma.projectsUncheckedUpdateWithoutPm_connectionInput>
 }
 
-export type projectsUpdateManyWithWhereWithoutJira_connectionInput = {
+export type projectsUpdateManyWithWhereWithoutPm_connectionInput = {
   where: Prisma.projectsScalarWhereInput
-  data: Prisma.XOR<Prisma.projectsUpdateManyMutationInput, Prisma.projectsUncheckedUpdateManyWithoutJira_connectionInput>
+  data: Prisma.XOR<Prisma.projectsUpdateManyMutationInput, Prisma.projectsUncheckedUpdateManyWithoutPm_connectionInput>
+}
+
+export type projectsCreateWithoutVc_connectionInput = {
+  id?: string
+  name: string
+  key: string
+  description?: string | null
+  start_date?: Date | string | null
+  end_date?: Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: $Enums.ProjectStatus
+  deleted_at?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  logo_url?: string | null
+  cover_picture?: string | null
+  owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
+  created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
+  updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
+  teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
+  sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
+  work_items?: Prisma.work_itemsCreateNestedManyWithoutProjectInput
+  work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutProjectInput
+  chart_rollups?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutProjectInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutProjectInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
+  saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
+}
+
+export type projectsUncheckedCreateWithoutVc_connectionInput = {
+  id?: string
+  name: string
+  key: string
+  description?: string | null
+  owner_id: string
+  start_date?: Date | string | null
+  end_date?: Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: $Enums.ProjectStatus
+  deleted_at?: Date | string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  logo_url?: string | null
+  cover_picture?: string | null
+  members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
+  teams?: Prisma.teamsUncheckedCreateNestedManyWithoutProjectInput
+  sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutProjectInput
+  work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutProjectInput
+  work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutProjectInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
+}
+
+export type projectsCreateOrConnectWithoutVc_connectionInput = {
+  where: Prisma.projectsWhereUniqueInput
+  create: Prisma.XOR<Prisma.projectsCreateWithoutVc_connectionInput, Prisma.projectsUncheckedCreateWithoutVc_connectionInput>
+}
+
+export type projectsCreateManyVc_connectionInputEnvelope = {
+  data: Prisma.projectsCreateManyVc_connectionInput | Prisma.projectsCreateManyVc_connectionInput[]
+  skipDuplicates?: boolean
+}
+
+export type projectsUpsertWithWhereUniqueWithoutVc_connectionInput = {
+  where: Prisma.projectsWhereUniqueInput
+  update: Prisma.XOR<Prisma.projectsUpdateWithoutVc_connectionInput, Prisma.projectsUncheckedUpdateWithoutVc_connectionInput>
+  create: Prisma.XOR<Prisma.projectsCreateWithoutVc_connectionInput, Prisma.projectsUncheckedCreateWithoutVc_connectionInput>
+}
+
+export type projectsUpdateWithWhereUniqueWithoutVc_connectionInput = {
+  where: Prisma.projectsWhereUniqueInput
+  data: Prisma.XOR<Prisma.projectsUpdateWithoutVc_connectionInput, Prisma.projectsUncheckedUpdateWithoutVc_connectionInput>
+}
+
+export type projectsUpdateManyWithWhereWithoutVc_connectionInput = {
+  where: Prisma.projectsScalarWhereInput
+  data: Prisma.XOR<Prisma.projectsUpdateManyMutationInput, Prisma.projectsUncheckedUpdateManyWithoutVc_connectionInput>
 }
 
 export type projectsCreateWithoutSaved_viewsInput = {
@@ -2594,15 +2716,15 @@ export type projectsCreateWithoutSaved_viewsInput = {
   deleted_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
-  jira_project_key?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
-  jira_connection?: Prisma.jira_connectionsCreateNestedOneWithoutProjectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
   members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
@@ -2629,10 +2751,10 @@ export type projectsUncheckedCreateWithoutSaved_viewsInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2674,15 +2796,15 @@ export type projectsUpdateWithoutSaved_viewsInput = {
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
-  jira_connection?: Prisma.jira_connectionsUpdateOneWithoutProjectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
   members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
@@ -2709,10 +2831,10 @@ export type projectsUncheckedUpdateWithoutSaved_viewsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2740,10 +2862,10 @@ export type projectsCreateManyOwnerInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
 }
@@ -2763,10 +2885,10 @@ export type projectsCreateManyCreated_by_userInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
 }
@@ -2786,10 +2908,10 @@ export type projectsCreateManyUpdated_by_userInput = {
   created_by?: string | null
   created_at?: Date | string
   updated_at?: Date | string
-  jira_project_key?: string | null
-  jira_connection_id?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
 }
@@ -2807,14 +2929,14 @@ export type projectsUpdateWithoutOwnerInput = {
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
-  jira_connection?: Prisma.jira_connectionsUpdateOneWithoutProjectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
   members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
@@ -2841,10 +2963,10 @@ export type projectsUncheckedUpdateWithoutOwnerInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2873,10 +2995,10 @@ export type projectsUncheckedUpdateManyWithoutOwnerInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -2894,14 +3016,14 @@ export type projectsUpdateWithoutCreated_by_userInput = {
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
-  jira_connection?: Prisma.jira_connectionsUpdateOneWithoutProjectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
   members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
@@ -2928,10 +3050,10 @@ export type projectsUncheckedUpdateWithoutCreated_by_userInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2960,10 +3082,10 @@ export type projectsUncheckedUpdateManyWithoutCreated_by_userInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -2981,14 +3103,14 @@ export type projectsUpdateWithoutUpdated_by_userInput = {
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
-  jira_connection?: Prisma.jira_connectionsUpdateOneWithoutProjectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
   members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
@@ -3015,10 +3137,10 @@ export type projectsUncheckedUpdateWithoutUpdated_by_userInput = {
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -3047,15 +3169,15 @@ export type projectsUncheckedUpdateManyWithoutUpdated_by_userInput = {
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  jira_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
-export type projectsCreateManyJira_connectionInput = {
+export type projectsCreateManyPm_connectionInput = {
   id?: string
   name: string
   key: string
@@ -3071,14 +3193,14 @@ export type projectsCreateManyJira_connectionInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
-  jira_project_key?: string | null
-  github_repo?: string | null
-  github_token?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: string | null
   cover_picture?: string | null
 }
 
-export type projectsUpdateWithoutJira_connectionInput = {
+export type projectsUpdateWithoutPm_connectionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3091,14 +3213,14 @@ export type projectsUpdateWithoutJira_connectionInput = {
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
   members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
@@ -3110,7 +3232,7 @@ export type projectsUpdateWithoutJira_connectionInput = {
   saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
 }
 
-export type projectsUncheckedUpdateWithoutJira_connectionInput = {
+export type projectsUncheckedUpdateWithoutPm_connectionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3126,9 +3248,9 @@ export type projectsUncheckedUpdateWithoutJira_connectionInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -3142,7 +3264,7 @@ export type projectsUncheckedUpdateWithoutJira_connectionInput = {
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
-export type projectsUncheckedUpdateManyWithoutJira_connectionInput = {
+export type projectsUncheckedUpdateManyWithoutPm_connectionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3158,9 +3280,119 @@ export type projectsUncheckedUpdateManyWithoutJira_connectionInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+}
+
+export type projectsCreateManyVc_connectionInput = {
+  id?: string
+  name: string
+  key: string
+  description?: string | null
+  owner_id: string
+  start_date?: Date | string | null
+  end_date?: Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: $Enums.ProjectStatus
+  deleted_at?: Date | string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  logo_url?: string | null
+  cover_picture?: string | null
+}
+
+export type projectsUpdateWithoutVc_connectionInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: Prisma.EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
+  created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
+  updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
+  teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
+  sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
+  work_items?: Prisma.work_itemsUpdateManyWithoutProjectNestedInput
+  work_item_links?: Prisma.work_item_linksUpdateManyWithoutProjectNestedInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUpdateManyWithoutProjectNestedInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutProjectNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
+  saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
+}
+
+export type projectsUncheckedUpdateWithoutVc_connectionInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  owner_id?: Prisma.StringFieldUpdateOperationsInput | string
+  start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: Prisma.EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
+  teams?: Prisma.teamsUncheckedUpdateManyWithoutProjectNestedInput
+  sprints?: Prisma.sprintsUncheckedUpdateManyWithoutProjectNestedInput
+  work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutProjectNestedInput
+  work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutProjectNestedInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
+}
+
+export type projectsUncheckedUpdateManyWithoutVc_connectionInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  owner_id?: Prisma.StringFieldUpdateOperationsInput | string
+  start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: Prisma.EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -3284,16 +3516,17 @@ export type projectsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   created_at?: boolean
   updated_by?: boolean
   updated_at?: boolean
-  jira_project_key?: boolean
-  jira_connection_id?: boolean
-  github_repo?: boolean
-  github_token?: boolean
+  pm_connection_id?: boolean
+  pm_external?: boolean
+  vc_connection_id?: boolean
+  vc_external?: boolean
   logo_url?: boolean
   cover_picture?: boolean
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   created_by_user?: boolean | Prisma.projects$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.projects$updated_by_userArgs<ExtArgs>
-  jira_connection?: boolean | Prisma.projects$jira_connectionArgs<ExtArgs>
+  pm_connection?: boolean | Prisma.projects$pm_connectionArgs<ExtArgs>
+  vc_connection?: boolean | Prisma.projects$vc_connectionArgs<ExtArgs>
   members?: boolean | Prisma.projects$membersArgs<ExtArgs>
   teams?: boolean | Prisma.projects$teamsArgs<ExtArgs>
   sprints?: boolean | Prisma.projects$sprintsArgs<ExtArgs>
@@ -3322,16 +3555,17 @@ export type projectsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   created_at?: boolean
   updated_by?: boolean
   updated_at?: boolean
-  jira_project_key?: boolean
-  jira_connection_id?: boolean
-  github_repo?: boolean
-  github_token?: boolean
+  pm_connection_id?: boolean
+  pm_external?: boolean
+  vc_connection_id?: boolean
+  vc_external?: boolean
   logo_url?: boolean
   cover_picture?: boolean
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   created_by_user?: boolean | Prisma.projects$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.projects$updated_by_userArgs<ExtArgs>
-  jira_connection?: boolean | Prisma.projects$jira_connectionArgs<ExtArgs>
+  pm_connection?: boolean | Prisma.projects$pm_connectionArgs<ExtArgs>
+  vc_connection?: boolean | Prisma.projects$vc_connectionArgs<ExtArgs>
 }, ExtArgs["result"]["projects"]>
 
 export type projectsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -3350,16 +3584,17 @@ export type projectsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   created_at?: boolean
   updated_by?: boolean
   updated_at?: boolean
-  jira_project_key?: boolean
-  jira_connection_id?: boolean
-  github_repo?: boolean
-  github_token?: boolean
+  pm_connection_id?: boolean
+  pm_external?: boolean
+  vc_connection_id?: boolean
+  vc_external?: boolean
   logo_url?: boolean
   cover_picture?: boolean
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   created_by_user?: boolean | Prisma.projects$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.projects$updated_by_userArgs<ExtArgs>
-  jira_connection?: boolean | Prisma.projects$jira_connectionArgs<ExtArgs>
+  pm_connection?: boolean | Prisma.projects$pm_connectionArgs<ExtArgs>
+  vc_connection?: boolean | Prisma.projects$vc_connectionArgs<ExtArgs>
 }, ExtArgs["result"]["projects"]>
 
 export type projectsSelectScalar = {
@@ -3378,20 +3613,21 @@ export type projectsSelectScalar = {
   created_at?: boolean
   updated_by?: boolean
   updated_at?: boolean
-  jira_project_key?: boolean
-  jira_connection_id?: boolean
-  github_repo?: boolean
-  github_token?: boolean
+  pm_connection_id?: boolean
+  pm_external?: boolean
+  vc_connection_id?: boolean
+  vc_external?: boolean
   logo_url?: boolean
   cover_picture?: boolean
 }
 
-export type projectsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "key" | "description" | "owner_id" | "start_date" | "end_date" | "attributes_config" | "workflow_config" | "status" | "deleted_at" | "created_by" | "created_at" | "updated_by" | "updated_at" | "jira_project_key" | "jira_connection_id" | "github_repo" | "github_token" | "logo_url" | "cover_picture", ExtArgs["result"]["projects"]>
+export type projectsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "key" | "description" | "owner_id" | "start_date" | "end_date" | "attributes_config" | "workflow_config" | "status" | "deleted_at" | "created_by" | "created_at" | "updated_by" | "updated_at" | "pm_connection_id" | "pm_external" | "vc_connection_id" | "vc_external" | "logo_url" | "cover_picture", ExtArgs["result"]["projects"]>
 export type projectsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   created_by_user?: boolean | Prisma.projects$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.projects$updated_by_userArgs<ExtArgs>
-  jira_connection?: boolean | Prisma.projects$jira_connectionArgs<ExtArgs>
+  pm_connection?: boolean | Prisma.projects$pm_connectionArgs<ExtArgs>
+  vc_connection?: boolean | Prisma.projects$vc_connectionArgs<ExtArgs>
   members?: boolean | Prisma.projects$membersArgs<ExtArgs>
   teams?: boolean | Prisma.projects$teamsArgs<ExtArgs>
   sprints?: boolean | Prisma.projects$sprintsArgs<ExtArgs>
@@ -3407,13 +3643,15 @@ export type projectsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   created_by_user?: boolean | Prisma.projects$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.projects$updated_by_userArgs<ExtArgs>
-  jira_connection?: boolean | Prisma.projects$jira_connectionArgs<ExtArgs>
+  pm_connection?: boolean | Prisma.projects$pm_connectionArgs<ExtArgs>
+  vc_connection?: boolean | Prisma.projects$vc_connectionArgs<ExtArgs>
 }
 export type projectsIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   created_by_user?: boolean | Prisma.projects$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.projects$updated_by_userArgs<ExtArgs>
-  jira_connection?: boolean | Prisma.projects$jira_connectionArgs<ExtArgs>
+  pm_connection?: boolean | Prisma.projects$pm_connectionArgs<ExtArgs>
+  vc_connection?: boolean | Prisma.projects$vc_connectionArgs<ExtArgs>
 }
 
 export type $projectsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3422,7 +3660,8 @@ export type $projectsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     owner: Prisma.$usersPayload<ExtArgs>
     created_by_user: Prisma.$usersPayload<ExtArgs> | null
     updated_by_user: Prisma.$usersPayload<ExtArgs> | null
-    jira_connection: Prisma.$jira_connectionsPayload<ExtArgs> | null
+    pm_connection: Prisma.$project_management_connectionsPayload<ExtArgs> | null
+    vc_connection: Prisma.$version_control_connectionsPayload<ExtArgs> | null
     members: Prisma.$project_membersPayload<ExtArgs>[]
     teams: Prisma.$teamsPayload<ExtArgs>[]
     sprints: Prisma.$sprintsPayload<ExtArgs>[]
@@ -3449,10 +3688,22 @@ export type $projectsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     created_at: Date
     updated_by: string | null
     updated_at: Date
-    jira_project_key: string | null
-    jira_connection_id: string | null
-    github_repo: string | null
-    github_token: string | null
+    /**
+     * FK to OAuth row in `project_management_connections` (typed for integrity).
+     */
+    pm_connection_id: string | null
+    /**
+     * Vendor link extras, e.g. `{ "vendor": "jira", "project_key": "ABC" }`.
+     */
+    pm_external: runtime.JsonValue | null
+    /**
+     * FK to OAuth row in `version_control_connections` (typed for integrity).
+     */
+    vc_connection_id: string | null
+    /**
+     * Vendor link extras, e.g. `{ "vendor": "github", "repo": "owner/repo" }`.
+     */
+    vc_external: runtime.JsonValue | null
     logo_url: string | null
     cover_picture: string | null
   }, ExtArgs["result"]["projects"]>
@@ -3852,7 +4103,8 @@ export interface Prisma__projectsClient<T, Null = never, ExtArgs extends runtime
   owner<T extends Prisma.usersDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.usersDefaultArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   created_by_user<T extends Prisma.projects$created_by_userArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$created_by_userArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   updated_by_user<T extends Prisma.projects$updated_by_userArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$updated_by_userArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  jira_connection<T extends Prisma.projects$jira_connectionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$jira_connectionArgs<ExtArgs>>): Prisma.Prisma__jira_connectionsClient<runtime.Types.Result.GetResult<Prisma.$jira_connectionsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  pm_connection<T extends Prisma.projects$pm_connectionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$pm_connectionArgs<ExtArgs>>): Prisma.Prisma__project_management_connectionsClient<runtime.Types.Result.GetResult<Prisma.$project_management_connectionsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  vc_connection<T extends Prisma.projects$vc_connectionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$vc_connectionArgs<ExtArgs>>): Prisma.Prisma__version_control_connectionsClient<runtime.Types.Result.GetResult<Prisma.$version_control_connectionsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   members<T extends Prisma.projects$membersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$membersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$project_membersPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   teams<T extends Prisma.projects$teamsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$teamsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$teamsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sprints<T extends Prisma.projects$sprintsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$sprintsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$sprintsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -3906,10 +4158,10 @@ export interface projectsFieldRefs {
   readonly created_at: Prisma.FieldRef<"projects", 'DateTime'>
   readonly updated_by: Prisma.FieldRef<"projects", 'String'>
   readonly updated_at: Prisma.FieldRef<"projects", 'DateTime'>
-  readonly jira_project_key: Prisma.FieldRef<"projects", 'String'>
-  readonly jira_connection_id: Prisma.FieldRef<"projects", 'String'>
-  readonly github_repo: Prisma.FieldRef<"projects", 'String'>
-  readonly github_token: Prisma.FieldRef<"projects", 'String'>
+  readonly pm_connection_id: Prisma.FieldRef<"projects", 'String'>
+  readonly pm_external: Prisma.FieldRef<"projects", 'Json'>
+  readonly vc_connection_id: Prisma.FieldRef<"projects", 'String'>
+  readonly vc_external: Prisma.FieldRef<"projects", 'Json'>
   readonly logo_url: Prisma.FieldRef<"projects", 'String'>
   readonly cover_picture: Prisma.FieldRef<"projects", 'String'>
 }
@@ -4351,22 +4603,41 @@ export type projects$updated_by_userArgs<ExtArgs extends runtime.Types.Extension
 }
 
 /**
- * projects.jira_connection
+ * projects.pm_connection
  */
-export type projects$jira_connectionArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type projects$pm_connectionArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the jira_connections
+   * Select specific fields to fetch from the project_management_connections
    */
-  select?: Prisma.jira_connectionsSelect<ExtArgs> | null
+  select?: Prisma.project_management_connectionsSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the jira_connections
+   * Omit specific fields from the project_management_connections
    */
-  omit?: Prisma.jira_connectionsOmit<ExtArgs> | null
+  omit?: Prisma.project_management_connectionsOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.jira_connectionsInclude<ExtArgs> | null
-  where?: Prisma.jira_connectionsWhereInput
+  include?: Prisma.project_management_connectionsInclude<ExtArgs> | null
+  where?: Prisma.project_management_connectionsWhereInput
+}
+
+/**
+ * projects.vc_connection
+ */
+export type projects$vc_connectionArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the version_control_connections
+   */
+  select?: Prisma.version_control_connectionsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the version_control_connections
+   */
+  omit?: Prisma.version_control_connectionsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.version_control_connectionsInclude<ExtArgs> | null
+  where?: Prisma.version_control_connectionsWhereInput
 }
 
 /**

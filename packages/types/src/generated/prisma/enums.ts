@@ -159,13 +159,36 @@ export const AccessRequestKind = {
 export type AccessRequestKind = (typeof AccessRequestKind)[keyof typeof AccessRequestKind]
 
 
-export const JiraConnectionStatus = {
+export const ProjectManagementVendor = {
+  jira: 'jira'
+} as const
+
+export type ProjectManagementVendor = (typeof ProjectManagementVendor)[keyof typeof ProjectManagementVendor]
+
+
+export const ProjectManagementConnectionStatus = {
   active: 'active',
   revoked: 'revoked',
   expired: 'expired'
 } as const
 
-export type JiraConnectionStatus = (typeof JiraConnectionStatus)[keyof typeof JiraConnectionStatus]
+export type ProjectManagementConnectionStatus = (typeof ProjectManagementConnectionStatus)[keyof typeof ProjectManagementConnectionStatus]
+
+
+export const VersionControlVendor = {
+  github: 'github'
+} as const
+
+export type VersionControlVendor = (typeof VersionControlVendor)[keyof typeof VersionControlVendor]
+
+
+export const VersionControlConnectionStatus = {
+  active: 'active',
+  revoked: 'revoked',
+  expired: 'expired'
+} as const
+
+export type VersionControlConnectionStatus = (typeof VersionControlConnectionStatus)[keyof typeof VersionControlConnectionStatus]
 
 
 export const IntegrationCategory = {

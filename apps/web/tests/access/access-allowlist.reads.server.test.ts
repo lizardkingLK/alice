@@ -4,13 +4,13 @@ import { accessAllowlistFactory } from '../factories/accessAllowlist.factory';
 const {
   shouldReadViaApiMock,
   apiFetchMock,
-  createClientMock,
+  createAdminClientMock,
   getDbUserMock,
   isAdminMock,
 } = vi.hoisted(() => ({
   shouldReadViaApiMock: vi.fn(() => false),
   apiFetchMock: vi.fn(),
-  createClientMock: vi.fn(),
+  createAdminClientMock: vi.fn(),
   getDbUserMock: vi.fn(),
   isAdminMock: vi.fn(),
 }));
@@ -23,8 +23,8 @@ vi.mock('@/lib/api/api-fetch.reads.use.server', () => ({
   apiFetch: apiFetchMock,
 }));
 
-vi.mock('@/lib/supabase/server', () => ({
-  createClient: createClientMock,
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: createAdminClientMock,
 }));
 
 vi.mock('@/lib/auth', () => ({
@@ -83,7 +83,7 @@ describe('access allowlist server reads retrieval toggle', () => {
     expect(apiFetchMock).toHaveBeenCalledWith(
       '/api/access-allowlist?page=1&limit=10&status=active&search=acme'
     );
-    expect(createClientMock).not.toHaveBeenCalled();
+    expect(createAdminClientMock).not.toHaveBeenCalled();
     expect(getDbUserMock).not.toHaveBeenCalled();
     expect(result.items[0]?.id).toBe(row.id);
   });
@@ -145,10 +145,10 @@ describe('access allowlist server reads retrieval toggle', () => {
     await expect(result).rejects.toThrow('Forbidden');
   });
 
-  it('lists via supabase-js when the toggle is off', async () => {
+  it('lists via service-role supabase-js when the toggle is off', async () => {
     // Arrange
     const supabase = createListSupabase(row);
-    createClientMock.mockResolvedValue(supabase);
+    createAdminClientMock.mockReturnValue(supabase);
 
     // Act
     const result = await listAccessAllowlist({ search: 'acme' });
@@ -156,6 +156,7 @@ describe('access allowlist server reads retrieval toggle', () => {
     // Assert
     expect(shouldReadViaApiMock).toHaveBeenCalledWith('access-allowlist');
     expect(apiFetchMock).not.toHaveBeenCalled();
+    expect(createAdminClientMock).toHaveBeenCalled();
     expect(supabase.chain.or).toHaveBeenCalled();
     expect(result.items).toHaveLength(1);
   });
@@ -168,7 +169,7 @@ describe('access allowlist server reads retrieval toggle', () => {
     const result = await listAccessAllowlist({ page: 1, limit: 10 });
 
     // Assert
-    expect(createClientMock).not.toHaveBeenCalled();
+    expect(createAdminClientMock).not.toHaveBeenCalled();
     expect(apiFetchMock).not.toHaveBeenCalled();
     expect(result).toMatchObject({ items: [], totalCount: 0 });
   });

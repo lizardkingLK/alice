@@ -58,7 +58,7 @@ sequenceDiagram
   A->>J: Authorize (3LO)
   J->>A: Callback + auth code
   A->>J: Exchange code → tokens
-  A->>A: Upsert jira_connections (encrypted refresh)
+  A->>A: Upsert project_management_connections vendor=jira
   A->>W: Connected
 
   M->>W: Create project + pick Jira project
@@ -72,46 +72,50 @@ sequenceDiagram
 
 ### 3.1 New / changed tables
 
-**`jira_connections`** (new)
+**`project_management_connections`** (hybrid; Jira is `vendor = jira`)
 
-| Column                      | Type           | Notes                                    |
-| --------------------------- | -------------- | ---------------------------------------- |
-| `id`                        | `uuid`         | PK                                       |
-| `user_id`                   | `uuid`         | Manager who authorized (FK `users`)      |
-| `cloud_id`                  | `text`         | Atlassian cloud id                       |
-| `site_url`                  | `text`         | e.g. `https://{subdomain}.atlassian.net` |
-| `account_email`             | `text?`        | Display only                             |
-| `refresh_token_enc`         | `text`         | Encrypted; never returned to clients     |
-| `access_token_enc`          | `text?`        | Optional cache; prefer refresh-on-demand |
-| `access_token_expires_at`   | `timestamptz?` |                                          |
-| `scopes`                    | `text`         | Space-separated scopes granted           |
-| `status`                    | `enum`         | `active` / `revoked` / `expired`         |
-| `created_at` / `updated_at` | `timestamptz`  |                                          |
+| Column                      | Type           | Notes                                                                   |
+| --------------------------- | -------------- | ----------------------------------------------------------------------- |
+| `id`                        | `uuid`         | PK                                                                      |
+| `user_id`                   | `uuid`         | Manager who authorized (FK `users`)                                     |
+| `vendor`                    | `enum`         | `jira` (more vendors later)                                             |
+| `external_id`               | `text`         | Jira Atlassian cloud id                                                 |
+| `display_label`             | `text?`        | UI label (Jira: site URL)                                               |
+| `provider_config`           | `jsonb`        | Vendor extras only — Jira: `{ site_url, account_email }`; **no tokens** |
+| `refresh_token_enc`         | `text`         | Encrypted; never returned to clients                                    |
+| `access_token_enc`          | `text?`        | Optional cache; prefer refresh-on-demand                                |
+| `access_token_expires_at`   | `timestamptz?` |                                                                         |
+| `scopes`                    | `text`         | Space-separated scopes granted                                          |
+| `status`                    | `enum`         | `active` / `revoked` / `expired`                                        |
+| `created_at` / `updated_at` | `timestamptz`  |                                                                         |
 
-**`projects`** (replace token columns)
+Unique: `(user_id, vendor, external_id)`. HTTP `/api/jira` still returns a Jira DTO (`cloud_id`, `site_url`, `account_email`) projected from this row.
 
-| Keep / add                                               | Drop                                                       |
-| -------------------------------------------------------- | ---------------------------------------------------------- |
-| `jira_connection_id` (FK → `jira_connections`, nullable) | `jira_token`                                               |
-| `jira_project_key`                                       | `jira_email` (optional: keep display-only from connection) |
-| `jira_cloud_id` (optional denormalized)                  | `jira_url` (derive from connection `site_url`)             |
+**`projects`** (PM link columns)
 
-**`work_items.jira_issue_key`** — keep; keep unique index on `(project_id, jira_issue_key)` WHERE NOT NULL.
+| Column             | Notes                                                    |
+| ------------------ | -------------------------------------------------------- |
+| `pm_connection_id` | FK → `project_management_connections` (typed; not JSONB) |
+| `pm_external`      | JSONB e.g. `{ "vendor": "jira", "project_key": "ABC" }`  |
+
+HTTP/UI still use `jira_connection_id` / `jira_project_key` DTOs (mapped at API/RPC).
+
+**`work_items.pm_external`** — JSONB e.g. `{ "vendor": "jira", "issue_key": "ABC-1" }`. Unique expression index on `(project_id, pm_external->>'issue_key')` where vendor is `jira`. Wire DTO still exposes `jira_issue_key`.
 
 **Drop** table `jira_settings` after sweep.
 
 ### 3.2 API (target)
 
-| Endpoint                                 | Purpose                                                     |
-| ---------------------------------------- | ----------------------------------------------------------- |
-| `GET /api/jira/oauth/start`              | Redirect URL / state for Atlassian 3LO                      |
-| `GET /api/jira/oauth/callback`           | Exchange code; upsert `jira_connections` for session user   |
-| `GET /api/jira/connections`              | List current user’s connections (no secrets)                |
-| `DELETE /api/jira/connections/:id`       | Revoke locally (+ optional Atlassian revoke)                |
-| `GET /api/jira/connections/:id/projects` | List Jira projects visible to that connection               |
-| `POST /api/projects`                     | Accept `jira_connection_id` + `jira_project_key` (optional) |
-| `POST /api/projects/:id/jira/import`     | Import/sync using the project’s connection                  |
-| `POST /api/projects/:id/jira/preview`    | Preview only                                                |
+| Endpoint                                 | Purpose                                                                |
+| ---------------------------------------- | ---------------------------------------------------------------------- |
+| `GET /api/jira/oauth/start`              | Redirect URL / state for Atlassian 3LO                                 |
+| `GET /api/jira/oauth/callback`           | Exchange code; upsert `project_management_connections` (`vendor=jira`) |
+| `GET /api/jira/connections`              | List current user’s connections (no secrets)                           |
+| `DELETE /api/jira/connections/:id`       | Revoke locally (+ optional Atlassian revoke)                           |
+| `GET /api/jira/connections/:id/projects` | List Jira projects visible to that connection                          |
+| `POST /api/projects`                     | Accept `jira_connection_id` + `jira_project_key` (optional)            |
+| `POST /api/projects/:id/jira/import`     | Import/sync using the project’s connection                             |
+| `POST /api/projects/:id/jira/preview`    | Preview only                                                           |
 
 Remove: `GET/PUT /api/projects/jira/settings`, body/env API-token import paths.
 
@@ -160,7 +164,7 @@ Do this **first**, in one PR (or a stacked pair: “remove UI” then “remove 
 ### Phase 1 — OAuth connection
 
 1. Register Atlassian Cloud OAuth app (3LO); configure redirect to Alice API callback.
-2. Add `jira_connections` + encryption helper.
+2. Add `project_management_connections` (`vendor=jira`) + encryption helper.
 3. Implement start + callback + list + delete connection APIs.
 4. Minimal UI: Connect / Disconnect Jira for managers.
 
@@ -208,7 +212,7 @@ Do this **first**, in one PR (or a stacked pair: “remove UI” then “remove 
 1. Manager clicks **Connect Jira** → web calls `GET /api/jira/oauth/start` → `{ url }`.
 2. Alice opens Atlassian authorize in a **new tab** (`window.open`) so create/edit **dialogs stay open** in the original tab (scopes: `read:jira-work read:jira-user offline_access`).
 3. `state` is an HMAC-signed payload (`userId`, nonce, expiry) using the same **32-byte Base64** key as GitHub encryption — see [GITHUB_INTEGRATION.md](./GITHUB_INTEGRATION.md#what-is-a-32-byte-base64-key) (`resolveIntegrationEncryptionKey`).
-4. Callback `GET /api/jira/oauth/callback` verifies `state`, exchanges `code` for tokens, loads accessible resources, upserts `jira_connections` with **encrypted** refresh/access tokens.
+4. Callback `GET /api/jira/oauth/callback` verifies `state`, exchanges `code` for tokens, loads accessible resources, upserts `project_management_connections` (`vendor=jira`) with **encrypted** refresh/access tokens.
 5. Redirects the OAuth tab to `/integrations/jira/done?jira=connected` (auto-close / “Close tab”); the original tab refreshes connections when OAuth completes (BroadcastChannel / storage), when the OAuth tab closes, or on focus **only while Connect is in progress** (avoids refetch on every browser tab switch).
 
 ### Linking + import
