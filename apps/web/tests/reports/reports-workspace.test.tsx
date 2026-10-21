@@ -166,11 +166,21 @@ describe('ReportsWorkspace', () => {
         verbosity: 'standard',
       })
     );
-    expect(screen.getByRole('group', { name: 'Completed: 1' })).toBeVisible();
-    expect(screen.getByRole('group', { name: 'In progress: 2' })).toBeVisible();
-    expect(screen.getByRole('group', { name: 'Pending: 3' })).toBeVisible();
-    expect(screen.getByRole('group', { name: 'Blocked: 1' })).toBeVisible();
-    expect(screen.getByRole('group', { name: 'Overdue: 4' })).toBeVisible();
+    for (const [label, value] of [
+      ['Completed', '1'],
+      ['In progress', '2'],
+      ['Pending', '3'],
+      ['Blocked', '1'],
+      ['Overdue', '4'],
+    ] as const) {
+      const metricLabel = screen
+        .getAllByText(label, { exact: true })
+        .find(
+          (element) => element.nextElementSibling?.textContent?.trim() === value
+        );
+      expect(metricLabel).toBeVisible();
+      expect(metricLabel?.nextElementSibling).toHaveTextContent(value);
+    }
     expect(screen.getByRole('heading', { name: 'Completed' })).toBeVisible();
     expect(screen.getByText('Ship report preview')).toBeVisible();
     expect(screen.getByText(/current work-item state/i)).toBeVisible();
