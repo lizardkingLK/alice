@@ -301,6 +301,36 @@ export const projectOwnerSelect = {
   email: true,
 } as const;
 
+/**
+ * Explicit project columns for PostgREST session/API readers.
+ * Prefer this over `select('*')` so future secret columns are not pulled by default.
+ */
+export const PROJECT_SESSION_COLUMNS = [
+  'id',
+  'name',
+  'key',
+  'description',
+  'status',
+  'owner_id',
+  'start_date',
+  'end_date',
+  'pm_connection_id',
+  'pm_external',
+  'vc_connection_id',
+  'vc_external',
+  'logo_url',
+  'cover_picture',
+  'attributes_config',
+  'workflow_config',
+  'created_by',
+  'created_at',
+  'updated_by',
+  'updated_at',
+  'deleted_at',
+] as const;
+
+export const projectSessionPostgrestSelect = PROJECT_SESSION_COLUMNS.join(', ');
+
 export const projectListSelect = {
   id: true,
   name: true,
