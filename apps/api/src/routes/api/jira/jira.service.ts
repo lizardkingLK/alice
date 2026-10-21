@@ -143,23 +143,27 @@ export class JiraService {
     );
     const sitesToSave = jiraSites.length > 0 ? jiraSites : resources;
 
-    let primaryResult: JiraConnectionDto | null = null;
-    for (const site of sitesToSave) {
-      const saved = await this.jiraRepository.upsertByUserAndCloud({
-        user_id: userId,
-        cloud_id: site.id,
-        site_url: site.url,
-        account_email: null,
-        refresh_token_enc: encryptSecret(refreshToken),
-        access_token_enc: encryptSecret(tokens.access_token),
-        access_token_expires_at: expiresAt,
-        scopes: tokens.scope ?? site.scopes.join(' '),
-        status: ProjectManagementConnectionStatus.active,
-      });
-      primaryResult ??= saved;
-    }
+    const savedResults = await Promise.all(
+      sitesToSave.map((site) =>
+        this.jiraRepository.upsertByUserAndCloud({
+          user_id: userId,
+          cloud_id: site.id,
+          site_url: site.url,
+          account_email: null,
+          refresh_token_enc: encryptSecret(refreshToken),
+          access_token_enc: encryptSecret(tokens.access_token),
+          access_token_expires_at: expiresAt,
+          scopes: tokens.scope ?? site.scopes.join(' '),
+          status: ProjectManagementConnectionStatus.active,
+        })
+      )
+    );
 
-    return primaryResult!;
+    const primaryResult = savedResults[0];
+    if (!primaryResult) {
+      throw new Error('Failed to persist Jira OAuth connection.');
+    }
+    return primaryResult;
   }
 
   async listConnections(actorId: string): Promise<JiraConnectionDto[]> {
