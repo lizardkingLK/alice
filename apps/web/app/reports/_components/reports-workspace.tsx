@@ -108,16 +108,12 @@ function Metric({
   readonly label: string;
   readonly value: number;
 }) {
- return (
-  <dl className="bg-muted/40 rounded-lg border px-3 py-2.5">
-    <dt className="text-muted-foreground text-xs font-medium">
-      {label}
-    </dt>
-    <dd className="mt-1 text-2xl font-semibold tabular-nums">
-      {value}
-    </dd>
-  </dl>
-);
+  return (
+    <dl className="bg-muted/40 rounded-lg border px-3 py-2.5">
+      <dt className="text-muted-foreground text-xs font-medium">{label}</dt>
+      <dd className="mt-1 text-2xl font-semibold tabular-nums">{value}</dd>
+    </dl>
+  );
 }
 
 function FilterList({
