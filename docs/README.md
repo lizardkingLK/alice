@@ -19,6 +19,7 @@ Central docs for **Alice**.
 | [architecture/TRD.md](./architecture/TRD.md)                               | Engineering / architecture                          | Living |
 | [guides/DATABASE.md](./guides/DATABASE.md)                                 | Anyone touching schema or migrations                | Living |
 | [guides/RLS_HYBRID_ROLLOUT.md](./guides/RLS_HYBRID_ROLLOUT.md)             | Hybrid RLS / PostgREST lockdown plan                | Living |
+| [guides/SUPABASE_LOG_INGEST.md](./guides/SUPABASE_LOG_INGEST.md)           | Free-plan Logs Ingest diagnosis and quiet defaults  | Living |
 | [guides/TESTING_DEVELOPMENT_FLOW.md](./guides/TESTING_DEVELOPMENT_FLOW.md) | Anyone developing features & running unit/e2e tests | Living |
 
 ---
@@ -96,6 +97,7 @@ How we work day to day.
 
 - [TESTING_DEVELOPMENT_FLOW.md](./guides/TESTING_DEVELOPMENT_FLOW.md) — Project development & testing flow for all features
 - [DATABASE.md](./guides/DATABASE.md) — Prisma / Supabase workflow
+- [SUPABASE_LOG_INGEST.md](./guides/SUPABASE_LOG_INGEST.md) — Logs Ingest quota, Postgres quieting, diagnosis
 - [DAY_ONE_SETUP.md](./features/platform/DAY_ONE_SETUP.md) — clone, configure, initialize, and run Alice locally
 - [PERFORMANCE.md](./guides/PERFORMANCE.md) — RSC data loading, caching, parallel fetches + roadmap
 - [DEBUGGING.md](./guides/DEBUGGING.md) — IDE debug configs
