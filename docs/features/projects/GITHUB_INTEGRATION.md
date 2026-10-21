@@ -9,25 +9,25 @@
 
 GitHub integration enables Alice workspaces to link pull requests, commits, and branches to work items, following the same OAuth UX pattern established by the Jira integration.
 
-| Concern                    | Approach                                                                                                                                                                                                          |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Authentication Flow**    | **GitHub OAuth 2.0 Authorization Code Flow** with signed HMAC `state` for CSRF protection and Alice `userId` binding (no DB session row for the in-flight OAuth)                                                  |
-| **Client Credentials**     | Configured via environment variables: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_REDIRECT_URI`                                                                                                           |
-| **Requested Scopes**       | Least privilege: `repo read:user`                                                                                                                                                                                 |
-| **Token Storage**          | Stored in the `integrations` table (`provider: 'github'`, `category: 'productivity'`). Both `access_token` and `refresh_token` are encrypted at rest with AES-256-GCM (`v1:...`)                                  |
-| **Project Binding**        | `projects.github_repo` stores the target repository path (`owner/repo`). Pull requests and repository links resolve credentials through the user's active GitHub OAuth integration                                |
-| **Token Refresh**          | **Just-In-Time (JIT) refresh**: `getValidAccessToken()` validates expiration with clock skew buffer (60s) and automatically refreshes tokens via GitHub OAuth refresh endpoint before making upstream requests    |
-| **Client DTO**             | Decrypted tokens are **never** returned to the browser or logged. The frontend only receives connection metadata (`GithubConnectionDto`: `id`, `name`, `status`, `account_login`, `account_avatar_url`, `scopes`) |
-| **Backward Compatibility** | Legacy project-level encrypted PATs in `projects.github_token` are supported as fallback if no OAuth connection exists for the user                                                                               |
+| Concern                 | Approach                                                                                                                                                                                                                |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Authentication Flow** | **GitHub OAuth 2.0 Authorization Code Flow** with signed HMAC `state` for CSRF protection and Alice `userId` binding (no DB session row for the in-flight OAuth)                                                        |
+| **Client Credentials**  | Configured via environment variables: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_REDIRECT_URI`                                                                                                                 |
+| **Requested Scopes**    | Least privilege: `repo read:user`                                                                                                                                                                                       |
+| **Token Storage**       | `version_control_connections` (`vendor: github`). Tokens in `access_token_enc` / `refresh_token_enc` (AES-256-GCM `v1:...`). Non-secret fields in `provider_config` JSONB. Strategy A RLS (service-role / Prisma only). |
+| **Project Binding**     | `projects.vc_connection_id` (FK) + `projects.vc_external` e.g. `{ "vendor": "github", "repo": "owner/repo" }`. HTTP/UI still use `github_repo` / `has_github_token` wire aliases.                                       |
+| **PR links**            | `version_control_pull_requests` (was `github_pull_requests`) with `vendor` column                                                                                                                                       |
+| **Token Refresh**       | **Just-In-Time (JIT) refresh**: `getValidAccessToken()` validates expiration with clock skew buffer (60s) and refreshes via GitHub OAuth before upstream requests                                                       |
+| **Client DTO**          | Decrypted tokens are **never** returned to the browser. Frontend receives `GithubConnectionDto` metadata only                                                                                                           |
 
 ### Mental model
 
-| Layer                  | Role                                                                                    |
-| ---------------------- | --------------------------------------------------------------------------------------- |
-| Alice login            | Who is connecting (`requireApiAuth` on `/oauth/start` + `userId` inside signed `state`) |
-| GitHub OAuth           | Grants Alice’s OAuth app access to that GitHub account                                  |
-| `integrations` row     | Encrypted tokens + account metadata (created/updated **after** callback succeeds)       |
-| `projects.github_repo` | Which `owner/repo` to use (binding), not the credential itself                          |
+| Layer                         | Role                                                                                    |
+| ----------------------------- | --------------------------------------------------------------------------------------- |
+| Alice login                   | Who is connecting (`requireApiAuth` on `/oauth/start` + `userId` inside signed `state`) |
+| GitHub OAuth                  | Grants Alice’s OAuth app access to that GitHub account                                  |
+| `version_control_connections` | Encrypted tokens + `provider_config` (created/updated **after** callback)               |
+| `projects.vc_external`        | Which `owner/repo` to use (binding), not the credential itself                          |
 
 ---
 

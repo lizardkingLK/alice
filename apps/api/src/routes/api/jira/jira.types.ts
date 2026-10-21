@@ -1,7 +1,14 @@
 import type { WorkItemType } from '@repo/types';
-import { JiraConnectionStatus } from '@repo/types/prisma';
+import {
+  ProjectManagementConnectionStatus,
+  ProjectManagementVendor,
+} from '@repo/types/prisma';
 
-export { JiraConnectionStatus };
+/** @deprecated Prefer `ProjectManagementConnectionStatus` — same values. */
+export const JiraConnectionStatus = ProjectManagementConnectionStatus;
+export type JiraConnectionStatus = ProjectManagementConnectionStatus;
+
+export { ProjectManagementConnectionStatus, ProjectManagementVendor };
 
 /** Public DTO — never includes encrypted token fields. */
 export type JiraConnectionDto = {
@@ -11,7 +18,7 @@ export type JiraConnectionDto = {
   site_url: string;
   account_email: string | null;
   scopes: string;
-  status: JiraConnectionStatus;
+  status: ProjectManagementConnectionStatus;
   created_at: Date;
   updated_at: Date;
   /** True when the current actor owns this OAuth connection. */
@@ -24,6 +31,9 @@ export type JiraConnectionRow = JiraConnectionDto & {
   refresh_token_enc: string;
   access_token_enc: string | null;
   access_token_expires_at: Date | null;
+  vendor: typeof ProjectManagementVendor.jira;
+  external_id: string;
+  provider_config: unknown;
 };
 
 export type UpsertJiraConnectionInput = {
@@ -35,14 +45,14 @@ export type UpsertJiraConnectionInput = {
   access_token_enc?: string | null;
   access_token_expires_at?: Date | null;
   scopes: string;
-  status?: JiraConnectionStatus;
+  status?: ProjectManagementConnectionStatus;
 };
 
 export type UpdateJiraConnectionTokensInput = {
   refresh_token_enc?: string;
   access_token_enc?: string | null;
   access_token_expires_at?: Date | null;
-  status?: JiraConnectionStatus;
+  status?: ProjectManagementConnectionStatus;
 };
 
 export type JiraCloudProject = {

@@ -118,7 +118,21 @@ enum AccessRequestKind {
   project_expansion
 }
 
-enum JiraConnectionStatus {
+enum ProjectManagementVendor {
+  jira
+}
+
+enum ProjectManagementConnectionStatus {
+  active
+  revoked
+  expired
+}
+
+enum VersionControlVendor {
+  github
+}
+
+enum VersionControlConnectionStatus {
   active
   revoked
   expired
@@ -209,7 +223,8 @@ model users {
   chart_shares            chart_shares[]      @relation("ChartShareRecipient")
   created_chart_shares    chart_shares[]      @relation("ChartShareCreatedBy")
   updated_chart_shares    chart_shares[]      @relation("ChartShareUpdatedBy")
-  jira_connections        jira_connections[]
+  project_management_connections project_management_connections[]
+  version_control_connections    version_control_connections[]
   created_integrations    integrations[]      @relation("IntegrationCreatedBy")
   updated_integrations    integrations[]      @relation("IntegrationUpdatedBy")
 }
@@ -230,17 +245,22 @@ model projects {
   created_at        DateTime      @default(now()) @db.Timestamptz(6)
   updated_by        String?       @db.Uuid
   updated_at        DateTime      @updatedAt @db.Timestamptz(6)
-  jira_project_key  String?
-  jira_connection_id String?      @db.Uuid
-  github_repo       String?
-  github_token      String?
+  /// FK to OAuth row in `project_management_connections` (typed for integrity).
+  pm_connection_id  String?       @db.Uuid
+  /// Vendor link extras, e.g. `{ "vendor": "jira", "project_key": "ABC" }`.
+  pm_external       Json?
+  /// FK to OAuth row in `version_control_connections` (typed for integrity).
+  vc_connection_id  String?       @db.Uuid
+  /// Vendor link extras, e.g. `{ "vendor": "github", "repo": "owner/repo" }`.
+  vc_external       Json?
   logo_url          String?
   cover_picture     String?
 
   owner           users             @relation("ProjectOwner", fields: [owner_id], references: [id])
   created_by_user users?            @relation("ProjectCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users?            @relation("ProjectUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
-  jira_connection jira_connections? @relation(fields: [jira_connection_id], references: [id], onDelete: SetNull)
+  pm_connection   project_management_connections? @relation(fields: [pm_connection_id], references: [id], onDelete: SetNull)
+  vc_connection   version_control_connections? @relation(fields: [vc_connection_id], references: [id], onDelete: SetNull)
   members              project_members[]
   teams                teams[]
   sprints              sprints[]
@@ -369,7 +389,9 @@ model work_items {
   created_at      DateTime       @default(now()) @db.Timestamptz(6)
   updated_by      String?        @db.Uuid
   updated_at      DateTime       @updatedAt @db.Timestamptz(6)
-  jira_issue_key  String?        @db.VarChar(255)
+  /// Vendor issue refs, e.g. `{ "vendor": "jira", "issue_key": "ABC-1" }`.
+  /// Uniqueness for Jira keys is a partial expression index in SQL (not Prisma @@unique).
+  pm_external     Json?
 
   project         projects      @relation(fields: [project_id], references: [id], onDelete: Cascade)
   sprint          sprints?      @relation(fields: [sprint_id], references: [id], onDelete: SetNull)
@@ -383,12 +405,11 @@ model work_items {
   attachments          attachments[]
   worklogs             work_item_worklogs[]
   activities           activities[]
-  github_pull_requests github_pull_requests[]
+  version_control_pull_requests version_control_pull_requests[]
   chart_hierarchy_rollup work_item_chart_hierarchy_rollups?
   links_as_source      work_item_links[] @relation("WorkItemLinkSource")
   links_as_target      work_item_links[] @relation("WorkItemLinkTarget")
 
-  @@unique([project_id, jira_issue_key])
   @@index([record_status])
   @@index([project_id, record_status])
   @@index([assignee_id])
@@ -633,25 +654,54 @@ model access_requests {
   @@index([requester_email, last_requested_at(sort: Desc)])
 }
 
-model jira_connections {
-  id                      String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id                 String               @db.Uuid
-  cloud_id                String
-  site_url                String
-  account_email           String?
+/// OAuth connections for project-management vendors (Jira first).
+/// Vendor-specific display fields live in `provider_config` (never tokens).
+model project_management_connections {
+  id                      String                             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                 String                             @db.Uuid
+  vendor                  ProjectManagementVendor
+  external_id             String
+  display_label           String?
+  provider_config         Json                               @default("{}")
   refresh_token_enc       String
   access_token_enc        String?
-  access_token_expires_at DateTime?            @db.Timestamptz(6)
+  access_token_expires_at DateTime?                          @db.Timestamptz(6)
   scopes                  String
-  status                  JiraConnectionStatus @default(active)
-  created_at              DateTime             @default(now()) @db.Timestamptz(6)
-  updated_at              DateTime             @updatedAt @db.Timestamptz(6)
+  status                  ProjectManagementConnectionStatus  @default(active)
+  created_at              DateTime                           @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime                           @updatedAt @db.Timestamptz(6)
 
   user     users      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   projects projects[]
 
   @@index([user_id])
-  @@unique([user_id, cloud_id])
+  @@index([vendor])
+  @@unique([user_id, vendor, external_id])
+}
+
+/// OAuth connections for version-control vendors (GitHub first).
+/// Vendor-specific display fields live in `provider_config` (never tokens).
+model version_control_connections {
+  id                      String                           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                 String                           @db.Uuid
+  vendor                  VersionControlVendor
+  external_id             String
+  display_label           String?
+  provider_config         Json                             @default("{}")
+  refresh_token_enc       String
+  access_token_enc        String?
+  access_token_expires_at DateTime?                        @db.Timestamptz(6)
+  scopes                  String
+  status                  VersionControlConnectionStatus   @default(active)
+  created_at              DateTime                         @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime                         @updatedAt @db.Timestamptz(6)
+
+  user     users      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  projects projects[]
+
+  @@index([user_id])
+  @@index([vendor])
+  @@unique([user_id, vendor, external_id])
 }
 
 model chat_conversations {
@@ -789,22 +839,24 @@ model chart_shares {
   @@index([user_id, status])
 }
 
-model github_pull_requests {
-  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  work_item_id   String     @db.Uuid
+model version_control_pull_requests {
+  id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  work_item_id   String                @db.Uuid
+  vendor         VersionControlVendor  @default(github)
   pr_number      Int
   repo_owner     String
   repo_name      String
   pr_title       String
   pr_url         String
   branch_name    String?
-  status         String?    
-  created_at     DateTime   @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime   @updatedAt @db.Timestamptz(6)
+  status         String?
+  created_at     DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime              @updatedAt @db.Timestamptz(6)
 
   work_item      work_items @relation(fields: [work_item_id], references: [id], onDelete: Cascade)
 
-  @@unique([work_item_id, repo_owner, repo_name, pr_number])
+  @@unique([work_item_id, vendor, repo_owner, repo_name, pr_number])
+  @@index([work_item_id])
 }
 
 /// Workspace-level integration instance (chat models, Slack, Figma, etc.).

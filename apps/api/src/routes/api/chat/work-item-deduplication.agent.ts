@@ -1,6 +1,7 @@
 import {
   WorkItemDeduplicationActionEnum,
   WorkItemDeduplicationMatchStatusEnum,
+  withJiraIssueKeyDtoField,
   type ParsedWorkItemNode,
   type WorkItemDeduplicationItemResult,
   type WorkItemDeduplicationReport,
@@ -548,27 +549,30 @@ export class WorkItemDeduplicationAgent {
     projectId: string,
     incomingItems: ParsedWorkItemNode[]
   ): Promise<WorkItemDeduplicationReport> {
-    const existingWorkItems: ExistingWorkItemSummary[] =
-      await prisma.work_items.findMany({
-        where: {
-          project_id: projectId,
-          record_status: 'active',
-        },
-        select: {
-          id: true,
-          title: true,
-          jira_issue_key: true,
-          type: true,
-          status: true,
-          parent_id: true,
-          priority: true,
-          story_points: true,
-          description: true,
-        },
-      });
+    const existingRows = await prisma.work_items.findMany({
+      where: {
+        project_id: projectId,
+        record_status: 'active',
+      },
+      select: {
+        id: true,
+        title: true,
+        pm_external: true,
+        type: true,
+        status: true,
+        parent_id: true,
+        priority: true,
+        story_points: true,
+        description: true,
+      },
+    });
+
+    const existingWithKeys: ExistingWorkItemSummary[] = existingRows.map(
+      (item) => withJiraIssueKeyDtoField(item) as ExistingWorkItemSummary
+    );
 
     const existingById = new Map<string, ExistingWorkItemSummary>(
-      existingWorkItems.map((item) => [item.id, item])
+      existingWithKeys.map((item) => [item.id, item])
     );
 
     const flatIncomingItems = flattenParsedWorkItems(incomingItems);
@@ -576,7 +580,7 @@ export class WorkItemDeduplicationAgent {
 
     const matchStats = processDeduplicationMatches({
       flatIncomingItems,
-      existingWorkItems,
+      existingWorkItems: existingWithKeys,
       existingById,
       incomingByRef,
     });
@@ -587,7 +591,7 @@ export class WorkItemDeduplicationAgent {
         .filter((id): id is string => Boolean(id))
     );
 
-    const omittedExisting = existingWorkItems.filter(
+    const omittedExisting = existingWithKeys.filter(
       (e) => !matchedExistingIds.has(e.id)
     );
 

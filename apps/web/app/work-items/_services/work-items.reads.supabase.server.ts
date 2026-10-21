@@ -11,6 +11,7 @@ import {
 import {
   buildWorkItemLabelsOrFilter,
   buildWorkItemSearchOrFilter,
+  withJiraIssueKeyDtoField,
 } from '@repo/types';
 import type {
   DbWorkItem,
@@ -230,7 +231,10 @@ export async function listWorkItemsPaginatedFromSupabase(
     }
   );
 
-  return { workItems, ...meta };
+  return {
+    workItems: workItems.map((row) => withJiraIssueKeyDtoField(row)),
+    ...meta,
+  };
 }
 
 export async function getWorkItemFromSupabase(
@@ -246,7 +250,11 @@ export async function getWorkItemFromSupabase(
 
   throwIfError(error, 'failed to get work-item', 'Failed to get work-item');
 
-  return (data as unknown as DbWorkItem | null) ?? null;
+  if (!data) {
+    return null;
+  }
+
+  return withJiraIssueKeyDtoField(data as unknown as DbWorkItem);
 }
 
 /**

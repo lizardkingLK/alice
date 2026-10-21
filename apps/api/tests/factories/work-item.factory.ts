@@ -25,7 +25,7 @@ export function createWorkItemListRow(
     created_at: new Date('2026-08-01T00:00:00.000Z'),
     updated_by: TEST_USER.id,
     updated_at: new Date('2026-08-01T00:00:00.000Z'),
-    jira_issue_key: null,
+    pm_external: null,
     record_status: 'active',
     assignee: TEST_USER,
     reporter: null,

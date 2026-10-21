@@ -579,7 +579,7 @@ export type Database = {
           },
         ]
       }
-      github_pull_requests: {
+      version_control_pull_requests: {
         Row: {
           branch_name: string | null
           created_at: string
@@ -591,6 +591,7 @@ export type Database = {
           repo_owner: string
           status: string | null
           updated_at: string
+          vendor: Database["public"]["Enums"]["VersionControlVendor"]
           work_item_id: string
         }
         Insert: {
@@ -604,6 +605,7 @@ export type Database = {
           repo_owner: string
           status?: string | null
           updated_at: string
+          vendor?: Database["public"]["Enums"]["VersionControlVendor"]
           work_item_id: string
         }
         Update: {
@@ -617,14 +619,71 @@ export type Database = {
           repo_owner?: string
           status?: string | null
           updated_at?: string
+          vendor?: Database["public"]["Enums"]["VersionControlVendor"]
           work_item_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "github_pull_requests_work_item_id_fkey"
+            foreignKeyName: "version_control_pull_requests_work_item_id_fkey"
             columns: ["work_item_id"]
             isOneToOne: false
             referencedRelation: "work_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      version_control_connections: {
+        Row: {
+          access_token_enc: string | null
+          access_token_expires_at: string | null
+          created_at: string
+          display_label: string | null
+          external_id: string
+          id: string
+          provider_config: Json
+          refresh_token_enc: string
+          scopes: string
+          status: Database["public"]["Enums"]["VersionControlConnectionStatus"]
+          updated_at: string
+          user_id: string
+          vendor: Database["public"]["Enums"]["VersionControlVendor"]
+        }
+        Insert: {
+          access_token_enc?: string | null
+          access_token_expires_at?: string | null
+          created_at?: string
+          display_label?: string | null
+          external_id: string
+          id?: string
+          provider_config?: Json
+          refresh_token_enc: string
+          scopes: string
+          status?: Database["public"]["Enums"]["VersionControlConnectionStatus"]
+          updated_at: string
+          user_id: string
+          vendor: Database["public"]["Enums"]["VersionControlVendor"]
+        }
+        Update: {
+          access_token_enc?: string | null
+          access_token_expires_at?: string | null
+          created_at?: string
+          display_label?: string | null
+          external_id?: string
+          id?: string
+          provider_config?: Json
+          refresh_token_enc?: string
+          scopes?: string
+          status?: Database["public"]["Enums"]["VersionControlConnectionStatus"]
+          updated_at?: string
+          user_id?: string
+          vendor?: Database["public"]["Enums"]["VersionControlVendor"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "version_control_connections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -692,52 +751,55 @@ export type Database = {
           },
         ]
       }
-      jira_connections: {
+      project_management_connections: {
         Row: {
           access_token_enc: string | null
           access_token_expires_at: string | null
-          account_email: string | null
-          cloud_id: string
           created_at: string
+          display_label: string | null
+          external_id: string
           id: string
+          provider_config: Json
           refresh_token_enc: string
           scopes: string
-          site_url: string
-          status: Database["public"]["Enums"]["JiraConnectionStatus"]
+          status: Database["public"]["Enums"]["ProjectManagementConnectionStatus"]
           updated_at: string
           user_id: string
+          vendor: Database["public"]["Enums"]["ProjectManagementVendor"]
         }
         Insert: {
           access_token_enc?: string | null
           access_token_expires_at?: string | null
-          account_email?: string | null
-          cloud_id: string
           created_at?: string
+          display_label?: string | null
+          external_id: string
           id?: string
+          provider_config?: Json
           refresh_token_enc: string
           scopes: string
-          site_url: string
-          status?: Database["public"]["Enums"]["JiraConnectionStatus"]
-          updated_at: string
+          status?: Database["public"]["Enums"]["ProjectManagementConnectionStatus"]
+          updated_at?: string
           user_id: string
+          vendor: Database["public"]["Enums"]["ProjectManagementVendor"]
         }
         Update: {
           access_token_enc?: string | null
           access_token_expires_at?: string | null
-          account_email?: string | null
-          cloud_id?: string
           created_at?: string
+          display_label?: string | null
+          external_id?: string
           id?: string
+          provider_config?: Json
           refresh_token_enc?: string
           scopes?: string
-          site_url?: string
-          status?: Database["public"]["Enums"]["JiraConnectionStatus"]
+          status?: Database["public"]["Enums"]["ProjectManagementConnectionStatus"]
           updated_at?: string
           user_id?: string
+          vendor?: Database["public"]["Enums"]["ProjectManagementVendor"]
         }
         Relationships: [
           {
-            foreignKeyName: "jira_connections_user_id_fkey"
+            foreignKeyName: "project_management_connections_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -877,19 +939,19 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           end_date: string | null
-          github_repo: string | null
-          github_token: string | null
           id: string
-          jira_connection_id: string | null
-          jira_project_key: string | null
           key: string
           logo_url: string | null
           name: string
           owner_id: string
+          pm_connection_id: string | null
+          pm_external: Json | null
           start_date: string | null
           status: Database["public"]["Enums"]["ProjectStatus"]
           updated_at: string
           updated_by: string | null
+          vc_connection_id: string | null
+          vc_external: Json | null
           workflow_config: Json | null
         }
         Insert: {
@@ -900,19 +962,19 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           end_date?: string | null
-          github_repo?: string | null
-          github_token?: string | null
           id?: string
-          jira_connection_id?: string | null
-          jira_project_key?: string | null
           key: string
           logo_url?: string | null
           name: string
           owner_id: string
+          pm_connection_id?: string | null
+          pm_external?: Json | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["ProjectStatus"]
           updated_at: string
           updated_by?: string | null
+          vc_connection_id?: string | null
+          vc_external?: Json | null
           workflow_config?: Json | null
         }
         Update: {
@@ -923,19 +985,19 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           end_date?: string | null
-          github_repo?: string | null
-          github_token?: string | null
           id?: string
-          jira_connection_id?: string | null
-          jira_project_key?: string | null
           key?: string
           logo_url?: string | null
           name?: string
           owner_id?: string
+          pm_connection_id?: string | null
+          pm_external?: Json | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["ProjectStatus"]
           updated_at?: string
           updated_by?: string | null
+          vc_connection_id?: string | null
+          vc_external?: Json | null
           workflow_config?: Json | null
         }
         Relationships: [
@@ -947,10 +1009,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "projects_jira_connection_id_fkey"
-            columns: ["jira_connection_id"]
+            foreignKeyName: "projects_pm_connection_id_fkey"
+            columns: ["pm_connection_id"]
             isOneToOne: false
-            referencedRelation: "jira_connections"
+            referencedRelation: "project_management_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_vc_connection_id_fkey"
+            columns: ["vc_connection_id"]
+            isOneToOne: false
+            referencedRelation: "version_control_connections"
             referencedColumns: ["id"]
           },
           {
@@ -1576,9 +1645,9 @@ export type Database = {
           done_at: string | null
           due_date: string | null
           id: string
-          jira_issue_key: string | null
           labels: Json
           parent_id: string | null
+          pm_external: Json | null
           priority: Database["public"]["Enums"]["WorkItemPriority"]
           project_id: string
           record_status: Database["public"]["Enums"]["RecordStatus"]
@@ -1604,9 +1673,9 @@ export type Database = {
           done_at?: string | null
           due_date?: string | null
           id?: string
-          jira_issue_key?: string | null
           labels?: Json
           parent_id?: string | null
+          pm_external?: Json | null
           priority?: Database["public"]["Enums"]["WorkItemPriority"]
           project_id: string
           record_status?: Database["public"]["Enums"]["RecordStatus"]
@@ -1632,9 +1701,9 @@ export type Database = {
           done_at?: string | null
           due_date?: string | null
           id?: string
-          jira_issue_key?: string | null
           labels?: Json
           parent_id?: string | null
+          pm_external?: Json | null
           priority?: Database["public"]["Enums"]["WorkItemPriority"]
           project_id?: string
           record_status?: Database["public"]["Enums"]["RecordStatus"]
@@ -1831,7 +1900,10 @@ export type Database = {
         | "design"
         | "productivity"
       IntegrationStatus: "active" | "disabled" | "draft"
-      JiraConnectionStatus: "active" | "revoked" | "expired"
+      ProjectManagementConnectionStatus: "active" | "revoked" | "expired"
+      ProjectManagementVendor: "jira"
+      VersionControlConnectionStatus: "active" | "revoked" | "expired"
+      VersionControlVendor: "github"
       NotificationType:
         | "assign"
         | "status_change"
@@ -2006,7 +2078,10 @@ export const Constants = {
         "productivity",
       ],
       IntegrationStatus: ["active", "disabled", "draft"],
-      JiraConnectionStatus: ["active", "revoked", "expired"],
+      ProjectManagementConnectionStatus: ["active", "revoked", "expired"],
+      ProjectManagementVendor: ["jira"],
+      VersionControlConnectionStatus: ["active", "revoked", "expired"],
+      VersionControlVendor: ["github"],
       NotificationType: [
         "assign",
         "status_change",

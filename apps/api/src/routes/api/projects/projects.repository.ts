@@ -2,6 +2,7 @@ import {
   USER_PROJECTION_WITH_ROLE,
   userRelationSelect,
   withoutIntegrationSecrets,
+  mapProjectRowForWire,
   type Database,
   projectListSelect,
   projectDetailSelect,
@@ -13,6 +14,9 @@ import {
   WorkItemTypeEnum,
   resolveProjectHierarchy,
   type ActorProjectsSummary,
+  projectPmExternalFromJiraKey,
+  jiraIssueKeyFromPmExternal,
+  projectVcExternalFromGithubRepo,
 } from '@repo/types';
 import { Prisma, ProjectStatus, RecordStatus } from '@repo/types/prisma';
 import { withBusyRetry } from '@repo/db';
@@ -58,14 +62,22 @@ function applyOptionalProjectIntegrations(
   patch: Record<string, unknown>,
   data: ProjectUpdateInput
 ): void {
-  if (data.jira_project_key !== undefined) {
-    patch.jira_project_key = data.jira_project_key;
+  if (
+    data.jira_project_key !== undefined ||
+    data.jira_connection_id !== undefined
+  ) {
+    if (data.jira_connection_id !== undefined) {
+      patch.pm_connection_id = data.jira_connection_id;
+    }
+    if (data.jira_project_key !== undefined) {
+      patch.pm_external =
+        projectPmExternalFromJiraKey(data.jira_project_key) ?? Prisma.DbNull;
+    }
   }
-  if (data.jira_connection_id !== undefined) {
-    patch.jira_connection_id = data.jira_connection_id;
+  if (data.github_repo !== undefined) {
+    patch.vc_external =
+      projectVcExternalFromGithubRepo(data.github_repo) ?? Prisma.DbNull;
   }
-  if (data.github_repo !== undefined) patch.github_repo = data.github_repo;
-  if (data.github_token !== undefined) patch.github_token = data.github_token;
   if (data.logo_url !== undefined) patch.logo_url = data.logo_url;
   if (data.cover_picture !== undefined) {
     patch.cover_picture = data.cover_picture;
@@ -426,7 +438,7 @@ export class ProjectsRepository {
     if (!row) {
       return null;
     }
-    const wired = {
+    return mapProjectRowForWire({
       ...row,
       start_date: row.start_date
         ? row.start_date.toISOString().split('T')[0]!
@@ -435,8 +447,7 @@ export class ProjectsRepository {
       created_at: row.created_at.toISOString(),
       updated_at: row.updated_at.toISOString(),
       deleted_at: row.deleted_at?.toISOString() ?? null,
-    };
-    return withoutIntegrationSecrets(wired) as unknown as ProjectRowWithOwner;
+    }) as unknown as ProjectRowWithOwner;
   }
 
   async listMembersPrisma(projectId: string): Promise<ProjectMemberRow[]> {
@@ -484,7 +495,9 @@ export class ProjectsRepository {
       throw new Error('Failed to list projects');
     }
 
-    return unsafeCast<ProjectRowWithOwner[]>(data);
+    return unsafeCast<ProjectRowWithOwner[]>(
+      (data ?? []).map((row) => mapProjectRowForWire(row))
+    );
   }
 
   async findByKey(key: string, excludeId?: string): Promise<ProjectRow | null> {
@@ -497,7 +510,10 @@ export class ProjectsRepository {
       console.error('error. failed to find project by key:', error.message);
       throw new Error('Failed to find duplicate project key');
     }
-    return unsafeCast<ProjectRow | null>(data);
+    if (!data) {
+      return null;
+    }
+    return unsafeCast<ProjectRow | null>(mapProjectRowForWire(data));
   }
 
   async findById(id: string): Promise<ProjectRowWithOwner | null> {
@@ -511,7 +527,10 @@ export class ProjectsRepository {
       console.error('error. failed to find project by id:', error.message);
       throw new Error('Failed to find project');
     }
-    return unsafeCast<ProjectRowWithOwner | null>(data);
+    if (!data) {
+      return null;
+    }
+    return unsafeCast<ProjectRowWithOwner | null>(mapProjectRowForWire(data));
   }
 
   async listMembers(projectId: string): Promise<ProjectMemberWithUser[]> {
@@ -609,10 +628,13 @@ export class ProjectsRepository {
                 start_date: prismaOptionalDate(data.start_date) ?? null,
                 end_date: prismaOptionalDate(data.end_date) ?? null,
                 owner_id: data.owner_id,
-                jira_project_key: data.jira_project_key,
-                jira_connection_id: data.jira_connection_id,
-                github_repo: data.github_repo,
-                github_token: data.github_token,
+                pm_connection_id: data.jira_connection_id ?? null,
+                pm_external:
+                  projectPmExternalFromJiraKey(data.jira_project_key) ??
+                  Prisma.DbNull,
+                vc_external:
+                  projectVcExternalFromGithubRepo(data.github_repo) ??
+                  Prisma.DbNull,
                 logo_url: data.logo_url ?? null,
                 cover_picture: data.cover_picture ?? null,
                 attributes_config:
@@ -798,7 +820,7 @@ export class ProjectsRepository {
         status: true,
         record_status: true,
         parent_id: true,
-        jira_issue_key: true,
+        pm_external: true,
         parent: { select: { id: true, title: true } },
       },
       orderBy: [{ type: 'asc' }, { title: 'asc' }],
@@ -821,7 +843,7 @@ export class ProjectsRepository {
           record_status: item.record_status,
           parent_id: item.parent_id,
           parent_title: item.parent?.title ?? null,
-          jira_issue_key: item.jira_issue_key,
+          jira_issue_key: jiraIssueKeyFromPmExternal(item.pm_external),
         })),
       };
     });
@@ -941,13 +963,14 @@ export class ProjectsRepository {
   ): Promise<void> {
     const allWorkItems = await prisma.work_items.findMany({
       where: { project_id: projectId },
-      select: { id: true, jira_issue_key: true, parent_id: true, type: true },
+      select: { id: true, pm_external: true, parent_id: true, type: true },
     });
 
     const keyToItemMap = new Map<string, (typeof allWorkItems)[number]>();
     for (const item of allWorkItems) {
-      if (item.jira_issue_key) {
-        keyToItemMap.set(item.jira_issue_key, item);
+      const issueKey = jiraIssueKeyFromPmExternal(item.pm_external);
+      if (issueKey) {
+        keyToItemMap.set(issueKey, item);
       }
     }
 

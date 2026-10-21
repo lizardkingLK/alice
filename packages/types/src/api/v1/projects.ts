@@ -17,6 +17,8 @@ import {
 import { ProjectFieldsConfigSchema } from './dynamic-fields.js';
 import { initialSprintSchema } from './sprints.js';
 import { initialProjectTeamSchema } from './teams.js';
+import { withJiraProjectDtoFields } from './pm-external.js';
+import { withGithubProjectDtoFields } from './vc-external.js';
 
 export * from './jira-import-types.js';
 export { projectWorkflowConfigSchema };
@@ -223,20 +225,75 @@ export type WorkItemTypeRemovalApplyResult = {
 
 /**
  * Strip integration secrets before project rows reach clients.
- * Deletes `github_token` and adds `has_github_token`.
+ * Prefer `withGithubProjectDtoFields` when the row has `vc_*` columns.
+ * Legacy: deletes `github_token` and adds `has_github_token`.
  */
 export function withoutIntegrationSecrets<
-  T extends { github_token?: string | null },
+  T extends {
+    github_token?: string | null;
+    vc_connection_id?: string | null;
+    has_github_token?: boolean;
+  },
 >(project: T): Omit<T, 'github_token'> & { has_github_token: boolean } {
   const { github_token: githubToken, ...rest } = project;
+  const hasToken =
+    typeof rest.has_github_token === 'boolean'
+      ? rest.has_github_token
+      : Boolean(rest.vc_connection_id) || Boolean(githubToken);
   return {
     ...(rest as Omit<T, 'github_token'>),
-    has_github_token: Boolean(githubToken),
+    has_github_token: hasToken,
   };
 }
 
 /** @deprecated Prefer `withoutIntegrationSecrets` — same mapping. */
 export const withoutGithubToken = withoutIntegrationSecrets;
+
+type ProjectWireSource = {
+  pm_connection_id?: string | null;
+  pm_external?: unknown;
+  vc_connection_id?: string | null;
+  vc_external?: unknown;
+  github_token?: string | null;
+  has_github_token?: boolean;
+};
+
+const PROJECT_DB_ONLY_KEYS = [
+  'pm_connection_id',
+  'pm_external',
+  'vc_connection_id',
+  'vc_external',
+] as const;
+
+/**
+ * DB/project row → client wire: `jira_*` + `github_*` aliases, no secrets,
+ * no raw `pm_*` / `vc_*` columns.
+ */
+export function mapProjectRowForWire<T extends ProjectWireSource>(
+  row: T
+): Omit<T, 'github_token'> & {
+  jira_connection_id: string | null;
+  jira_project_key: string | null;
+  github_repo: string | null;
+  github_connection_id: string | null;
+  has_github_token: boolean;
+} {
+  const aliased = withGithubProjectDtoFields(withJiraProjectDtoFields(row));
+  const stripped = { ...aliased } as Record<string, unknown>;
+  for (const key of PROJECT_DB_ONLY_KEYS) {
+    delete stripped[key];
+  }
+  return withoutIntegrationSecrets(stripped as typeof aliased) as Omit<
+    T,
+    'github_token'
+  > & {
+    jira_connection_id: string | null;
+    jira_project_key: string | null;
+    github_repo: string | null;
+    github_connection_id: string | null;
+    has_github_token: boolean;
+  };
+}
 
 export const projectOwnerSelect = {
   id: true,
@@ -265,10 +322,10 @@ export const projectDetailSelect = {
   ...projectListSelect,
   attributes_config: true,
   workflow_config: true,
-  jira_project_key: true,
-  jira_connection_id: true,
-  github_repo: true,
-  github_token: true,
+  pm_connection_id: true,
+  pm_external: true,
+  vc_connection_id: true,
+  vc_external: true,
 } as const;
 
 export type ProjectListRow = projectsGetPayload<{

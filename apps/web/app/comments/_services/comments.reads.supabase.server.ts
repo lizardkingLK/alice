@@ -58,7 +58,7 @@ export async function listCommentsFromSupabase(
 }
 
 const COMMENT_WORK_ITEM_OPTION_SELECT = `
-  id, title, type, project_id, jira_issue_key, priority, description,
+  id, title, type, project_id, pm_external, priority, description,
   ${projectRelationSelect()},
   ${WORK_ITEM_ASSIGNEE_POSTGREST_SELECT}
 `;

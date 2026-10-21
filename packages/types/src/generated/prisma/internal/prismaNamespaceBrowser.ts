@@ -69,14 +69,15 @@ export const ModelName = {
   notifications: 'notifications',
   access_allowlist: 'access_allowlist',
   access_requests: 'access_requests',
-  jira_connections: 'jira_connections',
+  project_management_connections: 'project_management_connections',
+  version_control_connections: 'version_control_connections',
   chat_conversations: 'chat_conversations',
   chat_attachments: 'chat_attachments',
   saved_views: 'saved_views',
   saved_view_shares: 'saved_view_shares',
   charts: 'charts',
   chart_shares: 'chart_shares',
-  github_pull_requests: 'github_pull_requests',
+  version_control_pull_requests: 'version_control_pull_requests',
   integrations: 'integrations'
 } as const
 
@@ -131,10 +132,10 @@ export const ProjectsScalarFieldEnum = {
   created_at: 'created_at',
   updated_by: 'updated_by',
   updated_at: 'updated_at',
-  jira_project_key: 'jira_project_key',
-  jira_connection_id: 'jira_connection_id',
-  github_repo: 'github_repo',
-  github_token: 'github_token',
+  pm_connection_id: 'pm_connection_id',
+  pm_external: 'pm_external',
+  vc_connection_id: 'vc_connection_id',
+  vc_external: 'vc_external',
   logo_url: 'logo_url',
   cover_picture: 'cover_picture'
 } as const
@@ -234,7 +235,7 @@ export const Work_itemsScalarFieldEnum = {
   created_at: 'created_at',
   updated_by: 'updated_by',
   updated_at: 'updated_at',
-  jira_issue_key: 'jira_issue_key'
+  pm_external: 'pm_external'
 } as const
 
 export type Work_itemsScalarFieldEnum = (typeof Work_itemsScalarFieldEnum)[keyof typeof Work_itemsScalarFieldEnum]
@@ -423,12 +424,13 @@ export const Access_requestsScalarFieldEnum = {
 export type Access_requestsScalarFieldEnum = (typeof Access_requestsScalarFieldEnum)[keyof typeof Access_requestsScalarFieldEnum]
 
 
-export const Jira_connectionsScalarFieldEnum = {
+export const Project_management_connectionsScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
-  cloud_id: 'cloud_id',
-  site_url: 'site_url',
-  account_email: 'account_email',
+  vendor: 'vendor',
+  external_id: 'external_id',
+  display_label: 'display_label',
+  provider_config: 'provider_config',
   refresh_token_enc: 'refresh_token_enc',
   access_token_enc: 'access_token_enc',
   access_token_expires_at: 'access_token_expires_at',
@@ -438,7 +440,26 @@ export const Jira_connectionsScalarFieldEnum = {
   updated_at: 'updated_at'
 } as const
 
-export type Jira_connectionsScalarFieldEnum = (typeof Jira_connectionsScalarFieldEnum)[keyof typeof Jira_connectionsScalarFieldEnum]
+export type Project_management_connectionsScalarFieldEnum = (typeof Project_management_connectionsScalarFieldEnum)[keyof typeof Project_management_connectionsScalarFieldEnum]
+
+
+export const Version_control_connectionsScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  vendor: 'vendor',
+  external_id: 'external_id',
+  display_label: 'display_label',
+  provider_config: 'provider_config',
+  refresh_token_enc: 'refresh_token_enc',
+  access_token_enc: 'access_token_enc',
+  access_token_expires_at: 'access_token_expires_at',
+  scopes: 'scopes',
+  status: 'status',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Version_control_connectionsScalarFieldEnum = (typeof Version_control_connectionsScalarFieldEnum)[keyof typeof Version_control_connectionsScalarFieldEnum]
 
 
 export const Chat_conversationsScalarFieldEnum = {
@@ -536,9 +557,10 @@ export const Chart_sharesScalarFieldEnum = {
 export type Chart_sharesScalarFieldEnum = (typeof Chart_sharesScalarFieldEnum)[keyof typeof Chart_sharesScalarFieldEnum]
 
 
-export const Github_pull_requestsScalarFieldEnum = {
+export const Version_control_pull_requestsScalarFieldEnum = {
   id: 'id',
   work_item_id: 'work_item_id',
+  vendor: 'vendor',
   pr_number: 'pr_number',
   repo_owner: 'repo_owner',
   repo_name: 'repo_name',
@@ -550,7 +572,7 @@ export const Github_pull_requestsScalarFieldEnum = {
   updated_at: 'updated_at'
 } as const
 
-export type Github_pull_requestsScalarFieldEnum = (typeof Github_pull_requestsScalarFieldEnum)[keyof typeof Github_pull_requestsScalarFieldEnum]
+export type Version_control_pull_requestsScalarFieldEnum = (typeof Version_control_pull_requestsScalarFieldEnum)[keyof typeof Version_control_pull_requestsScalarFieldEnum]
 
 
 export const IntegrationsScalarFieldEnum = {

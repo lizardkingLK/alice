@@ -47,7 +47,6 @@ import {
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../../../lib/prisma';
 import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
-import { encryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
 import type { ProjectsRepository } from './projects.repository';
 import type {
   CreateProjectInput,
@@ -89,28 +88,24 @@ async function requireAdmin(actorId: string) {
  * - create: encrypt non-empty; null clears
  * - update: omit / empty string → leave unchanged; null → clear; non-empty → encrypt
  */
+/**
+ * PAT column removed; drop non-empty wire `github_token` writes
+ * (OAuth lives on `version_control_connections`).
+ */
 function prepareGithubTokenForPersist(
   input: CreateProjectInput | UpdateProjectInput,
-  mode: 'create' | 'update'
+  _mode: 'create' | 'update'
 ): CreateProjectInput | UpdateProjectInput {
-  if (!('github_token' in input) || input.github_token === undefined) {
+  if (
+    !('github_token' in input) ||
+    input.github_token === undefined ||
+    input.github_token === null
+  ) {
     return input;
   }
-
-  if (mode === 'update' && input.github_token === '') {
-    const rest = { ...input };
-    delete rest.github_token;
-    return rest;
-  }
-
-  if (input.github_token === null || input.github_token === '') {
-    return { ...input, github_token: null };
-  }
-
-  return {
-    ...input,
-    github_token: encryptSecretIfPresent(input.github_token) ?? null,
-  };
+  const rest = { ...input };
+  delete rest.github_token;
+  return rest;
 }
 
 type ProjectImageField = 'logo_url' | 'cover_picture';

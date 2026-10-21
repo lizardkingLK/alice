@@ -70,6 +70,7 @@ Prisma creates objects as `postgres`. The Supabase Data API (`anon`, `authentica
 - Baseline: `0_init_supabase` includes grants from `prisma/sql/supabase_grants.sql`
 - `create:migrate` appends the same grants block to every new migration
 - After `migrate:reset`, grants are reapplied automatically via migrations
+- The grants file ends with a **secrets re-lock** (`REVOKE` on admission/token tables) so blanket `GRANT`s do not reopen PostgREST access — see [RLS_HYBRID_ROLLOUT.md](./RLS_HYBRID_ROLLOUT.md)
 
 ## Seed data (`pnpm db seed`)
 

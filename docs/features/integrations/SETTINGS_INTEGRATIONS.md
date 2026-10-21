@@ -169,7 +169,7 @@ Alice is a **single workspace per deployment** (no `workspaces` table today).
 All integration rows are **deployment-wide**—a manager or admin configures
 tools for everyone, matching Settings → Integrations RBAC.
 
-Project-scoped GitHub/Jira credentials **stay on `projects`** and `jira_connections`; this table is for **workspace-level** tools only (chat models, Slack, Figma, etc.).
+Project-scoped GitHub/Jira credentials **stay on `projects`** and `project_management_connections` (`vendor=jira`); this table is for **workspace-level** tools only (chat models, Slack, Figma, etc.).
 
 ### Design principles
 
@@ -492,12 +492,12 @@ same transaction. Disabling a row also clears its default flag.
 
 ### Relationship to project integrations
 
-| Scope                  | Storage today                   | Future                                                     |
-| ---------------------- | ------------------------------- | ---------------------------------------------------------- |
-| GitHub PAT + repo      | `projects.github_*`             | Unchanged                                                  |
-| Jira OAuth             | `jira_connections` + project FK | Unchanged                                                  |
-| Alice Chat LLMs        | `integrations` (`ai_agent`)     | Multi-row model pool (Gemini, SpaceXAI, OpenAI, Anthropic) |
-| Slack / Figma / Eraser | —                               | `integrations` (by category)                               |
+| Scope                  | Storage today                                                 | Future                                                     |
+| ---------------------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
+| GitHub PAT + repo      | `projects.github_*`                                           | Unchanged                                                  |
+| Jira OAuth             | `project_management_connections` (`vendor=jira`) + project FK | Unchanged                                                  |
+| Alice Chat LLMs        | `integrations` (`ai_agent`)                                   | Multi-row model pool (Gemini, SpaceXAI, OpenAI, Anthropic) |
+| Slack / Figma / Eraser | —                                                             | `integrations` (by category)                               |
 
 Do **not** move GitHub/Jira into `integrations` without an explicit migration project — different scope, FKs, and UI surfaces.
 

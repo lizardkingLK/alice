@@ -7,7 +7,10 @@ import {
   GithubInsufficientScopeError,
   GithubReauthorizationRequiredError,
 } from '../../src/routes/api/github/github.types';
-import { IntegrationCategory, IntegrationStatus } from '@repo/types/prisma';
+import {
+  VersionControlConnectionStatus,
+  VersionControlVendor,
+} from '@repo/types/prisma';
 
 const { requireUserWithRoleMock } = vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
@@ -33,13 +36,36 @@ function signOAuthStateForTest(payload: Record<string, unknown>): string {
   return `${body}.${sig}`;
 }
 
+function vcConnection(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'vc-1',
+    user_id: 'user-1',
+    vendor: VersionControlVendor.github,
+    external_id: '12345',
+    display_label: 'GitHub (@octocat)',
+    provider_config: {
+      account_login: 'octocat',
+      account_name: 'The Octocat',
+    },
+    refresh_token_enc: encryptSecret('ghr_refresh_token'),
+    access_token_enc: encryptSecret('gho_valid_token'),
+    access_token_expires_at: new Date(Date.now() + 3600 * 1000),
+    scopes: 'repo,read:user',
+    status: VersionControlConnectionStatus.active,
+    created_at: new Date(),
+    updated_at: new Date(),
+    user: { id: 'user-1', name: 'User 1', role: 'admin' },
+    ...overrides,
+  };
+}
+
 describe('GithubService', () => {
   const findActiveMock = vi.fn();
   const listByUserIdMock = vi.fn();
   const listAllActiveMock = vi.fn();
   const findByIdMock = vi.fn();
   const upsertConnectionMock = vi.fn();
-  const updateConfigMock = vi.fn();
+  const updateTokensMock = vi.fn();
   const updateStatusMock = vi.fn();
   const deleteByIdMock = vi.fn();
   const findActiveAdminConnectionMock = vi.fn();
@@ -51,7 +77,7 @@ describe('GithubService', () => {
     listAllActive: listAllActiveMock,
     findById: findByIdMock,
     upsertConnection: upsertConnectionMock,
-    updateConfig: updateConfigMock,
+    updateTokens: updateTokensMock,
     updateStatus: updateStatusMock,
     deleteById: deleteByIdMock,
     findActiveAdminConnection: findActiveAdminConnectionMock,
@@ -85,7 +111,7 @@ describe('GithubService', () => {
     expect(url).toContain('prompt=select_account');
   });
 
-  it('exchanges authorization code, fetches user profile, and stores encrypted tokens in integrations table', async () => {
+  it('exchanges authorization code, fetches user profile, and stores encrypted tokens', async () => {
     const { url } = await service.startOAuth('user-1');
     const state = new URL(url).searchParams.get('state');
     expect(state).toBeTruthy();
@@ -113,29 +139,12 @@ describe('GithubService', () => {
       });
     vi.stubGlobal('fetch', fetchMock);
 
-    upsertConnectionMock.mockResolvedValue({
-      id: 'int-1',
-      catalog_id: 'github',
-      category: IntegrationCategory.productivity,
-      provider: 'github',
-      name: 'GitHub (@octocat)',
-      status: IntegrationStatus.active,
-      config: {
-        kind: 'github_oauth',
-        access_token: encryptSecret('gho_fresh_access_token'),
-        refresh_token: encryptSecret('ghr_fresh_refresh_token'),
-        account_login: 'octocat',
-        account_id: 12345,
-        expires_at: new Date(Date.now() + 28800 * 1000).toISOString(),
-        scope: 'repo,read:user',
-      },
-      is_default: false,
-      sort_order: 0,
-      created_by: 'user-1',
-      created_at: new Date(),
-      updated_by: 'user-1',
-      updated_at: new Date(),
-    });
+    upsertConnectionMock.mockResolvedValue(
+      vcConnection({
+        access_token_enc: encryptSecret('gho_fresh_access_token'),
+        refresh_token_enc: encryptSecret('ghr_fresh_refresh_token'),
+      })
+    );
 
     const connection = await service.handleOAuthCallback(
       'test-auth-code',
@@ -147,14 +156,11 @@ describe('GithubService', () => {
     expect(upsertConnectionMock).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user-1',
-        name: 'GitHub (@octocat)',
-        config: expect.objectContaining({
-          kind: 'github_oauth',
-          account_login: 'octocat',
-          access_token: expect.stringMatching(/^v1:/),
-          refresh_token: expect.stringMatching(/^v1:/),
-        }),
-        status: 'active',
+        externalId: '12345',
+        displayLabel: 'GitHub (@octocat)',
+        accessTokenEnc: expect.stringMatching(/^v1:/),
+        refreshTokenEnc: expect.stringMatching(/^v1:/),
+        status: VersionControlConnectionStatus.active,
       })
     );
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -177,19 +183,7 @@ describe('GithubService', () => {
   });
 
   it('returns decrypted access token directly without refresh when token is still valid', async () => {
-    const validExpiry = new Date(Date.now() + 3600 * 1000).toISOString();
-    findActiveMock.mockResolvedValue({
-      id: 'int-1',
-      provider: 'github',
-      status: IntegrationStatus.active,
-      config: {
-        kind: 'github_oauth',
-        access_token: encryptSecret('gho_valid_token'),
-        refresh_token: encryptSecret('ghr_refresh_token'),
-        expires_at: validExpiry,
-        scope: 'repo,read:user',
-      },
-    });
+    findActiveMock.mockResolvedValue(vcConnection());
 
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
@@ -198,26 +192,18 @@ describe('GithubService', () => {
 
     expect(token).toBe('gho_valid_token');
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(updateConfigMock).not.toHaveBeenCalled();
+    expect(updateTokensMock).not.toHaveBeenCalled();
   });
 
   it('performs Just-In-Time (JIT) refresh when access token is expired', async () => {
-    const expiredExpiry = new Date(Date.now() - 10 * 1000).toISOString();
-    const expiredConnection = {
-      id: 'int-1',
-      provider: 'github',
-      status: IntegrationStatus.active,
-      config: {
-        kind: 'github_oauth',
-        access_token: encryptSecret('gho_old_token'),
-        refresh_token: encryptSecret('ghr_existing_refresh_token'),
-        expires_at: expiredExpiry,
-        scope: 'repo,read:user',
-        account_login: 'octocat',
-      },
-    };
+    const expiredConnection = vcConnection({
+      access_token_enc: encryptSecret('gho_old_token'),
+      refresh_token_enc: encryptSecret('ghr_existing_refresh_token'),
+      access_token_expires_at: new Date(Date.now() - 10 * 1000),
+    });
     findActiveMock.mockResolvedValue(expiredConnection);
     findByIdMock.mockResolvedValue(expiredConnection);
+    updateTokensMock.mockResolvedValue(expiredConnection);
 
     const fetchMock = vi.fn().mockResolvedValueOnce({
       ok: true,
@@ -230,54 +216,46 @@ describe('GithubService', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    const token = await service.getValidAccessToken('int-1');
+    const token = await service.getValidAccessToken('vc-1');
 
     expect(token).toBe('gho_new_refreshed_token');
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain(
       'https://github.com/login/oauth/access_token'
     );
-    expect(updateConfigMock).toHaveBeenCalledWith(
-      'int-1',
+    expect(updateTokensMock).toHaveBeenCalledWith(
+      'vc-1',
       expect.objectContaining({
-        access_token: expect.stringMatching(/^v1:/),
-        refresh_token: expect.stringMatching(/^v1:/),
-      }),
-      'active'
+        accessTokenEnc: expect.stringMatching(/^v1:/),
+        refreshTokenEnc: expect.stringMatching(/^v1:/),
+      })
     );
   });
 
   it('throws GithubReauthorizationRequiredError when expired and no refresh token is present', async () => {
-    const expiredExpiry = new Date(Date.now() - 10 * 1000).toISOString();
-    findActiveMock.mockResolvedValue({
-      id: 'int-1',
-      provider: 'github',
-      status: IntegrationStatus.active,
-      config: {
-        kind: 'github_oauth',
-        access_token: encryptSecret('gho_old_token'),
-        expires_at: expiredExpiry,
-        scope: 'repo,read:user',
-      },
-    });
+    findActiveMock.mockResolvedValue(
+      vcConnection({
+        access_token_enc: encryptSecret('gho_old_token'),
+        refresh_token_enc: '',
+        access_token_expires_at: new Date(Date.now() - 10 * 1000),
+      })
+    );
 
     await expect(service.getValidAccessToken()).rejects.toThrow(
       GithubReauthorizationRequiredError
     );
-    expect(updateStatusMock).toHaveBeenCalledWith('int-1', 'disabled');
+    expect(updateStatusMock).toHaveBeenCalledWith(
+      'vc-1',
+      VersionControlConnectionStatus.expired
+    );
   });
 
   it('throws GithubInsufficientScopeError when required scopes are missing', async () => {
-    findActiveMock.mockResolvedValue({
-      id: 'int-1',
-      provider: 'github',
-      status: IntegrationStatus.active,
-      config: {
-        kind: 'github_oauth',
-        access_token: encryptSecret('gho_token'),
-        scope: 'read:user',
-      },
-    });
+    findActiveMock.mockResolvedValue(
+      vcConnection({
+        scopes: 'read:user',
+      })
+    );
 
     await expect(service.getValidAccessToken()).rejects.toThrow(
       GithubInsufficientScopeError
@@ -285,18 +263,7 @@ describe('GithubService', () => {
   });
 
   it('fetches repositories for the connected user', async () => {
-    const validExpiry = new Date(Date.now() + 3600 * 1000).toISOString();
-    findActiveMock.mockResolvedValue({
-      id: 'int-1',
-      provider: 'github',
-      status: IntegrationStatus.active,
-      config: {
-        kind: 'github_oauth',
-        access_token: encryptSecret('gho_valid_token'),
-        expires_at: validExpiry,
-        scope: 'repo,read:user',
-      },
-    });
+    findActiveMock.mockResolvedValue(vcConnection());
 
     const fetchMock = vi.fn().mockResolvedValueOnce({
       ok: true,
@@ -353,23 +320,11 @@ describe('GithubService', () => {
       });
       listByUserIdMock.mockResolvedValue([]);
       listAllActiveMock.mockResolvedValue([
-        {
+        vcConnection({
           id: 'conn-admin-1',
-          name: 'GitHub (@octocat)',
-          status: IntegrationStatus.active,
-          created_by: 'admin-1',
-          created_at: new Date(),
-          updated_at: new Date(),
-          config: {
-            kind: 'github_oauth',
-            account_login: 'octocat',
-          },
-          created_by_user: {
-            id: 'admin-1',
-            name: 'Admin User',
-            role: 'admin',
-          },
-        },
+          user_id: 'admin-1',
+          user: { id: 'admin-1', name: 'Admin User', role: 'admin' },
+        }),
       ]);
 
       const result = await service.listConnections('user-member');
@@ -405,11 +360,13 @@ describe('GithubService', () => {
         id: 'manager-1',
         role: 'manager',
       });
-      findActiveAdminConnectionMock.mockResolvedValue({
-        id: 'admin-conn-1',
-        created_by: 'admin-1',
-        created_by_user: { id: 'admin-1', name: 'Admin', role: 'admin' },
-      });
+      findActiveAdminConnectionMock.mockResolvedValue(
+        vcConnection({
+          id: 'admin-conn-1',
+          user_id: 'admin-1',
+          user: { id: 'admin-1', name: 'Admin', role: 'admin' },
+        })
+      );
 
       await expect(service.startOAuth('manager-1')).rejects.toThrow(
         'An administrator has connected GitHub. That administrator must disconnect the existing connection before a different account can be connected.'
@@ -421,11 +378,13 @@ describe('GithubService', () => {
         id: 'manager-1',
         role: 'manager',
       });
-      findByIdMock.mockResolvedValue({
-        id: 'admin-conn-1',
-        created_by: 'admin-1',
-        created_by_user: { id: 'admin-1', name: 'Admin', role: 'admin' },
-      });
+      findByIdMock.mockResolvedValue(
+        vcConnection({
+          id: 'admin-conn-1',
+          user_id: 'admin-1',
+          user: { id: 'admin-1', name: 'Admin', role: 'admin' },
+        })
+      );
 
       await expect(
         service.deleteConnection('manager-1', 'admin-conn-1')
@@ -439,17 +398,19 @@ describe('GithubService', () => {
         id: 'admin-1',
         role: 'admin',
       });
-      findByIdMock.mockResolvedValue({
-        id: 'admin-conn-1',
-        created_by: 'admin-1',
-        created_by_user: { id: 'admin-1', name: 'Admin', role: 'admin' },
-      });
-      deleteByIdMock.mockResolvedValue({ id: 'admin-conn-1' });
+      findByIdMock.mockResolvedValue(
+        vcConnection({
+          id: 'admin-conn-1',
+          user_id: 'admin-1',
+          user: { id: 'admin-1', name: 'Admin', role: 'admin' },
+        })
+      );
+      deleteByIdMock.mockResolvedValue(true);
 
       await expect(
         service.deleteConnection('admin-1', 'admin-conn-1')
       ).resolves.toBeUndefined();
-      expect(deleteByIdMock).toHaveBeenCalledWith('admin-conn-1', 'admin-1');
+      expect(deleteByIdMock).toHaveBeenCalledWith('admin-conn-1');
     });
   });
 });
