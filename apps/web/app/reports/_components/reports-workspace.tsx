@@ -108,16 +108,16 @@ function Metric({
   readonly label: string;
   readonly value: number;
 }) {
-  return (
-    <div
-      role="group"
-      aria-label={`${label}: ${value}`}
-      className="bg-muted/40 rounded-lg border px-3 py-2.5"
-    >
-      <p className="text-muted-foreground text-xs font-medium">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
-    </div>
-  );
+ return (
+  <dl className="bg-muted/40 rounded-lg border px-3 py-2.5">
+    <dt className="text-muted-foreground text-xs font-medium">
+      {label}
+    </dt>
+    <dd className="mt-1 text-2xl font-semibold tabular-nums">
+      {value}
+    </dd>
+  </dl>
+);
 }
 
 function FilterList({
