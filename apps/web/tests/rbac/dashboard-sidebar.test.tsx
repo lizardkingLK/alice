@@ -150,9 +150,13 @@ describe('DashboardSidebar RBAC', () => {
     ).toBeInTheDocument();
   });
 
-  it('always shows Views, Charts, and Alice under Platform', () => {
+  it('always shows Reports, Views, Charts, and Alice under Platform', () => {
     renderSidebar('member');
 
+    expect(screen.getByRole('link', { name: /^Reports$/i })).toHaveAttribute(
+      'href',
+      '/reports'
+    );
     expect(screen.getByRole('link', { name: /^Views$/i })).toHaveAttribute(
       'href',
       '/views'
