@@ -3,6 +3,7 @@ import {
   userRelationSelect,
   withoutIntegrationSecrets,
   mapProjectRowForWire,
+  projectSessionPostgrestSelect,
   type Database,
   projectListSelect,
   projectDetailSelect,
@@ -485,9 +486,12 @@ export class ProjectsRepository {
   }
 
   async listAll(): Promise<ProjectRowWithOwner[]> {
+    // Explicit columns at runtime; `as '*'` satisfies supabase-js select typing.
     const { data, error } = await this.db
       .from('projects')
-      .select('*, owner:users!projects_owner_id_fkey(id, name, email)')
+      .select(
+        `${projectSessionPostgrestSelect}, owner:users!projects_owner_id_fkey(id, name, email)` as '*'
+      )
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -501,7 +505,10 @@ export class ProjectsRepository {
   }
 
   async findByKey(key: string, excludeId?: string): Promise<ProjectRow | null> {
-    let query = this.db.from('projects').select('*').eq('key', key);
+    let query = this.db
+      .from('projects')
+      .select(projectSessionPostgrestSelect as '*')
+      .eq('key', key);
     if (excludeId) {
       query = query.neq('id', excludeId);
     }
@@ -519,7 +526,9 @@ export class ProjectsRepository {
   async findById(id: string): Promise<ProjectRowWithOwner | null> {
     const { data, error } = await this.db
       .from('projects')
-      .select('*, owner:users!projects_owner_id_fkey(id, name, email)')
+      .select(
+        `${projectSessionPostgrestSelect}, owner:users!projects_owner_id_fkey(id, name, email)` as '*'
+      )
       .eq('id', id)
       .maybeSingle();
 

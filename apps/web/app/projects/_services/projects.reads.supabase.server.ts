@@ -2,6 +2,7 @@ import {
   USER_PROJECTION_WITH_ROLE,
   userRelationSelect,
   mapProjectRowForWire,
+  projectSessionPostgrestSelect,
 } from '@repo/types';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -33,31 +34,6 @@ const PROJECT_MEMBER_USER_SELECT = userRelationSelect(
   'project_members_user_id_fkey',
   USER_PROJECTION_WITH_ROLE
 );
-
-/** Explicit columns — avoids pulling future secret columns via `select('*')`. */
-const PROJECT_SESSION_COLUMNS = [
-  'id',
-  'name',
-  'key',
-  'description',
-  'status',
-  'owner_id',
-  'start_date',
-  'end_date',
-  'pm_connection_id',
-  'pm_external',
-  'vc_connection_id',
-  'vc_external',
-  'logo_url',
-  'cover_picture',
-  'attributes_config',
-  'workflow_config',
-  'created_by',
-  'created_at',
-  'updated_by',
-  'updated_at',
-  'deleted_at',
-].join(', ');
 
 type ProjectRowWithSecrets = Project & {
   github_token?: string | null;
@@ -95,7 +71,9 @@ export async function getProjectListPaginatedFromSupabase(
 
   let query = supabase
     .from('projects')
-    .select(`${PROJECT_SESSION_COLUMNS}, ${OWNER_SELECT}`, { count: 'exact' });
+    .select(`${projectSessionPostgrestSelect}, ${OWNER_SELECT}` as '*', {
+      count: 'exact',
+    });
 
   query = query.in('id', accessibleIds);
 
@@ -134,7 +112,7 @@ export async function getProjectFromSupabase(id: string): Promise<Project> {
 
   const { data, error } = await supabase
     .from('projects')
-    .select(`${PROJECT_SESSION_COLUMNS}, ${OWNER_SELECT}`)
+    .select(`${projectSessionPostgrestSelect}, ${OWNER_SELECT}` as '*')
     .eq('id', id)
     .maybeSingle();
 

@@ -203,6 +203,8 @@ export {
 } from './work-items.js';
 export {
   projectOwnerSelect,
+  PROJECT_SESSION_COLUMNS,
+  projectSessionPostgrestSelect,
   projectListSelect,
   projectDetailSelect,
   type ProjectListRow,

@@ -1,5 +1,9 @@
 import { unstable_cache, updateTag } from 'next/cache';
-import { filterProductUsableUsers, mapProjectRowForWire } from '@repo/types';
+import {
+  filterProductUsableUsers,
+  mapProjectRowForWire,
+  projectSessionPostgrestSelect,
+} from '@repo/types';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getUser } from '@/lib/auth';
 
@@ -51,7 +55,7 @@ async function fetchProjectsForDropdown(): Promise<unknown[]> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('projects')
-    .select(`*, ${OWNER_SELECT}`)
+    .select(`${projectSessionPostgrestSelect}, ${OWNER_SELECT}` as '*')
     .order('created_at', { ascending: false });
 
   if (error) {

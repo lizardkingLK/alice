@@ -31,5 +31,6 @@ REVOKE ALL ON TABLE public.work_item_links FROM anon, authenticated;
 REVOKE ALL ON TABLE public.work_item_chart_rollups FROM anon, authenticated;
 REVOKE ALL ON TABLE public.work_item_chart_hierarchy_rollups FROM anon, authenticated;
 REVOKE ALL ON TABLE public.sprint_burndown_rollups FROM anon, authenticated;
+REVOKE ALL ON TABLE public._prisma_migrations FROM anon, authenticated;
 
 REVOKE INSERT, UPDATE, DELETE ON TABLE public.users FROM anon, authenticated;

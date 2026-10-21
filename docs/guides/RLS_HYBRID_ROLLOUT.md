@@ -4,6 +4,9 @@ Security model: the Supabase **anon key stays public** (Auth, SSR session, Realt
 Protection is **Postgres RLS + grants**, not key secrecy. The service role key
 stays server-only (`createAdminClient` / `apps/api`).
 
+**Status:** P0 → P2 + P0.5 select hygiene + negative-test harness — **done**.
+Remaining work is optional deploy smoke (below), not further policy migrations.
+
 ## Strategies
 
 | Strategy                  | When                       | Pattern                                                                                                               |
@@ -17,7 +20,7 @@ to `anon`/`authenticated`. Secrets tables must be **re-revoked after those grant
 
 ## Phase checklist
 
-### P0 — Secrets / admission (Strategy A) — **this phase**
+### P0 — Secrets / admission (Strategy A) — **done**
 
 | Table / object                                                                   | Action                                                                                    | Callers after change                                                                    | Must-not-break                                             |
 | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
@@ -33,13 +36,13 @@ to `anon`/`authenticated`. Secrets tables must be **re-revoked after those grant
 | `projects.github_token`                                                          | **Removed** (VC hybrid)                                                                   | Wire `has_github_token` from `vc_connection_id`; OAuth on `version_control_connections` | GitHub settings card                                       |
 
 **P0.5:** absorbed by VC hybrid — PAT column dropped; secrets live on
-`version_control_connections` (Strategy A). Remaining work: prefer explicit
-project selects over `select('*')` where practical (session readers).
+`version_control_connections` (Strategy A). Session/API project readers use
+shared `projectSessionPostgrestSelect` (no `select('*')` on project rows).
 
 **Anon key:** leave `NEXT_PUBLIC_SUPABASE_ANON_KEY` public. Do not move Auth to a
 hidden key without a separate Auth/Realtime redesign.
 
-### P1 — Collaborative tables (Strategy B)
+### P1 — Collaborative tables (Strategy B) — **done**
 
 | Table                                                                                                     | Status / policy sketch                                                                                 |
 | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -53,25 +56,59 @@ hidden key without a separate Auth/Realtime redesign.
 active `project_members`). Authenticated **writes** remain denied by RLS (no
 INSERT/UPDATE/DELETE policies); mutations use service role / Prisma.
 
-### P2 — API-only revoke + policy hygiene (`rls_hybrid_p2_rollups_and_review`)
+### P2 — API-only revoke + policy hygiene — **done**
 
-| Table                                                                                     | Status                                                                     |
-| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `work_item_links`                                                                         | **Done** — RLS + revoke (Prisma / charts-API only)                         |
-| `work_item_chart_rollups`, `work_item_chart_hierarchy_rollups`, `sprint_burndown_rollups` | **Done** — RLS + revoke                                                    |
-| `notifications`                                                                           | **Hardened** — SELECT/UPDATE/DELETE own rows; INSERT via service role only |
-| `chat_conversations`                                                                      | **Hardened** — same owner CRUD; `(select auth.uid())`                      |
-| `charts`, `chart_shares`                                                                  | Reviewed — already owner/share policies with `(select auth.uid())`         |
-| `integrations`, PM/VC connections, `chat_attachments`, allowlist/requests                 | Revoke + RLS — grants footer                                               |
+| Table                                                                                     | Status                                                                                          |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `work_item_links`                                                                         | **Done** — RLS + revoke (Prisma / charts-API only)                                              |
+| `work_item_chart_rollups`, `work_item_chart_hierarchy_rollups`, `sprint_burndown_rollups` | **Done** — RLS + revoke                                                                         |
+| `notifications`                                                                           | **Hardened** — SELECT/UPDATE/DELETE own rows; INSERT via service role only                      |
+| `chat_conversations`                                                                      | **Hardened** — same owner CRUD; `(select auth.uid())`                                           |
+| `charts`, `chart_shares`                                                                  | Reviewed — already owner/share policies with `(select auth.uid())`                              |
+| `integrations`, PM/VC connections, `chat_attachments`, allowlist/requests                 | Revoke + RLS — grants footer                                                                    |
+| `_prisma_migrations`                                                                      | **Done** — RLS + revoke (`rls_hybrid_prisma_migrations_lockdown`); Prisma/`service_role` bypass |
 
-## Negative tests (add with each phase)
+### Out of scope (intentionally deferred)
 
-- Anon key + no JWT: `GET /rest/v1/<table>` → empty or 401/403, never full dump.
-- Authenticated non-admin: cannot read `access_allowlist` / `access_requests` via PostgREST.
-- Authenticated: cannot `INSERT`/`UPDATE`/`DELETE` `users` via PostgREST.
-- Authenticated: cannot read rollups / `work_item_links` via PostgREST (403 / empty).
-- Authenticated: cannot `INSERT` into `notifications` via PostgREST (create is API-only).
-- Feature smoke: login gate, allowlist admin UI, Jira/GitHub connect, chat, charts analytics via API, inbox mark-read.
+- **Strategy B write policies** for collaborative tables — product mutations stay on
+  service role / Prisma; session clients are SELECT (+ Realtime) only.
+- **Hiding the anon key** — would require an Auth/Realtime redesign.
+
+## Negative tests
+
+**Static (always in CI):** `packages/db/tests/rls-hybrid-grants.test.ts` asserts
+`supabase_grants.sql` + P0/P2/`_prisma_migrations` lockdown migrations keep
+Strategy A `REVOKE`s and users write denies.
+
+**Live PostgREST (opt-in):** `packages/db/tests/rls-hybrid-postgrest.live.test.ts`
+
+```bash
+# Anon / no JWT
+RUN_RLS_NEGATIVE_TESTS=1 \
+  NEXT_PUBLIC_SUPABASE_URL=... \
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=... \
+  pnpm turbo run test --filter=@repo/db -- --run tests/rls-hybrid-postgrest.live.test.ts
+
+# + authenticated denials (prefer a non-admin member access token)
+RUN_RLS_NEGATIVE_TESTS=1 \
+  NEXT_PUBLIC_SUPABASE_URL=... \
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=... \
+  RLS_NEGATIVE_TEST_USER_JWT=... \
+  pnpm turbo run test --filter=@repo/db -- --run tests/rls-hybrid-postgrest.live.test.ts
+```
+
+Covered by the live suite:
+
+| Actor         | Assertion                                                                   |
+| ------------- | --------------------------------------------------------------------------- |
+| Anon          | Strategy A tables → locked or empty                                         |
+| Anon          | `users` / `notifications` INSERT denied                                     |
+| Authenticated | `access_allowlist` / `access_requests` / rollups / `work_item_links` locked |
+| Authenticated | `users` INSERT/UPDATE/DELETE denied                                         |
+| Authenticated | `notifications` INSERT denied                                               |
+
+**Deploy smoke (manual):** login gate, allowlist admin UI, Jira/GitHub connect,
+chat, charts analytics via API, inbox mark-read.
 
 ## Related
 
