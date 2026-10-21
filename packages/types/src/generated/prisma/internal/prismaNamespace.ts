@@ -415,14 +415,15 @@ export const ModelName = {
   notifications: 'notifications',
   access_allowlist: 'access_allowlist',
   access_requests: 'access_requests',
-  jira_connections: 'jira_connections',
+  project_management_connections: 'project_management_connections',
+  version_control_connections: 'version_control_connections',
   chat_conversations: 'chat_conversations',
   chat_attachments: 'chat_attachments',
   saved_views: 'saved_views',
   saved_view_shares: 'saved_view_shares',
   charts: 'charts',
   chart_shares: 'chart_shares',
-  github_pull_requests: 'github_pull_requests',
+  version_control_pull_requests: 'version_control_pull_requests',
   integrations: 'integrations'
 } as const
 
@@ -439,7 +440,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "jira_connections" | "chat_conversations" | "chat_attachments" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "github_pull_requests" | "integrations"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "chat_conversations" | "chat_attachments" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "integrations"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1775,77 +1776,151 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    jira_connections: {
-      payload: Prisma.$jira_connectionsPayload<ExtArgs>
-      fields: Prisma.jira_connectionsFieldRefs
+    project_management_connections: {
+      payload: Prisma.$project_management_connectionsPayload<ExtArgs>
+      fields: Prisma.project_management_connectionsFieldRefs
       operations: {
         findUnique: {
-          args: Prisma.jira_connectionsFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload> | null
+          args: Prisma.project_management_connectionsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_management_connectionsPayload> | null
         }
         findUniqueOrThrow: {
-          args: Prisma.jira_connectionsFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>
+          args: Prisma.project_management_connectionsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_management_connectionsPayload>
         }
         findFirst: {
-          args: Prisma.jira_connectionsFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload> | null
+          args: Prisma.project_management_connectionsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_management_connectionsPayload> | null
         }
         findFirstOrThrow: {
-          args: Prisma.jira_connectionsFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>
+          args: Prisma.project_management_connectionsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_management_connectionsPayload>
         }
         findMany: {
-          args: Prisma.jira_connectionsFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>[]
+          args: Prisma.project_management_connectionsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_management_connectionsPayload>[]
         }
         create: {
-          args: Prisma.jira_connectionsCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>
+          args: Prisma.project_management_connectionsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_management_connectionsPayload>
         }
         createMany: {
-          args: Prisma.jira_connectionsCreateManyArgs<ExtArgs>
+          args: Prisma.project_management_connectionsCreateManyArgs<ExtArgs>
           result: BatchPayload
         }
         createManyAndReturn: {
-          args: Prisma.jira_connectionsCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>[]
+          args: Prisma.project_management_connectionsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_management_connectionsPayload>[]
         }
         delete: {
-          args: Prisma.jira_connectionsDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>
+          args: Prisma.project_management_connectionsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_management_connectionsPayload>
         }
         update: {
-          args: Prisma.jira_connectionsUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>
+          args: Prisma.project_management_connectionsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_management_connectionsPayload>
         }
         deleteMany: {
-          args: Prisma.jira_connectionsDeleteManyArgs<ExtArgs>
+          args: Prisma.project_management_connectionsDeleteManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateMany: {
-          args: Prisma.jira_connectionsUpdateManyArgs<ExtArgs>
+          args: Prisma.project_management_connectionsUpdateManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateManyAndReturn: {
-          args: Prisma.jira_connectionsUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>[]
+          args: Prisma.project_management_connectionsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_management_connectionsPayload>[]
         }
         upsert: {
-          args: Prisma.jira_connectionsUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>
+          args: Prisma.project_management_connectionsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_management_connectionsPayload>
         }
         aggregate: {
-          args: Prisma.Jira_connectionsAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateJira_connections>
+          args: Prisma.Project_management_connectionsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProject_management_connections>
         }
         groupBy: {
-          args: Prisma.jira_connectionsGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.Jira_connectionsGroupByOutputType>[]
+          args: Prisma.project_management_connectionsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Project_management_connectionsGroupByOutputType>[]
         }
         count: {
-          args: Prisma.jira_connectionsCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.Jira_connectionsCountAggregateOutputType> | number
+          args: Prisma.project_management_connectionsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Project_management_connectionsCountAggregateOutputType> | number
+        }
+      }
+    }
+    version_control_connections: {
+      payload: Prisma.$version_control_connectionsPayload<ExtArgs>
+      fields: Prisma.version_control_connectionsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.version_control_connectionsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_connectionsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.version_control_connectionsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_connectionsPayload>
+        }
+        findFirst: {
+          args: Prisma.version_control_connectionsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_connectionsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.version_control_connectionsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_connectionsPayload>
+        }
+        findMany: {
+          args: Prisma.version_control_connectionsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_connectionsPayload>[]
+        }
+        create: {
+          args: Prisma.version_control_connectionsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_connectionsPayload>
+        }
+        createMany: {
+          args: Prisma.version_control_connectionsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.version_control_connectionsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_connectionsPayload>[]
+        }
+        delete: {
+          args: Prisma.version_control_connectionsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_connectionsPayload>
+        }
+        update: {
+          args: Prisma.version_control_connectionsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_connectionsPayload>
+        }
+        deleteMany: {
+          args: Prisma.version_control_connectionsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.version_control_connectionsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.version_control_connectionsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_connectionsPayload>[]
+        }
+        upsert: {
+          args: Prisma.version_control_connectionsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_connectionsPayload>
+        }
+        aggregate: {
+          args: Prisma.Version_control_connectionsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateVersion_control_connections>
+        }
+        groupBy: {
+          args: Prisma.version_control_connectionsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Version_control_connectionsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.version_control_connectionsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Version_control_connectionsCountAggregateOutputType> | number
         }
       }
     }
@@ -2293,77 +2368,77 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    github_pull_requests: {
-      payload: Prisma.$github_pull_requestsPayload<ExtArgs>
-      fields: Prisma.github_pull_requestsFieldRefs
+    version_control_pull_requests: {
+      payload: Prisma.$version_control_pull_requestsPayload<ExtArgs>
+      fields: Prisma.version_control_pull_requestsFieldRefs
       operations: {
         findUnique: {
-          args: Prisma.github_pull_requestsFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$github_pull_requestsPayload> | null
+          args: Prisma.version_control_pull_requestsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_pull_requestsPayload> | null
         }
         findUniqueOrThrow: {
-          args: Prisma.github_pull_requestsFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$github_pull_requestsPayload>
+          args: Prisma.version_control_pull_requestsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_pull_requestsPayload>
         }
         findFirst: {
-          args: Prisma.github_pull_requestsFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$github_pull_requestsPayload> | null
+          args: Prisma.version_control_pull_requestsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_pull_requestsPayload> | null
         }
         findFirstOrThrow: {
-          args: Prisma.github_pull_requestsFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$github_pull_requestsPayload>
+          args: Prisma.version_control_pull_requestsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_pull_requestsPayload>
         }
         findMany: {
-          args: Prisma.github_pull_requestsFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$github_pull_requestsPayload>[]
+          args: Prisma.version_control_pull_requestsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_pull_requestsPayload>[]
         }
         create: {
-          args: Prisma.github_pull_requestsCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$github_pull_requestsPayload>
+          args: Prisma.version_control_pull_requestsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_pull_requestsPayload>
         }
         createMany: {
-          args: Prisma.github_pull_requestsCreateManyArgs<ExtArgs>
+          args: Prisma.version_control_pull_requestsCreateManyArgs<ExtArgs>
           result: BatchPayload
         }
         createManyAndReturn: {
-          args: Prisma.github_pull_requestsCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$github_pull_requestsPayload>[]
+          args: Prisma.version_control_pull_requestsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_pull_requestsPayload>[]
         }
         delete: {
-          args: Prisma.github_pull_requestsDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$github_pull_requestsPayload>
+          args: Prisma.version_control_pull_requestsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_pull_requestsPayload>
         }
         update: {
-          args: Prisma.github_pull_requestsUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$github_pull_requestsPayload>
+          args: Prisma.version_control_pull_requestsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_pull_requestsPayload>
         }
         deleteMany: {
-          args: Prisma.github_pull_requestsDeleteManyArgs<ExtArgs>
+          args: Prisma.version_control_pull_requestsDeleteManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateMany: {
-          args: Prisma.github_pull_requestsUpdateManyArgs<ExtArgs>
+          args: Prisma.version_control_pull_requestsUpdateManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateManyAndReturn: {
-          args: Prisma.github_pull_requestsUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$github_pull_requestsPayload>[]
+          args: Prisma.version_control_pull_requestsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_pull_requestsPayload>[]
         }
         upsert: {
-          args: Prisma.github_pull_requestsUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$github_pull_requestsPayload>
+          args: Prisma.version_control_pull_requestsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_pull_requestsPayload>
         }
         aggregate: {
-          args: Prisma.Github_pull_requestsAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateGithub_pull_requests>
+          args: Prisma.Version_control_pull_requestsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateVersion_control_pull_requests>
         }
         groupBy: {
-          args: Prisma.github_pull_requestsGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.Github_pull_requestsGroupByOutputType>[]
+          args: Prisma.version_control_pull_requestsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Version_control_pull_requestsGroupByOutputType>[]
         }
         count: {
-          args: Prisma.github_pull_requestsCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.Github_pull_requestsCountAggregateOutputType> | number
+          args: Prisma.version_control_pull_requestsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Version_control_pull_requestsCountAggregateOutputType> | number
         }
       }
     }
@@ -2515,10 +2590,10 @@ export const ProjectsScalarFieldEnum = {
   created_at: 'created_at',
   updated_by: 'updated_by',
   updated_at: 'updated_at',
-  jira_project_key: 'jira_project_key',
-  jira_connection_id: 'jira_connection_id',
-  github_repo: 'github_repo',
-  github_token: 'github_token',
+  pm_connection_id: 'pm_connection_id',
+  pm_external: 'pm_external',
+  vc_connection_id: 'vc_connection_id',
+  vc_external: 'vc_external',
   logo_url: 'logo_url',
   cover_picture: 'cover_picture'
 } as const
@@ -2618,7 +2693,7 @@ export const Work_itemsScalarFieldEnum = {
   created_at: 'created_at',
   updated_by: 'updated_by',
   updated_at: 'updated_at',
-  jira_issue_key: 'jira_issue_key'
+  pm_external: 'pm_external'
 } as const
 
 export type Work_itemsScalarFieldEnum = (typeof Work_itemsScalarFieldEnum)[keyof typeof Work_itemsScalarFieldEnum]
@@ -2807,12 +2882,13 @@ export const Access_requestsScalarFieldEnum = {
 export type Access_requestsScalarFieldEnum = (typeof Access_requestsScalarFieldEnum)[keyof typeof Access_requestsScalarFieldEnum]
 
 
-export const Jira_connectionsScalarFieldEnum = {
+export const Project_management_connectionsScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
-  cloud_id: 'cloud_id',
-  site_url: 'site_url',
-  account_email: 'account_email',
+  vendor: 'vendor',
+  external_id: 'external_id',
+  display_label: 'display_label',
+  provider_config: 'provider_config',
   refresh_token_enc: 'refresh_token_enc',
   access_token_enc: 'access_token_enc',
   access_token_expires_at: 'access_token_expires_at',
@@ -2822,7 +2898,26 @@ export const Jira_connectionsScalarFieldEnum = {
   updated_at: 'updated_at'
 } as const
 
-export type Jira_connectionsScalarFieldEnum = (typeof Jira_connectionsScalarFieldEnum)[keyof typeof Jira_connectionsScalarFieldEnum]
+export type Project_management_connectionsScalarFieldEnum = (typeof Project_management_connectionsScalarFieldEnum)[keyof typeof Project_management_connectionsScalarFieldEnum]
+
+
+export const Version_control_connectionsScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  vendor: 'vendor',
+  external_id: 'external_id',
+  display_label: 'display_label',
+  provider_config: 'provider_config',
+  refresh_token_enc: 'refresh_token_enc',
+  access_token_enc: 'access_token_enc',
+  access_token_expires_at: 'access_token_expires_at',
+  scopes: 'scopes',
+  status: 'status',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Version_control_connectionsScalarFieldEnum = (typeof Version_control_connectionsScalarFieldEnum)[keyof typeof Version_control_connectionsScalarFieldEnum]
 
 
 export const Chat_conversationsScalarFieldEnum = {
@@ -2920,9 +3015,10 @@ export const Chart_sharesScalarFieldEnum = {
 export type Chart_sharesScalarFieldEnum = (typeof Chart_sharesScalarFieldEnum)[keyof typeof Chart_sharesScalarFieldEnum]
 
 
-export const Github_pull_requestsScalarFieldEnum = {
+export const Version_control_pull_requestsScalarFieldEnum = {
   id: 'id',
   work_item_id: 'work_item_id',
+  vendor: 'vendor',
   pr_number: 'pr_number',
   repo_owner: 'repo_owner',
   repo_name: 'repo_name',
@@ -2934,7 +3030,7 @@ export const Github_pull_requestsScalarFieldEnum = {
   updated_at: 'updated_at'
 } as const
 
-export type Github_pull_requestsScalarFieldEnum = (typeof Github_pull_requestsScalarFieldEnum)[keyof typeof Github_pull_requestsScalarFieldEnum]
+export type Version_control_pull_requestsScalarFieldEnum = (typeof Version_control_pull_requestsScalarFieldEnum)[keyof typeof Version_control_pull_requestsScalarFieldEnum]
 
 
 export const IntegrationsScalarFieldEnum = {
@@ -3284,16 +3380,58 @@ export type ListEnumAccessRequestStatusFieldRefInput<$PrismaModel> = FieldRefInp
 
 
 /**
- * Reference to a field of type 'JiraConnectionStatus'
+ * Reference to a field of type 'ProjectManagementVendor'
  */
-export type EnumJiraConnectionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'JiraConnectionStatus'>
+export type EnumProjectManagementVendorFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ProjectManagementVendor'>
     
 
 
 /**
- * Reference to a field of type 'JiraConnectionStatus[]'
+ * Reference to a field of type 'ProjectManagementVendor[]'
  */
-export type ListEnumJiraConnectionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'JiraConnectionStatus[]'>
+export type ListEnumProjectManagementVendorFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ProjectManagementVendor[]'>
+    
+
+
+/**
+ * Reference to a field of type 'ProjectManagementConnectionStatus'
+ */
+export type EnumProjectManagementConnectionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ProjectManagementConnectionStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'ProjectManagementConnectionStatus[]'
+ */
+export type ListEnumProjectManagementConnectionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ProjectManagementConnectionStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'VersionControlVendor'
+ */
+export type EnumVersionControlVendorFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VersionControlVendor'>
+    
+
+
+/**
+ * Reference to a field of type 'VersionControlVendor[]'
+ */
+export type ListEnumVersionControlVendorFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VersionControlVendor[]'>
+    
+
+
+/**
+ * Reference to a field of type 'VersionControlConnectionStatus'
+ */
+export type EnumVersionControlConnectionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VersionControlConnectionStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'VersionControlConnectionStatus[]'
+ */
+export type ListEnumVersionControlConnectionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VersionControlConnectionStatus[]'>
     
 
 
@@ -3507,14 +3645,15 @@ export type GlobalOmitConfig = {
   notifications?: Prisma.notificationsOmit
   access_allowlist?: Prisma.access_allowlistOmit
   access_requests?: Prisma.access_requestsOmit
-  jira_connections?: Prisma.jira_connectionsOmit
+  project_management_connections?: Prisma.project_management_connectionsOmit
+  version_control_connections?: Prisma.version_control_connectionsOmit
   chat_conversations?: Prisma.chat_conversationsOmit
   chat_attachments?: Prisma.chat_attachmentsOmit
   saved_views?: Prisma.saved_viewsOmit
   saved_view_shares?: Prisma.saved_view_sharesOmit
   charts?: Prisma.chartsOmit
   chart_shares?: Prisma.chart_sharesOmit
-  github_pull_requests?: Prisma.github_pull_requestsOmit
+  version_control_pull_requests?: Prisma.version_control_pull_requestsOmit
   integrations?: Prisma.integrationsOmit
 }
 

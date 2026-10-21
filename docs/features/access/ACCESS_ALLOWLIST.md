@@ -428,8 +428,10 @@ Invitees should use the invite email or **Forgot password**.
 - Allowlist status badge is **display-derived**: inactive/archived/deleted stay
   as stored; `active` + past `expires_at` (UTC) shows **expired** via
   `getAccessAllowlistDisplayStatus` (does not mutate the row).
-- Allowlist reads for the gate may use service-role or a tight RLS policy
-  (authenticated read of active rows is OK; writes admin-only).
+- Allowlist is **service-role only** on PostgREST (RLS + revoke for
+  `anon`/`authenticated`). Gate and admin RSC list use `createAdminClient`
+  after app checks; mutations stay on the API. See
+  [RLS_HYBRID_ROLLOUT.md](../../guides/RLS_HYBRID_ROLLOUT.md).
 - Never trust client-only checks; middleware + callback are mandatory.
 - Expired rows: treat as absent; optionally soft-disable via `status`.
 - Invited users: invite email must already satisfy allowlist **or** admin

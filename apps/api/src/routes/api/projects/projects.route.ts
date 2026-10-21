@@ -41,6 +41,7 @@ import {
   type JiraImportConfig,
   type WorkItemType,
   WorkItemTypeEnum,
+  jiraIssueKeyFromPmExternal,
 } from '@repo/types';
 
 const TYPE_STRING = 'string';
@@ -67,13 +68,15 @@ function listProjectsQueryFromRequest(query: Record<string, unknown>) {
 async function loadExistingJiraKeys(projectId: string): Promise<Set<string>> {
   const { data: existingWorkItems } = await supabase
     .from('work_items')
-    .select('jira_issue_key')
+    .select('pm_external')
     .eq('project_id', projectId)
-    .not('jira_issue_key', 'is', null);
+    .not('pm_external', 'is', null);
 
   return new Set(
     (existingWorkItems || [])
-      .map((item: { jira_issue_key: string | null }) => item.jira_issue_key)
+      .map((item: { pm_external: unknown }) =>
+        jiraIssueKeyFromPmExternal(item.pm_external)
+      )
       .filter((key: string | null): key is string => Boolean(key))
   );
 }

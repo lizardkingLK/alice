@@ -1,5 +1,5 @@
 import { mapToWorkItemType, UserRoleEnum, utcNow } from '@repo/types';
-import { JiraConnectionStatus } from '@repo/types/prisma';
+import { ProjectManagementConnectionStatus } from '@repo/types/prisma';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { env } from '../../../config/env';
 import {
@@ -154,7 +154,7 @@ export class JiraService {
         access_token_enc: encryptSecret(tokens.access_token),
         access_token_expires_at: expiresAt,
         scopes: tokens.scope ?? site.scopes.join(' '),
-        status: JiraConnectionStatus.active,
+        status: ProjectManagementConnectionStatus.active,
       });
       primaryResult ??= saved;
     }
@@ -339,7 +339,7 @@ export class JiraService {
 
     if (!response.ok) {
       await this.jiraRepository.updateTokens(connection.id, {
-        status: JiraConnectionStatus.expired,
+        status: ProjectManagementConnectionStatus.expired,
       });
       const errorText = await response.text();
       throw new Error(
@@ -357,7 +357,7 @@ export class JiraService {
       refresh_token_enc: nextRefresh,
       access_token_enc: encryptSecret(tokens.access_token),
       access_token_expires_at: expiresAt,
-      status: JiraConnectionStatus.active,
+      status: ProjectManagementConnectionStatus.active,
     });
 
     return tokens.access_token;

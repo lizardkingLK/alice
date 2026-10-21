@@ -22,6 +22,9 @@ import {
   toDateOnly,
   normalizedAllowlistProjectKeysFromValue,
   resolveProjectIdsFromAllowlistValue,
+  workItemPmExternalFromJiraKey,
+  withJiraIssueKeyDtoField,
+  githubRepoFromVcExternal,
 } from '@repo/types';
 import {
   AccessAllowlistKind,
@@ -47,7 +50,10 @@ import {
   type WorkItemPaginatedList,
 } from './work-items.prisma-query';
 
-export type DbWorkItem = Tables<'work_items'>;
+/** DB row plus wire alias for Jira issue key (from `pm_external`). */
+export type DbWorkItem = Tables<'work_items'> & {
+  jira_issue_key?: string | null;
+};
 
 /**
  * Map a Prisma mutation select (assignee/reporter embeds) to the PostgREST
@@ -56,7 +62,7 @@ export type DbWorkItem = Tables<'work_items'>;
 export function mapPrismaWorkItemMutationRow(
   row: WorkItemListRowWithDescription
 ): DbWorkItem {
-  return {
+  return withJiraIssueKeyDtoField({
     ...row,
     due_date: row.due_date
       ? (toDateOnly(row.due_date.toISOString()) as string)
@@ -64,7 +70,7 @@ export function mapPrismaWorkItemMutationRow(
     done_at: row.done_at?.toISOString() ?? null,
     created_at: row.created_at.toISOString(),
     updated_at: row.updated_at.toISOString(),
-  } as unknown as DbWorkItem;
+  }) as unknown as DbWorkItem;
 }
 
 export interface DbGithubPullRequest {
@@ -336,7 +342,9 @@ export class WorkItemRepository {
       throw new Error('Failed to get work-item');
     }
 
-    return data as unknown as DbWorkItem;
+    return withJiraIssueKeyDtoField(
+      data as { pm_external?: unknown }
+    ) as unknown as DbWorkItem;
   }
 
   async getProjectWorkflowConfig(
@@ -532,7 +540,8 @@ export class WorkItemRepository {
         state: workItemStateToJson(synced.state) as Prisma.InputJsonValue,
         ...(synced.doneAt !== undefined ? { done_at: synced.doneAt } : {}),
         story_points: input.story_points,
-        jira_issue_key: input.jira_issue_key,
+        pm_external:
+          workItemPmExternalFromJiraKey(input.jira_issue_key) ?? Prisma.DbNull,
         description:
           input.description == null
             ? Prisma.DbNull
@@ -607,7 +616,11 @@ export class WorkItemRepository {
         story_points: input.story_points,
         parent_id: input.parent_id ?? null,
         ...(input.jira_issue_key !== undefined
-          ? { jira_issue_key: input.jira_issue_key }
+          ? {
+              pm_external:
+                workItemPmExternalFromJiraKey(input.jira_issue_key) ??
+                Prisma.DbNull,
+            }
           : {}),
         ...(synced.doneAt !== undefined ? { done_at: synced.doneAt } : {}),
         ...prismaAuditUpdate(input.updatedBy),
@@ -623,20 +636,24 @@ export class WorkItemRepository {
   }
 
   async listLinkedPRs(workItemId: string): Promise<DbGithubPullRequest[]> {
-    const db = this.db as unknown as SupabaseClient<Database>;
+    const rows = await prisma.version_control_pull_requests.findMany({
+      where: { work_item_id: workItemId },
+      orderBy: { created_at: 'desc' },
+    });
 
-    const { data, error } = await db
-      .from('github_pull_requests')
-      .select('*')
-      .eq('work_item_id', workItemId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('error. failed to list linked github PRs:', error.message);
-      throw new Error('Failed to list linked PRs');
-    }
-
-    return data ?? [];
+    return rows.map((row) => ({
+      id: row.id,
+      work_item_id: row.work_item_id,
+      pr_number: row.pr_number,
+      repo_owner: row.repo_owner,
+      repo_name: row.repo_name,
+      pr_title: row.pr_title,
+      pr_url: row.pr_url,
+      branch_name: row.branch_name,
+      status: row.status,
+      created_at: row.created_at.toISOString(),
+      updated_at: row.updated_at.toISOString(),
+    }));
   }
 
   async linkPR(
@@ -651,10 +668,11 @@ export class WorkItemRepository {
       status?: string | null;
     }
   ): Promise<DbGithubPullRequest> {
-    const upserted = await prisma.github_pull_requests.upsert({
+    const upserted = await prisma.version_control_pull_requests.upsert({
       where: {
-        work_item_id_repo_owner_repo_name_pr_number: {
+        work_item_id_vendor_repo_owner_repo_name_pr_number: {
           work_item_id: workItemId,
+          vendor: 'github',
           repo_owner: payload.repoOwner,
           repo_name: payload.repoName,
           pr_number: payload.prNumber,
@@ -662,6 +680,7 @@ export class WorkItemRepository {
       },
       create: {
         work_item_id: workItemId,
+        vendor: 'github',
         pr_number: payload.prNumber,
         repo_owner: payload.repoOwner,
         repo_name: payload.repoName,
@@ -679,23 +698,23 @@ export class WorkItemRepository {
       },
     });
 
-    const db = this.db as unknown as SupabaseClient<Database>;
-    const { data, error } = await db
-      .from('github_pull_requests')
-      .select('*')
-      .eq('id', upserted.id)
-      .single();
-
-    if (error) {
-      console.error('error. failed to link GitHub PR:', error.message);
-      throw new Error('Failed to link GitHub PR');
-    }
-
-    return data;
+    return {
+      id: upserted.id,
+      work_item_id: upserted.work_item_id,
+      pr_number: upserted.pr_number,
+      repo_owner: upserted.repo_owner,
+      repo_name: upserted.repo_name,
+      pr_title: upserted.pr_title,
+      pr_url: upserted.pr_url,
+      branch_name: upserted.branch_name,
+      status: upserted.status,
+      created_at: upserted.created_at.toISOString(),
+      updated_at: upserted.updated_at.toISOString(),
+    };
   }
 
   async unlinkPR(workItemId: string, prId: string): Promise<void> {
-    await prisma.github_pull_requests.deleteMany({
+    await prisma.version_control_pull_requests.deleteMany({
       where: { id: prId, work_item_id: workItemId },
     });
   }
@@ -704,27 +723,28 @@ export class WorkItemRepository {
     github_repo: string | null;
     github_token: string | null;
   } | null> {
-    const { data: workItem, error: workItemError } = await this.db
-      .from('work_items')
-      .select('project_id')
-      .eq('id', workItemId)
-      .maybeSingle();
+    const workItem = await prisma.work_items.findUnique({
+      where: { id: workItemId },
+      select: { project_id: true },
+    });
 
-    if (workItemError || !workItem) {
+    if (!workItem) {
       return null;
     }
 
-    const { data: project, error: projectError } = await this.db
-      .from('projects')
-      .select('github_repo, github_token')
-      .eq('id', workItem.project_id)
-      .maybeSingle();
+    const project = await prisma.projects.findUnique({
+      where: { id: workItem.project_id },
+      select: { vc_external: true },
+    });
 
-    if (projectError || !project) {
+    if (!project) {
       return null;
     }
 
-    return project;
+    return {
+      github_repo: githubRepoFromVcExternal(project.vc_external),
+      github_token: null,
+    };
   }
 
   /**

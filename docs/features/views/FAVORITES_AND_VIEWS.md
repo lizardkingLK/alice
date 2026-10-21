@@ -72,7 +72,7 @@ Related:
   preserved). If only an archived row exists for that path, it is restored and updated.
 - Soft archive: `status = archived` (same convention as projects/teams).
 - `search` stores the query string **without** a leading `?`.
-- RLS: owner full CRUD; recipients can **read** active views shared with them.
+- RLS (`rls_hybrid_p1_saved_views`): owner full CRUD on `saved_views`; recipients **SELECT** active views shared with them; share rows managed by view owner, readable by recipient.
 
 ---
 

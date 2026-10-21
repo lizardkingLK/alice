@@ -17,6 +17,7 @@ import {
   ChatTurnRoleEnum,
   type WorkItemPriority,
   type WorkItemType,
+  withJiraIssueKeyDtoField,
 } from '@repo/types';
 import {
   type ChatViewContext,
@@ -1668,13 +1669,17 @@ export class ChatService {
       select: {
         id: true,
         title: true,
-        jira_issue_key: true,
+        pm_external: true,
         type: true,
         status: true,
         parent_id: true,
         priority: true,
       },
     });
+
+    const existingWorkItemsForImport = existingWorkItems.map((row) =>
+      withJiraIssueKeyDtoField(row)
+    );
 
     const ctx = createBatchImportContext({
       userId,
@@ -1684,7 +1689,7 @@ export class ChatService {
       skipInvalidHierarchy,
       updateExisting,
       workItemService: this.deps.workItemService,
-      existingWorkItems,
+      existingWorkItems: existingWorkItemsForImport,
       skippedItems,
       toolActionsPerformed,
     });
@@ -1696,7 +1701,7 @@ export class ChatService {
 
       const omittedItems = identifyOmittedWorkItems({
         projectKey,
-        existingWorkItems,
+        existingWorkItems: existingWorkItemsForImport,
         matchedExistingIds: ctx.matchedExistingIds,
       });
 

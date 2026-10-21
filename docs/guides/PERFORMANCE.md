@@ -106,7 +106,7 @@ GET/list pages now read **straight from Supabase in the server component** inste
 
 Each server reader mirrors the query in the matching API repository (same `select`, filters, ordering, and pagination) so results are identical.
 
-**Security note:** the API uses the Supabase **service-role** key (bypasses RLS); the web SSR client uses the **anon key + user session**. Reads rely on default table grants for the `authenticated` role with RLS unenforced. If RLS is ever enforced, list/detail policies must be added for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, `team_members`, and `access_allowlist` before these reads keep working. Allowlist list is also **admin-gated in RSC** (`isAdmin`); do not treat table grants as the only control.
+**Security note:** the API uses the Supabase **service-role** key (bypasses RLS); the web SSR client uses the **anon key + user session**. Hybrid RLS ([RLS_HYBRID_ROLLOUT.md](./RLS_HYBRID_ROLLOUT.md)): P0 locks secrets/admission tables to service-role only; P1 adds `can_access_project` SELECT policies on collaborative tables (`projects`, `work_items`, …). The anon key remains public by design.
 
 ```1:10:apps/web/app/work-items/_services/workItem.service.server.ts
 import { User as DbUser } from '@/app/users/_services/users.service';
@@ -386,7 +386,7 @@ Targeting sub-1.5s. Ordered by impact-to-effort.
 
 **Current focus:** optional M8 follow-ups (re-measure TTFB; nested-donut / other chart slide prefetch). Hierarchy + backlog/project workspace RPCs + dashboard first-slide chart series prefetch + **discussion feeds realtime** are done. See [REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md).
 
-**RLS reminder:** M1 reads run with the `authenticated` role and RLS unenforced. Before enabling RLS, add SELECT policies for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members`. Dropdown cache (§2.7) uses the **service-role** client inside `unstable_cache` only.
+**RLS reminder:** P0 secrets lockdown + P1 membership SELECT policies are live (see [RLS_HYBRID_ROLLOUT.md](./RLS_HYBRID_ROLLOUT.md)). Dropdown cache (§2.7) uses the **service-role** client inside `unstable_cache` only.
 
 ---
 

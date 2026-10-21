@@ -115,6 +115,44 @@ export {
   type WorkflowBoardRuntime,
 } from './board-runtime.js';
 export * from './jira-import-types.js';
+export {
+  jiraProviderConfigSchema,
+  buildJiraProviderConfig,
+  parseJiraProviderConfig,
+  tryParseJiraProviderConfig,
+  type JiraProviderConfig,
+} from './pm-connection-config.js';
+export {
+  projectPmExternalSchema,
+  workItemPmExternalSchema,
+  buildJiraProjectPmExternal,
+  buildJiraWorkItemPmExternal,
+  tryParseProjectPmExternal,
+  tryParseWorkItemPmExternal,
+  jiraProjectKeyFromPmExternal,
+  jiraIssueKeyFromPmExternal,
+  projectPmExternalFromJiraKey,
+  workItemPmExternalFromJiraKey,
+  withJiraProjectDtoFields,
+  withJiraIssueKeyDtoField,
+  type ProjectPmExternal,
+  type WorkItemPmExternal,
+} from './pm-external.js';
+export {
+  githubProviderConfigSchema,
+  buildGithubProviderConfig,
+  tryParseGithubProviderConfig,
+  type GithubProviderConfig,
+} from './vc-connection-config.js';
+export {
+  projectVcExternalSchema,
+  buildGithubProjectVcExternal,
+  tryParseProjectVcExternal,
+  githubRepoFromVcExternal,
+  projectVcExternalFromGithubRepo,
+  withGithubProjectDtoFields,
+  type ProjectVcExternal,
+} from './vc-external.js';
 export * from './github-integration-types.js';
 export {
   createWorkItemBodySchema,
@@ -190,6 +228,7 @@ export {
   type WorkItemTypeRemovalApplyResult,
   withoutIntegrationSecrets,
   withoutGithubToken,
+  mapProjectRowForWire,
   DynamicFieldTypeEnum,
   TemplateFieldCategoryEnum,
   TemplateFieldKeyEnum,

@@ -15,7 +15,20 @@ export {
   type ListProjectsQuery,
 } from '@repo/types/api/v1';
 
-export type Project = Omit<Tables<'projects'>, 'github_token'> & {
+export type Project = Omit<
+  Tables<'projects'>,
+  | 'github_token'
+  | 'pm_connection_id'
+  | 'pm_external'
+  | 'vc_connection_id'
+  | 'vc_external'
+> & {
+  /** Wire aliases mapped from `pm_connection_id` / `pm_external`. */
+  jira_connection_id?: string | null;
+  jira_project_key?: string | null;
+  /** Wire aliases mapped from `vc_connection_id` / `vc_external`. */
+  github_repo?: string | null;
+  github_connection_id?: string | null;
   owner?:
     | (Pick<User, 'id' | 'name' | 'email'> & {
         profile_picture?: string | null;
@@ -45,10 +58,10 @@ type ProjectMutationInput = Omit<
   | 'deleted_at'
   | 'created_by'
   | 'updated_by'
-  | 'jira_connection_id'
-  | 'jira_project_key'
-  | 'github_repo'
-  | 'github_token'
+  | 'pm_connection_id'
+  | 'pm_external'
+  | 'vc_connection_id'
+  | 'vc_external'
   | 'logo_url'
   | 'cover_picture'
   | 'workflow_config'

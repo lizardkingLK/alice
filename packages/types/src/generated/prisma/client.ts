@@ -133,10 +133,17 @@ export type access_allowlist = Prisma.access_allowlistModel
  */
 export type access_requests = Prisma.access_requestsModel
 /**
- * Model jira_connections
- * 
+ * Model project_management_connections
+ * OAuth connections for project-management vendors (Jira first).
+ * Vendor-specific display fields live in `provider_config` (never tokens).
  */
-export type jira_connections = Prisma.jira_connectionsModel
+export type project_management_connections = Prisma.project_management_connectionsModel
+/**
+ * Model version_control_connections
+ * OAuth connections for version-control vendors (GitHub first).
+ * Vendor-specific display fields live in `provider_config` (never tokens).
+ */
+export type version_control_connections = Prisma.version_control_connectionsModel
 /**
  * Model chat_conversations
  * 
@@ -168,10 +175,10 @@ export type charts = Prisma.chartsModel
  */
 export type chart_shares = Prisma.chart_sharesModel
 /**
- * Model github_pull_requests
+ * Model version_control_pull_requests
  * 
  */
-export type github_pull_requests = Prisma.github_pull_requestsModel
+export type version_control_pull_requests = Prisma.version_control_pull_requestsModel
 /**
  * Model integrations
  * Workspace-level integration instance (chat models, Slack, Figma, etc.).
