@@ -90,7 +90,7 @@ export class GithubRepository {
     });
   }
 
-  async findActiveAdminConnection(): Promise<VcConnectionFull | null> {
+  findActiveAdminConnection(): Promise<VcConnectionFull | null> {
     return prisma.version_control_connections.findFirst({
       where: {
         vendor: VersionControlVendor.github,
@@ -102,14 +102,14 @@ export class GithubRepository {
     });
   }
 
-  async getUserById(userId: string) {
+  getUserById(userId: string) {
     return prisma.users.findUnique({
       where: { id: userId },
       select: { id: true, name: true, role: true },
     });
   }
 
-  async listByUserId(userId: string): Promise<VcConnectionPublic[]> {
+  listByUserId(userId: string): Promise<VcConnectionPublic[]> {
     return prisma.version_control_connections.findMany({
       where: {
         vendor: VersionControlVendor.github,
@@ -121,7 +121,7 @@ export class GithubRepository {
     });
   }
 
-  async listAllActive(): Promise<VcConnectionPublic[]> {
+  listAllActive(): Promise<VcConnectionPublic[]> {
     return prisma.version_control_connections.findMany({
       where: {
         vendor: VersionControlVendor.github,
@@ -132,14 +132,14 @@ export class GithubRepository {
     });
   }
 
-  async findById(id: string): Promise<VcConnectionFull | null> {
+  findById(id: string): Promise<VcConnectionFull | null> {
     return prisma.version_control_connections.findFirst({
       where: { id, vendor: VersionControlVendor.github },
       select: FULL_SELECT,
     });
   }
 
-  async findByIdForUser(
+  findByIdForUser(
     id: string,
     userId: string
   ): Promise<VcConnectionFull | null> {
@@ -207,8 +207,8 @@ export class GithubRepository {
   ): Promise<VcConnectionFull> {
     const current = await this.findById(id);
     const mergedConfig = {
-      ...(tryParseGithubProviderConfig(current?.provider_config) ?? {}),
-      ...(data.providerConfigPatch ?? {}),
+      ...tryParseGithubProviderConfig(current?.provider_config),
+      ...data.providerConfigPatch,
     };
 
     return prisma.version_control_connections.update({
