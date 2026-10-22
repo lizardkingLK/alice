@@ -23,6 +23,7 @@ type CommentsListResponse = {
 export function mapCommentApiRow(row: Record<string, unknown>): CommentItem {
   return {
     ...row,
+    reactions: row.reactions ?? [],
     created_at: asIso(row.created_at),
     updated_at: asIso(row.updated_at),
   } as unknown as CommentItem;

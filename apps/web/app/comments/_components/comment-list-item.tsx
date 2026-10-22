@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import type { JSONContent } from '@tiptap/react';
 import Link from 'next/link';
+import type { CommentReactionEmoji } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { Badge } from '@repo/ui/components/ui/badge';
 import {
@@ -19,12 +20,9 @@ import {
   Pencil,
   Reply,
   RotateCcw,
-  SmilePlus,
   Tag,
-  ThumbsUp,
   Trash2,
 } from '@repo/ui/lib/icons';
-import { formatDateTime } from '@/app/_shared/utility';
 import { UserAvatar } from '@/components/user-avatar';
 import { useRealtime } from '@/components/realtime/realtime-provider';
 import {
@@ -32,6 +30,8 @@ import {
   type CommentUserMentionTarget,
 } from '@/app/comments/_components/comment-content-view';
 import { CommentEditorFormShell } from '@/app/comments/_components/comment-editor-form-shell';
+import { CommentReactionBar } from '@/app/comments/_components/comment-reaction-bar';
+import { CommentRelativeTime } from '@/app/comments/_components/comment-relative-time';
 import type {
   CommentItem,
   CommentUser,
@@ -40,6 +40,13 @@ import type {
 
 const ISSUE_BADGE_CLASS =
   'border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400';
+
+/* eslint-disable no-unused-vars -- documents reaction toggle contract */
+type ReactionToggleHandler = (
+  emoji: CommentReactionEmoji,
+  action: 'add' | 'remove'
+) => void;
+/* eslint-enable no-unused-vars */
 
 type CommentListItemProps = {
   comment: CommentItem;
@@ -61,9 +68,168 @@ type CommentListItemProps = {
   onArchive: () => void;
   onRestore: () => void;
   onPurge: () => void;
-  // eslint-disable-next-line no-unused-vars -- insert emoji into reply/edit
-  onQuickEmoji?: (emoji: string) => void;
+  onToggleReaction?: ReactionToggleHandler;
+  isReactionSyncing?: boolean;
 };
+
+function CommentWorkItemBadge({
+  workItem,
+}: Readonly<{ workItem: NonNullable<CommentItem['work_item']> }>) {
+  return (
+    <Badge
+      variant="outline"
+      asChild
+      className={cn('gap-1.5 font-semibold', ISSUE_BADGE_CLASS)}
+    >
+      <Link href={`/work-items/${workItem.id}`}>
+        <Tag className="size-3 shrink-0" />
+        {workItem.key}
+        <ExternalLink className="size-3 opacity-60" />
+      </Link>
+    </Badge>
+  );
+}
+
+function CommentOwnerActions({
+  onStartEdit,
+  onArchive,
+}: Readonly<{ onStartEdit: () => void; onArchive: () => void }>) {
+  return (
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Edit"
+        title="Edit"
+        onClick={onStartEdit}
+      >
+        <Pencil className="size-3.5" />
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="More actions"
+            title="More actions"
+          >
+            <MoreHorizontal className="size-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem
+            onClick={onArchive}
+            className="gap-2 text-amber-600 focus:text-amber-600"
+          >
+            <Archive className="size-3.5" />
+            Archive
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  );
+}
+
+function CommentActiveFooter({
+  comment,
+  activeUserId,
+  users,
+  isOwner,
+  isReactionSyncing,
+  onStartReply,
+  onStartEdit,
+  onArchive,
+  onToggleReaction,
+}: Readonly<{
+  comment: CommentItem;
+  activeUserId?: string;
+  users: CommentUser[];
+  isOwner: boolean;
+  isReactionSyncing?: boolean;
+  onStartReply: () => void;
+  onStartEdit: () => void;
+  onArchive: () => void;
+  onToggleReaction?: ReactionToggleHandler;
+}>) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <CommentRelativeTime value={comment.created_at} />
+        {onToggleReaction ? (
+          <CommentReactionBar
+            reactions={comment.reactions}
+            activeUserId={activeUserId}
+            users={users}
+            isSyncing={isReactionSyncing}
+            onToggle={onToggleReaction}
+          />
+        ) : null}
+      </div>
+      <div className="text-muted-foreground flex flex-wrap items-center gap-0.5">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Reply"
+          title="Reply"
+          onClick={onStartReply}
+        >
+          <Reply className="size-3.5" />
+        </Button>
+        {isOwner ? (
+          <CommentOwnerActions
+            onStartEdit={onStartEdit}
+            onArchive={onArchive}
+          />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function CommentArchivedFooter({
+  createdAt,
+  isOwner,
+  onRestore,
+  onPurge,
+}: Readonly<{
+  createdAt: string;
+  isOwner: boolean;
+  onRestore: () => void;
+  onPurge: () => void;
+}>) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <CommentRelativeTime value={createdAt} />
+      {isOwner ? (
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-emerald-600"
+            onClick={onRestore}
+          >
+            <RotateCcw className="size-3.5" />
+            Restore
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-destructive gap-1.5"
+            onClick={onPurge}
+          >
+            <Trash2 className="size-3.5" />
+            Purge
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export function CommentListItem({
   comment,
@@ -82,10 +248,13 @@ export function CommentListItem({
   onArchive,
   onRestore,
   onPurge,
-  onQuickEmoji,
+  onToggleReaction,
+  isReactionSyncing = false,
 }: Readonly<CommentListItemProps>) {
   const { isUserOnline } = useRealtime();
   const isOwner = comment.author_id === activeUserId;
+  const showActiveFooter = !isEditing && comment.status === 'active';
+  const showArchivedFooter = !isEditing && comment.status === 'archived';
 
   return (
     <div
@@ -123,24 +292,11 @@ export function CommentListItem({
                 </span>
               ) : null}
             </div>
-            <p className="text-muted-foreground text-xs">
-              {formatDateTime(comment.created_at)}
-            </p>
           </div>
 
           <div className="flex items-center gap-1">
             {showWorkItemBadge && comment.work_item ? (
-              <Badge
-                variant="outline"
-                asChild
-                className={cn('gap-1.5 font-semibold', ISSUE_BADGE_CLASS)}
-              >
-                <Link href={`/work-items/${comment.work_item.id}`}>
-                  <Tag className="size-3 shrink-0" />
-                  {comment.work_item.key}
-                  <ExternalLink className="size-3 opacity-60" />
-                </Link>
-              </Badge>
+              <CommentWorkItemBadge workItem={comment.work_item} />
             ) : null}
           </div>
         </div>
@@ -164,100 +320,27 @@ export function CommentListItem({
           />
         )}
 
-        {!isEditing && comment.status === 'active' ? (
-          <div className="text-muted-foreground flex flex-wrap items-center gap-0.5">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Reply"
-              title="Reply"
-              onClick={onStartReply}
-            >
-              <Reply className="size-3.5" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="React"
-              title="React"
-              onClick={() => onQuickEmoji?.('👍')}
-            >
-              <ThumbsUp className="size-3.5" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Add emoji"
-              title="Add emoji"
-              onClick={() => onQuickEmoji?.('😊')}
-            >
-              <SmilePlus className="size-3.5" />
-            </Button>
-            {isOwner ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Edit"
-                title="Edit"
-                onClick={onStartEdit}
-              >
-                <Pencil className="size-3.5" />
-              </Button>
-            ) : null}
-            {isOwner ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="More actions"
-                    title="More actions"
-                  >
-                    <MoreHorizontal className="size-3.5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem
-                    onClick={onArchive}
-                    className="gap-2 text-amber-600 focus:text-amber-600"
-                  >
-                    <Archive className="size-3.5" />
-                    Archive
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : null}
-          </div>
+        {showActiveFooter ? (
+          <CommentActiveFooter
+            comment={comment}
+            activeUserId={activeUserId}
+            users={users}
+            isOwner={isOwner}
+            isReactionSyncing={isReactionSyncing}
+            onStartReply={onStartReply}
+            onStartEdit={onStartEdit}
+            onArchive={onArchive}
+            onToggleReaction={onToggleReaction}
+          />
         ) : null}
 
-        {!isEditing && comment.status === 'archived' && isOwner ? (
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 text-emerald-600"
-              onClick={onRestore}
-            >
-              <RotateCcw className="size-3.5" />
-              Restore
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-destructive gap-1.5"
-              onClick={onPurge}
-            >
-              <Trash2 className="size-3.5" />
-              Purge
-            </Button>
-          </div>
+        {showArchivedFooter ? (
+          <CommentArchivedFooter
+            createdAt={comment.created_at}
+            isOwner={isOwner}
+            onRestore={onRestore}
+            onPurge={onPurge}
+          />
         ) : null}
 
         {isReplying ? replySlot : null}

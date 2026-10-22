@@ -24,6 +24,9 @@ state — same spirit as [W6 board moves](../board/REALTIME_BOARD_MOVES.md).
 - Channel rows are flat table payloads (no embeds). Author / actor / user names
   are resolved from already-loaded client user lists (comment users, project
   members). Missing users fall back to “Unknown”.
+- Comment **reactions** live on `comments.reactions` (JSONB). Reaction toggles
+  merge without optimistic locks; content edits still use `expectedUpdatedAt`.
+  See [COMMENT_REACTIONS.md](./COMMENT_REACTIONS.md).
 
 ## Channels
 
@@ -62,10 +65,25 @@ Shared subscriber: `apps/web/lib/realtime/use-scoped-table-realtime.ts`
 - Board-move style pending drag stacks (feeds are append/update lists).
 - Silent inbox notifications (still deferred).
 - Per-event refetch-by-id for embeds.
+- Redis / Bull write-behind for optimistic mutations (**future** — see below).
+
+## Future: Redis write-behind
+
+**Today** we absorb spammy optimistic mutations (comment reactions, and the same
+class of problem on board / backlog / calendar DnD) with **client-side serial
+queues + coalesce**, honest pending UI, and best-effort `keepalive` flush.
+That matches Alice’s current scale without a broker.
+
+**Later**, when cross-surface mutation volume or multi-tab durability justifies
+infra, prefer a real **write-behind** path (e.g. Redis-backed queue / buffer →
+batched Postgres writes → realtime fan-out). Until then: do **not** introduce
+Redis for per-user reaction or DnD bursts — ship the client pattern and keep
+server merges simple (see [COMMENT_REACTIONS.md](./COMMENT_REACTIONS.md)).
 
 ## Related
 
 - [REALTIME_BOARD_MOVES.md](../board/REALTIME_BOARD_MOVES.md) — W6 pattern reused
+- [COMMENT_REACTIONS.md](./COMMENT_REACTIONS.md) — reaction queue / coalesce pilot
 - [ACTIVITY.md](./ACTIVITY.md) — activity feed product notes
 - [PERFORMANCE.md](../../guides/PERFORMANCE.md) — sequencing
 - User guide: [Comments and activity](../../user-guide/work-items/comments-and-activity.md)

@@ -342,6 +342,7 @@ export const CommentsScalarFieldEnum = {
   author_id: 'author_id',
   parent_id: 'parent_id',
   content: 'content',
+  reactions: 'reactions',
   edited: 'edited',
   status: 'status',
   created_by: 'created_by',

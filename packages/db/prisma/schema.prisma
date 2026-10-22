@@ -561,6 +561,8 @@ model comments {
   author_id    String       @db.Uuid
   parent_id    String?      @db.Uuid
   content      Json
+  /// Flat reaction entries: [{ user_id, emoji }]. Counts are derived, not stored.
+  reactions    Json         @default("[]")
   edited       Boolean      @default(false)
   status       RecordStatus @default(active)
   created_by   String?      @db.Uuid

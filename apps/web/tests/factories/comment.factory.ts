@@ -35,6 +35,7 @@ export const commentFactory = {
       content: plainTextToCommentDoc(
         'Security audit completed for the auth module.'
       ),
+      reactions: [],
       edited: false,
       status: 'active',
       created_at: formatDateToISOString(2026, 6, 20, 10, 0, 0),

@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import {
   USER_PROJECTION_WITH_ROLE,
   isCommentDocEmpty,
+  type CommentReactionEmoji,
   type Json,
 } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
@@ -43,6 +44,7 @@ import {
   updateComment,
   archiveComment,
   restoreComment,
+  toggleCommentReaction,
 } from '../_services/comments.mutations.client';
 import { createCommentAction } from './actions';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
@@ -75,6 +77,7 @@ import {
   applyRealtimeCommentChange,
   type CommentRealtimeRow,
 } from '@/app/comments/_helpers/apply-realtime-comment-row';
+import { createCommentReactionMutationQueue } from '@/app/comments/_helpers/comment-reaction-mutation-queue';
 import { rowFromRealtimePayload } from '@/lib/realtime/realtime-change-row';
 import { useScopedTableRealtime } from '@/lib/realtime/use-scoped-table-realtime';
 
@@ -270,12 +273,86 @@ export function CommentsFeed({
   const modalEditorRef = useRef<CommentEditorHandle | null>(null);
   const composerRef = useRef<CommentComposerHandle | null>(null);
   const pendingUserMentionRef = useRef<CommentUserMentionTarget | null>(null);
+  const commentsRef = useRef(comments);
+  const activeUserIdRef = useRef(currentUserId ?? '');
+  const [reactionSyncingIds, setReactionSyncingIds] = useState(
+    () => new Set<string>()
+  );
 
   const { handleMutationError } = useOptimisticLock();
   const activeUserId = currentUserId ?? '';
+  commentsRef.current = comments;
+  activeUserIdRef.current = activeUserId;
   const currentUser = users.find((u) => u.id === activeUserId);
   const currentUserName = currentUser?.name ?? 'You';
   const currentUserImageUrl = currentUser?.profile_picture ?? null;
+
+  const reactionQueue = useMemo(
+    () =>
+      createCommentReactionMutationQueue({
+        getUserId: () => activeUserIdRef.current || undefined,
+        setComments,
+        getComment: (commentId) =>
+          commentsRef.current.find((comment) => comment.id === commentId),
+        sendToggle: async (commentId, emoji, action, sendOptions) => {
+          const updated = await toggleCommentReaction(
+            commentId,
+            emoji,
+            action,
+            { keepalive: sendOptions?.keepalive }
+          );
+          return {
+            commentId,
+            reactions: (updated.reactions ?? []) as Json,
+            updated_at: updated.updated_at,
+          };
+        },
+        onPendingChange: (commentId, isPending) => {
+          setReactionSyncingIds((prev) => {
+            const already = prev.has(commentId);
+            if (isPending === already) {
+              return prev;
+            }
+            const next = new Set(prev);
+            if (isPending) {
+              next.add(commentId);
+            } else {
+              next.delete(commentId);
+            }
+            return next;
+          });
+        },
+      }),
+    []
+  );
+
+  useEffect(() => {
+    const flushKeepalive = () => {
+      if (!reactionQueue.hasAnyPending()) {
+        return;
+      }
+      reactionQueue.flushPendingKeepalive();
+    };
+    const onPageHide = () => {
+      flushKeepalive();
+    };
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!reactionQueue.hasAnyPending()) {
+        return;
+      }
+      flushKeepalive();
+      // Native leave prompt only — browsers ignore custom message strings.
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+      flushKeepalive();
+    };
+  }, [reactionQueue]);
 
   const targetWorkItemId =
     workItemId ||
@@ -334,7 +411,12 @@ export function CommentsFeed({
     onChange: ({ eventType, new: nextRow, old: prevRow }) => {
       setComments((prev) => {
         const row = rowFromRealtimePayload(eventType, nextRow, prevRow);
-        return applyRealtimeCommentChange(prev, eventType, row, users) ?? prev;
+        return (
+          applyRealtimeCommentChange(prev, eventType, row, users, {
+            isReactionFlushPending: (commentId) =>
+              reactionQueue.isPending(commentId),
+          }) ?? prev
+        );
       });
     },
   });
@@ -537,6 +619,14 @@ export function CommentsFeed({
     await handleCreateComment(doc, parent.id, parent.work_item_id);
   };
 
+  const handleToggleReaction = (
+    commentId: string,
+    emoji: CommentReactionEmoji,
+    action: 'add' | 'remove'
+  ) => {
+    reactionQueue.enqueue(commentId, emoji, action);
+  };
+
   const renderParentThreads = (showWorkItemBadge: boolean) =>
     parentComments.map((parent) => (
       <CommentThread
@@ -562,6 +652,8 @@ export function CommentsFeed({
         onArchive={handleArchive}
         onRestore={handleRestore}
         onPurge={setDeletingCommentId}
+        onToggleReaction={handleToggleReaction}
+        isReactionSyncing={(commentId) => reactionSyncingIds.has(commentId)}
       />
     ));
 

@@ -252,13 +252,19 @@ export async function getResponse<T>(
     headers.set('Content-Type', 'application/json');
   }
 
+  // Keepalive unload flushes must not use AbortSignal.timeout — the tab is
+  // already tearing down and a timeout aborts the request immediately.
+  const signal = fetchInit.keepalive
+    ? fetchInit.signal
+    : mergeAbortSignals(timeoutMs, fetchInit.signal);
+
   let response: Response;
   try {
     response = await fetch(`${apiUrl}${path}`, {
       cache: 'no-store',
       ...fetchInit,
       headers,
-      signal: mergeAbortSignals(timeoutMs, fetchInit.signal),
+      signal,
     });
   } catch (error) {
     if (isNetworkConnectivityError(error)) {

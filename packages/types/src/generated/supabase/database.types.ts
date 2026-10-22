@@ -513,6 +513,7 @@ export type Database = {
           edited: boolean
           id: string
           parent_id: string | null
+          reactions: Json
           status: Database["public"]["Enums"]["RecordStatus"]
           updated_at: string
           updated_by: string | null
@@ -526,6 +527,7 @@ export type Database = {
           edited?: boolean
           id?: string
           parent_id?: string | null
+          reactions?: Json
           status?: Database["public"]["Enums"]["RecordStatus"]
           updated_at: string
           updated_by?: string | null
@@ -539,6 +541,7 @@ export type Database = {
           edited?: boolean
           id?: string
           parent_id?: string | null
+          reactions?: Json
           status?: Database["public"]["Enums"]["RecordStatus"]
           updated_at?: string
           updated_by?: string | null

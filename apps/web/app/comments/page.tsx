@@ -37,6 +37,7 @@ const mockSeedComments: CommentItem[] = [
     parent_id: null,
     content:
       'Reviewed the user registration service logic. The RLS policies look solid and session refresh behavior is verified.',
+    reactions: [],
     edited: false,
     status: 'active',
     created_at: '2026-07-20T14:32:00Z',
@@ -67,6 +68,7 @@ const mockSeedComments: CommentItem[] = [
     parent_id: 'comment-seed-1',
     content:
       'Great update! Let us ensure we add e2e test cases covering edge-case token expiration in Cypress.',
+    reactions: [],
     edited: false,
     status: 'active',
     created_at: '2026-07-20T15:10:00Z',
@@ -92,6 +94,7 @@ const mockSeedComments: CommentItem[] = [
     parent_id: null,
     content:
       'Updated the drag-and-drop column transitions on the Kanban board. Column ordering persists smoothly now.',
+    reactions: [],
     edited: true,
     status: 'active',
     created_at: '2026-07-21T09:15:00Z',

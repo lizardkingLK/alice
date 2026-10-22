@@ -87,7 +87,9 @@ export const CommentComposer = forwardRef<
     }
     const doc = editorRef.current.getJSON();
     await onSubmit(doc);
-    editorRef.current.clear();
+    // Tab switches (e.g. Discussion → Activity) unmount the composer while
+    // create is in flight; skip clear if the editor is already gone.
+    editorRef.current?.clear();
   };
 
   const submitSafely = () => {

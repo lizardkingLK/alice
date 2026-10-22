@@ -1,5 +1,6 @@
 import type {
   CommentItem,
+  CommentRowFields,
   CommentUser,
 } from '@/app/comments/_services/comments.mutations.shared';
 import { isNewerUpdatedAt } from '@/app/board/_helpers/board-move-pending';
@@ -8,20 +9,9 @@ import {
   type RealtimeUserLookup,
 } from '@/lib/realtime/realtime-user-lookup';
 import type { ScopedRealtimeEvent } from '@/lib/realtime/use-scoped-table-realtime';
-import type { Json, Tables } from '@repo/types';
+import type { Json } from '@repo/types';
 
-export type CommentRealtimeRow = Pick<
-  Tables<'comments'>,
-  | 'id'
-  | 'work_item_id'
-  | 'author_id'
-  | 'parent_id'
-  | 'content'
-  | 'edited'
-  | 'status'
-  | 'created_at'
-  | 'updated_at'
->;
+export type CommentRealtimeRow = CommentRowFields;
 
 export type CommentAuthorLookup = RealtimeUserLookup;
 
@@ -44,6 +34,7 @@ function toCommentItem(
     author_id: row.author_id,
     parent_id: row.parent_id,
     content: row.content as Json,
+    reactions: (row.reactions ?? []) as Json,
     edited: row.edited,
     status: row.status,
     created_at: row.created_at,
@@ -54,6 +45,60 @@ function toCommentItem(
   };
 }
 
+function isValidUpsertRow(
+  row: Partial<CommentRealtimeRow>
+): row is CommentRealtimeRow {
+  return (
+    typeof row.id === 'string' &&
+    typeof row.work_item_id === 'string' &&
+    typeof row.author_id === 'string' &&
+    row.content !== undefined &&
+    typeof row.created_at === 'string' &&
+    typeof row.updated_at === 'string'
+  );
+}
+
+function replaceCommentAt(
+  comments: readonly CommentItem[],
+  index: number,
+  nextItem: CommentItem
+): CommentItem[] {
+  const next = [...comments];
+  next[index] = nextItem;
+  return next;
+}
+
+function applyUpsertIfNewer(
+  comments: readonly CommentItem[],
+  index: number,
+  fullRow: CommentRealtimeRow,
+  users: readonly CommentAuthorLookup[]
+): CommentItem[] | null {
+  if (index < 0) {
+    return [toCommentItem(fullRow, users), ...comments];
+  }
+
+  const current = comments[index]!;
+  if (!isNewerUpdatedAt(fullRow.updated_at, current.updated_at)) {
+    return null;
+  }
+
+  return replaceCommentAt(
+    comments,
+    index,
+    toCommentItem(fullRow, users, current)
+  );
+}
+
+export type ApplyRealtimeCommentOptions = {
+  /**
+   * When true for a comment id, keep local `reactions` (pending optimistic
+   * flush) instead of applying the channel payload's reactions.
+   */
+  // eslint-disable-next-line no-unused-vars -- predicate
+  isReactionFlushPending?: (commentId: string) => boolean;
+};
+
 /**
  * Merge a comments postgres_changes payload into the local feed list.
  * Returns null when the list is unchanged (echo / stale / invalid).
@@ -62,7 +107,8 @@ export function applyRealtimeCommentChange(
   comments: readonly CommentItem[],
   eventType: ScopedRealtimeEvent,
   row: Partial<CommentRealtimeRow> | null,
-  users: readonly CommentAuthorLookup[] = []
+  users: readonly CommentAuthorLookup[] = [],
+  options: ApplyRealtimeCommentOptions = {}
 ): CommentItem[] | null {
   if (eventType === 'DELETE') {
     const id = row?.id;
@@ -73,45 +119,25 @@ export function applyRealtimeCommentChange(
     return next.length === comments.length ? null : next;
   }
 
-  if (!row?.id || typeof row.id !== 'string') {
-    return null;
-  }
-  if (
-    typeof row.work_item_id !== 'string' ||
-    typeof row.author_id !== 'string' ||
-    row.content === undefined ||
-    typeof row.created_at !== 'string' ||
-    typeof row.updated_at !== 'string'
-  ) {
+  if (!row || !isValidUpsertRow(row)) {
     return null;
   }
 
-  const fullRow = row as CommentRealtimeRow;
-  const index = comments.findIndex((comment) => comment.id === fullRow.id);
+  const index = comments.findIndex((comment) => comment.id === row.id);
+  const existing = index >= 0 ? comments[index] : undefined;
+  const skipReactions =
+    Boolean(options.isReactionFlushPending?.(row.id)) && Boolean(existing);
 
-  if (eventType === 'INSERT') {
-    if (index >= 0) {
-      // Own create already applied; refresh if channel row is newer.
-      const current = comments[index]!;
-      if (!isNewerUpdatedAt(fullRow.updated_at, current.updated_at)) {
-        return null;
-      }
-      const next = [...comments];
-      next[index] = toCommentItem(fullRow, users, current);
-      return next;
-    }
+  const fullRow: CommentRealtimeRow = {
+    ...row,
+    reactions: skipReactions
+      ? (existing!.reactions ?? [])
+      : (row.reactions ?? existing?.reactions ?? []),
+  };
+
+  if (eventType === 'INSERT' && index < 0) {
     return [toCommentItem(fullRow, users), ...comments];
   }
 
-  // UPDATE
-  if (index < 0) {
-    return [toCommentItem(fullRow, users), ...comments];
-  }
-  const current = comments[index]!;
-  if (!isNewerUpdatedAt(fullRow.updated_at, current.updated_at)) {
-    return null;
-  }
-  const next = [...comments];
-  next[index] = toCommentItem(fullRow, users, current);
-  return next;
+  return applyUpsertIfNewer(comments, index, fullRow, users);
 }
