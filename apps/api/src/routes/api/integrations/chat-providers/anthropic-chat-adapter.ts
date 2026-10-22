@@ -421,14 +421,17 @@ export function anthropicMessageToChatLlmResponse(
 /** Parse JSON without exposing provider response content in thrown errors. */
 export async function anthropicMessageResponseToChatLlmResponse(
   response: Response,
-  tools: AliceChatTools
+  tools: AliceChatTools,
+  signal?: AbortSignal
 ): Promise<ChatLlmResponse> {
   let payload: unknown;
   try {
     payload = await response.json();
   } catch {
+    signal?.throwIfAborted();
     throw invalidResponse('invalid_json');
   }
+  signal?.throwIfAborted();
 
   return anthropicMessageToChatLlmResponse(payload, tools);
 }

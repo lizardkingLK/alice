@@ -54,10 +54,12 @@ export class AnthropicChatProvider implements ChatModelProvider {
       modelId: input.model,
       messagesCount: input.contents.length,
       resolveUserFacingError: resolveAnthropicUserFacingError,
+      signal: input.signal,
       fetchOnce: () =>
         fetch(apiUrl, {
           method: 'POST',
           redirect: 'error',
+          ...(input.signal ? { signal: input.signal } : {}),
           headers: {
             'Content-Type': 'application/json',
             'x-api-key': input.apiKey,
@@ -73,6 +75,10 @@ export class AnthropicChatProvider implements ChatModelProvider {
         }),
     });
 
-    return anthropicMessageResponseToChatLlmResponse(response, input.tools);
+    return anthropicMessageResponseToChatLlmResponse(
+      response,
+      input.tools,
+      input.signal
+    );
   }
 }

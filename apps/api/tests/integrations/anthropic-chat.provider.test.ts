@@ -81,6 +81,7 @@ describe('AnthropicChatProvider', () => {
         'anthropic-version': ANTHROPIC_API_VERSION,
       },
     });
+    expect(init).not.toHaveProperty('signal');
     expect(JSON.parse(String(init?.body))).toEqual({
       model: 'claude-sonnet-4-20250514',
       max_tokens: ANTHROPIC_MAX_TOKENS,
@@ -231,13 +232,63 @@ describe('AnthropicChatProvider', () => {
     );
     vi.stubGlobal('fetch', fetchMock);
 
-    await new AnthropicChatProvider().generateWithTools({
+    const result = await new AnthropicChatProvider().generateWithTools({
       ...baseInput,
       tools: [],
     });
 
+    expect(result.candidates?.[0]?.content?.parts).toEqual([{ text: 'Done' }]);
     const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
     expect(body).not.toHaveProperty('tools');
+  });
+
+  it('forwards a supplied AbortSignal to fetch', async () => {
+    const controller = new AbortController();
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
+      anthropicResponse([{ type: 'text', text: 'Done' }])
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await new AnthropicChatProvider().generateWithTools({
+      ...baseInput,
+      signal: controller.signal,
+    });
+
+    expect(fetchMock.mock.calls[0]?.[1]?.signal).toBe(controller.signal);
+  });
+
+  it('preserves cancellation while reading the response body', async () => {
+    const controller = new AbortController();
+    const response = anthropicResponse([{ type: 'text', text: 'unused' }]);
+    const jsonSpy = vi.spyOn(response, 'json').mockImplementation(
+      () =>
+        new Promise<never>((_resolve, reject) => {
+          controller.signal.addEventListener(
+            'abort',
+            () =>
+              reject(
+                new DOMException('The operation was aborted.', 'AbortError')
+              ),
+            { once: true }
+          );
+        })
+    );
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response)
+    );
+
+    const promise = new AnthropicChatProvider().generateWithTools({
+      ...baseInput,
+      signal: controller.signal,
+    });
+    const expectation = expect(promise).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+
+    await vi.waitFor(() => expect(jsonSpy).toHaveBeenCalledOnce());
+    controller.abort();
+    await expectation;
   });
 
   it('rejects unsafe endpoints before sending the API key', async () => {

@@ -13,6 +13,7 @@ export type ChatModelGenerateInput = {
   contents: ChatContentTurn[];
   systemInstruction: string;
   tools: AliceChatTools;
+  signal?: AbortSignal;
 };
 
 /** Minimal contract — tools + system instruction stay in ChatService. */

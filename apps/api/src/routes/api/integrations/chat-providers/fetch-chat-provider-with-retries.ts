@@ -34,9 +34,56 @@ export type FetchChatProviderWithRetriesParams = {
   messagesCount: number;
   fetchOnce: () => Promise<Response>;
   resolveUserFacingError: ResolveChatProviderUserFacingError;
+  signal?: AbortSignal;
   retries?: number;
   initialDelayMs?: number;
 };
+
+function throwIfAborted(signal: AbortSignal | undefined): void {
+  signal?.throwIfAborted();
+}
+
+function abortReason(signal: AbortSignal): unknown {
+  try {
+    signal.throwIfAborted();
+  } catch (error: unknown) {
+    return error;
+  }
+
+  return new DOMException('The operation was aborted.', 'AbortError');
+}
+
+async function waitForRetry(
+  delay: number,
+  signal: AbortSignal | undefined
+): Promise<void> {
+  if (!signal) {
+    await new Promise<void>((resolve) => setTimeout(resolve, delay));
+    return;
+  }
+
+  throwIfAborted(signal);
+  await new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const cleanup = () => signal.removeEventListener('abort', onAbort);
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve();
+    }, delay);
+    const onAbort = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      cleanup();
+      reject(abortReason(signal));
+    };
+
+    signal.addEventListener('abort', onAbort, { once: true });
+    if (signal.aborted) onAbort();
+  });
+}
 
 async function handleNetworkError(
   params: FetchChatProviderWithRetriesParams,
@@ -62,7 +109,7 @@ async function handleNetworkError(
   console.warn(
     `${params.providerLabel} network error. Retrying in ${delay}ms...`
   );
-  await new Promise((resolve) => setTimeout(resolve, delay));
+  await waitForRetry(delay, params.signal);
 }
 
 async function handleTransientError(
@@ -73,6 +120,7 @@ async function handleTransientError(
   delay: number
 ): Promise<void> {
   const errorText = await response.text();
+  throwIfAborted(params.signal);
   logLlmProviderError(params.provider, {
     timestamp: new Date().toISOString(),
     status: response.status,
@@ -90,7 +138,7 @@ async function handleTransientError(
   console.warn(
     `${params.providerLabel} transient error ${response.status}. Retrying in ${delay}ms...`
   );
-  await new Promise((resolve) => setTimeout(resolve, delay));
+  await waitForRetry(delay, params.signal);
 }
 
 async function handleNonOkResponse(
@@ -99,6 +147,7 @@ async function handleNonOkResponse(
   attempt: number
 ): Promise<never> {
   const errorText = await response.text();
+  throwIfAborted(params.signal);
   logLlmProviderError(params.provider, {
     timestamp: new Date().toISOString(),
     status: response.status,
@@ -129,16 +178,20 @@ export async function fetchChatProviderWithRetries(
   const retries = params.retries ?? 3;
   let delay = params.initialDelayMs ?? 2000;
 
+  throwIfAborted(params.signal);
   for (let i = 0; i < retries; i++) {
+    throwIfAborted(params.signal);
     const isLastAttempt = i === retries - 1;
     let response: Response;
     try {
       response = await params.fetchOnce();
     } catch (networkErr: unknown) {
+      throwIfAborted(params.signal);
       await handleNetworkError(params, networkErr, i + 1, isLastAttempt, delay);
       delay *= 2;
       continue;
     }
+    throwIfAborted(params.signal);
 
     if (isTransientHttpStatus(response.status)) {
       await handleTransientError(params, response, i + 1, isLastAttempt, delay);
