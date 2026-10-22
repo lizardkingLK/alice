@@ -8,6 +8,7 @@ export const updateComment = service.updateComment;
 export const forceUpdateComment = service.forceUpdateComment;
 export const archiveComment = service.archiveComment;
 export const restoreComment = service.restoreComment;
+export const toggleCommentReaction = service.toggleCommentReaction;
 
 export type {
   CommentUser,

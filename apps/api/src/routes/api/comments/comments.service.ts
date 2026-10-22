@@ -3,6 +3,7 @@ import {
   type ListCommentsQuery,
   type CommentListRow,
   type CommentDetailRow,
+  type CommentReactionEmoji,
   paginationMeta,
 } from '@repo/types';
 import { CommentsRepository, type CommentRow } from './comments.repository';
@@ -160,6 +161,21 @@ export class CommentsService {
 
   async hardDeleteComment(id: string): Promise<void> {
     await this.commentsRepository.hardDelete(id);
+  }
+
+  async toggleCommentReaction(
+    commentId: string,
+    actorId: string,
+    emoji: CommentReactionEmoji,
+    action: 'add' | 'remove'
+  ): Promise<CommentRow> {
+    await this.commentsRepository.requireProjectMember(commentId, actorId);
+    return this.commentsRepository.mergeReaction(
+      commentId,
+      actorId,
+      emoji,
+      action
+    );
   }
 
   async listCommentsPaginated(

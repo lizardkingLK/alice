@@ -227,4 +227,27 @@ describe('createCommentsService', () => {
       body: JSON.stringify({ expectedUpdatedAt }),
     });
   });
+
+  it('toggles a comment reaction via POST (no lock)', async () => {
+    // Arrange
+    const comment = commentFactory.build({
+      reactions: [{ user_id: 'user-1', emoji: '👍' }],
+    });
+    const apiFetch = vi.fn().mockResolvedValue({ data: comment, error: null });
+    const service = createCommentsService(apiFetch);
+
+    // Act
+    const result = await service.toggleCommentReaction(
+      'comment-1',
+      '👍',
+      'add'
+    );
+
+    // Assert
+    expect(apiFetch).toHaveBeenCalledWith('/api/comments/comment-1/reactions', {
+      method: 'POST',
+      body: JSON.stringify({ emoji: '👍', action: 'add' }),
+    });
+    expect(result).toEqual(comment);
+  });
 });

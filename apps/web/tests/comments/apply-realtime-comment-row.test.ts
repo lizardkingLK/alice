@@ -21,6 +21,7 @@ function row(overrides: Partial<CommentRealtimeRow> = {}): CommentRealtimeRow {
     author_id: 'user-1',
     parent_id: null,
     content: { type: 'doc', content: [] },
+    reactions: [],
     edited: false,
     status: 'active',
     created_at: '2026-10-01T00:00:00.000Z',
@@ -63,6 +64,27 @@ describe('applyRealtimeCommentChange', () => {
       users
     );
     expect(next?.[0]?.edited).toBe(true);
+  });
+
+  it('keeps local reactions while a flush is pending', () => {
+    const existing = [
+      item({
+        reactions: [{ user_id: 'user-1', emoji: '👍' }],
+      }),
+    ];
+    const next = applyRealtimeCommentChange(
+      existing,
+      'UPDATE',
+      row({
+        reactions: [],
+        edited: true,
+        updated_at: '2026-10-02T00:00:00.000Z',
+      }),
+      users,
+      { isReactionFlushPending: () => true }
+    );
+    expect(next?.[0]?.edited).toBe(true);
+    expect(next?.[0]?.reactions).toEqual([{ user_id: 'user-1', emoji: '👍' }]);
   });
 
   it('removes on DELETE', () => {

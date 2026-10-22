@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import type { JSONContent } from '@tiptap/react';
-import { plainTextToCommentDoc, type Json } from '@repo/types';
+import type { CommentReactionEmoji } from '@repo/types';
 import { X } from '@repo/ui/lib/icons';
 import { CommentEditorFormShell } from '@/app/comments/_components/comment-editor-form-shell';
 import { CommentListItem } from '@/app/comments/_components/comment-list-item';
@@ -12,6 +11,14 @@ import type {
   CommentUser,
   CommentWorkItemOption,
 } from '@/app/comments/_services/comments.mutations.shared';
+
+/* eslint-disable no-unused-vars -- documents reaction toggle contract */
+type ReactionToggleHandler = (
+  commentId: string,
+  emoji: CommentReactionEmoji,
+  action: 'add' | 'remove'
+) => void;
+/* eslint-enable no-unused-vars */
 
 type CommentThreadProps = {
   parent: CommentItem;
@@ -43,6 +50,9 @@ type CommentThreadProps = {
   onRestore: (commentId: string) => void | Promise<void>;
   // eslint-disable-next-line no-unused-vars -- callback signatures
   onPurge: (commentId: string) => void;
+  onToggleReaction: ReactionToggleHandler;
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  isReactionSyncing?: (commentId: string) => boolean;
 };
 
 function bindCommentItemHandlers(options: {
@@ -62,7 +72,7 @@ function bindCommentItemHandlers(options: {
   onRestore: (commentId: string) => void | Promise<void>;
   // eslint-disable-next-line no-unused-vars -- callback signatures
   onPurge: (commentId: string) => void;
-  onBeforeStartReply?: () => void;
+  onToggleReaction: ReactionToggleHandler;
 }) {
   return {
     onStartEdit: () => options.onStartEdit(options.commentId),
@@ -71,7 +81,6 @@ function bindCommentItemHandlers(options: {
       options.onSaveEdit(options.commentId, doc);
     },
     onStartReply: () => {
-      options.onBeforeStartReply?.();
       options.onStartReply(options.replyParentId);
     },
     onCancelReply: options.onCancelReply,
@@ -82,6 +91,12 @@ function bindCommentItemHandlers(options: {
       options.onRestore(options.commentId);
     },
     onPurge: () => options.onPurge(options.commentId),
+    onToggleReaction: (
+      emoji: CommentReactionEmoji,
+      action: 'add' | 'remove'
+    ) => {
+      options.onToggleReaction(options.commentId, emoji, action);
+    },
   };
 }
 
@@ -107,29 +122,21 @@ export function CommentThread({
   onArchive,
   onRestore,
   onPurge,
+  onToggleReaction,
+  isReactionSyncing,
 }: Readonly<CommentThreadProps>) {
-  const [replySeedEmoji, setReplySeedEmoji] = useState<string | null>(null);
   const isReplying = replyingParentId === parent.id;
-
-  const clearReplySeed = () => {
-    setReplySeedEmoji(null);
-  };
-
-  const handleCancelReply = () => {
-    clearReplySeed();
-    onCancelReply();
-  };
 
   const sharedHandlers = {
     onStartEdit,
     onCancelEdit,
     onSaveEdit,
     onStartReply,
-    onCancelReply: handleCancelReply,
+    onCancelReply,
     onArchive,
     onRestore,
     onPurge,
-    onBeforeStartReply: clearReplySeed,
+    onToggleReaction,
   };
 
   const parentHandlers = bindCommentItemHandlers({
@@ -148,25 +155,16 @@ export function CommentThread({
         isReplying={isReplying}
         users={users}
         workItems={workItems}
+        isReactionSyncing={isReactionSyncing?.(parent.id)}
         {...parentHandlers}
-        onQuickEmoji={(emoji) => {
-          setReplySeedEmoji(emoji);
-          onStartReply(parent.id);
-        }}
         onUserMentionClick={onUserMentionClick}
         replySlot={
           isReplying ? (
             <CommentEditorFormShell
-              key={replySeedEmoji ?? 'reply'}
               className="mt-2"
               users={users}
               workItems={workItems}
               placeholder="Write a reply..."
-              initialContent={
-                replySeedEmoji
-                  ? (plainTextToCommentDoc(replySeedEmoji) as Json)
-                  : undefined
-              }
               avatarName={currentUserName}
               avatarImageUrl={currentUserImageUrl}
               autoFocus
@@ -178,15 +176,11 @@ export function CommentThread({
                 </span>
               }
               isSubmitDisabled={isSubmitting}
-              onCancel={handleCancelReply}
+              onCancel={onCancelReply}
               onSubmit={(doc) => {
-                onPostReply(doc, parent)
-                  .then(() => {
-                    clearReplySeed();
-                  })
-                  .catch((error) => {
-                    console.error('error. failed to post reply', error);
-                  });
+                onPostReply(doc, parent).catch((error) => {
+                  console.error('error. failed to post reply', error);
+                });
               }}
             />
           ) : null
@@ -204,6 +198,7 @@ export function CommentThread({
               isReplying={false}
               users={users}
               workItems={workItems}
+              isReactionSyncing={isReactionSyncing?.(reply.id)}
               {...bindCommentItemHandlers({
                 commentId: reply.id,
                 replyParentId: parent.id,

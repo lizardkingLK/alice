@@ -13,6 +13,7 @@ const {
   archiveCommentMock,
   restoreCommentMock,
   hardDeleteCommentMock,
+  toggleCommentReactionMock,
 } = vi.hoisted(() => ({
   listCommentsPaginatedMock: vi.fn(),
   getCommentDetailMock: vi.fn(),
@@ -21,6 +22,7 @@ const {
   archiveCommentMock: vi.fn(),
   restoreCommentMock: vi.fn(),
   hardDeleteCommentMock: vi.fn(),
+  toggleCommentReactionMock: vi.fn(),
 }));
 
 vi.mock('../../src/middlewares/auth', () => ({
@@ -42,6 +44,7 @@ const commentsService = {
   archiveComment: archiveCommentMock,
   restoreComment: restoreCommentMock,
   hardDeleteComment: hardDeleteCommentMock,
+  toggleCommentReaction: toggleCommentReactionMock,
 } as unknown as CommentsService;
 
 async function withApp(run: (baseUrl: string) => Promise<void>): Promise<void> {
@@ -296,6 +299,53 @@ describe('comments routes', () => {
           '44444444-4444-4444-8444-444444444444',
           expect.any(String)
         );
+      });
+    });
+
+    it('handles POST /:id/reactions (merge toggle without lock)', async () => {
+      const comment = createCommentListRow({
+        reactions: [{ user_id: 'user-1', emoji: '👍' }],
+      });
+      toggleCommentReactionMock.mockResolvedValue(comment);
+
+      await withApp(async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/api/comments/${comment.id}/reactions`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emoji: '👍', action: 'add' }),
+          }
+        );
+        const body = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(body.data.id).toBe(comment.id);
+        expect(body.error).toBeNull();
+        expect(toggleCommentReactionMock).toHaveBeenCalledWith(
+          comment.id,
+          'user-1',
+          '👍',
+          'add'
+        );
+      });
+    });
+
+    it('rejects invalid reaction emoji with 400', async () => {
+      await withApp(async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/api/comments/44444444-4444-4444-8444-444444444444/reactions`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emoji: 'pizza', action: 'add' }),
+          }
+        );
+        const body = await response.json();
+
+        expect(response.status).toBe(400);
+        expect(body.data).toBeNull();
+        expect(toggleCommentReactionMock).not.toHaveBeenCalled();
       });
     });
   });

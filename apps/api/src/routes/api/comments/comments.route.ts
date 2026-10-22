@@ -8,6 +8,7 @@ import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import {
   commentLockActionSchema,
   createCommentSchema,
+  toggleCommentReactionBodySchema,
   updateCommentSchema,
 } from './comments.schemas';
 import { CommentsService } from './comments.service';
@@ -214,6 +215,46 @@ export function createCommentsRouter(deps: CommentsRouterDeps) {
         const message =
           error instanceof Error ? error.message : 'Failed to restore comment';
         res.status(500).json({ data: null, error: message });
+      }
+    }
+  );
+
+  commentsRouter.post(
+    '/:id/reactions',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.id);
+      if (!parsedId.success) {
+        return res
+          .status(400)
+          .json({ data: null, error: 'Invalid comment id' });
+      }
+
+      const validation = toggleCommentReactionBodySchema.safeParse(req.body);
+      if (!validation.success) {
+        return res
+          .status(400)
+          .json({ data: null, error: z.treeifyError(validation.error) });
+      }
+
+      try {
+        const updated = await commentsService.toggleCommentReaction(
+          parsedId.data,
+          req.userId!,
+          validation.data.emoji,
+          validation.data.action
+        );
+        res.json({ data: updated, error: null });
+      } catch (error) {
+        if (error instanceof CommentAccessError) {
+          return res.status(403).json({ data: null, error: error.message });
+        }
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Failed to update comment reaction';
+        const status = message === 'Comment not found' ? 404 : 500;
+        res.status(status).json({ data: null, error: message });
       }
     }
   );

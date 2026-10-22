@@ -276,6 +276,7 @@ describe('Comment Form Dialog & Editor', () => {
       author_id: 'user-admin-1',
       parent_id: null,
       content: plainTextToCommentDoc('New testing comment text.'),
+      reactions: [],
       edited: false,
       status: 'active',
       created_at: new Date().toISOString(),

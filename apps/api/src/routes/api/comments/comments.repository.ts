@@ -10,6 +10,8 @@ import {
   commentWorkItemSelect,
   type CommentListRow,
   type CommentDetailRow,
+  type CommentReactionEmoji,
+  mergeCommentReaction,
   paginationMeta,
 } from '@repo/types';
 import { Prisma, RecordStatus } from '@repo/types/prisma';
@@ -26,6 +28,7 @@ export type CommentRow = {
   author_id: string;
   parent_id: string | null;
   content: Json;
+  reactions: Json;
   edited: boolean;
   status: 'active' | 'archived' | 'deleted';
   created_at: string;
@@ -52,6 +55,7 @@ const commentMutationSelect = {
   author_id: true,
   parent_id: true,
   content: true,
+  reactions: true,
   edited: true,
   status: true,
   created_at: true,
@@ -93,6 +97,7 @@ export class CommentsRepository {
       return {
         ...row,
         content: row.content as Json,
+        reactions: row.reactions as Json,
         created_at: row.created_at.toISOString(),
         updated_at: row.updated_at.toISOString(),
       } as unknown as CommentRow;
@@ -200,6 +205,66 @@ export class CommentsRepository {
 
   async hardDelete(id: string): Promise<void> {
     await prisma.comments.deleteMany({ where: { id } });
+  }
+
+  /**
+   * Merge one user+emoji intent into reactions JSONB.
+   * Uses Prisma update (not interactive FOR UPDATE / $queryRaw) so we avoid
+   * Postgres `unknown`-param plan errors from tagged raw SQL. Same-user spam
+   * is serialized by the web reaction queue; multi-user merges stay idempotent
+   * per pair via mergeCommentReaction.
+   */
+  async mergeReaction(
+    id: string,
+    userId: string,
+    emoji: CommentReactionEmoji,
+    action: 'add' | 'remove'
+  ): Promise<CommentRow> {
+    try {
+      const current = await prisma.comments.findUnique({
+        where: { id },
+        select: { reactions: true },
+      });
+      if (!current) {
+        throw new Error('Comment not found');
+      }
+
+      const next = mergeCommentReaction(
+        current.reactions,
+        userId,
+        emoji,
+        action
+      );
+
+      const { count } = await prisma.comments.updateMany({
+        where: { id },
+        data: {
+          reactions: next as Prisma.InputJsonValue,
+          updated_at: new Date(),
+        },
+      });
+      if (count === 0) {
+        throw new Error('Comment not found');
+      }
+
+      const row = await this.getMutationRowById(id);
+      if (!row) {
+        throw new Error('Comment not found');
+      }
+      return row;
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Comment not found') {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to merge comment reaction:', message, {
+        commentId: id,
+        userId,
+        emoji,
+        action,
+      });
+      throw new Error('Failed to update comment reaction');
+    }
   }
 
   async listAccessibleProjectIds(actorId: string): Promise<string[]> {

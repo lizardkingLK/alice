@@ -1,7 +1,8 @@
-import type { Json, Tables } from '@repo/types';
 import {
   commentContentToPlainText,
   jiraIssueKeyFromPmExternal,
+  type Json,
+  type Tables,
 } from '@repo/types';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 import { ResponseDTO } from '@repo/types/connection';
@@ -64,18 +65,22 @@ export function mapCommentWorkItemOption(
   };
 }
 
-export type CommentItem = Pick<
+/** Shared comments table columns for feed items and realtime postgres rows. */
+export type CommentRowFields = Pick<
   Tables<'comments'>,
   | 'id'
   | 'work_item_id'
   | 'author_id'
   | 'parent_id'
   | 'content'
+  | 'reactions'
   | 'edited'
   | 'status'
   | 'created_at'
   | 'updated_at'
-> & {
+>;
+
+export type CommentItem = CommentRowFields & {
   author?: CommentUser | null;
   work_item?: CommentWorkItem | null;
   replies?: CommentItem[];
@@ -152,6 +157,23 @@ export function createCommentsService(
         method: 'POST',
         body: JSON.stringify({ expectedUpdatedAt }),
       });
+    },
+
+    async toggleCommentReaction(
+      id: string,
+      emoji: string,
+      action: 'add' | 'remove',
+      options?: { keepalive?: boolean }
+    ): Promise<CommentItem> {
+      const res = await apiFetch<ResponseDTO<CommentItem>>(
+        `${apiComments}/${id}/reactions`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ emoji, action }),
+          ...(options?.keepalive === true ? { keepalive: true } : {}),
+        }
+      );
+      return res.data!;
     },
   };
 }

@@ -170,6 +170,7 @@ export function buildMockComment({
     author_id: activeUserId,
     parent_id: parentId,
     content,
+    reactions: [],
     edited: false,
     status: 'active',
     created_at: new Date().toISOString(),
