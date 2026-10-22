@@ -94,9 +94,7 @@ export function useBoardStatusMoves(options: UseBoardStatusMovesOptions): {
   const usesCustomBoardConfigRef = useRef(usesCustomBoardConfig);
   usesCustomBoardConfigRef.current = usesCustomBoardConfig;
   /** Last server-acked placement — source column for error toasts (not optimistic UI). */
-  const lastAckPlacementRef = useRef(
-    new Map<string, BoardPlacementDesired>()
-  );
+  const lastAckPlacementRef = useRef(new Map<string, BoardPlacementDesired>());
   /** Labels for the in-flight flush, set in `send` before the PATCH. */
   const flushColumnLabelsRef = useRef(
     new Map<string, { source: string; target: string }>()
@@ -254,10 +252,7 @@ export function useBoardStatusMoves(options: UseBoardStatusMovesOptions): {
           const ackPlacement = lastAckPlacementRef.current.get(id);
           const sourceColumnName =
             (ackPlacement &&
-              columnNameForPlacement(
-                ackPlacement,
-                boardColumnsRef.current
-              )) ??
+              columnNameForPlacement(ackPlacement, boardColumnsRef.current)) ??
             'the current column';
           const targetColumnName =
             columnNameForPlacement(desired, boardColumnsRef.current) ??

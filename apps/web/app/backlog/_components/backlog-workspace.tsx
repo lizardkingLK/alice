@@ -1060,6 +1060,7 @@ export function BacklogWorkspace({
           sprints={sprintList}
           projectMembers={projectMembers}
           isManagerOrAdmin={isManagerOrAdmin}
+          isSyncing={pendingSprintMoveIds.size > 0}
           activeTab={activeTab}
           onTabChange={setActiveTab}
           preferredLayout={preferredLayout}

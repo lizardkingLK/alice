@@ -55,8 +55,8 @@ in defaults, the sprint cards pane can focus that sprint for the project.
    to the backlog). Child items follow their parent’s sprint — move the parent
    (or unlink it) if you need to plan a child separately. Re-drags while a
    save is running keep the latest sprint; rows dim slightly until the flush
-   finishes. Closing the tab with pending sprint moves may show a leave
-   warning.
+   finishes, and a small **Saving…** indicator appears on the backlog toolbar.
+   Closing the tab with pending sprint moves may show a leave warning.
 
 Managers and admins can **Create Sprint** from the toolbar **+** menu. The form
 defaults to your backlog **default project** (or the project currently selected

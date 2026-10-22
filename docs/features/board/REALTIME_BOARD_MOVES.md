@@ -77,6 +77,9 @@ Same destination twice: still settle on one commit; second client toasts once.
   echoes do not clobber local intent.
 - Honest pending UI (`pendingStatusIds` / dim in static mode) + native
   `beforeunload` / `pagehide` keepalive flush (`usePendingMutationUnload`).
+- Toolbar **Saving…** chrome (`PendingSyncIndicator`) while any status move
+  flush is in flight (realtime and static). Same pattern on calendar due-date
+  DnD and backlog sprint DnD; comment reactions keep their per-row spinner.
 - Cleared when the lane’s pending flush count hits zero; 409 rebases ack to the
   server row (toast, no merge dialog).
 
