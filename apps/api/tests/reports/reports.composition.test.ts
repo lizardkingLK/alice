@@ -2,6 +2,10 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { ReportsAiInsightsService } from '../../src/routes/api/reports/reports.ai-insights.service';
 import { ReportsService } from '../../src/routes/api/reports/reports.service';
 
+vi.mock('../../src/lib/supabase', () => ({
+  supabase: {},
+}));
+
 let composition: typeof import('../../src/config/composition.js');
 
 describe('reports dependency composition', () => {
