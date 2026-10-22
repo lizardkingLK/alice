@@ -54,10 +54,10 @@ Related:
 ### Tier 2 locks
 
 - Browser → Render **reader** → Neon
-- Enqueue: Express **post-commit** publisher (generic interceptor) → Upstash
+- Enqueue: Express **post-commit** publisher (generic interceptor) → **Upstash Redis + BullMQ** (see [WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md); not QStash-as-primary)
 - Neon holds a **lean** `work_items` projection (+ chart reads), not a full row mirror of the whole schema
 - Queue **consumer on `worker`**; **reader** HTTP-only
-- **Streamer** = Pusher auth/BFF until outgrown
+- **Streamer** = Pusher auth/BFF until outgrown (native WS later if needed)
 - Cutover: dual-run + feature flag
 
 ### Tier 3 locks
@@ -68,18 +68,20 @@ Related:
 
 ---
 
-## Future apps rename (before Tier 3)
+## Future apps (Tier 2+)
 
-| Today      | Target     | Role                                                                |
-| ---------- | ---------- | ------------------------------------------------------------------- |
-| `apps/web` | `client`   | UI (Vercel)                                                         |
-| `apps/api` | `writer`   | Mutations + post-commit publish (Vercel)                            |
-| —          | `reader`   | Neon-backed read HTTP API (Render)                                  |
-| —          | `streamer` | Realtime gateway (Pusher auth / façade)                             |
-| —          | `worker`   | Long-running jobs, queue consumers, heavy crons (Render or similar) |
+Keep **`web` / `api` names**. Add siblings as needed (do not rename to `client` /
+`writer` for symmetry — see [WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md)).
 
-Tier 2 may add `reader` / `worker` without renaming `web` / `api`. Rename
-`client` / `writer` just before Tier 3.
+| App            | Role                                                                |
+| -------------- | ------------------------------------------------------------------- |
+| `apps/web`     | UI (Vercel) — unchanged name                                        |
+| `apps/api`     | Mutations + post-commit publish (Vercel) — unchanged name           |
+| `apps/reader`  | Neon-backed read HTTP API (Render) — later                          |
+| `apps/streamer`| Realtime gateway (Pusher auth / façade; native WS if outgrown)      |
+| `apps/worker`  | Long-running jobs, BullMQ consumers, AI tools, heavy crons (Render) |
+
+Tier 2 may add `worker` / `streamer` / `reader` without renaming `web` / `api`.
 
 ---
 
