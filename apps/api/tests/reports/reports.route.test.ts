@@ -99,7 +99,10 @@ describe('POST /api/v1/reports/generate', () => {
 
         expect(response.status).toBe(200);
         await expect(response.json()).resolves.toEqual({ data: generated });
-        expect(generateMock).toHaveBeenCalledWith(ACTOR_ID, request);
+        expect(generateMock).toHaveBeenCalledWith(ACTOR_ID, {
+          ...request,
+          includeAiInsights: false,
+        });
       }
     );
   });
