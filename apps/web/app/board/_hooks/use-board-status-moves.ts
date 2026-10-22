@@ -9,10 +9,7 @@ import {
   type SetStateAction,
 } from 'react';
 import type { BoardColumn } from '@repo/types/api/v1';
-import {
-  resolveBoardMove,
-  resolveItemColumnId,
-} from '@/app/board/_helpers/board-columns';
+import { resolveBoardMove } from '@/app/board/_helpers/board-columns';
 import { mergeBoardPlacementRow } from '@/app/board/_helpers/board-move-pending';
 import { handleBoardStatusMoveError } from '@/app/board/_helpers/board-status-move';
 import type { BoardSyncPrefs } from '@/app/board/_helpers/board-sync-storage';
@@ -44,6 +41,21 @@ function placementsEqual(
   b: BoardPlacementDesired
 ): boolean {
   return a.status === b.status && a.board_column_id === b.board_column_id;
+}
+
+function columnNameForPlacement(
+  placement: BoardPlacementDesired,
+  columns: readonly BoardColumn[]
+): string | undefined {
+  if (placement.board_column_id) {
+    const byId = columns.find(
+      (column) => column.id === placement.board_column_id
+    );
+    if (byId) {
+      return byId.name;
+    }
+  }
+  return columns.find((column) => column.status === placement.status)?.name;
 }
 
 type UseBoardStatusMovesOptions = {
@@ -82,6 +94,14 @@ export function useBoardStatusMoves(options: UseBoardStatusMovesOptions): {
   boardColumnsRef.current = boardColumns;
   const usesCustomBoardConfigRef = useRef(usesCustomBoardConfig);
   usesCustomBoardConfigRef.current = usesCustomBoardConfig;
+  /** Last server-acked placement — source column for error toasts (not optimistic UI). */
+  const lastAckPlacementRef = useRef(
+    new Map<string, BoardPlacementDesired>()
+  );
+  /** Labels for the in-flight flush, set in `send` before the PATCH. */
+  const flushColumnLabelsRef = useRef(
+    new Map<string, { source: string; target: string }>()
+  );
 
   const [pendingStatusIds, setPendingStatusIds] = useState(
     () => new Set<string>()
@@ -171,7 +191,12 @@ export function useBoardStatusMoves(options: UseBoardStatusMovesOptions): {
         areEqual: placementsEqual,
         getAckSeed: (id) => {
           const item = workItemsRef.current.find((row) => row.id === id);
-          return item ? placementFromItem(item) : undefined;
+          if (!item) {
+            return undefined;
+          }
+          const seed = placementFromItem(item);
+          lastAckPlacementRef.current.set(id, seed);
+          return seed;
         },
         getExpectedUpdatedAt: (id) =>
           workItemsRef.current.find((row) => row.id === id)?.updated_at,
@@ -179,24 +204,19 @@ export function useBoardStatusMoves(options: UseBoardStatusMovesOptions): {
           restorePlacement(id, desired.status, desired.board_column_id);
         },
         reconcileToAck: (id, ack) => {
+          lastAckPlacementRef.current.set(id, ack);
           restorePlacement(id, ack.status, ack.board_column_id);
         },
         onPendingChange: (id, isPending) => {
           setPendingStatusIds((prev) => toggleIdInSet(prev, id, isPending));
         },
         onFlushError: (id, error) => {
-          const item = workItemsRef.current.find((row) => row.id === id);
-          const sourceColumnName =
-            item &&
-            boardColumnsRef.current.find(
-              (column) =>
-                column.id === resolveItemColumnId(item, boardColumnsRef.current)
-            )?.name;
+          const labels = flushColumnLabelsRef.current.get(id);
           handleBoardStatusMoveError(
             error,
             {
-              sourceColumnName: sourceColumnName ?? 'the current column',
-              targetColumnName: 'another column',
+              sourceColumnName: labels?.source ?? 'the current column',
+              targetColumnName: labels?.target ?? 'another column',
             },
             {
               revert: () => {
@@ -211,14 +231,12 @@ export function useBoardStatusMoves(options: UseBoardStatusMovesOptions): {
                   typeof row.status === 'string' &&
                   typeof row.updated_at === 'string'
                 ) {
-                  moveQueueRef.current.acknowledge(
-                    id,
-                    {
-                      status: row.status as DbWorkItem['status'],
-                      board_column_id: row.board_column_id ?? null,
-                    },
-                    row.updated_at
-                  );
+                  const ack = {
+                    status: row.status as DbWorkItem['status'],
+                    board_column_id: row.board_column_id ?? null,
+                  };
+                  lastAckPlacementRef.current.set(id, ack);
+                  moveQueueRef.current.acknowledge(id, ack, row.updated_at);
                 }
               },
               onFailure: (message) => {
@@ -229,6 +247,22 @@ export function useBoardStatusMoves(options: UseBoardStatusMovesOptions): {
         },
         send: async (id, desired, expectedUpdatedAt, sendOptions) => {
           setStatusError(null);
+          const ackPlacement = lastAckPlacementRef.current.get(id);
+          const sourceColumnName =
+            (ackPlacement &&
+              columnNameForPlacement(
+                ackPlacement,
+                boardColumnsRef.current
+              )) ??
+            'the current column';
+          const targetColumnName =
+            columnNameForPlacement(desired, boardColumnsRef.current) ??
+            'another column';
+          flushColumnLabelsRef.current.set(id, {
+            source: sourceColumnName,
+            target: targetColumnName,
+          });
+
           const response = await updateWorkItemStatus(
             id,
             desired.status,
@@ -245,9 +279,11 @@ export function useBoardStatusMoves(options: UseBoardStatusMovesOptions): {
             );
           }
           const synced = response.data;
+          const ack = placementFromItem(synced);
+          lastAckPlacementRef.current.set(id, ack);
           syncWorkItem(id, synced);
           return {
-            ack: placementFromItem(synced),
+            ack,
             expectedUpdatedAt: synced.updated_at,
           };
         },
