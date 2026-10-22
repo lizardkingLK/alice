@@ -207,6 +207,7 @@ export function ReportsWorkspace({ projects, sprints }: ReportsWorkspaceProps) {
       ),
     };
   });
+  const [includeAiInsights, setIncludeAiInsights] = useState(false);
   const [report, setReport] = useState<GenerateReportResponse | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -269,6 +270,7 @@ export function ReportsWorkspace({ projects, sprints }: ReportsWorkspaceProps) {
           ? { projectIds: config.projectIds }
           : {}),
         ...(config.sprintIds.length > 0 ? { sprintIds: config.sprintIds } : {}),
+        includeAiInsights,
       };
       setReport(await generateDailyReport(request));
     } catch (caught) {
@@ -364,6 +366,33 @@ export function ReportsWorkspace({ projects, sprints }: ReportsWorkspaceProps) {
                 >
                   Choose how much information to include in your report.
                 </p>
+              </div>
+
+              <div className="flex items-start gap-2 rounded-md border p-3">
+                <Checkbox
+                  id="include-ai-insights"
+                  checked={includeAiInsights}
+                  aria-describedby="include-ai-insights-description"
+                  onCheckedChange={(checked) => {
+                    setIncludeAiInsights(checked === true);
+                    setError(null);
+                  }}
+                />
+                <div className="space-y-1">
+                  <Label
+                    htmlFor="include-ai-insights"
+                    className="cursor-pointer"
+                  >
+                    Include AI insights
+                  </Label>
+                  <p
+                    id="include-ai-insights-description"
+                    className="text-muted-foreground text-xs"
+                  >
+                    Use AI to explain progress, risks, and suggested next
+                    priorities.
+                  </p>
+                </div>
               </div>
 
               <FilterList
@@ -493,6 +522,23 @@ export function ReportsWorkspace({ projects, sprints }: ReportsWorkspaceProps) {
               </div>
             ) : (
               <>
+                {report.aiInsightsStatus === 'unavailable' ? (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className="flex gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400"
+                  >
+                    <AlertCircle
+                      className="mt-0.5 size-4 shrink-0"
+                      aria-hidden
+                    />
+                    <span>
+                      AI insights are unavailable right now. Your regular report
+                      was generated successfully.
+                    </span>
+                  </div>
+                ) : null}
+
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                   <Metric
                     label="Completed"

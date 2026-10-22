@@ -59,7 +59,42 @@ describe('generateDailyReport', () => {
     expect(apiFetch).toHaveBeenCalledWith('/api/v1/reports/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...request, includeAiInsights: false }),
+    });
+  });
+
+  it('uses a longer timeout only when AI insights are enabled', async () => {
+    vi.mocked(apiFetch).mockResolvedValue({
+      data: {
+        ...VALID_RESPONSE,
+        aiInsightsStatus: 'generated',
+        aiInsights: {
+          completedWork: [],
+          importantInProgress: [],
+          pendingTasks: [],
+          blockedAndOverdue: [],
+          potentialRisks: [],
+          upcomingDeadlines: [],
+          nextPriorities: [],
+          overallProgress: 'The selected work is progressing.',
+        },
+      },
+    });
+    const request = {
+      reportType: 'daily' as const,
+      reportDate: '2026-10-20',
+      timezone: 'UTC',
+      verbosity: 'standard' as const,
+      includeAiInsights: true,
+    };
+
+    await generateDailyReport(request);
+
+    expect(apiFetch).toHaveBeenCalledWith('/api/v1/reports/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
+      timeoutMs: 35_000,
     });
   });
 

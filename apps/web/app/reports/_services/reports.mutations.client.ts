@@ -9,6 +9,8 @@ import {
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import { formatZodError } from '@/lib/zod/format-zod-error';
 
+const AI_REPORT_TIMEOUT_MS = 35_000;
+
 export async function generateDailyReport(
   input: GenerateReportRequest
 ): Promise<GenerateReportResponse> {
@@ -23,6 +25,9 @@ export async function generateDailyReport(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request.data),
+      ...(request.data.includeAiInsights
+        ? { timeoutMs: AI_REPORT_TIMEOUT_MS }
+        : {}),
     }
   );
   const report = generateReportResponseSchema.safeParse(response.data);

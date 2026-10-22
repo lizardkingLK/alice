@@ -77,6 +77,7 @@ import { pusher as pusherClient } from '../lib/pusher';
 import { PusherService } from '../routes/api/pusher/pusher.service';
 import { createPusherRouter } from '../routes/api/pusher/pusher.route';
 import { ReportsRepository } from '../routes/api/reports/reports.repository';
+import { ReportsAiInsightsService } from '../routes/api/reports/reports.ai-insights.service';
 import { ReportsService } from '../routes/api/reports/reports.service';
 import { createReportsRouter } from '../routes/api/reports/reports.route';
 
@@ -476,14 +477,26 @@ export const savedViews = createSavedViewsConfig(
 
 export const integrations = createIntegrationsConfig();
 export const pusher = createPusherConfig(users.usersRepository);
-function createReportsConfig() {
+function createReportsConfig(integrationsService: IntegrationsService) {
   const reportsRepository = new ReportsRepository(supabase);
-  const reportsService = new ReportsService(reportsRepository);
+  const reportsAiInsightsService = new ReportsAiInsightsService(
+    integrationsService
+  );
+  const reportsService = new ReportsService(
+    reportsRepository,
+    undefined,
+    reportsAiInsightsService
+  );
   const router = createReportsRouter({ reportsService });
-  return { reportsRepository, reportsService, router };
+  return {
+    reportsRepository,
+    reportsAiInsightsService,
+    reportsService,
+    router,
+  };
 }
 
-export const reports = createReportsConfig();
+export const reports = createReportsConfig(integrations.integrationsService);
 export const chat = createChatConfig(
   workItems.workItemService,
   sprints.sprintsService,
