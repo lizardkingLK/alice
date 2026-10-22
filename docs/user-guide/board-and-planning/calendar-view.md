@@ -53,7 +53,9 @@ drawer open.
 ## Change due dates
 
 Drag an item from the unscheduled list onto a day, or drag between days on the
-grid, to update its due date.
+grid, to update its due date. Re-drops while a save is in flight keep your
+latest day; closing the tab with pending due-date saves may show a leave
+warning and Alice attempts a keepalive flush.
 
 ---
 

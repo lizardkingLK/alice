@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type Dispatch,
@@ -21,6 +22,9 @@ import {
   applyRealtimeWorkItemRow,
   mergeWorkItemRealtimeRow,
 } from '@/lib/work-items/apply-realtime-work-item-row';
+import { createSerialCoalesceMutationQueue } from '@/lib/work-items/serial-coalesce-mutation-queue';
+import { toggleIdInSet } from '@/lib/work-items/toggle-id-in-set';
+import { usePendingMutationUnload } from '@/lib/work-items/use-pending-mutation-unload';
 import { useWorkItemsRealtime } from '@/lib/work-items/use-work-items-realtime';
 import {
   PAST_DUE_DATE_MESSAGE,
@@ -70,6 +74,12 @@ export function useCalendarDueDateDrag({
   );
   const suppressNextItemClickRef = useRef(false);
   const dueDateWarningClearTimerRef = useRef<number | null>(null);
+  const localWorkItemsRef = useRef(localWorkItems);
+  localWorkItemsRef.current = localWorkItems;
+  const resolveWorkItemRef = useRef(resolveWorkItem);
+  resolveWorkItemRef.current = resolveWorkItem;
+  const onItemScheduledRef = useRef(onItemScheduled);
+  onItemScheduledRef.current = onItemScheduled;
 
   useEffect(() => {
     return () => {
@@ -99,6 +109,13 @@ export function useCalendarDueDateDrag({
     }, 220);
   }, []);
 
+  const findItem = useCallback((id: string) => {
+    return (
+      localWorkItemsRef.current.find((item) => item.id === id) ??
+      resolveWorkItemRef.current?.(id)
+    );
+  }, []);
+
   const syncWorkItemDueDate = useCallback(
     (id: string, dueDate: string | null, updatedAt?: string) => {
       setLocalWorkItems((previous) => {
@@ -114,7 +131,7 @@ export function useCalendarDueDateDrag({
               : item
           );
         }
-        const source = resolveWorkItem?.(id);
+        const source = resolveWorkItemRef.current?.(id);
         if (!source || !dueDate) {
           return previous;
         }
@@ -128,7 +145,7 @@ export function useCalendarDueDateDrag({
         ];
       });
       if (dueDate) {
-        onItemScheduled?.(id);
+        onItemScheduledRef.current?.(id);
       }
       setItemToEdit((previous) =>
         previous?.id === id
@@ -140,16 +157,19 @@ export function useCalendarDueDateDrag({
           : previous
       );
     },
-    [onItemScheduled, resolveWorkItem, setItemToEdit, setLocalWorkItems]
+    [setItemToEdit, setLocalWorkItems]
   );
 
   const applyDueDateRow = useCallback(
     (row: Partial<DbWorkItem> & { id: string }, force = false) => {
+      if (!force && dueDateQueueRef.current.isPending(row.id)) {
+        return;
+      }
       setLocalWorkItems((previous) => {
         if (force) {
           const index = previous.findIndex((item) => item.id === row.id);
           if (index < 0) {
-            const source = resolveWorkItem?.(row.id);
+            const source = resolveWorkItemRef.current?.(row.id);
             if (!source) {
               return previous;
             }
@@ -159,7 +179,7 @@ export function useCalendarDueDateDrag({
               DUE_DATE_FIELDS
             );
             if (merged.due_date) {
-              onItemScheduled?.(row.id);
+              onItemScheduledRef.current?.(row.id);
             }
             return [merged, ...previous];
           }
@@ -172,7 +192,9 @@ export function useCalendarDueDateDrag({
           return next;
         }
         return (
-          applyRealtimeWorkItemRow(previous, row, DUE_DATE_FIELDS) ?? previous
+          applyRealtimeWorkItemRow(previous, row, DUE_DATE_FIELDS, {
+            isFlushPending: (id) => dueDateQueueRef.current.isPending(id),
+          }) ?? previous
         );
       });
       setItemToEdit((previous) => {
@@ -181,17 +203,89 @@ export function useCalendarDueDateDrag({
         }
         return mergeWorkItemRealtimeRow(previous, row, DUE_DATE_FIELDS);
       });
-      setPendingDueDateIds((previous) => {
-        if (!previous.has(row.id)) {
-          return previous;
-        }
-        const next = new Set(previous);
-        next.delete(row.id);
-        return next;
-      });
     },
-    [onItemScheduled, resolveWorkItem, setItemToEdit, setLocalWorkItems]
+    [setItemToEdit, setLocalWorkItems]
   );
+
+  const dueDateQueue = useMemo(
+    () =>
+      createSerialCoalesceMutationQueue<string | null>({
+        areEqual: (a, b) => a === b,
+        getAckSeed: (id) => {
+          const item = findItem(id);
+          if (!item) {
+            return undefined;
+          }
+          return dueDateDay(item.due_date);
+        },
+        getExpectedUpdatedAt: (id) => findItem(id)?.updated_at,
+        applyOptimistic: (id, desired) => {
+          syncWorkItemDueDate(id, desired);
+        },
+        reconcileToAck: (id, ack) => {
+          syncWorkItemDueDate(id, ack);
+        },
+        onPendingChange: (id, isPending) => {
+          setPendingDueDateIds((prev) => toggleIdInSet(prev, id, isPending));
+        },
+        onFlushError: (id, error) => {
+          if (isBoardMoveOptimisticLockError(error)) {
+            toastWorkItemDnDConflict(
+              CALENDAR_CONFLICT_TITLE,
+              CALENDAR_CONFLICT_DESCRIPTION
+            );
+            const serverRow = readBoardMoveConflictServerRow(error);
+            if (serverRow && typeof serverRow.updated_at === 'string') {
+              applyDueDateRow(serverRow, true);
+              dueDateQueueRef.current.acknowledge(
+                id,
+                dueDateDay(serverRow.due_date),
+                serverRow.updated_at
+              );
+            }
+            return;
+          }
+          let message: string;
+          if (error instanceof ApiError) {
+            message = error.message;
+          } else if (error instanceof Error) {
+            message = error.message;
+          } else {
+            message = 'Failed to update work item due date.';
+          }
+          showDueDateWarning(message);
+        },
+        send: async (id, desired, expectedUpdatedAt, sendOptions) => {
+          if (desired == null) {
+            throw new Error('Cannot flush a null due date from calendar drag.');
+          }
+          const formData = new FormData();
+          formData.set('due_date', desired);
+          const response = await updateWorkItem(
+            id,
+            formData,
+            expectedUpdatedAt,
+            { keepalive: sendOptions?.keepalive === true }
+          );
+          if (response.error || !response.data) {
+            throw new Error(
+              typeof response.error === 'string'
+                ? response.error
+                : 'Failed to update work item due date.'
+            );
+          }
+          const updated = response.data;
+          const ack = dueDateDay(updated.due_date) ?? desired;
+          syncWorkItemDueDate(id, ack, updated.updated_at);
+          return { ack, expectedUpdatedAt: updated.updated_at };
+        },
+      }),
+    [applyDueDateRow, findItem, showDueDateWarning, syncWorkItemDueDate]
+  );
+  const dueDateQueueRef = useRef(dueDateQueue);
+  dueDateQueueRef.current = dueDateQueue;
+
+  usePendingMutationUnload(dueDateQueue);
 
   useWorkItemsRealtime({
     enabled: Boolean(userId),
@@ -202,22 +296,17 @@ export function useCalendarDueDateDrag({
 
   const applyDueDateChange = useCallback(
     (itemId: string, targetDate: string) => {
-      const currentItem =
-        localWorkItems.find((item) => item.id === itemId) ??
-        resolveWorkItem?.(itemId);
-      if (!currentItem || pendingDueDateIds.has(itemId)) {
+      const currentItem = findItem(itemId);
+      if (!currentItem) {
         return;
       }
 
-      // Done work items are read-only. Ignore stale/existing calendar entries
-      // before applying an optimistic due-date change or calling the API.
       if (currentItem.status === 'Done') {
         return;
       }
 
-      const previousDueDate = currentItem.due_date;
-      const previousDateOnly = dueDateDay(previousDueDate);
-      if (previousDateOnly === targetDate) {
+      const previousDateOnly = dueDateDay(currentItem.due_date);
+      if (previousDateOnly === targetDate && !dueDateQueue.isPending(itemId)) {
         return;
       }
 
@@ -226,80 +315,12 @@ export function useCalendarDueDateDrag({
         return;
       }
 
-      setPendingDueDateIds((previous) => new Set(previous).add(itemId));
-      syncWorkItemDueDate(itemId, targetDate);
-
-      const formData = new FormData();
-      formData.set('due_date', targetDate);
-      const expectedUpdatedAt = currentItem.updated_at;
-
-      updateWorkItem(itemId, formData, expectedUpdatedAt)
-        .then((response) => {
-          if (response.error || !response.data) {
-            syncWorkItemDueDate(itemId, previousDueDate);
-            showDueDateWarning(
-              typeof response.error === 'string'
-                ? response.error
-                : 'Failed to update work item due date.'
-            );
-            return;
-          }
-          const updated = response.data;
-          syncWorkItemDueDate(
-            itemId,
-            dueDateDay(updated.due_date) ?? targetDate,
-            updated.updated_at
-          );
-        })
-        .catch((error: unknown) => {
-          if (isBoardMoveOptimisticLockError(error)) {
-            toastWorkItemDnDConflict(
-              CALENDAR_CONFLICT_TITLE,
-              CALENDAR_CONFLICT_DESCRIPTION
-            );
-            const serverRow = readBoardMoveConflictServerRow(error);
-            if (serverRow) {
-              applyDueDateRow(serverRow, true);
-            } else {
-              syncWorkItemDueDate(itemId, previousDueDate);
-            }
-            return;
-          }
-
-          syncWorkItemDueDate(itemId, previousDueDate);
-          let message: string;
-          if (error instanceof ApiError) {
-            message = error.message;
-          } else if (error instanceof Error) {
-            message = error.message;
-          } else {
-            message = 'Failed to update work item due date.';
-          }
-          showDueDateWarning(message);
-        })
-        .finally(() => {
-          setPendingDueDateIds((previous) => {
-            const next = new Set(previous);
-            next.delete(itemId);
-            return next;
-          });
-        });
+      dueDateQueue.enqueue(itemId, targetDate);
     },
-    [
-      applyDueDateRow,
-      localWorkItems,
-      pendingDueDateIds,
-      resolveWorkItem,
-      showDueDateWarning,
-      syncWorkItemDueDate,
-    ]
+    [dueDateQueue, findItem, showDueDateWarning]
   );
 
   const handleItemDragStart = (event: DragEvent, itemId: string): void => {
-    if (pendingDueDateIds.has(itemId)) {
-      event.preventDefault();
-      return;
-    }
     event.dataTransfer.setData('text/plain', itemId);
     event.dataTransfer.effectAllowed = 'move';
     setDraggedItemId(itemId);
@@ -332,7 +353,7 @@ export function useCalendarDueDateDrag({
     event.preventDefault();
     event.stopPropagation();
     const itemId = event.dataTransfer.getData('text/plain') || draggedItemId;
-    if (itemId && !pendingDueDateIds.has(itemId)) {
+    if (itemId) {
       applyDueDateChange(itemId, dateString);
     }
     setDraggedItemId(null);

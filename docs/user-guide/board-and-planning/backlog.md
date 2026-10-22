@@ -53,7 +53,10 @@ in defaults, the sprint cards pane can focus that sprint for the project.
    Okay if you want those values saved for next visits.
 2. **Drag** items from the backlog into a sprint card (or from a sprint back
    to the backlog). Child items follow their parent’s sprint — move the parent
-   (or unlink it) if you need to plan a child separately.
+   (or unlink it) if you need to plan a child separately. Re-drags while a
+   save is running keep the latest sprint; rows dim slightly until the flush
+   finishes. Closing the tab with pending sprint moves may show a leave
+   warning.
 
 Managers and admins can **Create Sprint** from the toolbar **+** menu. The form
 defaults to your backlog **default project** (or the project currently selected

@@ -1,7 +1,6 @@
 'use client';
 
-import type React from 'react';
-import { useMemo } from 'react';
+import { useMemo, type DragEvent } from 'react';
 import { BacklogDropZone } from '@/app/backlog/_components/backlog-drop-zone';
 import { BacklogItemCount } from '@/app/backlog/_components/backlog-item-count';
 import { BacklogSprintCapacitySummary } from '@/app/backlog/_components/backlog-sprint-capacity-summary';
@@ -59,13 +58,11 @@ type BacklogSprintCardProps = {
   readonly onStartSprint: (sprintId: string) => void;
   readonly onCompleteSprint: (sprintId: string) => void;
   readonly onSelectItem: (item: DbWorkItem) => void;
-  readonly onItemDragStart: (event: React.DragEvent, id: string) => void;
-  readonly onDragOver: (
-    event: React.DragEvent,
-    targetId: string | null
-  ) => void;
+  readonly pendingSprintMoveIds?: ReadonlySet<string>;
+  readonly onItemDragStart: (event: DragEvent, id: string) => void;
+  readonly onDragOver: (event: DragEvent, targetId: string | null) => void;
   readonly onDragLeave: () => void;
-  readonly onDrop: (event: React.DragEvent, targetId: string | null) => void;
+  readonly onDrop: (event: DragEvent, targetId: string | null) => void;
 };
 /* eslint-enable no-unused-vars */
 
@@ -240,6 +237,7 @@ export function BacklogSprintCard({
   onStartSprint,
   onCompleteSprint,
   onSelectItem,
+  pendingSprintMoveIds,
   onItemDragStart,
   onDragOver,
   onDragLeave,
@@ -304,6 +302,7 @@ export function BacklogSprintCard({
           isDragOver={isDragOver}
           minHeightClass="min-h-22.5"
           emptyMessage="Plan this sprint by dragging backlog items here"
+          pendingSprintMoveIds={pendingSprintMoveIds}
           onSelectItem={onSelectItem}
           onItemDragStart={onItemDragStart}
           onDragOver={onDragOver}

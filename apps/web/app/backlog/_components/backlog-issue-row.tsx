@@ -1,7 +1,6 @@
 'use client';
 
-import type React from 'react';
-import { useMemo } from 'react';
+import { useMemo, type DragEvent } from 'react';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
@@ -23,8 +22,10 @@ type BacklogIssueRowProps = {
   readonly item: DbWorkItem;
   readonly projects: DbProject[];
   readonly projectMembers: readonly BacklogAssignee[];
+  /** True while a sprint-placement flush is still in flight. */
+  readonly isPending?: boolean;
   readonly onSelect: (item: DbWorkItem) => void;
-  readonly onDragStart: (event: React.DragEvent, id: string) => void;
+  readonly onDragStart: (event: DragEvent, id: string) => void;
 };
 /* eslint-enable no-unused-vars */
 
@@ -32,6 +33,7 @@ export function BacklogIssueRow({
   item,
   projects,
   projectMembers,
+  isPending = false,
   onSelect,
   onDragStart,
 }: Readonly<BacklogIssueRowProps>) {
@@ -55,8 +57,10 @@ export function BacklogIssueRow({
         'bg-card hover:bg-muted/30 hover:border-primary/30 cursor-grab active:cursor-grabbing',
         'shadow-sm transition-all duration-150',
         'focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-hidden',
-        '@md/backlog-pane:flex-row @md/backlog-pane:items-center @md/backlog-pane:justify-between @md/backlog-pane:gap-3'
+        '@md/backlog-pane:flex-row @md/backlog-pane:items-center @md/backlog-pane:justify-between @md/backlog-pane:gap-3',
+        isPending && 'opacity-70'
       )}
+      aria-busy={isPending || undefined}
     >
       <div className="flex min-w-0 items-center gap-2">
         <div className="text-muted-foreground/40 group-hover:text-muted-foreground/70 shrink-0 transition-colors">

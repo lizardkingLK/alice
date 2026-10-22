@@ -39,10 +39,11 @@ Allowlist: `COMMENT_REACTION_EMOJIS` in `packages/types/src/comment-reactions.ts
 - **Content edits** still use optimistic locking.
 - Reactor names resolve from the cached comment users / project members list.
 
-This client serial/coalesce pattern is the right fix for spammy optimistic
-realtime UIs generally (board DnD, backlog, calendar due-dates). Prefer it over
-a Redis/Bull message queue for per-user interaction bursts **for now**. A
-future Redis write-behind is sketched in
+DnD surfaces reuse the same idea via shared
+`createSerialCoalesceMutationQueue` (board status, backlog sprint, calendar
+due-date). Prefer that client pattern over a Redis/Bull message queue for
+per-user interaction bursts **for now**. A future Redis write-behind is
+sketched in
 [REALTIME_DISCUSSION.md](./REALTIME_DISCUSSION.md#future-redis-write-behind).
 
 ## UI

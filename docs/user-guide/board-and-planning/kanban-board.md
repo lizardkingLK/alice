@@ -71,6 +71,11 @@ Open **Board settings** (grid icon on the board toolbar). Under **Board sync**:
 | **Static**             | No live merge from others until you refresh or navigate. Pending saves dim the card (classic behavior).                             |
 | **Subscribe to moves** | Only in Realtime. Turn off to stop applying placement changes over the wire while keeping Realtime mode selected.                   |
 
+You can re-drag the same card while a save is still running — Alice keeps your
+latest column and finishes the network work in order. If you close or refresh
+the tab with unsaved moves, the browser may warn you and Alice tries a last
+keepalive save.
+
 Preferences are stored in this browser for your account. If someone else moves
 the same card first, you get a short toast (**Someone else moved this item**)
 and the board shows their column — not a merge dialog. Live sync applies on

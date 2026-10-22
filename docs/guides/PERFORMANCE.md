@@ -752,6 +752,12 @@ Reuse the **W6** pattern ([REALTIME_BOARD_MOVES.md](../features/board/REALTIME_B
 
 **Done:** calendar + backlog fire-and-forget PATCH; 409 toast + rebase; live `work_items` UPDATE merge for `due_date` / `sprint_id`.
 
+**Follow-up (spam / coalesce):** board, backlog, and calendar share
+`serial-coalesce-mutation-queue` + pending realtime guards + unload keepalive
+(same client strategy as comment reactions). See
+[REALTIME_BOARD_MOVES.md](../features/board/REALTIME_BOARD_MOVES.md) and
+[REALTIME_DISCUSSION.md](../features/work-items/REALTIME_DISCUSSION.md#future-redis-write-behind).
+
 **Out of scope for W7:** work-item details Discussion / Activity / Work Log feeds — shipped separately as [discussion realtime](../features/work-items/REALTIME_DISCUSSION.md). No rank/reorder field exists on backlog today.
 
 ### After W7 — M8, then discussion realtime
