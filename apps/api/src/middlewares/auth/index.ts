@@ -1,6 +1,7 @@
 import { env } from '../../config/env';
 import { createClient } from '@supabase/supabase-js';
 import type { NextFunction, Request, Response } from 'express';
+import ws from 'ws';
 
 export type AuthenticatedRequest = Request & {
   userId?: string;
@@ -10,8 +11,18 @@ export type AuthenticatedRequest = Request & {
  * Stateless anon client reused across requests. `getUser(token)` validates the
  * passed JWT and does not rely on any stored session, so a single shared client
  * is safe and avoids re-instantiating one on every request.
+ *
+ * Node < 22 needs an explicit realtime WebSocket transport (`ws`).
  */
-const authClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
+const authClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  },
+  realtime: {
+    transport: ws as unknown as typeof WebSocket,
+  },
+});
 
 /**
  * Verifies the Bearer access token and attaches `req.userId`.
