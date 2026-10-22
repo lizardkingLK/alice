@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { AlertCircle, HelpCircle } from '@repo/ui/lib/icons';
 import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
 
@@ -61,6 +67,9 @@ import {
   applyRealtimeWorkItemRow,
   mergeWorkItemRealtimeRow,
 } from '@/lib/work-items/apply-realtime-work-item-row';
+import { createSerialCoalesceMutationQueue } from '@/lib/work-items/serial-coalesce-mutation-queue';
+import { toggleIdInSet } from '@/lib/work-items/toggle-id-in-set';
+import { usePendingMutationUnload } from '@/lib/work-items/use-pending-mutation-unload';
 import { useWorkItemsRealtime } from '@/lib/work-items/use-work-items-realtime';
 import { afterDialogClose } from '@/lib/dialog-close';
 
@@ -188,6 +197,9 @@ export function BacklogWorkspace({
   const [pendingSprintMoveIds, setPendingSprintMoveIds] = useState<Set<string>>(
     () => new Set()
   );
+  const workItemsRef = useRef(workItems);
+  workItemsRef.current = workItems;
+  const cascadeByIdRef = useRef(new Map<string, string[]>());
 
   // Selection state for Slide-out Details panel
   const [selectedItem, setSelectedItem] = useState<DbWorkItem | null>(null);
@@ -295,6 +307,9 @@ export function BacklogWorkspace({
 
   const applySprintRealtimeRow = useCallback(
     (row: Partial<DbWorkItem> & { id: string }, force = false) => {
+      if (!force && sprintMoveQueueRef.current.isPending(row.id)) {
+        return;
+      }
       setWorkItems((previous) => {
         if (force) {
           const index = previous.findIndex((item) => item.id === row.id);
@@ -310,27 +325,135 @@ export function BacklogWorkspace({
           return next;
         }
         return (
-          applyRealtimeWorkItemRow(previous, row, SPRINT_PLACEMENT_FIELDS) ??
-          previous
+          applyRealtimeWorkItemRow(previous, row, SPRINT_PLACEMENT_FIELDS, {
+            isFlushPending: (id) => sprintMoveQueueRef.current.isPending(id),
+          }) ?? previous
         );
       });
       setSelectedItem((previous) => {
         if (!previous || previous.id !== row.id) {
           return previous;
         }
-        return mergeWorkItemRealtimeRow(previous, row, SPRINT_PLACEMENT_FIELDS);
-      });
-      setPendingSprintMoveIds((previous) => {
-        if (!previous.has(row.id)) {
+        if (!force && sprintMoveQueueRef.current.isPending(row.id)) {
           return previous;
         }
-        const next = new Set(previous);
-        next.delete(row.id);
-        return next;
+        return mergeWorkItemRealtimeRow(previous, row, SPRINT_PLACEMENT_FIELDS);
       });
     },
     []
   );
+
+  const applySprintPlacementLocally = useCallback(
+    (
+      itemId: string,
+      sprintId: string | null,
+      cascadeIds: readonly string[]
+    ) => {
+      const affectedIds = [itemId, ...cascadeIds];
+      setWorkItems((prev) =>
+        applySprintIdsToItems(prev, affectedIds, sprintId)
+      );
+      setSelectedItem((prev) => {
+        if (!prev || !affectedIds.includes(prev.id)) {
+          return prev;
+        }
+        return { ...prev, sprint_id: sprintId };
+      });
+    },
+    []
+  );
+
+  const sprintMoveQueue = useMemo(
+    () =>
+      createSerialCoalesceMutationQueue<string | null>({
+        areEqual: (a, b) => sameWorkItemSprintId(a, b),
+        getAckSeed: (id) => {
+          const item = workItemsRef.current.find((row) => row.id === id);
+          if (!item) {
+            return undefined;
+          }
+          return item.sprint_id ?? null;
+        },
+        getExpectedUpdatedAt: (id) =>
+          workItemsRef.current.find((row) => row.id === id)?.updated_at,
+        applyOptimistic: (id, desired) => {
+          const item = workItemsRef.current.find((row) => row.id === id);
+          const cascadeIds =
+            item && !item.parent_id
+              ? collectLocalDescendantIds(id, workItemsRef.current)
+              : [];
+          cascadeByIdRef.current.set(id, cascadeIds);
+          applySprintPlacementLocally(id, desired, cascadeIds);
+        },
+        reconcileToAck: (id, ack) => {
+          const cascadeIds = cascadeByIdRef.current.get(id) ?? [];
+          applySprintPlacementLocally(id, ack, cascadeIds);
+        },
+        onPendingChange: (id, isPending) => {
+          setPendingSprintMoveIds((prev) => toggleIdInSet(prev, id, isPending));
+        },
+        onFlushError: (id, error) => {
+          if (isBoardMoveOptimisticLockError(error)) {
+            toastWorkItemDnDConflict(
+              BACKLOG_CONFLICT_TITLE,
+              BACKLOG_CONFLICT_DESCRIPTION
+            );
+            const serverRow = readBoardMoveConflictServerRow(error);
+            if (serverRow && typeof serverRow.updated_at === 'string') {
+              applySprintRealtimeRow(serverRow, true);
+              sprintMoveQueueRef.current.acknowledge(
+                id,
+                serverRow.sprint_id ?? null,
+                serverRow.updated_at
+              );
+            }
+            return;
+          }
+          setActionError(
+            error instanceof Error
+              ? error.message
+              : 'Failed to update work item sprint.'
+          );
+          setIsErrorOpen(true);
+        },
+        send: async (id, desired, expectedUpdatedAt, sendOptions) => {
+          const formData = new FormData();
+          formData.append('sprint_id', desired || '');
+          const cascadeIds = cascadeByIdRef.current.get(id) ?? [];
+          const response = await updateWorkItem(
+            id,
+            formData,
+            expectedUpdatedAt,
+            { keepalive: sendOptions?.keepalive === true }
+          );
+          if (response.error || !response.data) {
+            throw new Error(
+              typeof response.error === 'string'
+                ? response.error
+                : 'Failed to update work item sprint.'
+            );
+          }
+          const updated = response.data;
+          const serverCascade =
+            response.cascadedSprintDescendantIds ?? cascadeIds;
+          cascadeByIdRef.current.set(id, [...serverCascade]);
+          syncWorkItemFromServer(id, updated);
+          const nextSprintId = updated.sprint_id ?? desired;
+          setWorkItems((prev) =>
+            applySprintIdsToItems(prev, serverCascade, nextSprintId)
+          );
+          return {
+            ack: nextSprintId,
+            expectedUpdatedAt: updated.updated_at,
+          };
+        },
+      }),
+    [applySprintPlacementLocally, applySprintRealtimeRow]
+  );
+  const sprintMoveQueueRef = useRef(sprintMoveQueue);
+  sprintMoveQueueRef.current = sprintMoveQueue;
+
+  usePendingMutationUnload(sprintMoveQueue);
 
   useWorkItemsRealtime({
     enabled: Boolean(currentUserId),
@@ -341,10 +464,6 @@ export function BacklogWorkspace({
 
   // Helper: Drag-and-Drop Handlers
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
-    if (pendingSprintMoveIds.has(itemId)) {
-      e.preventDefault();
-      return;
-    }
     e.dataTransfer.setData('text/plain', itemId);
     setDraggedItemId(itemId);
   };
@@ -370,11 +489,6 @@ export function BacklogWorkspace({
     e.preventDefault();
     const itemId = e.dataTransfer.getData('text/plain') || draggedItemId;
     if (itemId) {
-      if (pendingSprintMoveIds.has(itemId)) {
-        setDraggedItemId(null);
-        setDragOverTargetId(null);
-        return;
-      }
       const dropMismatch = getSprintDropMismatchReason(itemId, targetId);
       if (dropMismatch) {
         openMismatchDialog(dropMismatch);
@@ -383,94 +497,11 @@ export function BacklogWorkspace({
         return;
       }
 
-      const draggedItem = workItems.find((item) => item.id === itemId);
-      const cascadeIds =
-        draggedItem && !draggedItem.parent_id
-          ? collectLocalDescendantIds(itemId, workItems)
-          : [];
-      const affectedIds = new Set([itemId, ...cascadeIds]);
-
-      setWorkItems((prev) =>
-        prev.map((item) =>
-          affectedIds.has(item.id) ? { ...item, sprint_id: targetId } : item
-        )
+      const draggedItem = workItemsRef.current.find(
+        (item) => item.id === itemId
       );
-      if (selectedItem && affectedIds.has(selectedItem.id)) {
-        setSelectedItem((prev) =>
-          prev ? { ...prev, sprint_id: targetId } : null
-        );
-      }
-      const formData = new FormData();
-      formData.append('sprint_id', targetId || '');
       if (draggedItem) {
-        const previousById = new Map(
-          workItems
-            .filter((item) => affectedIds.has(item.id))
-            .map((item) => [item.id, item.sprint_id] as const)
-        );
-        const expectedUpdatedAt = draggedItem.updated_at;
-        setPendingSprintMoveIds((previous) => new Set(previous).add(itemId));
-
-        const revertSprintMove = () => {
-          setWorkItems((prev) => restoreSprintIdsFromMap(previousById, prev));
-          setSelectedItem((prev) => {
-            if (!prev) {
-              return prev;
-            }
-            const restored = restoreSprintIdsFromMap(previousById, [prev]);
-            return restored[0] ?? prev;
-          });
-        };
-
-        updateWorkItem(itemId, formData, expectedUpdatedAt)
-          .then((response) => {
-            if (response.error || !response.data) {
-              revertSprintMove();
-              setActionError(
-                typeof response.error === 'string'
-                  ? response.error
-                  : 'Failed to update work item sprint.'
-              );
-              setIsErrorOpen(true);
-              return;
-            }
-            const updated = response.data;
-            const serverCascade =
-              response.cascadedSprintDescendantIds ?? cascadeIds;
-            syncWorkItemFromServer(itemId, updated);
-            const nextSprintId = updated.sprint_id ?? targetId;
-            setWorkItems((prev) =>
-              applySprintIdsToItems(prev, serverCascade, nextSprintId)
-            );
-          })
-          .catch((error: unknown) => {
-            if (isBoardMoveOptimisticLockError(error)) {
-              toastWorkItemDnDConflict(
-                BACKLOG_CONFLICT_TITLE,
-                BACKLOG_CONFLICT_DESCRIPTION
-              );
-              const serverRow = readBoardMoveConflictServerRow(error);
-              revertSprintMove();
-              if (serverRow) {
-                applySprintRealtimeRow(serverRow, true);
-              }
-              return;
-            }
-            revertSprintMove();
-            setActionError(
-              error instanceof Error
-                ? error.message
-                : 'Failed to update work item sprint.'
-            );
-            setIsErrorOpen(true);
-          })
-          .finally(() => {
-            setPendingSprintMoveIds((previous) => {
-              const next = new Set(previous);
-              next.delete(itemId);
-              return next;
-            });
-          });
+        sprintMoveQueue.enqueue(itemId, targetId);
       }
     }
     setDraggedItemId(null);
@@ -1087,6 +1118,7 @@ export function BacklogWorkspace({
                   onStartSprint={handleStartSprint}
                   onCompleteSprint={handleCompleteSprint}
                   onSelectItem={setSelectedItem}
+                  pendingSprintMoveIds={pendingSprintMoveIds}
                   onItemDragStart={handleDragStart}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
@@ -1105,6 +1137,7 @@ export function BacklogWorkspace({
                 projectMembers={projectMembers}
                 isCollapsed={isBacklogCollapsed}
                 isDragOver={dragOverTargetId === 'backlog'}
+                pendingSprintMoveIds={pendingSprintMoveIds}
                 onToggle={() => setIsBacklogCollapsed(!isBacklogCollapsed)}
                 onCreateIssue={() => openCreateIssue(null)}
                 onSelectItem={setSelectedItem}

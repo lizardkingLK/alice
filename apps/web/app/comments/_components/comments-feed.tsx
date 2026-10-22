@@ -78,6 +78,8 @@ import {
   type CommentRealtimeRow,
 } from '@/app/comments/_helpers/apply-realtime-comment-row';
 import { createCommentReactionMutationQueue } from '@/app/comments/_helpers/comment-reaction-mutation-queue';
+import { toggleIdInSet } from '@/lib/work-items/toggle-id-in-set';
+import { usePendingMutationUnload } from '@/lib/work-items/use-pending-mutation-unload';
 import { rowFromRealtimePayload } from '@/lib/realtime/realtime-change-row';
 import { useScopedTableRealtime } from '@/lib/realtime/use-scoped-table-realtime';
 
@@ -308,51 +310,15 @@ export function CommentsFeed({
           };
         },
         onPendingChange: (commentId, isPending) => {
-          setReactionSyncingIds((prev) => {
-            const already = prev.has(commentId);
-            if (isPending === already) {
-              return prev;
-            }
-            const next = new Set(prev);
-            if (isPending) {
-              next.add(commentId);
-            } else {
-              next.delete(commentId);
-            }
-            return next;
-          });
+          setReactionSyncingIds((prev) =>
+            toggleIdInSet(prev, commentId, isPending)
+          );
         },
       }),
     []
   );
 
-  useEffect(() => {
-    const flushKeepalive = () => {
-      if (!reactionQueue.hasAnyPending()) {
-        return;
-      }
-      reactionQueue.flushPendingKeepalive();
-    };
-    const onPageHide = () => {
-      flushKeepalive();
-    };
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!reactionQueue.hasAnyPending()) {
-        return;
-      }
-      flushKeepalive();
-      // Native leave prompt only — browsers ignore custom message strings.
-      event.preventDefault();
-      event.returnValue = '';
-    };
-    window.addEventListener('pagehide', onPageHide);
-    window.addEventListener('beforeunload', onBeforeUnload);
-    return () => {
-      window.removeEventListener('pagehide', onPageHide);
-      window.removeEventListener('beforeunload', onBeforeUnload);
-      flushKeepalive();
-    };
-  }, [reactionQueue]);
+  usePendingMutationUnload(reactionQueue);
 
   const targetWorkItemId =
     workItemId ||

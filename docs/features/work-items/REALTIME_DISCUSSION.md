@@ -69,16 +69,19 @@ Shared subscriber: `apps/web/lib/realtime/use-scoped-table-realtime.ts`
 
 ## Future: Redis write-behind
 
-**Today** we absorb spammy optimistic mutations (comment reactions, and the same
-class of problem on board / backlog / calendar DnD) with **client-side serial
-queues + coalesce**, honest pending UI, and best-effort `keepalive` flush.
-That matches Alice’s current scale without a broker.
+**Today** we absorb spammy optimistic mutations (comment reactions, board /
+backlog / calendar DnD) with **client-side serial queues + coalesce**, honest
+pending UI, and best-effort `keepalive` flush (`serial-coalesce-mutation-queue`
+
+- `usePendingMutationUnload`). That matches Alice’s current scale without a
+  broker.
 
 **Later**, when cross-surface mutation volume or multi-tab durability justifies
 infra, prefer a real **write-behind** path (e.g. Redis-backed queue / buffer →
 batched Postgres writes → realtime fan-out). Until then: do **not** introduce
 Redis for per-user reaction or DnD bursts — ship the client pattern and keep
-server merges simple (see [COMMENT_REACTIONS.md](./COMMENT_REACTIONS.md)).
+server merges simple (see [COMMENT_REACTIONS.md](./COMMENT_REACTIONS.md),
+[REALTIME_BOARD_MOVES.md](../board/REALTIME_BOARD_MOVES.md)).
 
 ## Related
 

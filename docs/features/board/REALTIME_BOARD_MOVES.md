@@ -66,12 +66,19 @@ On background PATCH result
 
 Same destination twice: still settle on one commit; second client toasts once.
 
-## Pending stack
+## Pending stack / serial coalesce
 
-- Keyed by **work-item id** (and client `attemptId`) so multi-card drags do not
-  undo each other.
-- Stores prior `status` / `board_column_id` / `updated_at` for revert.
-- Cleared on success echo, channel overwrite, or explicit failure handling.
+- Per **work-item id** lane via shared `createSerialCoalesceMutationQueue`
+  (`apps/web/lib/work-items/serial-coalesce-mutation-queue.ts`) — same pattern
+  as comment reactions.
+- Optimistic place on every drop; rapid re-drags **coalesce** to the latest
+  desired placement and flush after the previous HTTP settles (not blocked).
+- While a flush is pending, realtime placement rows for that id are ignored so
+  echoes do not clobber local intent.
+- Honest pending UI (`pendingStatusIds` / dim in static mode) + native
+  `beforeunload` / `pagehide` keepalive flush (`usePendingMutationUnload`).
+- Cleared when the lane’s pending flush count hits zero; 409 rebases ack to the
+  server row (toast, no merge dialog).
 
 ## Realtime source of truth
 
@@ -118,15 +125,17 @@ where pubname = 'supabase_realtime'
 
 ## Shipped surface
 
-| Piece         | Location                                                        |
-| ------------- | --------------------------------------------------------------- |
-| Prefs storage | `apps/web/app/board/_helpers/board-sync-storage.ts`             |
-| Prefs hook    | `useBoardSyncPrefs`                                             |
-| Menu toggles  | `BoardLayoutMenu` (Realtime / Static + Subscribe to moves)      |
-| Pending stack | `board-move-pending.ts` + kanban `pendingAttempts`              |
-| 409 toast     | `board-move-conflict-toast.ts` (no merge dialog on board moves) |
-| Channel       | `useBoardWorkItemsRealtime`                                     |
-| Publication   | `add_work_items_realtime_publication` migration                 |
+| Piece            | Location                                                         |
+| ---------------- | ---------------------------------------------------------------- |
+| Prefs storage    | `apps/web/app/board/_helpers/board-sync-storage.ts`              |
+| Prefs hook       | `useBoardSyncPrefs`                                              |
+| Menu toggles     | `BoardLayoutMenu` (Realtime / Static + Subscribe to moves)       |
+| Coalesce queue   | `serial-coalesce-mutation-queue.ts` via `use-board-status-moves` |
+| Unload flush     | `use-pending-mutation-unload.ts`                                 |
+| Timestamp helper | `board-move-pending.ts` (`isNewerUpdatedAt`, placement merge)    |
+| 409 toast        | `board-move-conflict-toast.ts` (no merge dialog on board moves)  |
+| Channel          | `useBoardWorkItemsRealtime`                                      |
+| Publication      | `add_work_items_realtime_publication` migration                  |
 
 **Still deferred:** silent inbox notifications (§ Non-goals / prefs).
 

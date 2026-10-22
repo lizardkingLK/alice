@@ -36,15 +36,21 @@ export type WorkItemUpdateResponse = ResponseDTO<DbWorkItem> & {
   readonly cascadedSprintDescendantIds?: readonly string[];
 };
 
+export type WorkItemMutationRequestOptions = {
+  readonly keepalive?: boolean;
+};
+
 export async function updateWorkItem(
   id: string,
   formData: FormData,
-  expectedUpdatedAt: string
+  expectedUpdatedAt: string,
+  requestOptions?: WorkItemMutationRequestOptions
 ): Promise<WorkItemUpdateResponse> {
   const body = parsePatchWorkItemFormData(formData, expectedUpdatedAt);
   return await apiFetch<WorkItemUpdateResponse>(`${workItemsPath}/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(body),
+    ...(requestOptions?.keepalive === true ? { keepalive: true } : {}),
   });
 }
 
@@ -53,7 +59,8 @@ export async function updateWorkItemStatus(
   status: DbWorkItem['status'],
   expectedUpdatedAt: string,
   boardColumnId?: string | null,
-  resolution?: PatchWorkItemStatusBody['resolution']
+  resolution?: PatchWorkItemStatusBody['resolution'],
+  requestOptions?: WorkItemMutationRequestOptions
 ): Promise<ResponseDTO<DbWorkItem>> {
   const body: PatchWorkItemStatusBody = {
     status,
@@ -69,6 +76,7 @@ export async function updateWorkItemStatus(
   return await apiFetch<ResponseDTO<DbWorkItem>>(`${workItemsPath}/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(parsed.data),
+    ...(requestOptions?.keepalive === true ? { keepalive: true } : {}),
   });
 }
 
