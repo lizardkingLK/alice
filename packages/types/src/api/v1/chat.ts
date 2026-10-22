@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { ChatRoles } from '../../chat.js';
-import { ChatAttachmentFileTypeEnum } from '../../chat-attachments.js';
+import {
+  ChatAttachmentFileTypeEnum,
+  WorkItemDeduplicationActionEnum,
+  WorkItemDeduplicationMatchStatusEnum,
+  type WorkItemDeduplicationItemResult,
+  type WorkItemDeduplicationReport,
+} from '../../chat-attachments.js';
 import { boardConfigSchema } from './board-config.js';
 import { emptyToUndefined } from './query-preprocess.js';
 import { workflowConfigEnvelopeSchema } from './workflow-config.js';
@@ -10,11 +16,20 @@ export {
   WorkItemDeduplicationMatchStatusEnum,
   type WorkItemDeduplicationItemResult,
   type WorkItemDeduplicationReport,
-} from '../../chat-attachments.js';
+};
+
+/** `/chat` history threads vs dock/widget session-only chats. */
+export const ChatConversationKinds = {
+  general: 'general',
+  temporary: 'temporary',
+} as const;
+
+export type ChatConversationKind =
+  (typeof ChatConversationKinds)[keyof typeof ChatConversationKinds];
 
 /** PostgREST column list for chat conversation list reads (RSC + API parity). */
 export const CHAT_CONVERSATION_POSTGREST_SELECT =
-  'id, title, created_at, updated_at, is_processing' as const;
+  'id, title, created_at, updated_at, is_processing, kind' as const;
 
 export enum ChatTurnRoleEnum {
   USER = 'user',
@@ -239,6 +254,10 @@ export const chatConversationSummarySchema = z.object({
   created_at: z.string(),
   updated_at: z.string(),
   is_processing: z.boolean(),
+  kind: z.enum([
+    ChatConversationKinds.general,
+    ChatConversationKinds.temporary,
+  ]),
 });
 
 export type ChatConversationSummaryWire = z.infer<
@@ -264,6 +283,10 @@ export const postChatMessageBodySchema = z.object({
   modelId: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   attachments: z.array(chatAttachmentWireSchema).optional(),
   viewContext: chatViewContextSchema.optional(),
+  /** Defaults to `general` (`/chat`). Dock/widget send `temporary`. */
+  kind: z
+    .enum([ChatConversationKinds.general, ChatConversationKinds.temporary])
+    .optional(),
 });
 
 export type PostChatMessageBody = z.infer<typeof postChatMessageBodySchema>;

@@ -471,6 +471,7 @@ export type Database = {
           created_at: string
           id: string
           is_processing: boolean
+          kind: Database["public"]["Enums"]["ChatConversationKind"]
           title: string
           updated_at: string
           user_id: string
@@ -479,6 +480,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_processing?: boolean
+          kind?: Database["public"]["Enums"]["ChatConversationKind"]
           title?: string
           updated_at: string
           user_id: string
@@ -487,6 +489,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_processing?: boolean
+          kind?: Database["public"]["Enums"]["ChatConversationKind"]
           title?: string
           updated_at?: string
           user_id?: string
@@ -1894,6 +1897,7 @@ export type Database = {
         | "commented"
         | "workflow_transition"
         | "escalation_resolved"
+      ChatConversationKind: "general" | "temporary"
       IntegrationCategory:
         | "ai_agent"
         | "communication"
@@ -2071,6 +2075,7 @@ export const Constants = {
         "workflow_transition",
         "escalation_resolved",
       ],
+      ChatConversationKind: ["general", "temporary"],
       IntegrationCategory: [
         "ai_agent",
         "communication",

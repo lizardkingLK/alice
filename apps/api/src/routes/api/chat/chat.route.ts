@@ -5,7 +5,7 @@ import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
-import { ChatRoles, parseChatRole } from '@repo/types';
+import { ChatConversationKinds, ChatRoles, parseChatRole } from '@repo/types';
 import { ChatProviderError } from '../integrations/chat-providers/chat-provider.error';
 import { type ChatService, sanitizeLog } from './chat.service';
 import {
@@ -440,6 +440,7 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
         integrationId,
         attachments: requestAttachments,
         viewContext,
+        kind: conversationKind,
       } = validation.data;
 
       let chatModelConfig;
@@ -494,7 +495,8 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
           conversationId = await chatService.createConversation(
             req.userId!,
             title,
-            false
+            false,
+            conversationKind ?? ChatConversationKinds.general
           );
 
           const newAssistantMessage: StoredChatMessage = {

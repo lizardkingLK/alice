@@ -1,39 +1,33 @@
 'use client';
 
-import { Sparkles } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import type { ChatModelOption } from '@repo/types';
 import type { ChatViewContext } from '@repo/types/api/v1';
 import type { AppRole } from '@/lib/rbac';
+import type { ChatDockPageContext } from '@/app/chat/_components/chat-dock-context-bar';
 import { ChatClient } from './chat-client';
-import type { ChatConversation, ChatMessage } from './chat-client.types';
 
 type DockedChatPanelProps = {
   readonly onClose: () => void;
   readonly viewContext: ChatViewContext | null;
+  readonly pageContext: ChatDockPageContext | null;
+  readonly onDismissPageContext?: () => void;
   readonly currentUserName?: string | null;
   readonly currentUserImageUrl?: string | null;
   readonly currentUserRole?: AppRole | null;
-  readonly bootstrapConversations: ChatConversation[] | null;
-  readonly bootstrapActiveConversationId?: string;
-  readonly bootstrapMessages: ChatMessage[] | null;
-  readonly bootstrapChatModels: ChatModelOption[] | null;
 };
 
 /**
- * App-shell Alice sidebar: same chrome as the old drawer, but a real flex
- * sibling (no overlay, no backdrop blur, full available height).
+ * App-shell Alice sidebar: opens instantly with empty session state.
+ * Conversations are temporary (not listed on `/chat`); models load on demand.
  */
 export function DockedChatPanel({
   onClose,
   viewContext,
+  pageContext,
+  onDismissPageContext,
   currentUserName,
   currentUserImageUrl,
   currentUserRole,
-  bootstrapConversations,
-  bootstrapActiveConversationId,
-  bootstrapMessages,
-  bootstrapChatModels,
 }: Readonly<DockedChatPanelProps>) {
   return (
     <aside
@@ -42,25 +36,18 @@ export function DockedChatPanel({
       )}
       data-testid="alice-dock"
     >
-      {bootstrapConversations === null || bootstrapChatModels === null ? (
-        <div className="text-muted-foreground flex h-full min-h-0 flex-1 items-center justify-center gap-2 p-4 text-sm">
-          <Sparkles className="size-4" />
-          Loading Alice…
-        </div>
-      ) : (
-        <ChatClient
-          variant="docked"
-          onClose={onClose}
-          viewContext={viewContext}
-          currentUserName={currentUserName}
-          currentUserImageUrl={currentUserImageUrl}
-          currentUserRole={currentUserRole}
-          initialConversations={bootstrapConversations}
-          initialConversationId={bootstrapActiveConversationId}
-          initialMessages={bootstrapMessages ?? undefined}
-          initialChatModels={bootstrapChatModels}
-        />
-      )}
+      <ChatClient
+        variant="docked"
+        onClose={onClose}
+        viewContext={viewContext}
+        pageContext={pageContext}
+        onDismissPageContext={onDismissPageContext}
+        currentUserName={currentUserName}
+        currentUserImageUrl={currentUserImageUrl}
+        currentUserRole={currentUserRole}
+        initialConversations={[]}
+        initialMessages={[]}
+      />
     </aside>
   );
 }

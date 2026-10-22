@@ -11,6 +11,8 @@ import {
   getAllowedChildType,
   ChatAttachmentFileTypeEnum,
   UserRoleEnum,
+  ChatConversationKinds,
+  type ChatConversationKind as ChatConversationKindValue,
   type ParsedWorkItemNode,
   ProjectFieldsConfigSchema,
   type ProjectFieldsConfig,
@@ -65,7 +67,7 @@ import type {
   StoredChatMessage,
 } from './chat.route.types';
 
-export { sanitizeLog } from './chat.utils';
+export { sanitizeLog };
 
 export type ChatServiceDeps = {
   chat: ChatRepository;
@@ -1880,9 +1882,10 @@ export class ChatService {
   async createConversation(
     userId: string,
     title = 'New Chat',
-    isProcessing = false
+    isProcessing = false,
+    kind: ChatConversationKindValue = ChatConversationKinds.general
   ): Promise<string> {
-    return this.chat.createConversation(userId, title, isProcessing);
+    return this.chat.createConversation(userId, title, isProcessing, kind);
   }
 
   async setProcessingStatus(

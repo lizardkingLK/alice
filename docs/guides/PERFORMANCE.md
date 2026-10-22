@@ -433,39 +433,39 @@ Legend:
 
 ### Read routes — web usage audit
 
-| API route                                | Status            | Web caller today     | Notes                                                                                                                     |
-| ---------------------------------------- | ----------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/users`                         | **Plan (toggle)** | RSC default          | Dual readers; `getUsersListPaginated` until `DATA_READS_VIA_API` ([DATA_RETRIEVAL.md](../architecture/DATA_RETRIEVAL.md)) |
-| `GET /api/users/secure`                  | **Removed**       | —                    | Auth smoke test only                                                                                                      |
-| `GET /api/projects`                      | **Plan (toggle)** | RSC default          | Dual readers for paginated list                                                                                           |
-| `GET /api/projects/:id`                  | **Plan (toggle)** | RSC default          | Dual readers for detail                                                                                                   |
-| `GET /api/projects/:id/members`          | **Plan (toggle)** | RSC default          | Dual readers for members                                                                                                  |
-| `GET /api/projects/jira/settings`        | **Removed**       | —                    | Preview/import resolve credentials internally; `PUT /jira/settings` kept                                                  |
-| `GET /api/teams`                         | **Plan (toggle)** | RSC default          | Dual readers for paginated list                                                                                           |
-| `GET /api/sprints`                       | **Plan (toggle)** | RSC default          | Dual readers for paginated list                                                                                           |
-| `GET /api/sprints/:id`                   | **Plan (toggle)** | RSC default          | Dual readers for detail                                                                                                   |
-| `GET /api/sprints/:id/burndown`          | **Kept**          | —                    | Dashboard uses `sprint-burndown.server.ts` + server action; Express handler kept for non-web consumers                    |
-| `GET /api/work-items`                    | **Plan (toggle)** | RSC default          | Dual readers; Next stays on SSR until `DATA_READS_VIA_API` ([DATA_RETRIEVAL.md](../architecture/DATA_RETRIEVAL.md))       |
-| `GET /api/work-items/:id`                | **Plan (toggle)** | RSC default          | Dual readers for detail                                                                                                   |
-| `GET /api/work-items/:id/github`         | **Client-only**   | Work-item sidebar    | `getLinkedPRs()` — GitHub API via service-role on Express                                                                 |
-| `GET /api/work-items/:id/worklogs`       | **Removed**       | —                    | Nested route removed; list via `GET /api/worklogs?work_item_id=`                                                          |
-| `GET /api/worklogs?work_item_id=`        | **Plan (toggle)** | RSC default          | Dual readers on work-item detail                                                                                          |
-| `POST /api/worklogs`                     | **Kept**          | Work log panel       | Body includes `work_item_id`; replaces nested `POST /api/work-items/:id/worklogs`                                         |
-| `GET /api/comments`                      | **Plan (toggle)** | RSC default          | Dual readers for `listComments` / discussion                                                                              |
-| `GET /api/saved-views`                   | **Plan (toggle)** | RSC default          | Dual readers for `getSavedViewsPaginated` (tabs mine/shared/archived)                                                     |
-| `GET /api/saved-views/shared-with-me`    | **Removed**       | —                    | Folded into list GET `tab=shared`                                                                                         |
-| `GET /api/chat/conversations`            | **Removed**       | —                    | Page + drawer use `listChatConversations` / `listChatConversationsAction` (direct Supabase)                               |
-| `GET /api/chat`, `GET /api/chat/:id`     | **Kept**          | `/chat` RSC + drawer | History is Storage (service-role); RSC uses server `apiFetch`; drawer client `apiFetch`                                   |
-| `GET /api/attachments`                   | **Plan (toggle)** | RSC default          | Dual readers on work-item detail (`?work_item_id=`)                                                                       |
-| `GET /api/attachments/:id`               | **Kept**          | Attachments UI       | Mints signed preview/download URLs (private bucket)                                                                       |
-| `GET /api/access-allowlist`              | **Plan (toggle)** | RSC default          | Dual readers for admin list; mutations stay Express                                                                       |
-| `GET /api/notifications/check-due-dates` | **Kept**          | Vercel cron          | Not a page read                                                                                                           |
-| `GET /api/notifications/prune-read`      | **Kept**          | Vercel cron          | Deletes read/archived rows older than 30 days                                                                             |
-| `GET /api/health`, `GET /api/v1/health`  | **Kept**          | Deploy / probes      | v1 health router; static version details, no DB                                                                           |
-| `GET /api/v2/health`                     | **Kept**          | Deploy / probes      | v2 reference (adds `checkedAt`); shared repository, separate service/router                                               |
-| `GET /`                                  | **Kept**          | Deploy / probes      | Root status line (`createRootRouter`); not aliased to health JSON                                                         |
-| `POST /api/notifications/send`           | Active            | Server-side notify   | No GET on this router                                                                                                     |
-| `POST /api/attachments`                  | Active            | `upload-form.tsx`    | Upload only (private bucket; signed URL)                                                                                  |
+| API route                                | Status            | Web caller today          | Notes                                                                                                                     |
+| ---------------------------------------- | ----------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/users`                         | **Plan (toggle)** | RSC default               | Dual readers; `getUsersListPaginated` until `DATA_READS_VIA_API` ([DATA_RETRIEVAL.md](../architecture/DATA_RETRIEVAL.md)) |
+| `GET /api/users/secure`                  | **Removed**       | —                         | Auth smoke test only                                                                                                      |
+| `GET /api/projects`                      | **Plan (toggle)** | RSC default               | Dual readers for paginated list                                                                                           |
+| `GET /api/projects/:id`                  | **Plan (toggle)** | RSC default               | Dual readers for detail                                                                                                   |
+| `GET /api/projects/:id/members`          | **Plan (toggle)** | RSC default               | Dual readers for members                                                                                                  |
+| `GET /api/projects/jira/settings`        | **Removed**       | —                         | Preview/import resolve credentials internally; `PUT /jira/settings` kept                                                  |
+| `GET /api/teams`                         | **Plan (toggle)** | RSC default               | Dual readers for paginated list                                                                                           |
+| `GET /api/sprints`                       | **Plan (toggle)** | RSC default               | Dual readers for paginated list                                                                                           |
+| `GET /api/sprints/:id`                   | **Plan (toggle)** | RSC default               | Dual readers for detail                                                                                                   |
+| `GET /api/sprints/:id/burndown`          | **Kept**          | —                         | Dashboard uses `sprint-burndown.server.ts` + server action; Express handler kept for non-web consumers                    |
+| `GET /api/work-items`                    | **Plan (toggle)** | RSC default               | Dual readers; Next stays on SSR until `DATA_READS_VIA_API` ([DATA_RETRIEVAL.md](../architecture/DATA_RETRIEVAL.md))       |
+| `GET /api/work-items/:id`                | **Plan (toggle)** | RSC default               | Dual readers for detail                                                                                                   |
+| `GET /api/work-items/:id/github`         | **Client-only**   | Work-item sidebar         | `getLinkedPRs()` — GitHub API via service-role on Express                                                                 |
+| `GET /api/work-items/:id/worklogs`       | **Removed**       | —                         | Nested route removed; list via `GET /api/worklogs?work_item_id=`                                                          |
+| `GET /api/worklogs?work_item_id=`        | **Plan (toggle)** | RSC default               | Dual readers on work-item detail                                                                                          |
+| `POST /api/worklogs`                     | **Kept**          | Work log panel            | Body includes `work_item_id`; replaces nested `POST /api/work-items/:id/worklogs`                                         |
+| `GET /api/comments`                      | **Plan (toggle)** | RSC default               | Dual readers for `listComments` / discussion                                                                              |
+| `GET /api/saved-views`                   | **Plan (toggle)** | RSC default               | Dual readers for `getSavedViewsPaginated` (tabs mine/shared/archived)                                                     |
+| `GET /api/saved-views/shared-with-me`    | **Removed**       | —                         | Folded into list GET `tab=shared`                                                                                         |
+| `GET /api/chat/conversations`            | **Removed**       | —                         | `/chat` lists `kind=general` via direct Supabase; dock/widget do not preload conversations                                |
+| `GET /api/chat`, `GET /api/chat/:id`     | **Kept**          | `/chat` RSC (+ dock send) | History is Storage (service-role); dock opens empty and only hits the API on send                                         |
+| `GET /api/attachments`                   | **Plan (toggle)** | RSC default               | Dual readers on work-item detail (`?work_item_id=`)                                                                       |
+| `GET /api/attachments/:id`               | **Kept**          | Attachments UI            | Mints signed preview/download URLs (private bucket)                                                                       |
+| `GET /api/access-allowlist`              | **Plan (toggle)** | RSC default               | Dual readers for admin list; mutations stay Express                                                                       |
+| `GET /api/notifications/check-due-dates` | **Kept**          | Vercel cron               | Not a page read                                                                                                           |
+| `GET /api/notifications/prune-read`      | **Kept**          | Vercel cron               | Deletes read/archived rows older than 30 days                                                                             |
+| `GET /api/health`, `GET /api/v1/health`  | **Kept**          | Deploy / probes           | v1 health router; static version details, no DB                                                                           |
+| `GET /api/v2/health`                     | **Kept**          | Deploy / probes           | v2 reference (adds `checkedAt`); shared repository, separate service/router                                               |
+| `GET /`                                  | **Kept**          | Deploy / probes           | Root status line (`createRootRouter`); not aliased to health JSON                                                         |
+| `POST /api/notifications/send`           | Active            | Server-side notify        | No GET on this router                                                                                                     |
+| `POST /api/attachments`                  | Active            | `upload-form.tsx`         | Upload only (private bucket; signed URL)                                                                                  |
 
 There is **no** `/api/team-members` or `/api/project-members` router. Membership is nested:
 

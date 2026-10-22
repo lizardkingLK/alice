@@ -1,4 +1,8 @@
-import type { ChatHistoryResponse } from '@repo/types/api/v1';
+import {
+  CHAT_CONVERSATION_POSTGREST_SELECT,
+  ChatConversationKinds,
+  type ChatHistoryResponse,
+} from '@repo/types/api/v1';
 import { getUser } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { apiFetch } from '@/lib/api/api-fetch.reads.use.server';
@@ -10,7 +14,7 @@ import type {
 } from '../_components/chat-client.types';
 import { selectChatBootstrapConversation } from '../_helpers/select-chat-bootstrap-conversation';
 
-export type { ChatConversation } from '../_components/chat-client.types';
+export type { ChatConversation };
 
 export type ChatPageBootstrap = {
   conversations: ChatConversation[];
@@ -55,8 +59,9 @@ async function fetchChatConversationsForUser(
 
   const { data, error } = await supabase
     .from('chat_conversations')
-    .select('id, title, created_at, updated_at, is_processing')
+    .select(CHAT_CONVERSATION_POSTGREST_SELECT)
     .eq('user_id', userId)
+    .eq('kind', ChatConversationKinds.general)
     .order('updated_at', { ascending: false });
 
   throwIfError(
@@ -83,9 +88,10 @@ export async function getChatConversationById(
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('chat_conversations')
-    .select('id, title, created_at, updated_at, is_processing')
+    .select(CHAT_CONVERSATION_POSTGREST_SELECT)
     .eq('user_id', user.id)
     .eq('id', conversationId)
+    .eq('kind', ChatConversationKinds.general)
     .maybeSingle();
 
   throwIfError(

@@ -10,6 +10,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import type { ChatMessage } from './chat-client.types';
 import type { ChatConversation } from '../_services/chat.mutations.client';
+import { ChatConversationKinds } from '@repo/types';
 import {
   bootstrapLatestChat,
   loadConversationHistory,
@@ -65,6 +66,9 @@ export function useChatConversationsRealtime(params: {
 
   const handleRealtimeInsert = useCallback(
     (updatedConv: ChatConversation) => {
+      if (updatedConv.kind === ChatConversationKinds.temporary) {
+        return;
+      }
       setConversations((prev) => {
         const exists = prev.some((c) => c.id === updatedConv.id);
         return exists ? prev : [updatedConv, ...prev];

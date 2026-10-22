@@ -3,7 +3,10 @@
 import { type Dispatch, type RefObject, type SetStateAction } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { cn } from '@repo/ui/lib/utils';
-import { detectChatAttachmentFileType } from '@repo/types';
+import {
+  ChatConversationKinds,
+  detectChatAttachmentFileType,
+} from '@repo/types';
 import type { ChatMessage, ActionItem } from './chat-client.types';
 import type { ChatConversation } from '../_services/chat.mutations.client';
 import {
@@ -250,6 +253,7 @@ export function applySuccessfulChatResponse(params: {
   router: ChatResponseRouter;
   /** When false (docked Alice), stay on the current page URL. */
   readonly syncUrl?: boolean;
+  readonly conversationKind?: ChatConversation['kind'];
 }) {
   const {
     response,
@@ -261,6 +265,7 @@ export function applySuccessfulChatResponse(params: {
     hydratedRef,
     router,
     syncUrl = true,
+    conversationKind = ChatConversationKinds.general,
   } = params;
 
   if (response.history) {
@@ -288,6 +293,7 @@ export function applySuccessfulChatResponse(params: {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         is_processing: response.is_processing ?? false,
+        kind: conversationKind,
       },
       ...prev,
     ]);

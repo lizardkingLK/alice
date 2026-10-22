@@ -46,6 +46,11 @@ import { ChatAgentsPanelDialog } from '@/app/chat/_components/chat-agents-panel-
 import { useBoundChatAgent } from '@/app/chat/_helpers/use-bound-chat-agent';
 import type { DashboardBreadcrumbOverride } from '@/app/dashboard/_components/dashboard-breadcrumb';
 import type { AppRole } from '@/lib/rbac';
+import {
+  ChatDockContextBar,
+  type ChatDockPageContext,
+} from '@/app/chat/_components/chat-dock-context-bar';
+import type { ChatViewContext } from '@repo/types/api/v1';
 
 const CHAT_PANEL_HEADER_CLASS =
   'border-border flex h-14 shrink-0 items-center border-b px-3';
@@ -169,12 +174,14 @@ type ChatFramePanelHeaderProps = {
   readonly canManageChatModels: boolean;
   readonly isInputDisabled: boolean;
   readonly isMarkingDefault: boolean;
+  readonly isLoadingModels?: boolean;
   readonly onToggleHistory: () => void;
   readonly onOpenGallery: () => void;
   // eslint-disable-next-line no-unused-vars -- callback prop types
   readonly onOpenDetail: (agentId: string) => void;
   readonly onNewChat: () => void;
   readonly onMarkSelectedAsDefault: () => Promise<void>;
+  readonly onEnsureModelsLoaded?: () => Promise<void>;
   // eslint-disable-next-line no-unused-vars -- callback prop types
   readonly onSelectedIntegrationIdChange: (value: string) => void;
   readonly onClose?: () => void;
@@ -190,11 +197,13 @@ function ChatFramePanelHeader({
   canManageChatModels,
   isInputDisabled,
   isMarkingDefault,
+  isLoadingModels = false,
   onToggleHistory,
   onOpenGallery,
   onOpenDetail,
   onNewChat,
   onMarkSelectedAsDefault,
+  onEnsureModelsLoaded,
   onSelectedIntegrationIdChange,
   onClose,
 }: Readonly<ChatFramePanelHeaderProps>) {
@@ -234,8 +243,10 @@ function ChatFramePanelHeader({
           selectedIntegrationId={selectedIntegrationId}
           canManageChatModels={canManageChatModels}
           isMarkingDefault={isMarkingDefault}
+          isLoadingModels={isLoadingModels}
           onSelectedIntegrationIdChange={onSelectedIntegrationIdChange}
           onMarkSelectedAsDefault={onMarkSelectedAsDefault}
+          onEnsureModelsLoaded={onEnsureModelsLoaded}
           onNewChat={onNewChat}
           onOpenAgentsGallery={isPage ? onOpenGallery : undefined}
           onClose={onClose}
@@ -251,6 +262,9 @@ type ChatFrameComposerProps = {
   readonly inputValue: string;
   readonly isInputDisabled: boolean;
   readonly fileInputRef: RefObject<HTMLInputElement | null>;
+  readonly pageContext?: ChatDockPageContext | null;
+  readonly viewContext?: ChatViewContext | null;
+  readonly onDismissPageContext?: () => void;
   // eslint-disable-next-line no-unused-vars -- callback prop types
   readonly onRemoveAttachment: (id: string) => void;
   // eslint-disable-next-line no-unused-vars -- callback prop types
@@ -273,6 +287,9 @@ function ChatFrameComposer({
   inputValue,
   isInputDisabled,
   fileInputRef,
+  pageContext = null,
+  viewContext = null,
+  onDismissPageContext,
   onRemoveAttachment,
   onFormSubmit,
   onFileSelect,
@@ -286,12 +303,21 @@ function ChatFrameComposer({
     (Boolean(inputValue.trim()) || pendingAttachments.length > 0) &&
     !isInputDisabled &&
     !isUploading;
+  const showDockContext = variant === 'docked';
 
   return (
     <div
       className={cn('bg-muted/20 shrink-0', isCompact ? 'p-2.5' : 'p-3 sm:p-4')}
     >
       <div className="mx-auto max-w-3xl">
+        {showDockContext ? (
+          <ChatDockContextBar
+            className="mb-2"
+            pageContext={pageContext}
+            viewContext={viewContext}
+            onDismiss={onDismissPageContext}
+          />
+        ) : null}
         <ChatAttachmentTiles
           attachments={pendingAttachments}
           onRemove={onRemoveAttachment}
@@ -377,6 +403,7 @@ type ChatClientFrameProps = {
   readonly canManageChatModels: boolean;
   readonly isInputDisabled: boolean;
   readonly isMarkingDefault: boolean;
+  readonly isLoadingModels?: boolean;
   readonly isPending: boolean;
   readonly isActiveConversationProcessing: boolean;
   readonly showHero: boolean;
@@ -396,6 +423,9 @@ type ChatClientFrameProps = {
   readonly conversationToRename: ChatConversation | null;
   readonly isDeleting: boolean;
   readonly isRenaming: boolean;
+  readonly pageContext?: ChatDockPageContext | null;
+  readonly viewContext?: ChatViewContext | null;
+  readonly onDismissPageContext?: () => void;
   readonly onClose?: () => void;
   // eslint-disable-next-line no-unused-vars -- callback prop types
   readonly onConversationSearchChange: (value: string) => void;
@@ -416,6 +446,7 @@ type ChatClientFrameProps = {
   ) => void;
   readonly onToggleHistory: () => void;
   readonly onMarkSelectedAsDefault: () => Promise<void>;
+  readonly onEnsureModelsLoaded?: () => Promise<void>;
   // eslint-disable-next-line no-unused-vars -- callback prop types
   readonly onSelectedIntegrationIdChange: (value: string) => void;
   // eslint-disable-next-line no-unused-vars -- callback prop types
@@ -463,6 +494,7 @@ export function ChatClientFrame({
   canManageChatModels,
   isInputDisabled,
   isMarkingDefault,
+  isLoadingModels = false,
   isPending,
   isActiveConversationProcessing,
   showHero,
@@ -482,6 +514,9 @@ export function ChatClientFrame({
   conversationToRename,
   isDeleting,
   isRenaming,
+  pageContext = null,
+  viewContext = null,
+  onDismissPageContext,
   onClose,
   onConversationSearchChange,
   onSelectConversation,
@@ -490,6 +525,7 @@ export function ChatClientFrame({
   onDeleteConversationClick,
   onToggleHistory,
   onMarkSelectedAsDefault,
+  onEnsureModelsLoaded,
   onSelectedIntegrationIdChange,
   onSendMessage,
   onRemoveAttachment,
@@ -563,11 +599,13 @@ export function ChatClientFrame({
           canManageChatModels={canManageChatModels}
           isInputDisabled={isInputDisabled}
           isMarkingDefault={isMarkingDefault}
+          isLoadingModels={isLoadingModels}
           onToggleHistory={onToggleHistory}
           onOpenGallery={openAgentsGallery}
           onOpenDetail={openAgentDetail}
           onNewChat={onNewChat}
           onMarkSelectedAsDefault={onMarkSelectedAsDefault}
+          onEnsureModelsLoaded={onEnsureModelsLoaded}
           onSelectedIntegrationIdChange={onSelectedIntegrationIdChange}
           onClose={onClose}
         />
@@ -596,6 +634,9 @@ export function ChatClientFrame({
             inputValue={inputValue}
             isInputDisabled={isInputDisabled}
             fileInputRef={fileInputRef}
+            pageContext={pageContext}
+            viewContext={viewContext}
+            onDismissPageContext={onDismissPageContext}
             onRemoveAttachment={onRemoveAttachment}
             onFormSubmit={onFormSubmit}
             onFileSelect={onFileSelect}

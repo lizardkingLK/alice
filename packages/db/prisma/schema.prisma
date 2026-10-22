@@ -34,6 +34,12 @@ enum SavedViewResourceKind {
   chart
 }
 
+/// `/chat` history threads vs dock/widget session-only chats (hidden from history).
+enum ChatConversationKind {
+  general
+  temporary
+}
+
 enum ProjectStatus {
   active
   archived
@@ -705,17 +711,20 @@ model version_control_connections {
 }
 
 model chat_conversations {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id       String   @db.Uuid
-  title         String   @default("New Chat")
-  is_processing Boolean  @default(false)
-  created_at    DateTime @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime @updatedAt @db.Timestamptz(6)
+  id            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String               @db.Uuid
+  title         String               @default("New Chat")
+  is_processing Boolean              @default(false)
+  /// `general` = `/chat` history; `temporary` = dock/widget (not listed in history).
+  kind          ChatConversationKind @default(general)
+  created_at    DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime             @updatedAt @db.Timestamptz(6)
 
   user        users              @relation(fields: [user_id], references: [id], onDelete: Cascade)
   attachments chat_attachments[]
 
   @@index([user_id])
+  @@index([user_id, kind])
 }
 
 model chat_attachments {
