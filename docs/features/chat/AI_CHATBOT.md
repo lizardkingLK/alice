@@ -81,10 +81,10 @@ Main **Alice** toolbar has a fixed `h-14` height.
 
 ### Data loading (PERFORMANCE.md)
 
-| Surface         | Initial conversations                          | Initial message history                        | Interactions after mount                     |
-| --------------- | ---------------------------------------------- | ---------------------------------------------- | -------------------------------------------- |
-| `/chat` page    | RSC direct Supabase (`chat.service.server.ts`) | RSC `apiFetch` → API (Storage is service-role) | Client `apiFetch` for send / switch / delete |
-| Floating drawer | Server action `listChatConversationsAction`    | Client `apiFetch` on open (Storage)            | Same                                         |
+| Surface        | Initial conversations                          | Initial message history                        | Interactions after mount                      |
+| -------------- | ---------------------------------------------- | ---------------------------------------------- | --------------------------------------------- |
+| `/chat` page   | RSC direct Supabase (`chat.service.server.ts`) | RSC `apiFetch` → API (Storage is service-role) | Client `apiFetch` for send / switch / delete  |
+| App-shell dock | None (opens instantly; empty session)          | None on open                                   | Client `apiFetch` on send; models on dropdown |
 
 `/chat` uses `Suspense` + `safeServerFetch(getChatPageBootstrap())` so the
 shell streams first; the client receives bootstrap props and **does not**
@@ -97,6 +97,25 @@ a live list and an owned **by-id** lookup before 404ing so the new thread stays
 reachable. The header favorite star stays disabled until the URL
 `conversationId` matches the active thread (avoids starring the wrong chat
 while create/select is still hydrating).
+
+### Dock vs `/chat` conversation kinds
+
+`chat_conversations.kind` (`ChatConversationKinds` in `@repo/types`):
+
+| Kind        | Created from                     | Listed on `/chat` history | Persistence                                   |
+| ----------- | -------------------------------- | ------------------------- | --------------------------------------------- |
+| `general`   | Full `/chat` page                | Yes                       | Normal history + Storage markdown             |
+| `temporary` | App-shell dock / Overview widget | No                        | Saved for multi-turn within the shell session |
+
+Apply migration `add_chat_conversation_kind` before deploying API/web that
+filter on `kind`.
+
+The dock opens with **no** conversation list, latest-thread hydrate, or model
+preload. Sends omit `integrationId` until the model menu is opened (API uses the
+workspace default). Closing the dock keeps the panel mounted (hidden) so the
+temporary thread continues for the page session. A **Context** bar sits above
+the composer (Jira Rovo-style): page Alice was opened on (nav icon + label),
+plus workflow designer via the existing `viewContext` bridge when registered.
 
 ---
 

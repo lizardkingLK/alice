@@ -718,6 +718,23 @@ export type EnumVersionControlConnectionStatusWithAggregatesFilter<$PrismaModel 
   _max?: Prisma.NestedEnumVersionControlConnectionStatusFilter<$PrismaModel>
 }
 
+export type EnumChatConversationKindFilter<$PrismaModel = never> = {
+  equals?: $Enums.ChatConversationKind | Prisma.EnumChatConversationKindFieldRefInput<$PrismaModel>
+  in?: $Enums.ChatConversationKind[] | Prisma.ListEnumChatConversationKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ChatConversationKind[] | Prisma.ListEnumChatConversationKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumChatConversationKindFilter<$PrismaModel> | $Enums.ChatConversationKind
+}
+
+export type EnumChatConversationKindWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ChatConversationKind | Prisma.EnumChatConversationKindFieldRefInput<$PrismaModel>
+  in?: $Enums.ChatConversationKind[] | Prisma.ListEnumChatConversationKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ChatConversationKind[] | Prisma.ListEnumChatConversationKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumChatConversationKindWithAggregatesFilter<$PrismaModel> | $Enums.ChatConversationKind
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumChatConversationKindFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumChatConversationKindFilter<$PrismaModel>
+}
+
 export type EnumSavedViewResourceKindFilter<$PrismaModel = never> = {
   equals?: $Enums.SavedViewResourceKind | Prisma.EnumSavedViewResourceKindFieldRefInput<$PrismaModel>
   in?: $Enums.SavedViewResourceKind[] | Prisma.ListEnumSavedViewResourceKindFieldRefInput<$PrismaModel>
@@ -1404,6 +1421,23 @@ export type NestedEnumVersionControlConnectionStatusWithAggregatesFilter<$Prisma
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumVersionControlConnectionStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumVersionControlConnectionStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumChatConversationKindFilter<$PrismaModel = never> = {
+  equals?: $Enums.ChatConversationKind | Prisma.EnumChatConversationKindFieldRefInput<$PrismaModel>
+  in?: $Enums.ChatConversationKind[] | Prisma.ListEnumChatConversationKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ChatConversationKind[] | Prisma.ListEnumChatConversationKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumChatConversationKindFilter<$PrismaModel> | $Enums.ChatConversationKind
+}
+
+export type NestedEnumChatConversationKindWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ChatConversationKind | Prisma.EnumChatConversationKindFieldRefInput<$PrismaModel>
+  in?: $Enums.ChatConversationKind[] | Prisma.ListEnumChatConversationKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ChatConversationKind[] | Prisma.ListEnumChatConversationKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumChatConversationKindWithAggregatesFilter<$PrismaModel> | $Enums.ChatConversationKind
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumChatConversationKindFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumChatConversationKindFilter<$PrismaModel>
 }
 
 export type NestedEnumSavedViewResourceKindFilter<$PrismaModel = never> = {

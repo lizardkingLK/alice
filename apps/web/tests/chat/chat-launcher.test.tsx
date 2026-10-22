@@ -4,6 +4,7 @@ import {
   ChatLauncherButton,
   ChatLauncherProvider,
 } from '@/app/chat/_components/chat-launcher';
+import type { ChatClientProps } from '@/app/chat/_components/chat-client.types';
 
 const usePathnameMock = vi.fn(() => '/dashboard');
 
@@ -11,17 +12,15 @@ vi.mock('next/navigation', () => ({
   usePathname: () => usePathnameMock(),
 }));
 
-vi.mock('@/app/chat/_components/chat-client-bootstrap', () => ({
-  bootstrapLatestChat: vi.fn(async () => ({
-    conversations: [],
-    activeConversationId: undefined,
-    messages: [],
-    chatModels: [],
-  })),
-}));
-
 vi.mock('@/app/chat/_components/chat-client', () => ({
-  ChatClient: () => <div data-testid="alice-dock-client">Chat</div>,
+  ChatClient: ({ pageContext }: ChatClientProps) => (
+    <div data-testid="alice-dock-client">
+      Chat
+      {pageContext ? (
+        <div data-testid="alice-dock-context">{pageContext.label}</div>
+      ) : null}
+    </div>
+  ),
 }));
 
 describe('ChatLauncherButton', () => {
@@ -30,7 +29,7 @@ describe('ChatLauncherButton', () => {
     usePathnameMock.mockReturnValue('/dashboard');
   });
 
-  it('opens the Alice dock sidebar from the navbar control', async () => {
+  it('opens the Alice dock sidebar instantly from the navbar control', () => {
     render(
       <ChatLauncherProvider>
         <ChatLauncherButton />
@@ -39,11 +38,14 @@ describe('ChatLauncherButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Open Alice/i }));
 
-    expect(await screen.findByTestId('alice-dock')).toBeInTheDocument();
-    expect(await screen.findByTestId('alice-dock-client')).toBeInTheDocument();
+    expect(screen.getByTestId('alice-dock')).toBeInTheDocument();
+    expect(screen.getByTestId('alice-dock-client')).toBeInTheDocument();
+    expect(screen.getByTestId('alice-dock-context')).toHaveTextContent(
+      'Overview'
+    );
   });
 
-  it('toggles the dock closed from the navbar control', async () => {
+  it('keeps the dock mounted (hidden) after close so the session continues', () => {
     render(
       <ChatLauncherProvider>
         <ChatLauncherButton />
@@ -51,10 +53,13 @@ describe('ChatLauncherButton', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Open Alice/i }));
-    expect(await screen.findByTestId('alice-dock')).toBeInTheDocument();
+    expect(screen.getByTestId('alice-dock')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Close Alice/i }));
-    expect(screen.queryByTestId('alice-dock')).not.toBeInTheDocument();
+    expect(screen.getByTestId('alice-dock')).toBeInTheDocument();
+    expect(screen.getByTestId('alice-dock').closest('div')).toHaveClass(
+      'hidden'
+    );
   });
 
   it('hides the navbar control on the full /chat page', () => {

@@ -467,6 +467,7 @@ export const Chat_conversationsScalarFieldEnum = {
   user_id: 'user_id',
   title: 'title',
   is_processing: 'is_processing',
+  kind: 'kind',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const

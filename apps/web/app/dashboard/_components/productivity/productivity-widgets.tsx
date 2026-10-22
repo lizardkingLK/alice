@@ -24,7 +24,6 @@ import {
   Plus,
   RotateCcw,
   Search,
-  Sparkles,
 } from '@repo/ui/lib/icons';
 import {
   Tooltip,
@@ -33,7 +32,6 @@ import {
 } from '@repo/ui/components/ui/tooltip';
 import { cn } from '@repo/ui/lib/utils';
 import { ChatClient } from '@/app/chat/_components/chat-client';
-import { useChatBootstrap } from '@/app/chat/_helpers/use-chat-bootstrap';
 import { DashboardWidgetShell } from '@/app/dashboard/_components/dashboard-widget-shell';
 import { PRODUCTIVITY_WIDGET_CATALOG } from '@/app/dashboard/_components/productivity/productivity-catalog';
 import {
@@ -142,13 +140,6 @@ function ProjectsWidget({
 
 function AliceWidget() {
   const meta = widgetById.alice;
-  const { isLoading, conversations, chatModels } = useChatBootstrap({
-    enabled: true,
-    preferNewChat: true,
-    logLabel: 'bootstrap Overview Alice widget',
-  });
-
-  const ready = conversations !== null && chatModels !== null && !isLoading;
 
   return (
     <DashboardWidgetShell
@@ -173,22 +164,14 @@ function AliceWidget() {
         </Tooltip>
       }
     >
-      {ready ? (
-        <div className="border-border flex min-h-0 flex-1 flex-col overflow-hidden border-t">
-          <ChatClient
-            variant="widget"
-            initialConversations={conversations}
-            initialConversationId={undefined}
-            initialMessages={[]}
-            initialChatModels={chatModels}
-          />
-        </div>
-      ) : (
-        <div className="text-muted-foreground flex min-h-40 flex-1 items-center justify-center gap-2 px-4 text-sm">
-          <Sparkles className="size-4" aria-hidden />
-          {isLoading ? 'Loading Alice…' : 'Alice is unavailable right now.'}
-        </div>
-      )}
+      <div className="border-border flex min-h-0 flex-1 flex-col overflow-hidden border-t">
+        <ChatClient
+          variant="widget"
+          initialConversations={[]}
+          initialConversationId={undefined}
+          initialMessages={[]}
+        />
+      </div>
     </DashboardWidgetShell>
   );
 }

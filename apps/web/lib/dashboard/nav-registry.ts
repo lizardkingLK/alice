@@ -80,16 +80,43 @@ const ALL_FAVORITE_NAV_ICONS: readonly DashboardNavItem[] = [
 export const DEFAULT_FAVORITE_NAV_ICON: LucideIcon = CircleDot;
 
 /**
+ * Longest path-prefix match against the nav registry (icons + labels).
+ */
+export function resolveDashboardNavItem(
+  pathname: string
+): DashboardNavItem | null {
+  const normalized = normalizeFavoritePathname(pathname);
+  return (
+    [...ALL_FAVORITE_NAV_ICONS]
+      .sort((a, b) => b.path.length - a.path.length)
+      .find(
+        ({ path }) => normalized === path || normalized.startsWith(`${path}/`)
+      ) ?? null
+  );
+}
+
+/**
  * Resolve the sidebar icon for a favorited pathname (query already stripped).
  * Longest path prefix wins.
  */
 export function resolveFavoriteNavIcon(pathname: string): LucideIcon {
-  const normalized = normalizeFavoritePathname(pathname);
-  const match = [...ALL_FAVORITE_NAV_ICONS]
-    .sort((a, b) => b.path.length - a.path.length)
-    .find(
-      ({ path }) => normalized === path || normalized.startsWith(`${path}/`)
-    );
+  return resolveDashboardNavItem(pathname)?.icon ?? DEFAULT_FAVORITE_NAV_ICON;
+}
 
-  return match?.icon ?? DEFAULT_FAVORITE_NAV_ICON;
+/** Human label for a dashboard pathname (fallback: last segment / path). */
+export function resolveDashboardNavLabel(pathname: string): string {
+  const match = resolveDashboardNavItem(pathname);
+  if (match) {
+    return match.label;
+  }
+  const normalized = normalizeFavoritePathname(pathname);
+  const segment = normalized.split('/').filter(Boolean).at(-1);
+  if (!segment) {
+    return 'Page';
+  }
+  return segment
+    .split('-')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }

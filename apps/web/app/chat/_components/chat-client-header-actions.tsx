@@ -47,9 +47,11 @@ type ChatClientHeaderActionsProps = {
   readonly selectedIntegrationId: string | undefined;
   readonly canManageChatModels: boolean;
   readonly isMarkingDefault: boolean;
+  readonly isLoadingModels?: boolean;
   // eslint-disable-next-line no-unused-vars
   readonly onSelectedIntegrationIdChange: (value: string) => void;
   readonly onMarkSelectedAsDefault: () => Promise<void>;
+  readonly onEnsureModelsLoaded?: () => Promise<void>;
   readonly onNewChat: () => void;
   readonly onOpenAgentsGallery?: () => void;
   readonly onClose?: () => void;
@@ -240,6 +242,97 @@ function NewChatOrAdminPlusButton({
   );
 }
 
+function CompactChatActionsMenu({
+  isPending,
+  chatModels,
+  selectedIntegrationId,
+  canManageChatModels,
+  isLoadingModels,
+  onSelectedIntegrationIdChange,
+  onEnsureModelsLoaded,
+  onNewChat,
+  onClose,
+}: Readonly<{
+  isPending: boolean;
+  chatModels: readonly ChatModelOption[];
+  selectedIntegrationId: string | undefined;
+  canManageChatModels: boolean;
+  isLoadingModels: boolean;
+  // eslint-disable-next-line no-unused-vars
+  onSelectedIntegrationIdChange: (value: string) => void;
+  onEnsureModelsLoaded?: () => Promise<void>;
+  onNewChat: () => void;
+  onClose?: () => void;
+}>) {
+  const hasModels = chatModels.length > 0;
+
+  return (
+    <>
+      <DropdownMenu
+        onOpenChange={(open) => {
+          if (open && onEnsureModelsLoaded) {
+            void onEnsureModelsLoaded();
+          }
+        }}
+      >
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Chat actions"
+          >
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-60">
+          <DropdownMenuItem onClick={onNewChat} disabled={isPending}>
+            <Plus className="size-4" />
+            New chat
+          </DropdownMenuItem>
+          {canManageChatModels ? (
+            <DropdownMenuItem asChild>
+              <Link href={chatAiAgentsIntegrationsHref()}>
+                <Settings2 className="size-4" />
+                Configure AI models
+              </Link>
+            </DropdownMenuItem>
+          ) : null}
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>Model</DropdownMenuLabel>
+          {hasModels ? (
+            <ChatModelProviderSubmenus
+              chatModels={chatModels}
+              selectedIntegrationId={selectedIntegrationId}
+              onSelectedIntegrationIdChange={onSelectedIntegrationIdChange}
+            />
+          ) : (
+            <DropdownMenuItem disabled>
+              {isLoadingModels ? 'Loading models…' : 'Using workspace default'}
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {onClose ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              aria-label="Close chat"
+            >
+              <X className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Close</TooltipContent>
+        </Tooltip>
+      ) : null}
+    </>
+  );
+}
+
 export default function ChatClientHeaderActions({
   variant,
   isPending,
@@ -247,8 +340,10 @@ export default function ChatClientHeaderActions({
   selectedIntegrationId,
   canManageChatModels,
   isMarkingDefault,
+  isLoadingModels = false,
   onSelectedIntegrationIdChange,
   onMarkSelectedAsDefault,
+  onEnsureModelsLoaded,
   onNewChat,
   onOpenAgentsGallery,
   onClose,
@@ -275,26 +370,23 @@ export default function ChatClientHeaderActions({
       </Tooltip>
     ) : null;
 
-  if (!hasModels) {
-    if (showCompactMenu && onClose) {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              aria-label="Close chat"
-            >
-              <X className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">Close</TooltipContent>
-        </Tooltip>
-      );
-    }
+  if (showCompactMenu) {
+    return (
+      <CompactChatActionsMenu
+        isPending={isPending}
+        chatModels={chatModels}
+        selectedIntegrationId={selectedIntegrationId}
+        canManageChatModels={canManageChatModels}
+        isLoadingModels={isLoadingModels}
+        onSelectedIntegrationIdChange={onSelectedIntegrationIdChange}
+        onEnsureModelsLoaded={onEnsureModelsLoaded}
+        onNewChat={onNewChat}
+        onClose={onClose}
+      />
+    );
+  }
 
+  if (!hasModels) {
     // Still allow admins to reach model settings when none are configured.
     if (variant === 'page' && canManageChatModels) {
       return (
@@ -310,62 +402,6 @@ export default function ChatClientHeaderActions({
     }
 
     return agentsGalleryButton;
-  }
-
-  if (showCompactMenu) {
-    return (
-      <>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label="Chat actions"
-            >
-              <MoreHorizontal className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-60">
-            <DropdownMenuItem onClick={onNewChat} disabled={isPending}>
-              <Plus className="size-4" />
-              New chat
-            </DropdownMenuItem>
-            {canManageChatModels ? (
-              <DropdownMenuItem asChild>
-                <Link href={chatAiAgentsIntegrationsHref()}>
-                  <Settings2 className="size-4" />
-                  Configure AI models
-                </Link>
-              </DropdownMenuItem>
-            ) : null}
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel>Model</DropdownMenuLabel>
-            <ChatModelProviderSubmenus
-              chatModels={chatModels}
-              selectedIntegrationId={selectedIntegrationId}
-              onSelectedIntegrationIdChange={onSelectedIntegrationIdChange}
-            />
-          </DropdownMenuContent>
-        </DropdownMenu>
-        {onClose ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                aria-label="Close chat"
-              >
-                <X className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Close</TooltipContent>
-          </Tooltip>
-        ) : null}
-      </>
-    );
   }
 
   return (

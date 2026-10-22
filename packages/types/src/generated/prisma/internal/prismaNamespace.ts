@@ -2925,6 +2925,7 @@ export const Chat_conversationsScalarFieldEnum = {
   user_id: 'user_id',
   title: 'title',
   is_processing: 'is_processing',
+  kind: 'kind',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -3432,6 +3433,20 @@ export type EnumVersionControlConnectionStatusFieldRefInput<$PrismaModel> = Fiel
  * Reference to a field of type 'VersionControlConnectionStatus[]'
  */
 export type ListEnumVersionControlConnectionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VersionControlConnectionStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'ChatConversationKind'
+ */
+export type EnumChatConversationKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ChatConversationKind'>
+    
+
+
+/**
+ * Reference to a field of type 'ChatConversationKind[]'
+ */
+export type ListEnumChatConversationKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ChatConversationKind[]'>
     
 
 

@@ -42,21 +42,29 @@ On any dashboard page (except `/chat`):
 
 1. Select the **Alice** control in the header (between notifications and your
    profile).
-2. Alice opens as a **right-hand sidebar** that shares the page width — it does
-   **not** cover the page with a blur overlay.
-3. Select the control again (or the **Close** control in Alice’s header) to
-   hide the sidebar and give the page full width.
-4. Continue the conversation without leaving your current page.
+2. Alice opens **immediately** as a **right-hand sidebar** that shares the page
+   width — it does **not** cover the page with a blur overlay.
+3. A **Context** strip just above the message box shows the page you opened
+   Alice from (icon + name). When you are on the **Workflow** designer, that
+   context is included so Alice can work with the live draft. You can dismiss
+   the page chip with the **X** on the strip.
+4. Select the control again (or the **Close** control in Alice’s header) to
+   hide the sidebar and give the page full width. Closing does **not** clear
+   the dock conversation for that session — reopen to continue.
+5. Dock chats are **temporary**: they are saved while you talk on that page, but
+   they do **not** appear in the history list on the full `/chat` page.
+6. Alice uses the workspace **default model** until you open the model menu and
+   pick another (models load when you open that menu).
 
 ---
 
 ## Workflow designer context
 
 When the project **Workflow** designer is open (managers/admins), Alice is
-**aware of that designer** (project, live draft, unsaved changes). You can ask
-in natural language to change the graph — for example add a state, connect Dev
-to QA, or turn on **Lock record in this state**, **Terminal state**, or
-**Require children** on a transition.
+**aware of that designer** (project, live draft, unsaved changes) via the dock
+**Context** strip. You can ask in natural language to change the graph — for
+example add a state, connect Dev to QA, or turn on **Lock record in this
+state**, **Terminal state**, or **Require children** on a transition.
 
 Board column drafts are no longer offered; workflow proposals are the only
 structured configuration path.

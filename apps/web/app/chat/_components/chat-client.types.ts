@@ -6,6 +6,7 @@ import type {
   ChatViewContext,
 } from '@repo/types';
 import type { AppRole } from '@/lib/rbac';
+import type { ChatDockPageContext } from '@/app/chat/_components/chat-dock-context-bar';
 
 export type ActionItem = ChatToolActionWire;
 export type ChatMessage = ChatMessageWire;
@@ -25,6 +26,9 @@ export type ChatClientProps = {
   readonly onClose?: () => void;
   /** Page-aware context (e.g. workflow designer draft) sent with each turn. */
   readonly viewContext?: ChatViewContext | null;
+  /** Dock-only: page Alice was opened from (shown above the composer). */
+  readonly pageContext?: ChatDockPageContext | null;
+  readonly onDismissPageContext?: () => void;
   readonly currentUserName?: string | null;
   readonly currentUserEmail?: string | null;
   readonly currentUserImageUrl?: string | null;

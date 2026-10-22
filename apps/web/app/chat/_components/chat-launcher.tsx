@@ -11,17 +11,21 @@ import {
 import { usePathname } from 'next/navigation';
 import { Button } from '@repo/ui/components/ui/button';
 import { Sparkles } from '@repo/ui/lib/icons';
+import { cn } from '@repo/ui/lib/utils';
 import type { ChatViewContext } from '@repo/types/api/v1';
 import type { AppRole } from '@/lib/rbac';
-import { useChatBootstrap } from '@/app/chat/_helpers/use-chat-bootstrap';
+import {
+  captureChatDockPageContext,
+  type ChatDockPageContext,
+} from '@/app/chat/_components/chat-dock-context-bar';
 import { DockedChatPanel } from '@/app/chat/_components/docked-chat-panel';
 import type { WorkflowAliceBridgeValue } from '@/app/projects/_components/project-details/workflow-alice-bridge';
 
 type ChatLauncherContextValue = {
   readonly isOpen: boolean;
-  readonly openLauncher: () => Promise<void>;
+  readonly openLauncher: () => void;
   readonly closeLauncher: () => void;
-  readonly toggleLauncher: () => Promise<void>;
+  readonly toggleLauncher: () => void;
   readonly viewContext: ChatViewContext | null;
   readonly setViewContext: (
     // eslint-disable-next-line no-unused-vars -- documents payload
@@ -67,38 +71,35 @@ export function ChatLauncherProvider({
   const pathname = usePathname();
   const hideOnChatPage = pathname === '/chat';
   const [isOpen, setIsOpen] = useState(false);
+  const [hasOpened, setHasOpened] = useState(false);
+  const [pageContext, setPageContext] = useState<ChatDockPageContext | null>(
+    null
+  );
   const [viewContext, setViewContext] = useState<ChatViewContext | null>(null);
   const [surfaceBridge, setSurfaceBridge] =
     useState<WorkflowAliceBridgeValue | null>(null);
 
-  const {
-    ensureLoaded,
-    conversations,
-    activeConversationId,
-    messages,
-    chatModels,
-  } = useChatBootstrap({
-    enabled: isOpen && !hideOnChatPage,
-    logLabel: 'bootstrap docked Alice sidebar',
-  });
-
-  const openLauncher = useCallback(async () => {
-    await ensureLoaded();
+  const openLauncher = useCallback(() => {
+    setPageContext(captureChatDockPageContext(pathname));
+    setHasOpened(true);
     setIsOpen(true);
-  }, [ensureLoaded]);
+  }, [pathname]);
 
   const closeLauncher = useCallback(() => {
     setIsOpen(false);
   }, []);
 
-  const toggleLauncher = useCallback(async () => {
+  const dismissPageContext = useCallback(() => {
+    setPageContext(null);
+  }, []);
+
+  const toggleLauncher = useCallback(() => {
     if (isOpen) {
       setIsOpen(false);
       return;
     }
-    await ensureLoaded();
-    setIsOpen(true);
-  }, [ensureLoaded, isOpen]);
+    openLauncher();
+  }, [isOpen, openLauncher]);
 
   const value = useMemo(
     () => ({
@@ -121,7 +122,7 @@ export function ChatLauncherProvider({
     ]
   );
 
-  const showDock = isOpen && !hideOnChatPage;
+  const showDock = hasOpened && !hideOnChatPage;
 
   return (
     <ChatLauncherContext.Provider value={value}>
@@ -130,17 +131,22 @@ export function ChatLauncherProvider({
           {children}
         </div>
         {showDock ? (
-          <DockedChatPanel
-            onClose={closeLauncher}
-            viewContext={viewContext}
-            currentUserName={currentUserName}
-            currentUserImageUrl={currentUserImageUrl}
-            currentUserRole={currentUserRole}
-            bootstrapConversations={conversations}
-            bootstrapActiveConversationId={activeConversationId}
-            bootstrapMessages={messages}
-            bootstrapChatModels={chatModels}
-          />
+          <div
+            className={cn(
+              'flex h-full min-h-0 shrink-0 flex-col',
+              !isOpen && 'hidden'
+            )}
+          >
+            <DockedChatPanel
+              onClose={closeLauncher}
+              viewContext={viewContext}
+              pageContext={pageContext}
+              onDismissPageContext={dismissPageContext}
+              currentUserName={currentUserName}
+              currentUserImageUrl={currentUserImageUrl}
+              currentUserRole={currentUserRole}
+            />
+          </div>
         ) : null}
       </div>
     </ChatLauncherContext.Provider>
@@ -164,7 +170,7 @@ export function ChatLauncherButton() {
       aria-pressed={isOpen}
       className="cursor-pointer"
       onClick={() => {
-        void toggleLauncher();
+        toggleLauncher();
       }}
     >
       <Sparkles className="size-4" />

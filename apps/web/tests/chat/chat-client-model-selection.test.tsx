@@ -136,6 +136,7 @@ const existingConversation = {
   created_at: '2026-10-16T00:00:00.000Z',
   updated_at: '2026-10-16T00:00:00.000Z',
   is_processing: false,
+  kind: 'general' as const,
 };
 
 const createdMessages: ChatMessage[] = [
@@ -213,7 +214,8 @@ describe('ChatClient model selection lifecycle', () => {
       undefined,
       SELECTED_INTEGRATION_ID,
       undefined,
-      null
+      null,
+      'general'
     );
     expect(mockReplace).toHaveBeenCalledWith(
       `/chat?conversationId=${CREATED_CONVERSATION_ID}`
@@ -250,7 +252,8 @@ describe('ChatClient model selection lifecycle', () => {
       CREATED_CONVERSATION_ID,
       SELECTED_INTEGRATION_ID,
       undefined,
-      null
+      null,
+      'general'
     );
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), {

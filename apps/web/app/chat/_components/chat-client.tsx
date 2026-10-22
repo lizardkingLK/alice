@@ -8,8 +8,16 @@ import React, {
   useMemo,
 } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChatRoles, type ChatAttachmentWire } from '@repo/types';
-import type { ChatMessage, ChatClientProps } from './chat-client.types';
+import {
+  ChatConversationKinds,
+  ChatRoles,
+  type ChatAttachmentWire,
+} from '@repo/types';
+import {
+  isCompactChatChrome,
+  type ChatMessage,
+  type ChatClientProps,
+} from './chat-client.types';
 import {
   sendChatMessage,
   deleteConversation,
@@ -48,7 +56,11 @@ import {
 } from './chat-client-support';
 
 export function ChatClient(props: Readonly<ChatClientProps>) {
-  const chatModelSelection = useWorkspaceChatModels(props.initialChatModels);
+  const compact = isCompactChatChrome(props.variant ?? 'page');
+  const chatModelSelection = useWorkspaceChatModels({
+    initialChatModels: props.initialChatModels,
+    lazy: compact && props.initialChatModels === undefined,
+  });
 
   return (
     <ChatClientConversationScope
@@ -79,6 +91,8 @@ function ChatClientInner({
   variant = 'page',
   onClose,
   viewContext = null,
+  pageContext = null,
+  onDismissPageContext,
   currentUserName,
   currentUserEmail = null,
   currentUserImageUrl,
@@ -142,8 +156,14 @@ function ChatClientInner({
     selectedIntegrationId,
     setSelectedIntegrationId,
     isMarkingDefault,
+    isLoadingModels,
+    ensureModelsLoaded,
     markSelectedAsDefault,
   } = chatModelSelection;
+  const isCompact = isCompactChatChrome(variant);
+  const conversationKind = isCompact
+    ? ChatConversationKinds.temporary
+    : ChatConversationKinds.general;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -344,7 +364,9 @@ function ChatClientInner({
       return;
     }
 
-    if (!selectedIntegrationId) {
+    // Page requires an explicit selection; dock/widget omit id so the API
+    // uses the workspace default until the model menu has been opened.
+    if (!isCompact && !selectedIntegrationId) {
       setError(NO_CHAT_MODEL_ERROR);
       return;
     }
@@ -390,7 +412,8 @@ function ChatClientInner({
         activeConversationId,
         selectedIntegrationId,
         attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
-        viewContext
+        viewContext,
+        conversationKind
       );
 
       applySuccessfulChatResponse({
@@ -403,8 +426,11 @@ function ChatClientInner({
         hydratedRef,
         router,
         syncUrl: isPage,
+        conversationKind,
       });
-      void revalidateChatConversations();
+      if (conversationKind === ChatConversationKinds.general) {
+        void revalidateChatConversations();
+      }
 
       await syncChatMutationSideEffects({
         actions: response.actions,
@@ -531,6 +557,9 @@ function ChatClientInner({
       conversationToRename={conversationToRename}
       isDeleting={isDeleting}
       isRenaming={isRenaming}
+      pageContext={pageContext}
+      viewContext={viewContext}
+      onDismissPageContext={onDismissPageContext}
       onClose={onClose}
       onConversationSearchChange={setConversationSearch}
       onSelectConversation={(id) => {
@@ -541,6 +570,8 @@ function ChatClientInner({
       onDeleteConversationClick={handleDeleteConversationClick}
       onToggleHistory={handleToggleHistory}
       onMarkSelectedAsDefault={markSelectedAsDefault}
+      onEnsureModelsLoaded={ensureModelsLoaded}
+      isLoadingModels={isLoadingModels}
       onSelectedIntegrationIdChange={setSelectedIntegrationId}
       onSendMessage={(text) => {
         void handleSendMessage(text);

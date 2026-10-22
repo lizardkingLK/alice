@@ -44,6 +44,14 @@ export const SavedViewResourceKind = {
 export type SavedViewResourceKind = (typeof SavedViewResourceKind)[keyof typeof SavedViewResourceKind]
 
 
+export const ChatConversationKind = {
+  general: 'general',
+  temporary: 'temporary'
+} as const
+
+export type ChatConversationKind = (typeof ChatConversationKind)[keyof typeof ChatConversationKind]
+
+
 export const ProjectStatus = {
   active: 'active',
   archived: 'archived'
