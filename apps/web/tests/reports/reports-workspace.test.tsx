@@ -85,6 +85,27 @@ const generatedReport = {
   },
 };
 
+const generatedAiReport = {
+  ...generatedReport,
+  markdown: `${generatedReport.markdown}\n\n## AI Insights\n\n### Overall Progress\n\nThe selected work is progressing.`,
+  aiInsightsStatus: 'generated' as const,
+  aiInsights: {
+    completedWork: [],
+    importantInProgress: [],
+    pendingTasks: [],
+    blockedAndOverdue: [],
+    potentialRisks: [],
+    upcomingDeadlines: [],
+    nextPriorities: [],
+    overallProgress: 'The selected work is progressing.',
+  },
+};
+
+const unavailableAiReport = {
+  ...generatedReport,
+  aiInsightsStatus: 'unavailable' as const,
+};
+
 function renderWorkspace(search = 'date=2026-10-20&timezone=UTC') {
   configureNextNavigationMock({
     pathname: '/reports',
@@ -108,6 +129,14 @@ describe('ReportsWorkspace', () => {
     expect(screen.getByLabelText('Timezone')).toHaveValue('UTC');
     expect(screen.getByLabelText('Report Detail')).toHaveValue('standard');
     expect(
+      screen.getByRole('checkbox', { name: 'Include AI insights' })
+    ).not.toBeChecked();
+    expect(
+      screen.getByText(
+        'Use AI to explain progress, risks, and suggested next priorities.'
+      )
+    ).toBeVisible();
+    expect(
       screen.getByText('Choose how much information to include in your report.')
     ).toBeVisible();
     expect(screen.getByRole('option', { name: 'Short' })).toHaveValue(
@@ -120,6 +149,19 @@ describe('ReportsWorkspace', () => {
     expect(screen.getByText('All sprints')).toBeVisible();
     expect(generateDailyReport).not.toHaveBeenCalled();
     expect(screen.getByText(/configure your report/i)).toBeVisible();
+  });
+
+  it('changes the AI opt-in locally without generating a report', () => {
+    renderWorkspace();
+    const checkbox = screen.getByRole('checkbox', {
+      name: 'Include AI insights',
+    });
+
+    fireEvent.click(checkbox);
+
+    expect(checkbox).toBeChecked();
+    expect(generateDailyReport).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
   it('initializes filters from URL parameters', () => {
@@ -164,6 +206,7 @@ describe('ReportsWorkspace', () => {
         reportDate: '2026-10-20',
         timezone: 'UTC',
         verbosity: 'standard',
+        includeAiInsights: false,
       })
     );
     for (const [label, value] of [
@@ -185,6 +228,56 @@ describe('ReportsWorkspace', () => {
     expect(screen.getByText('Ship report preview')).toBeVisible();
     expect(screen.getByText(/current work-item state/i)).toBeVisible();
     expect(screen.getByText(/generated/i)).toBeVisible();
+    expect(
+      screen.queryByText(/AI insights are unavailable right now/i)
+    ).not.toBeInTheDocument();
+  });
+
+  it('sends the complete report configuration when AI is enabled', async () => {
+    vi.mocked(generateDailyReport).mockResolvedValue(generatedAiReport);
+    renderWorkspace(
+      `date=2026-10-19&timezone=Asia%2FColombo&projects=${PROJECT_ID}&sprints=${SPRINT_ID}&verbosity=detailed`
+    );
+
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: 'Include AI insights' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
+
+    await waitFor(() =>
+      expect(generateDailyReport).toHaveBeenCalledWith({
+        reportType: 'daily',
+        reportDate: '2026-10-19',
+        timezone: 'Asia/Colombo',
+        verbosity: 'detailed',
+        projectIds: [PROJECT_ID],
+        sprintIds: [SPRINT_ID],
+        includeAiInsights: true,
+      })
+    );
+  });
+
+  it('renders generated AI Markdown once alongside deterministic metrics', async () => {
+    vi.mocked(generateDailyReport).mockResolvedValue(generatedAiReport);
+    renderWorkspace();
+
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: 'Include AI insights' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
+
+    expect(
+      await screen.findByRole('heading', { name: 'AI Insights' })
+    ).toBeVisible();
+    expect(
+      screen.getAllByRole('heading', { name: 'AI Insights' })
+    ).toHaveLength(1);
+    const completedMetric = screen
+      .getAllByText('Completed', { exact: true })
+      .find(
+        (element) => element.nextElementSibling?.textContent?.trim() === '1'
+      );
+    expect(completedMetric).toBeVisible();
   });
 
   it('includes selected project and sprint filters in the request', async () => {
@@ -219,6 +312,8 @@ describe('ReportsWorkspace', () => {
     expect(
       screen.getByRole('button', { name: 'Generating report' })
     ).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Generating report' }));
+    expect(generateDailyReport).toHaveBeenCalledOnce();
 
     resolveReport(generatedReport);
     await waitFor(() =>
@@ -280,8 +375,56 @@ describe('ReportsWorkspace', () => {
     expect(await screen.findByText('No matching work items')).toBeVisible();
   });
 
+  it('shows a non-blocking warning while keeping an unavailable report usable', async () => {
+    vi.mocked(generateDailyReport).mockResolvedValue(unavailableAiReport);
+    renderWorkspace();
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: 'Include AI insights' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'AI insights are unavailable right now. Your regular report was generated successfully.'
+    );
+    expect(screen.getByText('Ship report preview')).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Download Markdown' })
+    ).toBeEnabled();
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: 'Include AI insights' })
+    );
+    expect(screen.getByRole('status')).toBeVisible();
+    expect(generateDailyReport).toHaveBeenCalledOnce();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Download Markdown' }));
+    expect(downloadReportMarkdown).toHaveBeenCalledWith(
+      unavailableAiReport.markdown,
+      'daily',
+      '2026-10-20'
+    );
+  });
+
+  it('replaces an old AI warning with the latest successful report state', async () => {
+    vi.mocked(generateDailyReport)
+      .mockResolvedValueOnce(unavailableAiReport)
+      .mockResolvedValueOnce(generatedAiReport);
+    renderWorkspace();
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: 'Include AI insights' })
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
+    expect(await screen.findByRole('status')).toBeVisible();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
+    expect(
+      await screen.findByRole('heading', { name: 'AI Insights' })
+    ).toBeVisible();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
   it('downloads the exact generated Markdown', async () => {
-    vi.mocked(generateDailyReport).mockResolvedValue(generatedReport);
+    vi.mocked(generateDailyReport).mockResolvedValue(generatedAiReport);
     renderWorkspace();
     fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
 
@@ -289,7 +432,7 @@ describe('ReportsWorkspace', () => {
       await screen.findByRole('button', { name: 'Download Markdown' })
     );
     expect(downloadReportMarkdown).toHaveBeenCalledWith(
-      generatedReport.markdown,
+      generatedAiReport.markdown,
       'daily',
       '2026-10-20'
     );

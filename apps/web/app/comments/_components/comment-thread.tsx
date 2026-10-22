@@ -17,7 +17,7 @@ type ReactionToggleHandler = (
   commentId: string,
   emoji: CommentReactionEmoji,
   action: 'add' | 'remove'
-) => void | Promise<void>;
+) => void;
 /* eslint-enable no-unused-vars */
 
 type CommentThreadProps = {

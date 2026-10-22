@@ -11,6 +11,42 @@ export const REPORT_VERBOSITIES = ['concise', 'standard', 'detailed'] as const;
 export const reportVerbositySchema = z.enum(REPORT_VERBOSITIES);
 export type ReportVerbosity = z.infer<typeof reportVerbositySchema>;
 
+export const DAILY_REPORT_AI_INSIGHTS_STATUSES = [
+  'not_requested',
+  'generated',
+  'unavailable',
+] as const;
+export const dailyReportAiInsightsStatusSchema = z.enum(
+  DAILY_REPORT_AI_INSIGHTS_STATUSES
+);
+export type DailyReportAiInsightsStatus = z.infer<
+  typeof dailyReportAiInsightsStatusSchema
+>;
+
+const DAILY_REPORT_AI_INSIGHT_MAX_ITEMS = 20;
+const DAILY_REPORT_AI_INSIGHT_MAX_LENGTH = 1000;
+const dailyReportAiInsightTextSchema = z
+  .string()
+  .min(1)
+  .max(DAILY_REPORT_AI_INSIGHT_MAX_LENGTH);
+const dailyReportAiInsightListSchema = z
+  .array(dailyReportAiInsightTextSchema)
+  .max(DAILY_REPORT_AI_INSIGHT_MAX_ITEMS);
+
+export const dailyReportAiInsightsSchema = z
+  .object({
+    completedWork: dailyReportAiInsightListSchema,
+    importantInProgress: dailyReportAiInsightListSchema,
+    pendingTasks: dailyReportAiInsightListSchema,
+    blockedAndOverdue: dailyReportAiInsightListSchema,
+    potentialRisks: dailyReportAiInsightListSchema,
+    upcomingDeadlines: dailyReportAiInsightListSchema,
+    nextPriorities: dailyReportAiInsightListSchema,
+    overallProgress: dailyReportAiInsightTextSchema,
+  })
+  .strict();
+export type DailyReportAiInsights = z.infer<typeof dailyReportAiInsightsSchema>;
+
 function isCalendarDate(value: string): boolean {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) {
@@ -62,12 +98,21 @@ export const dailyReportRequestSchema = z
     projectIds: optionalIdFilterSchema,
     sprintIds: optionalIdFilterSchema,
     verbosity: reportVerbositySchema.default('standard'),
+    includeAiInsights: z.boolean().default(false),
   })
   .strict();
 
 export const generateReportRequestSchema = dailyReportRequestSchema;
-export type DailyReportRequest = z.infer<typeof dailyReportRequestSchema>;
-export type GenerateReportRequest = z.infer<typeof generateReportRequestSchema>;
+type DailyReportRequestInput = z.input<typeof dailyReportRequestSchema>;
+export type DailyReportRequest = Omit<DailyReportRequestInput, 'verbosity'> & {
+  verbosity: ReportVerbosity;
+};
+export type GenerateReportRequest = Omit<
+  z.input<typeof generateReportRequestSchema>,
+  'verbosity'
+> & {
+  verbosity: ReportVerbosity;
+};
 
 export const dailyReportWorkItemSchema = z.object({
   id: z.string().min(1),
@@ -139,6 +184,8 @@ export const generateReportResponseSchema = z.object({
   snapshot: dailyReportSnapshotSchema,
   markdown: z.string(),
   metadata: dailyReportMetadataSchema,
+  aiInsights: dailyReportAiInsightsSchema.optional(),
+  aiInsightsStatus: dailyReportAiInsightsStatusSchema.optional(),
 });
 export type GenerateReportResponse = z.infer<
   typeof generateReportResponseSchema

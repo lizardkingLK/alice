@@ -209,7 +209,13 @@ export function createCommentReactionMutationQueue(
     let lastUpdatedAt: string | undefined;
     const generationAtStart = lane.generation;
 
-    for (const diff of diffs) {
+    // Serial flushes (coalesce already collapsed net diffs). Recursive send
+    // avoids await-in-for (typescript:S9382) while preserving order.
+    const sendRemaining = async (remaining: typeof diffs): Promise<void> => {
+      const [diff, ...rest] = remaining;
+      if (!diff) {
+        return;
+      }
       const result = await options.sendToggle(
         commentId,
         diff.emoji,
@@ -219,9 +225,12 @@ export function createCommentReactionMutationQueue(
       lastReactions = result.reactions;
       lastUpdatedAt = result.updated_at;
       lane.ack = membershipFromReactions(result.reactions, userId);
-    }
+      await sendRemaining(rest);
+    };
+    await sendRemaining(diffs);
 
-    if (lastReactions === undefined) {
+    const reactionsToApply = lastReactions;
+    if (reactionsToApply === undefined) {
       return;
     }
 
@@ -232,7 +241,7 @@ export function createCommentReactionMutationQueue(
       return replaceCommentReactions(
         prev,
         commentId,
-        lastReactions,
+        reactionsToApply,
         lastUpdatedAt
       );
     });

@@ -37,6 +37,111 @@ describe('fetchChatProviderWithRetries', () => {
     expect(fetchOnce).toHaveBeenCalledTimes(1);
   });
 
+  it('does not fetch when the signal is already aborted', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const fetchOnce = vi.fn(async () => new Response(null, { status: 200 }));
+
+    await expect(
+      fetchChatProviderWithRetries({
+        provider: 'test',
+        providerLabel: 'Test',
+        modelId: 'm1',
+        messagesCount: 1,
+        fetchOnce,
+        resolveUserFacingError: () => null,
+        signal: controller.signal,
+      })
+    ).rejects.toMatchObject({ name: 'AbortError' });
+
+    expect(fetchOnce).not.toHaveBeenCalled();
+    expect(logLlmProviderErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('does not retry when the active fetch is aborted', async () => {
+    vi.useFakeTimers();
+    const controller = new AbortController();
+    const fetchOnce = vi.fn(() => {
+      if (controller.signal.aborted) {
+        return Promise.reject(
+          new DOMException('The operation was aborted.', 'AbortError')
+        );
+      }
+
+      return new Promise<Response>((_resolve, reject) => {
+        controller.signal.addEventListener(
+          'abort',
+          () =>
+            reject(
+              new DOMException('The operation was aborted.', 'AbortError')
+            ),
+          { once: true }
+        );
+      });
+    });
+
+    const promise = fetchChatProviderWithRetries({
+      provider: 'test',
+      providerLabel: 'Test',
+      modelId: 'm1',
+      messagesCount: 1,
+      fetchOnce,
+      resolveUserFacingError: () => null,
+      signal: controller.signal,
+      initialDelayMs: 10,
+    });
+    const expectation = expect(promise).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+
+    controller.abort();
+    await vi.runAllTimersAsync();
+    await expectation;
+
+    expect(fetchOnce).toHaveBeenCalledTimes(1);
+    expect(logLlmProviderErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('cancels retry backoff without starting another attempt', async () => {
+    vi.useFakeTimers();
+    const controller = new AbortController();
+    const removeEventListenerSpy = vi.spyOn(
+      controller.signal,
+      'removeEventListener'
+    );
+    const fetchOnce = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('busy', { status: 503 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+
+    const promise = fetchChatProviderWithRetries({
+      provider: 'test',
+      providerLabel: 'Test',
+      modelId: 'm1',
+      messagesCount: 1,
+      fetchOnce,
+      resolveUserFacingError: () => null,
+      signal: controller.signal,
+      initialDelayMs: 10_000,
+    });
+    const expectation = expect(promise).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetchOnce).toHaveBeenCalledTimes(1);
+    controller.abort();
+    await vi.runAllTimersAsync();
+    await expectation;
+
+    expect(fetchOnce).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+    expect(removeEventListenerSpy).toHaveBeenCalledWith(
+      'abort',
+      expect.any(Function)
+    );
+  });
+
   it.each([503, 529])(
     'retries transient HTTP %s errors then succeeds',
     async (status) => {

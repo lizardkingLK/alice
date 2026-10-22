@@ -129,7 +129,7 @@ export function CommentReactionBar({
         <PopoverContent align="start" className="w-auto p-2">
           <div
             className="grid grid-cols-5 gap-1"
-            role="listbox"
+            role="group"
             aria-label="Reaction picker"
           >
             {COMMENT_REACTION_EMOJIS.map((emoji) => {

@@ -72,6 +72,7 @@ describe('OpenAiChatProvider', () => {
         Authorization: 'Bearer sk-test-sensitive',
       },
     });
+    expect(init).not.toHaveProperty('signal');
     expect(JSON.parse(String(init?.body))).toEqual({
       model: 'gpt-4o',
       messages: [
@@ -99,6 +100,73 @@ describe('OpenAiChatProvider', () => {
         },
       ],
     });
+  });
+
+  it('omits tools when none are registered', async () => {
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
+      completionResponse('Tool-free response')
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await new OpenAiChatProvider().generateWithTools({
+      ...baseInput,
+      tools: [],
+    });
+
+    expect(result.candidates?.[0]?.content?.parts).toEqual([
+      { text: 'Tool-free response' },
+    ]);
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body).not.toHaveProperty('tools');
+  });
+
+  it('forwards a supplied AbortSignal to fetch', async () => {
+    const controller = new AbortController();
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
+      completionResponse('Done')
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await new OpenAiChatProvider().generateWithTools({
+      ...baseInput,
+      signal: controller.signal,
+    });
+
+    expect(fetchMock.mock.calls[0]?.[1]?.signal).toBe(controller.signal);
+  });
+
+  it('preserves cancellation while reading the response body', async () => {
+    const controller = new AbortController();
+    const response = completionResponse('unused');
+    const jsonSpy = vi.spyOn(response, 'json').mockImplementation(
+      () =>
+        new Promise<never>((_resolve, reject) => {
+          controller.signal.addEventListener(
+            'abort',
+            () =>
+              reject(
+                new DOMException('The operation was aborted.', 'AbortError')
+              ),
+            { once: true }
+          );
+        })
+    );
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response)
+    );
+
+    const promise = new OpenAiChatProvider().generateWithTools({
+      ...baseInput,
+      signal: controller.signal,
+    });
+    const expectation = expect(promise).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+
+    await vi.waitFor(() => expect(jsonSpy).toHaveBeenCalledOnce());
+    controller.abort();
+    await expectation;
   });
 
   it('preserves multiple tool-call ids and results across model rounds', async () => {
