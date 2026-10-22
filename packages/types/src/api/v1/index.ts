@@ -492,8 +492,11 @@ export {
   type ListAccessAllowlistQuery,
 } from './access-allowlist.js';
 export {
+  DAILY_REPORT_AI_INSIGHTS_STATUSES,
   REPORT_TYPES,
   REPORT_VERBOSITIES,
+  dailyReportAiInsightsSchema,
+  dailyReportAiInsightsStatusSchema,
   dailyReportMetadataSchema,
   dailyReportRequestSchema,
   dailyReportSnapshotSchema,
@@ -504,6 +507,8 @@ export {
   ianaTimezoneSchema,
   reportDateSchema,
   reportVerbositySchema,
+  type DailyReportAiInsights,
+  type DailyReportAiInsightsStatus,
   type DailyReportMetadata,
   type DailyReportRequest,
   type DailyReportSnapshot,
