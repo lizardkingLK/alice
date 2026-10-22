@@ -3,7 +3,7 @@
 | Field        | Value                                                                               |
 | ------------ | ----------------------------------------------------------------------------------- |
 | Status       | **Living**                                                                          |
-| Last updated | 2026-10-17                                                                          |
+| Last updated | 2026-10-22                                                                          |
 | Scope        | Kanban status / column moves, client prefs, realtime confirm, toasts                |
 | Performance  | [PERFORMANCE.md §9 W6](../../guides/PERFORMANCE.md#w6--async--realtime-board-moves) |
 
@@ -77,6 +77,9 @@ Same destination twice: still settle on one commit; second client toasts once.
   echoes do not clobber local intent.
 - Honest pending UI (`pendingStatusIds` / dim in static mode) + native
   `beforeunload` / `pagehide` keepalive flush (`usePendingMutationUnload`).
+- Toolbar **Saving…** chrome (`PendingSyncIndicator`) while any status move
+  flush is in flight (realtime and static). Same pattern on calendar due-date
+  DnD and backlog sprint DnD; comment reactions keep their per-row spinner.
 - Cleared when the lane’s pending flush count hits zero; 409 rebases ack to the
   server row (toast, no merge dialog).
 

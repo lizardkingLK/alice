@@ -46,6 +46,7 @@ import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults
 import { useBoardFilterActions } from '@/app/board/_hooks/use-board-filter-actions';
 import { useBoardStatusMoves } from '@/app/board/_hooks/use-board-status-moves';
 import { useBoardSyncPrefs } from '@/app/board/_hooks/use-board-sync-prefs';
+import { PendingSyncIndicator } from '@/components/pending-sync-indicator';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
@@ -909,12 +910,15 @@ export function KanbanBoard({
           ) : null}
         </div>
 
-        <BoardLayoutMenu
-          layout={layout}
-          onLayoutChange={setLayout}
-          syncPrefs={syncPrefs}
-          onSyncPrefsChange={setSyncPrefs}
-        />
+        <div className="flex shrink-0 flex-wrap items-center gap-3 self-start sm:self-auto">
+          <PendingSyncIndicator active={pendingStatusIds.size > 0} />
+          <BoardLayoutMenu
+            layout={layout}
+            onLayoutChange={setLayout}
+            syncPrefs={syncPrefs}
+            onSyncPrefsChange={setSyncPrefs}
+          />
+        </div>
       </div>
 
       {layout === 'grouped' ? (
