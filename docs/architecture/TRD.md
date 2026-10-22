@@ -381,6 +381,10 @@ Cross-cutting pagination support is built via:
 - Web frontend: `apps/web`
 - API backend: `apps/api` (Node.js Serverless, configured in `vercel.json`)
 
+**Planned long-lived apps (not deployed yet)**
+
+- `apps/worker` / `apps/streamer` on Render (BullMQ + Upstash Redis; separate processes) — see [WORKER_AND_STREAMER.md](./WORKER_AND_STREAMER.md)
+
 **Serverless constraints**
 
 - No WebSockets

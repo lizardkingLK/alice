@@ -41,6 +41,7 @@ How the monorepo fits together (apps, auth, deployment).
 - [DI.md](./architecture/DI.md) — Express composition root (`config/composition.ts`) / constructor injection (**Plan**; work-items, sprints, chat, projects, users, teams, profile, savedViews Living)
 - [API_VERSIONING.md](./architecture/API_VERSIONING.md) — Prisma GETs (unused), Zod mutation DTOs, `/api/v1` (**Plan**)
 - [DATA_RETRIEVAL.md](./architecture/DATA_RETRIEVAL.md) — app toggle: RSC supabase-js vs Express Prisma GETs (**Plan**)
+- [WORKER_AND_STREAMER.md](./architecture/WORKER_AND_STREAMER.md) — `apps/worker` + `apps/streamer`; BullMQ + Upstash Redis; parent/child jobs (**Plan**)
 
 ### Features
 
