@@ -12,6 +12,7 @@ import {
   ReportAccessError,
   ReportsService,
 } from '../../src/routes/api/reports/reports.service';
+import { renderDailyReportMarkdown } from '../../src/routes/api/reports/reports.markdown';
 
 const {
   generateAiInsightsMock,
@@ -101,6 +102,10 @@ describe('ReportsService', () => {
     });
 
     expect(generateAiInsightsMock).not.toHaveBeenCalled();
+    expect(result.markdown).toBe(
+      renderDailyReportMarkdown(result.snapshot, 'standard')
+    );
+    expect(result.markdown).not.toContain('## AI Insights');
     expect(result).not.toHaveProperty('aiInsights');
     expect(result).not.toHaveProperty('aiInsightsStatus');
   });
@@ -131,7 +136,11 @@ describe('ReportsService', () => {
       aiInsights: AI_INSIGHTS,
     });
     expect(result.snapshot).toEqual(deterministic.snapshot);
-    expect(result.markdown).toBe(deterministic.markdown);
+    expect(result.markdown.startsWith(deterministic.markdown)).toBe(true);
+    expect(result.markdown).toContain('## AI Insights');
+    expect(result.markdown).toContain('### Completed Work');
+    expect(result.markdown).toContain('- Completed the release checklist.');
+    expect(result.markdown.match(/^## AI Insights$/gm)).toHaveLength(1);
     expect(result.metadata).toEqual(deterministic.metadata);
     expect(generateReportResponseSchema.parse(result)).toEqual(result);
   });
@@ -182,11 +191,42 @@ describe('ReportsService', () => {
         upcomingDeadlines: 0,
       });
       expect(result.markdown).toContain('# Daily Report');
+      expect(result.markdown).toBe(
+        renderDailyReportMarkdown(result.snapshot, 'standard')
+      );
+      expect(result.markdown).not.toContain('## AI Insights');
       expect(result).toMatchObject({ aiInsightsStatus: 'unavailable' });
       expect(result).not.toHaveProperty('aiInsights');
       expect(generateReportResponseSchema.parse(result)).toEqual(result);
     }
   );
+
+  it('returns the exact deterministic report if AI Markdown appending fails', async () => {
+    const throwingInsights = new Proxy(AI_INSIGHTS, {
+      get(target, property, receiver) {
+        if (property === 'completedWork') {
+          throw new Error('AI Markdown append failed');
+        }
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    generateAiInsightsMock.mockResolvedValue(throwingInsights);
+
+    const result = await service.generate(ACTOR_ID, {
+      reportType: 'daily',
+      reportDate: '2026-10-20',
+      timezone: 'UTC',
+      verbosity: 'detailed',
+      includeAiInsights: true,
+    });
+
+    expect(result.markdown).toBe(
+      renderDailyReportMarkdown(result.snapshot, 'detailed')
+    );
+    expect(result.markdown).not.toContain('## AI Insights');
+    expect(result).toMatchObject({ aiInsightsStatus: 'unavailable' });
+    expect(result).not.toHaveProperty('aiInsights');
+  });
 
   it('keeps existing constructor usage compatible when AI is requested', async () => {
     const serviceWithoutAi = new ReportsService(repository, NOW);

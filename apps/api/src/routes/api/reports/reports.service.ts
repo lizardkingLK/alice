@@ -7,7 +7,10 @@ import {
   UPCOMING_DEADLINE_DAYS,
 } from './reports.aggregation';
 import type { ReportsAiInsightsService } from './reports.ai-insights.service';
-import { renderDailyReportMarkdown } from './reports.markdown';
+import {
+  appendDailyReportAiInsightsMarkdown,
+  renderDailyReportMarkdown,
+} from './reports.markdown';
 import type { ReportsRepository } from './reports.repository';
 import { dailyReportUtcRange } from './reports.timezone';
 
@@ -91,6 +94,10 @@ export class ReportsService {
       const aiInsights = await this.aiInsightsService.generate(snapshot);
       return {
         ...report,
+        markdown: appendDailyReportAiInsightsMarkdown(
+          report.markdown,
+          aiInsights
+        ),
         aiInsightsStatus: 'generated',
         aiInsights,
       };
