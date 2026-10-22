@@ -343,7 +343,8 @@ export function CommentsFeed({
       flushKeepalive();
       // Native leave prompt only — browsers ignore custom message strings.
       event.preventDefault();
-      event.returnValue = '';
+      // Chromium still requires returnValue for the dialog (deprecated but needed).
+      event.returnValue = ''; // NOSONAR
     };
     window.addEventListener('pagehide', onPageHide);
     window.addEventListener('beforeunload', onBeforeUnload);

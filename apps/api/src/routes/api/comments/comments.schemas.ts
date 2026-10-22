@@ -1,10 +1,12 @@
 import {
   expectedUpdatedAtSchema,
   isValidCommentDoc,
-  toggleCommentReactionSchema,
   type Json,
 } from '@repo/types';
 import { z } from 'zod';
+
+/** Reaction toggle — merge semantics, no optimistic lock. */
+export { toggleCommentReactionSchema as toggleCommentReactionBodySchema } from '@repo/types';
 
 const commentContentSchema = z.custom<Json>(
   (value) => isValidCommentDoc(value),
@@ -28,6 +30,3 @@ export const updateCommentSchema = z.object({
 export const commentLockActionSchema = z.object({
   expectedUpdatedAt: expectedUpdatedAtSchema,
 });
-
-/** Reaction toggle — merge semantics, no optimistic lock. */
-export const toggleCommentReactionBodySchema = toggleCommentReactionSchema;
