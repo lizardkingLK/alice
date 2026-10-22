@@ -3,7 +3,7 @@
 | Field        | Value                                                                               |
 | ------------ | ----------------------------------------------------------------------------------- |
 | Status       | **Living**                                                                          |
-| Last updated | 2026-10-17                                                                          |
+| Last updated | 2026-10-22                                                                          |
 | Scope        | Kanban status / column moves, client prefs, realtime confirm, toasts                |
 | Performance  | [PERFORMANCE.md §9 W6](../../guides/PERFORMANCE.md#w6--async--realtime-board-moves) |
 
@@ -85,6 +85,11 @@ Same destination twice: still settle on one commit; second client toasts once.
 **Primary (shipped):** Supabase realtime on `work_items` UPDATE via
 `useBoardWorkItemsRealtime` (status, `board_column_id`, `updated_at`;
 `project_id` filter when the board URL has a concrete project).
+
+**List shape:** Board cards load without `description` (lean list). Channel
+merges and post-PATCH sync use `mergeBoardPlacementRow` / placement field keys
+only — never copy `description` (or other non-placement fields) from the wire
+or status PATCH body — so cards stay visually identical before and after moves.
 
 **Publication (required):** `public.work_items` must be in the
 `supabase_realtime` publication or clients receive no events. Migration:

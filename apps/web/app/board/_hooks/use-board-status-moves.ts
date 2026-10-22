@@ -17,7 +17,6 @@ import {
   applyRealtimeBoardRow,
   useBoardWorkItemsRealtime,
 } from '@/app/board/_hooks/use-board-work-items-realtime';
-import { mergeWorkItemServerRow } from '@/app/work-items/_helpers/work-item-merge-server-row';
 import { updateWorkItemStatus } from '@/app/work-items/_services/work-items.mutations.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { createSerialCoalesceMutationQueue } from '@/lib/work-items/serial-coalesce-mutation-queue';
@@ -138,16 +137,21 @@ export function useBoardStatusMoves(options: UseBoardStatusMovesOptions): {
     [setSelectedTask, setWorkItems]
   );
 
+  /**
+   * Board lists omit `description` for payload size. Status PATCH responses
+   * include the full row — merge placement fields only so cards stay consistent
+   * with the initial list shape after own moves / realtime confirms.
+   */
   const syncWorkItem = useCallback(
     (id: string, updated: DbWorkItem) => {
       setWorkItems((previous) =>
         previous.map((item) =>
-          item.id === id ? mergeWorkItemServerRow(item, updated) : item
+          item.id === id ? mergeBoardPlacementRow(item, updated) : item
         )
       );
       setSelectedTask((previous) =>
         previous?.id === id
-          ? mergeWorkItemServerRow(previous, updated)
+          ? mergeBoardPlacementRow(previous, updated)
           : previous
       );
     },

@@ -65,6 +65,35 @@ describe('board-move-pending', () => {
     expect(merged.updated_at).toBe('2026-10-03T00:00:00.000Z');
   });
 
+  it('does not copy description from wire / PATCH rows onto list cards', () => {
+    const withoutDescription = {
+      ...item,
+      description: null,
+      title: 'Scoreboard Design',
+    } as unknown as DbWorkItem;
+
+    const merged = mergeBoardPlacementRow(withoutDescription, {
+      status: 'InProgress',
+      board_column_id: 'working',
+      updated_at: '2026-10-03T00:00:00.000Z',
+      description: { type: 'doc', content: [] } as never,
+      title: 'Should not replace title either via placement merge',
+    });
+    expect(merged.description).toBeNull();
+    expect(merged.title).toBe('Scoreboard Design');
+    expect(merged.status).toBe('InProgress');
+
+    const next = applyRealtimeBoardRow([withoutDescription], {
+      id: 'wi-1',
+      status: 'ToDo',
+      board_column_id: 'todo',
+      updated_at: '2026-10-02T00:00:00.000Z',
+      description: { type: 'doc', content: [] } as never,
+    });
+    expect(next?.[0]?.description).toBeNull();
+    expect(next?.[0]?.status).toBe('ToDo');
+  });
+
   it('applies realtime rows only when newer', () => {
     expect(
       applyRealtimeBoardRow([item], {
