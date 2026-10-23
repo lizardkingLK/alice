@@ -310,6 +310,7 @@ export {
   type SprintListRow,
   type SprintPrismaListFilters,
 } from './sprints.js';
+export * from './sprint-estimation.js';
 export {
   commentAuthorSelect,
   commentWorkItemProjectSelect,
