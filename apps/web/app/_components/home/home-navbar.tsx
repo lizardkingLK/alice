@@ -1,12 +1,14 @@
 import Link from 'next/link';
-import { Button } from '@repo/ui/components/ui/button';
 import { AuthControls } from '@/app/dashboard/_components/dashboard-auth';
 import { appTitle } from '@/app/_shared/values';
 import { cn } from '@repo/ui/lib/utils';
 
-const NAV_LINKS = [
+const MARKETING_NAV_LINKS = [
   { href: '/#how-it-works', label: 'How it works' },
   { href: '/#pricing', label: 'Pricing' },
+] as const;
+
+const ALWAYS_NAV_LINKS = [
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
 ] as const;
@@ -14,16 +16,16 @@ const NAV_LINKS = [
 type HomeNavbarProps = {
   readonly email?: string | null;
   readonly profilePicture?: string | null;
-  /** Home page only: green Dashboard CTA left of the profile control when signed in. */
-  readonly showDashboardButton?: boolean;
 };
 
 export function HomeNavbar({
   email,
   profilePicture,
-  showDashboardButton = false,
 }: Readonly<HomeNavbarProps>) {
   const isSignedIn = Boolean(email);
+  const navLinks = isSignedIn
+    ? ALWAYS_NAV_LINKS
+    : [...MARKETING_NAV_LINKS, ...ALWAYS_NAV_LINKS];
 
   return (
     <header className="border-border/60 bg-background shrink-0 border-b">
@@ -50,7 +52,7 @@ export function HomeNavbar({
           aria-label="Marketing"
           className="hidden items-center gap-7 md:flex"
         >
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -62,11 +64,6 @@ export function HomeNavbar({
         </nav>
 
         <div className="flex items-center gap-3">
-          {showDashboardButton && isSignedIn ? (
-            <Button asChild size="sm" className="cursor-pointer">
-              <Link href="/dashboard">Dashboard</Link>
-            </Button>
-          ) : null}
           <AuthControls email={email} profilePicture={profilePicture} />
         </div>
       </div>

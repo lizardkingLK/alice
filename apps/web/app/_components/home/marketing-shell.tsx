@@ -14,7 +14,8 @@ type MarketingShellProps = {
 export async function MarketingShell({
   children,
 }: Readonly<MarketingShellProps>) {
-  const { user, dbUser, showAppLinks } = await getMarketingSession();
+  const { user, dbUser, showAppLinks, isSignedIn } =
+    await getMarketingSession();
 
   return (
     <main className="bg-background h-dvh snap-y snap-proximity overflow-x-hidden overflow-y-auto">
@@ -27,7 +28,10 @@ export async function MarketingShell({
           {children}
         </div>
       </div>
-      <HomeFooter showAppLinks={showAppLinks} />
+      <HomeFooter
+        showAppLinks={showAppLinks}
+        hideMarketingAnchors={isSignedIn}
+      />
     </main>
   );
 }

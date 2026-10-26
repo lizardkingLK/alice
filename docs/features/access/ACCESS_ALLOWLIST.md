@@ -13,7 +13,7 @@ Related:
 - RBAC (roles after admission): [RBAC_AUTHORIZATION_SKELETON.md](../../auth/RBAC_AUTHORIZATION_SKELETON.md)
 - Users registry: [USER_MANAGEMENT.md](../users/USER_MANAGEMENT.md)
 - Notifications inbox: dashboard notifications + `notifications` table
-- Home footer: `apps/web/app/_components/home/home-footer.tsx`
+- Signed-in home + footer: `apps/web/app/page.tsx`, `apps/web/app/_components/home/`
 - Auth callback: `apps/web/app/auth/callback/route.ts`
 - Session proxy: `apps/web/proxy.ts` → `lib/supabase/middleware.ts`
 
@@ -328,11 +328,25 @@ Route: `/check-email` remains a public helper for invite / set-password copy
 mistyped password from an unset invite password, so we do not redirect
 allowlisted failures to `/check-email`.
 
-### 4. Home footer — **implemented**
+### 4. Home for signed-in users — **implemented**
+
+When a session exists, `/` skips the marketing product hero (how-it-works,
+pricing, CTA). Layout is:
+
+1. Navbar with **About** and **Contact** only (no How it works / Pricing;
+   Dashboard CTA lives in the hero, not the nav)
+2. Centered time-of-day greeting (`Good Morning` / `Afternoon` / `Evening`)
+   plus the user's name, with a large **Dashboard** button
+3. Footer (same allowlist gating as below)
+
+Signed-out visitors still see the full marketing landing.
+
+### 5. Home footer — **implemented**
 
 `apps/web/app/_components/home/home-footer.tsx` accepts `showAppLinks`.
 The home page (`app/page.tsx`) sets it via `isEmailAllowed(user.email)` when
-signed in.
+signed in. Signed-in home also sets `hideMarketingAnchors` so Company omits
+the Pricing hash link (that section is not rendered).
 
 | Column                            | Anonymous / not allowlisted | Allowlisted signed-in |
 | --------------------------------- | --------------------------- | --------------------- |
