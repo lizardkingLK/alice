@@ -21,6 +21,7 @@ import {
 } from '@/app/work-items/_helpers/work-item-priority-ui';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
 import { BacklogSprintCard } from '@/app/backlog/_components/backlog-sprint-card';
+import { BacklogSprintEstimationDialog } from '@/app/backlog/_components/backlog-sprint-estimation-dialog';
 import { BacklogPanel } from '@/app/backlog/_components/backlog-panel';
 import { BacklogItemDetailsSheet } from '@/app/backlog/_components/backlog-item-details-sheet';
 import {
@@ -207,6 +208,9 @@ export function BacklogWorkspace({
   // Dialogs State
   const [isCreateSprintOpen, setIsCreateSprintOpen] = useState(false);
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
+  const [estimatingSprintId, setEstimatingSprintId] = useState<string | null>(
+    null
+  );
   const [isCreateIssueOpen, setIsCreateIssueOpen] = useState(false);
   const [createIssueSprintId, setCreateIssueSprintId] = useState<string | null>(
     null
@@ -1037,6 +1041,9 @@ export function BacklogWorkspace({
   const completeSprintIncompleteCount = completeSprintItems.filter(
     (item) => item.status !== 'Done'
   ).length;
+  const estimatingSprint = estimatingSprintId
+    ? (sprintList.find((sprint) => sprint.id === estimatingSprintId) ?? null)
+    : null;
 
   const filteredProjectName =
     projectFilter === 'all'
@@ -1116,6 +1123,11 @@ export function BacklogWorkspace({
                   onToggle={toggleSprint}
                   onCreateIssue={openCreateIssue}
                   onEditSprint={setEditingSprint}
+                  onEstimateSprint={(selectedSprint) => {
+                    if (isManagerOrAdmin) {
+                      setEstimatingSprintId(selectedSprint.id);
+                    }
+                  }}
                   onStartSprint={handleStartSprint}
                   onCompleteSprint={handleCompleteSprint}
                   onSelectItem={setSelectedItem}
@@ -1184,6 +1196,16 @@ export function BacklogWorkspace({
             onUpdated={handleEditSprintSuccess}
           />
         )}
+
+        {isManagerOrAdmin ? (
+          <BacklogSprintEstimationDialog
+            sprint={estimatingSprint}
+            workItems={workItems}
+            onOpenChange={(open) => {
+              if (!open) setEstimatingSprintId(null);
+            }}
+          />
+        ) : null}
 
         {/* Dialog: Create Issue */}
         <BacklogCreateIssueDialog

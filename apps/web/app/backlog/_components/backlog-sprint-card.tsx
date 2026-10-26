@@ -37,6 +37,7 @@ import {
   Pencil,
   Play,
   Plus,
+  Sparkles,
 } from '@repo/ui/lib/icons';
 import { sprintReportHref } from '@/app/sprints/_helpers/sprint-report-links';
 
@@ -55,6 +56,7 @@ type BacklogSprintCardProps = {
   readonly onToggle: (sprintId: string) => void;
   readonly onCreateIssue: (sprintId: string) => void;
   readonly onEditSprint: (sprint: Sprint) => void;
+  readonly onEstimateSprint: (sprint: Sprint) => void;
   readonly onStartSprint: (sprintId: string) => void;
   readonly onCompleteSprint: (sprintId: string) => void;
   readonly onSelectItem: (item: DbWorkItem) => void;
@@ -83,6 +85,8 @@ type SprintCardActionsProps = {
   // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onEditSprint: (sprint: Sprint) => void;
   // eslint-disable-next-line no-unused-vars -- callback signature
+  readonly onEstimateSprint: (sprint: Sprint) => void;
+  // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onStartSprint: (sprintId: string) => void;
   // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onCompleteSprint: (sprintId: string) => void;
@@ -94,6 +98,7 @@ function SprintCardActions({
   isManagerOrAdmin,
   onCreateIssue,
   onEditSprint,
+  onEstimateSprint,
   onStartSprint,
   onCompleteSprint,
 }: Readonly<SprintCardActionsProps>) {
@@ -207,6 +212,13 @@ function SprintCardActions({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
+              aria-label="Estimate with AI"
+              onClick={() => onEstimateSprint(sprint)}
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              Estimate with AI
+            </DropdownMenuItem>
+            <DropdownMenuItem
               aria-label="Edit Sprint"
               onClick={() => onEditSprint(sprint)}
             >
@@ -234,6 +246,7 @@ export function BacklogSprintCard({
   onToggle,
   onCreateIssue,
   onEditSprint,
+  onEstimateSprint,
   onStartSprint,
   onCompleteSprint,
   onSelectItem,
@@ -287,6 +300,7 @@ export function BacklogSprintCard({
             isManagerOrAdmin={isManagerOrAdmin}
             onCreateIssue={onCreateIssue}
             onEditSprint={onEditSprint}
+            onEstimateSprint={onEstimateSprint}
             onStartSprint={onStartSprint}
             onCompleteSprint={onCompleteSprint}
           />
