@@ -187,11 +187,20 @@
   animation: workflow-marching-ants-stroke 0.75s linear infinite;
 }
 
+/*
+ * Same dash period as nodes (4+3=7) and keyframe offset (-14 = 2 periods)
+ * so the loop is seamless. A mismatched dasharray (e.g. 5 4) causes a hitch
+ * each cycle when offset wraps.
+ */
 .workflow-edge-marching {
+  stroke-dasharray: 4 3;
   animation: workflow-marching-ants-stroke 0.75s linear infinite;
 }
 
 @keyframes workflow-marching-ants-stroke {
+  from {
+    stroke-dashoffset: 0;
+  }
   to {
     stroke-dashoffset: -14;
   }

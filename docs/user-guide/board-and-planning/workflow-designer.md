@@ -135,7 +135,7 @@ board move) asks for **fields** and an **Outcome** before the status changes.
 
 ---
 
-## Default and forks
+## Default, forks, and import
 
 Next to the workflow switcher:
 
@@ -143,14 +143,31 @@ Next to the workflow switcher:
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Title**        | Rename the active workflow (saved with the envelope)                                                                                                                                    |
 | **Fork**         | Copy the active workflow into a new editable fork (disabled on an existing fork)                                                                                                        |
+| **Import**       | Copy a workflow from another **active** project into this one as a **new** workflow (see below)                                                                                         |
 | **Mark default** | Make the active workflow the project default (disabled when it already is). Also moves the previous default’s type bindings here and reassigns work items that were on the old default. |
 | **Delete**       | Remove a non-default workflow when more than one exists (confirm first; promote another default first). That workflow’s type bindings and work items move to the project default.       |
 
 - A **team manager** (set on the project team) may **fork** once via the same
   control; that fork cannot be forked again. Forks start with **no** type
   bindings until you mark them default (or bind types later).
-- Unsaved canvas edits are saved before Fork / Mark default / Delete so the
-  server stays in sync.
+- Unsaved canvas edits are saved before Fork / Import / Mark default / Delete so
+  the server stays in sync.
+
+### Import from another project
+
+Managers and admins can open **Import** and:
+
+1. Choose another **active** project you can access, then pick one of its
+   workflows.
+2. Edit the **title** for the new workflow in this project.
+3. Optionally check **Mark as default after import**.
+4. Click **Import**.
+
+States, categories, transitions, resolution forms, and layout are copied.
+**Who can move** restrictions on transitions are **not** imported — every
+imported edge starts as **Everyone**. After import, select each transition and
+set **Who can move** again if you need restricted moves. The import dialog shows
+this note once a source workflow is selected.
 
 If configuration is missing or invalid, the project safely uses a **seeded
 default** workflow so the board keeps working.

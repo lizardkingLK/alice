@@ -53,9 +53,11 @@ function WorkflowTransitionEdgeComponent({
         ...style,
         stroke,
         strokeWidth: 1.5,
+        // Inline animation — BaseEdge applies `style` on the path; className alone
+        // does not reliably animate. Dash period 4+3 matches keyframe -14 (2 cycles).
         ...(selected
           ? {
-              strokeDasharray: '5 4',
+              strokeDasharray: '4 3',
               animation: 'workflow-marching-ants-stroke 0.75s linear infinite',
             }
           : {}),

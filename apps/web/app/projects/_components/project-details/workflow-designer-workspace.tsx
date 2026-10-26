@@ -57,6 +57,7 @@ import {
 } from '@repo/ui/components/ui/tooltip';
 import {
   CircleHelp,
+  Download,
   GitBranch,
   GitFork,
   Kanban,
@@ -74,9 +75,14 @@ import type { Project } from '@/app/projects/_services/projects.mutations.client
 import {
   deleteProjectWorkflow,
   forkProjectWorkflow,
+  importProjectWorkflow,
   putProjectWorkflowConfig,
   setDefaultProjectWorkflow,
 } from '@/app/projects/_services/projects.workflow-config.client';
+import {
+  WorkflowImportDialog,
+  type WorkflowImportSubmitInput,
+} from '@/app/projects/_components/project-details/workflow-import-dialog';
 import { WorkflowOrphanedStatesDialog } from '@/app/projects/_components/project-details/workflow-orphaned-states-dialog';
 import { WorkflowStateFlowNode } from '@/app/projects/_components/project-details/workflow-state-flow-node';
 import { WorkflowTransitionEdge } from '@/app/projects/_components/project-details/workflow-transition-edge';
@@ -169,6 +175,7 @@ type WorkflowManageResult = {
   readonly config: WorkflowConfigEnvelope;
   readonly updatedAt: string;
   readonly forkedWorkflowId?: string;
+  readonly importedWorkflowId?: string;
 };
 
 /* eslint-disable no-unused-vars -- callback parameter names document the payload */
@@ -373,6 +380,7 @@ export function WorkflowDesignerWorkspace({
   const [isSaving, setIsSaving] = useState(false);
   const [isManaging, setIsManaging] = useState(false);
   const [deleteWorkflowOpen, setDeleteWorkflowOpen] = useState(false);
+  const [importWorkflowOpen, setImportWorkflowOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [messageIsError, setMessageIsError] = useState(false);
@@ -1024,6 +1032,23 @@ export function WorkflowDesignerWorkspace({
     });
   };
 
+  const handleImportWorkflow = (input: WorkflowImportSubmitInput) => {
+    runManageAction(
+      (expectedUpdatedAt) =>
+        importProjectWorkflow(project.id, expectedUpdatedAt, input),
+      input.markAsDefault
+        ? 'Workflow imported and marked as default.'
+        : 'Workflow imported.',
+      (result) => result.importedWorkflowId
+    )
+      .then(() => {
+        setImportWorkflowOpen(false);
+      })
+      .catch(() => {
+        /* errors surfaced in runManageAction */
+      });
+  };
+
   const handleMarkDefault = () => {
     runManageAction(
       (expectedUpdatedAt) =>
@@ -1285,6 +1310,19 @@ export function WorkflowDesignerWorkspace({
               type="button"
               variant="outline"
               size="sm"
+              disabled={manageBusy}
+              data-testid="workflow-designer-import"
+              onClick={() => {
+                setImportWorkflowOpen(true);
+              }}
+            >
+              <Download data-icon="inline-start" className="size-4" />
+              Import
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
               disabled={manageBusy || isDefaultWorkflow}
               data-testid="workflow-designer-mark-default"
               onClick={handleMarkDefault}
@@ -1404,6 +1442,14 @@ export function WorkflowDesignerWorkspace({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <WorkflowImportDialog
+        open={importWorkflowOpen}
+        onOpenChange={setImportWorkflowOpen}
+        currentProjectId={project.id}
+        busy={manageBusy}
+        onImport={handleImportWorkflow}
+      />
     </div>
   );
 }

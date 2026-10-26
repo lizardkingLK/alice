@@ -41,6 +41,7 @@ export {
   WORKFLOW_CONFIG_SCHEMA_VERSION,
   WORKFLOW_REQUIRE_CHILDREN,
   WORKFLOW_REQUIRE_LINKED_ISSUES,
+  cloneWorkflowForProjectImport,
   createSeededDefaultWorkflowConfig,
   findWorkflowById,
   mergeWorkflowEnvelopeIntoProjectConfig,

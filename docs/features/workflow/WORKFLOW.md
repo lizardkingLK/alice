@@ -25,8 +25,8 @@ exist on disk; runtime reads fall back safely. Historical notes:
 - Single-current work-item **`state`** JSONB + optional per-workflow history.
 - Safe fallback: null / unparsable / schema conflict → **seeded default**
   workflow (and default board behavior) so the project never hard-crashes.
-- Designer UI supports add/connect/delete, multi-workflow manage (Fork / Mark
-  default / Delete / Rename), keyboard shortcuts (add state: **Ctrl/Cmd+Alt+N**),
+- Designer UI supports add/connect/delete, multi-workflow manage (Fork / Import /
+  Mark default / Delete / Rename), keyboard shortcuts (add state: **Ctrl/Cmd+Alt+N**),
   undo, copy/cut/paste states, canvas context menu, live Settings→node sync,
   Help, and Go to Board — Step 12.
 - Alice docked chat can propose designer changes with **Apply / Reject**.
@@ -62,6 +62,12 @@ exist on disk; runtime reads fall back safely. Historical notes:
 - Seeded default uses **empty** `typeBindings` (owns types via being default) so
   fork + promote cannot leave types stuck on the parent.
 - Fork depth ≤ 1 (Zod + API).
+- **Import** (`POST …/workflow-config/import`) copies a workflow from another
+  **active** project the actor can read into the target as a **new** workflow
+  (`cloneWorkflowForProjectImport`): new `wf-*` id, `forkedFromId: null`, empty
+  `typeBindings`, every edge `allowAnyOf: []`. Optional `markAsDefault` runs
+  `promoteWorkflowToDefault` in the same write. Title is supplied by the client
+  (dialog). Managers/admins only on the **target**.
 - **Save** that removes graph states still referenced by work items
   (`state_workflow_id` + `state_id`) returns **409**
   `WORKFLOW_ORPHANED_STATES` with per-state counts and remaining targets.
@@ -237,14 +243,14 @@ document (and default board lanes). Optional manager-only soft notice later.
 
 ### As-built — workflow envelope API (Step 2)
 
-| Item           | Detail                                                                                                                                               |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Schema         | `workflowConfigEnvelopeSchema` in `packages/types/src/api/v1/workflow-config.ts`                                                                     |
-| Seeded default | `createSeededDefaultWorkflowConfig()` — board statuses as states, linear path + Testing↔InProgress, Done edges use `all_complete`                    |
-| Resolve        | `resolveWorkflowConfig(raw)` → `{ config, usedFallback }`                                                                                            |
-| Merge          | `mergeWorkflowEnvelopeIntoProjectConfig` preserves `work_item_types` / legacy board keys                                                             |
-| HTTP           | `GET/PUT /api/projects/:id/workflow-config`; `POST …/fork`; `POST …/:workflowId/default`; `DELETE …/:workflowId` (body includes `expectedUpdatedAt`) |
-| Auth           | GET: project member; PUT/default/delete: manager/admin; fork: manager/admin **or** active project team `manager_id`                                  |
+| Item           | Detail                                                                                                                                                                |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Schema         | `workflowConfigEnvelopeSchema` in `packages/types/src/api/v1/workflow-config.ts`                                                                                      |
+| Seeded default | `createSeededDefaultWorkflowConfig()` — board statuses as states, linear path + Testing↔InProgress, Done edges use `all_complete`                                     |
+| Resolve        | `resolveWorkflowConfig(raw)` → `{ config, usedFallback }`                                                                                                             |
+| Merge          | `mergeWorkflowEnvelopeIntoProjectConfig` preserves `work_item_types` / legacy board keys                                                                              |
+| HTTP           | `GET/PUT /api/projects/:id/workflow-config`; `POST …/fork`; `POST …/import`; `POST …/:workflowId/default`; `DELETE …/:workflowId` (body includes `expectedUpdatedAt`) |
+| Auth           | GET: project member; PUT/default/delete/import: manager/admin; fork: manager/admin **or** active project team `manager_id`                                            |
 
 ---
 
