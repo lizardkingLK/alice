@@ -19,6 +19,10 @@ export type ProjectWorkflowForkResponse = ProjectWorkflowManageResponse & {
   readonly forkedWorkflowId: string;
 };
 
+export type ProjectWorkflowImportResponse = ProjectWorkflowManageResponse & {
+  readonly importedWorkflowId: string;
+};
+
 export async function getProjectWorkflowConfig(
   projectId: string
 ): Promise<ProjectWorkflowConfigResponse> {
@@ -57,6 +61,29 @@ export async function forkProjectWorkflow(
 ): Promise<ProjectWorkflowForkResponse> {
   return apiFetch<ProjectWorkflowForkResponse>(
     `/api/projects/${projectId}/workflow-config/fork`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        expectedUpdatedAt,
+        ...input,
+      }),
+    }
+  );
+}
+
+export async function importProjectWorkflow(
+  projectId: string,
+  expectedUpdatedAt: string,
+  input: {
+    readonly sourceProjectId: string;
+    readonly sourceWorkflowId?: string;
+    readonly title?: string;
+    readonly description?: string;
+    readonly markAsDefault?: boolean;
+  }
+): Promise<ProjectWorkflowImportResponse> {
+  return apiFetch<ProjectWorkflowImportResponse>(
+    `/api/projects/${projectId}/workflow-config/import`,
     {
       method: 'POST',
       body: JSON.stringify({

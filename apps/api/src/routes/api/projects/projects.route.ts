@@ -24,6 +24,7 @@ import {
   updateProjectSchema,
   putWorkflowConfigSchema,
   forkWorkflowConfigSchema,
+  importWorkflowConfigSchema,
   workflowIdParamActionSchema,
 } from './projects.schemas';
 import { withoutIntegrationSecrets } from './projects.repository';
@@ -238,6 +239,33 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         res.status(201).json(result);
       } catch (error) {
         sendWorkflowMutationError(res, error, 'Failed to fork workflow');
+      }
+    }
+  );
+
+  projectsRouter.post(
+    '/:id/workflow-config/import',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ error: 'Project ID is required' });
+      }
+      const parsed = importWorkflowConfigSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+      try {
+        const { expectedUpdatedAt, ...input } = parsed.data;
+        const result = await projectsService.importWorkflow(
+          req.userId!,
+          id,
+          input,
+          expectedUpdatedAt
+        );
+        res.status(201).json(result);
+      } catch (error) {
+        sendWorkflowMutationError(res, error, 'Failed to import workflow');
       }
     }
   );

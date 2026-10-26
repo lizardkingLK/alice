@@ -705,3 +705,34 @@ export function resolveWorkflowForWorkItemType(
     findWorkflowById(config, config.defaultWorkflowId) ?? config.workflows[0]!
   );
 }
+
+/**
+ * Clone a workflow for cross-project import: new id, no fork parent, empty
+ * type bindings, and all edge move restrictions cleared (`allowAnyOf: []`).
+ * Callers mint `id` and supply the destination title.
+ */
+export function cloneWorkflowForProjectImport(
+  source: WorkflowDocument,
+  input: {
+    readonly id: string;
+    readonly title: string;
+    readonly description?: string;
+  }
+): WorkflowDocument {
+  const cloned = structuredClone(source);
+  return workflowDocumentSchema.parse({
+    ...cloned,
+    id: input.id,
+    title: input.title.trim(),
+    description: input.description ?? cloned.description,
+    forkedFromId: null,
+    typeBindings: [],
+    graph: {
+      ...cloned.graph,
+      edges: cloned.graph.edges.map((edge) => ({
+        ...edge,
+        allowAnyOf: [],
+      })),
+    },
+  });
+}
