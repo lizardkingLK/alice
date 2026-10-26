@@ -37,3 +37,13 @@ password on the reset page, then you'll land in the workspace.
 
 If you **self-register** with email, you may need to confirm your email before
 the first sign-in completes.
+
+---
+
+## After you sign in
+
+Visiting **Home** (`/`) while signed in shows a centered greeting with your
+name and a **Dashboard** button — not the public product marketing page. Use
+**About** and **Contact** in the top nav when you need those pages; open
+**Dashboard** (or the footer Overview link, when available) to get back into
+the workspace.

@@ -4,13 +4,12 @@ import { HomeAuthButtons } from '@/app/_components/home/home-auth-buttons';
 import { HomeFeaturesCarousel } from '@/app/_components/home/home-features-carousel';
 
 type HomeHeroProps = {
-  readonly isSignedIn: boolean;
   readonly resetSuccess: boolean;
   readonly accountClosed: boolean;
 };
 
+/** Marketing product hero for signed-out visitors. */
 export function HomeHero({
-  isSignedIn,
   resetSuccess,
   accountClosed,
 }: Readonly<HomeHeroProps>) {
@@ -55,7 +54,7 @@ export function HomeHero({
 
           <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8">
             <HomeAuthButtons
-              isSignedIn={isSignedIn}
+              isSignedIn={false}
               showSignedOutSecondary={false}
             />
           </div>

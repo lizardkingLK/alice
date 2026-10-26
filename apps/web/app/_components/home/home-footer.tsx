@@ -2,6 +2,12 @@ import Link from 'next/link';
 import { Separator } from '@repo/ui/components/ui/separator';
 import { cn } from '@repo/ui/lib/utils';
 
+const COMPANY_LINKS = [
+  { href: '/#pricing', label: 'Pricing' },
+  { href: '/about', label: 'About' },
+  { href: '/contact', label: 'Contact' },
+] as const;
+
 const footerColumns = [
   {
     title: 'Workspace',
@@ -32,11 +38,7 @@ const footerColumns = [
   },
   {
     title: 'Company',
-    links: [
-      { href: '/#pricing', label: 'Pricing' },
-      { href: '/about', label: 'About' },
-      { href: '/contact', label: 'Contact' },
-    ],
+    links: COMPANY_LINKS,
   },
 ] as const;
 
@@ -45,19 +47,35 @@ const APP_ONLY_COLUMN_TITLES = new Set(['Workspace', 'People']);
 type HomeFooterProps = {
   /** Show Workspace / People links (allowlisted signed-in users). */
   showAppLinks?: boolean;
+  /**
+   * Hide in-page marketing anchors (e.g. Pricing) when the signed-in home
+   * no longer renders those sections.
+   */
+  hideMarketingAnchors?: boolean;
   /** `snap` fills a home scroll panel; `inline` sizes to content for other pages. */
   variant?: 'snap' | 'inline';
 };
 
 export function HomeFooter({
   showAppLinks = false,
+  hideMarketingAnchors = false,
   variant = 'snap',
 }: Readonly<HomeFooterProps>) {
-  const columns = showAppLinks
-    ? footerColumns
-    : footerColumns.filter(
-        (column) => !APP_ONLY_COLUMN_TITLES.has(column.title)
-      );
+  const columns = (
+    showAppLinks
+      ? footerColumns
+      : footerColumns.filter(
+          (column) => !APP_ONLY_COLUMN_TITLES.has(column.title)
+        )
+  ).map((column) => {
+    if (column.title !== 'Company' || !hideMarketingAnchors) {
+      return column;
+    }
+    return {
+      ...column,
+      links: column.links.filter((link) => link.href !== '/#pricing'),
+    };
+  });
 
   return (
     <footer

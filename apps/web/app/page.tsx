@@ -4,7 +4,9 @@ import { HomeHowItWorks } from '@/app/_components/home/home-how-it-works';
 import { HomeHero } from '@/app/_components/home/home-hero';
 import { HomeNavbar } from '@/app/_components/home/home-navbar';
 import { HomePricing } from '@/app/_components/home/home-pricing';
+import { HomeSignedInHero } from '@/app/_components/home/home-signed-in-hero';
 import { getMarketingSession } from '@/app/_components/home/get-marketing-session';
+import { resolveHomeDisplayName } from '@/app/_components/home/resolve-home-display-name';
 import './globals.css';
 
 type HomeProps = {
@@ -19,24 +21,43 @@ export default async function Home({ searchParams }: Readonly<HomeProps>) {
   const resetSuccess = reset === 'success';
   const accountClosed = account === 'closed';
 
+  if (isSignedIn) {
+    const displayName = resolveHomeDisplayName({
+      name: dbUser?.name,
+      email: user?.email,
+    });
+
+    return (
+      <main className="h-dvh snap-y snap-proximity overflow-x-hidden overflow-y-auto">
+        <div className="flex h-dvh shrink-0 snap-start flex-col">
+          <HomeNavbar
+            email={user?.email}
+            profilePicture={dbUser?.profile_picture}
+          />
+          <HomeSignedInHero
+            displayName={displayName}
+            resetSuccess={resetSuccess}
+            accountClosed={accountClosed}
+          />
+        </div>
+        <HomeFooter showAppLinks={showAppLinks} hideMarketingAnchors />
+      </main>
+    );
+  }
+
   return (
     <main className="h-dvh snap-y snap-proximity overflow-x-hidden overflow-y-auto">
       <div className="flex h-dvh shrink-0 snap-start flex-col">
         <HomeNavbar
           email={user?.email}
           profilePicture={dbUser?.profile_picture}
-          showDashboardButton
         />
-        <HomeHero
-          isSignedIn={isSignedIn}
-          resetSuccess={resetSuccess}
-          accountClosed={accountClosed}
-        />
+        <HomeHero resetSuccess={resetSuccess} accountClosed={accountClosed} />
       </div>
 
       <HomeHowItWorks />
-      <HomePricing isSignedIn={isSignedIn} />
-      <HomeCta isSignedIn={isSignedIn} />
+      <HomePricing isSignedIn={false} />
+      <HomeCta isSignedIn={false} />
       <HomeFooter showAppLinks={showAppLinks} />
     </main>
   );

@@ -335,7 +335,7 @@ One Supabase project serves both development and production. Migrations must be 
 
 **Routes**
 
-- `/` — home page ("Alice") with Sign In / Sign Up controls
+- `/` — home page ("Alice"): marketing landing when signed out; greeting + Dashboard CTA when signed in
 - `/about`, `/contact` — public marketing pages
 - `/login` — email/password sign-in (Server Action)
 - `/signup` — registration (Server Action)
