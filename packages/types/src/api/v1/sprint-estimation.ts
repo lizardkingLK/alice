@@ -120,12 +120,102 @@ export type SprintWorkItemEstimate = z.infer<
   typeof sprintWorkItemEstimateSchema
 >;
 
+export const SPRINT_ESTIMATION_METHODS = ['ai', 'deterministic'] as const;
+export const sprintEstimationMethodSchema = z.enum(SPRINT_ESTIMATION_METHODS);
+export type SprintEstimationMethod = z.infer<
+  typeof sprintEstimationMethodSchema
+>;
+
+export const SPRINT_ESTIMATION_AI_FAILURE_REASONS = [
+  'cancelled',
+  'configuration',
+  'invalid_input',
+  'invalid_response',
+  'provider_error',
+  'timeout',
+  'unsupported_provider',
+] as const;
+export const sprintEstimationAiFailureReasonSchema = z.enum(
+  SPRINT_ESTIMATION_AI_FAILURE_REASONS
+);
+export type SprintEstimationAiFailureReason = z.infer<
+  typeof sprintEstimationAiFailureReasonSchema
+>;
+
+export const SPRINT_ESTIMATION_AI_STATUSES = [
+  'empty',
+  'generated',
+  'partial_fallback',
+  'fallback',
+] as const;
+export const sprintEstimationAiStatusSchema = z.enum(
+  SPRINT_ESTIMATION_AI_STATUSES
+);
+export type SprintEstimationAiStatus = z.infer<
+  typeof sprintEstimationAiStatusSchema
+>;
+
+export const sprintEstimationResultSchema = sprintWorkItemEstimateSchema
+  .safeExtend({
+    estimationMethod: sprintEstimationMethodSchema,
+    fallbackReason: sprintEstimationAiFailureReasonSchema.nullable(),
+  })
+  .superRefine((estimate, context) => {
+    if (
+      estimate.estimationMethod === 'ai' &&
+      estimate.fallbackReason !== null
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['fallbackReason'],
+        message: 'AI estimates cannot have a fallback reason',
+      });
+    }
+    if (
+      estimate.estimationMethod === 'deterministic' &&
+      estimate.fallbackReason === null
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['fallbackReason'],
+        message: 'Deterministic fallback estimates require a fallback reason',
+      });
+    }
+  });
+export type SprintEstimationResult = z.infer<
+  typeof sprintEstimationResultSchema
+>;
+
 export const sprintEstimationResponseSchema = z
   .object({
     sprintId: z.uuid(),
-    estimates: z.array(sprintWorkItemEstimateSchema),
+    aiStatus: sprintEstimationAiStatusSchema,
+    estimates: z.array(sprintEstimationResultSchema),
   })
-  .strict();
+  .strict()
+  .superRefine((response, context) => {
+    const aiCount = response.estimates.filter(
+      (estimate) => estimate.estimationMethod === 'ai'
+    ).length;
+    const fallbackCount = response.estimates.length - aiCount;
+    const statusIsValid =
+      (response.aiStatus === 'empty' && response.estimates.length === 0) ||
+      (response.aiStatus === 'generated' &&
+        aiCount > 0 &&
+        fallbackCount === 0) ||
+      (response.aiStatus === 'partial_fallback' &&
+        aiCount > 0 &&
+        fallbackCount > 0) ||
+      (response.aiStatus === 'fallback' && aiCount === 0 && fallbackCount > 0);
+
+    if (!statusIsValid) {
+      context.addIssue({
+        code: 'custom',
+        path: ['aiStatus'],
+        message: 'AI status does not match the returned estimate methods',
+      });
+    }
+  });
 export type SprintEstimationResponse = z.infer<
   typeof sprintEstimationResponseSchema
 >;

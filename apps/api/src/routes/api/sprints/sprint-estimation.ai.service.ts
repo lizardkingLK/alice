@@ -5,6 +5,7 @@ import {
   estimateSprintWorkItem,
   sprintEstimationInputSchema,
   type SprintEstimationConfidence,
+  type SprintEstimationAiFailureReason as SharedSprintEstimationAiFailureReason,
   type SprintEstimationHistoryItem,
   type SprintEstimationInput,
   type SprintWorkItemEstimate,
@@ -80,13 +81,7 @@ export const sprintEstimationAiResponseSchema = z
   .strict();
 
 export type SprintEstimationAiFailureReason =
-  | 'cancelled'
-  | 'configuration'
-  | 'invalid_input'
-  | 'invalid_response'
-  | 'provider_error'
-  | 'timeout'
-  | 'unsupported_provider';
+  SharedSprintEstimationAiFailureReason;
 
 export type SprintEstimationAiResult =
   | {

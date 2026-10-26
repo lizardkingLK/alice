@@ -12,6 +12,14 @@ import {
 } from './sprints.schemas';
 import type { SprintsService, SprintBurndownService } from './sprints.service';
 import {
+  SprintEstimationCancelledError,
+  SprintEstimationForbiddenError,
+  SprintEstimationLimitError,
+  SprintEstimationNotFoundError,
+  SprintEstimationUnauthenticatedError,
+} from './sprints.errors';
+import type { SprintEstimationService } from './sprint-estimation.service';
+import {
   SprintAccessError,
   isSprintNameConflictMessage,
 } from './sprints.errors';
@@ -24,6 +32,7 @@ import {
 export type SprintsRouterDeps = {
   sprintsService: SprintsService;
   sprintBurndownService: SprintBurndownService;
+  sprintEstimationService: SprintEstimationService;
 };
 
 function firstQueryValue(value: unknown): string | undefined {
@@ -70,7 +79,8 @@ function sendSprintMutationError(
 }
 
 export function createSprintsRouter(deps: SprintsRouterDeps): Router {
-  const { sprintsService, sprintBurndownService } = deps;
+  const { sprintsService, sprintBurndownService, sprintEstimationService } =
+    deps;
 
   const sprintsRouter: Router = Router();
 
@@ -144,6 +154,77 @@ export function createSprintsRouter(deps: SprintsRouterDeps): Router {
         res.status(200).json({ data: sprint, error: null });
       } catch (error) {
         sendSprintMutationError(res, error, 'Failed to update sprint');
+      }
+    }
+  );
+
+  sprintsRouter.post(
+    '/:id/estimates',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.id);
+      if (!parsedId.success) {
+        return res.status(400).json({ data: null, error: 'Invalid sprint id' });
+      }
+
+      const controller = new AbortController();
+      let responseFinished = false;
+      const cleanup = () => {
+        req.removeListener('aborted', onRequestAborted);
+        res.removeListener('finish', onResponseFinish);
+        res.removeListener('close', onResponseClose);
+      };
+      const onRequestAborted = () => controller.abort();
+      const onResponseFinish = () => {
+        responseFinished = true;
+        cleanup();
+      };
+      const onResponseClose = () => {
+        if (!responseFinished) controller.abort();
+        cleanup();
+      };
+      req.once('aborted', onRequestAborted);
+      res.once('finish', onResponseFinish);
+      res.once('close', onResponseClose);
+
+      try {
+        const estimation = await sprintEstimationService.generate(
+          req.userId!,
+          parsedId.data,
+          controller.signal
+        );
+        if (controller.signal.aborted || res.destroyed) return;
+        return res.status(200).json({ data: estimation, error: null });
+      } catch (error) {
+        if (
+          controller.signal.aborted ||
+          res.destroyed ||
+          error instanceof SprintEstimationCancelledError
+        ) {
+          return;
+        }
+        if (error instanceof SprintEstimationUnauthenticatedError) {
+          return res.status(401).json({ data: null, error: 'Unauthorized' });
+        }
+        if (error instanceof SprintEstimationForbiddenError) {
+          return res.status(403).json({ data: null, error: 'Forbidden' });
+        }
+        if (error instanceof SprintEstimationNotFoundError) {
+          return res
+            .status(404)
+            .json({ data: null, error: 'Sprint not found' });
+        }
+        if (error instanceof SprintEstimationLimitError) {
+          return res.status(422).json({
+            data: null,
+            error: error.message,
+          });
+        }
+        return res
+          .status(500)
+          .json({ data: null, error: 'Failed to estimate sprint' });
+      } finally {
+        cleanup();
       }
     }
   );

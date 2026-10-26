@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  sprintEstimationResponseSchema,
   sprintEstimationInputSchema,
   sprintWorkItemEstimateSchema,
 } from '@repo/types';
@@ -114,6 +115,78 @@ describe('sprint estimation contracts', () => {
         ...validEstimate,
         minimumHours: 10,
         maximumHours: 6,
+      }).success
+    ).toBe(false);
+  });
+
+  it('represents AI estimates and deterministic fallbacks explicitly', () => {
+    const baseEstimate = {
+      workItemId: WORK_ITEM_ID,
+      suggestedHours: 8,
+      minimumHours: 6,
+      maximumHours: 12,
+      confidence: 'medium',
+      source: 'similar_history',
+      evidenceCount: 4,
+      roughEstimate: false,
+      rationale: 'Historical evidence supports this range.',
+    } as const;
+
+    expect(
+      sprintEstimationResponseSchema.safeParse({
+        sprintId: '44444444-4444-4444-8444-444444444444',
+        aiStatus: 'partial_fallback',
+        estimates: [
+          {
+            ...baseEstimate,
+            estimationMethod: 'ai',
+            fallbackReason: null,
+          },
+          {
+            ...baseEstimate,
+            workItemId: '55555555-5555-4555-8555-555555555555',
+            estimationMethod: 'deterministic',
+            fallbackReason: 'timeout',
+          },
+        ],
+      }).success
+    ).toBe(true);
+  });
+
+  it('rejects inconsistent AI and fallback response metadata', () => {
+    const estimate = {
+      workItemId: WORK_ITEM_ID,
+      suggestedHours: 8,
+      minimumHours: 6,
+      maximumHours: 12,
+      confidence: 'medium',
+      source: 'similar_history',
+      evidenceCount: 4,
+      roughEstimate: false,
+      rationale: 'Historical evidence supports this range.',
+    } as const;
+
+    expect(
+      sprintEstimationResponseSchema.safeParse({
+        sprintId: '44444444-4444-4444-8444-444444444444',
+        aiStatus: 'generated',
+        estimates: [
+          {
+            ...estimate,
+            estimationMethod: 'deterministic',
+            fallbackReason: null,
+          },
+        ],
+      }).success
+    ).toBe(false);
+
+    expect(
+      sprintEstimationResponseSchema.safeParse({
+        sprintId: '44444444-4444-4444-8444-444444444444',
+        aiStatus: 'empty',
+        estimates: [
+          { ...estimate, estimationMethod: 'ai', fallbackReason: null },
+        ],
       }).success
     ).toBe(false);
   });

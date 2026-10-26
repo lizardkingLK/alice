@@ -8,8 +8,9 @@ import {
   type SprintEstimationWorkItem,
 } from '@repo/types';
 import { prisma } from '../../../lib/prisma';
+import { SPRINT_ESTIMATION_TARGET_LIMIT } from './sprint-estimation.constants';
 
-export const SPRINT_ESTIMATION_TARGET_LIMIT = 200;
+export { SPRINT_ESTIMATION_TARGET_LIMIT } from './sprint-estimation.constants';
 export const SPRINT_ESTIMATION_HISTORY_LIMIT = 100;
 export const SPRINT_ESTIMATION_PREVIOUS_SPRINT_LIMIT = 5;
 
@@ -260,7 +261,9 @@ export class SprintEstimationRepository {
           },
           select: workItemSelect(sprint.project_id),
           orderBy: { id: 'asc' },
-          take: SPRINT_ESTIMATION_TARGET_LIMIT,
+          // Read one sentinel row so callers can reject oversized sprints
+          // instead of silently returning estimates for only the first 200.
+          take: SPRINT_ESTIMATION_TARGET_LIMIT + 1,
         }),
         prisma.work_items.findMany({
           where: {

@@ -276,6 +276,29 @@ describe('SprintEstimationRepository', () => {
     await expect(repository.loadForSprint(SPRINT_ID)).resolves.toBeNull();
   });
 
+  it('loads one item beyond the public limit so oversized sprints are detectable', async () => {
+    mockSprint();
+    const targetRows = Array.from(
+      { length: SPRINT_ESTIMATION_TARGET_LIMIT + 1 },
+      (_, index) =>
+        targetRow({
+          id: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+        })
+    );
+    workItemFindManyMock
+      .mockResolvedValueOnce(targetRows)
+      .mockResolvedValueOnce([]);
+    sprintFindManyMock.mockResolvedValue([]);
+
+    const result = await new SprintEstimationRepository().loadForSprint(
+      SPRINT_ID
+    );
+
+    expect(result?.estimationInputs).toHaveLength(
+      SPRINT_ESTIMATION_TARGET_LIMIT + 1
+    );
+  });
+
   it('uses bounded, predictable, project-scoped Prisma queries without N+1 reads', async () => {
     mockSprint();
     workItemFindManyMock
@@ -299,7 +322,7 @@ describe('SprintEstimationRepository', () => {
           record_status: 'active',
         },
         orderBy: { id: 'asc' },
-        take: SPRINT_ESTIMATION_TARGET_LIMIT,
+        take: SPRINT_ESTIMATION_TARGET_LIMIT + 1,
       })
     );
     expect(workItemFindManyMock).toHaveBeenNthCalledWith(
