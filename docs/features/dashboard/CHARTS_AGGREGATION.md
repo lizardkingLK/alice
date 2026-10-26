@@ -73,13 +73,13 @@ Related:
 Keep **`web` / `api` names**. Add siblings as needed (do not rename to `client` /
 `writer` for symmetry — see [WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md)).
 
-| App            | Role                                                                |
-| -------------- | ------------------------------------------------------------------- |
-| `apps/web`     | UI (Vercel) — unchanged name                                        |
-| `apps/api`     | Mutations + post-commit publish (Vercel) — unchanged name           |
-| `apps/reader`  | Neon-backed read HTTP API (Render) — later                          |
-| `apps/streamer`| Realtime gateway (Pusher auth / façade; native WS if outgrown)      |
-| `apps/worker`  | Long-running jobs, BullMQ consumers, AI tools, heavy crons (Render) |
+| App             | Role                                                                |
+| --------------- | ------------------------------------------------------------------- |
+| `apps/web`      | UI (Vercel) — unchanged name                                        |
+| `apps/api`      | Mutations + post-commit publish (Vercel) — unchanged name           |
+| `apps/reader`   | Neon-backed read HTTP API (Render) — later                          |
+| `apps/streamer` | Realtime gateway (Pusher auth / façade; native WS if outgrown)      |
+| `apps/worker`   | Long-running jobs, BullMQ consumers, AI tools, heavy crons (Render) |
 
 Tier 2 may add `worker` / `streamer` / `reader` without renaming `web` / `api`.
 

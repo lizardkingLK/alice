@@ -18,7 +18,7 @@ import {
   resolveWorkflowGraphState,
   resolveWorkflowPlacementState,
   validateResolutionPayload,
-  type BoardRuleMatcher,
+  doesTransitionRuleAllowActor,
   type RuntimeBoardConfig,
   type WorkItemType,
   type WorkflowConfigEnvelope,
@@ -48,11 +48,7 @@ import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { env } from '../../../config/env';
 import { removeStorageObjects } from '../../../lib/file-helpers';
 import { WorkItemRepository } from './work-items.repository';
-import type {
-  BoardActorContext,
-  DbWorkItem,
-  DbGithubPullRequest,
-} from './work-items.repository';
+import type { DbWorkItem, DbGithubPullRequest } from './work-items.repository';
 import type { WorkItemPaginatedList } from './work-items.prisma-query';
 import {
   collectWorkItemFieldChanges,
@@ -124,28 +120,6 @@ export const WorkItemDefaults = {
   UNASSIGNED: 'Unassigned',
   USER: 'User',
 } as const;
-
-function doesTransitionRuleAllowActor(
-  allowAnyOf: readonly BoardRuleMatcher[],
-  actor: BoardActorContext | null,
-  actorId: string
-): boolean {
-  if (!actor) return false;
-
-  const activeTeamIds = new Set(
-    actor.activeTeamIds.map((teamId) => teamId.toLowerCase())
-  );
-  return allowAnyOf.some((matcher) => {
-    if (matcher.scope === 'role') return matcher.role === actor.role;
-    if (matcher.scope === 'team') {
-      return activeTeamIds.has(matcher.teamId.toLowerCase());
-    }
-    return (
-      actor.isActiveProjectMember &&
-      matcher.userId.toLowerCase() === actorId.toLowerCase()
-    );
-  });
-}
 
 function throwWorkflowConfigLoadError(error: unknown): void {
   if (error) throw error;

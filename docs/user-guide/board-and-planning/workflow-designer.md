@@ -101,7 +101,7 @@ Select an edge between two states:
 
 | Setting                   | What it does                                                                                                                                                                                                           |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Who can move**          | **Everyone**, or **Restricted** to roles, teams, or people                                                                                                                                                             |
+| **Who can move**          | **Everyone**, or **Restricted** (opens a dialog to pick roles, teams, or members). Save the workflow after you apply.                                                                                                  |
 | **Requires escalation**   | Turn on when this move needs a form. Then **Create new…** or pick a form, open **Edit form**, click **Save** in the dialog, and **Save** the workflow                                                                  |
 | **Resolution form**       | Named form people complete when taking this transition (required when escalation is on). Full editor opens in a dialog; changes apply only when you click **Save** there                                               |
 | **Require children**      | **Off** — no check. **All complete** — all direct subtasks must be in a done category. **Match parent target** — all direct subtasks must already be in the parent’s target state (or same category when types differ) |
