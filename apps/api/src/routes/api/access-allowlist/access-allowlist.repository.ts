@@ -182,6 +182,9 @@ export class AccessAllowlistRepository {
       throw new Error('Failed to check domain allowlist');
     }
 
+    // Include display-expired rows (status stays `active` past expires_at).
+    // Email-kind creates must not bypass a domain rule — admins renew the
+    // domain instead (see EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE).
     return data as AccessAllowlistRow | null;
   }
 

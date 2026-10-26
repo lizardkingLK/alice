@@ -12,6 +12,8 @@ import {
 } from '@repo/types';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
+import { useSoftInvalidateHoldAutoRefresh } from '@/lib/soft-invalidate/use-soft-invalidate-hold-auto-refresh';
+import { useSoftInvalidateProject } from '@/lib/soft-invalidate/use-soft-invalidate-project';
 import { DialogFooter } from '@repo/ui/components/ui/dialog';
 import { Loader2 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
@@ -261,6 +263,8 @@ export function WorkItemForm({
   const [projectId, setProjectId] = useState(
     itemToEdit?.project_id ?? (lockProject ? (projects[0]?.id ?? '') : '')
   );
+  useSoftInvalidateHoldAutoRefresh(true);
+  useSoftInvalidateProject(projectId || null);
 
   const selectedProject = projects.find((p) => p.id === projectId);
   const projectWorkflowConfig = selectedProject?.workflow_config as

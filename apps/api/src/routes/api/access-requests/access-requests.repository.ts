@@ -219,6 +219,10 @@ export class AccessRequestsRepository {
     });
   }
 
+  async deleteById(id: string): Promise<void> {
+    await prisma.access_requests.delete({ where: { id } });
+  }
+
   rollingWindowStart(now: Date = new Date()): Date {
     return accessRequestRollingWindowStart(now);
   }

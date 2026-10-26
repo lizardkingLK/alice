@@ -442,6 +442,13 @@ Invitees should use the invite email or **Forgot password**.
 - Allowlist status badge is **display-derived**: inactive/archived/deleted stay
   as stored; `active` + past `expires_at` (UTC) shows **expired** via
   `getAccessAllowlistDisplayStatus` (does not mutate the row).
+- **Email create vs domain:** creating an email row is rejected when a domain
+  row with `status=active` already covers that address — including
+  **display-expired** rows (`expires_at` in the past; status stays `active`).
+  Message: `EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE` (check Allowlist for an
+  expired/inactive domain; renew or reactivate it — do not add a per-email
+  bypass). Project membership is for project access after admission, not a
+  substitute for allowlist admission.
 - Allowlist is **service-role only** on PostgREST (RLS + revoke for
   `anon`/`authenticated`). Gate and admin RSC list use `createAdminClient`
   after app checks; mutations stay on the API. See

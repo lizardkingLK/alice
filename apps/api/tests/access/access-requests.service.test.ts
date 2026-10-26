@@ -22,6 +22,7 @@ const repository = {
   updatePendingSubmission: vi.fn(),
   resolveRequest: vi.fn(),
   archiveNotificationsForRequest: vi.fn(),
+  deleteById: vi.fn(),
   rollingWindowStart: vi.fn(() => new Date('2026-01-01T00:00:00.000Z')),
 } as unknown as AccessRequestsRepository;
 
@@ -168,5 +169,36 @@ describe('AccessRequestsService.denyAccessRequest', () => {
     expect(repository.archiveNotificationsForRequest).toHaveBeenCalledWith(
       'req-1'
     );
+  });
+});
+
+describe('AccessRequestsService.deleteAccessRequest', () => {
+  const service = new AccessRequestsService(
+    repository,
+    notificationsRepository
+  );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('archives notifications then hard-deletes the request', async () => {
+    vi.mocked(repository.findById).mockResolvedValue(baseRequest);
+
+    await service.deleteAccessRequest('admin-1', 'req-1');
+
+    expect(repository.archiveNotificationsForRequest).toHaveBeenCalledWith(
+      'req-1'
+    );
+    expect(repository.deleteById).toHaveBeenCalledWith('req-1');
+  });
+
+  it('rejects when the request is missing', async () => {
+    vi.mocked(repository.findById).mockResolvedValue(null);
+
+    await expect(
+      service.deleteAccessRequest('admin-1', 'missing')
+    ).rejects.toThrow('Access request not found');
+    expect(repository.deleteById).not.toHaveBeenCalled();
   });
 });

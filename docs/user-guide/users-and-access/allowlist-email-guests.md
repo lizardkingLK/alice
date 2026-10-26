@@ -45,6 +45,14 @@ pending member record.
 
 Prefer email entries for guests; reserve domain entries for your organization.
 
+If Alice says access is denied because a **domain** already covers the
+address, check **Users → Allowlist** for that domain. Renew or reactivate it
+when it is expired or inactive so people on the domain can sign in. Alice does
+not add a separate email row while a domain rule still covers them — even if
+that domain shows as expired. After they can sign in, add them as a **project
+member** if they still cannot open the projects they need — allowlist
+admission is not the same as project access.
+
 ---
 
 ## Related

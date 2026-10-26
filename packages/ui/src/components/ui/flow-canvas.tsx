@@ -72,7 +72,7 @@ function FlowCanvasInner({
   return (
     <div
       data-slot="flow-canvas"
-      className={cn('bg-muted/20 h-full min-h-[320px] w-full', className)}
+      className={cn('bg-muted/20 h-full min-h-80 w-full', className)}
     >
       <ReactFlow proOptions={{ hideAttribution: true }} fitView {...props}>
         {showBackground ? <Background gap={16} size={1} /> : null}

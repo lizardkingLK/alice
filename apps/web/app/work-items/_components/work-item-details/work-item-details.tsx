@@ -98,6 +98,7 @@ import {
 } from '@/app/work-items/_helpers/apply-realtime-work-log-row';
 import { rowFromRealtimePayload } from '@/lib/realtime/realtime-change-row';
 import { useScopedTableRealtime } from '@/lib/realtime/use-scoped-table-realtime';
+import { useSoftInvalidateProject } from '@/lib/soft-invalidate/use-soft-invalidate-project';
 import {
   readMoreFieldsOpen,
   writeMoreFieldsOpen,
@@ -747,6 +748,7 @@ export default function WorkItemDetails({
   discussionWorkItems?: CommentWorkItemOption[];
   initialDetailsPreferences?: WorkItemDetailsPreferences;
 }>) {
+  useSoftInvalidateProject(project?.id ?? workItemDetails.project_id ?? null);
   const router = useRouter();
   const { isUserOnline } = useRealtime();
   const { handleMutationError } = useOptimisticLock();

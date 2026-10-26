@@ -13,3 +13,11 @@ export async function denyAccessRequestClient(
     }
   );
 }
+
+export async function deleteAccessRequestClient(
+  requestId: string
+): Promise<void> {
+  await apiFetch<{ success: boolean }>(`/api/access-requests/${requestId}`, {
+    method: 'DELETE',
+  });
+}

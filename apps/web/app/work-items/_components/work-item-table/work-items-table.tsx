@@ -44,6 +44,7 @@ import {
   applyQueryFilterParam,
   useQueryFilter,
 } from '@/hooks/use-query-filter';
+import { useSoftInvalidateProject } from '@/lib/soft-invalidate/use-soft-invalidate-project';
 import {
   parseWorkItemLabelsFilterParam,
   serializeWorkItemLabelsFilter,
@@ -128,6 +129,12 @@ export default function WorkItemsTable({
   const { setValue: setProjectFilterValue, allValue: projectAllValue } =
     projectQuery;
   const { setValue: setSprintFilterValue } = sprintQuery;
+  const softInvalidateProjectId =
+    lockedProjectId ||
+    (projectQuery.value && projectQuery.value !== projectAllValue
+      ? projectQuery.value
+      : null);
+  useSoftInvalidateProject(softInvalidateProjectId);
   /** Hierarchy browse forest; search keeps a flat match table under the panel. */
   const isHierarchy = listView === 'hierarchy' && hierarchyMode === 'tree';
   // Prefer server cookie bootstrap so the first paint matches saved prefs.

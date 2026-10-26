@@ -22,6 +22,8 @@ import {
   fetchProjectSprintsForForm,
 } from '@/lib/form-read-actions';
 import { cn } from '@repo/ui/lib/utils';
+import { useSoftInvalidateHoldAutoRefresh } from '@/lib/soft-invalidate/use-soft-invalidate-hold-auto-refresh';
+import { useSoftInvalidateProject } from '@/lib/soft-invalidate/use-soft-invalidate-project';
 
 type WorkItemFormDialogProps = WorkItemFormProps & {
   open: boolean;
@@ -246,6 +248,13 @@ export function WorkItemFormDialog({
   const projectMembers = usedBootstrap
     ? bootstrappedMembers
     : projectMembersProp;
+  const softInvalidateProjectId = open
+    ? (resolvedItemToEdit?.project_id ??
+      resolveBootstrapProjectId(null, projects, lockProject) ??
+      null)
+    : null;
+  useSoftInvalidateHoldAutoRefresh(open);
+  useSoftInvalidateProject(softInvalidateProjectId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

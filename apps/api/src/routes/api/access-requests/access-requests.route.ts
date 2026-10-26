@@ -68,5 +68,24 @@ export function createAccessRequestsRouter(deps: AccessRequestsRouterDeps) {
     }
   );
 
+  accessRequestsRouter.delete(
+    '/:id',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const actorId = requireActorId(req);
+        const id = readRouteId(req);
+        if (!id) {
+          return res.status(400).json({ error: 'Invalid id' });
+        }
+
+        await accessRequestsService.deleteAccessRequest(actorId, id);
+        res.json({ success: true });
+      } catch (error) {
+        routeError(res, error, 'Failed to delete access request');
+      }
+    }
+  );
+
   return accessRequestsRouter;
 }

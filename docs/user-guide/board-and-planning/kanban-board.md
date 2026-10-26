@@ -48,6 +48,10 @@ Managers configure paths, who may move cards, locks, resolution forms, and
 subtask checks in the project [Workflow designer](./workflow-designer.md)
 (**Workflow** tab — not a separate Board designer).
 
+If someone updates the project’s workflow while your board is open, Alice may
+refresh the board for you, or show a short banner asking you to **Refresh** so
+columns and move rules stay current.
+
 ---
 
 ## Update status
