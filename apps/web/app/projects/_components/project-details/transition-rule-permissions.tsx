@@ -107,7 +107,7 @@ export function validateTransitionRulePermissions(
   value: Readonly<TransitionRulePermissionsValue>
 ): string | null {
   if (value.accessMode === 'restricted' && value.allowAnyOf.length === 0) {
-    return 'Select at least one role, team, or individual.';
+    return 'Select at least one role, team, or member.';
   }
   return null;
 }
@@ -175,7 +175,7 @@ export function TransitionRulePermissions({
       {value.accessMode === 'restricted' ? (
         <div className="space-y-4">
           <p className="text-muted-foreground text-xs">
-            Any selected role, team, or person may make this move.
+            Any selected role, team, or member may make this move.
           </p>
           <div className="space-y-1.5">
             <Label>Roles</Label>
@@ -209,7 +209,7 @@ export function TransitionRulePermissions({
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Individuals</Label>
+            <Label>Members</Label>
             <MemberCheckboxList
               members={members}
               selectedUserIds={selections.userIds}

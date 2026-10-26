@@ -167,6 +167,59 @@ describe('WorkflowDesignerSettings', () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /edit form/i })).toBeNull();
     expect(screen.getByText(/who can move/i)).toBeInTheDocument();
+    expect(screen.getByTestId('workflow-edge-access-mode')).toBeInTheDocument();
+  });
+
+  it('opens the permissions dialog when Restricted is selected', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const edge = workflow.graph.edges[0]!;
+    renderSettings({
+      selection: { kind: 'edge', edgeId: edge.id },
+      workflow,
+    });
+
+    fireEvent.click(screen.getByTestId('workflow-edge-access-mode'));
+    fireEvent.click(screen.getByRole('option', { name: /^restricted$/i }));
+
+    expect(
+      screen.getByTestId('workflow-edge-permissions-dialog')
+    ).toBeInTheDocument();
+  });
+
+  it('clears allowAnyOf when Everyone is selected on a restricted edge', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const edge = workflow.graph.edges[0]!;
+    const restrictedWorkflow = {
+      ...workflow,
+      graph: {
+        ...workflow.graph,
+        edges: workflow.graph.edges.map((candidate) =>
+          candidate.id === edge.id
+            ? {
+                ...candidate,
+                allowAnyOf: [
+                  { scope: 'role' as const, role: 'manager' as const },
+                ],
+              }
+            : candidate
+        ),
+      },
+    };
+    const onEdgeChange = vi.fn();
+    renderSettings({
+      selection: { kind: 'edge', edgeId: edge.id },
+      workflow: restrictedWorkflow,
+      onEdgeChange,
+    });
+
+    expect(
+      screen.getByTestId('workflow-edge-edit-permissions')
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('workflow-edge-access-mode'));
+    fireEvent.click(screen.getByRole('option', { name: /^everyone$/i }));
+
+    expect(onEdgeChange).toHaveBeenCalledWith(edge.id, { allowAnyOf: [] });
   });
 
   it('opens the resolution form editor in a dialog from Edit form', () => {

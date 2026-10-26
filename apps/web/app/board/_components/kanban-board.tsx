@@ -77,7 +77,12 @@ import {
   QUERY_FILTER_ALL_VALUE,
   useQueryFilter,
 } from '@/hooks/use-query-filter';
-import { type BoardColumn, type BoardWorkflowTab } from '@repo/types/api/v1';
+import {
+  type BoardColumn,
+  type BoardWorkflowTab,
+  type TransitionRuleActorContext,
+} from '@repo/types/api/v1';
+import type { BoardTransitionAuthRule } from '@/app/board/_helpers/board-transition-auth';
 
 type BoardStatus = BoardColumn['status'];
 
@@ -160,6 +165,8 @@ type KanbanBoardProps = {
   readonly workflowTabs?: readonly BoardWorkflowTab[];
   readonly activeWorkflowId?: string | null;
   readonly boardMode?: 'workflow' | 'legacy' | 'default';
+  readonly transitionAuthRules?: readonly BoardTransitionAuthRule[];
+  readonly transitionActor?: TransitionRuleActorContext | null;
   readonly initialWorkItems: DbWorkItem[];
   readonly projects: Project[];
   readonly sprints: Sprint[];
@@ -615,6 +622,8 @@ export function KanbanBoard({
   workflowTabs = [],
   activeWorkflowId = null,
   boardMode = 'default',
+  transitionAuthRules = [],
+  transitionActor = null,
   initialWorkItems,
   projects,
   sprints,
@@ -696,6 +705,8 @@ export function KanbanBoard({
       syncPrefs,
       realtimeProjectId,
       setStatusError,
+      transitionAuthRules,
+      transitionActor,
     });
 
   const uniqueAssignees = useMemo(

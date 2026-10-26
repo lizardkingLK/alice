@@ -33,6 +33,11 @@ export {
   type WorkItemStatusTransition,
 } from './board-config.js';
 export {
+  doesTransitionRuleAllowActor,
+  isTransitionAllowedForActor,
+  type TransitionRuleActorContext,
+} from './transition-rule-auth.js';
+export {
   WORKFLOW_CONFIG_SCHEMA_VERSION,
   WORKFLOW_REQUIRE_CHILDREN,
   WORKFLOW_REQUIRE_LINKED_ISSUES,

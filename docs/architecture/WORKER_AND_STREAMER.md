@@ -42,12 +42,12 @@ Still open (enrich later):
 
 ## Why not combine streamer + worker
 
-| Concern        | Streamer                                      | Worker                                  | If combined                                    |
-| -------------- | --------------------------------------------- | --------------------------------------- | ---------------------------------------------- |
-| Scale axis     | Open connections, memory, sticky affinity     | CPU, duration, queue concurrency        | One bad AI job or OOM restarts **all** sockets |
-| Lifecycle      | Must stay up; restarts drop clients           | Restart-friendly; scale to N consumers  | Ops forced into the worse of both              |
-| Failure domain | Auth, fan-out, backpressure                   | Tool timeouts, retries, poison messages | Coupled blast radius                           |
-| Deploy shape   | Few sticky instances (or managed realtime)    | Many ephemeral workers                  | One knobs-for-everything service               |
+| Concern        | Streamer                                   | Worker                                  | If combined                                    |
+| -------------- | ------------------------------------------ | --------------------------------------- | ---------------------------------------------- |
+| Scale axis     | Open connections, memory, sticky affinity  | CPU, duration, queue concurrency        | One bad AI job or OOM restarts **all** sockets |
+| Lifecycle      | Must stay up; restarts drop clients        | Restart-friendly; scale to N consumers  | Ops forced into the worse of both              |
+| Failure domain | Auth, fan-out, backpressure                | Tool timeouts, retries, poison messages | Coupled blast radius                           |
+| Deploy shape   | Few sticky instances (or managed realtime) | Many ephemeral workers                  | One knobs-for-everything service               |
 
 AI agent tools amplify this: long runs, high memory, flaky third parties. Those belong in a process you can kill, retry, and scale independently of live connections.
 
@@ -89,12 +89,12 @@ flowchart LR
 
 **BullMQ + Upstash Redis via `ioredis`.**
 
-| Piece                 | Role                                              | Use here?                                      |
-| --------------------- | ------------------------------------------------- | ---------------------------------------------- |
-| Upstash Redis         | Managed Redis (TCP)                               | Yes — BullMQ broker                            |
-| BullMQ + ioredis      | Queues, workers, flows, retries, stalled recovery | Yes — primary workload API                     |
-| Upstash QStash        | HTTP push into serverless endpoints               | No as primary                                  |
-| Upstash Workflow      | Durable multi-step / human-in-the-loop            | Optional later; not needed for tool batches    |
+| Piece            | Role                                              | Use here?                                   |
+| ---------------- | ------------------------------------------------- | ------------------------------------------- |
+| Upstash Redis    | Managed Redis (TCP)                               | Yes — BullMQ broker                         |
+| BullMQ + ioredis | Queues, workers, flows, retries, stalled recovery | Yes — primary workload API                  |
+| Upstash QStash   | HTTP push into serverless endpoints               | No as primary                               |
+| Upstash Workflow | Durable multi-step / human-in-the-loop            | Optional later; not needed for tool batches |
 
 Charts Tier 2 “Upstash queue” should mean **Upstash Redis backing BullMQ**, not QStash replacing BullMQ.
 
@@ -119,12 +119,12 @@ Suggested flow:
 
 Split by failure and concurrency profile — not one mega-queue:
 
-| Queue       | Intent                                      | Concurrency hint        |
-| ----------- | ------------------------------------------- | ----------------------- |
-| `default`   | Short post-commit helpers                   | Moderate                |
-| `ai-agent`  | Parent agent runs                           | Low                     |
-| `ai-tools`  | Child tool executions                       | Higher; strict timeouts |
-| `heavy`     | Chart/Neon apply, rebuilds                  | 1–2                     |
+| Queue      | Intent                     | Concurrency hint        |
+| ---------- | -------------------------- | ----------------------- |
+| `default`  | Short post-commit helpers  | Moderate                |
+| `ai-agent` | Parent agent runs          | Low                     |
+| `ai-tools` | Child tool executions      | Higher; strict timeouts |
+| `heavy`    | Chart/Neon apply, rebuilds | 1–2                     |
 
 Parents orchestrate on the orchestration queue; children run on specialist queues so a slow tool does not starve unrelated work.
 

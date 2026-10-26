@@ -36,13 +36,10 @@ import {
   WORKFLOW_STATE_CATEGORIES,
   type WorkflowStateCategory,
 } from '@repo/types';
-import {
-  TransitionRulePermissions,
-  type TransitionRulePermissionsValue,
-  type TransitionRuleTeamOption,
-} from '@/app/projects/_components/project-details/transition-rule-permissions';
+import type { TransitionRuleTeamOption } from '@/app/projects/_components/project-details/transition-rule-permissions';
 import type { MemberCheckboxOption } from '@/components/member-checkbox-list';
 import { WORK_ITEM_STATUS_BADGE_STYLES } from '@/app/work-items/_helpers/work-item-status';
+import { WorkflowEdgePermissionsDialog } from '@/app/projects/_components/project-details/workflow-edge-permissions-dialog';
 import { WorkflowResolutionPresetEditor } from '@/app/projects/_components/project-details/workflow-resolution-preset-editor';
 import { WorkflowSettingsInfoTip } from '@/app/projects/_components/project-details/workflow-settings-info-tip';
 import { cn } from '@repo/ui/lib/utils';
@@ -466,9 +463,8 @@ function EdgeSettingsForm({
     edge.to;
   const escalationRequired =
     edge.requiresEscalation === true || fromState?.requiresEscalation === true;
-
-  const accessMode: TransitionRulePermissionsValue['accessMode'] =
-    edge.allowAnyOf.length > 0 ? 'restricted' : 'everyone';
+  const isRestricted = edge.allowAnyOf.length > 0;
+  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
 
   return (
     <div className="space-y-4" data-testid="workflow-settings-edge">
@@ -589,23 +585,63 @@ function EdgeSettingsForm({
       <div className="space-y-2">
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-medium">Who can move</p>
-          <WorkflowSettingsInfoTip text="Everyone allows any member. Restricted limits who can take this move." />
+          <WorkflowSettingsInfoTip text="Everyone allows any member. Restricted opens a dialog to pick roles, teams, or members." />
         </div>
-        <TransitionRulePermissions
-          idPrefix={`workflow-edge-${edge.id}`}
-          value={{
-            accessMode,
-            allowAnyOf: edge.allowAnyOf,
+        <Select
+          value={isRestricted ? 'restricted' : 'everyone'}
+          disabled={!canEdit}
+          onValueChange={(value) => {
+            if (!value) {
+              return;
+            }
+            if (value === 'everyone') {
+              onEdgeChange(edge.id, { allowAnyOf: [] });
+              return;
+            }
+            setPermissionsDialogOpen(true);
           }}
+        >
+          <SelectTrigger
+            id={`workflow-edge-${edge.id}-access`}
+            data-testid="workflow-edge-access-mode"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="everyone">Everyone</SelectItem>
+            <SelectItem value="restricted">Restricted</SelectItem>
+          </SelectContent>
+        </Select>
+        {isRestricted ? (
+          <div className="flex flex-col gap-2">
+            <p className="text-muted-foreground text-xs">
+              {edge.allowAnyOf.length} matcher
+              {edge.allowAnyOf.length === 1 ? '' : 's'} configured.
+            </p>
+            {canEdit ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-testid="workflow-edge-edit-permissions"
+                onClick={() => setPermissionsDialogOpen(true)}
+              >
+                Edit who can move
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+        <WorkflowEdgePermissionsDialog
+          open={permissionsDialogOpen}
+          onOpenChange={setPermissionsDialogOpen}
+          fromName={fromName}
+          toName={toName}
           savedAllowAnyOf={edge.allowAnyOf}
           teams={teams}
           members={members}
           disabled={!canEdit}
-          onChange={(next) => {
-            onEdgeChange(edge.id, {
-              allowAnyOf:
-                next.accessMode === 'everyone' ? [] : [...next.allowAnyOf],
-            });
+          onApply={(allowAnyOf) => {
+            onEdgeChange(edge.id, { allowAnyOf: [...allowAnyOf] });
           }}
         />
       </div>

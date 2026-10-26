@@ -8,11 +8,22 @@ import {
   type Dispatch,
   type SetStateAction,
 } from 'react';
-import type { BoardColumn } from '@repo/types/api/v1';
-import { resolveBoardMove } from '@/app/board/_helpers/board-columns';
+import type {
+  BoardColumn,
+  TransitionRuleActorContext,
+} from '@repo/types/api/v1';
+import {
+  resolveBoardMove,
+  resolveItemColumnId,
+} from '@/app/board/_helpers/board-columns';
 import { mergeBoardPlacementRow } from '@/app/board/_helpers/board-move-pending';
 import { handleBoardStatusMoveError } from '@/app/board/_helpers/board-status-move';
 import type { BoardSyncPrefs } from '@/app/board/_helpers/board-sync-storage';
+import {
+  isBoardTransitionLocallyAllowed,
+  type BoardTransitionAuthRule,
+} from '@/app/board/_helpers/board-transition-auth';
+import { toastWorkflowMoveBlocked } from '@/app/board/_helpers/workflow-move-blocked-toast';
 import {
   applyRealtimeBoardRow,
   useBoardWorkItemsRealtime,
@@ -67,6 +78,8 @@ type UseBoardStatusMovesOptions = {
   readonly syncPrefs: BoardSyncPrefs;
   readonly realtimeProjectId: string | null;
   readonly setStatusError: Dispatch<SetStateAction<string | null>>;
+  readonly transitionAuthRules?: readonly BoardTransitionAuthRule[];
+  readonly transitionActor?: TransitionRuleActorContext | null;
 };
 
 export function useBoardStatusMoves(options: UseBoardStatusMovesOptions): {
@@ -85,6 +98,8 @@ export function useBoardStatusMoves(options: UseBoardStatusMovesOptions): {
     syncPrefs,
     realtimeProjectId,
     setStatusError,
+    transitionAuthRules = [],
+    transitionActor = null,
   } = options;
 
   const workItemsRef = useRef(workItems);
@@ -175,7 +190,7 @@ export function useBoardStatusMoves(options: UseBoardStatusMovesOptions): {
         );
       });
       setSelectedTask((previous) => {
-        if (!previous || previous.id !== row.id) {
+        if (previous?.id !== row.id) {
           return previous;
         }
         if (!force && moveQueueRef.current.isPending(row.id)) {
@@ -303,6 +318,11 @@ export function useBoardStatusMoves(options: UseBoardStatusMovesOptions): {
     },
   });
 
+  const transitionAuthRulesRef = useRef(transitionAuthRules);
+  transitionAuthRulesRef.current = transitionAuthRules;
+  const transitionActorRef = useRef(transitionActor);
+  transitionActorRef.current = transitionActor;
+
   const applyStatusChange = useCallback(
     (id: string, targetColumn: BoardColumn) => {
       const currentItem = workItemsRef.current.find((item) => item.id === id);
@@ -319,12 +339,35 @@ export function useBoardStatusMoves(options: UseBoardStatusMovesOptions): {
         return;
       }
 
+      const fromColumnId = resolveItemColumnId(
+        currentItem,
+        boardColumnsRef.current
+      );
+      const allowed = isBoardTransitionLocallyAllowed(
+        transitionAuthRulesRef.current,
+        fromColumnId,
+        targetColumn.id,
+        transitionActorRef.current,
+        userId
+      );
+      if (!allowed) {
+        const sourceColumnName =
+          (fromColumnId &&
+            boardColumnsRef.current.find((column) => column.id === fromColumnId)
+              ?.name) ??
+          'the current column';
+        toastWorkflowMoveBlocked(
+          `You do not have permission to move this item from ${sourceColumnName} to ${targetColumn.name}.`
+        );
+        return;
+      }
+
       moveQueue.enqueue(id, {
         status: move.status,
         board_column_id: move.board_column_id,
       });
     },
-    [moveQueue]
+    [moveQueue, userId]
   );
 
   return {
