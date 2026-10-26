@@ -94,12 +94,31 @@ Explicit action: `POST /api/access-requests/:id/deny` (admin only)
 1. Sets request → `denied`
 2. Archives linked notifications
 
+### Delete
+
+Hard-delete from the Requests registry (aligned with Allowlist **Delete**):
+`DELETE /api/access-requests/:id` (admin only). Archives linked notifications,
+then removes the row. Available for pending, granted, and denied requests.
+
+### Row actions
+
+| Status               | Menu                             |
+| -------------------- | -------------------------------- |
+| `pending`            | **Review**, **Deny**, **Delete** |
+| `granted` / `denied` | **View**, **Delete**             |
+
+**Review** / **View** open dialogs from local state (no URL rewrite), so the
+page does not RSC-refresh on open/close. Inbox deep links still use
+`requestId` / `addEmail`; closing clears those query keys quietly via
+`history.replaceState`.
+
 ## API
 
 | Method | Path                            | Auth   | Purpose                         |
 | ------ | ------------------------------- | ------ | ------------------------------- |
 | POST   | `/api/notifications/contact`    | Public | Submit contact / access request |
 | POST   | `/api/access-requests/:id/deny` | Admin  | Deny pending request            |
+| DELETE | `/api/access-requests/:id`      | Admin  | Hard-delete request             |
 
 Contact payload may include optional `requestedProjectKeys` (string or string[]).
 

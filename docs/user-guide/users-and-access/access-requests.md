@@ -20,7 +20,7 @@ flow: name, email, message, **requested project keys**, and date.
 ## Typical workflow
 
 1. **Verify** the person should have access (manager approval, ticket, etc.).
-2. Open **Review & allow** on the row (or follow the inbox deep link).
+2. Open **Review** on a pending row (or follow the inbox deep link).
 3. The **Add allowlist entry** dialog opens with their **email** and any
    **requested project keys** already selected — adjust the guest project list
    if needed, then save. See [Admission allowlist](./allowlist.md) and
@@ -29,6 +29,9 @@ flow: name, email, message, **requested project keys**, and date.
    a separate Users-directory invite (allowlist grant already emails an invite
    for new addresses).
 5. Or **Deny** the request when they should not join.
+6. Use **View** on granted or denied rows to re-read the request. Use
+   **Delete** to remove a request from the list (same idea as deleting an
+   allowlist entry).
 
 ---
 

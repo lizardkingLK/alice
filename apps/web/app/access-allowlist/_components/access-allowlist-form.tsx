@@ -442,10 +442,10 @@ export function AccessAllowlistForm({
       </Card>
 
       <Dialog open={domainConflictOpen} onOpenChange={setDomainConflictOpen}>
-        <DialogContent className="bg-card border-border/80 sm:max-w-md">
+        <DialogContent className="bg-card border-border/80 sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Access denied</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-left text-sm leading-relaxed">
               {EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE}
             </DialogDescription>
           </DialogHeader>

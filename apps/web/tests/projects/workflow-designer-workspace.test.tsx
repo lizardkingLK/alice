@@ -30,6 +30,10 @@ vi.mock('@/app/projects/_services/projects.workflow-config.client', () => ({
   deleteProjectWorkflow: vi.fn(),
 }));
 
+vi.mock('@/app/projects/_services/projects.cache.actions.server', () => ({
+  invalidateProjectDropdownCache: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@repo/ui/components/ui/sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));

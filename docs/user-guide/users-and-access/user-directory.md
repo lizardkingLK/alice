@@ -39,6 +39,11 @@ directory page.
 
 Use search or filters when the list is long.
 
+### When an admin changes your role
+
+You do not need to sign out. If you already have Alice open, a banner may ask
+you to **Refresh** so menus and permissions match your new role.
+
 ### Editing roles (admins)
 
 When you **Edit** a user:

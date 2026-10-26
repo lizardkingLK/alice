@@ -145,6 +145,20 @@ export class AccessRequestsService {
     );
   }
 
+  async deleteAccessRequest(actorId: string, requestId: string) {
+    await requireAdmin(actorId);
+
+    const existing = await this.accessRequestsRepository.findById(requestId);
+    if (!existing) {
+      throw new Error('Access request not found');
+    }
+
+    await this.accessRequestsRepository.archiveNotificationsForRequest(
+      requestId
+    );
+    await this.accessRequestsRepository.deleteById(requestId);
+  }
+
   async markGrantedForEmail(actorId: string, email: string) {
     const normalized = normalizeAccessRequestEmail(email);
     if (!normalized) {

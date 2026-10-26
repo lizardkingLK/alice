@@ -4,6 +4,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useSoftInvalidateProject } from '@/lib/soft-invalidate/use-soft-invalidate-project';
 import {
   ClipboardPenLine,
   GitBranch,
@@ -311,6 +312,7 @@ export function ProjectDetailsWorkspace({
   const searchParams = useSearchParams();
   const requestedTab = parseProjectDetailsTab(searchParams.get('tab'));
   const [sidebarOpen, setSidebarOpen] = useState(initialSidebarOpen);
+  useSoftInvalidateProject(project.id);
 
   const appRole = isAppRole(currentUserRole) ? currentUserRole : null;
   const canEditProject = isManagerOrAdmin(appRole);

@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -38,11 +39,13 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import {
+  Eye,
   Inbox,
   Loader2,
   MoreHorizontal,
   ShieldCheck,
   ShieldX,
+  Trash2,
   UserPlus,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
@@ -51,13 +54,17 @@ import { formatDate } from '@/app/_shared/utility';
 import { DataTable } from '@/components/data-table';
 import { DismissibleError } from '@/components/dismissible-error';
 import { Pagination } from '@/components/pagination';
+import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import { SearchInput } from '@/components/search-input';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { AccessAllowlistForm } from '@/app/access-allowlist/_components/access-allowlist-form';
 import type { AccessRequestEntry } from '@/app/access-requests/_services/access-requests.mutations.shared';
-import { denyAccessRequestClient } from '@/app/access-requests/_services/access-requests.mutations.client';
+import {
+  deleteAccessRequestClient,
+  denyAccessRequestClient,
+} from '@/app/access-requests/_services/access-requests.mutations.client';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import { accessRequestProjectKeysFromValue } from '@repo/types';
 
@@ -193,14 +200,20 @@ interface ActionsCellProps {
   // eslint-disable-next-line no-unused-vars -- callback param names for documentation
   readonly onReview: (entry: AccessRequestEntry) => void;
   // eslint-disable-next-line no-unused-vars
+  readonly onView: (entry: AccessRequestEntry) => void;
+  // eslint-disable-next-line no-unused-vars
   readonly onDeny: (entry: AccessRequestEntry) => void;
+  // eslint-disable-next-line no-unused-vars
+  readonly onDelete: (entry: AccessRequestEntry) => void;
 }
 
 function ActionsCell({
   row,
   isBusy,
   onReview,
+  onView,
   onDeny,
+  onDelete,
 }: Readonly<ActionsCellProps>) {
   const entry = row.original;
   const pending = entry.status === 'pending';
@@ -220,10 +233,17 @@ function ActionsCell({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onReview(entry)}>
-            <UserPlus />
-            {pending ? 'Review & allow' : 'View'}
-          </DropdownMenuItem>
+          {pending ? (
+            <DropdownMenuItem onClick={() => onReview(entry)}>
+              <UserPlus />
+              Review
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onClick={() => onView(entry)}>
+              <Eye />
+              View
+            </DropdownMenuItem>
+          )}
           {pending ? (
             <DropdownMenuItem
               variant="destructive"
@@ -233,6 +253,13 @@ function ActionsCell({
               Deny
             </DropdownMenuItem>
           ) : null}
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => onDelete(entry)}
+          >
+            <Trash2 />
+            Delete
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -283,7 +310,9 @@ const COLUMNS: ColumnDef<AccessRequestEntry>[] = [
           row={ctx.row}
           isBusy={meta?.isBusy ?? false}
           onReview={meta?.onReview ?? (() => undefined)}
+          onView={meta?.onView ?? (() => undefined)}
           onDeny={meta?.onDeny ?? (() => undefined)}
+          onDelete={meta?.onDelete ?? (() => undefined)}
         />
       );
     },
@@ -295,19 +324,58 @@ type RequestTableMeta = {
   // eslint-disable-next-line no-unused-vars
   onReview: (entry: AccessRequestEntry) => void;
   // eslint-disable-next-line no-unused-vars
+  onView: (entry: AccessRequestEntry) => void;
+  // eslint-disable-next-line no-unused-vars
   onDeny: (entry: AccessRequestEntry) => void;
+  // eslint-disable-next-line no-unused-vars
+  onDelete: (entry: AccessRequestEntry) => void;
 };
 
-function clearRequestQueryParams(
+function buildResolvedDialog(entry: AccessRequestEntry): {
+  title: string;
+  body: ReactNode;
+} {
+  if (entry.status === 'granted') {
+    return {
+      title: 'Access already granted',
+      body: (
+        <p>
+          Another admin has already granted workspace access to{' '}
+          <span className="font-semibold">{entry.requester_email}</span>
+          {entry.resolved_at ? ` on ${formatDate(entry.resolved_at)}.` : '.'}
+        </p>
+      ),
+    };
+  }
+
+  return {
+    title: 'Access request denied',
+    body: (
+      <p>
+        This request from{' '}
+        <span className="font-semibold">{entry.requester_email}</span> was
+        denied
+        {entry.resolved_at ? ` on ${formatDate(entry.resolved_at)}` : ''}
+        {'.'}
+      </p>
+    ),
+  };
+}
+
+/** Drop deep-link query keys without Next navigation (avoids RSC refresh). */
+function clearRequestQueryParamsQuietly(
   searchParams: URLSearchParams,
-  pathname: string,
-  router: ReturnType<typeof useRouter>
+  pathname: string
 ) {
   const params = new URLSearchParams(searchParams.toString());
+  if (!params.has('requestId') && !params.has('addEmail')) {
+    return;
+  }
   params.delete('requestId');
   params.delete('addEmail');
   const query = params.toString();
-  router.replace(query ? `${pathname}?${query}` : pathname);
+  const url = query ? `${pathname}?${query}` : pathname;
+  window.history.replaceState(window.history.state, '', url);
 }
 
 export function AccessRequestsRegistry({
@@ -342,17 +410,38 @@ export function AccessRequestsRegistry({
   const [activeRequest, setActiveRequest] = useState<AccessRequestEntry | null>(
     null
   );
-
-  const openReview = useCallback(
-    (entry: AccessRequestEntry) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('tab', 'requests');
-      params.set('requestId', entry.id);
-      params.set('addEmail', entry.requester_email);
-      router.push(`${pathname}?${params.toString()}`);
-    },
-    [pathname, router, searchParams]
+  const [deletingEntry, setDeletingEntry] = useState<AccessRequestEntry | null>(
+    null
   );
+  const dismissedDeepLinkIdRef = useRef<string | null>(null);
+
+  const closeDialogsLocally = useCallback(() => {
+    setAllowDialogOpen(false);
+    setResolvedDialog(null);
+    setActiveRequest(null);
+  }, []);
+
+  const clearDeepLinkParams = useCallback(() => {
+    if (!requestIdParam && !addEmailParam) {
+      return;
+    }
+    if (requestIdParam) {
+      dismissedDeepLinkIdRef.current = requestIdParam;
+    }
+    clearRequestQueryParamsQuietly(searchParams, pathname);
+  }, [addEmailParam, pathname, requestIdParam, searchParams]);
+
+  /** Open Review / View from the row menu without touching the URL (no RSC refresh). */
+  const openLocalDialog = useCallback((entry: AccessRequestEntry) => {
+    setActiveRequest(entry);
+    if (entry.status === 'pending') {
+      setAllowDialogOpen(true);
+      setResolvedDialog(null);
+      return;
+    }
+    setAllowDialogOpen(false);
+    setResolvedDialog(buildResolvedDialog(entry));
+  }, []);
 
   const handleDeny = useCallback(
     (entry: AccessRequestEntry) => {
@@ -360,7 +449,8 @@ export function AccessRequestsRegistry({
       setError(null);
       denyAccessRequestClient(entry.id)
         .then(() => {
-          clearRequestQueryParams(searchParams, pathname, router);
+          closeDialogsLocally();
+          clearDeepLinkParams();
           router.refresh();
         })
         .catch((denyError: unknown) => {
@@ -374,17 +464,50 @@ export function AccessRequestsRegistry({
           setIsBusy(false);
         });
     },
-    [pathname, router, searchParams]
+    [clearDeepLinkParams, closeDialogsLocally, router]
   );
 
+  const confirmDelete = useCallback(() => {
+    if (!deletingEntry) {
+      return;
+    }
+    setIsBusy(true);
+    setError(null);
+    deleteAccessRequestClient(deletingEntry.id)
+      .then(() => {
+        setDeletingEntry(null);
+        closeDialogsLocally();
+        clearDeepLinkParams();
+        router.refresh();
+      })
+      .catch((deleteError: unknown) => {
+        const message =
+          deleteError instanceof Error
+            ? deleteError.message
+            : 'Failed to delete access request.';
+        setError(message);
+      })
+      .finally(() => {
+        setIsBusy(false);
+      });
+  }, [clearDeepLinkParams, closeDialogsLocally, deletingEntry, router]);
+
+  // Deep links from inbox / notification only — menu actions stay local.
   useEffect(() => {
+    if (!requestIdParam) {
+      dismissedDeepLinkIdRef.current = null;
+      return;
+    }
+    if (dismissedDeepLinkIdRef.current === requestIdParam) {
+      return;
+    }
+
     const target =
       focusedRequest ??
-      (requestIdParam
-        ? (requests.find((row) => row.id === requestIdParam) ?? null)
-        : null);
+      requests.find((row) => row.id === requestIdParam) ??
+      null;
 
-    if (target?.id !== requestIdParam) {
+    if (!target || target.id !== requestIdParam) {
       return;
     }
 
@@ -397,48 +520,24 @@ export function AccessRequestsRegistry({
     }
 
     setAllowDialogOpen(false);
-    if (target.status === 'granted') {
-      setResolvedDialog({
-        title: 'Access already granted',
-        body: (
-          <p>
-            Another admin has already granted workspace access to{' '}
-            <span className="font-semibold">{target.requester_email}</span>
-            {target.resolved_at
-              ? ` on ${formatDate(target.resolved_at)}.`
-              : '.'}
-          </p>
-        ),
-      });
-      return;
-    }
-
-    setResolvedDialog({
-      title: 'Access request denied',
-      body: (
-        <p>
-          This request from{' '}
-          <span className="font-semibold">{target.requester_email}</span> was
-          denied
-          {target.resolved_at ? ` on ${formatDate(target.resolved_at)}` : ''}
-          {'.'}
-        </p>
-      ),
-    });
+    setResolvedDialog(buildResolvedDialog(target));
   }, [focusedRequest, requestIdParam, requests]);
 
   const handleCloseAllow = useCallback(() => {
-    setAllowDialogOpen(false);
-    setActiveRequest(null);
-    clearRequestQueryParams(searchParams, pathname, router);
-  }, [pathname, router, searchParams]);
+    closeDialogsLocally();
+    clearDeepLinkParams();
+  }, [clearDeepLinkParams, closeDialogsLocally]);
 
   const handleAllowSuccess = useCallback(() => {
-    setAllowDialogOpen(false);
-    setActiveRequest(null);
-    clearRequestQueryParams(searchParams, pathname, router);
+    closeDialogsLocally();
+    clearDeepLinkParams();
     router.refresh();
-  }, [pathname, router, searchParams]);
+  }, [clearDeepLinkParams, closeDialogsLocally, router]);
+
+  const handleCloseResolved = useCallback(() => {
+    closeDialogsLocally();
+    clearDeepLinkParams();
+  }, [clearDeepLinkParams, closeDialogsLocally]);
 
   const columns = useMemo(() => COLUMNS, []);
 
@@ -448,8 +547,10 @@ export function AccessRequestsRegistry({
     getCoreRowModel: getCoreRowModel(),
     meta: {
       isBusy,
-      onReview: openReview,
+      onReview: openLocalDialog,
+      onView: openLocalDialog,
       onDeny: handleDeny,
+      onDelete: setDeletingEntry,
     } satisfies RequestTableMeta,
   });
 
@@ -536,8 +637,7 @@ export function AccessRequestsRegistry({
         open={resolvedDialog !== null}
         onOpenChange={(open) => {
           if (!open) {
-            setResolvedDialog(null);
-            clearRequestQueryParams(searchParams, pathname, router);
+            handleCloseResolved();
           }
         }}
       >
@@ -560,16 +660,32 @@ export function AccessRequestsRegistry({
             <Button
               type="button"
               className="cursor-pointer"
-              onClick={() => {
-                setResolvedDialog(null);
-                clearRequestQueryParams(searchParams, pathname, router);
-              }}
+              onClick={handleCloseResolved}
             >
               Okay
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {deletingEntry ? (
+        <RegistryConfirmDialog
+          title="Delete access request"
+          subject={deletingEntry.requester_email}
+          detail="This cannot be undone."
+          confirmLabel="Delete"
+          pendingLabel="Deleting…"
+          isPending={isBusy}
+          isSoft={false}
+          actionVerb="delete"
+          onCancel={() => {
+            if (!isBusy) {
+              setDeletingEntry(null);
+            }
+          }}
+          onConfirm={confirmDelete}
+        />
+      ) : null}
 
       {isBusy ? (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/20">

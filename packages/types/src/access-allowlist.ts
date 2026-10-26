@@ -125,7 +125,7 @@ export const OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE =
   'You cannot delete or deactivate the domain that matches your email.';
 
 export const EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE =
-  'This email’s domain is already allowlisted. Add the user as a project member instead of creating an email allowlist entry.';
+  'A domain allowlist entry already covers this address, so Alice does not create a separate email entry under that domain. On the Allowlist tab, check whether that domain is expired or inactive — renew or reactivate it so people on the domain can sign in again. If they can sign in but still cannot open a project, add them as a project member; domain admission alone does not grant project access.';
 
 /** Parse `allowed_project_ids` JSON into unique trimmed project keys. */
 export function parseAllowlistProjectKeys(value: unknown): string[] {

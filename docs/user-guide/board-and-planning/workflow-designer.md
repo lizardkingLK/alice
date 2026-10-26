@@ -18,6 +18,10 @@ Use **Save** to persist canvas layout and Settings together, or **Discard** to
 revert unsaved edits. Members can use the board and change states according to
 the published workflow; they cannot open or edit the graph.
 
+After you save, teammates with that project open may see a **Refresh** prompt
+(or an automatic board refresh) so their columns and state options match what
+you published.
+
 ---
 
 ## What you design

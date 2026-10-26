@@ -108,6 +108,25 @@ describe('AccessAllowlistService admission email', () => {
     expect(createMock).not.toHaveBeenCalled();
   });
 
+  it('rejects email create when the domain row is still active even if display-expired', async () => {
+    findActiveDomainByValueMock.mockResolvedValue({
+      id: 'domain-1',
+      kind: 'domain',
+      value: 'partner.com',
+      status: 'active',
+      expires_at: '2020-01-01T00:00:00.000Z',
+    });
+
+    await expect(
+      service.createAccessAllowlist('admin-1', {
+        kind: 'email',
+        value: 'client@partner.com',
+      })
+    ).rejects.toThrow(EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE);
+
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
   it('does not email domain rows', async () => {
     createMock.mockResolvedValue({
       ...emailEntry,

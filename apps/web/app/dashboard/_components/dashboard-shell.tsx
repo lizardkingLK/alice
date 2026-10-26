@@ -97,7 +97,10 @@ export async function DashboardShell({
             currentUserImageUrl={dbUser?.profile_picture}
             currentUserRole={dbUser?.role}
           >
-            <DashboardRuntimeProviders>
+            <DashboardRuntimeProviders
+              userId={dbUser?.id ?? null}
+              initialRole={dbUser?.role ?? null}
+            >
               {stickyHeader ? (
                 <>
                   {header}

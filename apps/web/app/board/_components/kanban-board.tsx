@@ -47,6 +47,7 @@ import { useBoardFilterActions } from '@/app/board/_hooks/use-board-filter-actio
 import { useBoardStatusMoves } from '@/app/board/_hooks/use-board-status-moves';
 import { useBoardSyncPrefs } from '@/app/board/_hooks/use-board-sync-prefs';
 import { PendingSyncIndicator } from '@/components/pending-sync-indicator';
+import { useSoftInvalidateProject } from '@/lib/soft-invalidate/use-soft-invalidate-project';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
@@ -737,6 +738,9 @@ export function KanbanBoard({
   const projectFilterActive = Boolean(
     projectQuery.value && projectQuery.value !== projectAllValue
   );
+  useSoftInvalidateProject(projectFilterActive ? projectQuery.value : null, {
+    autoRefresh: true,
+  });
   const sprintFilterActive = Boolean(
     sprintQuery.value && sprintQuery.value !== sprintQuery.allValue
   );

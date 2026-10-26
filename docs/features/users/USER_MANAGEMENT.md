@@ -154,6 +154,13 @@ Admins edit name and workspace role from the registry **Edit** dialog.
 
 API `PATCH /api/users/:id` enforces the same rules (403) so the UI cannot be bypassed.
 
+**Soft UI sync:** Roles are read from `public.users` on each RSC/API request (not
+JWT claims), so re-login is **not** required for authz. Open tabs subscribe to
+Realtime on the signed-in user’s `users` row and show a soft banner —
+“Your access was updated. Refresh to see your new permissions.” — then
+`router.refresh()`. No forced sign-out. Publication:
+`add_projects_users_realtime_publication`.
+
 ---
 
 ## Authorization status (RBAC)

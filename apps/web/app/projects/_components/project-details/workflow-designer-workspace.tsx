@@ -72,6 +72,7 @@ import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-
 import { ApiError } from '@/lib/api/api-fetch.helper';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
+import { invalidateProjectDropdownCache } from '@/app/projects/_services/projects.cache.actions.server';
 import {
   deleteProjectWorkflow,
   forkProjectWorkflow,
@@ -801,6 +802,12 @@ export function WorkflowDesignerWorkspace({
       setMessage(options.successMessage);
       setMessageIsError(false);
       toast.success(options.successMessage, { duration: SUCCESS_FEEDBACK_MS });
+      invalidateProjectDropdownCache().catch((error: unknown) => {
+        console.warn(
+          'warn. failed to invalidate project dropdown cache after workflow save:',
+          error
+        );
+      });
       router.refresh();
     },
     [resetUndo, router]

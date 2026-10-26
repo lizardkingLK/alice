@@ -46,5 +46,11 @@ export function createAccessRequestsService(
     );
   }
 
-  return { denyAccessRequest };
+  async function deleteAccessRequest(requestId: string): Promise<void> {
+    await apiFetch<{ success: boolean }>(`${apiAccessRequests}/${requestId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  return { denyAccessRequest, deleteAccessRequest };
 }
