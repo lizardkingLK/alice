@@ -90,9 +90,9 @@ function createRootConfig() {
 }
 
 function createAccessAllowlistConfig(
-  accessRequestsService: AccessRequestsService
+  accessRequestsService: AccessRequestsService,
+  accessAllowlistRepository: AccessAllowlistRepository
 ) {
-  const accessAllowlistRepository = new AccessAllowlistRepository(supabase);
   const accessAllowlistService = new AccessAllowlistService(
     accessAllowlistRepository,
     accessRequestsService
@@ -108,12 +108,17 @@ function createAccessAllowlistConfig(
   };
 }
 
-function createAccessRequestsConfig() {
+function createAccessRequestsConfig(grantDeps: {
+  accessAllowlistRepository: AccessAllowlistRepository;
+  projectsRepository: ProjectsRepository;
+  usersRepository: UsersRepository;
+}) {
   const notificationsRepository = new NotificationsRepository(supabase);
   const accessRequestsRepository = new AccessRequestsRepository();
   const accessRequestsService = new AccessRequestsService(
     accessRequestsRepository,
-    notificationsRepository
+    notificationsRepository,
+    grantDeps
   );
   const router = createAccessRequestsRouter({ accessRequestsService });
 
@@ -281,9 +286,9 @@ function createGithubConfig() {
 
 function createProjectsConfig(
   workItemService: WorkItemService,
-  jiraService: JiraService
+  jiraService: JiraService,
+  projectsRepository: ProjectsRepository
 ) {
-  const projectsRepository = new ProjectsRepository(supabase);
   const projectsService = new ProjectsService(projectsRepository);
   const router = createProjectsRouter({
     projectsService,
@@ -298,8 +303,7 @@ function createProjectsConfig(
   };
 }
 
-function createUsersConfig() {
-  const usersRepository = new UsersRepository(supabase);
+function createUsersConfig(usersRepository: UsersRepository) {
   const usersService = new UsersService(usersRepository, supabase);
   const router = createUsersRouter({ usersService });
 
@@ -423,12 +427,22 @@ function createPusherConfig(
   };
 }
 
+/** Shared repos needed before access-requests (grant deps). */
+const sharedAccessAllowlistRepository = new AccessAllowlistRepository(supabase);
+const sharedProjectsRepository = new ProjectsRepository(supabase);
+const sharedUsersRepository = new UsersRepository(supabase);
+
 /** Production configs graph (repo → service → router). */
 export const root = createRootConfig();
 export const health = createHealthConfig();
-export const accessRequests = createAccessRequestsConfig();
+export const accessRequests = createAccessRequestsConfig({
+  accessAllowlistRepository: sharedAccessAllowlistRepository,
+  projectsRepository: sharedProjectsRepository,
+  usersRepository: sharedUsersRepository,
+});
 export const accessAllowlist = createAccessAllowlistConfig(
-  accessRequests.accessRequestsService
+  accessRequests.accessRequestsService,
+  sharedAccessAllowlistRepository
 );
 export const notifications = createNotificationsConfig(
   accessRequests.accessRequestsService
@@ -452,9 +466,10 @@ export const sprints = createSprintsConfig();
 export const jira = createJiraConfig();
 export const projects = createProjectsConfig(
   workItems.workItemService,
-  jira.jiraService
+  jira.jiraService,
+  sharedProjectsRepository
 );
-export const users = createUsersConfig();
+export const users = createUsersConfig(sharedUsersRepository);
 export const teams = createTeamsConfig();
 export const profile = createProfileConfig();
 

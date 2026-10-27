@@ -50,3 +50,30 @@ export async function listAccessAllowlistFromSupabase(
 
   return { items, ...meta };
 }
+
+/**
+ * All domain allowlist rows (any status, not paginated). Used by access-request
+ * grant UI for covering-domain / renew-before-grant.
+ */
+export async function listAllowlistDomainEntriesFromSupabase(): Promise<
+  AccessAllowlistEntry[]
+> {
+  const dbUser = await getDbUser();
+  if (!isAdmin(dbUser?.role)) {
+    return [];
+  }
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from('access_allowlist')
+    .select('*')
+    .eq('kind', 'domain')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('failed to list allowlist domains:', error.message);
+    return [];
+  }
+
+  return (data ?? []) as AccessAllowlistEntry[];
+}

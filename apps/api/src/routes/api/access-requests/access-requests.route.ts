@@ -1,4 +1,5 @@
 import { Router, type Response } from 'express';
+import { accessRequestGrantSchema } from '@repo/types';
 import { requireActorId } from '../../../lib/audit';
 import {
   requireApiAuth,
@@ -28,7 +29,13 @@ function routeError(
     return;
   }
 
-  if (message.includes('not found') || message.includes('already resolved')) {
+  if (
+    message.includes('not found') ||
+    message.includes('already resolved') ||
+    message.includes('Only pending') ||
+    message.includes('No Alice user exists') ||
+    message.includes('Select at least one')
+  ) {
     res.status(409).json({ error: message });
     return;
   }
@@ -49,6 +56,26 @@ export function createAccessRequestsRouter(deps: AccessRequestsRouterDeps) {
   const { accessRequestsService } = deps;
   const accessRequestsRouter: Router = Router();
 
+  accessRequestsRouter.get(
+    '/:id/shared-memberships',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const actorId = requireActorId(req);
+        const id = readRouteId(req);
+        if (!id) {
+          return res.status(400).json({ error: 'Invalid id' });
+        }
+
+        const projects =
+          await accessRequestsService.listSharedMembershipProjects(actorId, id);
+        res.json({ projects });
+      } catch (error) {
+        routeError(res, error, 'Failed to list shared memberships');
+      }
+    }
+  );
+
   accessRequestsRouter.post(
     '/:id/deny',
     requireApiAuth,
@@ -64,6 +91,36 @@ export function createAccessRequestsRouter(deps: AccessRequestsRouterDeps) {
         res.json({ success: true });
       } catch (error) {
         routeError(res, error, 'Failed to deny access request');
+      }
+    }
+  );
+
+  accessRequestsRouter.post(
+    '/:id/grant',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const actorId = requireActorId(req);
+        const id = readRouteId(req);
+        if (!id) {
+          return res.status(400).json({ error: 'Invalid id' });
+        }
+
+        const parsed = accessRequestGrantSchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            error: parsed.error.issues[0]?.message ?? 'Invalid grant payload',
+          });
+        }
+
+        await accessRequestsService.grantAccessRequest(
+          actorId,
+          id,
+          parsed.data
+        );
+        res.json({ success: true });
+      } catch (error) {
+        routeError(res, error, 'Failed to grant access request');
       }
     }
   );

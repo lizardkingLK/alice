@@ -363,7 +363,9 @@ See [ACCESS_REQUESTS.md](./ACCESS_REQUESTS.md).
 
 Admins review admission requests from **`/access-denied`** and Contact (subject
 **Access request**) on **`/users?tab=requests`**. Requesters can name project
-keys; grant opens the email allowlist form with those keys prefilled. Limits:
+keys; **Edit** opens the grant dialog (accessible projects + Member). When
+there is no covering domain, grant creates the email allowlist ACL; when a
+domain covers the email, grant adds project members only. Limits:
 **3 submissions per email per rolling 30 days** (constants in `@repo/types`).
 Grant via allowlist email row; deny via explicit admin action. Both archive
 linked notifications.

@@ -188,6 +188,25 @@ export class AccessAllowlistRepository {
     return data as AccessAllowlistRow | null;
   }
 
+  /** Email allowlist row by value (any status). Unique on (kind, value). */
+  async findEmailByValue(email: string): Promise<AccessAllowlistRow | null> {
+    const normalized = normalizeEmail(email);
+    try {
+      const row = await prisma.access_allowlist.findFirst({
+        where: {
+          kind: AccessAllowlistKindEnum.email,
+          value: normalized,
+        },
+        select: accessAllowlistListSelect,
+      });
+      return row ? toAccessAllowlistRow(row) : null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to find email allowlist entry:', message);
+      throw new Error('Failed to find email allowlist entry');
+    }
+  }
+
   async create(params: {
     actorId: string;
     kind: AccessAllowlistKind;
