@@ -117,6 +117,67 @@ export function findWorkflowEdge(
   );
 }
 
+/**
+ * Unconstrained edge shape used when a state wildcard allows a move that has
+ * no explicit edge. Explicit edges always take precedence.
+ */
+export function createWildcardWorkflowEdge(
+  fromStateId: string,
+  toStateId: string
+): WorkflowEdge {
+  return {
+    id: `wildcard-${fromStateId}-to-${toStateId}`,
+    from: fromStateId,
+    to: toStateId,
+    allowAnyOf: [],
+    requiresEscalation: false,
+    resolutionPresetId: null,
+    requireChildren: 'off',
+    requireLinkedIssues: 'off',
+  };
+}
+
+export type ResolvedWorkflowTransition = {
+  readonly edge: WorkflowEdge;
+  /** True when the move is allowed only via acceptFromAny / allowToAny. */
+  readonly viaWildcard: boolean;
+};
+
+/**
+ * Resolve a directed move: prefer an explicit edge; otherwise allow when the
+ * destination accepts from any state or the source allows to any state.
+ * Terminal sources never produce outbound wildcards.
+ */
+export function resolveWorkflowTransition(
+  workflow: WorkflowDocument,
+  fromStateId: string,
+  toStateId: string
+): ResolvedWorkflowTransition | null {
+  if (fromStateId === toStateId) {
+    return null;
+  }
+
+  const explicit = findWorkflowEdge(workflow, fromStateId, toStateId);
+  if (explicit) {
+    return { edge: explicit, viaWildcard: false };
+  }
+
+  const fromState = findWorkflowState(workflow, fromStateId);
+  const toState = findWorkflowState(workflow, toStateId);
+  if (!fromState || !toState || fromState.terminal) {
+    return null;
+  }
+
+  if (toState.acceptFromAnyState || fromState.allowToAnyState) {
+    return {
+      edge: createWildcardWorkflowEdge(fromStateId, toStateId),
+      viaWildcard: true,
+    };
+  }
+
+  return null;
+}
+
 export function findWorkflowState(
   workflow: WorkflowDocument,
   stateId: string

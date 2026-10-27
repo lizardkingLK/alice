@@ -27,8 +27,9 @@ exist on disk; runtime reads fall back safely. Historical notes:
   workflow (and default board behavior) so the project never hard-crashes.
 - Designer UI supports add/connect/delete, multi-workflow manage (Fork / Import /
   Mark default / Delete / Rename), keyboard shortcuts (add state: **Ctrl/Cmd+Alt+N**),
-  undo, copy/cut/paste states, canvas context menu, live Settings→node sync,
-  Help, and Go to Board — Step 12.
+  floating **+** FAB, undo, copy/cut/paste states, canvas context menu, live
+  Settings→node sync, Help (keyboard + designer legend), and Go to Board —
+  Step 12 / #639.
 - Alice docked chat can propose designer changes with **Apply / Reject**.
 
 ## Non-goals (MVP)
@@ -100,15 +101,16 @@ requires project scope) — same constraint as custom boards today.
 
 ## Graph rules
 
-| Rule                     | Detail                                                                        |
-| ------------------------ | ----------------------------------------------------------------------------- |
-| Closed graph             | No edge ⇒ transition **not allowed** (400 validation; not a permission error) |
-| Edge auth                | Non-empty `allowAnyOf` mismatch ⇒ 403 `BOARD_MOVE_FORBIDDEN`                  |
-| Cycles                   | Allowed when both directions are explicit edges                               |
-| Self-loops               | Banned                                                                        |
-| Duplicate directed edges | Banned (`A→B` at most once); `A→B` and `B→A` are fine                         |
-| Layout                   | Separate JSON key from graph semantics (`graph` vs `layout`)                  |
-| Draft                    | Pre-board / start: not a normal lane unless designer adds an equivalent state |
+| Rule                     | Detail                                                                                                                                                         |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Closed graph             | No matching transition ⇒ **not allowed** (400 validation; not a permission error). Matching = explicit edge **or** state wildcards below.                      |
+| State wildcards          | `acceptFromAnyState` (any → this) and `allowToAnyState` (this → any). Explicit edges win for auth / children / escalation. Terminal forbids `allowToAnyState`. |
+| Edge auth                | Non-empty `allowAnyOf` mismatch ⇒ 403 `BOARD_MOVE_FORBIDDEN`                                                                                                   |
+| Cycles                   | Allowed when both directions are explicit edges (or covered by wildcards)                                                                                      |
+| Self-loops               | Banned                                                                                                                                                         |
+| Duplicate directed edges | Banned (`A→B` at most once); `A→B` and `B→A` are fine                                                                                                          |
+| Layout                   | Separate JSON key from graph semantics (`graph` vs `layout`)                                                                                                   |
+| Draft                    | Pre-board / start: not a normal lane unless designer adds an equivalent state                                                                                  |
 
 Shared client helpers cache allowed transitions; API remains source of truth.
 Optimistic moves stay; conflicts surface for the user (toast / revert).
@@ -138,12 +140,14 @@ click popovers on every control.
 
 ### State node
 
-| Control                       | Label (locked) | Effect                                                                                                                                           |
-| ----------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Name / description            | —              | Display                                                                                                                                          |
-| Category                      | —              | `draft` \| `todo` \| `in_progress` \| `done`                                                                                                     |
-| **Lock record in this state** | Locked copy    | While here, record is read-only except state transitions (reopen pattern).                                                                       |
-| **Terminal state**            | Locked copy    | No outbound edges. Checking it **blocks** until outbound edges are removed (confirm / “Remove all outbound and lock”). Never silent auto-delete. |
+| Control                              | Label (locked) | Effect                                                                                                                                           |
+| ------------------------------------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Name / description                   | —              | Display                                                                                                                                          |
+| Category                             | —              | `draft` \| `todo` \| `in_progress` \| `done`                                                                                                     |
+| **Lock record in this state**        | Locked copy    | While here, record is read-only except state transitions (reopen pattern).                                                                       |
+| **Terminal state**                   | Locked copy    | No outbound edges. Checking it **blocks** until outbound edges are removed (confirm / “Remove all outbound and lock”). Never silent auto-delete. |
+| **Allow transitions from any state** | —              | Any other state may move here without an explicit edge. Explicit edges keep their rules.                                                         |
+| **Allow transitions to any state**   | —              | This state may move to any other state without an explicit edge. Cleared / disabled when terminal.                                               |
 
 Legacy: some older configs may still set `requiresEscalation` on the **state**
 (force every exit). Prefer the **edge** control below.
@@ -211,7 +215,9 @@ Named forms live in `resolutionPresets[]` on each workflow document.
             "category": "todo",
             "lockRecord": false,
             "terminal": false,
-            "requiresEscalation": false
+            "requiresEscalation": false,
+            "acceptFromAnyState": false,
+            "allowToAnyState": false
           }
         ],
         "edges": [

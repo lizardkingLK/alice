@@ -66,6 +66,17 @@ export const workflowStateNodeSchema = z.object({
   lockRecord: z.boolean().default(false),
   terminal: z.boolean().default(false),
   requiresEscalation: z.boolean().default(false),
+  /**
+   * When true, every other state may transition into this state. Explicit
+   * edges still win for auth / children / escalation rules when present.
+   */
+  acceptFromAnyState: z.boolean().default(false),
+  /**
+   * When true, this state may transition into every other state. Explicit
+   * edges still win for auth / children / escalation rules when present.
+   * Incompatible with terminal (no outbound path).
+   */
+  allowToAnyState: z.boolean().default(false),
 });
 
 export const workflowEdgeSchema = z
@@ -241,6 +252,82 @@ function buildOutboundByState(
   return outboundByState;
 }
 
+function validateStateFlagConflicts(
+  state: WorkflowDocumentValue['graph']['states'][number],
+  stateIndex: number,
+  outboundCount: number,
+  context: z.RefinementCtx,
+  pathPrefix: (string | number)[]
+): void {
+  const statePath = [...pathPrefix, 'graph', 'states', stateIndex];
+  if (state.terminal && outboundCount > 0) {
+    addCustomIssue(
+      context,
+      [...statePath, 'terminal'],
+      'Terminal states cannot have outbound edges — remove them before locking'
+    );
+  }
+  if (state.terminal && state.allowToAnyState) {
+    addCustomIssue(
+      context,
+      [...statePath, 'allowToAnyState'],
+      'Terminal states cannot allow transitions to any state'
+    );
+  }
+  if (state.allowToAnyState && state.requiresEscalation) {
+    addCustomIssue(
+      context,
+      [...statePath, 'allowToAnyState'],
+      'Allow transitions to any state cannot combine with state-level escalation — use explicit edges instead'
+    );
+  }
+}
+
+function validateStateEscalationExits(
+  state: WorkflowDocumentValue['graph']['states'][number],
+  outbound: readonly WorkflowEdgeValue[],
+  edgeIndexById: ReadonlyMap<string, number>,
+  context: z.RefinementCtx,
+  pathPrefix: (string | number)[]
+): void {
+  if (!state.requiresEscalation) {
+    return;
+  }
+  for (const edge of outbound) {
+    if (edge.resolutionPresetId) {
+      continue;
+    }
+    addCustomIssue(
+      context,
+      [
+        ...pathPrefix,
+        'graph',
+        'edges',
+        edgeIndexById.get(edge.id) ?? 0,
+        'resolutionPresetId',
+      ],
+      `State "${state.name}" requires escalation — select that exit and link a resolution form`
+    );
+  }
+}
+
+function validateEdgeEscalationPresets(
+  edges: WorkflowDocumentValue['graph']['edges'],
+  context: z.RefinementCtx,
+  pathPrefix: (string | number)[]
+): void {
+  for (const [edgeIndex, edge] of edges.entries()) {
+    if (!edge.requiresEscalation || edge.resolutionPresetId) {
+      continue;
+    }
+    addCustomIssue(
+      context,
+      [...pathPrefix, 'graph', 'edges', edgeIndex, 'resolutionPresetId'],
+      'This exit requires escalation — pick or create a resolution form before you save'
+    );
+  }
+}
+
 function validateWorkflowStateFlags(
   workflow: WorkflowDocumentValue,
   context: z.RefinementCtx,
@@ -253,44 +340,23 @@ function validateWorkflowStateFlags(
 
   for (const [stateIndex, state] of workflow.graph.states.entries()) {
     const outbound = outboundByState.get(state.id) ?? [];
-    if (state.terminal && outbound.length > 0) {
-      addCustomIssue(
-        context,
-        [...pathPrefix, 'graph', 'states', stateIndex, 'terminal'],
-        'Terminal states cannot have outbound edges — remove them before locking'
-      );
-    }
-    if (!state.requiresEscalation) {
-      continue;
-    }
-    for (const edge of outbound) {
-      if (edge.resolutionPresetId) {
-        continue;
-      }
-      addCustomIssue(
-        context,
-        [
-          ...pathPrefix,
-          'graph',
-          'edges',
-          edgeIndexById.get(edge.id) ?? 0,
-          'resolutionPresetId',
-        ],
-        `State "${state.name}" requires escalation — select that exit and link a resolution form`
-      );
-    }
-  }
-
-  for (const [edgeIndex, edge] of workflow.graph.edges.entries()) {
-    if (!edge.requiresEscalation || edge.resolutionPresetId) {
-      continue;
-    }
-    addCustomIssue(
+    validateStateFlagConflicts(
+      state,
+      stateIndex,
+      outbound.length,
       context,
-      [...pathPrefix, 'graph', 'edges', edgeIndex, 'resolutionPresetId'],
-      'This exit requires escalation — pick or create a resolution form before you save'
+      pathPrefix
+    );
+    validateStateEscalationExits(
+      state,
+      outbound,
+      edgeIndexById,
+      context,
+      pathPrefix
     );
   }
+
+  validateEdgeEscalationPresets(workflow.graph.edges, context, pathPrefix);
 }
 
 function validateWorkflowDocument(
@@ -412,6 +478,8 @@ function seededDefaultStates(): WorkflowStateNode[] {
     lockRecord: status === WorkItemStatusEnum.Done,
     terminal: false,
     requiresEscalation: false,
+    acceptFromAnyState: false,
+    allowToAnyState: false,
   }));
 }
 

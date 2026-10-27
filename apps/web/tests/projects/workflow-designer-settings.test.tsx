@@ -112,6 +112,45 @@ describe('WorkflowDesignerSettings', () => {
     });
   });
 
+  it('toggles allow transitions from any state', () => {
+    const onStateChange = vi.fn();
+    renderSettings({
+      selection: { kind: 'state', stateId: WorkItemStatusEnum.Done },
+      onStateChange,
+    });
+    fireEvent.click(screen.getByLabelText(/allow transitions from any state/i));
+    expect(onStateChange).toHaveBeenCalledWith(WorkItemStatusEnum.Done, {
+      acceptFromAnyState: true,
+    });
+  });
+
+  it('toggles allow transitions to any state', () => {
+    const onStateChange = vi.fn();
+    renderSettings({
+      selection: { kind: 'state', stateId: WorkItemStatusEnum.New },
+      onStateChange,
+    });
+    fireEvent.click(screen.getByLabelText(/allow transitions to any state/i));
+    expect(onStateChange).toHaveBeenCalledWith(WorkItemStatusEnum.New, {
+      allowToAnyState: true,
+    });
+  });
+
+  it('disables allow to any state when the state is terminal', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const done = workflow.graph.states.find(
+      (state) => state.id === WorkItemStatusEnum.Done
+    )!;
+    done.terminal = true;
+    renderSettings({
+      selection: { kind: 'state', stateId: WorkItemStatusEnum.Done },
+      workflow,
+    });
+    expect(
+      screen.getByLabelText(/allow transitions to any state/i)
+    ).toBeDisabled();
+  });
+
   it('confirms before making a state with outbound edges terminal', () => {
     const onMakeStateTerminal = vi.fn();
     renderSettings({

@@ -4,6 +4,7 @@ import {
   createEmptyResolutionPreset,
   createSeededDefaultWorkflowConfig,
   ensureUniqueResolutionEntityIds,
+  escalationResolvedEdgeId,
   getResolutionRequirement,
   upsertResolutionPreset,
   validateResolutionPayload,
@@ -48,11 +49,45 @@ describe('workflow-resolution', () => {
       lockRecord: false,
       terminal: false,
       requiresEscalation: false,
+      acceptFromAnyState: false,
+      allowToAnyState: false,
     };
     expect(getResolutionRequirement(edge, source)).toEqual({
       required: true,
       presetId: 'preset-1',
     });
+  });
+
+  it('ignores from-state escalation on wildcard moves', () => {
+    const edge = {
+      id: 'wildcard-a-to-b',
+      from: 'a',
+      to: 'b',
+      allowAnyOf: [],
+      requiresEscalation: false,
+      resolutionPresetId: null,
+      requireChildren: 'off' as const,
+      requireLinkedIssues: 'off' as const,
+    };
+    const source = {
+      id: 'a',
+      name: 'A',
+      category: 'todo' as const,
+      lockRecord: false,
+      terminal: false,
+      requiresEscalation: true,
+      acceptFromAnyState: false,
+      allowToAnyState: true,
+    };
+    expect(getResolutionRequirement(edge, source)).toEqual({
+      required: true,
+      presetId: null,
+    });
+    expect(
+      getResolutionRequirement(edge, source, { viaWildcard: true })
+    ).toEqual({ required: false });
+    expect(escalationResolvedEdgeId(edge, true)).toBeNull();
+    expect(escalationResolvedEdgeId(edge, false)).toBe('wildcard-a-to-b');
   });
 
   it('validates required answers and outcomes', () => {

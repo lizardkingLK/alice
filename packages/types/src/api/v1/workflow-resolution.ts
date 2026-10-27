@@ -33,9 +33,18 @@ export type ResolutionRequirement =
   | { readonly required: true; readonly presetId: string }
   | { readonly required: true; readonly presetId: null };
 
+export type ResolutionRequirementOptions = {
+  /**
+   * Wildcard moves are unconstrained — ignore legacy from-state escalation.
+   * Explicit edges still apply their own `requiresEscalation` / preset.
+   */
+  readonly viaWildcard?: boolean;
+};
+
 export function getResolutionRequirement(
   edge: WorkflowEdge | null,
-  sourceState: WorkflowStateNode
+  sourceState: WorkflowStateNode,
+  options?: ResolutionRequirementOptions
 ): ResolutionRequirement {
   if (!edge) {
     return { required: false };
@@ -43,10 +52,23 @@ export function getResolutionRequirement(
   if (edge.resolutionPresetId) {
     return { required: true, presetId: edge.resolutionPresetId };
   }
-  if (edge.requiresEscalation || sourceState.requiresEscalation) {
+  const sourceRequiresEscalation =
+    !options?.viaWildcard && sourceState.requiresEscalation;
+  if (edge.requiresEscalation || sourceRequiresEscalation) {
     return { required: true, presetId: null };
   }
   return { required: false };
+}
+
+/** Persist escalation activity against a real edge id only (not synthetic wildcards). */
+export function escalationResolvedEdgeId(
+  edge: WorkflowEdge | null,
+  viaWildcard: boolean
+): string | null {
+  if (viaWildcard || !edge) {
+    return null;
+  }
+  return edge.id;
 }
 
 export function findResolutionPreset(

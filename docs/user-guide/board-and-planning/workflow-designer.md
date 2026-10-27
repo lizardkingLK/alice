@@ -43,8 +43,9 @@ change what transitions are allowed until you **Save**.
 Managers and admins can change the graph on the canvas (Alice remains an
 optional alternate path):
 
-1. Press **Ctrl/Cmd+Alt+N** to add a state (opens Settings so you can rename
-   it), or right-click the canvas and choose **Add state**.
+1. Press **Ctrl/Cmd+Alt+N**, click the floating **+** on the canvas (bottom
+   right), or right-click the canvas and choose **Add state** (opens Settings so
+   you can rename it).
 2. Drag from a handle on one state to a handle on another to create a
    transition (handles sit on all four sides; they stay hidden until you hover
    or select a state, start a connection, or an edge already uses that port).
@@ -67,8 +68,9 @@ optional alternate path):
    changes** to keep the previous graph.
 
 Use the **Kanban** icon in the toolbar to open this project’s **Board**. Open
-**Help** (?) for the full keyboard list, or **right-click** the canvas for the
-same commands with shortcuts shown.
+**Help** (?) for the keyboard list and a **designer legend** (states, edges,
+wildcards, Settings), or **right-click** the canvas for the same commands with
+shortcuts shown.
 
 ### Keyboard
 
@@ -88,12 +90,14 @@ same commands with shortcuts shown.
 
 Select a state, then open **Settings**:
 
-| Setting                       | What it does                                                                                               |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| **Name** / description        | Labels on the board and in pickers (updates the canvas node live)                                          |
-| **Category**                  | Groups states for filters and reports (`todo`, `in progress`, `done`, …); updates the node live            |
-| **Lock record in this state** | While an item is here, most fields are read-only; changing state (for example reopen) can still be allowed |
-| **Terminal state**            | No outbound transitions. If edges already leave this state, remove them before you can turn this on        |
+| Setting                              | What it does                                                                                                                                    |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Name** / description               | Labels on the board and in pickers (updates the canvas node live)                                                                               |
+| **Category**                         | Groups states for filters and reports (`todo`, `in progress`, `done`, …); updates the node live                                                 |
+| **Lock record in this state**        | While an item is here, most fields are read-only; changing state (for example reopen) can still be allowed                                      |
+| **Terminal state**                   | No outbound transitions. If edges already leave this state, remove them before you can turn this on                                             |
+| **Allow transitions from any state** | Every other state can move here without drawing each edge. Explicit transitions keep their own rules (who can move, children, forms)            |
+| **Allow transitions to any state**   | This state can move to every other state without drawing each edge. Explicit transitions keep their own rules. Not available on terminal states |
 
 Use the info icons for short explanations of each option.
 

@@ -189,6 +189,8 @@ describe('workflow-designer.layout', () => {
       lockRecord: false,
       terminal: false,
       requiresEscalation: false,
+      acceptFromAnyState: false,
+      allowToAnyState: false,
     });
     expect(second.document.layout.nodes[second.stateId]).toEqual(
       defaultStatePosition(workflow.graph.states.length + 1)
