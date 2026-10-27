@@ -44,6 +44,22 @@ this project** — ask the owner to add you via
 
 ---
 
+## Share a project link
+
+Each project has a short key (for example `ABC`). You can share:
+
+`/projects/ABC`
+
+1. Open the project and stay on **Details**.
+2. Next to the key badge, select the copy icon to copy the full share URL.
+3. Anyone who opens that link signs in first (if needed), then lands on the
+   project workspace.
+
+The short key URL redirects to the project's normal workspace address after
+sign-in.
+
+---
+
 ## Empty list?
 
 - **Create** a new project if your role allows it, or

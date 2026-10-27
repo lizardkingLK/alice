@@ -121,6 +121,34 @@ export async function getProjectFromSupabase(id: string): Promise<Project> {
   return sanitizeProjectRow(data as unknown as ProjectRowWithSecrets);
 }
 
+/**
+ * Resolve a project id from its unique key (share URLs). Returns null when
+ * no row matches — callers map that to notFound / redirect skips.
+ */
+export async function getProjectIdByKeyFromSupabase(
+  key: string
+): Promise<string | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('key', key)
+    .maybeSingle();
+
+  throwIfError(
+    error,
+    'failed to find project by key',
+    'Failed to find project by key'
+  );
+
+  if (!data || typeof data.id !== 'string') {
+    return null;
+  }
+
+  return data.id;
+}
+
 export async function getProjectMembersFromSupabase(
   projectId: string
 ): Promise<ProjectMemberWithUser[]> {

@@ -38,6 +38,7 @@ Furthermore, development teams need the ability to define **project-specific dyn
 ### Key Objectives & Delivered Capabilities
 
 - **Sidebar Navigation**: Replaced the top horizontal tab bar with an intuitive, responsive vertical sidebar navigation adhering to Alice design standards (`SettingsWorkspace` pattern).
+- **Shareable key URL**: `/projects/{KEY}` resolves to the project UUID workspace (auth/allowlist first); the Details banner key control copies the absolute share URL.
 - **Banner Isolation**: Rendered the `ProjectSummaryBanner` exclusively on the `Details` tab, allowing other tabs (`Members`, `Teams`, `Work Items`, `Integrations`, `Fields`) to utilize the full available canvas area.
 - **Fields Configuration Workspace**: Added a dedicated `Fields` tab allowing authorized managers and administrators to view, edit, beautify, validate, and save dynamic field definitions with optimistic concurrency control.
 - **Starter Templates Catalog**: Delivered 8 production-ready agile field templates across 6 categories (Agile Prioritization, Requirements & QA, Strategy & Value, Release Management, Security & Governance, Defects & QA, DevOps & Deployment).
