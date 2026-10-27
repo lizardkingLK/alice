@@ -171,6 +171,26 @@ describe('BacklogSprintEstimationDialog', () => {
     expect(generateSprintEstimates).toHaveBeenCalledTimes(1);
   });
 
+  it('formats half-hour estimates and ranges with one decimal place', async () => {
+    vi.mocked(generateSprintEstimates).mockResolvedValue(
+      response({
+        estimates: [
+          {
+            ...aiEstimate(),
+            suggestedHours: 8.5,
+            minimumHours: 6.5,
+            maximumHours: 10.5,
+          },
+        ],
+      })
+    );
+
+    renderDialog({ workItems: [firstItem] });
+
+    expect(await screen.findByText('8.5h')).toBeVisible();
+    expect(screen.getByText('6.5–10.5h range')).toBeVisible();
+  });
+
   it('preserves backend order and presents mixed AI and deterministic metadata', async () => {
     vi.mocked(generateSprintEstimates).mockResolvedValue(
       response({
@@ -297,6 +317,53 @@ describe('BacklogSprintEstimationDialog', () => {
     view.unmount();
 
     expect(requestSignal?.aborted).toBe(true);
+  });
+
+  it('aborts on Escape and ignores the cancelled request after reopening', async () => {
+    const cancelledRequest = deferred<SprintEstimationResponse>();
+    const reopenedRequest = deferred<SprintEstimationResponse>();
+    let cancelledSignal: AbortSignal | undefined;
+    vi.mocked(generateSprintEstimates)
+      .mockImplementationOnce((_id, signal) => {
+        cancelledSignal = signal;
+        return cancelledRequest.promise;
+      })
+      .mockReturnValueOnce(reopenedRequest.promise);
+
+    const view = renderDialog();
+    fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' });
+
+    expect(view.onOpenChange).toHaveBeenCalledWith(false);
+    expect(cancelledSignal?.aborted).toBe(true);
+
+    view.rerender(
+      <BacklogSprintEstimationDialog
+        sprint={null}
+        workItems={[firstItem]}
+        onOpenChange={view.onOpenChange}
+      />
+    );
+    view.rerender(
+      <BacklogSprintEstimationDialog
+        sprint={sprint}
+        workItems={[firstItem]}
+        onOpenChange={view.onOpenChange}
+      />
+    );
+
+    cancelledRequest.resolve(response());
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Generating estimates'
+      );
+    });
+    expect(
+      screen.queryByText('Build estimation dialog')
+    ).not.toBeInTheDocument();
+
+    reopenedRequest.resolve(response());
+    expect(await screen.findByText('Build estimation dialog')).toBeVisible();
+    expect(generateSprintEstimates).toHaveBeenCalledTimes(2);
   });
 
   it('prevents a stale response from replacing a newer sprint result', async () => {

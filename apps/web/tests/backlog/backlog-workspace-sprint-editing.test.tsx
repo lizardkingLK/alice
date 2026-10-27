@@ -69,11 +69,13 @@ vi.mock('@/app/backlog/_components/backlog-sprint-card', () => ({
   BacklogSprintCard: ({
     sprint,
     items,
+    isManagerOrAdmin,
     onEditSprint,
     onEstimateSprint,
   }: {
     sprint: Sprint;
     items: readonly DbWorkItem[];
+    isManagerOrAdmin: boolean;
     // eslint-disable-next-line no-unused-vars -- callback signature
     onEditSprint: (sprint: Sprint) => void;
     // eslint-disable-next-line no-unused-vars -- callback signature
@@ -85,12 +87,16 @@ vi.mock('@/app/backlog/_components/backlog-sprint-card', () => ({
       <span data-testid={`sprint-details-${sprint.id}`}>
         {sprint.startDate}|{sprint.endDate}
       </span>
-      <button type="button" onClick={() => onEditSprint(sprint)}>
-        Edit {sprint.name}
-      </button>
-      <button type="button" onClick={() => onEstimateSprint(sprint)}>
-        Estimate {sprint.name}
-      </button>
+      {isManagerOrAdmin ? (
+        <>
+          <button type="button" onClick={() => onEditSprint(sprint)}>
+            Edit {sprint.name}
+          </button>
+          <button type="button" onClick={() => onEstimateSprint(sprint)}>
+            Estimate {sprint.name}
+          </button>
+        </>
+      ) : null}
     </article>
   ),
 }));
@@ -187,7 +193,10 @@ const secondSprint = sprintFactory.build({
   name: 'Sprint Two',
 });
 
-function renderWorkspace(initialWorkItems: DbWorkItem[] = []) {
+function renderWorkspace(
+  initialWorkItems: DbWorkItem[] = [],
+  userRole = 'manager'
+) {
   return render(
     <BacklogWorkspace
       projects={[project]}
@@ -195,13 +204,24 @@ function renderWorkspace(initialWorkItems: DbWorkItem[] = []) {
       teamCapacities={[]}
       initialWorkItems={initialWorkItems}
       sprints={[firstSprint, secondSprint]}
-      userRole="manager"
+      userRole={userRole}
       currentUserId={null}
     />
   );
 }
 
 describe('BacklogWorkspace sprint editing synchronization', () => {
+  it('does not expose sprint estimation actions or the dialog to members', () => {
+    renderWorkspace([], 'member');
+
+    expect(
+      screen.queryByRole('button', { name: /Estimate Sprint/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('sprint-estimation-dialog')
+    ).not.toBeInTheDocument();
+  });
+
   it('opens estimation for the selected sprint with unfiltered work-item context', () => {
     const item = workItemFactory.build({
       id: 'work-item-1',

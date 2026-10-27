@@ -81,6 +81,24 @@ describe('generateSprintEstimates', () => {
     );
   });
 
+  it('rejects estimate hours that are not in half-hour increments', async () => {
+    vi.mocked(apiFetch).mockResolvedValue({
+      data: {
+        ...VALID_RESPONSE,
+        estimates: [
+          {
+            ...VALID_RESPONSE.estimates[0],
+            suggestedHours: 8.25,
+          },
+        ],
+      },
+    });
+
+    await expect(generateSprintEstimates(SPRINT_ID)).rejects.toThrow(
+      /invalid sprint estimation response/i
+    );
+  });
+
   it('rejects a valid response for a different sprint', async () => {
     vi.mocked(apiFetch).mockResolvedValue({
       data: {
