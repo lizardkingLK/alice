@@ -193,6 +193,40 @@ describe('workflowConfigEnvelopeSchema', () => {
     });
     expect(workflowConfigEnvelopeSchema.safeParse(seeded).success).toBe(false);
   });
+
+  it('rejects terminal states that also allow transitions to any state', () => {
+    const seeded = createSeededDefaultWorkflowConfig();
+    const done = seeded.workflows[0]!.graph.states.find(
+      (state) => state.id === WorkItemStatusEnum.Done
+    )!;
+    done.terminal = true;
+    done.allowToAnyState = true;
+    expect(workflowConfigEnvelopeSchema.safeParse(seeded).success).toBe(false);
+  });
+
+  it('defaults missing acceptFromAny / allowToAny flags to false', () => {
+    const seeded = createSeededDefaultWorkflowConfig();
+    const raw = structuredClone(seeded) as {
+      workflows: Array<{
+        graph: { states: Array<Record<string, unknown>> };
+      }>;
+    };
+    for (const state of raw.workflows[0]!.graph.states) {
+      delete state.acceptFromAnyState;
+      delete state.allowToAnyState;
+    }
+    const parsed = workflowConfigEnvelopeSchema.safeParse(raw);
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) {
+      return;
+    }
+    expect(
+      parsed.data.workflows[0]?.graph.states.every(
+        (state) =>
+          state.acceptFromAnyState === false && state.allowToAnyState === false
+      )
+    ).toBe(true);
+  });
 });
 
 describe('resolveWorkflowConfig', () => {

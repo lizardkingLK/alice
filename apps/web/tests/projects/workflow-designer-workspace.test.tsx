@@ -293,6 +293,24 @@ describe('WorkflowDesignerWorkspace', () => {
     expect(screen.getByText(/^keyboard$/i)).toBeInTheDocument();
     expect(help).toHaveTextContent('Ctrl/Cmd + Alt + N');
     expect(help).toHaveTextContent('Ctrl/Cmd + C');
+    expect(screen.getByText(/^designer legend$/i)).toBeInTheDocument();
+    expect(screen.getByTestId('workflow-designer-legend')).toHaveTextContent(
+      /state node/i
+    );
+  });
+
+  it('adds a state from the floating plus button', () => {
+    const project = projectFactory.build({ workflow_config: null });
+    render(
+      <WorkflowDesignerWorkspace
+        project={project}
+        canEdit
+        currentUserId="user-manager-1"
+      />
+    );
+    fireEvent.click(screen.getByTestId('workflow-designer-add-state-fab'));
+    expect(screen.getByTestId('workflow-settings-state')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('New state')).toBeInTheDocument();
   });
 
   it('renders the canvas context menu with shortcut labels', () => {

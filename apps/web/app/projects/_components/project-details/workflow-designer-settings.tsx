@@ -42,6 +42,7 @@ import { WORK_ITEM_STATUS_BADGE_STYLES } from '@/app/work-items/_helpers/work-it
 import { WorkflowEdgePermissionsDialog } from '@/app/projects/_components/project-details/workflow-edge-permissions-dialog';
 import { WorkflowResolutionPresetEditor } from '@/app/projects/_components/project-details/workflow-resolution-preset-editor';
 import { WorkflowSettingsInfoTip } from '@/app/projects/_components/project-details/workflow-settings-info-tip';
+import type { WorkflowStateDocumentPatch } from '@/app/projects/_helpers/workflow-designer.layout';
 import { cn } from '@repo/ui/lib/utils';
 
 export type WorkflowDesignerSelection =
@@ -49,12 +50,7 @@ export type WorkflowDesignerSelection =
   | { readonly kind: 'edge'; readonly edgeId: string }
   | null;
 
-export type WorkflowStateSettingsPatch = Partial<
-  Pick<
-    WorkflowStateNode,
-    'name' | 'category' | 'lockRecord' | 'terminal' | 'requiresEscalation'
-  >
->;
+export type WorkflowStateSettingsPatch = WorkflowStateDocumentPatch;
 
 /* eslint-disable no-unused-vars -- callback parameter names document the payload */
 type WorkflowStateChangeHandler = (
@@ -279,7 +275,7 @@ function StateSettingsForm({
       return;
     }
     if (outboundCount === 0) {
-      onStateChange(state.id, { terminal: true });
+      onStateChange(state.id, { terminal: true, allowToAnyState: false });
       return;
     }
     setTerminalConfirmOpen(true);
@@ -363,6 +359,26 @@ function StateSettingsForm({
           checked={state.terminal}
           disabled={!canEdit}
           onCheckedChange={requestTerminal}
+        />
+        <StateFlagRow
+          id="workflow-state-accept-from-any"
+          label="Allow transitions from any state"
+          tip="Every other state can move here without drawing each edge. Explicit transitions keep their own rules (who can move, children, forms)."
+          checked={state.acceptFromAnyState}
+          disabled={!canEdit}
+          onCheckedChange={(checked) =>
+            onStateChange(state.id, { acceptFromAnyState: checked })
+          }
+        />
+        <StateFlagRow
+          id="workflow-state-allow-to-any"
+          label="Allow transitions to any state"
+          tip="This state can move to every other state without drawing each edge. Explicit transitions keep their own rules. Not available on terminal states."
+          checked={state.allowToAnyState}
+          disabled={!canEdit || state.terminal}
+          onCheckedChange={(checked) =>
+            onStateChange(state.id, { allowToAnyState: checked })
+          }
         />
       </div>
 

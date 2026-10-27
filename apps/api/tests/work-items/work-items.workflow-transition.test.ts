@@ -163,6 +163,78 @@ describe('WorkItemService workflow graph transitions', () => {
     expect((caught as Error).message).toMatch(/not allowed in the workflow/i);
   });
 
+  it('allows a jump to Done when acceptFromAnyState is set', async () => {
+    const envelope = createSeededDefaultWorkflowConfig();
+    const done = envelope.workflows[0]!.graph.states.find(
+      (state) => state.id === WorkItemStatusEnum.Done
+    )!;
+    done.acceptFromAnyState = true;
+    getProjectWorkflowConfigMock.mockResolvedValue(envelope);
+
+    await expect(
+      service.updateWorkItem(
+        ACTOR_ID,
+        WORK_ITEM_ID,
+        updateInput({
+          status: WorkItemStatusEnum.Done,
+          board_column_id: WorkItemStatusEnum.Done,
+        }),
+        LOCK
+      )
+    ).resolves.toMatchObject({
+      workItem: {
+        status: WorkItemStatusEnum.Done,
+        board_column_id: WorkItemStatusEnum.Done,
+      },
+    });
+  });
+
+  it('allows a jump from New when allowToAnyState is set', async () => {
+    const envelope = createSeededDefaultWorkflowConfig();
+    const newState = envelope.workflows[0]!.graph.states.find(
+      (state) => state.id === WorkItemStatusEnum.New
+    )!;
+    newState.allowToAnyState = true;
+    getProjectWorkflowConfigMock.mockResolvedValue(envelope);
+
+    await expect(
+      service.updateWorkItem(
+        ACTOR_ID,
+        WORK_ITEM_ID,
+        updateInput({
+          status: WorkItemStatusEnum.Testing,
+          board_column_id: WorkItemStatusEnum.Testing,
+        }),
+        LOCK
+      )
+    ).resolves.toMatchObject({
+      workItem: {
+        status: WorkItemStatusEnum.Testing,
+        board_column_id: WorkItemStatusEnum.Testing,
+      },
+    });
+  });
+
+  it('still applies explicit edge rules when a wildcard also matches', async () => {
+    const envelope = createSeededDefaultWorkflowConfig();
+    const workflow = envelope.workflows[0]!;
+    const done = workflow.graph.states.find(
+      (state) => state.id === WorkItemStatusEnum.Done
+    )!;
+    done.acceptFromAnyState = true;
+    const edge = workflow.graph.edges.find(
+      (item) =>
+        item.from === WorkItemStatusEnum.New &&
+        item.to === WorkItemStatusEnum.ToDo
+    )!;
+    edge.allowAnyOf = [{ scope: 'role', role: 'manager' }];
+    getProjectWorkflowConfigMock.mockResolvedValue(envelope);
+
+    await expect(
+      service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
+    ).rejects.toBeInstanceOf(BoardMoveForbiddenError);
+  });
+
   it('rejects restricted edges with BoardMoveForbiddenError', async () => {
     const envelope = createSeededDefaultWorkflowConfig();
     const workflow = envelope.workflows[0]!;

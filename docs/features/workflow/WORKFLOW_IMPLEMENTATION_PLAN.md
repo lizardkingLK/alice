@@ -500,10 +500,10 @@ Settings→node sync, Help, and Go to Board.
 
 ### Product behavior
 
-1. **Add state** — **Ctrl/Cmd+Alt+N** appends a `st-{uuid}` state (`New state`,
-   category `todo`) to the local draft, selects it, and opens Settings (no
-   wide Plus toolbar). **Ctrl/Cmd+N** is avoided because browsers reserve it
-   for a new tab/window.
+1. **Add state** — **Ctrl/Cmd+Alt+N** or the floating **+** FAB (bottom-right,
+   above the MiniMap) appends a `st-{uuid}` state (`New state`, category
+   `todo`) to the local draft, selects it, and opens Settings. **Ctrl/Cmd+N**
+   is avoided because browsers reserve it for a new tab/window.
 2. **Connect edges** — Drag from a state’s handle to another’s (handles on all
    four sides). Chosen handles persist in `layout.edges`; otherwise the canvas
    picks short sides (return edges use free top/bottom ports). Forward edges
@@ -529,18 +529,24 @@ Settings→node sync, Help, and Go to Board.
     draft first). Switch to the new fork or remaining default after delete.
     Cannot delete the only or default workflow without promoting another first.
 11. **Go to Board** — Toolbar Kanban link → `/board?project={id}`.
-12. **Workflow Help** — Help icon opens a dialog with a Keyboard shortcuts
-    section (shared catalog with the context menu).
+12. **Workflow Help** — Help icon opens a scrollable dialog with Keyboard
+    shortcuts plus a **Designer legend** (shared command catalog with the
+    context menu).
+13. **State wildcards (#639)** — Settings: **Allow transitions from any state**
+    / **Allow transitions to any state**. Runtime
+    `resolveWorkflowTransition` prefers explicit edges, then wildcards.
+    Terminal clears / disables allow-to-any.
 
-### As-built (Step 12)
+### As-built (Step 12 + #639)
 
-| Piece          | Location / change                                                                                              |
-| -------------- | -------------------------------------------------------------------------------------------------------------- |
-| Layout helpers | `addStateToDocument`, `addEdgeToDocument`, `remove*`, `canConnectWorkflowStates`, rename envelope              |
-| Undo helper    | `workflow-designer.undo.ts` — envelope snapshot stack                                                          |
-| Designer UI    | `nodesConnectable` + `onConnect`, manage chrome, delete in Settings, keyboard, context menu, Help, Go to Board |
-| Client         | `forkProjectWorkflow`, `setDefaultProjectWorkflow`, `deleteProjectWorkflow`                                    |
-| Docs           | User-guide workflow designer + this plan                                                                       |
+| Piece          | Location / change                                                                                                              |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Layout helpers | `addStateToDocument`, `addEdgeToDocument`, `remove*`, `canConnectWorkflowStates`, rename envelope                              |
+| Undo helper    | `workflow-designer.undo.ts` — envelope snapshot stack                                                                          |
+| Designer UI    | `nodesConnectable` + `onConnect`, manage chrome, delete in Settings, keyboard, FAB, context menu, Help (+ legend), Go to Board |
+| Runtime        | `resolveWorkflowTransition` / `acceptFromAnyState` / `allowToAnyState` on state nodes                                          |
+| Client         | `forkProjectWorkflow`, `setDefaultProjectWorkflow`, `deleteProjectWorkflow`                                                    |
+| Docs           | User-guide workflow designer + this plan                                                                                       |
 
 ---
 

@@ -15,7 +15,6 @@ import {
   type WorkflowEdge,
   type WorkflowOrphanedStatesConflict,
   type WorkflowResolutionPreset,
-  type WorkflowStateNode,
   type WorkflowStateRemap,
 } from '@repo/types/api/v1';
 import { Button } from '@repo/ui/components/ui/button';
@@ -62,6 +61,7 @@ import {
   GitFork,
   Kanban,
   Lock,
+  Plus,
   RotateCcw,
   Save,
   Star,
@@ -118,6 +118,7 @@ import {
   updateEdgeHandlesInDocument,
   workflowDocumentToFlowElements,
   workflowFlowEdgePresentation,
+  type WorkflowStateDocumentPatch,
   type WorkflowStateClipboard,
 } from '@/app/projects/_helpers/workflow-designer.layout';
 import {
@@ -477,15 +478,7 @@ export function WorkflowDesignerWorkspace({
   );
 
   const handleStateChange = useCallback(
-    (
-      stateId: string,
-      patch: Partial<
-        Pick<
-          WorkflowStateNode,
-          'name' | 'category' | 'lockRecord' | 'terminal' | 'requiresEscalation'
-        >
-      >
-    ) => {
+    (stateId: string, patch: WorkflowStateDocumentPatch) => {
       const coalesceKey =
         'name' in patch
           ? `state-name:${stateId}`
@@ -1358,7 +1351,7 @@ export function WorkflowDesignerWorkspace({
       <div className="flex h-[min(560px,calc(100dvh-16rem))] min-h-80 gap-4 pb-2">
         <ContextMenu>
           <ContextMenuTrigger asChild>
-            <div className="min-h-0 min-w-0 flex-1">
+            <div className="relative min-h-0 min-w-0 flex-1">
               <ReactFlowProvider>
                 <WorkflowDesignerCanvas
                   key={`${activeWorkflow.id}:${canvasEpoch}`}
@@ -1372,6 +1365,25 @@ export function WorkflowDesignerWorkspace({
                   onReconnect={handleReconnect}
                 />
               </ReactFlowProvider>
+              {canEdit ? (
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        className="absolute right-4 bottom-36 z-10 size-10 rounded-full shadow-md"
+                        aria-label="Add state"
+                        data-testid="workflow-designer-add-state-fab"
+                        onClick={handleAddState}
+                      >
+                        <Plus className="size-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">Add state</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : null}
             </div>
           </ContextMenuTrigger>
           <WorkflowDesignerContextMenuContent

@@ -6,6 +6,7 @@ import {
   findWorkflowEdge,
   resolveProjectBoardRuntime,
   resolveWorkflowGraphState,
+  resolveWorkflowTransition,
   workflowStatesToBoardColumns,
 } from '@repo/types/api/v1';
 
@@ -66,6 +67,60 @@ describe('board-runtime', () => {
     expect(edge?.id).toBe('e-New-to-ToDo');
     expect(
       findWorkflowEdge(
+        workflow,
+        WorkItemStatusEnum.Done,
+        WorkItemStatusEnum.New
+      )
+    ).toBeNull();
+  });
+
+  it('resolves accept-from-any and allow-to-any wildcards', () => {
+    const workflow = createSeededDefaultWorkflowConfig().workflows[0]!;
+    const done = workflow.graph.states.find(
+      (state) => state.id === WorkItemStatusEnum.Done
+    )!;
+    done.acceptFromAnyState = true;
+
+    const intoDone = resolveWorkflowTransition(
+      workflow,
+      WorkItemStatusEnum.New,
+      WorkItemStatusEnum.Done
+    );
+    expect(intoDone).toMatchObject({
+      viaWildcard: true,
+      edge: {
+        from: WorkItemStatusEnum.New,
+        to: WorkItemStatusEnum.Done,
+        allowAnyOf: [],
+        requireChildren: 'off',
+      },
+    });
+
+    const explicit = resolveWorkflowTransition(
+      workflow,
+      WorkItemStatusEnum.Testing,
+      WorkItemStatusEnum.Done
+    );
+    expect(explicit).toMatchObject({
+      viaWildcard: false,
+      edge: { id: 'e-Testing-to-Done' },
+    });
+
+    const newState = workflow.graph.states.find(
+      (state) => state.id === WorkItemStatusEnum.New
+    )!;
+    newState.allowToAnyState = true;
+    const fromNew = resolveWorkflowTransition(
+      workflow,
+      WorkItemStatusEnum.New,
+      WorkItemStatusEnum.Testing
+    );
+    expect(fromNew?.viaWildcard).toBe(true);
+
+    done.terminal = true;
+    done.allowToAnyState = true;
+    expect(
+      resolveWorkflowTransition(
         workflow,
         WorkItemStatusEnum.Done,
         WorkItemStatusEnum.New

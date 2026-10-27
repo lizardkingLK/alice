@@ -5,10 +5,10 @@ import {
   buildEscalationResolvedMeta,
   findResolutionPreset,
   boardColumnIdForWorkflowState,
-  findWorkflowEdge,
   findWorkflowState,
   getAllowedChildType,
   getAllowedParentType,
+  escalationResolvedEdgeId,
   getResolutionRequirement,
   legacyStatusFromWorkItemState,
   normalizeBoardConfig,
@@ -17,6 +17,7 @@ import {
   resolveWorkflowForWorkItemType,
   resolveWorkflowGraphState,
   resolveWorkflowPlacementState,
+  resolveWorkflowTransition,
   validateResolutionPayload,
   doesTransitionRuleAllowActor,
   type RuntimeBoardConfig,
@@ -693,7 +694,8 @@ export class WorkItemService {
 
     const requirement = getResolutionRequirement(
       workflow.edge,
-      workflow.sourceState
+      workflow.sourceState,
+      { viaWildcard: workflow.viaWildcard }
     );
     if (!requirement.required) {
       return null;
@@ -722,7 +724,7 @@ export class WorkItemService {
       preset,
       payload: resolution,
       workflowId: workflow.workflow.id,
-      edgeId: workflow.edge?.id ?? null,
+      edgeId: escalationResolvedEdgeId(workflow.edge, workflow.viaWildcard),
       fromStateId: workflow.sourceState.id,
       toStateId: workflow.destinationState.id,
     });
@@ -901,6 +903,7 @@ export class WorkItemService {
         mode: 'workflow';
         workflow: WorkflowDocument;
         edge: WorkflowEdge | null;
+        viaWildcard: boolean;
         sourceState: WorkflowStateNode;
         destinationState: WorkflowStateNode;
       } {
@@ -972,6 +975,7 @@ export class WorkItemService {
     mode: 'workflow';
     workflow: WorkflowDocument;
     edge: WorkflowEdge | null;
+    viaWildcard: boolean;
     sourceState: WorkflowStateNode;
     destinationState: WorkflowStateNode;
   } {
@@ -1010,15 +1014,20 @@ export class WorkItemService {
       throw new WorkItemValidationError('That state is not on this workflow.');
     }
 
-    const edge =
+    const resolved =
       sourceState.id === destinationState.id
         ? null
-        : findWorkflowEdge(workflow, sourceState.id, destinationState.id);
+        : resolveWorkflowTransition(
+            workflow,
+            sourceState.id,
+            destinationState.id
+          );
 
     return {
       mode: 'workflow',
       workflow,
-      edge,
+      edge: resolved?.edge ?? null,
+      viaWildcard: resolved?.viaWildcard ?? false,
       sourceState,
       destinationState,
     };

@@ -90,6 +90,7 @@ export {
   cloneResolutionPreset,
   createEmptyResolutionPreset,
   ensureUniqueResolutionEntityIds,
+  escalationResolvedEdgeId,
   findResolutionPreset,
   getResolutionRequirement,
   upsertResolutionPreset,
@@ -98,12 +99,14 @@ export {
   workflowResolutionPayloadSchema,
   type EscalationResolvedMeta,
   type ResolutionRequirement,
+  type ResolutionRequirementOptions,
   type ResolutionValidationResult,
   type WorkflowResolutionAnswer,
   type WorkflowResolutionPayload,
 } from './workflow-resolution.js';
 export {
   boardColumnIdForWorkflowState,
+  createWildcardWorkflowEdge,
   findWorkflowEdge,
   findWorkflowState,
   listBoardWorkflowTabs,
@@ -111,6 +114,7 @@ export {
   resolveProjectBoardRuntime,
   resolveWorkflowGraphState,
   resolveWorkflowPlacementState,
+  resolveWorkflowTransition,
   workItemBelongsToActiveWorkflow,
   workflowStateToBoardColumn,
   workflowStatesToBoardColumns,
@@ -118,6 +122,7 @@ export {
   type DefaultBoardRuntime,
   type LegacyBoardRuntime,
   type ProjectBoardRuntime,
+  type ResolvedWorkflowTransition,
   type WorkflowBoardRuntime,
 } from './board-runtime.js';
 export * from './jira-import-types.js';
