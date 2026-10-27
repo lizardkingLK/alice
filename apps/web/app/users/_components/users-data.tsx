@@ -6,15 +6,21 @@ import {
   getUsersListPaginated,
   type User,
 } from '@/app/users/_services/users.reads.server';
-import { listAccessAllowlist } from '@/app/access-allowlist/_services/access-allowlist.reads.server';
-import type { AccessAllowlistListResult } from '@/app/access-allowlist/_services/access-allowlist.mutations.shared';
+import {
+  listAccessAllowlist,
+  listAllowlistDomainEntries,
+} from '@/app/access-allowlist/_services/access-allowlist.reads.server';
+import type {
+  AccessAllowlistEntry,
+  AccessAllowlistListResult,
+} from '@/app/access-allowlist/_services/access-allowlist.mutations.shared';
 import {
   getAccessRequestById,
   listAccessRequests,
 } from '@/app/access-requests/_services/access-requests.reads.server';
 import type { AccessRequestListResult } from '@/app/access-requests/_services/access-requests.mutations.shared';
-import { getProjectList } from '@/app/projects/_services/projects.reads.server';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
+import { getAccessibleProjectList } from '@/lib/projects/accessible-project-list';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
   listParamsForUsersPageTab,
@@ -84,6 +90,7 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
     requestsData,
     projects,
     focusedAccessRequest,
+    domainAllowlistEntries,
   ] = await Promise.all([
     safeServerFetch(
       getUsersListPaginated(
@@ -121,11 +128,11 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
           'fetch access requests'
         )
       : Promise.resolve(EMPTY_REQUESTS),
-    allowlistEnabled
+    allowlistEnabled && dbUser?.id
       ? safeServerFetch(
-          getProjectList(),
+          getAccessibleProjectList(dbUser.id),
           EMPTY_PROJECTS,
-          'fetch projects for allowlist form'
+          'fetch accessible projects for allowlist and access requests'
         )
       : Promise.resolve(EMPTY_PROJECTS),
     allowlistEnabled && requestId
@@ -135,6 +142,13 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
           'fetch focused access request'
         )
       : Promise.resolve(null),
+    allowlistEnabled
+      ? safeServerFetch(
+          listAllowlistDomainEntries(),
+          [] as AccessAllowlistEntry[],
+          'fetch allowlist domain entries'
+        )
+      : Promise.resolve([] as AccessAllowlistEntry[]),
   ]);
 
   return (
@@ -161,6 +175,7 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
       focusedAccessRequest={focusedAccessRequest}
       currentUserEmail={dbUser?.email}
       projects={projects}
+      domainAllowlistEntries={domainAllowlistEntries}
     />
   );
 }

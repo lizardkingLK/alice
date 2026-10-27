@@ -1,4 +1,8 @@
-import type { AccessRequestKind, AccessRequestStatus } from '@repo/types';
+import type {
+  AccessRequestGrantInput,
+  AccessRequestKind,
+  AccessRequestStatus,
+} from '@repo/types';
 
 export type AccessRequestEntry = {
   id: string;
@@ -46,11 +50,35 @@ export function createAccessRequestsService(
     );
   }
 
+  async function grantAccessRequest(
+    requestId: string,
+    input: AccessRequestGrantInput
+  ): Promise<void> {
+    await apiFetch<{ success: boolean }>(
+      `${apiAccessRequests}/${requestId}/grant`,
+      { method: 'POST', body: JSON.stringify(input) }
+    );
+  }
+
+  async function listSharedMemberships(
+    requestId: string
+  ): Promise<Array<{ id: string; key: string; name: string }>> {
+    const data = await apiFetch<{
+      projects: Array<{ id: string; key: string; name: string }>;
+    }>(`${apiAccessRequests}/${requestId}/shared-memberships`);
+    return data.projects ?? [];
+  }
+
   async function deleteAccessRequest(requestId: string): Promise<void> {
     await apiFetch<{ success: boolean }>(`${apiAccessRequests}/${requestId}`, {
       method: 'DELETE',
     });
   }
 
-  return { denyAccessRequest, deleteAccessRequest };
+  return {
+    denyAccessRequest,
+    grantAccessRequest,
+    listSharedMemberships,
+    deleteAccessRequest,
+  };
 }

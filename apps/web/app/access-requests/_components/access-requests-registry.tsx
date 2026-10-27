@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type CellContext,
   type ColumnDef,
@@ -25,28 +18,18 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@repo/ui/components/ui/dialog';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import {
-  Eye,
   Inbox,
   Loader2,
   MoreHorizontal,
-  ShieldCheck,
+  Pencil,
   ShieldX,
   Trash2,
-  UserPlus,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
@@ -59,55 +42,17 @@ import { SearchInput } from '@/components/search-input';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { AccessAllowlistForm } from '@/app/access-allowlist/_components/access-allowlist-form';
+import { AccessRequestGrantDialog } from '@/app/access-requests/_components/access-request-grant-dialog';
+import { AccessRequestProjectKeyBadges } from '@/app/access-requests/_components/access-request-project-key-badges';
 import type { AccessRequestEntry } from '@/app/access-requests/_services/access-requests.mutations.shared';
 import {
   deleteAccessRequestClient,
   denyAccessRequestClient,
 } from '@/app/access-requests/_services/access-requests.mutations.client';
+import type { AccessAllowlistEntry } from '@/app/access-allowlist/_services/access-allowlist.mutations.client';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import { accessRequestProjectKeysFromValue } from '@repo/types';
-
-function resolveRequestedProjectKeysForForm(
-  entry: AccessRequestEntry | null | undefined,
-  projects: readonly Project[]
-): string[] {
-  const requested = accessRequestProjectKeysFromValue(
-    entry?.requested_project_keys
-  );
-  if (requested.length === 0 || projects.length === 0) {
-    return requested;
-  }
-  const byUpper = new Map(
-    projects.map((project) => [project.key.trim().toUpperCase(), project.key])
-  );
-  return requested
-    .map((key) => byUpper.get(key) ?? key)
-    .filter((key, index, all) => all.indexOf(key) === index);
-}
-
-function AccessRequestProjectKeyBadges({
-  keys,
-  empty = null,
-  className,
-}: Readonly<{
-  keys: readonly string[];
-  empty?: ReactNode;
-  className?: string;
-}>) {
-  if (keys.length === 0) {
-    return empty;
-  }
-  return (
-    <div className={cn('flex flex-wrap gap-1', className)}>
-      {keys.map((key) => (
-        <Badge key={key} variant="outline" className="font-mono text-[11px]">
-          {key}
-        </Badge>
-      ))}
-    </div>
-  );
-}
+import { findCoveringDomainEntry } from '@/lib/access-requests/grant-domain-renew';
 
 function RequestedProjectsCell({
   entry,
@@ -122,27 +67,6 @@ function RequestedProjectsCell({
   );
 }
 
-function ActiveRequestSummary({
-  entry,
-}: Readonly<{ entry: AccessRequestEntry }>) {
-  const keys = accessRequestProjectKeysFromValue(entry.requested_project_keys);
-  return (
-    <div className="space-y-3">
-      {keys.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-muted-foreground text-xs">
-            Requested projects
-          </span>
-          <AccessRequestProjectKeyBadges keys={keys} />
-        </div>
-      ) : null}
-      <div className="bg-muted max-h-48 overflow-y-auto rounded-md border p-3 font-mono text-xs whitespace-pre-wrap">
-        {entry.message}
-      </div>
-    </div>
-  );
-}
-
 interface AccessRequestsRegistryProps {
   readonly requests: AccessRequestEntry[];
   readonly totalCount: number;
@@ -152,6 +76,8 @@ interface AccessRequestsRegistryProps {
   readonly search: string;
   readonly focusedRequest?: AccessRequestEntry | null;
   readonly projects?: readonly Project[];
+  /** Domain allowlist rows (any status) for renew-before-grant. */
+  readonly domainAllowlistEntries?: readonly AccessAllowlistEntry[];
 }
 
 type RequestRow = Row<AccessRequestEntry>;
@@ -198,9 +124,7 @@ interface ActionsCellProps {
   readonly row: RequestRow;
   readonly isBusy: boolean;
   // eslint-disable-next-line no-unused-vars -- callback param names for documentation
-  readonly onReview: (entry: AccessRequestEntry) => void;
-  // eslint-disable-next-line no-unused-vars
-  readonly onView: (entry: AccessRequestEntry) => void;
+  readonly onEdit: (entry: AccessRequestEntry) => void;
   // eslint-disable-next-line no-unused-vars
   readonly onDeny: (entry: AccessRequestEntry) => void;
   // eslint-disable-next-line no-unused-vars
@@ -210,8 +134,7 @@ interface ActionsCellProps {
 function ActionsCell({
   row,
   isBusy,
-  onReview,
-  onView,
+  onEdit,
   onDeny,
   onDelete,
 }: Readonly<ActionsCellProps>) {
@@ -233,17 +156,10 @@ function ActionsCell({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {pending ? (
-            <DropdownMenuItem onClick={() => onReview(entry)}>
-              <UserPlus />
-              Review
-            </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem onClick={() => onView(entry)}>
-              <Eye />
-              View
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem onClick={() => onEdit(entry)}>
+            <Pencil />
+            Edit
+          </DropdownMenuItem>
           {pending ? (
             <DropdownMenuItem
               variant="destructive"
@@ -309,8 +225,7 @@ const COLUMNS: ColumnDef<AccessRequestEntry>[] = [
         <ActionsCell
           row={ctx.row}
           isBusy={meta?.isBusy ?? false}
-          onReview={meta?.onReview ?? (() => undefined)}
-          onView={meta?.onView ?? (() => undefined)}
+          onEdit={meta?.onEdit ?? (() => undefined)}
           onDeny={meta?.onDeny ?? (() => undefined)}
           onDelete={meta?.onDelete ?? (() => undefined)}
         />
@@ -322,45 +237,12 @@ const COLUMNS: ColumnDef<AccessRequestEntry>[] = [
 type RequestTableMeta = {
   isBusy: boolean;
   // eslint-disable-next-line no-unused-vars
-  onReview: (entry: AccessRequestEntry) => void;
-  // eslint-disable-next-line no-unused-vars
-  onView: (entry: AccessRequestEntry) => void;
+  onEdit: (entry: AccessRequestEntry) => void;
   // eslint-disable-next-line no-unused-vars
   onDeny: (entry: AccessRequestEntry) => void;
   // eslint-disable-next-line no-unused-vars
   onDelete: (entry: AccessRequestEntry) => void;
 };
-
-function buildResolvedDialog(entry: AccessRequestEntry): {
-  title: string;
-  body: ReactNode;
-} {
-  if (entry.status === 'granted') {
-    return {
-      title: 'Access already granted',
-      body: (
-        <p>
-          Another admin has already granted workspace access to{' '}
-          <span className="font-semibold">{entry.requester_email}</span>
-          {entry.resolved_at ? ` on ${formatDate(entry.resolved_at)}.` : '.'}
-        </p>
-      ),
-    };
-  }
-
-  return {
-    title: 'Access request denied',
-    body: (
-      <p>
-        This request from{' '}
-        <span className="font-semibold">{entry.requester_email}</span> was
-        denied
-        {entry.resolved_at ? ` on ${formatDate(entry.resolved_at)}` : ''}
-        {'.'}
-      </p>
-    ),
-  };
-}
 
 /** Drop deep-link query keys without Next navigation (avoids RSC refresh). */
 function clearRequestQueryParamsQuietly(
@@ -387,6 +269,7 @@ export function AccessRequestsRegistry({
   search,
   focusedRequest = null,
   projects = [],
+  domainAllowlistEntries = [],
 }: Readonly<AccessRequestsRegistryProps>) {
   const router = useRouter();
   const pathname = usePathname();
@@ -402,11 +285,7 @@ export function AccessRequestsRegistry({
 
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [allowDialogOpen, setAllowDialogOpen] = useState(false);
-  const [resolvedDialog, setResolvedDialog] = useState<{
-    title: string;
-    body: ReactNode;
-  } | null>(null);
+  const [grantDialogOpen, setGrantDialogOpen] = useState(false);
   const [activeRequest, setActiveRequest] = useState<AccessRequestEntry | null>(
     null
   );
@@ -416,8 +295,7 @@ export function AccessRequestsRegistry({
   const dismissedDeepLinkIdRef = useRef<string | null>(null);
 
   const closeDialogsLocally = useCallback(() => {
-    setAllowDialogOpen(false);
-    setResolvedDialog(null);
+    setGrantDialogOpen(false);
     setActiveRequest(null);
   }, []);
 
@@ -431,16 +309,10 @@ export function AccessRequestsRegistry({
     clearRequestQueryParamsQuietly(searchParams, pathname);
   }, [addEmailParam, pathname, requestIdParam, searchParams]);
 
-  /** Open Review / View from the row menu without touching the URL (no RSC refresh). */
+  /** Open Edit from the row menu without touching the URL (no RSC refresh). */
   const openLocalDialog = useCallback((entry: AccessRequestEntry) => {
     setActiveRequest(entry);
-    if (entry.status === 'pending') {
-      setAllowDialogOpen(true);
-      setResolvedDialog(null);
-      return;
-    }
-    setAllowDialogOpen(false);
-    setResolvedDialog(buildResolvedDialog(entry));
+    setGrantDialogOpen(true);
   }, []);
 
   const handleDeny = useCallback(
@@ -507,37 +379,34 @@ export function AccessRequestsRegistry({
       requests.find((row) => row.id === requestIdParam) ??
       null;
 
-    if (!target || target.id !== requestIdParam) {
+    if (target?.id !== requestIdParam) {
       return;
     }
 
     setActiveRequest(target);
-
-    if (target.status === 'pending') {
-      setAllowDialogOpen(true);
-      setResolvedDialog(null);
-      return;
-    }
-
-    setAllowDialogOpen(false);
-    setResolvedDialog(buildResolvedDialog(target));
+    setGrantDialogOpen(true);
   }, [focusedRequest, requestIdParam, requests]);
 
-  const handleCloseAllow = useCallback(() => {
+  const handleCloseGrant = useCallback(() => {
     closeDialogsLocally();
     clearDeepLinkParams();
   }, [clearDeepLinkParams, closeDialogsLocally]);
 
-  const handleAllowSuccess = useCallback(() => {
+  const handleGrantSuccess = useCallback(() => {
     closeDialogsLocally();
     clearDeepLinkParams();
     router.refresh();
   }, [clearDeepLinkParams, closeDialogsLocally, router]);
 
-  const handleCloseResolved = useCallback(() => {
-    closeDialogsLocally();
-    clearDeepLinkParams();
-  }, [clearDeepLinkParams, closeDialogsLocally]);
+  const coveringDomainEntry = useMemo(() => {
+    if (!activeRequest) {
+      return null;
+    }
+    return findCoveringDomainEntry(
+      activeRequest.requester_email,
+      domainAllowlistEntries
+    );
+  }, [activeRequest, domainAllowlistEntries]);
 
   const columns = useMemo(() => COLUMNS, []);
 
@@ -547,8 +416,7 @@ export function AccessRequestsRegistry({
     getCoreRowModel: getCoreRowModel(),
     meta: {
       isBusy,
-      onReview: openLocalDialog,
-      onView: openLocalDialog,
+      onEdit: openLocalDialog,
       onDeny: handleDeny,
       onDelete: setDeletingEntry,
     } satisfies RequestTableMeta,
@@ -573,9 +441,9 @@ export function AccessRequestsRegistry({
             Access requests
           </CardTitle>
           <CardDescription>
-            Contact and access-denied admission requests. Review pending items
-            to add an email allowlist entry (projects prefilled when requested)
-            or deny explicitly.
+            Contact and access-denied admission requests. Edit to grant,
+            re-grant, or revoke granted memberships; deny pending items
+            explicitly.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -601,72 +469,16 @@ export function AccessRequestsRegistry({
         </CardContent>
       </Card>
 
-      <Dialog
-        open={allowDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            handleCloseAllow();
-          }
-        }}
-      >
-        <DialogContent
-          showCloseButton={false}
-          className="border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-xl"
-        >
-          <DialogTitle className="sr-only">Allow access request</DialogTitle>
-          <DialogDescription className="sr-only">
-            Create an email allowlist entry for this requester.
-          </DialogDescription>
-          <AccessAllowlistForm
-            projects={projects}
-            onClose={handleCloseAllow}
-            onSuccess={handleAllowSuccess}
-            initialKind="email"
-            initialValue={
-              activeRequest?.requester_email ?? addEmailParam ?? undefined
-            }
-            initialProjectKeys={resolveRequestedProjectKeysForForm(
-              activeRequest,
-              projects
-            )}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={resolvedDialog !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            handleCloseResolved();
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ShieldCheck className="text-primary size-5 shrink-0" />
-              {resolvedDialog?.title}
-            </DialogTitle>
-            <DialogDescription asChild>
-              <div className="text-muted-foreground text-sm">
-                {resolvedDialog?.body}
-              </div>
-            </DialogDescription>
-          </DialogHeader>
-          {activeRequest ? (
-            <ActiveRequestSummary entry={activeRequest} />
-          ) : null}
-          <DialogFooter>
-            <Button
-              type="button"
-              className="cursor-pointer"
-              onClick={handleCloseResolved}
-            >
-              Okay
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {activeRequest && grantDialogOpen ? (
+        <AccessRequestGrantDialog
+          open={grantDialogOpen}
+          entry={activeRequest}
+          projects={projects}
+          coveringDomainEntry={coveringDomainEntry}
+          onClose={handleCloseGrant}
+          onSuccess={handleGrantSuccess}
+        />
+      ) : null}
 
       {deletingEntry ? (
         <RegistryConfirmDialog

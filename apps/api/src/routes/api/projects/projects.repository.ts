@@ -557,6 +557,15 @@ export class ProjectsRepository {
     return unsafeCast<ProjectMemberWithUser[]>(data);
   }
 
+  /** Active project memberships for a user (project ids only). */
+  async listActiveMemberProjectIds(userId: string): Promise<string[]> {
+    const rows = await prisma.project_members.findMany({
+      where: { user_id: userId, status: 'active' },
+      select: { project_id: true },
+    });
+    return rows.map((row) => row.project_id);
+  }
+
   async addMember(
     projectId: string,
     userId: string,

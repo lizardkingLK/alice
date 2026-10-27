@@ -20,18 +20,43 @@ flow: name, email, message, **requested project keys**, and date.
 ## Typical workflow
 
 1. **Verify** the person should have access (manager approval, ticket, etc.).
-2. Open **Review** on a pending row (or follow the inbox deep link).
-3. The **Add allowlist entry** dialog opens with their **email** and any
-   **requested project keys** already selected — adjust the guest project list
-   if needed, then save. See [Admission allowlist](./allowlist.md) and
-   [Allow by email (guests)](./allowlist-email-guests.md).
-4. Optionally **invite** them with [Invite users](./invite-users.md) if you want
-   a separate Users-directory invite (allowlist grant already emails an invite
-   for new addresses).
-5. Or **Deny** the request when they should not join.
-6. Use **View** on granted or denied rows to re-read the request. Use
-   **Delete** to remove a request from the list (same idea as deleting an
-   allowlist entry).
+2. Open **Edit** on a row (or follow the inbox deep link). **View** is not used
+   — Edit covers pending, granted, and denied requests.
+3. The dialog shows their message first.
+4. If their email domain has an **expired** or **inactive** domain allowlist
+   row, renew that domain before projects appear: set **Status** to **Active**
+   and **Expires on** to a date after today, then **Renew domain**. A toast
+   confirms success and the project grant section opens.
+5. For **pending** or **denied** requests, choose projects **you** can access.
+   Requested keys are pre-checked when they overlap your list; keys you cannot
+   access are noted and omitted.
+6. For each project:
+   - **Grant** — include the project in this approval.
+   - **Member** — also add them to the project roster (defaults on with Grant).
+7. **Save** to grant (or re-grant after a prior deny).
+8. For a **pending** request you can also use row-menu **Deny** (no membership
+   revoke). For a **granted** request, open **Edit** and use **Deny** there —
+   Alice warns about shared project memberships, removes memberships on
+   projects you can access, deactivates any **email** allowlist for that
+   address, and sets the request to denied.
+9. Use **Delete** to remove a request from the list (same idea as deleting an
+   allowlist entry). If you delete a granted request instead of denying it,
+   memberships are left as-is under Projects.
+
+### Domain vs email allowlist
+
+- If a domain allowlist covers their email but is **expired or inactive**, you
+  must renew it in the grant dialog before selecting projects (admission stays
+  blocked until the domain is effectively active again).
+- If an **active** (non-expired) domain allowlist covers their email, Grant adds
+  **project membership** only — Alice does not create a separate email
+  allowlist row. Member stays locked on with Grant.
+- If there is **no** covering domain, Grant creates an **email** allowlist entry
+  with the selected projects as the guest ACL, and Member optionally adds
+  project membership when an Alice user already exists for that email.
+
+See [Admission allowlist](./allowlist.md) and
+[Allow by email (guests)](./allowlist-email-guests.md).
 
 ---
 
@@ -44,12 +69,13 @@ Repeated spam from the same address stops automatically.
 
 ## After approval
 
-The requester must set a password via the invite or
+When an email allowlist row is created, Alice emails an invite / magic link.
+The requester must set a password via that invite or
 [Forgot password](../sign-in-and-account/forgot-password.md) before email
 sign-in works. You may still need to:
 
 - Set their **role** under **Users**
-- Add them as **project members** for operational access — see
+- Confirm **project members** for operational access — see
   [Project members](../projects/project-members.md) (guest allowlist ACL is not
   the same as membership)
 
