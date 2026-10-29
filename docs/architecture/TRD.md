@@ -41,7 +41,7 @@ Both apps deploy to Vercel. The API runs as Vercel Serverless Functions. Protect
 - `src/routes/api/health/health.route.ts` — health check router
 - `src/routes/api/users/` — users router, service, and repository with secure endpoints and user registration
 - `src/routes/api/projects/` — projects router, service, repository, and schema validation supporting full project CRUD (with soft delete)
-- `src/routes/api/sprints/` — sprints router, service, repository, and schema validation supporting sprint lifecycle (planned, active, closed, archived)
+- `src/routes/api/sprints/` — sprints router, service, repository, and schema validation supporting sprint lifecycle (planned, active, closed, archived), burndown metrics, and AI-powered sprint estimation
 - `src/routes/api/attributes/` — attributes router, service, and repository to retrieve custom fields metadata
 - `src/routes/api/attachments/` — attachments upload router (Storage via `lib/file-helpers.ts`)
 - `src/lib/file-helpers.ts` — shared Storage upload / public URL / signed URL helpers
@@ -315,6 +315,7 @@ One Supabase project serves both development and production. Migrations must be 
   - `PATCH /api/sprints/:id` — protected. Updates sprint details (validates request body via `updateSprintBodySchema`).
   - `PATCH /api/sprints/:id/status` — protected. Updates sprint status (validates body via `updateSprintStatusSchema`).
   - `GET /api/sprints/:id/burndown` — protected. Returns burndown series for a sprint (web dashboard prefers the RSC reader in `sprint-burndown.server.ts`).
+  - `POST /api/sprints/:id/estimates` (and `/api/v1/sprints/:id/estimates`) — protected, Manager or Admin required, project member. Generates read-only sprint planning effort estimates (suggested hours, min/max uncertainty ranges, confidence, and rationales) combining historical work logs, deterministic median calculations, and LLM evaluation (Gemini/SpaceXAI). Strictly read-only; no database updates. Batches up to 20 items with max concurrency of 3, isolated 10s timeouts, and full cancellation propagation. See [AI_SPRINT_ESTIMATION.md](../features/sprints/AI_SPRINT_ESTIMATION.md).
   - Sprint **list/detail reads** are not Express GETs — dashboard pages use direct Supabase RSC readers (`sprints.service.server.ts`).
 
 - **Attributes**

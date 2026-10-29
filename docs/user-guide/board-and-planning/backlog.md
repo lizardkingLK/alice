@@ -71,7 +71,44 @@ Sprint cards keep a compact header: click the sprint name or hover the info icon
 for dates, status, project, and capacity details; use **Capacity display**
 (above) for the compact header layout (progress bar, numbers, or percentage).
 Manager/admin actions (**Summary report**, **Start sprint**, **Complete sprint**)
-are icon buttons with tooltips.
+are icon buttons with tooltips. Additional manager/admin tools (**Estimate with AI**,
+**Edit Sprint**) are available in the **...** (More actions) menu.
+
+---
+
+## Estimate a sprint with AI
+
+Managers and admins can generate advisory effort estimates for any planned or
+active sprint directly from the backlog view:
+
+1. On the sprint card, click the **...** (More actions) button in the header.
+2. Select **Estimate with AI** (Sparkles icon).
+3. The **Estimate sprint** dialog opens and automatically queries project history:
+   - A loading indicator indicates: _"Alice is comparing this sprint with historical work."_
+   - Work items are evaluated using a combination of historical delivery logs,
+     deterministic median baselines, and AI refinement (via Gemini or SpaceXAI).
+4. **Evaluate the estimates**:
+   - **Summary status**: The banner notes the composition (e.g., _12 AI-generated estimates_
+     or _AI was unavailable. 12 deterministic estimates are shown_).
+   - **Suggested hours & range**: Displays expected effort and bounded uncertainty
+     ranges (for example, `8.5h` with `6.5–10.5h range`).
+   - **Confidence level**: Indicates data quality as **High**, **Medium**, or **Low**
+     confidence based on sample count and characteristic specificity.
+   - **Method & evidence**: Shows whether the estimate is AI-generated or a deterministic
+     fallback, the evidence source (such as _Assignee history_, _Similar history_,
+     _Experience history_, or _Rough fallback_), sample count, and fallback reason if AI timed out.
+   - **Explanation**: Contextual rationale explaining the basis of the calculation.
+5. **Retry or Cancel**:
+   - If an error occurs (network failure, timeout, or session expiration), click **Try again**.
+   - Click **Close** or press **Escape** at any time. Closing the dialog immediately
+     cancels any in-flight estimation requests without writing to the database.
+
+> [!NOTE]
+> **Read-only guarantee**: Sprint estimation is strictly advisory. Generating estimates
+> never modifies work-item story points, logged hours, statuses, or sprint records.
+
+For technical details, algorithmic calculations, and API contracts, see
+[AI Sprint Estimation](../../features/sprints/AI_SPRINT_ESTIMATION.md).
 
 ---
 
@@ -85,4 +122,5 @@ ends (manager/admin workflows). Review open items before completing.
 ## Related
 
 - [Sprints](./sprints.md)
+- [AI Sprint Estimation](../../features/sprints/AI_SPRINT_ESTIMATION.md)
 - [Work items](../work-items/README.md)
