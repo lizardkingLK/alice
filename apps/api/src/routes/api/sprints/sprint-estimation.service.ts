@@ -241,11 +241,9 @@ export class SprintEstimationService {
     }
 
     const batchResults: SprintEstimationResult[][] = new Array(batches.length);
-    for (
-      let index = 0;
-      index < batches.length;
-      index += this.maxAiConcurrency
-    ) {
+    const generateWave = async (index: number): Promise<void> => {
+      if (index >= batches.length) return;
+
       throwIfCancelled(callerSignal);
       const wave = batches.slice(index, index + this.maxAiConcurrency);
       const waveResults = await Promise.all(
@@ -255,7 +253,9 @@ export class SprintEstimationService {
       waveResults.forEach((result, waveIndex) => {
         batchResults[index + waveIndex] = result;
       });
-    }
+      await generateWave(index + this.maxAiConcurrency);
+    };
+    await generateWave(0);
 
     const estimates = batchResults.flat();
     return sprintEstimationResponseSchema.parse({
@@ -286,7 +286,7 @@ export class SprintEstimationService {
     inputs: readonly SprintEstimationInput[],
     callerSignal?: AbortSignal
   ): Promise<SprintEstimationResult[]> {
-    const baselines = inputs.map(estimateSprintWorkItem);
+    const baselines = inputs.map((input) => estimateSprintWorkItem(input));
     let result: unknown;
     try {
       result = await this.aiService.generate(inputs, callerSignal);

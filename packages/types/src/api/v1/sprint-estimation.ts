@@ -246,7 +246,7 @@ type EvidencePool = {
 
 function normalized(value: string | null | undefined): string | null {
   const result = value?.trim().toLowerCase();
-  return result ? result : null;
+  return result || null;
 }
 
 function roundToHalfHour(value: number): number {
@@ -354,15 +354,14 @@ function selectEvidencePool(input: SprintEstimationInput): EvidencePool | null {
     });
   }
 
-  pools.push({
-    items: comparable,
-    source: 'similar_history',
-    description: 'comparable same-project, same-type items',
-    highConfidenceEligible: true,
-    mediumConfidenceEligible: true,
-  });
-
   pools.push(
+    {
+      items: comparable,
+      source: 'similar_history',
+      description: 'comparable same-project, same-type items',
+      highConfidenceEligible: true,
+      mediumConfidenceEligible: true,
+    },
     {
       items: sameType,
       source: 'similar_history',

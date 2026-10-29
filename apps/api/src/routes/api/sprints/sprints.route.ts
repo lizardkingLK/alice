@@ -12,17 +12,15 @@ import {
 } from './sprints.schemas';
 import type { SprintsService, SprintBurndownService } from './sprints.service';
 import {
+  SprintAccessError,
   SprintEstimationCancelledError,
   SprintEstimationForbiddenError,
   SprintEstimationLimitError,
   SprintEstimationNotFoundError,
   SprintEstimationUnauthenticatedError,
-} from './sprints.errors';
-import type { SprintEstimationService } from './sprint-estimation.service';
-import {
-  SprintAccessError,
   isSprintNameConflictMessage,
 } from './sprints.errors';
+import type { SprintEstimationService } from './sprint-estimation.service';
 import {
   deleteSprintActionSchema,
   listSprintsQuerySchema,

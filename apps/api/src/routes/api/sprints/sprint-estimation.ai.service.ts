@@ -413,7 +413,9 @@ export class SprintEstimationAiService {
       return unavailable('invalid_input', []);
     }
 
-    const deterministicEstimates = validatedInputs.map(estimateSprintWorkItem);
+    const deterministicEstimates = validatedInputs.map((input) =>
+      estimateSprintWorkItem(input)
+    );
     if (validatedInputs.length === 0) {
       return {
         status: 'success',

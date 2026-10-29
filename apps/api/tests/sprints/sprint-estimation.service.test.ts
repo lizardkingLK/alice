@@ -478,6 +478,35 @@ describe('SprintEstimationService', () => {
     expect(maximumActive).toBe(2);
   });
 
+  it('waits for each default-concurrency wave before starting the next', async () => {
+    const estimationInputs = inputs(80);
+    loadForSprint.mockResolvedValueOnce(repositoryData(estimationInputs));
+    const resolveBatch: Array<() => void> = [];
+    generate.mockImplementation(
+      (batch: SprintEstimationInput[]) =>
+        new Promise((resolve) => {
+          resolveBatch.push(() => resolve(successResult(batch)));
+        })
+    );
+
+    const pending = service().generate(ACTOR_ID, SPRINT_ID);
+    await vi.waitFor(() => expect(generate).toHaveBeenCalledTimes(3));
+
+    resolveBatch[2]!();
+    resolveBatch[0]!();
+    await Promise.resolve();
+    expect(generate).toHaveBeenCalledTimes(3);
+
+    resolveBatch[1]!();
+    await vi.waitFor(() => expect(generate).toHaveBeenCalledTimes(4));
+    resolveBatch[3]!();
+
+    const result = await pending;
+    expect(result.estimates.map((estimate) => estimate.workItemId)).toEqual(
+      estimationInputs.map((input) => input.workItem.id)
+    );
+  });
+
   it('rejects more than 200 items instead of silently truncating', async () => {
     loadForSprint.mockResolvedValueOnce(repositoryData(inputs(201)));
 
