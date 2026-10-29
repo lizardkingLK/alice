@@ -14,10 +14,7 @@ function isLoopbackOrigin(origin: string): boolean {
 }
 
 export function isAllowedCorsOrigin(origin: string | undefined): boolean {
-  if (!origin) {
-    return true;
-  }
-  if (allowedOrigins.has(origin)) {
+  if (!origin || allowedOrigins.has(origin)) {
     return true;
   }
   // Browser may use 127.0.0.1 while FRONTEND_URL is localhost (or the reverse).

@@ -28,6 +28,7 @@ const routesConfig: Router = Router();
 
 // Version path map lives here (not composition, not per-route middleware).
 // See docs/architecture/API_VERSIONING.md
+// default routes are here
 routesConfig.use('/', root.router);
 routesConfig.use('/api/access-allowlist', accessAllowlist.router);
 routesConfig.use('/api/access-requests', accessRequests.router);
@@ -51,6 +52,7 @@ routesConfig.use('/api/users', users.router);
 routesConfig.use('/api/work-items', workItems.router);
 routesConfig.use('/api/worklogs', worklogs.router);
 
+// explicitly defined v1 routes are here
 routesConfig.use('/api/v1/access-allowlist', accessAllowlist.router);
 routesConfig.use('/api/v1/attachments', attachments.router);
 routesConfig.use('/api/v1/charts', charts.router);
@@ -69,6 +71,7 @@ routesConfig.use('/api/v1/users', users.router);
 routesConfig.use('/api/v1/work-items', workItems.router);
 routesConfig.use('/api/v1/worklogs', worklogs.router);
 
+// explicitly defined v2 routes are here
 routesConfig.use('/api/v2/health', health.v2Router);
 
 export default routesConfig;
