@@ -19,7 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
-import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import {
   Table,
   TableBody,
@@ -119,11 +118,11 @@ function EstimateRow({
   const fallbackTitle = `Work item ${estimate.workItemId.slice(0, 8).toUpperCase()}`;
   return (
     <TableRow data-testid="sprint-estimate-row">
-      <TableCell className="min-w-64 align-top">
+      <TableCell className="min-w-64 align-top whitespace-normal">
         <div className="space-y-2">
           <div>
             <p
-              className="text-foreground font-medium"
+              className="text-foreground font-medium [overflow-wrap:anywhere]"
               data-testid="estimate-work-item-title"
             >
               {item?.title ?? fallbackTitle}
@@ -164,7 +163,7 @@ function EstimateRow({
           {CONFIDENCE_LABELS[estimate.confidence]}
         </Badge>
       </TableCell>
-      <TableCell className="min-w-48 align-top">
+      <TableCell className="min-w-48 align-top [overflow-wrap:anywhere] whitespace-normal">
         <div className="space-y-1.5">
           <Badge
             variant={
@@ -189,7 +188,7 @@ function EstimateRow({
           ) : null}
         </div>
       </TableCell>
-      <TableCell className="text-muted-foreground min-w-72 align-top text-sm whitespace-normal">
+      <TableCell className="text-muted-foreground min-w-72 align-top text-sm [overflow-wrap:anywhere] whitespace-normal">
         {estimate.rationale}
       </TableCell>
     </TableRow>
@@ -274,15 +273,17 @@ export function BacklogSprintEstimationDialog({
 
   return (
     <Dialog open={Boolean(sprint)} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[calc(100vh-2rem)] sm:max-w-5xl">
-        <DialogHeader>
-          <div className="flex items-center gap-2">
-            <span className="bg-primary/10 text-primary rounded-md p-1.5">
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] min-w-0 flex-col overflow-hidden sm:max-w-5xl">
+        <DialogHeader className="min-w-0 shrink-0">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="bg-primary/10 text-primary shrink-0 rounded-md p-1.5">
               <Sparkles className="size-4" aria-hidden />
             </span>
-            <DialogTitle>Estimate {sprint?.name ?? 'sprint'}</DialogTitle>
+            <DialogTitle className="min-w-0 [overflow-wrap:anywhere]">
+              Estimate {sprint?.name ?? 'sprint'}
+            </DialogTitle>
           </div>
-          <DialogDescription>
+          <DialogDescription className="[overflow-wrap:anywhere]">
             {sprint?.project?.name ? `${sprint.project.name} · ` : ''}
             Read-only planning estimates. No work-item values will be changed.
           </DialogDescription>
@@ -340,15 +341,18 @@ export function BacklogSprintEstimationDialog({
         ) : null}
 
         {!isLoading && !error && visibleResult?.estimates.length ? (
-          <div className="min-h-0 space-y-3">
+          <div className="flex min-h-0 min-w-0 flex-col gap-3">
             <div
               role="status"
               aria-live="polite"
-              className="border-border bg-muted/40 rounded-lg border px-3 py-2 text-sm"
+              className="border-border bg-muted/40 min-w-0 shrink-0 rounded-lg border px-3 py-2 text-sm [overflow-wrap:anywhere]"
             >
               {estimateSummary(visibleResult)}
             </div>
-            <ScrollArea className="h-[min(58vh,34rem)] rounded-lg border">
+            <div
+              className="max-h-[min(58dvh,34rem)] min-h-0 w-full max-w-full min-w-0 overflow-auto rounded-lg border"
+              data-testid="sprint-estimate-table-scroll"
+            >
               <div className="min-w-[64rem]">
                 <Table>
                   <TableHeader>
@@ -372,11 +376,11 @@ export function BacklogSprintEstimationDialog({
                   </TableBody>
                 </Table>
               </div>
-            </ScrollArea>
+            </div>
           </div>
         ) : null}
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0" data-testid="sprint-estimate-footer">
           <DialogClose asChild>
             <Button type="button" variant="outline">
               Close

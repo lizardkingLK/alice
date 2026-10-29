@@ -219,6 +219,38 @@ describe('BacklogSprintEstimationDialog', () => {
     expect(within(rows[1]!).getByText('AI-generated')).toBeVisible();
   });
 
+  it('contains responsive results without forcing empty table height', async () => {
+    vi.mocked(generateSprintEstimates).mockResolvedValue(response());
+
+    renderDialog({ workItems: [firstItem] });
+
+    const row = await screen.findByTestId('sprint-estimate-row');
+    const dialog = screen.getByRole('dialog');
+    const scrollContainer = screen.getByTestId('sprint-estimate-table-scroll');
+    const footer = screen.getByTestId('sprint-estimate-footer');
+    const cells = within(row).getAllByRole('cell');
+
+    expect(dialog).toHaveClass(
+      'flex',
+      'max-h-[calc(100dvh-2rem)]',
+      'min-w-0',
+      'overflow-hidden'
+    );
+    expect(scrollContainer).toHaveClass(
+      'max-h-[min(58dvh,34rem)]',
+      'min-h-0',
+      'min-w-0',
+      'max-w-full',
+      'overflow-auto'
+    );
+    expect(scrollContainer).not.toHaveClass('h-[min(58vh,34rem)]');
+    expect(within(scrollContainer).getByRole('table')).toBeVisible();
+    expect(cells[0]).toHaveClass('whitespace-normal');
+    expect(cells[3]).toHaveClass('whitespace-normal');
+    expect(footer).toHaveClass('shrink-0');
+    expect(within(footer).getByRole('button', { name: 'Close' })).toBeVisible();
+  });
+
   it('presents complete deterministic fallback without calling it AI-generated', async () => {
     vi.mocked(generateSprintEstimates).mockResolvedValue(
       response({
