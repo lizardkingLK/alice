@@ -26,6 +26,11 @@ export type AccessRequestRow = {
   updated_at: string;
 };
 
+export type AccessRequestsTransaction = Pick<
+  Prisma.TransactionClient,
+  'access_requests' | 'access_allowlist' | 'notifications' | 'project_members'
+>;
+
 function toAccessRequestRow(row: {
   id: string;
   requester_email: string;
@@ -69,13 +74,21 @@ function toRequestedProjectKeysJson(
 }
 
 export class AccessRequestsRepository {
-  async findById(id: string): Promise<AccessRequestRow | null> {
-    const row = await prisma.access_requests.findUnique({ where: { id } });
+  async findById(
+    id: string,
+    transaction: AccessRequestsTransaction = prisma
+  ): Promise<AccessRequestRow | null> {
+    const row = await transaction.access_requests.findUnique({
+      where: { id },
+    });
     return row ? toAccessRequestRow(row) : null;
   }
 
-  async findPendingByEmail(email: string): Promise<AccessRequestRow | null> {
-    const row = await prisma.access_requests.findFirst({
+  async findPendingByEmail(
+    email: string,
+    transaction: AccessRequestsTransaction = prisma
+  ): Promise<AccessRequestRow | null> {
+    const row = await transaction.access_requests.findFirst({
       where: {
         requester_email: email,
         status: AccessRequestStatusEnum.pending,
@@ -175,21 +188,72 @@ export class AccessRequestsRepository {
     return toAccessRequestRow(row);
   }
 
-  async resolveRequest(params: {
-    id: string;
-    status: 'granted' | 'denied';
-    actorId: string;
-  }): Promise<AccessRequestRow> {
-    const now = new Date();
-    const row = await prisma.access_requests.update({
-      where: { id: params.id },
-      data: {
-        status: params.status,
-        resolved_by: params.actorId,
-        resolved_at: now,
-      },
-    });
-    return toAccessRequestRow(row);
+  async resolvePendingAndArchive(
+    params: {
+      id: string;
+      status: 'granted' | 'denied';
+      actorId: string;
+    },
+    transaction?: AccessRequestsTransaction
+  ): Promise<AccessRequestRow | null> {
+    return this.resolveFromStatusAndArchive(
+      { ...params, expectedStatus: AccessRequestStatusEnum.pending },
+      transaction
+    );
+  }
+
+  async resolveFromStatusAndArchive(
+    params: {
+      id: string;
+      expectedStatus: AccessRequestStatus;
+      status: 'granted' | 'denied';
+      actorId: string;
+    },
+    transaction?: AccessRequestsTransaction
+  ): Promise<AccessRequestRow | null> {
+    const resolve = async (
+      currentTransaction: AccessRequestsTransaction
+    ): Promise<AccessRequestRow | null> => {
+      const now = new Date();
+      const { count } = await currentTransaction.access_requests.updateMany({
+        where: {
+          id: params.id,
+          status: params.expectedStatus,
+        },
+        data: {
+          status: params.status,
+          resolved_by: params.actorId,
+          resolved_at: now,
+        },
+      });
+
+      if (count === 0) {
+        return null;
+      }
+
+      await currentTransaction.notifications.updateMany({
+        where: { related_item_id: params.id },
+        data: {
+          status: 'archived',
+          read_status: true,
+          updated_at: now,
+        },
+      });
+
+      const row = await currentTransaction.access_requests.findUnique({
+        where: { id: params.id },
+      });
+      if (!row) {
+        throw new Error('Access request not found after resolution');
+      }
+      return toAccessRequestRow(row);
+    };
+
+    if (transaction) {
+      return resolve(transaction);
+    }
+
+    return prisma.$transaction(resolve);
   }
 
   async resolvePendingByEmail(params: {
@@ -201,7 +265,7 @@ export class AccessRequestsRepository {
     if (!pending) {
       return null;
     }
-    return this.resolveRequest({
+    return this.resolvePendingAndArchive({
       id: pending.id,
       status: params.status,
       actorId: params.actorId,
