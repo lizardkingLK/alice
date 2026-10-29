@@ -10,7 +10,10 @@ import {
   type ContactRequestInput,
 } from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
-import { AccessRequestsRepository } from './access-requests.repository';
+import {
+  AccessRequestsRepository,
+  type AccessRequestsTransaction,
+} from './access-requests.repository';
 import type { NotificationsRepository } from '../notifications/notifications.repository';
 
 async function requireAdmin(actorId: string) {
@@ -135,35 +138,84 @@ export class AccessRequestsService {
       throw new Error('This access request is already resolved.');
     }
 
-    await this.accessRequestsRepository.resolveRequest({
-      id: requestId,
-      status: 'denied',
-      actorId,
-    });
-    await this.accessRequestsRepository.archiveNotificationsForRequest(
-      requestId
-    );
+    const resolved =
+      await this.accessRequestsRepository.resolvePendingAndArchive({
+        id: requestId,
+        status: 'denied',
+        actorId,
+      });
+    if (!resolved) {
+      throw new Error('This access request is already resolved.');
+    }
   }
 
-  async markGrantedForEmail(actorId: string, email: string) {
+  async markGrantedForRequest(
+    actorId: string,
+    requestId: string,
+    email: string,
+    transaction?: AccessRequestsTransaction
+  ): Promise<void> {
+    const normalized = normalizeAccessRequestEmail(email);
+    const existing = await this.accessRequestsRepository.findById(
+      requestId,
+      transaction
+    );
+    if (!existing) {
+      throw new Error('Access request not found');
+    }
+    if (existing.status !== 'pending') {
+      throw new Error('This access request is already resolved.');
+    }
+    if (
+      !normalized ||
+      normalizeAccessRequestEmail(existing.requester_email) !== normalized
+    ) {
+      throw new Error('Access request does not match the allowlist email.');
+    }
+
+    const resolved =
+      await this.accessRequestsRepository.resolvePendingAndArchive(
+        {
+          id: requestId,
+          status: 'granted',
+          actorId,
+        },
+        transaction
+      );
+    if (!resolved) {
+      throw new Error('This access request is already resolved.');
+    }
+  }
+
+  async markGrantedForEmail(
+    actorId: string,
+    email: string,
+    transaction?: AccessRequestsTransaction
+  ) {
     const normalized = normalizeAccessRequestEmail(email);
     if (!normalized) {
       return;
     }
 
-    const pending =
-      await this.accessRequestsRepository.findPendingByEmail(normalized);
+    const pending = await this.accessRequestsRepository.findPendingByEmail(
+      normalized,
+      transaction
+    );
     if (!pending) {
       return;
     }
 
-    await this.accessRequestsRepository.resolveRequest({
-      id: pending.id,
-      status: 'granted',
-      actorId,
-    });
-    await this.accessRequestsRepository.archiveNotificationsForRequest(
-      pending.id
-    );
+    const resolved =
+      await this.accessRequestsRepository.resolvePendingAndArchive(
+        {
+          id: pending.id,
+          status: 'granted',
+          actorId,
+        },
+        transaction
+      );
+    if (!resolved) {
+      throw new Error('This access request is already resolved.');
+    }
   }
 }

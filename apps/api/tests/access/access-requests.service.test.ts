@@ -20,8 +20,7 @@ const repository = {
   create: vi.fn(),
   updateMessageOnly: vi.fn(),
   updatePendingSubmission: vi.fn(),
-  resolveRequest: vi.fn(),
-  archiveNotificationsForRequest: vi.fn(),
+  resolvePendingAndArchive: vi.fn(),
   rollingWindowStart: vi.fn(() => new Date('2026-01-01T00:00:00.000Z')),
 } as unknown as AccessRequestsRepository;
 
@@ -157,16 +156,95 @@ describe('AccessRequestsService.denyAccessRequest', () => {
 
   it('denies a pending request and archives notifications', async () => {
     vi.mocked(repository.findById).mockResolvedValue(baseRequest);
+    vi.mocked(repository.resolvePendingAndArchive).mockResolvedValue({
+      ...baseRequest,
+      status: 'denied',
+    });
 
     await service.denyAccessRequest('admin-1', 'req-1');
 
-    expect(repository.resolveRequest).toHaveBeenCalledWith({
+    expect(repository.resolvePendingAndArchive).toHaveBeenCalledWith({
       id: 'req-1',
       status: 'denied',
       actorId: 'admin-1',
     });
-    expect(repository.archiveNotificationsForRequest).toHaveBeenCalledWith(
-      'req-1'
+  });
+
+  it('does not overwrite a request resolved by a concurrent action', async () => {
+    vi.mocked(repository.findById).mockResolvedValue(baseRequest);
+    vi.mocked(repository.resolvePendingAndArchive).mockResolvedValue(null);
+
+    await expect(service.denyAccessRequest('admin-1', 'req-1')).rejects.toThrow(
+      'This access request is already resolved.'
     );
+  });
+});
+
+describe('AccessRequestsService.markGrantedForRequest', () => {
+  const service = new AccessRequestsService(
+    repository,
+    notificationsRepository
+  );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('grants the expected pending request', async () => {
+    const transaction = {} as never;
+    vi.mocked(repository.findById).mockResolvedValue(baseRequest);
+    vi.mocked(repository.resolvePendingAndArchive).mockResolvedValue({
+      ...baseRequest,
+      status: 'granted',
+    });
+
+    await service.markGrantedForRequest(
+      'admin-1',
+      'req-1',
+      ' GUEST@PARTNER.COM ',
+      transaction
+    );
+
+    expect(repository.findById).toHaveBeenCalledWith('req-1', transaction);
+    expect(repository.resolvePendingAndArchive).toHaveBeenCalledWith(
+      {
+        id: 'req-1',
+        status: 'granted',
+        actorId: 'admin-1',
+      },
+      transaction
+    );
+  });
+
+  it('rejects an already resolved request', async () => {
+    vi.mocked(repository.findById).mockResolvedValue({
+      ...baseRequest,
+      status: 'denied',
+    });
+
+    await expect(
+      service.markGrantedForRequest('admin-1', 'req-1', 'guest@partner.com')
+    ).rejects.toThrow('This access request is already resolved.');
+
+    expect(repository.resolvePendingAndArchive).not.toHaveBeenCalled();
+  });
+
+  it('rejects when a concurrent resolver wins the conditional update', async () => {
+    vi.mocked(repository.findById).mockResolvedValue(baseRequest);
+    vi.mocked(repository.resolvePendingAndArchive).mockResolvedValue(null);
+
+    await expect(
+      service.markGrantedForRequest('admin-1', 'req-1', 'guest@partner.com')
+    ).rejects.toThrow('This access request is already resolved.');
+  });
+
+  it('rejects approval for a different requester email', async () => {
+    vi.mocked(repository.findById).mockResolvedValue(baseRequest);
+
+    await expect(
+      service.markGrantedForRequest('admin-1', 'req-1', 'other@partner.com')
+    ).rejects.toThrow('Access request does not match the allowlist email.');
+
+    expect(repository.resolvePendingAndArchive).not.toHaveBeenCalled();
   });
 });

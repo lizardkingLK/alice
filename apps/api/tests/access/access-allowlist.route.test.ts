@@ -98,3 +98,41 @@ describe('access-allowlist GET /', () => {
     expect(listAccessAllowlistPaginatedMock).not.toHaveBeenCalled();
   });
 });
+
+describe('access-allowlist POST /', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('passes an access request id into email approval', async () => {
+    const entry = {
+      id: 'allow-1',
+      kind: 'email',
+      value: 'guest@partner.com',
+      status: 'active',
+    };
+    createMock.mockResolvedValue(entry);
+
+    await withAllowlistRouter(async (baseUrl) => {
+      const { response, body } = await requestAllowlist(baseUrl, '', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          kind: 'email',
+          value: ' Guest@Partner.com ',
+          requestId: '019a31d2-a14a-7677-88a5-f82fc71fd5d7',
+        }),
+      });
+
+      expect(response.status).toBe(201);
+      expect(body).toEqual({ entry });
+    });
+
+    expect(createMock).toHaveBeenCalledWith(MOCK_AUTH_USER_ID, {
+      kind: 'email',
+      value: 'guest@partner.com',
+      requestId: '019a31d2-a14a-7677-88a5-f82fc71fd5d7',
+      allowed_project_ids: null,
+    });
+  });
+});

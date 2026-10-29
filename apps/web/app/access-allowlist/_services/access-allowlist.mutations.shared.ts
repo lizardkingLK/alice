@@ -14,6 +14,7 @@ export type AccessAllowlistCreateInput = {
   expires_at?: string | null;
   allowed_project_ids?: string[] | null;
   status?: AccessAllowlistStatus;
+  requestId?: string;
 };
 
 export type AccessAllowlistUpdateInput = {
