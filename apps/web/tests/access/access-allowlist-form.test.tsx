@@ -145,6 +145,7 @@ describe('AccessAllowlistForm', () => {
       <AccessAllowlistForm
         initialKind="email"
         initialValue="guest@partner.com"
+        requestId="019a31d2-a14a-7677-88a5-f82fc71fd5d7"
         projects={[...mockProjects]}
         onSuccess={onSuccess}
       />
@@ -161,6 +162,7 @@ describe('AccessAllowlistForm', () => {
         expires_at: null,
         allowed_project_ids: ['SG'],
         status: 'active',
+        requestId: '019a31d2-a14a-7677-88a5-f82fc71fd5d7',
       });
     });
     expect(
