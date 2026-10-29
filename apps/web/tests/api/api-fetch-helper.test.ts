@@ -105,4 +105,30 @@ describe('getResponse', () => {
         'State "todo" requires escalation — outbound edge must reference a resolution preset',
     });
   });
+
+  it('aborts a request when its configured timeout expires', async () => {
+    vi.stubEnv('INTERNAL_API_URL', 'http://api.test');
+    let requestSignal: AbortSignal | null | undefined;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+        requestSignal = init?.signal;
+        return new Promise<Response>((_resolve, reject) => {
+          requestSignal?.addEventListener(
+            'abort',
+            () => reject(requestSignal?.reason),
+            { once: true }
+          );
+        });
+      })
+    );
+
+    await expect(
+      getResponse('/api/v1/sprints/sprint-1/estimates', 'token', {
+        method: 'POST',
+        timeoutMs: 5,
+      })
+    ).rejects.toMatchObject({ name: 'BackendUnreachableError' });
+    expect(requestSignal?.aborted).toBe(true);
+  });
 });

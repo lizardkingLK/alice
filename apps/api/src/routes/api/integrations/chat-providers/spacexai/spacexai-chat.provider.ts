@@ -33,10 +33,12 @@ export class SpaceXAIChatProvider implements ChatModelProvider {
       modelId: input.model,
       messagesCount: input.contents.length,
       resolveUserFacingError: resolveSpaceXAIUserFacingError,
+      signal: input.signal,
       fetchOnce: () =>
         fetch(input.apiUrl, {
           method: 'POST',
           redirect: 'error',
+          ...(input.signal ? { signal: input.signal } : {}),
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${input.apiKey}`,
@@ -52,7 +54,8 @@ export class SpaceXAIChatProvider implements ChatModelProvider {
     return openAiChatCompletionResponseToChatLlmResponse(
       response,
       'SpaceXAI',
-      input.tools
+      input.tools,
+      input.signal
     );
   }
 }

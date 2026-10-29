@@ -7,6 +7,7 @@ import type {
   SprintsService,
   SprintBurndownService,
 } from '../../src/routes/api/sprints/sprints.service';
+import type { SprintEstimationService } from '../../src/routes/api/sprints/sprint-estimation.service';
 import { createSprintListRow } from '../factories/sprint.factory';
 import { SprintAccessError } from '../../src/routes/api/sprints/sprints.errors';
 import { DeleteSprintWorkItemsActionEnum } from '@repo/types';
@@ -48,6 +49,7 @@ const sprintsService = {
 } as unknown as SprintsService;
 
 const sprintBurndownService = {} as unknown as SprintBurndownService;
+const sprintEstimationService = {} as unknown as SprintEstimationService;
 
 async function withApp(run: (baseUrl: string) => Promise<void>): Promise<void> {
   const app = express();
@@ -55,7 +57,11 @@ async function withApp(run: (baseUrl: string) => Promise<void>): Promise<void> {
   app.use(express.json());
   app.use(
     '/api/sprints',
-    createSprintsRouter({ sprintsService, sprintBurndownService })
+    createSprintsRouter({
+      sprintsService,
+      sprintBurndownService,
+      sprintEstimationService,
+    })
   );
 
   const server: Server = await new Promise((resolve) => {

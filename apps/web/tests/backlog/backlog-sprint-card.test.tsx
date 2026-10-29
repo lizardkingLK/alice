@@ -44,10 +44,13 @@ function renderSprintCard(options?: {
   // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onEditSprint?: (sprint: Sprint) => void;
   // eslint-disable-next-line no-unused-vars -- callback signature
+  readonly onEstimateSprint?: (sprint: Sprint) => void;
+  // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onToggle?: (sprintId: string) => void;
 }) {
   const sprint = options?.sprint ?? sprintFactory.build();
   const onEditSprint = options?.onEditSprint ?? vi.fn();
+  const onEstimateSprint = options?.onEstimateSprint ?? vi.fn();
   const onToggle = options?.onToggle ?? vi.fn();
 
   const view = render(
@@ -64,6 +67,7 @@ function renderSprintCard(options?: {
       onToggle={onToggle}
       onCreateIssue={vi.fn()}
       onEditSprint={onEditSprint}
+      onEstimateSprint={onEstimateSprint}
       onStartSprint={vi.fn()}
       onCompleteSprint={vi.fn()}
       onSelectItem={vi.fn()}
@@ -74,10 +78,29 @@ function renderSprintCard(options?: {
     />
   );
 
-  return { ...view, sprint, onEditSprint, onToggle };
+  return { ...view, sprint, onEditSprint, onEstimateSprint, onToggle };
 }
 
 describe('BacklogSprintCard sprint actions', () => {
+  it.each(['planned', 'active', 'closed'] as const)(
+    'offers estimation for manager/admin %s sprints',
+    (status) => {
+      renderSprintCard({ sprint: sprintFactory.build({ status }) });
+
+      expect(
+        screen.getByRole('button', { name: 'Estimate with AI' })
+      ).toBeInTheDocument();
+    }
+  );
+
+  it('shows Estimate with AI to managers and admins and passes the sprint', () => {
+    const { sprint, onEstimateSprint } = renderSprintCard();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Estimate with AI' }));
+
+    expect(onEstimateSprint).toHaveBeenCalledWith(sprint);
+  });
+
   it('shows Edit Sprint to managers and admins and passes the selected sprint', () => {
     const { sprint, onEditSprint } = renderSprintCard();
 
@@ -99,12 +122,16 @@ describe('BacklogSprintCard sprint actions', () => {
     expect(
       screen.queryByRole('button', { name: 'Edit Sprint' })
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Estimate with AI' })
+    ).not.toBeInTheDocument();
   });
 
   it('does not collapse the sprint when opening the menu or selecting Edit', () => {
     const { onToggle } = renderSprintCard();
 
     fireEvent.click(screen.getByRole('button', { name: 'Open Actions Menu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Estimate with AI' }));
     fireEvent.click(screen.getByRole('button', { name: 'Edit Sprint' }));
 
     expect(onToggle).not.toHaveBeenCalled();
@@ -135,6 +162,7 @@ describe('BacklogSprintCard sprint actions', () => {
         onToggle={vi.fn()}
         onCreateIssue={vi.fn()}
         onEditSprint={vi.fn()}
+        onEstimateSprint={vi.fn()}
         onStartSprint={vi.fn()}
         onCompleteSprint={vi.fn()}
         onSelectItem={vi.fn()}

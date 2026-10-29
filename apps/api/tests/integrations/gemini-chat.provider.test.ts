@@ -2,10 +2,39 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ChatProviderError } from '../../src/routes/api/integrations/chat-providers/chat-provider.error';
 import { GEMINI_API_KEY_REJECTED_MESSAGE } from '../../src/routes/api/integrations/chat-providers/gemini/alice-chatbot-errors';
 import { GeminiChatProvider } from '../../src/routes/api/integrations/chat-providers/gemini/gemini-chat.provider';
+import type { ChatModelGenerateInput } from '../../src/routes/api/integrations/chat-providers/chat-provider.types';
+
+const baseInput: ChatModelGenerateInput = {
+  apiKey: 'gemini-test-key',
+  apiUrl:
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
+  model: 'gemini-3.6-flash',
+  contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
+  systemInstruction: 'You are Alice.',
+  tools: [],
+};
+
+function geminiResponse(text: string): Response {
+  return new Response(
+    JSON.stringify({
+      candidates: [
+        {
+          content: {
+            role: 'model',
+            parts: [{ text }],
+          },
+        },
+      ],
+    }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } }
+  );
+}
 
 describe('GeminiChatProvider', () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it('sends Gemini history, system instructions, and tools and returns text', async () => {
@@ -77,6 +106,107 @@ describe('GeminiChatProvider', () => {
         },
       ],
     });
+  });
+
+  it('does not fetch when the supplied signal is already aborted', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      new GeminiChatProvider().generateWithTools({
+        ...baseInput,
+        signal: controller.signal,
+      })
+    ).rejects.toMatchObject({ name: 'AbortError' });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('forwards cancellation to the active fetch without retrying', async () => {
+    const controller = new AbortController();
+    const fetchMock = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(init.signal?.reason),
+            { once: true }
+          );
+        })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const promise = new GeminiChatProvider().generateWithTools({
+      ...baseInput,
+      signal: controller.signal,
+    });
+    const expectation = expect(promise).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    expect(fetchMock.mock.calls[0]?.[1]?.signal).toBe(controller.signal);
+    controller.abort();
+    await expectation;
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('cancels retry backoff without starting another fetch', async () => {
+    vi.useFakeTimers();
+    const controller = new AbortController();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('busy', { status: 503 }))
+      .mockResolvedValueOnce(geminiResponse('unused'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const promise = new GeminiChatProvider().generateWithTools({
+      ...baseInput,
+      signal: controller.signal,
+    });
+    const expectation = expect(promise).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    controller.abort();
+    await vi.runAllTimersAsync();
+    await expectation;
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('preserves cancellation while reading the response body', async () => {
+    const controller = new AbortController();
+    const response = geminiResponse('unused');
+    let resolveJson!: (value: unknown) => void;
+    const jsonPromise = new Promise<unknown>((resolve) => {
+      resolveJson = resolve;
+    });
+    const jsonSpy = vi
+      .spyOn(response, 'json')
+      .mockImplementation(() => jsonPromise);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response)
+    );
+
+    const promise = new GeminiChatProvider().generateWithTools({
+      ...baseInput,
+      signal: controller.signal,
+    });
+    const expectation = expect(promise).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+
+    await vi.waitFor(() => expect(jsonSpy).toHaveBeenCalledOnce());
+    controller.abort();
+    resolveJson({ candidates: [] });
+    await expectation;
   });
 
   it('throws ChatProviderError when Google reports a retired model', async () => {

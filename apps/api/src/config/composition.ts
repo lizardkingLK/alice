@@ -12,6 +12,9 @@ import {
   SprintBurndownService,
 } from '../routes/api/sprints/sprints.service';
 import { createSprintsRouter } from '../routes/api/sprints/sprints.route';
+import { SprintEstimationRepository } from '../routes/api/sprints/sprint-estimation.repository';
+import { SprintEstimationAiService } from '../routes/api/sprints/sprint-estimation.ai.service';
+import { SprintEstimationService } from '../routes/api/sprints/sprint-estimation.service';
 import { ChatRepository } from '../routes/api/chat/chat.repository';
 import { ChatAttachmentsRepository } from '../routes/api/chat/chat-attachments.repository';
 import { WorkItemDeduplicationAgent } from '../routes/api/chat/work-item-deduplication.agent';
@@ -239,9 +242,18 @@ function createWorkItemsConfig(
   };
 }
 
-function createSprintsConfig() {
+function createSprintsConfig(integrationsService: IntegrationsService) {
   const sprintsRepository = new SprintsRepository(supabase);
   const sprintBurndownRepository = new SprintBurndownRepository(supabase);
+  const sprintEstimationRepository = new SprintEstimationRepository();
+  const sprintEstimationAiService = new SprintEstimationAiService(
+    integrationsService
+  );
+  const sprintEstimationService = new SprintEstimationService(
+    sprintsRepository,
+    sprintEstimationRepository,
+    sprintEstimationAiService
+  );
   const sprintsService = new SprintsService(sprintsRepository);
   const sprintBurndownService = new SprintBurndownService(
     sprintBurndownRepository
@@ -249,6 +261,7 @@ function createSprintsConfig() {
   const router = createSprintsRouter({
     sprintsService,
     sprintBurndownService,
+    sprintEstimationService,
   });
 
   return {
@@ -256,6 +269,9 @@ function createSprintsConfig() {
     sprintBurndownRepository,
     sprintsService,
     sprintBurndownService,
+    sprintEstimationRepository,
+    sprintEstimationAiService,
+    sprintEstimationService,
     router,
   };
 }
@@ -462,7 +478,8 @@ export const comments = createCommentsConfig(
   notifications.notificationsService
 );
 export const worklogs = createWorklogsConfig(workItems.workItemRepository);
-export const sprints = createSprintsConfig();
+export const integrations = createIntegrationsConfig();
+export const sprints = createSprintsConfig(integrations.integrationsService);
 export const jira = createJiraConfig();
 export const projects = createProjectsConfig(
   workItems.workItemService,
@@ -490,7 +507,6 @@ export const savedViews = createSavedViewsConfig(
   charts.chartsRepository
 );
 
-export const integrations = createIntegrationsConfig();
 export const pusher = createPusherConfig(users.usersRepository);
 function createReportsConfig(integrationsService: IntegrationsService) {
   const reportsRepository = new ReportsRepository(supabase);

@@ -28,10 +28,12 @@ export class GeminiChatProvider implements ChatModelProvider {
       modelId: input.model,
       messagesCount: input.contents.length,
       resolveUserFacingError: resolveGeminiUserFacingError,
+      signal: input.signal,
       fetchOnce: () =>
         fetch(url, {
           method: 'POST',
           redirect: 'error',
+          ...(input.signal ? { signal: input.signal } : {}),
           headers: {
             'Content-Type': 'application/json',
           },
@@ -46,6 +48,14 @@ export class GeminiChatProvider implements ChatModelProvider {
     });
 
     // Gemini wire response matches ChatLlmResponse structurally.
-    return response.json() as Promise<ChatLlmResponse>;
+    let payload: unknown;
+    try {
+      payload = await response.json();
+    } catch (error: unknown) {
+      input.signal?.throwIfAborted();
+      throw error;
+    }
+    input.signal?.throwIfAborted();
+    return payload as ChatLlmResponse;
   }
 }

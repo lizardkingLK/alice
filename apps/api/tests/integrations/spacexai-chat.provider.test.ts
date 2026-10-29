@@ -1,9 +1,28 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SpaceXAIChatProvider } from '../../src/routes/api/integrations/chat-providers/spacexai/spacexai-chat.provider';
+import type { ChatModelGenerateInput } from '../../src/routes/api/integrations/chat-providers/chat-provider.types';
+
+const baseInput: ChatModelGenerateInput = {
+  apiKey: 'xai-test-key',
+  apiUrl: 'https://api.x.ai/v1/chat/completions',
+  model: 'grok-4.3',
+  contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
+  systemInstruction: 'You are Alice.',
+  tools: [],
+};
+
+function completionResponse(content: string): Response {
+  return new Response(JSON.stringify({ choices: [{ message: { content } }] }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
 
 describe('SpaceXAIChatProvider', () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it('sends authenticated OpenAI-compatible history and tools and returns text', async () => {
@@ -69,6 +88,107 @@ describe('SpaceXAIChatProvider', () => {
       ],
     });
     expect(String(init?.body)).not.toContain('xai-test-key');
+  });
+
+  it('does not fetch when the supplied signal is already aborted', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      new SpaceXAIChatProvider().generateWithTools({
+        ...baseInput,
+        signal: controller.signal,
+      })
+    ).rejects.toMatchObject({ name: 'AbortError' });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('forwards cancellation to the active fetch without retrying', async () => {
+    const controller = new AbortController();
+    const fetchMock = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(init.signal?.reason),
+            { once: true }
+          );
+        })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const promise = new SpaceXAIChatProvider().generateWithTools({
+      ...baseInput,
+      signal: controller.signal,
+    });
+    const expectation = expect(promise).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    expect(fetchMock.mock.calls[0]?.[1]?.signal).toBe(controller.signal);
+    controller.abort();
+    await expectation;
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('cancels retry backoff without starting another fetch', async () => {
+    vi.useFakeTimers();
+    const controller = new AbortController();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('busy', { status: 503 }))
+      .mockResolvedValueOnce(completionResponse('unused'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const promise = new SpaceXAIChatProvider().generateWithTools({
+      ...baseInput,
+      signal: controller.signal,
+    });
+    const expectation = expect(promise).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    controller.abort();
+    await vi.runAllTimersAsync();
+    await expectation;
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('preserves cancellation while reading the response body', async () => {
+    const controller = new AbortController();
+    const response = completionResponse('unused');
+    let resolveJson!: (value: unknown) => void;
+    const jsonPromise = new Promise<unknown>((resolve) => {
+      resolveJson = resolve;
+    });
+    const jsonSpy = vi
+      .spyOn(response, 'json')
+      .mockImplementation(() => jsonPromise);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response)
+    );
+
+    const promise = new SpaceXAIChatProvider().generateWithTools({
+      ...baseInput,
+      signal: controller.signal,
+    });
+    const expectation = expect(promise).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+
+    await vi.waitFor(() => expect(jsonSpy).toHaveBeenCalledOnce());
+    controller.abort();
+    resolveJson({ choices: [{ message: { content: 'unused' } }] });
+    await expectation;
   });
 
   it('does not follow redirects that could forward the authorization header', async () => {
