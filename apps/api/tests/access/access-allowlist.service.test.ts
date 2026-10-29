@@ -5,19 +5,25 @@ import { EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE } from '@repo/types';
 
 const {
   createMock,
+  withTransactionMock,
   updateMock,
   findByIdMock,
   hardDeleteMock,
   findActiveDomainByValueMock,
   notifyMock,
+  markGrantedForRequestMock,
+  markGrantedForEmailMock,
   selectSingleMock,
 } = vi.hoisted(() => ({
   createMock: vi.fn(),
+  withTransactionMock: vi.fn(),
   updateMock: vi.fn(),
   findByIdMock: vi.fn(),
   hardDeleteMock: vi.fn(),
   findActiveDomainByValueMock: vi.fn(),
   notifyMock: vi.fn(),
+  markGrantedForRequestMock: vi.fn(),
+  markGrantedForEmailMock: vi.fn(),
   selectSingleMock: vi.fn(),
 }));
 
@@ -42,6 +48,7 @@ vi.mock(
 
 const repository = {
   create: createMock,
+  withTransaction: withTransactionMock,
   update: updateMock,
   findById: findByIdMock,
   hardDelete: hardDeleteMock,
@@ -49,7 +56,8 @@ const repository = {
 } as unknown as AccessAllowlistRepository;
 
 const accessRequestsService = {
-  markGrantedForEmail: vi.fn(),
+  markGrantedForRequest: markGrantedForRequestMock,
+  markGrantedForEmail: markGrantedForEmailMock,
 } as never;
 
 const emailEntry = {
@@ -77,17 +85,89 @@ describe('AccessAllowlistService admission email', () => {
       error: null,
     });
     notifyMock.mockResolvedValue(undefined);
+    markGrantedForRequestMock.mockResolvedValue(undefined);
+    markGrantedForEmailMock.mockResolvedValue(undefined);
+    withTransactionMock.mockImplementation(
+      async (operation: (transaction: object) => Promise<unknown>) =>
+        operation({})
+    );
   });
 
-  it('emails an active email row after create', async () => {
+  it('persists an access-request approval before emailing', async () => {
     createMock.mockResolvedValue(emailEntry);
 
     await service.createAccessAllowlist('admin-1', {
       kind: 'email',
       value: 'client@partner.com',
+      requestId: '019a31d2-a14a-7677-88a5-f82fc71fd5d7',
     });
 
+    expect(withTransactionMock).toHaveBeenCalledOnce();
+    expect(markGrantedForRequestMock).toHaveBeenCalledWith(
+      'admin-1',
+      '019a31d2-a14a-7677-88a5-f82fc71fd5d7',
+      'client@partner.com',
+      expect.any(Object)
+    );
+    expect(markGrantedForRequestMock.mock.invocationCallOrder[0]).toBeLessThan(
+      notifyMock.mock.invocationCallOrder[0]!
+    );
     expect(notifyMock).toHaveBeenCalledWith('client@partner.com');
+  });
+
+  it('does not grant or email an inactive email entry', async () => {
+    createMock.mockResolvedValue({ ...emailEntry, status: 'inactive' });
+
+    await service.createAccessAllowlist('admin-1', {
+      kind: 'email',
+      value: 'client@partner.com',
+      status: 'inactive',
+      requestId: '019a31d2-a14a-7677-88a5-f82fc71fd5d7',
+    });
+
+    expect(markGrantedForRequestMock).not.toHaveBeenCalled();
+    expect(markGrantedForEmailMock).not.toHaveBeenCalled();
+    expect(notifyMock).not.toHaveBeenCalled();
+  });
+
+  it('does not email when approval persistence fails', async () => {
+    createMock.mockResolvedValue(emailEntry);
+    markGrantedForRequestMock.mockRejectedValue(
+      new Error('This access request is already resolved.')
+    );
+
+    await expect(
+      service.createAccessAllowlist('admin-1', {
+        kind: 'email',
+        value: 'client@partner.com',
+        requestId: '019a31d2-a14a-7677-88a5-f82fc71fd5d7',
+      })
+    ).rejects.toThrow('This access request is already resolved.');
+
+    expect(notifyMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps a successful approval when email delivery fails', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    createMock.mockResolvedValue(emailEntry);
+    notifyMock.mockRejectedValue(new Error('Supabase email unavailable'));
+
+    await expect(
+      service.createAccessAllowlist('admin-1', {
+        kind: 'email',
+        value: 'client@partner.com',
+        requestId: '019a31d2-a14a-7677-88a5-f82fc71fd5d7',
+      })
+    ).resolves.toEqual(emailEntry);
+
+    expect(markGrantedForRequestMock).toHaveBeenCalledOnce();
+    expect(consoleError).toHaveBeenCalledWith(
+      'error. allowlist admission email failed:',
+      'Supabase email unavailable'
+    );
+    consoleError.mockRestore();
   });
 
   it('rejects email create when the domain is already allowlisted', async () => {
@@ -123,7 +203,7 @@ describe('AccessAllowlistService admission email', () => {
     expect(notifyMock).not.toHaveBeenCalled();
   });
 
-  it('emails when an email row is reactivated', async () => {
+  it('persists reactivation and request approval before emailing', async () => {
     findByIdMock.mockResolvedValue({ ...emailEntry, status: 'inactive' });
     updateMock.mockResolvedValue(emailEntry);
 
@@ -132,6 +212,15 @@ describe('AccessAllowlistService admission email', () => {
       expectedUpdatedAt: emailEntry.updated_at,
     });
 
+    expect(withTransactionMock).toHaveBeenCalledOnce();
+    expect(markGrantedForEmailMock).toHaveBeenCalledWith(
+      'admin-1',
+      'client@partner.com',
+      expect.any(Object)
+    );
+    expect(markGrantedForEmailMock.mock.invocationCallOrder[0]).toBeLessThan(
+      notifyMock.mock.invocationCallOrder[0]!
+    );
     expect(notifyMock).toHaveBeenCalledWith('client@partner.com');
   });
 

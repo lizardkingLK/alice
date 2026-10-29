@@ -518,6 +518,7 @@ export function AccessRequestsRegistry({
           </DialogDescription>
           <AccessAllowlistForm
             projects={projects}
+            requestId={activeRequest?.id}
             onClose={handleCloseAllow}
             onSuccess={handleAllowSuccess}
             initialKind="email"
