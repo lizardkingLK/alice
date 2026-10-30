@@ -199,6 +199,30 @@ describe('ProjectsRepository Prisma reads', () => {
     });
   });
 
+  it('atomically inserts a member while ignoring a concurrent duplicate', async () => {
+    memberCreateManyMock.mockResolvedValueOnce({ count: 1 });
+
+    await expect(
+      repository.addMember('project-1', 'user-1', 'actor-1')
+    ).resolves.toBe(true);
+    expect(memberCreateManyMock).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          project_id: 'project-1',
+          user_id: 'user-1',
+          created_by: 'actor-1',
+          updated_by: 'actor-1',
+        }),
+      ],
+      skipDuplicates: true,
+    });
+
+    memberCreateManyMock.mockResolvedValueOnce({ count: 0 });
+    await expect(
+      repository.addMember('project-1', 'user-1', 'actor-1')
+    ).resolves.toBe(false);
+  });
+
   it('persists workflow config through the optimistic project update', async () => {
     updateManyMock.mockResolvedValue({ count: 1 });
     const expectedUpdatedAt = '2026-08-25T12:00:00.000Z';

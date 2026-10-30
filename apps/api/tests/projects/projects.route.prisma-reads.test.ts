@@ -31,11 +31,13 @@ const {
   getProjectDetailMock,
   listProjectMembersPrismaMock,
   enqueueCreateProjectMock,
+  addMemberMock,
 } = vi.hoisted(() => ({
   listProjectsPaginatedMock: vi.fn(),
   getProjectDetailMock: vi.fn(),
   listProjectMembersPrismaMock: vi.fn(),
   enqueueCreateProjectMock: vi.fn(),
+  addMemberMock: vi.fn(),
 }));
 
 vi.mock('../../src/middlewares/auth', () => ({
@@ -54,6 +56,7 @@ const projectsService = {
   getProjectDetail: getProjectDetailMock,
   listProjectMembersPrisma: listProjectMembersPrismaMock,
   enqueueCreateProject: enqueueCreateProjectMock,
+  addMember: addMemberMock,
 } as unknown as ProjectsService;
 
 const workItemService = {
@@ -68,10 +71,13 @@ async function withApp(run: (baseUrl: string) => Promise<void>): Promise<void> {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json());
-  app.use(
-    '/api/projects',
-    createProjectsRouter({ projectsService, workItemService, jiraService })
-  );
+  const router = createProjectsRouter({
+    projectsService,
+    workItemService,
+    jiraService,
+  });
+  app.use('/api/projects', router);
+  app.use('/api/v1/projects', router);
 
   const server: Server = await new Promise((resolve) => {
     const next = app.listen(0, '127.0.0.1', () => resolve(next));
@@ -220,6 +226,35 @@ describe('projects unused Prisma GET routes', () => {
       );
     });
   });
+
+  it.each(['/api/projects', '/api/v1/projects'])(
+    'preserves the member-add contract at %s',
+    async (mountPath) => {
+      addMemberMock.mockResolvedValue(undefined);
+
+      await withApp(async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}${mountPath}/33333333-3333-4333-8333-333333333333/members`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: '44444444-4444-4444-8444-444444444444',
+            }),
+          }
+        );
+
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toEqual({ success: true });
+      });
+
+      expect(addMemberMock).toHaveBeenCalledWith(
+        '11111111-1111-4111-8111-111111111111',
+        '33333333-3333-4333-8333-333333333333',
+        '44444444-4444-4444-8444-444444444444'
+      );
+    }
+  );
 
   it('passes nested sprint configuration to project creation', async () => {
     enqueueCreateProjectMock.mockResolvedValue({
