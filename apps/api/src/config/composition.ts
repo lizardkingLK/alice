@@ -303,9 +303,13 @@ function createGithubConfig() {
 function createProjectsConfig(
   workItemService: WorkItemService,
   jiraService: JiraService,
-  projectsRepository: ProjectsRepository
+  projectsRepository: ProjectsRepository,
+  usersRepository: UsersRepository
 ) {
-  const projectsService = new ProjectsService(projectsRepository);
+  const projectsService = new ProjectsService(
+    projectsRepository,
+    usersRepository
+  );
   const router = createProjectsRouter({
     projectsService,
     workItemService,
@@ -484,7 +488,8 @@ export const jira = createJiraConfig();
 export const projects = createProjectsConfig(
   workItems.workItemService,
   jira.jiraService,
-  sharedProjectsRepository
+  sharedProjectsRepository,
+  sharedUsersRepository
 );
 export const users = createUsersConfig(sharedUsersRepository);
 export const teams = createTeamsConfig();

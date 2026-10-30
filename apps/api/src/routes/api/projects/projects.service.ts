@@ -48,8 +48,15 @@ import {
 import { randomUUID } from 'node:crypto';
 import { withBusyRetry } from '@repo/db';
 import { prisma } from '../../../lib/prisma';
+import { env } from '../../../config/env';
 import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
 import type { ProjectsRepository } from './projects.repository';
+import type { UsersRepository } from '../users/users.repository';
+import {
+  boundaryOnlyProjectMemberEmailSender,
+  buildProjectMemberAddedEmail,
+  type ProjectMemberEmailSender,
+} from './project-member-email';
 import type {
   CreateProjectInput,
   ProjectMemberWithUser,
@@ -167,7 +174,11 @@ type ProjectImageUploadResult = {
 };
 
 export class ProjectsService {
-  constructor(private readonly projectsRepository: ProjectsRepository) {}
+  constructor(
+    private readonly projectsRepository: ProjectsRepository,
+    private readonly usersRepository?: Pick<UsersRepository, 'findById'>,
+    private readonly projectMemberEmailSender: ProjectMemberEmailSender = boundaryOnlyProjectMemberEmailSender
+  ) {}
 
   async listProjectsPaginated(
     query: ListProjectsQuery,
@@ -285,7 +296,42 @@ export class ProjectsService {
       throw new Error('User is already a member of this project.');
     }
 
-    await this.projectsRepository.addMember(projectId, userId, actorId);
+    if (!this.usersRepository) {
+      throw new Error('Project member notification is not configured.');
+    }
+
+    const [project, user] = await Promise.all([
+      this.projectsRepository.findById(projectId),
+      this.usersRepository.findById(userId),
+    ]);
+    if (!project) {
+      throw new Error('Project not found.');
+    }
+    if (!user) {
+      throw new Error('User not found.');
+    }
+
+    const inserted = await this.projectsRepository.addMember(
+      projectId,
+      userId,
+      actorId
+    );
+    if (!inserted) {
+      throw new Error('User is already a member of this project.');
+    }
+
+    try {
+      const email = buildProjectMemberAddedEmail({
+        recipientEmail: user.email,
+        recipientName: user.name,
+        projectId: project.id,
+        projectName: project.name,
+        frontendUrl: env.FRONTEND_URL,
+      });
+      await this.projectMemberEmailSender.send(email);
+    } catch {
+      console.error('error. project member email notification failed');
+    }
   }
 
   async removeMember(

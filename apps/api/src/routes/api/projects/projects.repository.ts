@@ -570,14 +570,18 @@ export class ProjectsRepository {
     projectId: string,
     userId: string,
     actorId: string
-  ): Promise<void> {
-    await prisma.project_members.create({
-      data: {
-        project_id: projectId,
-        user_id: userId,
-        ...prismaAuditCreate(actorId),
-      },
+  ): Promise<boolean> {
+    const result = await prisma.project_members.createMany({
+      data: [
+        {
+          project_id: projectId,
+          user_id: userId,
+          ...prismaAuditCreate(actorId),
+        },
+      ],
+      skipDuplicates: true,
     });
+    return result.count === 1;
   }
 
   /**
