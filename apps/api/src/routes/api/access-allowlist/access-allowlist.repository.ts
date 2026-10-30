@@ -31,8 +31,6 @@ import { SupabaseClient } from '@supabase/supabase-js';
 export type AccessAllowlistRow = Tables<'access_allowlist'>;
 export type AccessAllowlistKind = Tables<'access_allowlist'>['kind'];
 export type AccessAllowlistStatus = RecordStatus;
-export type AccessAllowlistTransaction = Prisma.TransactionClient;
-type AccessAllowlistDb = Pick<Prisma.TransactionClient, 'access_allowlist'>;
 
 export type AccessAllowlistPaginatedList = {
   items: AccessAllowlistRow[];
@@ -78,12 +76,6 @@ function toAccessAllowlistRow(row: {
 
 export class AccessAllowlistRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
-
-  async withTransaction<T>(
-    operation: (transaction: AccessAllowlistTransaction) => Promise<T>
-  ): Promise<T> {
-    return prisma.$transaction(operation);
-  }
 
   /**
    * Prisma-only list for Express GET (parity with RSC `listAccessAllowlist`).
@@ -150,12 +142,9 @@ export class AccessAllowlistRepository {
   }
 
   /** Post-mutation / optimistic-lock row via Prisma (no PostgREST hop). */
-  async getMutationRowById(
-    id: string,
-    transaction: AccessAllowlistDb = prisma
-  ): Promise<AccessAllowlistRow | null> {
+  async getMutationRowById(id: string): Promise<AccessAllowlistRow | null> {
     try {
-      const row = await transaction.access_allowlist.findUnique({
+      const row = await prisma.access_allowlist.findUnique({
         where: { id },
         select: accessAllowlistListSelect,
       });
@@ -196,18 +185,15 @@ export class AccessAllowlistRepository {
     return data as AccessAllowlistRow | null;
   }
 
-  async create(
-    params: {
-      actorId: string;
-      kind: AccessAllowlistKind;
-      value: string;
-      label?: string | null;
-      expires_at?: string | null;
-      allowed_project_ids?: string[] | null;
-      status: AccessAllowlistStatus;
-    },
-    transaction: AccessAllowlistDb = prisma
-  ): Promise<AccessAllowlistRow> {
+  async create(params: {
+    actorId: string;
+    kind: AccessAllowlistKind;
+    value: string;
+    label?: string | null;
+    expires_at?: string | null;
+    allowed_project_ids?: string[] | null;
+    status: AccessAllowlistStatus;
+  }): Promise<AccessAllowlistRow> {
     const { actorId, kind } = params;
     const normalizedValue = normalizeValue(kind, params.value);
 
@@ -224,7 +210,7 @@ export class AccessAllowlistRepository {
         : new Date(params.expires_at).toISOString();
 
     try {
-      const created = await transaction.access_allowlist.create({
+      const created = await prisma.access_allowlist.create({
         data: {
           kind,
           value: normalizedValue,
@@ -247,18 +233,15 @@ export class AccessAllowlistRepository {
     }
   }
 
-  async update(
-    params: {
-      actorId: string;
-      id: string;
-      label?: string | null;
-      expires_at?: string | null;
-      allowed_project_ids?: string[] | null;
-      status?: AccessAllowlistStatus;
-      expectedUpdatedAt: string;
-    },
-    transaction: AccessAllowlistDb = prisma
-  ): Promise<AccessAllowlistRow> {
+  async update(params: {
+    actorId: string;
+    id: string;
+    label?: string | null;
+    expires_at?: string | null;
+    allowed_project_ids?: string[] | null;
+    status?: AccessAllowlistStatus;
+    expectedUpdatedAt: string;
+  }): Promise<AccessAllowlistRow> {
     let expires_at: string | null | undefined = undefined;
     if (params.expires_at !== undefined) {
       if (params.expires_at == null || params.expires_at === '') {
@@ -272,7 +255,7 @@ export class AccessAllowlistRepository {
       }
     }
 
-    const { count } = await transaction.access_allowlist.updateMany({
+    const { count } = await prisma.access_allowlist.updateMany({
       where: {
         id: params.id,
         updated_at: prismaLockTimestamp(params.expectedUpdatedAt),
@@ -292,8 +275,8 @@ export class AccessAllowlistRepository {
 
     return resolveOptimisticPrismaUpdate({
       count,
-      fetchUpdated: () => this.getMutationRowById(params.id, transaction),
-      fetchCurrent: () => this.getMutationRowById(params.id, transaction),
+      fetchUpdated: () => this.getMutationRowById(params.id),
+      fetchCurrent: () => this.getMutationRowById(params.id),
       notFoundMessage: 'Access allowlist entry not found',
     });
   }

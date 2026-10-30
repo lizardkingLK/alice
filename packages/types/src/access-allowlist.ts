@@ -66,7 +66,6 @@ export const accessAllowlistCreateSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal(AccessAllowlistKind.email),
     value: accessAllowlistEmailValueSchema,
-    requestId: z.string().uuid().optional(),
     ...accessAllowlistMetaFields,
   }),
 ]);

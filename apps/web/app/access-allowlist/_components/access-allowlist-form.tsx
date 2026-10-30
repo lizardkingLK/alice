@@ -62,7 +62,6 @@ interface AccessAllowlistFormProps {
   readonly initialValue?: string;
   /** Prefill guest project ACL checkboxes (e.g. from an access request). */
   readonly initialProjectKeys?: readonly string[];
-  readonly requestId?: string;
   readonly className?: string;
 }
 
@@ -151,7 +150,6 @@ export function AccessAllowlistForm({
   initialKind,
   initialValue,
   initialProjectKeys,
-  requestId,
   className,
 }: Readonly<AccessAllowlistFormProps>) {
   const isEdit = Boolean(entry);
@@ -243,7 +241,6 @@ export function AccessAllowlistForm({
           expires_at: fromDateInputValue(expiresAt),
           allowed_project_ids: parsedAcl,
           status,
-          ...(requestId ? { requestId } : {}),
         });
         setMessage('Allowlist entry created.');
       }
