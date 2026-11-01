@@ -22,7 +22,9 @@ settings|Settings panel|Right-hand panel for the selected state or transition. D
 add-state-fab|Add state button|Floating plus on the canvas (bottom right) adds a new state and opens Settings. Same as Ctrl/Cmd+Alt+N.
 `;
 
-function parseLegendTable(table: string): readonly WorkflowDesignerLegendItem[] {
+function parseLegendTable(
+  table: string
+): readonly WorkflowDesignerLegendItem[] {
   return table
     .trim()
     .split('\n')

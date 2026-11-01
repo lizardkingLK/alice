@@ -26,12 +26,16 @@ coverage
 out/
 build
 dist
-
+*.log
 
 # Debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Generated in-app docs (source of truth: repo-root docs/)
+apps/web/content/docs/
+apps/web/content/docs-index.json
 
 # Misc
 .DS_Store
@@ -39,7 +43,4 @@ yarn-error.log*
 .vercel
 .pnpm-store
 *.txt
-
-# Generated in-app docs (source of truth: repo-root docs/)
-apps/web/content/docs/
-apps/web/content/docs-index.json
+.tmp
