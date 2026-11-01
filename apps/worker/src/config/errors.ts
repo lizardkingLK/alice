@@ -1,32 +1,8 @@
 import type { ErrorRequestHandler } from 'express';
+import { createErrorHandler } from '@repo/http-kit';
 
-const errorConfig: ErrorRequestHandler = (err, _req, res, _next) => {
-  if (res.headersSent) {
-    return;
-  }
-
-  const errAny = err as { status?: number; statusCode?: number; name?: string };
-  const status =
-    errAny.status ??
-    errAny.statusCode ??
-    (typeof res.statusCode === 'number' ? res.statusCode : undefined);
-
-  const message = err instanceof Error ? err.message : 'Request failed';
-
-  const isPayloadTooLarge =
-    status === 413 ||
-    errAny.name === 'PayloadTooLargeError' ||
-    /payload too large/i.test(message);
-
-  if (isPayloadTooLarge) {
-    res.status(413).json({ error: 'Payload too large' });
-    return;
-  }
-
-  console.error('error. worker server request failed:', message);
-  res
-    .status(typeof status === 'number' && status >= 400 ? status : 500)
-    .json({ error: message });
-};
+const errorConfig: ErrorRequestHandler = createErrorHandler({
+  logLabel: 'worker server request failed',
+});
 
 export default errorConfig;

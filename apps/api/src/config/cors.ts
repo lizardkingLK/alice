@@ -1,35 +1,9 @@
-import cors from 'cors';
+import type { RequestHandler } from 'express';
+import { createCorsConfig } from '@repo/http-kit';
 
-const configuredOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
+const { isAllowedCorsOrigin, corsMiddleware } = createCorsConfig();
 
-const allowedOrigins = new Set<string>([configuredOrigin]);
+const corsConfig: RequestHandler = corsMiddleware;
 
-function isLoopbackOrigin(origin: string): boolean {
-  try {
-    const url = new URL(origin);
-    return url.hostname === 'localhost' || url.hostname === '127.0.0.1';
-  } catch {
-    return false;
-  }
-}
-
-export function isAllowedCorsOrigin(origin: string | undefined): boolean {
-  if (!origin || allowedOrigins.has(origin)) {
-    return true;
-  }
-  // Browser may use 127.0.0.1 while FRONTEND_URL is localhost (or the reverse).
-  return isLoopbackOrigin(origin) && isLoopbackOrigin(configuredOrigin);
-}
-
-const corsConfig = cors({
-  origin: (origin, callback) => {
-    if (isAllowedCorsOrigin(origin)) {
-      callback(null, true);
-      return;
-    }
-    callback(new Error('error. blocked by CORS policy'));
-  },
-  optionsSuccessStatus: 200,
-});
-
+export { isAllowedCorsOrigin };
 export default corsConfig;
