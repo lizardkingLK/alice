@@ -27,7 +27,9 @@ import {
   type WorkflowEdge,
   type WorkflowResolutionPayload,
   type WorkflowStateNode,
-  CANONICAL_HIERARCHY_ORDER,
+  normalizeProjectWorkItemTypeDefs,
+  resolveProjectTypeKeys,
+  type ProjectWorkItemTypeDef,
   type ProjectWorkflowConfig,
   paginationMeta,
   type ListWorkItemsQuery,
@@ -211,7 +213,7 @@ export class WorkItemService {
   ): Promise<DbWorkItem> {
     await this.workItems.assertCanAccessProject(userId, input.project_id);
 
-    const { allowedTypes, hierarchy, workflowConfig } =
+    const { allowedTypes, hierarchy, typeDefs, workflowConfig } =
       await this.getProjectAllowedTypes(input.project_id);
     if (!allowedTypes.includes(input.type)) {
       throw new WorkItemValidationError(
@@ -225,6 +227,7 @@ export class WorkItemService {
       childType: input.type,
       allowedTypes,
       hierarchy,
+      typeDefs,
     });
 
     const createInput = await this.applySprintInheritanceForCreate(input);
@@ -324,8 +327,13 @@ export class WorkItemService {
 
     const current = await this.workItems.getById(workItemId);
 
-    const { allowedTypes, hierarchy, workflowConfig, workflowConfigError } =
-      await this.getProjectAllowedTypes(input.project_id);
+    const {
+      allowedTypes,
+      hierarchy,
+      typeDefs,
+      workflowConfig,
+      workflowConfigError,
+    } = await this.getProjectAllowedTypes(input.project_id);
     if (input.type && !allowedTypes.includes(input.type)) {
       throw new WorkItemValidationError(
         `Work item type "${input.type}" is not allowed in this project`
@@ -338,6 +346,7 @@ export class WorkItemService {
       input,
       allowedTypes,
       hierarchy,
+      typeDefs,
       detachChildren: options?.detachChildren === true,
     });
 
@@ -375,6 +384,7 @@ export class WorkItemService {
       workItemId,
       allowedTypes,
       hierarchy,
+      typeDefs,
     });
 
     nextInput = await this.applySprintHierarchyRules(current, nextInput);
@@ -736,9 +746,11 @@ export class WorkItemService {
     input: WorkItemUpdateBody;
     allowedTypes: readonly WorkItemType[];
     hierarchy?: Record<string, string | null> | null;
+    typeDefs?: readonly ProjectWorkItemTypeDef[] | null;
     detachChildren: boolean;
   }): Promise<WorkItemUpdateBody> {
-    const { workItemId, current, input, allowedTypes, hierarchy } = params;
+    const { workItemId, current, input, allowedTypes, hierarchy, typeDefs } =
+      params;
     const typeChanged =
       Boolean(input.type) && input.type !== (current.type as WorkItemType);
     if (!typeChanged) {
@@ -758,6 +770,7 @@ export class WorkItemService {
       input,
       allowedTypes,
       hierarchy,
+      typeDefs,
     });
   }
 
@@ -766,8 +779,9 @@ export class WorkItemService {
     input: WorkItemUpdateBody;
     allowedTypes: readonly WorkItemType[];
     hierarchy?: Record<string, string | null> | null;
+    typeDefs?: readonly ProjectWorkItemTypeDef[] | null;
   }): Promise<WorkItemUpdateBody> {
-    const { current, input, allowedTypes, hierarchy } = params;
+    const { current, input, allowedTypes, hierarchy, typeDefs } = params;
     const parentId =
       input.parent_id !== undefined ? input.parent_id : current.parent_id;
     if (!parentId) {
@@ -778,7 +792,8 @@ export class WorkItemService {
     const allowedParent = getAllowedParentType(
       input.type as WorkItemType,
       allowedTypes,
-      hierarchy
+      hierarchy,
+      typeDefs
     );
     if (
       !parent ||
@@ -796,8 +811,16 @@ export class WorkItemService {
     workItemId: string;
     allowedTypes: readonly WorkItemType[];
     hierarchy?: Record<string, string | null> | null;
+    typeDefs?: readonly ProjectWorkItemTypeDef[] | null;
   }): Promise<void> {
-    const { current, nextInput, workItemId, allowedTypes, hierarchy } = params;
+    const {
+      current,
+      nextInput,
+      workItemId,
+      allowedTypes,
+      hierarchy,
+      typeDefs,
+    } = params;
     const parentChanged = !sameNullable(nextInput.parent_id, current.parent_id);
     const typeChanged = Boolean(
       nextInput.type && nextInput.type !== current.type
@@ -816,6 +839,7 @@ export class WorkItemService {
       childId: workItemId,
       allowedTypes,
       hierarchy,
+      typeDefs,
     });
   }
 
@@ -1492,6 +1516,7 @@ export class WorkItemService {
   private async getProjectAllowedTypes(projectId: string): Promise<{
     allowedTypes: WorkItemType[];
     hierarchy?: Record<string, string | null> | null;
+    typeDefs: ProjectWorkItemTypeDef[];
     workflowConfig: unknown;
     workflowConfigError: unknown;
   }> {
@@ -1499,20 +1524,22 @@ export class WorkItemService {
       const rawConfig =
         await this.workItems.getProjectWorkflowConfig(projectId);
       const config = rawConfig as ProjectWorkflowConfig | null;
-      const allowedTypes =
-        config?.work_item_types && config.work_item_types.length > 0
-          ? config.work_item_types
-          : [...CANONICAL_HIERARCHY_ORDER];
+      const typeDefs = normalizeProjectWorkItemTypeDefs(
+        config?.work_item_types
+      );
       return {
-        allowedTypes,
+        allowedTypes: resolveProjectTypeKeys(typeDefs),
         hierarchy: config?.hierarchy,
+        typeDefs,
         workflowConfig: rawConfig,
         workflowConfigError: null,
       };
     } catch (error) {
+      const typeDefs = normalizeProjectWorkItemTypeDefs(null);
       return {
-        allowedTypes: [...CANONICAL_HIERARCHY_ORDER],
+        allowedTypes: resolveProjectTypeKeys(typeDefs),
         hierarchy: null,
+        typeDefs,
         workflowConfig: null,
         workflowConfigError: error,
       };
@@ -1526,6 +1553,7 @@ export class WorkItemService {
     childId?: string;
     allowedTypes?: readonly WorkItemType[] | null;
     hierarchy?: Record<string, string | null> | null;
+    typeDefs?: readonly ProjectWorkItemTypeDef[] | null;
   }): Promise<void> {
     const { parentId, projectId, childType, childId } = params;
 
@@ -1550,16 +1578,19 @@ export class WorkItemService {
 
     let allowedTypes = params.allowedTypes;
     let hierarchy = params.hierarchy;
-    if (!allowedTypes) {
+    let typeDefs = params.typeDefs;
+    if (!allowedTypes || !typeDefs) {
       const projectTypes = await this.getProjectAllowedTypes(projectId);
-      allowedTypes = projectTypes.allowedTypes;
-      hierarchy = projectTypes.hierarchy;
+      allowedTypes = allowedTypes ?? projectTypes.allowedTypes;
+      hierarchy = hierarchy ?? projectTypes.hierarchy;
+      typeDefs = typeDefs ?? projectTypes.typeDefs;
     }
 
     const allowedChildType = getAllowedChildType(
       parent.type as WorkItemType,
       allowedTypes,
-      hierarchy
+      hierarchy,
+      typeDefs
     );
     if (!allowedChildType) {
       throw new WorkItemValidationError(

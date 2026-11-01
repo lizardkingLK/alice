@@ -70,17 +70,6 @@ export const SprintStatus = {
 export type SprintStatus = (typeof SprintStatus)[keyof typeof SprintStatus]
 
 
-export const WorkItemType = {
-  Epic: 'Epic',
-  Feature: 'Feature',
-  Story: 'Story',
-  Task: 'Task',
-  Issue: 'Issue'
-} as const
-
-export type WorkItemType = (typeof WorkItemType)[keyof typeof WorkItemType]
-
-
 export const WorkItemStatus = {
   Draft: 'Draft',
   New: 'New',

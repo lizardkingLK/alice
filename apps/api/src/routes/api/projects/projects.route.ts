@@ -42,6 +42,10 @@ import {
   type JiraImportConfig,
   type WorkItemType,
   WorkItemTypeEnum,
+  buildDefaultProjectTypeDefs,
+  mapToProjectWorkItemTypeKey,
+  normalizeProjectWorkItemTypeDefs,
+  type ProjectWorkItemTypeDef,
   jiraIssueKeyFromPmExternal,
 } from '@repo/types';
 
@@ -348,9 +352,7 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         return raw
           .split(',')
           .map((part) => part.trim())
-          .filter((part): part is WorkItemType =>
-            (Object.values(WorkItemTypeEnum) as string[]).includes(part)
-          );
+          .filter((part) => part.length > 0);
       };
 
       const removedTypes = parseTypes(removeRaw);
@@ -450,8 +452,13 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
     issues: ParsedJiraIssue[];
     existingKeys: Set<string>;
     config?: JiraImportConfig;
+    typeDefs: readonly ProjectWorkItemTypeDef[];
   }): Promise<number> {
     const typeMappings = params.config?.typeMappings || {};
+    const fallbackKey = mapToProjectWorkItemTypeKey(
+      WorkItemTypeEnum.Issue,
+      params.typeDefs
+    );
 
     const toImport: { key: string; input: WorkItemBody }[] = [];
     for (const issue of params.issues) {
@@ -466,14 +473,26 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         continue;
       }
 
-      let resolvedType: WorkItemType = issue.type;
+      let resolvedType: WorkItemType = mapToProjectWorkItemTypeKey(
+        issue.type,
+        params.typeDefs,
+        fallbackKey
+      );
       if (mapping?.action === JiraImportActionEnum.Drop) {
-        resolvedType = WorkItemTypeEnum.Issue;
+        resolvedType = mapToProjectWorkItemTypeKey(
+          mapping.targetType ?? WorkItemTypeEnum.Issue,
+          params.typeDefs,
+          fallbackKey
+        );
       } else if (
         mapping?.action === JiraImportActionEnum.Map &&
         mapping.targetType
       ) {
-        resolvedType = mapping.targetType;
+        resolvedType = mapToProjectWorkItemTypeKey(
+          mapping.targetType,
+          params.typeDefs,
+          fallbackKey
+        );
       }
 
       toImport.push({
@@ -647,6 +666,18 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         const config = importConfig.success ? importConfig.data : undefined;
 
         const existingKeys = await loadExistingJiraKeys(id);
+        const projectBeforeImport = await projectsService.getProjectById(id);
+        const existingConfig = projectBeforeImport.workflow_config as Record<
+          string,
+          unknown
+        > | null;
+        let typeDefs = normalizeProjectWorkItemTypeDefs(
+          existingConfig?.work_item_types
+        );
+        if (config?.hierarchy && config.hierarchy.length > 0) {
+          typeDefs = buildDefaultProjectTypeDefs(config.hierarchy);
+        }
+
         const issues = await jiraService.fetchIssuesForProjectLink(
           req.userId!,
           link.connectionId,
@@ -659,17 +690,13 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
           issues,
           existingKeys,
           config,
+          typeDefs,
         });
 
         let customHierarchyMap: Record<string, string> | undefined;
         const activeTypes: WorkItemType[] | undefined = config?.hierarchy;
 
         if (config?.hierarchy && config.hierarchy.length > 0) {
-          const project = await projectsService.getProjectById(id);
-          const existingConfig = project.workflow_config as Record<
-            string,
-            unknown
-          > | null;
           customHierarchyMap = {};
           for (let i = 0; i < config.hierarchy.length - 1; i++) {
             customHierarchyMap[config.hierarchy[i]!] = config.hierarchy[i + 1]!;
@@ -680,11 +707,11 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
             {
               workflow_config: {
                 ...existingConfig,
-                work_item_types: config.hierarchy,
+                work_item_types: typeDefs,
                 hierarchy: customHierarchyMap,
               },
             },
-            project.updated_at
+            projectBeforeImport.updated_at
           );
         }
 
@@ -694,7 +721,8 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
             id,
             issues,
             customHierarchyMap,
-            activeTypes
+            activeTypes,
+            typeDefs
           );
         } catch (linkError) {
           console.error(

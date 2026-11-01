@@ -1,6 +1,7 @@
 # Project types
 
-Configure which work-item types are permitted in a project.
+Configure the project’s work-item **type catalog** (name, icon, description,
+hierarchy level) — including custom types beyond the create defaults.
 
 **Audience:** Managers and admins
 
@@ -16,14 +17,18 @@ Managers and admins who can access the project workspace see **Types**.
 **Members** do not see the Types, Workflow, Board, Fields, Teams, Sprints, or
 Integrations sidebar entries (deep links fall back to Details).
 
-On **Types**, permitted work-item types use a stacked list with confirmation
-before removing a previously saved type. When you save after removing types that
-still have work items (active or archived), a conflict dialog asks how to handle
-each type: **delete permanently** or **convert to** a remaining type. Parent
-links that would become invalid are detached first. Archive is not offered,
-because restoring would put a disallowed type back into the project.
+On **Types**, edit the catalog as a stacked list: add types, rename display
+names, set icons and descriptions, and reorder **levels** (one linear
+parent→child chain). Removing a saved type asks for confirmation. When you save
+after removing types that still have work items (active or archived), a conflict
+dialog asks how to handle each type: **delete permanently** or **convert to** a
+remaining type. Parent links that would become invalid are detached first.
+Archive is not offered, because restoring would put a removed type back into the
+project.
 
-Submit **Save Types** when finished.
+Submit **Save Types** when finished. See
+[Work-item types and hierarchy](./work-item-types-and-hierarchy.md) for hierarchy
+rules, forms, and Jira mapping.
 
 ---
 

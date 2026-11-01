@@ -365,13 +365,6 @@ export type EnumSprintStatusWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumSprintStatusFilter<$PrismaModel>
 }
 
-export type EnumWorkItemTypeFilter<$PrismaModel = never> = {
-  equals?: $Enums.WorkItemType | Prisma.EnumWorkItemTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.WorkItemType[] | Prisma.ListEnumWorkItemTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.WorkItemType[] | Prisma.ListEnumWorkItemTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumWorkItemTypeFilter<$PrismaModel> | $Enums.WorkItemType
-}
-
 export type EnumWorkItemPriorityFilter<$PrismaModel = never> = {
   equals?: $Enums.WorkItemPriority | Prisma.EnumWorkItemPriorityFieldRefInput<$PrismaModel>
   in?: $Enums.WorkItemPriority[] | Prisma.ListEnumWorkItemPriorityFieldRefInput<$PrismaModel>
@@ -408,16 +401,6 @@ export type EnumWorkItemStatusFilter<$PrismaModel = never> = {
   in?: $Enums.WorkItemStatus[] | Prisma.ListEnumWorkItemStatusFieldRefInput<$PrismaModel>
   notIn?: $Enums.WorkItemStatus[] | Prisma.ListEnumWorkItemStatusFieldRefInput<$PrismaModel>
   not?: Prisma.NestedEnumWorkItemStatusFilter<$PrismaModel> | $Enums.WorkItemStatus
-}
-
-export type EnumWorkItemTypeWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.WorkItemType | Prisma.EnumWorkItemTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.WorkItemType[] | Prisma.ListEnumWorkItemTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.WorkItemType[] | Prisma.ListEnumWorkItemTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumWorkItemTypeWithAggregatesFilter<$PrismaModel> | $Enums.WorkItemType
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumWorkItemTypeFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumWorkItemTypeFilter<$PrismaModel>
 }
 
 export type EnumWorkItemPriorityWithAggregatesFilter<$PrismaModel = never> = {
@@ -1119,13 +1102,6 @@ export type NestedEnumSprintStatusWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumSprintStatusFilter<$PrismaModel>
 }
 
-export type NestedEnumWorkItemTypeFilter<$PrismaModel = never> = {
-  equals?: $Enums.WorkItemType | Prisma.EnumWorkItemTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.WorkItemType[] | Prisma.ListEnumWorkItemTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.WorkItemType[] | Prisma.ListEnumWorkItemTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumWorkItemTypeFilter<$PrismaModel> | $Enums.WorkItemType
-}
-
 export type NestedEnumWorkItemPriorityFilter<$PrismaModel = never> = {
   equals?: $Enums.WorkItemPriority | Prisma.EnumWorkItemPriorityFieldRefInput<$PrismaModel>
   in?: $Enums.WorkItemPriority[] | Prisma.ListEnumWorkItemPriorityFieldRefInput<$PrismaModel>
@@ -1138,16 +1114,6 @@ export type NestedEnumWorkItemStatusFilter<$PrismaModel = never> = {
   in?: $Enums.WorkItemStatus[] | Prisma.ListEnumWorkItemStatusFieldRefInput<$PrismaModel>
   notIn?: $Enums.WorkItemStatus[] | Prisma.ListEnumWorkItemStatusFieldRefInput<$PrismaModel>
   not?: Prisma.NestedEnumWorkItemStatusFilter<$PrismaModel> | $Enums.WorkItemStatus
-}
-
-export type NestedEnumWorkItemTypeWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.WorkItemType | Prisma.EnumWorkItemTypeFieldRefInput<$PrismaModel>
-  in?: $Enums.WorkItemType[] | Prisma.ListEnumWorkItemTypeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.WorkItemType[] | Prisma.ListEnumWorkItemTypeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumWorkItemTypeWithAggregatesFilter<$PrismaModel> | $Enums.WorkItemType
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumWorkItemTypeFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumWorkItemTypeFilter<$PrismaModel>
 }
 
 export type NestedEnumWorkItemPriorityWithAggregatesFilter<$PrismaModel = never> = {

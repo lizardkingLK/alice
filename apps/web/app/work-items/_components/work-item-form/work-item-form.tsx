@@ -6,6 +6,8 @@ import {
   WORK_ITEM_TYPES,
   getAllowedParentType,
   parseWorkItemLabels,
+  normalizeProjectWorkItemTypeDefs,
+  resolveProjectTypeKeys,
   type WorkItemPriority,
   type WorkItemStatus,
   type WorkItemType,
@@ -156,7 +158,7 @@ function isWorkItemPriority(value: string): value is WorkItemPriority {
 }
 
 function isWorkItemType(value: string): value is WorkItemType {
-  return (WORK_ITEM_TYPES as readonly string[]).includes(value);
+  return value.trim().length > 0;
 }
 
 function keepOrClearParentId(
@@ -201,11 +203,9 @@ function resolveAvailableTypes(
   if (explicitAllowedTypes && explicitAllowedTypes.length > 0) {
     return explicitAllowedTypes;
   }
-  if (
-    projectConfig?.work_item_types &&
-    projectConfig.work_item_types.length > 0
-  ) {
-    return projectConfig.work_item_types;
+  const fromConfig = resolveProjectTypeKeys(projectConfig?.work_item_types);
+  if (fromConfig.length > 0) {
+    return fromConfig;
   }
   return taskTypes;
 }
@@ -214,12 +214,13 @@ function resolveAllowedParentType(
   type: string,
   parentLocked: boolean,
   availableTypes: readonly WorkItemType[],
-  hierarchy?: Record<string, string | null> | null
+  hierarchy?: Record<string, string | null> | null,
+  typeDefs?: ReturnType<typeof normalizeProjectWorkItemTypeDefs> | null
 ): WorkItemType | null {
   if (!isWorkItemType(type) || parentLocked) {
     return null;
   }
-  return getAllowedParentType(type, availableTypes, hierarchy);
+  return getAllowedParentType(type, availableTypes, hierarchy, typeDefs);
 }
 
 export function WorkItemForm({
@@ -347,7 +348,8 @@ export function WorkItemForm({
     type,
     parentLocked,
     availableTypes,
-    projectWorkflowConfig?.hierarchy
+    projectWorkflowConfig?.hierarchy,
+    normalizeProjectWorkItemTypeDefs(projectWorkflowConfig?.work_item_types)
   );
 
   const effectiveParentId = parentLocked

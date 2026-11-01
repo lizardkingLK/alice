@@ -13,7 +13,9 @@ import {
   type ProjectMemberRow,
   type WorkItemType,
   WorkItemTypeEnum,
+  buildDefaultProjectTypeDefs,
   resolveProjectHierarchy,
+  type ProjectWorkItemTypeDef,
   type ActorProjectsSummary,
   projectPmExternalFromJiraKey,
   jiraIssueKeyFromPmExternal,
@@ -34,11 +36,12 @@ import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import { listAccessibleProjectIds } from '../../../lib/project-access';
 import { insertSprint } from '../sprints/sprints.prisma';
 import type {
+  CreateProjectInput,
   ProjectMemberWithUser,
   ProjectRow,
   ProjectRowWithOwner,
   ProjectUpdateInput,
-  CreateProjectInput,
+  UpdateProjectInput,
 } from './projects.types';
 
 export type {
@@ -48,7 +51,7 @@ export type {
   ProjectRowWithOwner,
   ProjectUpdateInput,
   UpdateProjectInput,
-} from './projects.types';
+};
 
 export type ActiveProjectMember = {
   readonly id: string;
@@ -231,11 +234,13 @@ async function applyTypeRemovalActions(
 async function pruneInvalidHierarchyLinks(
   projectId: string,
   allowedTypes: WorkItemType[],
-  customHierarchy?: Record<string, string | null> | null
+  customHierarchy?: Record<string, string | null> | null,
+  typeDefs?: ProjectWorkItemTypeDef[] | null
 ): Promise<number> {
   const { parentToChild } = resolveProjectHierarchy(
     allowedTypes,
-    customHierarchy
+    customHierarchy,
+    typeDefs
   );
   const itemsWithParents = await prisma.work_items.findMany({
     where: {
@@ -798,7 +803,8 @@ export class ProjectsRepository {
     removedTypes: WorkItemType[],
     keptTypes: WorkItemType[],
     customHierarchy?: Record<string, string | null> | null,
-    previewLimitPerType = 100
+    previewLimitPerType = 100,
+    typeDefs?: ProjectWorkItemTypeDef[] | null
   ): Promise<{
     groups: Array<{
       type: WorkItemType;
@@ -821,9 +827,11 @@ export class ProjectsRepository {
       return { groups: [], totalAffected: 0 };
     }
 
+    const hierarchyTypes = [...keptTypes, ...removedTypes];
     const { parentToChild } = resolveProjectHierarchy(
-      [...keptTypes, ...removedTypes],
-      customHierarchy
+      hierarchyTypes,
+      customHierarchy,
+      typeDefs ?? buildDefaultProjectTypeDefs(hierarchyTypes)
     );
 
     const items = await prisma.work_items.findMany({
@@ -880,7 +888,8 @@ export class ProjectsRepository {
     projectId: string,
     allowedTypes: WorkItemType[],
     strategies: TypeRemovalStrategy[],
-    customHierarchy?: Record<string, string | null> | null
+    customHierarchy?: Record<string, string | null> | null,
+    typeDefs?: ProjectWorkItemTypeDef[] | null
   ): Promise<{
     detachedCount: number;
     deletedCount: number;
@@ -910,10 +919,12 @@ export class ProjectsRepository {
       affected
     );
 
+    const defs = typeDefs ?? buildDefaultProjectTypeDefs(allowedTypes);
     detachedCount += await pruneInvalidHierarchyLinks(
       projectId,
       allowedTypes,
-      customHierarchy
+      customHierarchy,
+      defs
     );
 
     return { detachedCount, deletedCount, migratedCount };
@@ -977,7 +988,8 @@ export class ProjectsRepository {
     projectId: string,
     issues: { key: string; parentKey?: string | null }[],
     hierarchy?: Record<string, string | null> | null,
-    allowedTypes?: WorkItemType[] | null
+    allowedTypes?: WorkItemType[] | null,
+    typeDefs?: ProjectWorkItemTypeDef[] | null
   ): Promise<void> {
     const allWorkItems = await prisma.work_items.findMany({
       where: { project_id: projectId },
@@ -992,7 +1004,16 @@ export class ProjectsRepository {
       }
     }
 
-    const { parentToChild } = resolveProjectHierarchy(allowedTypes, hierarchy);
+    const defs =
+      typeDefs ??
+      (allowedTypes && allowedTypes.length > 0
+        ? buildDefaultProjectTypeDefs(allowedTypes)
+        : null);
+    const { parentToChild } = resolveProjectHierarchy(
+      allowedTypes,
+      hierarchy,
+      defs
+    );
 
     const parentLinkUpdates: { childId: string; parentId: string }[] = [];
     for (const issue of issues) {

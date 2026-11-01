@@ -3242,20 +3242,6 @@ export type ListEnumSprintStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
 
 
 /**
- * Reference to a field of type 'WorkItemType'
- */
-export type EnumWorkItemTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WorkItemType'>
-    
-
-
-/**
- * Reference to a field of type 'WorkItemType[]'
- */
-export type ListEnumWorkItemTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WorkItemType[]'>
-    
-
-
-/**
  * Reference to a field of type 'WorkItemPriority'
  */
 export type EnumWorkItemPriorityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WorkItemPriority'>

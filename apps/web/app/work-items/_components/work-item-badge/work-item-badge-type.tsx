@@ -1,6 +1,6 @@
 import {
-  WORK_ITEM_TYPE_BADGE_STYLES,
-  WORK_ITEM_TYPE_ICONS,
+  workItemTypeBadgeStyle,
+  workItemTypeIcon,
 } from '@/app/work-items/_helpers/work-item-type';
 import type { WorkItemType } from '@repo/types';
 import { Badge } from '@repo/ui/components/ui/badge';
@@ -18,14 +18,14 @@ export function WorkItemTypeBadge({
   className,
   compact = false,
 }: WorkItemTypeBadgeProps) {
-  const Icon = type ? WORK_ITEM_TYPE_ICONS[type] : null;
+  const Icon = type ? workItemTypeIcon(type) : null;
 
   return (
     <Badge
       variant="outline"
       className={cn(
         'gap-1 font-medium',
-        type && WORK_ITEM_TYPE_BADGE_STYLES[type],
+        type && workItemTypeBadgeStyle(type),
         compact && 'h-4 border px-1.5 py-0 text-[9px] uppercase',
         className
       )}

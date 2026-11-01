@@ -1,4 +1,8 @@
-import type { WorkItemType } from '@repo/types';
+import {
+  WorkItemTypeEnum,
+  type SeedWorkItemTypeKey,
+  type WorkItemType,
+} from '@repo/types';
 import {
   Bookmark,
   CircleAlert,
@@ -8,7 +12,10 @@ import {
   type LucideIcon,
 } from '@repo/ui/lib/icons';
 
-export const WORK_ITEM_TYPE_BADGE_STYLES: Record<WorkItemType, string> = {
+type SeedStyleMap = Record<SeedWorkItemTypeKey, string>;
+type SeedIconMap = Record<SeedWorkItemTypeKey, LucideIcon>;
+
+export const WORK_ITEM_TYPE_BADGE_STYLES: SeedStyleMap = {
   Epic: 'border-work-item-epic/20 bg-work-item-epic/10 text-work-item-epic',
   Feature:
     'border-work-item-feature/20 bg-work-item-feature/10 text-work-item-feature',
@@ -18,7 +25,7 @@ export const WORK_ITEM_TYPE_BADGE_STYLES: Record<WorkItemType, string> = {
 };
 
 /** Soft gradient start for the details summary banner (type color mode). */
-export const WORK_ITEM_TYPE_TINT: Record<WorkItemType, string> = {
+export const WORK_ITEM_TYPE_TINT: SeedStyleMap = {
   Epic: 'from-work-item-epic/5',
   Feature: 'from-work-item-feature/5',
   Story: 'from-work-item-story/5',
@@ -26,7 +33,7 @@ export const WORK_ITEM_TYPE_TINT: Record<WorkItemType, string> = {
   Issue: 'from-work-item-issue/5',
 };
 
-export const WORK_ITEM_TYPE_BORDER: Record<WorkItemType, string> = {
+export const WORK_ITEM_TYPE_BORDER: SeedStyleMap = {
   Epic: 'border-work-item-epic/20',
   Feature: 'border-work-item-feature/20',
   Story: 'border-work-item-story/20',
@@ -34,7 +41,7 @@ export const WORK_ITEM_TYPE_BORDER: Record<WorkItemType, string> = {
   Issue: 'border-work-item-issue/20',
 };
 
-export const WORK_ITEM_TYPE_TEXT: Record<WorkItemType, string> = {
+export const WORK_ITEM_TYPE_TEXT: SeedStyleMap = {
   Epic: 'text-work-item-epic',
   Feature: 'text-work-item-feature',
   Story: 'text-work-item-story',
@@ -42,10 +49,39 @@ export const WORK_ITEM_TYPE_TEXT: Record<WorkItemType, string> = {
   Issue: 'text-work-item-issue',
 };
 
-export const WORK_ITEM_TYPE_ICONS: Record<WorkItemType, LucideIcon> = {
+export const WORK_ITEM_TYPE_ICONS: SeedIconMap = {
   Epic: Layers,
   Feature: Trophy,
   Story: Bookmark,
   Task: SquareCheck,
   Issue: CircleAlert,
 };
+
+const DEFAULT_SEED = WorkItemTypeEnum.Task;
+
+function asSeedKey(type: WorkItemType): SeedWorkItemTypeKey {
+  if (type in WORK_ITEM_TYPE_ICONS) {
+    return type as SeedWorkItemTypeKey;
+  }
+  return DEFAULT_SEED;
+}
+
+export function workItemTypeBadgeStyle(type: WorkItemType): string {
+  return WORK_ITEM_TYPE_BADGE_STYLES[asSeedKey(type)];
+}
+
+export function workItemTypeTint(type: WorkItemType): string {
+  return WORK_ITEM_TYPE_TINT[asSeedKey(type)];
+}
+
+export function workItemTypeBorder(type: WorkItemType): string {
+  return WORK_ITEM_TYPE_BORDER[asSeedKey(type)];
+}
+
+export function workItemTypeText(type: WorkItemType): string {
+  return WORK_ITEM_TYPE_TEXT[asSeedKey(type)];
+}
+
+export function workItemTypeIcon(type: WorkItemType): LucideIcon {
+  return WORK_ITEM_TYPE_ICONS[asSeedKey(type)];
+}

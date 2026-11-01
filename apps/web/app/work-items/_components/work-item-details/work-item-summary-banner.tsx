@@ -15,9 +15,9 @@ import type {
   WorkItemTitleIconSource,
 } from '@/app/work-items/_helpers/work-item-details-preferences';
 import {
-  WORK_ITEM_TYPE_BORDER,
-  WORK_ITEM_TYPE_ICONS,
-  WORK_ITEM_TYPE_TINT,
+  workItemTypeBorder,
+  workItemTypeIcon,
+  workItemTypeTint,
 } from '@/app/work-items/_helpers/work-item-type';
 import {
   resolveStatePresentation,
@@ -51,7 +51,7 @@ type TitleIconComponent = ComponentType<{
 }>;
 
 function isWorkItemType(value: string): value is WorkItemType {
-  return value in WORK_ITEM_TYPE_ICONS;
+  return value.trim().length > 0;
 }
 
 function resolveBannerSurfaceClasses(params: {
@@ -62,8 +62,8 @@ function resolveBannerSurfaceClasses(params: {
   const { bannerColor, workItemType, presentation } = params;
   if (bannerColor === 'type' && workItemType) {
     return {
-      borderClass: WORK_ITEM_TYPE_BORDER[workItemType],
-      tintClass: WORK_ITEM_TYPE_TINT[workItemType],
+      borderClass: workItemTypeBorder(workItemType),
+      tintClass: workItemTypeTint(workItemType),
     };
   }
   return {
@@ -116,7 +116,7 @@ export function WorkItemSummaryBanner({
     stateName: picker.currentLabel,
   });
   const workItemType = isWorkItemType(workItem.type) ? workItem.type : null;
-  const TypeIcon = workItemType ? WORK_ITEM_TYPE_ICONS[workItemType] : null;
+  const TypeIcon = workItemType ? workItemTypeIcon(workItemType) : null;
   const { borderClass: bannerBorderClass, tintClass: bannerTintClass } =
     resolveBannerSurfaceClasses({
       bannerColor: preferences.bannerColor,

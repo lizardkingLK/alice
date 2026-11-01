@@ -46,7 +46,8 @@ appears: open it from the inbox link (or Projects list), then use the
 
 - Open the project workspace to add **Members**, **Teams**, and **Work items**
 - Configure **Integrations** on the project **Integrations** tab
-- Adjust allowed types with [Project types](./project-settings.md)
+- Adjust the work-item type catalog with [Project types](./project-settings.md)
+  and [Work-item types and hierarchy](./work-item-types-and-hierarchy.md)
 
 The creating admin and the owner stay on the Members list and cannot be removed
 from membership (see [Project members](./project-members.md)).

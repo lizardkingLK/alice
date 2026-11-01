@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { WORK_ITEM_PRIORITIES } from '../../work-item-priorities.js';
-import { WORK_ITEM_TYPES, type WorkItemType } from '../../work-item-types.js';
+import {
+  WorkItemTypeEnum,
+  type SeedWorkItemTypeKey,
+} from '../../work-item-types.js';
 
 export const SPRINT_ESTIMATION_CONFIDENCE_LEVELS = [
   'low',
@@ -37,7 +40,7 @@ export const sprintEstimationWorkItemSchema = z
   .object({
     id: z.uuid(),
     projectId: z.uuid(),
-    type: z.enum(WORK_ITEM_TYPES),
+    type: z.string().trim().min(1),
     priority: z.enum(WORK_ITEM_PRIORITIES),
     severity: optionalCharacteristicSchema,
     storyPoints: z.number().int().nonnegative().nullable(),
@@ -52,7 +55,7 @@ export type SprintEstimationWorkItem = z.infer<
 export const sprintEstimationHistoryItemSchema = z
   .object({
     projectId: z.uuid(),
-    type: z.enum(WORK_ITEM_TYPES),
+    type: z.string().trim().min(1),
     priority: z.enum(WORK_ITEM_PRIORITIES),
     severity: optionalCharacteristicSchema,
     storyPoints: z.number().int().nonnegative().nullable(),
@@ -228,13 +231,20 @@ export const SPRINT_ESTIMATION_MIN_HOURS = 0.5;
 export const SPRINT_ESTIMATION_MAX_HOURS = 1_000;
 
 /** Rough hours used only when neither usable history nor positive points exist. */
-const ROUGH_HOURS_BY_TYPE: Readonly<Record<WorkItemType, number>> = {
+const ROUGH_HOURS_BY_TYPE: Readonly<Record<SeedWorkItemTypeKey, number>> = {
   Epic: 40,
   Feature: 24,
   Story: 8,
   Task: 4,
   Issue: 4,
 };
+
+function roughHoursForType(type: string): number {
+  if (type in ROUGH_HOURS_BY_TYPE) {
+    return ROUGH_HOURS_BY_TYPE[type as SeedWorkItemTypeKey];
+  }
+  return ROUGH_HOURS_BY_TYPE[WorkItemTypeEnum.Task];
+}
 
 type EvidencePool = {
   items: SprintEstimationHistoryItem[];
@@ -457,7 +467,7 @@ export function estimateSprintWorkItem(
     const hasStoryPoints = (input.workItem.storyPoints ?? 0) > 0;
     const suggested = hasStoryPoints
       ? input.workItem.storyPoints!
-      : ROUGH_HOURS_BY_TYPE[input.workItem.type];
+      : roughHoursForType(input.workItem.type);
     const range = withBoundedRange(
       suggested,
       suggested * 0.75,

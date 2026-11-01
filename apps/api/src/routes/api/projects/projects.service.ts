@@ -9,7 +9,10 @@ import {
   type ProjectDetailRow,
   type ProjectMemberRow,
   type WorkItemType,
-  CANONICAL_HIERARCHY_ORDER,
+  buildDefaultProjectTypeDefs,
+  normalizeProjectWorkItemTypeDefs,
+  resolveProjectTypeKeys,
+  type ProjectWorkItemTypeDef,
   type ProjectWorkflowConfig,
   type WorkItemTypeRemovalApplyResult,
   type WorkflowConfigEnvelope,
@@ -396,8 +399,8 @@ export class ProjectsService {
     const workItemTypes =
       workflowConfig?.work_item_types &&
       workflowConfig.work_item_types.length > 0
-        ? workflowConfig.work_item_types
-        : [...CANONICAL_HIERARCHY_ORDER];
+        ? normalizeProjectWorkItemTypeDefs(workflowConfig.work_item_types)
+        : buildDefaultProjectTypeDefs();
 
     return {
       ...prepared,
@@ -624,11 +627,16 @@ export class ProjectsService {
     const existingConfig =
       (project.workflow_config as ProjectWorkflowConfig | null) ?? null;
 
+    const typeDefs = normalizeProjectWorkItemTypeDefs(
+      existingConfig?.work_item_types
+    );
     return await this.projectsRepository.previewWorkItemTypeRemoval(
       projectId,
       removedTypes,
       keptTypes,
-      existingConfig?.hierarchy ?? null
+      existingConfig?.hierarchy ?? null,
+      100,
+      typeDefs
     );
   }
 
@@ -679,14 +687,16 @@ export class ProjectsService {
     projectId: string,
     issues: { key: string; parentKey?: string | null }[],
     hierarchy?: Record<string, string | null> | null,
-    allowedTypes?: WorkItemType[] | null
+    allowedTypes?: WorkItemType[] | null,
+    typeDefs?: ProjectWorkItemTypeDef[] | null
   ): Promise<void> {
     await requireProjectManager(actorId);
     await this.projectsRepository.linkImportedJiraParents(
       projectId,
       issues,
       hierarchy,
-      allowedTypes
+      allowedTypes,
+      typeDefs
     );
   }
 
@@ -788,21 +798,21 @@ export class ProjectsService {
     }
 
     const newConfig = prepared.workflow_config as ProjectWorkflowConfig;
-    if (!newConfig.work_item_types || newConfig.work_item_types.length === 0) {
+    const newTypeDefs = normalizeProjectWorkItemTypeDefs(
+      newConfig.work_item_types
+    );
+    if (newTypeDefs.length === 0) {
       return null;
     }
+    const newTypeKeys = resolveProjectTypeKeys(newTypeDefs);
 
     const previousConfig = previous?.workflow_config as
       ProjectWorkflowConfig | null | undefined;
-    const previousTypes: WorkItemType[] =
-      previousConfig?.work_item_types &&
-      previousConfig.work_item_types.length > 0
-        ? previousConfig.work_item_types
-        : [...CANONICAL_HIERARCHY_ORDER];
-
-    const removedTypes = previousTypes.filter(
-      (t) => !newConfig.work_item_types!.includes(t)
+    const previousTypes: WorkItemType[] = resolveProjectTypeKeys(
+      previousConfig?.work_item_types
     );
+
+    const removedTypes = previousTypes.filter((t) => !newTypeKeys.includes(t));
 
     if (removedTypes.length === 0) {
       return null;
@@ -811,9 +821,10 @@ export class ProjectsService {
     const preview = await this.projectsRepository.previewWorkItemTypeRemoval(
       projectId,
       removedTypes,
-      newConfig.work_item_types,
+      newTypeKeys,
       newConfig.hierarchy ?? null,
-      1
+      1,
+      newTypeDefs
     );
 
     const typesWithItems = preview.groups
@@ -823,9 +834,10 @@ export class ProjectsService {
     if (typesWithItems.length === 0) {
       return await this.projectsRepository.applyWorkItemTypeRemovalStrategies(
         projectId,
-        newConfig.work_item_types,
+        newTypeKeys,
         [],
-        newConfig.hierarchy ?? null
+        newConfig.hierarchy ?? null,
+        newTypeDefs
       );
     }
 
@@ -841,7 +853,7 @@ export class ProjectsService {
     const invalidMigrate = strategies.filter(
       (s) =>
         s.action === 'migrate' &&
-        (!s.migrateTo || !newConfig.work_item_types!.includes(s.migrateTo))
+        (!s.migrateTo || !newTypeKeys.includes(s.migrateTo))
     );
     if (invalidMigrate.length > 0) {
       throw new Error(
@@ -851,9 +863,10 @@ export class ProjectsService {
 
     return await this.projectsRepository.applyWorkItemTypeRemovalStrategies(
       projectId,
-      newConfig.work_item_types,
+      newTypeKeys,
       strategies.filter((s) => typesWithItems.includes(s.type)),
-      newConfig.hierarchy ?? null
+      newConfig.hierarchy ?? null,
+      newTypeDefs
     );
   }
 

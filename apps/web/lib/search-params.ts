@@ -1,5 +1,4 @@
-import type { WorkItemType } from '@repo/types';
-import { WORK_ITEM_TYPES, parseWorkItemLabelsFilterParam } from '@repo/types';
+import { parseWorkItemLabelsFilterParam, type WorkItemType } from '@repo/types';
 import { ALL_PROJECTS_ID } from '@/app/board/_helpers/board-defaults-storage';
 
 export interface RawSearchParams {
@@ -58,8 +57,6 @@ export interface ParsedWorkItemFilters {
   labels?: string[];
 }
 
-const WORK_ITEM_TYPE_FILTERS = new Set<WorkItemTypeFilter>(WORK_ITEM_TYPES);
-
 export function parseStandardParams(
   resolvedParams: RawSearchParams,
   defaultLimit = 10
@@ -90,9 +87,7 @@ export function parseWorkItemFilters(
   const assigneeId = parseOptionalFilterId(resolvedParams.assignee);
   const rawType = resolvedParams.type?.trim();
   const type =
-    rawType &&
-    rawType !== ALL_PROJECTS_ID &&
-    WORK_ITEM_TYPE_FILTERS.has(rawType as WorkItemTypeFilter)
+    rawType && rawType !== ALL_PROJECTS_ID
       ? (rawType as WorkItemTypeFilter)
       : undefined;
   const labels = parseWorkItemLabelsFilterParam(resolvedParams.labels);

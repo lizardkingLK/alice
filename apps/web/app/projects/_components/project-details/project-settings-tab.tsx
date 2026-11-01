@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, type FormEvent } from 'react';
+import { useMemo, useState, useTransition, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { Button } from '@repo/ui/components/ui/button';
-import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -19,7 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
-import { Label } from '@repo/ui/components/ui/label';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -28,9 +26,10 @@ import {
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import {
-  CANONICAL_HIERARCHY_ORDER,
+  normalizeProjectWorkItemTypeDefs,
+  projectTypeKeys,
+  type ProjectWorkItemTypeDef,
   type WorkItemType,
-  WorkItemTypeEnum,
   type WorkItemTypeRemovalPreviewResponse,
   type WorkItemTypeRemovalStrategy,
 } from '@repo/types';
@@ -41,32 +40,47 @@ import {
   type Project,
 } from '@/app/projects/_services/projects.mutations.client';
 import { ProjectTypeRemovalStrategyDialog } from '@/app/projects/_components/project-details/project-type-removal-strategy-dialog';
+import { WorkItemTypeCatalogEditor } from '@/app/projects/_components/work-item-type-catalog-editor';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import { errorMessage } from '@/lib/errors/error-message';
 import {
-  WORK_ITEM_TYPE_BADGE_STYLES,
-  WORK_ITEM_TYPE_ICONS,
-} from '@/app/work-items/_helpers/work-item-type';
+  catalogRevisionFromDefs,
+  upsertWitCatalogProject,
+} from '@/app/work-items/_helpers/wit-catalog-storage';
 
 export type ProjectSettingsTabProps = {
   readonly project: Project;
   readonly isManagerOrAdmin: boolean;
+  readonly userId?: string | null;
 };
 
-const ALL_TYPES: readonly WorkItemType[] = CANONICAL_HIERARCHY_ORDER;
-
-const TYPE_DESCRIPTIONS: Record<WorkItemType, string> = {
-  [WorkItemTypeEnum.Epic]: 'Top-level initiative',
-  [WorkItemTypeEnum.Feature]: 'Product capability',
-  [WorkItemTypeEnum.Story]: 'User story / deliverable',
-  [WorkItemTypeEnum.Task]: 'Standard work unit',
-  [WorkItemTypeEnum.Issue]: 'Bug or leaf work item',
-};
+function defsEqual(
+  left: readonly ProjectWorkItemTypeDef[],
+  right: readonly ProjectWorkItemTypeDef[]
+): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+  const sortedLeft = [...left].sort((a, b) => a.level - b.level);
+  const sortedRight = [...right].sort((a, b) => a.level - b.level);
+  return sortedLeft.every((def, index) => {
+    const other = sortedRight[index];
+    return (
+      other &&
+      def.key === other.key &&
+      def.name === other.name &&
+      def.icon === other.icon &&
+      def.level === other.level &&
+      (def.description ?? '') === (other.description ?? '')
+    );
+  });
+}
 
 export function ProjectSettingsTab({
   project,
   isManagerOrAdmin,
+  userId = null,
 }: Readonly<ProjectSettingsTabProps>) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -74,62 +88,69 @@ export function ProjectSettingsTab({
 
   const existingConfig =
     (project.workflow_config as ProjectWorkflowConfig | null) ?? null;
-  const initialTypes: WorkItemType[] =
-    existingConfig?.work_item_types && existingConfig.work_item_types.length > 0
-      ? existingConfig.work_item_types
-      : [...ALL_TYPES];
+  const initialDefs = useMemo(
+    () => normalizeProjectWorkItemTypeDefs(existingConfig?.work_item_types),
+    [existingConfig?.work_item_types]
+  );
+  const initialKeys = useMemo(
+    () => projectTypeKeys(initialDefs),
+    [initialDefs]
+  );
 
-  const [selectedTypes, setSelectedTypes] =
-    useState<WorkItemType[]>(initialTypes);
+  const [defs, setDefs] = useState<ProjectWorkItemTypeDef[]>(initialDefs);
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: 'success' | 'error';
     text: string;
   } | null>(null);
-  const [pendingUncheck, setPendingUncheck] = useState<WorkItemType | null>(
-    null
-  );
+  const [pendingRemoveKey, setPendingRemoveKey] = useState<string | null>(null);
   const [strategyOpen, setStrategyOpen] = useState(false);
   const [preview, setPreview] =
     useState<WorkItemTypeRemovalPreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
 
-  const removedTypes = initialTypes.filter((t) => !selectedTypes.includes(t));
+  const selectedKeys = projectTypeKeys(defs);
+  const removedTypes = initialKeys.filter((key) => !selectedKeys.includes(key));
   const hasRemovedTypes = removedTypes.length > 0;
-  const isDirty =
-    selectedTypes.length !== initialTypes.length ||
-    selectedTypes.some((type) => !initialTypes.includes(type));
+  const isDirty = !defsEqual(defs, initialDefs);
 
-  const applyUncheck = (type: WorkItemType) => {
-    setSelectedTypes(selectedTypes.filter((t) => t !== type));
-    setPendingUncheck(null);
+  const applyRemove = (key: string) => {
+    setDefs(
+      defs
+        .filter((def) => def.key !== key)
+        .map((def, index) => ({ ...def, level: index }))
+    );
+    setPendingRemoveKey(null);
   };
 
-  const handleToggleType = (type: WorkItemType, checked: boolean) => {
+  const handleCatalogChange = (next: ProjectWorkItemTypeDef[]) => {
     setFeedback(null);
-    if (checked) {
-      const next = ALL_TYPES.filter(
-        (t) => t === type || selectedTypes.includes(t)
-      );
-      setSelectedTypes(next);
+    setDefs(next);
+  };
+
+  const handleRequestRemove = (key: string) => {
+    setFeedback(null);
+    if (initialKeys.includes(key)) {
+      setPendingRemoveKey(key);
       return;
     }
-
-    if (initialTypes.includes(type)) {
-      setPendingUncheck(type);
-      return;
-    }
-
-    applyUncheck(type);
+    applyRemove(key);
   };
 
   const saveWithStrategies = async (
     strategies?: WorkItemTypeRemovalStrategy[]
   ) => {
+    const hierarchy: Record<string, string | null> = {};
+    const ordered = [...defs].sort((a, b) => a.level - b.level);
+    for (let i = 0; i < ordered.length - 1; i++) {
+      hierarchy[ordered[i]!.key] = ordered[i + 1]!.key;
+    }
+
     const mergedWorkflowConfig: ProjectWorkflowConfig = {
       ...existingConfig,
-      work_item_types: selectedTypes,
+      work_item_types: defs,
+      hierarchy,
     };
 
     const pendingFields: Record<string, unknown> = {
@@ -153,15 +174,22 @@ export function ProjectSettingsTab({
       pendingFields,
     });
 
+    if (userId) {
+      upsertWitCatalogProject(userId, project.id, {
+        revision: catalogRevisionFromDefs(defs),
+        types: defs,
+      });
+    }
+
     return data;
   };
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
-    if (selectedTypes.length === 0) {
+    if (defs.length === 0) {
       setFeedback({
         type: 'error',
-        text: 'Please select at least one work-item type.',
+        text: 'Please configure at least one work-item type.',
       });
       return;
     }
@@ -178,7 +206,7 @@ export function ProjectSettingsTab({
           const nextPreview = await previewWorkItemTypeRemoval(
             project.id,
             removedTypes,
-            selectedTypes
+            selectedKeys
           );
           setPreview(nextPreview);
           if (nextPreview.totalAffected === 0) {
@@ -266,11 +294,11 @@ export function ProjectSettingsTab({
         <CardHeader>
           <CardTitle className="text-primary flex items-center gap-2 text-base font-semibold">
             <Shapes className="h-5 w-5" />
-            Allowed Work-Item Types
+            Work-Item Types
           </CardTitle>
           <CardDescription className="text-muted-foreground text-sm">
-            Configure which work-item types are permitted in this project.
-            Subtasks and forms will automatically respect this configuration.
+            Add, rename, and order types for this project. Hierarchy is a single
+            chain by level.
           </CardDescription>
         </CardHeader>
 
@@ -297,64 +325,21 @@ export function ProjectSettingsTab({
               </div>
             )}
 
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Permitted Types</Label>
-              <div className="flex flex-col gap-3">
-                {ALL_TYPES.map((type) => {
-                  const isChecked = selectedTypes.includes(type);
-                  const Icon = WORK_ITEM_TYPE_ICONS[type];
-                  return (
-                    <label
-                      key={type}
-                      htmlFor={`type-checkbox-${type}`}
-                      className={cn(
-                        'border-border flex cursor-pointer items-center gap-4 rounded-xl border p-4 transition-colors',
-                        isChecked
-                          ? 'border-primary/40 bg-primary/5'
-                          : 'bg-muted/10 hover:bg-muted/20'
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          'flex size-12 shrink-0 items-center justify-center rounded-xl border',
-                          WORK_ITEM_TYPE_BADGE_STYLES[type]
-                        )}
-                      >
-                        <Icon className="size-6" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="text-foreground text-base font-semibold">
-                          {type}
-                        </span>
-                        <p className="text-muted-foreground text-sm">
-                          {TYPE_DESCRIPTIONS[type]}
-                        </p>
-                      </div>
-                      <Checkbox
-                        id={`type-checkbox-${type}`}
-                        aria-label={type}
-                        checked={isChecked}
-                        onCheckedChange={(val) =>
-                          handleToggleType(type, val === true)
-                        }
-                        className="size-5"
-                      />
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
+            <WorkItemTypeCatalogEditor
+              value={defs}
+              onChange={handleCatalogChange}
+              disabled={isSaving}
+              onRequestRemove={handleRequestRemove}
+              className="max-h-[min(60vh,36rem)] overflow-y-auto pr-1"
+            />
 
             {existingConfig?.hierarchy &&
               Object.keys(existingConfig.hierarchy).length > 0 && (
                 <div className="border-border/60 bg-muted/20 text-muted-foreground space-y-1 rounded-lg border p-3 text-xs">
                   <span className="text-foreground font-semibold">
-                    Jira Import Custom Hierarchy Active
+                    Custom hierarchy active
                   </span>
-                  <p>
-                    This project uses a custom hierarchy defined during Jira
-                    import.
-                  </p>
+                  <p>Levels on save refresh the project parent→child chain.</p>
                 </div>
               )}
 
@@ -369,8 +354,7 @@ export function ProjectSettingsTab({
                     Removing{' '}
                     <span className="font-bold">{removedTypes.join(', ')}</span>{' '}
                     will prompt you to delete or convert each affected type when
-                    you save. Parent links that would become invalid are
-                    detached first.
+                    you save.
                   </p>
                 </div>
               </div>
@@ -379,7 +363,7 @@ export function ProjectSettingsTab({
             <div className="mt-auto flex justify-end pt-2">
               <Button
                 type="submit"
-                disabled={isSaving || selectedTypes.length === 0 || !isDirty}
+                disabled={isSaving || defs.length === 0 || !isDirty}
                 size="sm"
                 title="Save types"
               >
@@ -392,33 +376,32 @@ export function ProjectSettingsTab({
       </Card>
 
       <Dialog
-        open={Boolean(pendingUncheck)}
-        onOpenChange={(open) => !open && setPendingUncheck(null)}
+        open={Boolean(pendingRemoveKey)}
+        onOpenChange={(open) => !open && setPendingRemoveKey(null)}
       >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              Remove {pendingUncheck} from this project?
+              Remove {pendingRemoveKey} from this project?
             </DialogTitle>
             <DialogDescription>
               Existing work items of type{' '}
-              <span className="font-semibold">{pendingUncheck}</span> must be
-              deleted or converted when you save. You will choose the strategy
-              for each removed type in the next step.
+              <span className="font-semibold">{pendingRemoveKey}</span> must be
+              deleted or converted when you save.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
-              onClick={() => setPendingUncheck(null)}
+              onClick={() => setPendingRemoveKey(null)}
             >
               Keep type
             </Button>
             <Button
               type="button"
               variant="destructive"
-              onClick={() => pendingUncheck && applyUncheck(pendingUncheck)}
+              onClick={() => pendingRemoveKey && applyRemove(pendingRemoveKey)}
             >
               Remove type
             </Button>
@@ -432,7 +415,7 @@ export function ProjectSettingsTab({
         preview={preview}
         previewLoading={previewLoading}
         previewError={previewError}
-        migrateTargets={selectedTypes}
+        migrateTargets={selectedKeys as WorkItemType[]}
         isSubmitting={isSaving}
         onConfirm={handleStrategyConfirm}
       />

@@ -1,4 +1,3 @@
-import { WORK_ITEM_TYPES } from '@repo/types';
 import { z } from 'zod';
 import {
   getLocalStorageJson,
@@ -46,7 +45,7 @@ const projectCreationDraftSchema = z.object({
     status: z.enum(['active', 'archived']),
     startDate: dateInputSchema,
     endDate: dateInputSchema,
-    selectedWorkItemTypes: z.array(z.enum(WORK_ITEM_TYPES)),
+    selectedWorkItemTypes: z.array(z.string().trim().min(1)),
   }),
   imports: z.object({
     importFromJira: z.boolean(),

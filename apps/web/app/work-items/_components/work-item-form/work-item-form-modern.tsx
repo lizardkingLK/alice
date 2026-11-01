@@ -53,7 +53,7 @@ import { WorkItemFormModernDescription } from '@/app/work-items/_components/work
 import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels/work-item-labels-input';
 import { WorkItemPrioritySelect } from '@/app/work-items/_components/work-item-priority-select';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
-import { WORK_ITEM_TYPE_ICONS } from '@/app/work-items/_helpers/work-item-type';
+import { workItemTypeIcon } from '@/app/work-items/_helpers/work-item-type';
 import { MODERN_BORDERLESS_FOCUS_CLASSES } from '@/lib/editor/compact-editor-attrs';
 import {
   isOptionsLoadingEmpty,
@@ -170,7 +170,7 @@ function IconSearchablePill({
 }
 
 function isWorkItemType(value: string): value is WorkItemType {
-  return value in WORK_ITEM_TYPE_ICONS;
+  return value.trim().length > 0;
 }
 
 function ModernSprintField({
@@ -357,8 +357,7 @@ export function WorkItemFormModernFields({
       : selectedProject.name;
   }
 
-  const TypeIcon =
-    type && isWorkItemType(type) ? WORK_ITEM_TYPE_ICONS[type] : null;
+  const TypeIcon = type && isWorkItemType(type) ? workItemTypeIcon(type) : null;
 
   return (
     <TooltipProvider delayDuration={200}>

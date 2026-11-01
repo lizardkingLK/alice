@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { buildDefaultProjectTypeDefs } from '@repo/types';
 import {
   createProjectSchema,
   updateProjectSchema,
@@ -47,16 +48,17 @@ describe('projects schemas', () => {
     });
 
     it('accepts workflow config in the create contract', () => {
+      const typeKeys = ['Epic', 'Story', 'Task', 'Issue'] as const;
       const parsed = createProjectSchema.safeParse({
         ...validCreateInput,
         workflow_config: {
-          work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+          work_item_types: [...typeKeys],
         },
       });
       expect(parsed.success).toBe(true);
       if (parsed.success) {
         expect(parsed.data.workflow_config).toEqual({
-          work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+          work_item_types: buildDefaultProjectTypeDefs(typeKeys),
         });
       }
     });

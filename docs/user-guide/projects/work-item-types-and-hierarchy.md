@@ -1,6 +1,7 @@
 # Project Work-Item Types & Hierarchy
 
-Configure project-level work-item types and map Jira issue hierarchies during import in ALICE.
+Configure a project’s work-item type catalog (name, icon, description, hierarchy
+level) and map Jira issue types during import.
 
 **Audience:** Managers and admins
 
@@ -8,81 +9,88 @@ Configure project-level work-item types and map Jira issue hierarchies during im
 
 ## Overview
 
-In ALICE, projects can configure which work-item types are permitted. This ensures that teams only use work-item types relevant to their specific project methodology, while keeping system-wide reporting and filtering unified.
+Each project has its **own type catalog**. You are not limited to a fixed global
+list: you can add types that match how your team works (for example Initiative,
+Spike, or Defect), set an icon and description, and order them in a **single
+parent → child chain**.
 
-### Standard System Hierarchy
+New projects start from ALICE **defaults** (Epic, Feature, Story, Task, Issue).
+Those defaults are templates you can keep, rename, reorder, or extend.
 
-The fixed standard ALICE work-item hierarchy follows these rules:
+### Hierarchy (levels)
+
+Types form one linear chain by **level** (lowest number = top of the tree):
 
 ```text
-Epic
- └── Story
-      └── Task
-           └── Issue
+Level 0 (e.g. Epic)
+ └── Level 1 (e.g. Story)
+      └── Level 2 (e.g. Task)
+           └── Level 3 (e.g. Issue)   ← leaf: no subtasks
 ```
 
-- **Epic**: Top-level strategic initiative.
-- **Story**: User story or feature deliverable under an Epic.
-- **Task**: Standard execution unit under a Story.
-- **Issue**: Leaf work-item or bug under a Task. Issues cannot have subtasks.
-- **Feature**: An optional high-level product capability that can be enabled per project.
+- Reordering levels changes which type may parent which child.
+- Only one type may occupy each level in a project.
+- Non-linear trees (multiple different child types under one parent) are not
+  supported.
 
 > [!NOTE]
-> Arbitrary hierarchy customization is **strictly restricted** to Jira import configuration. Project creation and editing only configure which types are active in the project.
+> The stable identity of a type is its **key** (used in the database and in
+> imports). The **name** is what people see and can rename without breaking
+> existing work items.
 
 ---
 
-## 1. Project Creation Configuration
+## 1. Project creation
 
-When creating a new project as an administrator:
+When creating a project as an administrator:
 
-1. Navigate to **Projects** (`/projects`) and select **+ New Project**.
-2. In **Step 1: Basic Details**, scroll to **Allowed Work-Item Types**.
-3. Select any combination of work-item types from the canonical set:
-   - `Epic`
-   - `Feature`
-   - `Story`
-   - `Task`
-   - `Issue`
-4. **Validation**: At least one work-item type must be selected to proceed.
-5. Submit the form to save the project. The selected types are stored in the project's workflow configuration.
+1. Go to **Projects** (`/projects`) and select **Add Project** / **+ New Project**.
+2. In basic details, open the **Work-Item Types** section.
+3. Start from the default catalog (or a subset). For each type you can adjust:
+   - **Name** and optional **description**
+   - **Icon** (from the allowed icon set)
+   - **Level** / order in the hierarchy
+4. **Add** custom types if needed (each gets a stable key).
+5. At least one type is required.
+6. Create the project. The catalog is stored in the project’s workflow
+   configuration.
+
+After sign-in, ALICE caches each accessible project’s type catalog locally so
+type labels and icons stay fast to resolve; the server remains the source of
+truth and the cache refreshes when types change.
 
 ---
 
-## 2. Create & Edit Work-Item Form Scoping
+## 2. Create & edit work-item forms
 
-When creating or editing work items:
-
-- The **Type** dropdown in both the **Create Work-Item** and **Edit Work-Item** forms only displays the types allowed for the active project.
-- If a project only has `Epic`, `Story`, `Task`, and `Issue` enabled, `Feature` will not appear in the dropdown.
-- **Backend Validation**: ALICE backend APIs enforce this restriction. Attempting to create or update an item with a disallowed type returns an HTTP 400 error.
-- **Global Filters**: Unrelated dropdowns (such as the Backlog filter dialog, Work-Item Registry filters, and Calendar filters) continue to list all canonical types across all projects.
+- The **Type** dropdown shows only types from the **active project’s** catalog
+  (display names; values are keys).
+- The API rejects create/update with a type key that is not in that catalog.
+- Filters on Work Items, Board-related views, and Calendar use the **union of
+  types across projects you can access** when no single project is selected, and
+  the active project’s catalog when one is — not a hard-coded global five-type list.
 
 ---
 
 ## 3. Removing types that already have work items
 
-In ALICE, work items have a **mandatory** type field in the database.
+Work items always have a type key.
 
-When an administrator or project manager removes an active type from a project
-and items of that type still exist (active **or** archived):
+When you remove a type from the catalog and items still use that key (active or
+archived):
 
 1. **Save is blocked** until you choose a strategy for each affected type.
-2. A conflict dialog lists the work items under each removed type (collapsible
-   groups, similar to resolving merge conflicts).
-3. For each type, choose one of:
+2. A conflict dialog lists work items under each removed type.
+3. For each type, choose:
    - **Delete permanently** — hard-deletes those work items (archive is not
-     offered, because restore would reintroduce a disallowed type).
-   - **Convert to…** — migrates them to one of the types that remain enabled.
-4. **Detach first** — before delete/migrate, ALICE clears parent links that
-   involve removed-type items (or that would be invalid after migration). That
-   avoids hierarchy loops when several types are removed together (for example
-   Epic and Story in one save).
-5. When a removed type is still the allowed child of a kept parent type, the
-   dialog warns that those parent→child links will be unlinked.
+     offered, because restore would reintroduce a removed type).
+   - **Convert to…** — migrates them to another type that remains in the catalog.
+4. **Detach first** — parent links that would be invalid are cleared before
+   delete/migrate.
+5. If a removed type was the allowed child of a kept parent, the dialog warns
+   that those parent→child links will be unlinked.
 
-If no work items use the removed types, the allowed-types list saves without the
-dialog.
+If no work items use the removed keys, the catalog saves without the dialog.
 
 ---
 
@@ -91,27 +99,27 @@ dialog.
 When you change the type of a work item that still has direct subtasks:
 
 1. ALICE asks how to proceed (default: **unlink subtasks, then change type**).
-2. Confirming detaches those children (`parent_id` cleared) and applies the new
-   type. If the new type cannot keep its current parent, that parent link is
-   cleared as well.
+2. Confirming detaches those children and applies the new type. If the new type
+   cannot keep its current parent, that parent link is cleared as well.
 3. You can cancel and unlink subtasks yourself first, then change the type.
 
 Leaf items (no children) change type without this prompt.
 
 ---
 
-## 4. Restoring Removed Types on the Types Tab
+## 4. Types tab (ongoing configuration)
 
-Managers and Admins can update allowed work-item types at any time:
+Managers and admins can edit the catalog any time:
 
-1. Open the project workspace and select the **Types** tab (`/projects/[id]?tab=types`).
-2. In the **Allowed Work-Item Types** card:
-   - Check or uncheck permitted types.
-   - If removing a type that currently has work items, a warning alert explains that those items must be deleted or converted when you save.
-3. Select **Save Types**. When items still use a removed type, complete the conflict dialog (delete or convert each type).
-4. **Restoring a Type**:
-   - Re-enabling a previously removed type allows it to be used for new work items immediately.
-   - **Important**: Restoring a type does **not** retroactively change items that were deleted or converted when the type was removed.
+1. Open the project and select the **Types** tab (`/projects/[id]?tab=types`).
+2. In the work-item types card:
+   - Edit **name**, **description**, **icon**, and **level** / order.
+   - **Add** a new type or **remove** an existing one (removal may open the
+     conflict dialog on save).
+3. Select **Save Types**.
+4. **Re-adding** a similar type later creates a new catalog entry (or restore a
+   key only if you explicitly keep that key). Items that were deleted or
+   converted earlier are not automatically restored.
 
 ---
 
@@ -120,39 +128,43 @@ Managers and Admins can update allowed work-item types at any time:
 Work items with a **parent** inherit that parent’s sprint (Jira-style):
 
 - On **work item details**, Sprint is read-only text: the sprint name or **Backlog**.
-- In **create/edit forms** and the **backlog** sheet, you cannot assign a different sprint while a parent is linked.
-- Moving the **parent** into or out of a sprint updates all descendants automatically.
+- In **create/edit forms** and the **backlog** sheet, you cannot assign a different
+  sprint while a parent is linked.
+- Moving the **parent** into or out of a sprint updates all descendants
+  automatically.
 
-To plan a child in a different sprint, remove the parent link or use a separate top-level work item instead of a subtask.
+To plan a child in a different sprint, remove the parent link or use a separate
+top-level work item instead of a subtask.
 
-Sprint names cannot be **Backlog** (case-insensitive) — that label is reserved for unscheduled work.
-
----
-
-## 6. Jira Import & Hierarchy Mapping
-
-When importing issues from Jira into ALICE:
-
-1. Open the project's **Integrations** tab and locate the **Jira Cloud** card.
-2. Select **Jira Import & Hierarchy Mapping** to scan issue types from the linked Jira project.
-3. **Configure Type Handling**:
-   - **Map to ALICE type**: Map each Jira issue type (e.g., Jira `Story` → ALICE `Story`).
-   - **Ignore (Skip)**: Completely skip issues of this type during import. Children of ignored issues will be imported with `parent_id = null`.
-   - **Drop type (Fallback to Issue)**: Import issues of this type as an ALICE `Issue`.
-4. **Configure ALICE Target Hierarchy**:
-   - Customize the hierarchy order (e.g., `Epic → Feature → Story → Task → Issue`).
-   - Use the **Up** and **Down** arrow buttons to adjust level ordering.
-   - Add or remove levels as needed.
-5. Select **Start Import**:
-   - Issues are imported with their mapped types.
-   - Parent-child links are established conforming strictly to the configured target hierarchy.
-   - The custom hierarchy is saved in the project configuration, and an indicator badge on **Types** confirms custom hierarchy is active.
+Sprint names cannot be **Backlog** (case-insensitive) — that label is reserved
+for unscheduled work.
 
 ---
 
-## 7. Related Documentation
+## 6. Jira import & hierarchy mapping
 
-- [User Testing Guide](./work-item-types-testing.md)
+When importing issues from Jira:
+
+1. Open the project **Integrations** tab and the **Jira Cloud** card.
+2. Select **Jira Import & Hierarchy Mapping** to scan issue types from the linked
+   Jira project.
+3. **Configure type handling** for each Jira issue type:
+   - **Map to** a type in this project’s catalog (by key / display name).
+   - **Ignore (Skip)** — skip those issues; children may import with no parent.
+   - **Drop / fallback** — import as a chosen fallback type in the catalog
+     (defaults often use Issue).
+4. **Configure hierarchy** by ordering catalog levels (up/down). Add types to the
+   catalog when the import needs new keys.
+5. **Start Import**:
+   - Issues receive mapped type keys.
+   - Parent–child links follow the linear level chain.
+   - The updated catalog is saved on the project (client type cache refreshes).
+
+---
+
+## 7. Related documentation
+
+- [User testing guide](./work-item-types-testing.md)
 - [Project types](./project-settings.md)
-- [Create a Project](./create-project.md)
-- [Project Integrations](./project-integrations.md)
+- [Create a project](./create-project.md)
+- [Project integrations](./project-integrations.md)
