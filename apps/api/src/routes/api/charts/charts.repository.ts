@@ -5,8 +5,10 @@ import {
   chartRollupGroupColumn,
   CHART_HIERARCHY_MAX_DEPTH,
   CHART_SERIES_NULL_SLICE_KEY,
+  normalizeProjectWorkItemTypeDefs,
   paginationMeta,
   parseWorkflowConfigEnvelope,
+  workItemTypeDisplayName,
   type ChartDrilldownItemRow,
   type ChartHierarchyMeasure,
   type ChartHierarchyRing,
@@ -15,6 +17,7 @@ import {
   type ChartSeriesLabelField,
   type ChartSeriesSlice,
   type Database,
+  type ProjectWorkItemTypeDef,
   type WorkItemPriority,
   type WorkItemStatus,
   type WorkItemType,
@@ -654,6 +657,17 @@ export class ChartsRepository {
       }));
     }
 
+    if (labelField === 'type') {
+      const catalogDefs = await this.loadTypeCatalogDefs(projectIds);
+      return slices.map((slice) => ({
+        ...slice,
+        label:
+          slice.key === CHART_SERIES_NULL_SLICE_KEY
+            ? 'Unassigned'
+            : workItemTypeDisplayName(slice.key, catalogDefs),
+      }));
+    }
+
     if (labelField !== 'owner') {
       return slices.map((slice) => ({
         ...slice,
@@ -687,6 +701,31 @@ export class ChartsRepository {
           ? 'Unassigned'
           : (nameById.get(slice.key) ?? slice.key),
     }));
+  }
+
+  private async loadTypeCatalogDefs(
+    projectIds: readonly string[]
+  ): Promise<ProjectWorkItemTypeDef[]> {
+    if (projectIds.length === 0) {
+      return [];
+    }
+    const projects = await prisma.projects.findMany({
+      where: { id: { in: [...projectIds] } },
+      select: { workflow_config: true },
+    });
+    const byKey = new Map<string, ProjectWorkItemTypeDef>();
+    for (const project of projects) {
+      const defs = normalizeProjectWorkItemTypeDefs(
+        (project.workflow_config as { work_item_types?: unknown } | null)
+          ?.work_item_types
+      );
+      for (const def of defs) {
+        if (!byKey.has(def.key)) {
+          byKey.set(def.key, def);
+        }
+      }
+    }
+    return [...byKey.values()];
   }
 
   async create(ownerId: string, input: CreateChartBody): Promise<ChartRow> {

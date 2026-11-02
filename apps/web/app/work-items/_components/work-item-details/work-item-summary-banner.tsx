@@ -16,7 +16,7 @@ import type {
 } from '@/app/work-items/_helpers/work-item-details-preferences';
 import {
   workItemTypeBorder,
-  workItemTypeIcon,
+  workItemTypeIconFromDef,
   workItemTypeTint,
 } from '@/app/work-items/_helpers/work-item-type';
 import {
@@ -27,7 +27,8 @@ import {
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import { UserAvatar } from '@/components/user-avatar';
-import type { WorkItemType } from '@repo/types';
+import { findProjectWorkItemTypeDef, type WorkItemType } from '@repo/types';
+import { typeDefsFromWorkflowConfig } from '@/app/work-items/_helpers/resolve-work-item-type-def-from-projects';
 
 type WorkItemSummaryBannerProps = {
   readonly workItem: DbWorkItem;
@@ -116,7 +117,17 @@ export function WorkItemSummaryBanner({
     stateName: picker.currentLabel,
   });
   const workItemType = isWorkItemType(workItem.type) ? workItem.type : null;
-  const TypeIcon = workItemType ? workItemTypeIcon(workItemType) : null;
+  const typeDef = workItemType
+    ? findProjectWorkItemTypeDef(
+        typeDefsFromWorkflowConfig(workflowConfig),
+        workItemType
+      )
+    : null;
+  const TypeIcon = workItemType
+    ? workItemTypeIconFromDef(
+        typeDef ?? { key: workItemType, icon: 'square-check' }
+      )
+    : null;
   const { borderClass: bannerBorderClass, tintClass: bannerTintClass } =
     resolveBannerSurfaceClasses({
       bannerColor: preferences.bannerColor,

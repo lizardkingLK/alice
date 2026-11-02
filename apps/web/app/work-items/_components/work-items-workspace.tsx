@@ -1,9 +1,14 @@
+'use client';
+
 import type { VisibilityState } from '@tanstack/react-table';
-import { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
-import type { ProjectMembersByProjectId } from '@/app/projects/_services/projects.mutations.client';
+import {
+  Project as DbProject,
+  type ProjectMembersByProjectId,
+} from '@/app/projects/_services/projects.mutations.client';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import WorkItemsTable from '@/app/work-items/_components/work-item-table/work-items-table';
 import type { WorkItemMemberLike } from '@/app/work-items/_helpers/work-item-member';
+import { useWitCatalogBootstrap } from '@/app/work-items/_hooks/use-wit-catalog-bootstrap';
 import {
   DbWorkItem,
   type WorkItemAncestor,
@@ -61,6 +66,8 @@ export interface WorkItemWorkspaceProps {
 export default function WorkItemsWorkspace(
   props: Readonly<WorkItemWorkspaceProps>
 ) {
+  useWitCatalogBootstrap(props.currentUserId, props.projects);
+
   return (
     <div className="w-full">
       <WorkItemsTable {...props} />

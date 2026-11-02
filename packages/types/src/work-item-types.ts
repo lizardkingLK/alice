@@ -1,11 +1,32 @@
 /**
  * Project work-item type catalogs (dynamic keys) + seed defaults.
  * `work_items.type` stores the catalog `key` (plain text).
+ *
+ * New custom types use opaque UUID keys (never shown in product UI).
+ * Seed templates keep stable keys (`Epic`, `Story`, …) for migration.
  */
 
-/** Catalog key stored on work items / filters (project-defined free string). */
+/** Catalog key stored on work items / filters (UUID or seed / legacy string). */
 // eslint-disable-next-line sonarjs/redundant-type-aliases -- intentional public domain alias
 export type WorkItemType = string;
+
+const UUID_KEY_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** True when `key` looks like a UUID catalog identity. */
+export function isUuidWorkItemTypeKey(key: string): boolean {
+  return UUID_KEY_PATTERN.test(key.trim());
+}
+
+/** Allocate a new opaque catalog key for a custom work-item type. */
+export function createProjectWorkItemTypeKey(): string {
+  return globalThis.crypto.randomUUID();
+}
+
+/** Case-insensitive trimmed name used for uniqueness checks. */
+export function normalizeWorkItemTypeName(name: string): string {
+  return name.trim().toLowerCase();
+}
 
 /** Seed keys used as create defaults / migration templates. */
 export const SEED_WORK_ITEM_TYPE_KEYS = [
@@ -55,8 +76,30 @@ export type ProjectWorkItemTypeDef = {
   name: string;
   description?: string;
   icon: string;
+  /** Optional accent color (`#RRGGBB`) for badges and catalog cards. */
+  color?: string;
   level: number;
 };
+
+/**
+ * Returns the first duplicate type name (normalized), or null when all unique.
+ */
+export function findDuplicateWorkItemTypeName(
+  defs: readonly Pick<ProjectWorkItemTypeDef, 'name'>[]
+): string | null {
+  const seen = new Set<string>();
+  for (const def of defs) {
+    const normalized = normalizeWorkItemTypeName(def.name);
+    if (!normalized) {
+      continue;
+    }
+    if (seen.has(normalized)) {
+      return def.name.trim();
+    }
+    seen.add(normalized);
+  }
+  return null;
+}
 
 const SEED_TYPE_META: Record<
   SeedWorkItemTypeKey,
@@ -66,26 +109,31 @@ const SEED_TYPE_META: Record<
     name: 'Epic',
     description: 'Top-level initiative',
     icon: 'layers',
+    color: '#6B5B95',
   },
   Feature: {
     name: 'Feature',
     description: 'Product capability',
     icon: 'trophy',
+    color: '#A855A0',
   },
   Story: {
     name: 'Story',
     description: 'User story / deliverable',
     icon: 'bookmark',
+    color: '#3B6FDB',
   },
   Task: {
     name: 'Task',
     description: 'Standard work unit',
     icon: 'square-check',
+    color: '#2F9E6B',
   },
   Issue: {
     name: 'Issue',
     description: 'Bug or leaf work item',
     icon: 'circle-alert',
+    color: '#D97706',
   },
 };
 
@@ -117,6 +165,7 @@ export function buildDefaultProjectTypeDefs(
       name: meta.name,
       description: meta.description,
       icon: meta.icon,
+      color: meta.color,
       level,
     });
     level += 1;
@@ -127,6 +176,7 @@ export function buildDefaultProjectTypeDefs(
       name: key,
       description: '',
       icon: 'square-check',
+      color: '#64748B',
       level,
     });
     level += 1;
@@ -180,6 +230,50 @@ export function projectTypeKeys(
   defs: readonly ProjectWorkItemTypeDef[]
 ): string[] {
   return defs.map((def) => def.key);
+}
+
+/** Find a catalog def by key, or null when missing. */
+export function findProjectWorkItemTypeDef(
+  defs: readonly ProjectWorkItemTypeDef[] | null | undefined,
+  key: string | null | undefined
+): ProjectWorkItemTypeDef | null {
+  if (!defs || !key) {
+    return null;
+  }
+  return defs.find((def) => def.key === key) ?? null;
+}
+
+/**
+ * Soften legacy slug keys when the catalog is unavailable
+ * (`New_type_2` → `New type 2`). Seed keys stay unchanged.
+ */
+export function humanizeWorkItemTypeKey(key: string): string {
+  if ((SEED_WORK_ITEM_TYPE_KEYS as readonly string[]).includes(key)) {
+    return key;
+  }
+  const softened = key.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return softened || key;
+}
+
+/**
+ * Display label for a type key. Prefer catalog `name`; never surface UUID keys
+ * or raw legacy slug keys in product UI.
+ */
+export function workItemTypeDisplayName(
+  key: string | null | undefined,
+  defs?: readonly ProjectWorkItemTypeDef[] | null
+): string {
+  if (!key) {
+    return 'Unknown';
+  }
+  const fromCatalog = findProjectWorkItemTypeDef(defs, key)?.name.trim();
+  if (fromCatalog) {
+    return fromCatalog;
+  }
+  if (isUuidWorkItemTypeKey(key)) {
+    return 'Custom type';
+  }
+  return humanizeWorkItemTypeKey(key);
 }
 
 /** Keys from legacy string[] or catalog defs (empty → default seed keys). */

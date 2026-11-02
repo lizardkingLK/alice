@@ -1,12 +1,15 @@
-import type {
-  AttachmentActivityMeta,
-  WorkItemActivity,
-  WorkflowTransitionMeta,
+import {
+  workItemTypeDisplayName,
+  type AttachmentActivityMeta,
+  type ProjectWorkItemTypeDef,
+  type WorkItemActivity,
+  type WorkflowTransitionMeta,
 } from '@repo/types';
 
 export type ActivityValueLookups = {
   readonly memberNamesById?: ReadonlyMap<string, string>;
   readonly sprintNamesById?: ReadonlyMap<string, string>;
+  readonly typeDefs?: readonly ProjectWorkItemTypeDef[] | null;
 };
 
 type IdName = {
@@ -45,6 +48,7 @@ export function buildActivityValueLookups(params: {
   readonly assignee?: IdName | null;
   readonly reporter?: IdName | null;
   readonly sprint?: IdName | null;
+  readonly typeDefs?: readonly ProjectWorkItemTypeDef[] | null;
 }): ActivityValueLookups {
   return {
     memberNamesById: buildIdNameMap(params.projectMembers, [
@@ -54,6 +58,7 @@ export function buildActivityValueLookups(params: {
     sprintNamesById: buildIdNameMap(params.projectSprints, [
       params.sprint ?? {},
     ]),
+    typeDefs: params.typeDefs ?? null,
   };
 }
 
@@ -104,6 +109,10 @@ export function formatActivityFieldValue(
 
   if (field === 'sprint_id') {
     return lookups.sprintNamesById?.get(trimmed) ?? 'Unknown sprint';
+  }
+
+  if (field === 'type') {
+    return workItemTypeDisplayName(trimmed, lookups.typeDefs);
   }
 
   return trimmed;

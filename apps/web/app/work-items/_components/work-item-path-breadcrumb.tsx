@@ -28,11 +28,20 @@ type WorkItemPathBreadcrumbProps = {
 function PathTypeChip({
   type,
   title,
-}: Readonly<{ type: WorkItemType; title: string }>) {
+  projectId,
+}: Readonly<{
+  type: WorkItemType;
+  title: string;
+  projectId?: string | null;
+}>) {
   const label = title.trim() || 'Untitled';
   return (
     <span className="flex min-w-0 items-center gap-2">
-      <WorkItemTypeBadge type={type} className="shrink-0 font-normal" />
+      <WorkItemTypeBadge
+        type={type}
+        projectId={projectId}
+        className="shrink-0 font-normal"
+      />
       <TruncatedText as="span" className="max-w-28 text-xs sm:max-w-40">
         {label}
       </TruncatedText>
@@ -103,7 +112,11 @@ export function WorkItemPathBreadcrumb({
           <BreadcrumbItem key={ancestor.id} className="min-w-0">
             <BreadcrumbLink asChild className="hover:text-primary min-w-0">
               <Link href={`/work-items/${ancestor.id}`} className="min-w-0">
-                <PathTypeChip type={ancestor.type} title={ancestor.title} />
+                <PathTypeChip
+                  type={ancestor.type}
+                  title={ancestor.title}
+                  projectId={projectId}
+                />
               </Link>
             </BreadcrumbLink>
           </BreadcrumbItem>,
@@ -113,7 +126,11 @@ export function WorkItemPathBreadcrumb({
 
         <BreadcrumbItem className="min-w-0">
           <BreadcrumbPage className="min-w-0">
-            <PathTypeChip type={workItem.type} title={workItem.title} />
+            <PathTypeChip
+              type={workItem.type}
+              title={workItem.title}
+              projectId={projectId}
+            />
           </BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>

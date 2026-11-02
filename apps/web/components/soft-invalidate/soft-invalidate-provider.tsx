@@ -50,6 +50,8 @@ type SoftInvalidateActions = {
 const SoftInvalidateActionsContext =
   createContext<SoftInvalidateActions | null>(null);
 
+const SoftInvalidateUserIdContext = createContext<string | null>(null);
+
 type SoftInvalidateProviderProps = {
   readonly userId: string | null;
   readonly initialRole: string | null;
@@ -378,20 +380,27 @@ export function SoftInvalidateProvider({
   );
 
   return (
-    <SoftInvalidateActionsContext.Provider value={actions}>
-      {staleReason ? (
-        <SoftInvalidateBanner
-          reason={staleReason}
-          onRefresh={refresh}
-          onDismiss={dismiss}
-        />
-      ) : null}
-      {children}
-    </SoftInvalidateActionsContext.Provider>
+    <SoftInvalidateUserIdContext.Provider value={userId}>
+      <SoftInvalidateActionsContext.Provider value={actions}>
+        {staleReason ? (
+          <SoftInvalidateBanner
+            reason={staleReason}
+            onRefresh={refresh}
+            onDismiss={dismiss}
+          />
+        ) : null}
+        {children}
+      </SoftInvalidateActionsContext.Provider>
+    </SoftInvalidateUserIdContext.Provider>
   );
 }
 
 /** Optional access when a surface may render outside the dashboard shell. */
 export function useSoftInvalidateOptional(): SoftInvalidateActions | null {
   return useContext(SoftInvalidateActionsContext);
+}
+
+/** Session user id from the dashboard shell (null outside / unauthenticated). */
+export function useSoftInvalidateUserId(): string | null {
+  return useContext(SoftInvalidateUserIdContext);
 }

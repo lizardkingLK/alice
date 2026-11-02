@@ -6,7 +6,6 @@ import {
 } from './query-preprocess.js';
 import { WORK_ITEM_PRIORITIES } from '../../work-item-priorities.js';
 import { WORK_ITEM_STATUSES } from '../../work-item-status.js';
-import { WORK_ITEM_TYPES } from '../../work-item-types.js';
 import {
   WORKFLOW_STATE_CATEGORIES,
   type WorkflowStateCategory,
@@ -114,7 +113,8 @@ const chartScopeFilterFields = {
   sprintId: optionalUuid,
   /** Quick / advanced equality filters applied on rollups and drilldown. */
   status: z.preprocess(emptyToUndefined, z.enum(WORK_ITEM_STATUSES).optional()),
-  type: z.preprocess(emptyToUndefined, z.enum(WORK_ITEM_TYPES).optional()),
+  /** Catalog key (seed or custom UUID / legacy slug). */
+  type: z.preprocess(emptyToUndefined, z.string().trim().min(1).optional()),
   priority: z.preprocess(
     emptyToUndefined,
     z.enum(WORK_ITEM_PRIORITIES).optional()

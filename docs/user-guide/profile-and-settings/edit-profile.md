@@ -47,6 +47,9 @@ Update your name, profile photo, and cover image.
 Under **Settings → Preferences**:
 
 - **Modern work item create** — compact create dialog vs full form
+- **Auto-save project drafts** — when on, Add Project continuously saves your
+  create wizard progress and resumes it automatically next time (no resume
+  prompt or save-on-close dialog). When off, drafts stay manual.
 - **Work item details** — banner color, title icon, and which sections/fields
   appear on every work-item page (same as **Configure** on a work item)
 

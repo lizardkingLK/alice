@@ -241,6 +241,64 @@ const PROJECT_COLUMNS: ColumnDef<Project>[] = [
   },
 ];
 
+function AddProjectOverlay({
+  users,
+  currentUserId,
+  isMaximized,
+  isWide,
+  onMaximizedChange,
+  onWideChange,
+  onClose,
+  onSuccess,
+}: Readonly<{
+  users: ProjectRegistryProps['users'];
+  currentUserId?: string | null;
+  isMaximized: boolean;
+  isWide: boolean;
+  // eslint-disable-next-line no-unused-vars
+  onMaximizedChange: (maximized: boolean) => void;
+  // eslint-disable-next-line no-unused-vars
+  onWideChange: (wide: boolean) => void;
+  onClose: () => void;
+  onSuccess: () => void;
+}>) {
+  let shellClassName =
+    'zoom-in-95 max-h-[calc(100vh-2rem)] overflow-y-auto p-1 max-w-xl';
+  if (isMaximized) {
+    shellClassName = 'h-full max-h-none max-w-none overflow-hidden p-0';
+  } else if (isWide) {
+    shellClassName =
+      'zoom-in-95 max-h-[calc(100vh-2rem)] overflow-y-auto p-1 max-w-2xl';
+  }
+
+  return (
+    <div
+      className={cn(
+        'animate-in fade-in fixed inset-0 z-50 flex bg-black/60 backdrop-blur-sm duration-200',
+        isMaximized
+          ? 'items-stretch justify-stretch p-0'
+          : 'items-center justify-center p-4'
+      )}
+    >
+      <div
+        className={cn(
+          'animate-in fade-in no-scrollbar w-full transition-all duration-300',
+          shellClassName
+        )}
+      >
+        <ProjectForm
+          users={users}
+          currentUserId={currentUserId}
+          onMaximizedChange={onMaximizedChange}
+          onClose={onClose}
+          onSuccess={onSuccess}
+          onJiraImportToggle={onWideChange}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function ProjectRegistry({
   projects,
   totalCount,
@@ -265,6 +323,7 @@ export function ProjectRegistry({
   const { handleMutationError } = useOptimisticLock();
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isAddWide, setIsAddWide] = useState(false);
+  const [isAddMaximized, setIsAddMaximized] = useState(true);
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [deleteMode, setDeleteMode] = useState<'soft' | 'hard'>('soft');
@@ -469,29 +528,25 @@ export function ProjectRegistry({
       </Card>
 
       {isAddProjectOpen ? (
-        <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
-          <div
-            className={cn(
-              'animate-in fade-in zoom-in-95 no-scrollbar max-h-[calc(100vh-2rem)] w-full overflow-y-auto p-1 transition-all duration-300',
-              isAddWide ? 'max-w-2xl' : 'max-w-xl'
-            )}
-          >
-            <ProjectForm
-              users={users}
-              currentUserId={currentUserId}
-              onClose={() => {
-                setIsAddProjectOpen(false);
-                setIsAddWide(false);
-              }}
-              onSuccess={() => {
-                setIsAddProjectOpen(false);
-                setIsAddWide(false);
-                router.refresh();
-              }}
-              onJiraImportToggle={setIsAddWide}
-            />
-          </div>
-        </div>
+        <AddProjectOverlay
+          users={users}
+          currentUserId={currentUserId}
+          isMaximized={isAddMaximized}
+          isWide={isAddWide}
+          onMaximizedChange={setIsAddMaximized}
+          onWideChange={setIsAddWide}
+          onClose={() => {
+            setIsAddProjectOpen(false);
+            setIsAddWide(false);
+            setIsAddMaximized(true);
+          }}
+          onSuccess={() => {
+            setIsAddProjectOpen(false);
+            setIsAddWide(false);
+            setIsAddMaximized(true);
+            router.refresh();
+          }}
+        />
       ) : null}
 
       {projectToEdit ? (

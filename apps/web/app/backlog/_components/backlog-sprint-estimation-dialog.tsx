@@ -135,7 +135,11 @@ function EstimateRow({
           </div>
           {item ? (
             <div className="flex flex-wrap items-center gap-1.5">
-              <WorkItemTypeBadge type={item.type} compact />
+              <WorkItemTypeBadge
+                type={item.type}
+                projectId={item.project_id}
+                compact
+              />
               <PriorityBadge priority={item.priority} />
               {item.story_points != null ? (
                 <Badge variant="outline">{item.story_points} points</Badge>

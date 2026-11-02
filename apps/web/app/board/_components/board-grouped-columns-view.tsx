@@ -106,7 +106,12 @@ function buildColumns(
     {
       accessorKey: 'type',
       header: 'Type',
-      cell: ({ row }) => <WorkItemTypeBadge type={row.original.type} />,
+      cell: ({ row }) => (
+        <WorkItemTypeBadge
+          type={row.original.type}
+          projectId={row.original.project_id}
+        />
+      ),
     },
     {
       accessorKey: 'priority',

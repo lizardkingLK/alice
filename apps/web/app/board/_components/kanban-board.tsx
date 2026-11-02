@@ -411,7 +411,10 @@ function BoardWorkItemPreviewDialog({
                   <p className="text-muted-foreground mb-2.5 text-[10px] font-medium tracking-wide uppercase">
                     Type
                   </p>
-                  <WorkItemTypeBadge type={selectedTask.type} />
+                  <WorkItemTypeBadge
+                    type={selectedTask.type}
+                    projectId={selectedTask.project_id}
+                  />
                 </div>
 
                 <div className="bg-muted/20 rounded-lg border p-3">
@@ -595,6 +598,7 @@ function BoardClassicColumns({
                         <WorkItemPreviewCardBody
                           title={item.title}
                           type={item.type}
+                          projectId={item.project_id}
                           priority={item.priority}
                           descriptionPlain={description || null}
                           assigneeName={assigneeName(item)}

@@ -5,9 +5,11 @@ import {
   setLocalStorageJson,
 } from '@/lib/local-storage';
 
-export const PROJECT_CREATION_DRAFT_VERSION = 1 as const;
+export const PROJECT_CREATION_DRAFT_VERSION = 2 as const;
+const LEGACY_DRAFT_VERSION = 1 as const;
 
 const STORAGE_PREFIX = `alice:project-creation-draft:v${PROJECT_CREATION_DRAFT_VERSION}:`;
+const LEGACY_STORAGE_PREFIX = `alice:project-creation-draft:v${LEGACY_DRAFT_VERSION}:`;
 const DATE_INPUT_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 function isValidDateInput(value: string): boolean {
@@ -32,10 +34,10 @@ const wizardStepSchema = z.union([
   z.literal(3),
   z.literal(4),
   z.literal(5),
+  z.literal(6),
 ]);
 
-const projectCreationDraftSchema = z.object({
-  version: z.literal(PROJECT_CREATION_DRAFT_VERSION),
+const draftBodySchema = z.object({
   currentStep: wizardStepSchema,
   basicInfo: z.object({
     name: z.string(),
@@ -74,6 +76,21 @@ const projectCreationDraftSchema = z.object({
   }),
 });
 
+const projectCreationDraftSchema = draftBodySchema.extend({
+  version: z.literal(PROJECT_CREATION_DRAFT_VERSION),
+});
+
+const legacyDraftSchema = draftBodySchema.omit({ currentStep: true }).extend({
+  version: z.literal(LEGACY_DRAFT_VERSION),
+  currentStep: z.union([
+    z.literal(1),
+    z.literal(2),
+    z.literal(3),
+    z.literal(4),
+    z.literal(5),
+  ]),
+});
+
 /**
  * Serializable create-wizard state. Date inputs remain YYYY-MM-DD strings (or
  * an empty string), matching the form controls. Authentication tokens and
@@ -96,6 +113,10 @@ export function projectCreationDraftStorageKey(userId: string): string {
   return `${STORAGE_PREFIX}${userId}`;
 }
 
+function legacyProjectCreationDraftStorageKey(userId: string): string {
+  return `${LEGACY_STORAGE_PREFIX}${userId}`;
+}
+
 function resolveStorageKey(
   currentUserId: string | null | undefined
 ): string | null {
@@ -103,12 +124,37 @@ function resolveStorageKey(
   return userId ? projectCreationDraftStorageKey(userId) : null;
 }
 
+/** v1 steps: Details(+types), Imports, Source, Sprint, Team → insert Types at 2. */
+function migrateLegacyDraftStep(
+  step: 1 | 2 | 3 | 4 | 5
+): 1 | 2 | 3 | 4 | 5 | 6 {
+  return step === 1 ? 1 : ((step + 1) as 2 | 3 | 4 | 5 | 6);
+}
+
+function migrateLegacyDraft(
+  draft: z.infer<typeof legacyDraftSchema>
+): ProjectCreationDraft {
+  return {
+    ...draft,
+    version: PROJECT_CREATION_DRAFT_VERSION,
+    currentStep: migrateLegacyDraftStep(draft.currentStep),
+  };
+}
+
 /** Validate and sanitize unknown stored data. */
 export function validateProjectCreationDraft(
   value: unknown
 ): ProjectCreationDraft | null {
   const parsed = projectCreationDraftSchema.safeParse(value);
-  return parsed.success ? parsed.data : null;
+  if (parsed.success) {
+    return parsed.data;
+  }
+
+  const legacy = legacyDraftSchema.safeParse(value);
+  if (!legacy.success) {
+    return null;
+  }
+  return migrateLegacyDraft(legacy.data);
 }
 
 export function saveProjectCreationDraft(
@@ -129,26 +175,47 @@ export function saveProjectCreationDraft(
 export function readProjectCreationDraft(
   currentUserId: string | null | undefined
 ): ProjectCreationDraft | null {
-  const storageKey = resolveStorageKey(currentUserId);
-  if (!storageKey) {
+  const userId = normalizeUserId(currentUserId);
+  if (!userId) {
     return null;
   }
 
+  const storageKey = projectCreationDraftStorageKey(userId);
   const stored = getLocalStorageJson<unknown>(storageKey);
-  if (stored === null) {
+  if (stored !== null) {
+    const validatedDraft = validateProjectCreationDraft(stored);
+    if (!validatedDraft) {
+      removeLocalStorageItem(storageKey);
+    }
+    return validatedDraft;
+  }
+
+  const legacyKey = legacyProjectCreationDraftStorageKey(userId);
+  const legacyStored = getLocalStorageJson<unknown>(legacyKey);
+  if (legacyStored === null) {
     return null;
   }
 
-  const validatedDraft = validateProjectCreationDraft(stored);
-  if (!validatedDraft) {
-    removeLocalStorageItem(storageKey);
+  const migrated = validateProjectCreationDraft(legacyStored);
+  removeLocalStorageItem(legacyKey);
+  if (migrated) {
+    setLocalStorageJson(storageKey, migrated);
   }
-  return validatedDraft;
+  return migrated;
 }
 
 export function clearProjectCreationDraft(
   currentUserId: string | null | undefined
 ): boolean {
-  const storageKey = resolveStorageKey(currentUserId);
-  return storageKey ? removeLocalStorageItem(storageKey) : false;
+  const userId = normalizeUserId(currentUserId);
+  if (!userId) {
+    return false;
+  }
+  const clearedCurrent = removeLocalStorageItem(
+    projectCreationDraftStorageKey(userId)
+  );
+  const clearedLegacy = removeLocalStorageItem(
+    legacyProjectCreationDraftStorageKey(userId)
+  );
+  return clearedCurrent || clearedLegacy;
 }

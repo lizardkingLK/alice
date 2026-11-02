@@ -76,6 +76,7 @@ type CommentContentWorkItem = {
   key: string;
   title: string;
   type?: Tables<'work_items'>['type'];
+  project_id?: string | null;
   priority?: Tables<'work_items'>['priority'] | null;
   description_plain?: string | null;
   assignee_name?: string | null;
@@ -256,6 +257,7 @@ function renderWorkItemMention(
           <WorkItemPreviewCard
             title={matched?.title || title || label || 'Work item'}
             type={matched?.type ?? 'Task'}
+            projectId={matched?.project_id}
             priority={matched?.priority}
             descriptionPlain={matched?.description_plain}
             assigneeName={matched?.assignee_name}

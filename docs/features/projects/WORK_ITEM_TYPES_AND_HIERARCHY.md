@@ -25,19 +25,20 @@ type ProjectWorkItemTypeDef = {
 };
 ```
 
-| Field         | Rules                                                                                                                                                                                    |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `key`         | Unique per project. **Immutable after create** (change only via migrate/removal). Seed keys keep `Epic` / `Feature` / `Story` / `Task` / `Issue` so existing rows need no value rewrite. |
-| `name`        | UI / import display. Bindings and storage use `key`.                                                                                                                                     |
-| `description` | Optional help text on Types tab / pickers.                                                                                                                                               |
-| `icon`        | Controlled vocabulary; unknown → safe fallback icon.                                                                                                                                     |
-| `level`       | Non-negative integer, **unique** in the project. Sort ascending → single parent→child chain.                                                                                             |
+| Field         | Rules                                                                                                                                                                                                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `key`         | Unique per project. **Immutable after create** (change only via migrate/removal). **Never shown in product UI.** New custom types use opaque **UUID** keys (`createProjectWorkItemTypeKey`). Seed templates keep `Epic` / `Feature` / `Story` / `Task` / `Issue` for migration. |
+| `name`        | UI / import display (**unique** per project, case-insensitive). Bindings and storage use `key`.                                                                                                                                                                                 |
+| `description` | Optional help text on Types tab / pickers.                                                                                                                                                                                                                                      |
+| `icon`        | Controlled vocabulary; unknown → safe fallback icon.                                                                                                                                                                                                                            |
+| `level`       | Non-negative integer, **unique** in the project. Sort ascending → single parent→child chain.                                                                                                                                                                                    |
 
 Constraints (Zod + API):
 
 - At least one type definition.
-- Unique `key`, unique `level`.
+- Unique `key`, unique `level`, unique `name` (trimmed, case-insensitive).
 - Non-empty `name`.
+- Product surfaces (pickers, badges, filters) always show **name + icon**, never the raw key.
 
 ### 1.2 Linear hierarchy (levels)
 
@@ -141,12 +142,13 @@ endpoint: `{ projectId, revision, types[] }`.
 
 ### Web (`apps/web`)
 
-- Types tab / create wizard: catalog editor (add, rename, description, icon, reorder
-  levels) — not enable/disable checkboxes only.
+- Types tab / create wizard **Types** step: catalog editor (add, rename,
+  description, icon picker, color picker, drag-reorder levels) — not
+  enable/disable checkboxes only.
 - Badges, forms, board, backlog, calendar, filters: resolve presentation from the
   **project** catalog (filters must not assume a global fixed five).
 - Presentation helpers resolve by catalog; seed-key CSS tokens for known keys;
-  custom keys → neutral default token (v1; no per-type color picker).
+  optional per-type hex `color` on catalog defs for live card tones.
 
 ---
 

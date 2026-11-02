@@ -43,6 +43,8 @@ import {
   ChatTurnRoles,
   ChatAttachmentFileTypeEnum,
   WorkItemTypeEnum,
+  buildDefaultProjectTypeDefs,
+  createProjectWorkItemTypeKey,
 } from '@repo/types';
 import { prisma } from '../../src/lib/prisma';
 import {
@@ -153,7 +155,14 @@ describe('ChatService tool authorization', () => {
         listAccessibleProjectIds: vi
           .fn()
           .mockResolvedValue(options.accessibleProjectIds),
-        findById: vi.fn().mockResolvedValue({ key: 'ALICE' }),
+        findById: vi.fn().mockResolvedValue({
+          id: 'project-allowed',
+          key: 'ALICE',
+          name: 'Alice',
+          workflow_config: {
+            work_item_types: buildDefaultProjectTypeDefs(),
+          },
+        }),
       } as never,
       workItemService: {
         createWorkItem: options.createWorkItem ?? vi.fn(),
@@ -222,6 +231,135 @@ describe('ChatService tool authorization', () => {
       error: "You're not a member of this project.",
     });
     expect(listSprintsByProject).not.toHaveBeenCalled();
+  });
+
+  it('returns the project work-item type catalog for create guidance', async () => {
+    const customKey = createProjectWorkItemTypeKey();
+    const typeDefs = [
+      ...buildDefaultProjectTypeDefs(['Epic', 'Story', 'Task']),
+      {
+        key: customKey,
+        name: 'Initiative',
+        icon: 'trophy',
+        color: '#123456',
+        level: 3,
+      },
+    ];
+    const findById = vi.fn().mockResolvedValue({
+      id: 'project-allowed',
+      key: 'ALICE',
+      name: 'Alice',
+      workflow_config: { work_item_types: typeDefs },
+    });
+    const service = new ChatService({
+      chat: {} as never,
+      projectsRepository: {
+        listAccessibleProjectIds: vi
+          .fn()
+          .mockResolvedValue(['project-allowed']),
+        findById,
+      } as never,
+      workItemService: { createWorkItem: vi.fn() } as never,
+      sprintsService: {} as never,
+      projectsService: {} as never,
+      integrationsService: {} as never,
+    });
+
+    const [response] = await service.processFunctionCalls(
+      'trusted-user',
+      [
+        {
+          functionCall: {
+            name: 'get_project_work_item_types',
+            args: { projectId: 'project-allowed' },
+          },
+        },
+      ],
+      []
+    );
+
+    expect(response?.functionResponse?.response.result).toEqual(
+      expect.objectContaining({
+        projectId: 'project-allowed',
+        types: expect.arrayContaining([
+          expect.objectContaining({ key: customKey, name: 'Initiative' }),
+          expect.objectContaining({ key: 'Task', name: 'Task' }),
+        ]),
+        defaultTypeKey: 'Task',
+      })
+    );
+  });
+
+  it('maps create_work_item type through the project catalog by name', async () => {
+    const customKey = createProjectWorkItemTypeKey();
+    const typeDefs = [
+      ...buildDefaultProjectTypeDefs(['Epic', 'Story', 'Task']),
+      {
+        key: customKey,
+        name: 'Initiative',
+        icon: 'trophy',
+        level: 3,
+      },
+    ];
+    const createWorkItem = vi.fn().mockResolvedValue({
+      id: 'wi-created',
+      title: 'Kickoff',
+    });
+    const service = new ChatService({
+      chat: {} as never,
+      projectsRepository: {
+        listAccessibleProjectIds: vi
+          .fn()
+          .mockResolvedValue(['project-allowed']),
+        findById: vi.fn().mockResolvedValue({
+          id: 'project-allowed',
+          key: 'ALICE',
+          name: 'Alice',
+          workflow_config: { work_item_types: typeDefs },
+        }),
+      } as never,
+      workItemService: { createWorkItem } as never,
+      sprintsService: {} as never,
+      projectsService: {} as never,
+      integrationsService: {} as never,
+    });
+
+    const toolActionsPerformed: ToolAction[] = [];
+    await service.processFunctionCalls(
+      'trusted-user',
+      [
+        {
+          functionCall: {
+            name: 'create_work_item',
+            args: {
+              title: 'Kickoff',
+              projectId: 'project-allowed',
+              type: 'Initiative',
+              priority: 'medium',
+            },
+          },
+        },
+      ],
+      toolActionsPerformed
+    );
+
+    expect(createWorkItem).toHaveBeenCalledWith(
+      'trusted-user',
+      expect.objectContaining({
+        title: 'Kickoff',
+        project_id: 'project-allowed',
+        type: customKey,
+      })
+    );
+    expect(toolActionsPerformed).toContainEqual(
+      expect.objectContaining({
+        type: 'create_work_item',
+        entity: expect.objectContaining({
+          type: customKey,
+          typeName: 'Initiative',
+        }),
+      })
+    );
   });
 
   it('loads active sprint context only for accessible project ids', async () => {

@@ -169,6 +169,7 @@ function PanelTreeNode({
         <ResultLink itemId={item.id}>
           <WorkItemTypeBadge
             type={item.type}
+            projectId={item.project_id}
             className="shrink-0 font-normal"
           />
           {item.jira_issue_key ? (
