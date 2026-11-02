@@ -336,7 +336,7 @@ const dateStringSchema = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
 
 const workItemTypeSchema = z
-  .string()
+  .string({ error: 'Please select a work item type' })
   .trim()
   .min(1, { message: 'Please select a work item type' });
 
