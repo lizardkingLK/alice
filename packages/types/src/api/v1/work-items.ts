@@ -9,7 +9,7 @@ import {
   WORK_ITEM_STATUSES,
   type WorkItemStatus,
 } from '../../work-item-status.js';
-import { WORK_ITEM_TYPES, type WorkItemType } from '../../work-item-types.js';
+import type { WorkItemType } from '../../work-item-types.js';
 import {
   coerceLabelsFormField,
   normalizeWorkItemLabels,
@@ -267,7 +267,7 @@ export const listWorkItemsQuerySchema = z
     projectId: optionalUuid,
     sprintId: optionalNullableId,
     parentId: optionalNullableId,
-    type: z.preprocess(emptyToUndefined, z.enum(WORK_ITEM_TYPES).optional()),
+    type: z.preprocess(emptyToUndefined, z.string().trim().min(1).optional()),
     assigneeId: optionalUuid,
     labels: z.preprocess(emptyToUndefined, z.string().optional()),
     view: z.preprocess(
@@ -335,9 +335,10 @@ const dateStringSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
 
-const workItemTypeSchema = z.enum(WORK_ITEM_TYPES, {
-  message: 'Please select a work item type',
-});
+const workItemTypeSchema = z
+  .string({ error: 'Please select a work item type' })
+  .trim()
+  .min(1, { message: 'Please select a work item type' });
 
 const workItemPrioritySchema = z.enum(WORK_ITEM_PRIORITIES, {
   message: 'Please select a valid priority',

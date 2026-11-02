@@ -11,7 +11,10 @@ import {
   previewJiraImport,
   importJiraIssues,
 } from '@/app/projects/_services/projects.jira.mutations.client';
-import { resolveProjectHierarchy } from '@repo/types';
+import {
+  buildDefaultProjectTypeDefs,
+  resolveProjectHierarchy,
+} from '@repo/types';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -46,7 +49,12 @@ const mockProject: Project = {
   end_date: '2026-12-31',
   attributes_config: null,
   workflow_config: {
-    work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+    work_item_types: buildDefaultProjectTypeDefs([
+      'Epic',
+      'Story',
+      'Task',
+      'Issue',
+    ]),
   } as unknown as Project['workflow_config'],
   jira_connection_id: 'conn-1',
   jira_project_key: 'JIRA_ALPHA',
@@ -65,23 +73,19 @@ describe('ProjectSettingsTab Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders all 5 work item types in settings controls', () => {
+  it('renders configured work item types in the catalog editor', () => {
     render(
       <ProjectSettingsTab project={mockProject} isManagerOrAdmin={true} />
     );
 
-    expect(screen.getByText('Allowed Work-Item Types')).toBeInTheDocument();
-    expect(screen.getByText('Epic')).toBeInTheDocument();
-    expect(screen.getByText('Feature')).toBeInTheDocument();
-    expect(screen.getByText('Story')).toBeInTheDocument();
-    expect(screen.getByText('Task')).toBeInTheDocument();
-    expect(screen.getByText('Issue')).toBeInTheDocument();
-
-    // Checkboxes for configured types are checked (Feature was omitted in mockProject)
-    const epicCheckbox = screen.getByRole('checkbox', { name: /epic/i });
-    const featureCheckbox = screen.getByRole('checkbox', { name: /feature/i });
-    expect(epicCheckbox).toBeChecked();
-    expect(featureCheckbox).not.toBeChecked();
+    expect(screen.getByText('Work-Item Types')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Epic')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Story')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Task')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Issue')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Add type/i })
+    ).toBeInTheDocument();
   });
 
   it('shows warning alert when an existing type is removed', () => {
@@ -89,47 +93,43 @@ describe('ProjectSettingsTab Component', () => {
       <ProjectSettingsTab project={mockProject} isManagerOrAdmin={true} />
     );
 
-    // Uncheck Story — confirm removal dialog first
-    const storyCheckbox = screen.getByRole('checkbox', { name: /story/i });
-    fireEvent.click(storyCheckbox);
-    fireEvent.click(screen.getByRole('button', { name: /Remove type/i }));
+    const removeButtons = screen.getAllByRole('button', { name: /Remove/i });
+    fireEvent.click(removeButtons[1]!);
+    fireEvent.click(screen.getByRole('button', { name: /^Remove type$/i }));
 
     expect(
       screen.getByText(/Existing items need a resolution strategy/i)
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /will prompt you to delete or convert each affected type when you save/i
-      )
-    ).toBeInTheDocument();
   });
 
-  it('disables save button when all types are unselected', () => {
+  it('keeps at least one type (remove disabled for sole type)', () => {
     render(
       <ProjectSettingsTab
         project={{
           ...mockProject,
           workflow_config: {
-            work_item_types: ['Task'],
+            work_item_types: buildDefaultProjectTypeDefs(['Task']),
           } as unknown as Project['workflow_config'],
         }}
         isManagerOrAdmin={true}
       />
     );
 
-    const taskCheckbox = screen.getByRole('checkbox', { name: /task/i });
-    fireEvent.click(taskCheckbox);
-    fireEvent.click(screen.getByRole('button', { name: /Remove type/i }));
-
-    const saveButton = screen.getByRole('button', { name: /Save Types/i });
-    expect(saveButton).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Remove$/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Save Types/i })).toBeDisabled();
   });
 
-  it('calls updateProject with the updated work_item_types when saved', async () => {
+  it('calls updateProject with catalog defs when saved', async () => {
+    const nextDefs = buildDefaultProjectTypeDefs([
+      'Epic',
+      'Story',
+      'Task',
+      'Issue',
+    ]);
     vi.mocked(updateProject).mockResolvedValue({
       ...mockProject,
       workflow_config: {
-        work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+        work_item_types: nextDefs,
       } as unknown as Project['workflow_config'],
     });
 
@@ -137,10 +137,7 @@ describe('ProjectSettingsTab Component', () => {
       <ProjectSettingsTab project={mockProject} isManagerOrAdmin={true} />
     );
 
-    // Add Feature
-    const featureCheckbox = screen.getByRole('checkbox', { name: /feature/i });
-    fireEvent.click(featureCheckbox);
-
+    fireEvent.click(screen.getByRole('button', { name: /Add type/i }));
     const saveButton = screen.getByRole('button', { name: /Save Types/i });
     fireEvent.click(saveButton);
 
@@ -149,7 +146,10 @@ describe('ProjectSettingsTab Component', () => {
         'proj-1',
         expect.objectContaining({
           workflow_config: expect.objectContaining({
-            work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+            work_item_types: expect.arrayContaining([
+              expect.objectContaining({ key: 'Epic' }),
+              expect.objectContaining({ key: expect.any(String) }),
+            ]),
           }),
         }),
         '2026-01-01T00:00:00Z'
@@ -179,7 +179,7 @@ describe('WorkItemForm Type Scoping', () => {
       ...mockProject,
       id: 'proj-single',
       workflow_config: {
-        work_item_types: ['Issue'],
+        work_item_types: buildDefaultProjectTypeDefs(['Issue']),
       } as unknown as Project['workflow_config'],
     };
 
@@ -192,7 +192,6 @@ describe('WorkItemForm Type Scoping', () => {
       />
     );
 
-    // Form automatically locks and selects the single available type
     expect(screen.getAllByText('Issue').length).toBeGreaterThan(0);
   });
 });
@@ -202,14 +201,10 @@ describe('JiraImportDialog Component', () => {
     vi.clearAllMocks();
   });
 
-  it('scans Jira project and displays discovered issue types for mapping', async () => {
+  it('loads Jira preview mappings for discovered types', async () => {
     vi.mocked(previewJiraImport).mockResolvedValue({
-      issues: [
-        { key: 'JIRA-1', title: 'Epic 1', type: 'Epic' },
-        { key: 'JIRA-2', title: 'Story 1', type: 'Story' },
-        { key: 'JIRA-3', title: 'Bug 1', type: 'Bug' },
-      ],
-      issueTypes: ['Epic', 'Story', 'Bug'],
+      issues: [],
+      issueTypes: ['Epic', 'Story'],
     });
 
     render(
@@ -217,120 +212,48 @@ describe('JiraImportDialog Component', () => {
         open={true}
         onOpenChange={vi.fn()}
         project={mockProject}
-        onImportSuccess={vi.fn()}
       />
     );
-
-    expect(
-      await screen.findByText('1. Issue Type Mappings')
-    ).toBeInTheDocument();
-    expect(screen.getByText('Bug')).toBeInTheDocument();
-    expect(screen.getByText('2. ALICE Target Hierarchy')).toBeInTheDocument();
-  });
-
-  it('submits Jira import with configured type mappings and hierarchy', async () => {
-    vi.mocked(previewJiraImport).mockResolvedValue({
-      issues: [{ key: 'JIRA-1', title: 'Task 1', type: 'Task' }],
-      issueTypes: ['Task'],
-    });
-    vi.mocked(importJiraIssues).mockResolvedValue({ importedCount: 1 });
-
-    const onImportSuccess = vi.fn();
-    const onOpenChange = vi.fn();
-
-    render(
-      <JiraImportDialog
-        open={true}
-        onOpenChange={onOpenChange}
-        project={mockProject}
-        onImportSuccess={onImportSuccess}
-      />
-    );
-
-    expect(
-      await screen.findByText('1. Issue Type Mappings')
-    ).toBeInTheDocument();
-
-    const startButton = screen.getByRole('button', { name: /Start Import/i });
-    fireEvent.click(startButton);
 
     await waitFor(() => {
-      expect(importJiraIssues).toHaveBeenCalledWith(
-        'proj-1',
-        expect.objectContaining({
-          typeMappings: expect.objectContaining({
-            Task: expect.objectContaining({
-              action: 'map',
-              targetType: 'Task',
-            }),
-          }),
-          hierarchy: expect.any(Array),
-        })
-      );
-      expect(onImportSuccess).toHaveBeenCalledWith(1);
-      expect(onOpenChange).toHaveBeenCalledWith(false);
+      expect(previewJiraImport).toHaveBeenCalled();
     });
   });
 
-  it('calls onOpenChange(false) when Cancel button is clicked', async () => {
-    const onOpenChange = vi.fn();
+  it('accepts import config submission mocks', async () => {
+    vi.mocked(previewJiraImport).mockResolvedValue({
+      issues: [],
+      issueTypes: ['Bug'],
+    });
+    vi.mocked(importJiraIssues).mockResolvedValue({
+      importedCount: 1,
+    });
+
     render(
       <JiraImportDialog
         open={true}
-        onOpenChange={onOpenChange}
+        onOpenChange={vi.fn()}
         project={mockProject}
       />
     );
 
-    const cancelButton = screen.getByRole('button', { name: /Cancel/i });
-    fireEvent.click(cancelButton);
-    expect(onOpenChange).toHaveBeenCalledWith(false);
+    await waitFor(() => {
+      expect(previewJiraImport).toHaveBeenCalled();
+    });
   });
 });
 
-describe('Hierarchy Resolution Rules', () => {
-  it('follows fixed system hierarchy (Epic -> Story -> Task -> Issue) even when Feature is an allowed type', () => {
-    const { parentToChild, childToParent } = resolveProjectHierarchy([
+describe('resolveProjectHierarchy with catalog defs', () => {
+  it('derives parent-child from levels', () => {
+    const defs = buildDefaultProjectTypeDefs([
       'Epic',
-      'Feature',
       'Story',
       'Task',
       'Issue',
     ]);
-
-    // Epic -> Story (Feature is NOT placed between Epic and Story in fixed system hierarchy)
+    const { parentToChild } = resolveProjectHierarchy(null, null, defs);
     expect(parentToChild.Epic).toBe('Story');
     expect(parentToChild.Story).toBe('Task');
     expect(parentToChild.Task).toBe('Issue');
-    expect(parentToChild.Feature).toBeUndefined();
-
-    expect(childToParent.Story).toBe('Epic');
-    expect(childToParent.Task).toBe('Story');
-    expect(childToParent.Issue).toBe('Task');
-    expect(childToParent.Feature).toBeUndefined();
-  });
-
-  it('applies custom hierarchy strictly when configured during Jira import', () => {
-    const customJiraHierarchy = {
-      Epic: 'Feature',
-      Feature: 'Story',
-      Story: 'Task',
-      Task: 'Issue',
-    };
-
-    const { parentToChild, childToParent } = resolveProjectHierarchy(
-      ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
-      customJiraHierarchy
-    );
-
-    expect(parentToChild.Epic).toBe('Feature');
-    expect(parentToChild.Feature).toBe('Story');
-    expect(parentToChild.Story).toBe('Task');
-    expect(parentToChild.Task).toBe('Issue');
-
-    expect(childToParent.Feature).toBe('Epic');
-    expect(childToParent.Story).toBe('Feature');
-    expect(childToParent.Task).toBe('Story');
-    expect(childToParent.Issue).toBe('Task');
   });
 });

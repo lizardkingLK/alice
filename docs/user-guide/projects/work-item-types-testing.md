@@ -1,6 +1,8 @@
-# User Testing Guide: Project Work-Item Types & Jira Hierarchy Mapping
+# User Testing Guide: Dynamic Project Work-Item Types & Hierarchy
 
-Step-by-step instructions for testing **Project-Level Work-Item Types**, **Create/Edit Form Scoping**, **Fallback to Issue**, **Restoring Types**, and **Jira Import Hierarchy Mapping** on the running system.
+Step-by-step checks for **project type catalogs**, **level-based hierarchy**,
+**form scoping**, **removal/migrate**, **custom types**, and **Jira import**
+mapping to catalog keys.
 
 **Audience:** Managers, Administrators, QA Engineers, and Developers
 
@@ -23,115 +25,101 @@ Step-by-step instructions for testing **Project-Level Work-Item Types**, **Creat
 
 ## Test Scenarios
 
-### 1. Project Creation with Configured Types
+### 1. Project creation with default catalog
 
-Verify that allowed work-item types can be selected during project creation:
-
-1. Navigate to **Projects** (`/projects`) and click **+ New Project**.
-2. In **Step 1: Basic Details**:
-   - Fill in Project Name (e.g., `Alpha Project`) and Key (e.g., `ALP`).
-   - Scroll down to the **Allowed Work-Item Types** section.
-   - Verify 5 checkboxes are present: `Epic`, `Feature`, `Story`, `Task`, `Issue`.
-   - Verify there is **no** active hierarchy preview box in Step 1.
-3. Deselect all 5 types and click **Next**:
-   - Verify validation error: _"At least one work-item type must be selected."_
-4. Select `Epic`, `Story`, `Task`, `Issue` (leave `Feature` unchecked).
-5. Complete the wizard and submit **Create Project**.
-
----
-
-### 2. Create & Edit Work-Item Form Scoping
-
-Verify that forms show only permitted types for the selected project:
-
-1. Navigate to **Work Items** -> click **+ New Work Item**.
-2. Select your project (`Alpha Project`).
-3. Open the **Type** dropdown:
-   - Verify only `Epic`, `Story`, `Task`, and `Issue` appear.
-   - Verify `Feature` is not present.
-4. Create an `Epic` titled `Core Initiative`.
-5. Create a `Story` with parent set to `Core Initiative`.
-6. Open the newly created `Story` in the edit dialog:
-   - Verify the edit form's Type dropdown is similarly restricted to the project's configured types.
+1. Navigate to **Projects** (`/projects`) and open **+ New Project** / **Add Project**.
+2. In **Work-Item Types**:
+   - Verify defaults are present (Epic, Feature, Story, Task, Issue) with name,
+     icon, description, and level/order controls — not only bare checkboxes.
+   - Clear all types (or remove until empty) and advance:
+     - Expect validation: at least one type required.
+3. Keep Epic, Story, Task, Issue; remove or omit Feature (or leave Feature out of
+   the active set).
+4. Optionally **add** a custom type (e.g. name `Spike`, place it at an unused
+   level).
+5. Finish create and open the project **Types** tab:
+   - Verify the saved catalog matches (including custom type if added).
 
 ---
 
-### 3. Global Filters Remain Unrestricted
+### 2. Create & edit work-item form scoping
 
-Verify that global filters continue listing all canonical types:
-
-1. Open **Work Items** (registry table).
-2. Click **Filter** and view the Type filter options:
-   - Verify all 5 types (`Epic`, `Feature`, `Story`, `Task`, `Issue`) are available.
-3. Open **Calendar** and view the Calendar filter options:
-   - Verify all 5 types are present.
-
----
-
-### 4. Project Types: Type Removal Conflict Dialog
-
-Verify that deselecting a type with existing items requires an explicit delete or convert strategy:
-
-1. Open `Alpha Project` -> click the **Types** tab.
-2. In **Allowed Work-Item Types**:
-   - Deselect `Story`.
-   - Confirm the remove-type dialog, then verify the warning banner explains that affected items must be deleted or converted when saving.
-3. Click **Save Types**:
-   - Complete the conflict dialog (e.g. **Convert to** `Issue`, or **Delete permanently**).
-   - Verify success notification.
-4. Navigate to the project's **Work Items** or **Backlog**:
-   - Verify items follow the chosen strategy.
-   - Verify parent links involving removed-type items were detached first.
+1. **Work Items** → **+ New Work Item**; select the project.
+2. Open **Type**:
+   - Only catalog types for that project appear (display **names**).
+   - Omitted defaults (e.g. Feature) and types from other projects do not appear.
+3. Create a top-level item and a child under an allowed parent type.
+4. Edit the child: Type dropdown remains scoped to the same catalog.
 
 ---
 
-### 5. Project Types: Restoring Removed Types
+### 3. Filters follow accessible project catalogs
 
-Verify that re-enabling a previously removed type allows it for future items without reverting prior strategies:
-
-1. Return to `Alpha Project` -> **Types** tab.
-2. Check `Story` and check `Feature`.
-3. Click **Save Types**.
-4. Open **+ New Work Item**:
-   - Verify both `Story` and `Feature` are selectable.
-5. Inspect work items that were deleted or converted when `Story` was removed:
-   - Verify they were not automatically restored to `Story`.
+1. Open **Work Items** → **Filter** → Type options:
+   - Options reflect types from projects you can access (including custom keys),
+     not a hard-coded global five-only list.
+2. Repeat for **Calendar** filters with the same expectation.
 
 ---
 
-### 6. Jira Import & Custom Hierarchy Configuration
+### 4. Types tab: remove type with conflict dialog
 
-Verify Jira import issue type mapping and hierarchy customization:
+1. Open the project → **Types**.
+2. Remove a type that still has work items (e.g. Story).
+3. **Save Types**:
+   - Complete conflict dialog (**Convert to** another catalog type, or **Delete
+     permanently**).
+4. Verify work items and parent links follow the strategy (detach-first).
 
-1. Open `Alpha Project` -> **Integrations** tab.
-2. In the **Jira Cloud** card, open **Jira Import & Hierarchy Mapping**.
-3. Verify the dialog opens with expanded width (`max-w-4xl` / `max-w-5xl`), hidden scrollbar, and fixed footer buttons.
-4. In **1. Issue Type Mappings**:
-   - Verify each mapping row displays Jira type and ALICE mapping options on a single row without wrapping.
-   - Set one type to **Map to ALICE type**.
-   - Set one type to **Ignore (Skip)**.
-   - Set one type to **Drop type (Fallback to Issue)**.
-5. In **2. ALICE Target Hierarchy**:
-   - Reorder levels using **Up** / **Down** buttons (e.g. `Epic → Feature → Story → Task → Issue`).
-6. Click **Start Import**:
-   - Verify issues are imported with configured types.
-   - Verify ignored issues are skipped.
-   - Verify dropped issues are created as `Issue`.
-   - Verify parent links conform strictly to the custom hierarchy.
-7. Return to **Types** tab:
-   - Verify the informational badge indicates: _"Jira Import Custom Hierarchy Active"_.
+---
+
+### 5. Types tab: add / rename / reorder
+
+1. On **Types**, rename a type’s **display name** (key unchanged).
+2. Save; open a work item of that type — badge/label shows the new name.
+3. Reorder **levels** so the linear chain changes (e.g. insert Feature between
+   Epic and Story).
+4. Save; verify create-subtask / parent rules follow the new adjacent levels.
+5. Add a new type at the leaf or middle level; save; confirm it appears in the
+   Type dropdown.
+
+---
+
+### 6. Client catalog cache (smoke)
+
+1. Sign out and sign in again.
+2. Open board / work-item UI that shows type badges before editing Types:
+   - Labels/icons resolve without a visible “unknown type” flash for cached
+     projects (best-effort smoke).
+3. Change the catalog on **Types** and save:
+   - UI elsewhere in the same session picks up new names/icons after
+     invalidation (refresh or navigation as designed).
+
+---
+
+### 7. Jira import & level mapping
+
+1. Project → **Integrations** → **Jira Import & Hierarchy Mapping**.
+2. Map at least one Jira type to a **catalog key**; set one to **Ignore**; set one
+   to drop/fallback.
+3. Reorder hierarchy **levels** with Up/Down.
+4. **Start Import**:
+   - Mapped issues use the correct keys.
+   - Ignored skipped; fallback uses the chosen catalog type.
+   - Parent links follow the linear level chain.
+5. **Types** tab reflects any catalog updates from import.
 
 ---
 
 ## Summary Checklist
 
-| #   | Test Case                       | Expected Result                                                            | Pass/Fail |
-| --- | ------------------------------- | -------------------------------------------------------------------------- | :-------: |
-| 1   | Project creation type selection | Checkboxes for all 5 types; at least one required                          |    [ ]    |
-| 2   | Create/Edit form type scoping   | Disallowed types hidden from dropdown                                      |    [ ]    |
-| 3   | Global filters                  | All 5 types remain available globally                                      |    [ ]    |
-| 4   | Remove type on Types tab        | Conflict dialog; delete or convert; parents detached first                 |    [ ]    |
-| 5   | Restore type on Types tab       | Type available for new items; previously deleted/converted items unchanged |    [ ]    |
-| 6   | Jira import layout & width      | Wide dialog (`max-w-4xl`), no scrollbar, fixed bottom buttons              |    [ ]    |
-| 7   | Jira import type mappings       | `Map`, `Ignore`, `Drop` actions executed cleanly                           |    [ ]    |
-| 8   | Jira import hierarchy           | Hierarchy reordered and saved in `workflow_config.hierarchy`               |    [ ]    |
+| #   | Test Case                     | Expected Result                                  | Pass/Fail |
+| --- | ----------------------------- | ------------------------------------------------ | :-------: |
+| 1   | Create with defaults / custom | Catalog editor; ≥1 type; custom type persists    |    [ ]    |
+| 2   | Form type scoping             | Only project catalog types                       |    [ ]    |
+| 3   | Filters                       | Project-accessible catalogs, not fixed five-only |    [ ]    |
+| 4   | Remove type                   | Conflict dialog; delete or convert; detach-first |    [ ]    |
+| 5   | Rename / reorder / add        | Name and levels apply; dropdown updates          |    [ ]    |
+| 6   | Cache smoke                   | Resolve after login; refresh after Types save    |    [ ]    |
+| 7   | Jira map / ignore / fallback  | Keys + linear levels applied                     |    [ ]    |
+| 8   | Jira hierarchy order          | Level order saved on project config              |    [ ]    |

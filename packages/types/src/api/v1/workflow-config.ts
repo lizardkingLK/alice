@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { Constants } from '../../generated/supabase/database.types.js';
 import { boardRuleMatcherSchema } from './board-config.js';
 import {
   DEFAULT_WORKFLOW_ID,
@@ -14,6 +13,9 @@ import {
 import type { WorkItemType } from '../../work-item-types.js';
 
 export const WORKFLOW_CONFIG_SCHEMA_VERSION = 1 as const;
+
+/** Catalog type key (free-form string). */
+const workItemTypeSchema = z.string().trim().min(1);
 
 export const WORKFLOW_REQUIRE_CHILDREN = [
   'off',
@@ -33,8 +35,6 @@ export const WORKFLOW_REQUIRE_LINKED_ISSUES = ['off', 'unlink_first'] as const;
 
 export type WorkflowRequireLinkedIssues =
   (typeof WORKFLOW_REQUIRE_LINKED_ISSUES)[number];
-
-const workItemTypeSchema = z.enum(Constants.public.Enums.WorkItemType);
 
 const workflowStateCategorySchema = z.enum(WORKFLOW_STATE_CATEGORIES);
 

@@ -28,6 +28,7 @@ import {
 } from '@repo/ui/lib/icons';
 import {
   CANONICAL_HIERARCHY_ORDER,
+  resolveProjectTypeKeys,
   type WorkItemType,
   WorkItemTypeEnum,
 } from '@repo/types';
@@ -108,9 +109,7 @@ function hierarchyRecordToArray(
   const visited = new Set<string>();
   while (current && !visited.has(current)) {
     visited.add(current);
-    if (CANONICAL_HIERARCHY_ORDER.includes(current as WorkItemType)) {
-      result.push(current as WorkItemType);
-    }
+    result.push(current);
     current = record[current] ?? null;
   }
   return result.length > 0 ? result : null;
@@ -157,13 +156,10 @@ export function JiraImportDialog({
       let initialHierarchy: WorkItemType[];
       if (parsedHierarchy && parsedHierarchy.length > 0) {
         initialHierarchy = parsedHierarchy;
-      } else if (
-        existingConfig?.work_item_types &&
-        existingConfig.work_item_types.length > 0
-      ) {
-        initialHierarchy = [...existingConfig.work_item_types];
       } else {
-        initialHierarchy = [...CANONICAL_HIERARCHY_ORDER];
+        const keys = resolveProjectTypeKeys(existingConfig?.work_item_types);
+        initialHierarchy =
+          keys.length > 0 ? keys : [...CANONICAL_HIERARCHY_ORDER];
       }
       setHierarchy(initialHierarchy);
     } catch (err) {

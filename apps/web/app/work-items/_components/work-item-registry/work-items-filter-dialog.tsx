@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Constants } from '@repo/types/database';
 import { cn } from '@repo/ui/lib/utils';
 import {
   parseWorkItemLabelsFilterParam,
+  SEED_WORK_ITEM_TYPE_KEYS,
   WORK_ITEM_PRIORITIES,
 } from '@repo/types';
+import { collectTypeKeysFromWitCatalog } from '@/app/work-items/_helpers/wit-catalog-storage';
 import {
   applyProjectFilterToSearchParams,
   buildSprintFilterOptionsForQuery,
@@ -33,7 +34,15 @@ import {
   type FilterDialogOption,
 } from '@/components/filter-dialog-shell';
 
-const WORK_ITEM_TYPES = Constants.public.Enums.WorkItemType;
+function resolveFilterTypeKeys(userId?: string | null): readonly string[] {
+  if (userId) {
+    const cached = collectTypeKeysFromWitCatalog(userId);
+    if (cached.length > 0) {
+      return cached;
+    }
+  }
+  return SEED_WORK_ITEM_TYPE_KEYS;
+}
 
 /** Single-value draft fields updated by the same apply/clear path. */
 const SCALAR_DRAFT_FILTER_KEYS = [
@@ -213,7 +222,7 @@ function optionsForField(
       }));
     }
     case 'type':
-      return WORK_ITEM_TYPES.map((workItemType) => ({
+      return resolveFilterTypeKeys(null).map((workItemType) => ({
         value: workItemType,
         label: workItemType,
       }));

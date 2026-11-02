@@ -47,7 +47,7 @@ export type Work_item_chart_hierarchy_rollupsMinAggregateOutputType = {
   status_category: string | null
   workflow_id: string | null
   state_id: string | null
-  type: $Enums.WorkItemType | null
+  type: string | null
   priority: $Enums.WorkItemPriority | null
   assignee_id: string | null
   item_count: number | null
@@ -64,7 +64,7 @@ export type Work_item_chart_hierarchy_rollupsMaxAggregateOutputType = {
   status_category: string | null
   workflow_id: string | null
   state_id: string | null
-  type: $Enums.WorkItemType | null
+  type: string | null
   priority: $Enums.WorkItemPriority | null
   assignee_id: string | null
   item_count: number | null
@@ -248,7 +248,7 @@ export type Work_item_chart_hierarchy_rollupsGroupByOutputType = {
   status_category: string
   workflow_id: string
   state_id: string
-  type: $Enums.WorkItemType
+  type: string
   priority: $Enums.WorkItemPriority
   assignee_id: string | null
   item_count: number
@@ -288,7 +288,7 @@ export type work_item_chart_hierarchy_rollupsWhereInput = {
   status_category?: Prisma.StringFilter<"work_item_chart_hierarchy_rollups"> | string
   workflow_id?: Prisma.StringFilter<"work_item_chart_hierarchy_rollups"> | string
   state_id?: Prisma.StringFilter<"work_item_chart_hierarchy_rollups"> | string
-  type?: Prisma.EnumWorkItemTypeFilter<"work_item_chart_hierarchy_rollups"> | $Enums.WorkItemType
+  type?: Prisma.StringFilter<"work_item_chart_hierarchy_rollups"> | string
   priority?: Prisma.EnumWorkItemPriorityFilter<"work_item_chart_hierarchy_rollups"> | $Enums.WorkItemPriority
   assignee_id?: Prisma.UuidNullableFilter<"work_item_chart_hierarchy_rollups"> | string | null
   item_count?: Prisma.IntFilter<"work_item_chart_hierarchy_rollups"> | number
@@ -333,7 +333,7 @@ export type work_item_chart_hierarchy_rollupsWhereUniqueInput = Prisma.AtLeast<{
   status_category?: Prisma.StringFilter<"work_item_chart_hierarchy_rollups"> | string
   workflow_id?: Prisma.StringFilter<"work_item_chart_hierarchy_rollups"> | string
   state_id?: Prisma.StringFilter<"work_item_chart_hierarchy_rollups"> | string
-  type?: Prisma.EnumWorkItemTypeFilter<"work_item_chart_hierarchy_rollups"> | $Enums.WorkItemType
+  type?: Prisma.StringFilter<"work_item_chart_hierarchy_rollups"> | string
   priority?: Prisma.EnumWorkItemPriorityFilter<"work_item_chart_hierarchy_rollups"> | $Enums.WorkItemPriority
   assignee_id?: Prisma.UuidNullableFilter<"work_item_chart_hierarchy_rollups"> | string | null
   item_count?: Prisma.IntFilter<"work_item_chart_hierarchy_rollups"> | number
@@ -379,7 +379,7 @@ export type work_item_chart_hierarchy_rollupsScalarWhereWithAggregatesInput = {
   status_category?: Prisma.StringWithAggregatesFilter<"work_item_chart_hierarchy_rollups"> | string
   workflow_id?: Prisma.StringWithAggregatesFilter<"work_item_chart_hierarchy_rollups"> | string
   state_id?: Prisma.StringWithAggregatesFilter<"work_item_chart_hierarchy_rollups"> | string
-  type?: Prisma.EnumWorkItemTypeWithAggregatesFilter<"work_item_chart_hierarchy_rollups"> | $Enums.WorkItemType
+  type?: Prisma.StringWithAggregatesFilter<"work_item_chart_hierarchy_rollups"> | string
   priority?: Prisma.EnumWorkItemPriorityWithAggregatesFilter<"work_item_chart_hierarchy_rollups"> | $Enums.WorkItemPriority
   assignee_id?: Prisma.UuidNullableWithAggregatesFilter<"work_item_chart_hierarchy_rollups"> | string | null
   item_count?: Prisma.IntWithAggregatesFilter<"work_item_chart_hierarchy_rollups"> | number
@@ -393,7 +393,7 @@ export type work_item_chart_hierarchy_rollupsCreateInput = {
   status_category: string
   workflow_id: string
   state_id: string
-  type: $Enums.WorkItemType
+  type: string
   priority: $Enums.WorkItemPriority
   item_count?: number
   story_points?: number
@@ -413,7 +413,7 @@ export type work_item_chart_hierarchy_rollupsUncheckedCreateInput = {
   status_category: string
   workflow_id: string
   state_id: string
-  type: $Enums.WorkItemType
+  type: string
   priority: $Enums.WorkItemPriority
   assignee_id?: string | null
   item_count?: number
@@ -427,7 +427,7 @@ export type work_item_chart_hierarchy_rollupsUpdateInput = {
   status_category?: Prisma.StringFieldUpdateOperationsInput | string
   workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   state_id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   item_count?: Prisma.IntFieldUpdateOperationsInput | number
   story_points?: Prisma.IntFieldUpdateOperationsInput | number
@@ -447,7 +447,7 @@ export type work_item_chart_hierarchy_rollupsUncheckedUpdateInput = {
   status_category?: Prisma.StringFieldUpdateOperationsInput | string
   workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   state_id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   assignee_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -464,7 +464,7 @@ export type work_item_chart_hierarchy_rollupsCreateManyInput = {
   status_category: string
   workflow_id: string
   state_id: string
-  type: $Enums.WorkItemType
+  type: string
   priority: $Enums.WorkItemPriority
   assignee_id?: string | null
   item_count?: number
@@ -478,7 +478,7 @@ export type work_item_chart_hierarchy_rollupsUpdateManyMutationInput = {
   status_category?: Prisma.StringFieldUpdateOperationsInput | string
   workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   state_id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   item_count?: Prisma.IntFieldUpdateOperationsInput | number
   story_points?: Prisma.IntFieldUpdateOperationsInput | number
@@ -494,7 +494,7 @@ export type work_item_chart_hierarchy_rollupsUncheckedUpdateManyInput = {
   status_category?: Prisma.StringFieldUpdateOperationsInput | string
   workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   state_id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   assignee_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -742,7 +742,7 @@ export type work_item_chart_hierarchy_rollupsCreateWithoutAssigneeInput = {
   status_category: string
   workflow_id: string
   state_id: string
-  type: $Enums.WorkItemType
+  type: string
   priority: $Enums.WorkItemPriority
   item_count?: number
   story_points?: number
@@ -761,7 +761,7 @@ export type work_item_chart_hierarchy_rollupsUncheckedCreateWithoutAssigneeInput
   status_category: string
   workflow_id: string
   state_id: string
-  type: $Enums.WorkItemType
+  type: string
   priority: $Enums.WorkItemPriority
   item_count?: number
   story_points?: number
@@ -806,7 +806,7 @@ export type work_item_chart_hierarchy_rollupsScalarWhereInput = {
   status_category?: Prisma.StringFilter<"work_item_chart_hierarchy_rollups"> | string
   workflow_id?: Prisma.StringFilter<"work_item_chart_hierarchy_rollups"> | string
   state_id?: Prisma.StringFilter<"work_item_chart_hierarchy_rollups"> | string
-  type?: Prisma.EnumWorkItemTypeFilter<"work_item_chart_hierarchy_rollups"> | $Enums.WorkItemType
+  type?: Prisma.StringFilter<"work_item_chart_hierarchy_rollups"> | string
   priority?: Prisma.EnumWorkItemPriorityFilter<"work_item_chart_hierarchy_rollups"> | $Enums.WorkItemPriority
   assignee_id?: Prisma.UuidNullableFilter<"work_item_chart_hierarchy_rollups"> | string | null
   item_count?: Prisma.IntFilter<"work_item_chart_hierarchy_rollups"> | number
@@ -820,7 +820,7 @@ export type work_item_chart_hierarchy_rollupsCreateWithoutProjectInput = {
   status_category: string
   workflow_id: string
   state_id: string
-  type: $Enums.WorkItemType
+  type: string
   priority: $Enums.WorkItemPriority
   item_count?: number
   story_points?: number
@@ -838,7 +838,7 @@ export type work_item_chart_hierarchy_rollupsUncheckedCreateWithoutProjectInput 
   status_category: string
   workflow_id: string
   state_id: string
-  type: $Enums.WorkItemType
+  type: string
   priority: $Enums.WorkItemPriority
   assignee_id?: string | null
   item_count?: number
@@ -878,7 +878,7 @@ export type work_item_chart_hierarchy_rollupsCreateWithoutSprintInput = {
   status_category: string
   workflow_id: string
   state_id: string
-  type: $Enums.WorkItemType
+  type: string
   priority: $Enums.WorkItemPriority
   item_count?: number
   story_points?: number
@@ -896,7 +896,7 @@ export type work_item_chart_hierarchy_rollupsUncheckedCreateWithoutSprintInput =
   status_category: string
   workflow_id: string
   state_id: string
-  type: $Enums.WorkItemType
+  type: string
   priority: $Enums.WorkItemPriority
   assignee_id?: string | null
   item_count?: number
@@ -936,7 +936,7 @@ export type work_item_chart_hierarchy_rollupsCreateWithoutWork_itemInput = {
   status_category: string
   workflow_id: string
   state_id: string
-  type: $Enums.WorkItemType
+  type: string
   priority: $Enums.WorkItemPriority
   item_count?: number
   story_points?: number
@@ -954,7 +954,7 @@ export type work_item_chart_hierarchy_rollupsUncheckedCreateWithoutWork_itemInpu
   status_category: string
   workflow_id: string
   state_id: string
-  type: $Enums.WorkItemType
+  type: string
   priority: $Enums.WorkItemPriority
   assignee_id?: string | null
   item_count?: number
@@ -984,7 +984,7 @@ export type work_item_chart_hierarchy_rollupsUpdateWithoutWork_itemInput = {
   status_category?: Prisma.StringFieldUpdateOperationsInput | string
   workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   state_id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   item_count?: Prisma.IntFieldUpdateOperationsInput | number
   story_points?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1002,7 +1002,7 @@ export type work_item_chart_hierarchy_rollupsUncheckedUpdateWithoutWork_itemInpu
   status_category?: Prisma.StringFieldUpdateOperationsInput | string
   workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   state_id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   assignee_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1019,7 +1019,7 @@ export type work_item_chart_hierarchy_rollupsCreateManyAssigneeInput = {
   status_category: string
   workflow_id: string
   state_id: string
-  type: $Enums.WorkItemType
+  type: string
   priority: $Enums.WorkItemPriority
   item_count?: number
   story_points?: number
@@ -1032,7 +1032,7 @@ export type work_item_chart_hierarchy_rollupsUpdateWithoutAssigneeInput = {
   status_category?: Prisma.StringFieldUpdateOperationsInput | string
   workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   state_id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   item_count?: Prisma.IntFieldUpdateOperationsInput | number
   story_points?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1051,7 +1051,7 @@ export type work_item_chart_hierarchy_rollupsUncheckedUpdateWithoutAssigneeInput
   status_category?: Prisma.StringFieldUpdateOperationsInput | string
   workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   state_id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   item_count?: Prisma.IntFieldUpdateOperationsInput | number
   story_points?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1067,7 +1067,7 @@ export type work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeI
   status_category?: Prisma.StringFieldUpdateOperationsInput | string
   workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   state_id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   item_count?: Prisma.IntFieldUpdateOperationsInput | number
   story_points?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1082,7 +1082,7 @@ export type work_item_chart_hierarchy_rollupsCreateManyProjectInput = {
   status_category: string
   workflow_id: string
   state_id: string
-  type: $Enums.WorkItemType
+  type: string
   priority: $Enums.WorkItemPriority
   assignee_id?: string | null
   item_count?: number
@@ -1096,7 +1096,7 @@ export type work_item_chart_hierarchy_rollupsUpdateWithoutProjectInput = {
   status_category?: Prisma.StringFieldUpdateOperationsInput | string
   workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   state_id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   item_count?: Prisma.IntFieldUpdateOperationsInput | number
   story_points?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1114,7 +1114,7 @@ export type work_item_chart_hierarchy_rollupsUncheckedUpdateWithoutProjectInput 
   status_category?: Prisma.StringFieldUpdateOperationsInput | string
   workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   state_id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   assignee_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1130,7 +1130,7 @@ export type work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutProjectIn
   status_category?: Prisma.StringFieldUpdateOperationsInput | string
   workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   state_id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   assignee_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1146,7 +1146,7 @@ export type work_item_chart_hierarchy_rollupsCreateManySprintInput = {
   status_category: string
   workflow_id: string
   state_id: string
-  type: $Enums.WorkItemType
+  type: string
   priority: $Enums.WorkItemPriority
   assignee_id?: string | null
   item_count?: number
@@ -1160,7 +1160,7 @@ export type work_item_chart_hierarchy_rollupsUpdateWithoutSprintInput = {
   status_category?: Prisma.StringFieldUpdateOperationsInput | string
   workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   state_id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   item_count?: Prisma.IntFieldUpdateOperationsInput | number
   story_points?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1178,7 +1178,7 @@ export type work_item_chart_hierarchy_rollupsUncheckedUpdateWithoutSprintInput =
   status_category?: Prisma.StringFieldUpdateOperationsInput | string
   workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   state_id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   assignee_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1194,7 +1194,7 @@ export type work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutSprintInp
   status_category?: Prisma.StringFieldUpdateOperationsInput | string
   workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
   state_id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumWorkItemTypeFieldUpdateOperationsInput | $Enums.WorkItemType
+  type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   assignee_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1321,7 +1321,7 @@ export type $work_item_chart_hierarchy_rollupsPayload<ExtArgs extends runtime.Ty
     status_category: string
     workflow_id: string
     state_id: string
-    type: $Enums.WorkItemType
+    type: string
     priority: $Enums.WorkItemPriority
     assignee_id: string | null
     item_count: number
@@ -1762,7 +1762,7 @@ export interface work_item_chart_hierarchy_rollupsFieldRefs {
   readonly status_category: Prisma.FieldRef<"work_item_chart_hierarchy_rollups", 'String'>
   readonly workflow_id: Prisma.FieldRef<"work_item_chart_hierarchy_rollups", 'String'>
   readonly state_id: Prisma.FieldRef<"work_item_chart_hierarchy_rollups", 'String'>
-  readonly type: Prisma.FieldRef<"work_item_chart_hierarchy_rollups", 'WorkItemType'>
+  readonly type: Prisma.FieldRef<"work_item_chart_hierarchy_rollups", 'String'>
   readonly priority: Prisma.FieldRef<"work_item_chart_hierarchy_rollups", 'WorkItemPriority'>
   readonly assignee_id: Prisma.FieldRef<"work_item_chart_hierarchy_rollups", 'String'>
   readonly item_count: Prisma.FieldRef<"work_item_chart_hierarchy_rollups", 'Int'>

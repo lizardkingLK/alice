@@ -1,79 +1,242 @@
-import { Constants } from './generated/supabase/database.types.js';
-import { WorkItemType as WorkItemTypeEnum } from './generated/prisma/enums.js';
+/**
+ * Project work-item type catalogs (dynamic keys) + seed defaults.
+ * `work_items.type` stores the catalog `key` (plain text).
+ */
 
-/** Canonical ordered work-item types (matches DB enum). */
-export const WORK_ITEM_TYPES = Constants.public.Enums.WorkItemType;
+/** Catalog key stored on work items / filters (project-defined free string). */
+// eslint-disable-next-line sonarjs/redundant-type-aliases -- intentional public domain alias
+export type WorkItemType = string;
 
-export { WorkItemTypeEnum };
-export type WorkItemType = (typeof WORK_ITEM_TYPES)[number];
-
-/** All work-item types available for project configuration. */
-export const ALL_WORK_ITEM_TYPES: readonly WorkItemType[] = [
-  WorkItemTypeEnum.Epic,
-  WorkItemTypeEnum.Feature,
-  WorkItemTypeEnum.Story,
-  WorkItemTypeEnum.Task,
-  WorkItemTypeEnum.Issue,
+/** Seed keys used as create defaults / migration templates. */
+export const SEED_WORK_ITEM_TYPE_KEYS = [
+  'Epic',
+  'Feature',
+  'Story',
+  'Task',
+  'Issue',
 ] as const;
+
+export type SeedWorkItemTypeKey = (typeof SEED_WORK_ITEM_TYPE_KEYS)[number];
+
+/**
+ * Seed key constants (names match historical enum members).
+ * Prefer catalog lookups at runtime; keep for defaults and gradual migration.
+ */
+export const WorkItemTypeEnum = {
+  Epic: 'Epic',
+  Feature: 'Feature',
+  Story: 'Story',
+  Task: 'Task',
+  Issue: 'Issue',
+} as const satisfies Record<SeedWorkItemTypeKey, SeedWorkItemTypeKey>;
+
+/** @deprecated Prefer {@link SEED_WORK_ITEM_TYPE_KEYS} / project catalog defs. */
+export const WORK_ITEM_TYPES = SEED_WORK_ITEM_TYPE_KEYS;
+
+/** All seed types available when scaffolding a project catalog. */
+export const ALL_WORK_ITEM_TYPES: readonly SeedWorkItemTypeKey[] =
+  SEED_WORK_ITEM_TYPE_KEYS;
 
 export const CANONICAL_HIERARCHY_ORDER = ALL_WORK_ITEM_TYPES;
 
 /**
- * Fixed standard ALICE system hierarchy:
- * Epic
- *  └── Story
- *       └── Task
- *            └── Issue
- *
- * Feature is not part of the default system hierarchy.
- * Custom hierarchy customization (such as Epic -> Feature -> Story -> Task -> Issue)
- * is strictly restricted to Jira import configuration.
+ * Default create subset (Feature optional — omitted from default chain).
+ * Epic → Story → Task → Issue
  */
-export const DEFAULT_SYSTEM_HIERARCHY: readonly WorkItemType[] = [
+export const DEFAULT_SYSTEM_HIERARCHY: readonly SeedWorkItemTypeKey[] = [
   WorkItemTypeEnum.Epic,
   WorkItemTypeEnum.Story,
   WorkItemTypeEnum.Task,
   WorkItemTypeEnum.Issue,
 ] as const;
 
+export type ProjectWorkItemTypeDef = {
+  key: string;
+  name: string;
+  description?: string;
+  icon: string;
+  level: number;
+};
+
+const SEED_TYPE_META: Record<
+  SeedWorkItemTypeKey,
+  Omit<ProjectWorkItemTypeDef, 'key' | 'level'>
+> = {
+  Epic: {
+    name: 'Epic',
+    description: 'Top-level initiative',
+    icon: 'layers',
+  },
+  Feature: {
+    name: 'Feature',
+    description: 'Product capability',
+    icon: 'trophy',
+  },
+  Story: {
+    name: 'Story',
+    description: 'User story / deliverable',
+    icon: 'bookmark',
+  },
+  Task: {
+    name: 'Task',
+    description: 'Standard work unit',
+    icon: 'square-check',
+  },
+  Issue: {
+    name: 'Issue',
+    description: 'Bug or leaf work item',
+    icon: 'circle-alert',
+  },
+};
+
+/** Full seed catalog (canonical levels 0..4 including Feature). */
+export const DEFAULT_WORK_ITEM_TYPE_DEFS: readonly ProjectWorkItemTypeDef[] =
+  SEED_WORK_ITEM_TYPE_KEYS.map((key, level) => ({
+    key,
+    level,
+    ...SEED_TYPE_META[key],
+  }));
+
 /**
- * Default parent → allowed child type for subtask creation.
- * Follows the fixed system rules: Epic -> Story -> Task -> Issue.
- * Issue is a leaf and has no children.
- * Feature is not in the default hierarchy unless custom hierarchy is configured in Jira import.
+ * Default defs for new projects: DEFAULT_SYSTEM_HIERARCHY with renumbered levels.
+ * Feature is available via {@link DEFAULT_WORK_ITEM_TYPE_DEFS} but not pre-selected.
  */
-export const WORK_ITEM_CHILD_TYPE: Partial<Record<WorkItemType, WorkItemType>> =
-  {
-    [WorkItemTypeEnum.Epic]: WorkItemTypeEnum.Story,
-    [WorkItemTypeEnum.Feature]: WorkItemTypeEnum.Story,
-    [WorkItemTypeEnum.Story]: WorkItemTypeEnum.Task,
-    [WorkItemTypeEnum.Task]: WorkItemTypeEnum.Issue,
-  };
+export function buildDefaultProjectTypeDefs(
+  keys: readonly string[] = DEFAULT_SYSTEM_HIERARCHY
+): ProjectWorkItemTypeDef[] {
+  const ordered = CANONICAL_HIERARCHY_ORDER.filter((key) => keys.includes(key));
+  const extras = keys.filter(
+    (key) => !CANONICAL_HIERARCHY_ORDER.includes(key as SeedWorkItemTypeKey)
+  );
+  const defs: ProjectWorkItemTypeDef[] = [];
+  let level = 0;
+  for (const key of ordered) {
+    const meta = SEED_TYPE_META[key];
+    defs.push({
+      key,
+      name: meta.name,
+      description: meta.description,
+      icon: meta.icon,
+      level,
+    });
+    level += 1;
+  }
+  for (const key of extras) {
+    defs.push({
+      key,
+      name: key,
+      description: '',
+      icon: 'square-check',
+      level,
+    });
+    level += 1;
+  }
+  return defs;
+}
+
+/** True when value looks like a catalog def object. */
+export function isProjectWorkItemTypeDef(
+  value: unknown
+): value is ProjectWorkItemTypeDef {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.key === 'string' &&
+    record.key.trim().length > 0 &&
+    typeof record.name === 'string' &&
+    record.name.trim().length > 0 &&
+    typeof record.icon === 'string' &&
+    typeof record.level === 'number' &&
+    Number.isFinite(record.level)
+  );
+}
+
+/**
+ * Normalize legacy `string[]` or catalog defs into defs.
+ * Assigns levels from canonical order when expanding strings.
+ */
+export function normalizeProjectWorkItemTypeDefs(
+  input: unknown
+): ProjectWorkItemTypeDef[] {
+  if (!Array.isArray(input) || input.length === 0) {
+    return buildDefaultProjectTypeDefs();
+  }
+  if (input.every(isProjectWorkItemTypeDef)) {
+    return [...input].sort((a, b) => a.level - b.level);
+  }
+  const keys = input
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+  if (keys.length === 0) {
+    return buildDefaultProjectTypeDefs();
+  }
+  return buildDefaultProjectTypeDefs(keys);
+}
+
+export function projectTypeKeys(
+  defs: readonly ProjectWorkItemTypeDef[]
+): string[] {
+  return defs.map((def) => def.key);
+}
+
+/** Keys from legacy string[] or catalog defs (empty → default seed keys). */
+export function resolveProjectTypeKeys(workItemTypes: unknown): string[] {
+  return projectTypeKeys(normalizeProjectWorkItemTypeDefs(workItemTypes));
+}
+
+/**
+ * Default parent → child for seed hierarchy (Feature → Story when present).
+ * Prefer {@link resolveProjectHierarchyFromLevels} for project catalogs.
+ */
+export const WORK_ITEM_CHILD_TYPE: Partial<Record<string, string>> = {
+  [WorkItemTypeEnum.Epic]: WorkItemTypeEnum.Story,
+  [WorkItemTypeEnum.Feature]: WorkItemTypeEnum.Story,
+  [WorkItemTypeEnum.Story]: WorkItemTypeEnum.Task,
+  [WorkItemTypeEnum.Task]: WorkItemTypeEnum.Issue,
+};
 
 export type ResolvedProjectHierarchy = {
-  parentToChild: Partial<Record<WorkItemType, WorkItemType>>;
-  childToParent: Partial<Record<WorkItemType, WorkItemType>>;
+  parentToChild: Partial<Record<string, string>>;
+  childToParent: Partial<Record<string, string>>;
 };
 
 function isTypePermitted(
   type: string,
-  allowedTypes?: readonly WorkItemType[] | null
+  allowedTypes?: readonly string[] | null
 ): boolean {
-  if (!WORK_ITEM_TYPES.includes(type as WorkItemType)) {
-    return false;
-  }
   if (!allowedTypes || allowedTypes.length === 0) {
     return true;
   }
-  return allowedTypes.includes(type as WorkItemType);
+  return allowedTypes.includes(type);
+}
+
+/**
+ * Linear hierarchy from catalog levels (unique levels, sort ascending).
+ */
+export function resolveProjectHierarchyFromLevels(
+  defs: readonly ProjectWorkItemTypeDef[]
+): ResolvedProjectHierarchy {
+  const parentToChild: Partial<Record<string, string>> = {};
+  const childToParent: Partial<Record<string, string>> = {};
+  const ordered = [...defs].sort((a, b) => a.level - b.level);
+  for (let i = 0; i < ordered.length - 1; i++) {
+    const parent = ordered[i]!;
+    const child = ordered[i + 1]!;
+    parentToChild[parent.key] = child.key;
+    childToParent[child.key] = parent.key;
+  }
+  return { parentToChild, childToParent };
 }
 
 function resolveCustomHierarchy(
   customHierarchy: Record<string, string | null>,
-  allowedTypes?: readonly WorkItemType[] | null
+  allowedTypes?: readonly string[] | null
 ): ResolvedProjectHierarchy {
-  const parentToChild: Partial<Record<WorkItemType, WorkItemType>> = {};
-  const childToParent: Partial<Record<WorkItemType, WorkItemType>> = {};
+  const parentToChild: Partial<Record<string, string>> = {};
+  const childToParent: Partial<Record<string, string>> = {};
 
   for (const [parent, child] of Object.entries(customHierarchy)) {
     if (
@@ -81,8 +244,8 @@ function resolveCustomHierarchy(
       isTypePermitted(parent, allowedTypes) &&
       isTypePermitted(child, allowedTypes)
     ) {
-      parentToChild[parent as WorkItemType] = child as WorkItemType;
-      childToParent[child as WorkItemType] = parent as WorkItemType;
+      parentToChild[parent] = child;
+      childToParent[child] = parent;
     }
   }
 
@@ -90,37 +253,34 @@ function resolveCustomHierarchy(
 }
 
 function resolveDefaultHierarchy(
-  allowedTypes?: readonly WorkItemType[] | null
+  allowedTypes?: readonly string[] | null
 ): ResolvedProjectHierarchy {
-  const parentToChild: Partial<Record<WorkItemType, WorkItemType>> = {};
-  const childToParent: Partial<Record<WorkItemType, WorkItemType>> = {};
-
   const effectiveTypes =
     allowedTypes && allowedTypes.length > 0
       ? DEFAULT_SYSTEM_HIERARCHY.filter((type) => allowedTypes.includes(type))
-      : DEFAULT_SYSTEM_HIERARCHY;
+      : [...DEFAULT_SYSTEM_HIERARCHY];
 
-  for (let i = 0; i < effectiveTypes.length - 1; i++) {
-    const parent = effectiveTypes[i]!;
-    const child = effectiveTypes[i + 1]!;
-    parentToChild[parent] = child;
-    childToParent[child] = parent;
-  }
-
-  return { parentToChild, childToParent };
+  return resolveProjectHierarchyFromLevels(
+    buildDefaultProjectTypeDefs(effectiveTypes)
+  );
 }
 
 /**
- * Resolves the parent-child hierarchy for a project.
- * If customHierarchy is provided (strictly from Jira import), it takes precedence.
- * Otherwise, the hierarchy strictly follows the fixed system rules (Epic -> Story -> Task -> Issue).
- * Selecting work-item types during project creation/editing only controls which types are available,
- * and does not automatically customize or alter the fixed hierarchy.
+ * Resolves parent-child hierarchy for a project.
+ * Preference: catalog defs (levels) → custom hierarchy map → default seed chain.
  */
 export function resolveProjectHierarchy(
-  allowedTypes?: readonly WorkItemType[] | null,
-  customHierarchy?: Record<string, string | null> | null
+  allowedTypes?: readonly string[] | null,
+  customHierarchy?: Record<string, string | null> | null,
+  typeDefs?: readonly ProjectWorkItemTypeDef[] | null
 ): ResolvedProjectHierarchy {
+  if (typeDefs && typeDefs.length > 0) {
+    const scoped =
+      allowedTypes && allowedTypes.length > 0
+        ? typeDefs.filter((def) => allowedTypes.includes(def.key))
+        : typeDefs;
+    return resolveProjectHierarchyFromLevels(scoped);
+  }
   if (customHierarchy && Object.keys(customHierarchy).length > 0) {
     return resolveCustomHierarchy(customHierarchy, allowedTypes);
   }
@@ -128,36 +288,38 @@ export function resolveProjectHierarchy(
 }
 
 export function getAllowedChildType(
-  parentType: WorkItemType,
-  allowedTypes?: readonly WorkItemType[] | null,
-  customHierarchy?: Record<string, string | null> | null
-): WorkItemType | null {
-  if (!allowedTypes && !customHierarchy) {
+  parentType: string,
+  allowedTypes?: readonly string[] | null,
+  customHierarchy?: Record<string, string | null> | null,
+  typeDefs?: readonly ProjectWorkItemTypeDef[] | null
+): string | null {
+  if (!allowedTypes && !customHierarchy && !typeDefs) {
     return WORK_ITEM_CHILD_TYPE[parentType] ?? null;
   }
   const { parentToChild } = resolveProjectHierarchy(
     allowedTypes,
-    customHierarchy
+    customHierarchy,
+    typeDefs
   );
   return parentToChild[parentType] ?? null;
 }
 
 /**
  * Child → allowed parent type (inverse of {@link getAllowedChildType}).
- * Epic has no parent in standard hierarchy.
  */
 export function getAllowedParentType(
-  childType: WorkItemType,
-  allowedTypes?: readonly WorkItemType[] | null,
-  customHierarchy?: Record<string, string | null> | null
-): WorkItemType | null {
-  if (!allowedTypes && !customHierarchy) {
+  childType: string,
+  allowedTypes?: readonly string[] | null,
+  customHierarchy?: Record<string, string | null> | null,
+  typeDefs?: readonly ProjectWorkItemTypeDef[] | null
+): string | null {
+  if (!allowedTypes && !customHierarchy && !typeDefs) {
     if (childType === WorkItemTypeEnum.Story) {
       return WorkItemTypeEnum.Epic;
     }
     for (const [parentType, allowedChild] of Object.entries(
       WORK_ITEM_CHILD_TYPE
-    ) as Array<[WorkItemType, WorkItemType]>) {
+    )) {
       if (allowedChild === childType) {
         return parentType;
       }
@@ -166,34 +328,78 @@ export function getAllowedParentType(
   }
   const { childToParent } = resolveProjectHierarchy(
     allowedTypes,
-    customHierarchy
+    customHierarchy,
+    typeDefs
   );
   return childToParent[childType] ?? null;
 }
 
 /**
- * Static mapping of raw strings (including lowercase and aliases) to WorkItemType.
+ * Static mapping of raw strings (including aliases) to seed type keys.
  */
-export const WORK_ITEM_TYPE_MAPPINGS: Record<string, WorkItemType> = {
+export const WORK_ITEM_TYPE_MAPPINGS: Record<string, SeedWorkItemTypeKey> = {
   epic: WorkItemTypeEnum.Epic,
   feature: WorkItemTypeEnum.Feature,
   story: WorkItemTypeEnum.Story,
+  'user story': WorkItemTypeEnum.Story,
   task: WorkItemTypeEnum.Task,
   'sub-task': WorkItemTypeEnum.Task,
   subtask: WorkItemTypeEnum.Task,
   bug: WorkItemTypeEnum.Issue,
+  defect: WorkItemTypeEnum.Issue,
   issue: WorkItemTypeEnum.Issue,
 };
 
 /**
- * Maps any string value to a valid WorkItemType enum value.
+ * Maps a free-form string to a seed type key (import defaults).
+ * Prefer project-catalog resolution when defs are available.
  */
 export function mapToWorkItemType(
   input: string | null | undefined
-): WorkItemType {
+): SeedWorkItemTypeKey {
   if (!input) {
     return WorkItemTypeEnum.Task;
   }
   const normalized = input.trim().toLowerCase();
   return WORK_ITEM_TYPE_MAPPINGS[normalized] ?? WorkItemTypeEnum.Task;
+}
+
+/**
+ * Map an external type label to a project catalog key.
+ * Tries exact key, case-insensitive name, then seed alias map constrained to catalog.
+ */
+export function mapToProjectWorkItemTypeKey(
+  input: string | null | undefined,
+  defs: readonly ProjectWorkItemTypeDef[],
+  fallbackKey?: string
+): string {
+  const fallback =
+    fallbackKey && defs.some((def) => def.key === fallbackKey)
+      ? fallbackKey
+      : (defs.find((def) => def.key === WorkItemTypeEnum.Task)?.key ??
+        defs.at(-1)?.key ??
+        WorkItemTypeEnum.Task);
+
+  if (!input) {
+    return fallback;
+  }
+
+  const trimmed = input.trim();
+  const byKey = defs.find((def) => def.key === trimmed);
+  if (byKey) {
+    return byKey.key;
+  }
+
+  const lower = trimmed.toLowerCase();
+  const byName = defs.find((def) => def.name.trim().toLowerCase() === lower);
+  if (byName) {
+    return byName.key;
+  }
+
+  const seed = WORK_ITEM_TYPE_MAPPINGS[lower];
+  if (seed && defs.some((def) => def.key === seed)) {
+    return seed;
+  }
+
+  return fallback;
 }

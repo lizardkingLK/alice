@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { WORK_ITEM_PRIORITIES } from '../../work-item-priorities.js';
 import { WORKFLOW_STATE_CATEGORIES } from '../../work-item-state.js';
-import { WORK_ITEM_TYPES } from '../../work-item-types.js';
 
 /** Supported report variants; add Sprint and Review schemas to this union later. */
 export const REPORT_TYPES = ['daily'] as const;
@@ -117,7 +116,7 @@ export type GenerateReportRequest = Omit<
 export const dailyReportWorkItemSchema = z.object({
   id: z.string().min(1),
   title: z.string(),
-  type: z.enum(WORK_ITEM_TYPES),
+  type: z.string().trim().min(1),
   priority: z.enum(WORK_ITEM_PRIORITIES),
   project: z.object({
     id: z.string().min(1),

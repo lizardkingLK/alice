@@ -18,6 +18,7 @@ import {
   getComboboxOptions,
   pickComboboxOption,
 } from '../helpers/pick-combobox-option';
+import { buildDefaultProjectTypeDefs } from '@repo/types';
 
 vi.mock('@/lib/api/api-fetch.mutations.use.client', () => ({
   apiFetch: vi.fn(),
@@ -337,7 +338,7 @@ describe('ProjectForm Component', () => {
     fireEvent.change(screen.getByLabelText(/Project Key/i), {
       target: { value: 'alice' },
     });
-    fireEvent.change(screen.getByLabelText(/Description/i), {
+    fireEvent.change(screen.getByLabelText(/^Description$/i), {
       target: { value: 'Project description details' },
     });
     await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
@@ -370,7 +371,7 @@ describe('ProjectForm Component', () => {
         status: 'active',
         attributes_config: null,
         workflow_config: {
-          work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+          work_item_types: buildDefaultProjectTypeDefs(),
         },
         jira_connection_id: null,
         jira_project_key: null,
@@ -703,7 +704,7 @@ describe('ProjectForm Component', () => {
 
     expect(screen.getByLabelText(/Project Name/i)).toHaveValue('Project Alice');
     expect(screen.getByLabelText(/Project Key/i)).toHaveValue('ALICE');
-    expect(screen.getByLabelText(/Description/i)).toHaveValue(
+    expect(screen.getByLabelText(/^Description$/i)).toHaveValue(
       'Project description details'
     );
     expect(screen.getByLabelText(/Project Owner/i)).toHaveValue(
@@ -736,7 +737,7 @@ describe('ProjectForm Component', () => {
           status: 'active',
           attributes_config: null,
           workflow_config: {
-            work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+            work_item_types: buildDefaultProjectTypeDefs(),
           },
           jira_connection_id: null,
           jira_project_key: null,
@@ -840,7 +841,7 @@ describe('ProjectForm Component', () => {
       'Restored Project'
     );
     expect(screen.getByLabelText(/Project Key/i)).toHaveValue('RESTORE');
-    expect(screen.getByLabelText(/Description/i)).toHaveValue(
+    expect(screen.getByLabelText(/^Description$/i)).toHaveValue(
       'Restored project description'
     );
     expect(screen.getByLabelText(/Project Owner/i)).toHaveValue(
@@ -848,9 +849,9 @@ describe('ProjectForm Component', () => {
     );
     expect(screen.getByLabelText(/Start Date/i)).toHaveValue('2099-09-01');
     expect(screen.getByLabelText(/End Date/i)).toHaveValue('2099-10-01');
-    expect(screen.getByRole('checkbox', { name: 'Epic' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'Story' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'Feature' })).not.toBeChecked();
+    expect(screen.getByDisplayValue('Epic')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Story')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('Feature')).not.toBeInTheDocument();
     expect(onJiraImportToggle).toHaveBeenCalledWith(true);
 
     fireEvent.change(screen.getByLabelText(/Project Name/i), {

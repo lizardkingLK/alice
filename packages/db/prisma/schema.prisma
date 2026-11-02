@@ -52,14 +52,6 @@ enum SprintStatus {
   archived
 }
 
-enum WorkItemType {
-  Epic
-  Feature
-  Story
-  Task
-  Issue
-}
-
 enum WorkItemStatus {
   Draft
   New
@@ -372,7 +364,8 @@ model work_items {
   sprint_id    String?          @db.Uuid
   parent_id    String?          @db.Uuid
   title        String
-  type         WorkItemType
+  /// Project catalog type key (see workflow_config.work_item_types defs).
+  type         String
   priority     WorkItemPriority @default(medium)
   description  Json?
   labels       Json             @default("[]")
@@ -496,7 +489,7 @@ model work_item_chart_rollups {
   status_category String
   workflow_id     String
   state_id        String
-  type         WorkItemType
+  type         String
   priority     WorkItemPriority
   assignee_id  String?          @db.Uuid
   item_count   Int              @default(0)
@@ -522,7 +515,7 @@ model work_item_chart_hierarchy_rollups {
   status_category String
   workflow_id     String
   state_id        String
-  type            WorkItemType
+  type            String
   priority        WorkItemPriority
   assignee_id     String?          @db.Uuid
   item_count      Int              @default(1)

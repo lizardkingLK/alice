@@ -66,6 +66,7 @@ vi.mock('../../src/lib/prisma', () => ({
   },
 }));
 
+import { buildDefaultProjectTypeDefs } from '@repo/types';
 import {
   CreateProjectInput,
   ProjectTeamValidationError,
@@ -234,7 +235,7 @@ describe('ProjectsService backend tests', () => {
         {
           ...input,
           workflow_config: {
-            work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+            work_item_types: buildDefaultProjectTypeDefs(),
           },
         },
         'user-admin'
@@ -249,7 +250,12 @@ describe('ProjectsService backend tests', () => {
 
       const input = createProjectInput({
         workflow_config: {
-          work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+          work_item_types: buildDefaultProjectTypeDefs([
+            'Epic',
+            'Story',
+            'Task',
+            'Issue',
+          ]),
         },
       });
 
@@ -259,7 +265,12 @@ describe('ProjectsService backend tests', () => {
         {
           ...input,
           workflow_config: {
-            work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+            work_item_types: buildDefaultProjectTypeDefs([
+              'Epic',
+              'Story',
+              'Task',
+              'Issue',
+            ]),
           },
         },
         'user-admin'
@@ -555,7 +566,13 @@ describe('ProjectsService backend tests', () => {
       findByIdMock.mockResolvedValue({
         ...mockProject,
         workflow_config: {
-          work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+          work_item_types: buildDefaultProjectTypeDefs([
+            'Epic',
+            'Feature',
+            'Story',
+            'Task',
+            'Issue',
+          ]),
         },
       });
       previewWorkItemTypeRemovalMock.mockResolvedValue({
@@ -576,7 +593,12 @@ describe('ProjectsService backend tests', () => {
           'project-1',
           {
             workflow_config: {
-              work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+              work_item_types: buildDefaultProjectTypeDefs([
+                'Epic',
+                'Story',
+                'Task',
+                'Issue',
+              ]),
             },
           },
           mockProject.updated_at
@@ -593,7 +615,13 @@ describe('ProjectsService backend tests', () => {
       findByIdMock.mockResolvedValue({
         ...mockProject,
         workflow_config: {
-          work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+          work_item_types: buildDefaultProjectTypeDefs([
+            'Epic',
+            'Feature',
+            'Story',
+            'Task',
+            'Issue',
+          ]),
         },
       });
       updateMock.mockResolvedValue(mockProject);
@@ -619,7 +647,12 @@ describe('ProjectsService backend tests', () => {
         'project-1',
         {
           workflow_config: {
-            work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+            work_item_types: buildDefaultProjectTypeDefs([
+              'Epic',
+              'Story',
+              'Task',
+              'Issue',
+            ]),
           },
           typeRemovalStrategies: [
             { type: 'Feature', action: 'migrate', migrateTo: 'Story' },
@@ -632,7 +665,8 @@ describe('ProjectsService backend tests', () => {
         'project-1',
         ['Epic', 'Story', 'Task', 'Issue'],
         [{ type: 'Feature', action: 'migrate', migrateTo: 'Story' }],
-        null
+        null,
+        buildDefaultProjectTypeDefs(['Epic', 'Story', 'Task', 'Issue'])
       );
       expect(result.typeRemoval).toEqual({
         detachedCount: 1,

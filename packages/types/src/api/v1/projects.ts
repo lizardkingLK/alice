@@ -60,8 +60,8 @@ export function projectRelationSelect(
   return `${alias}:projects(${projection})`;
 }
 
-const workItemTypeValues = Constants.public.Enums.WorkItemType;
-const workItemTypeField = z.enum(workItemTypeValues);
+/** Catalog type key (free-form). */
+const workItemTypeField = z.string().trim().min(1);
 
 const baseCreateProjectSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -165,7 +165,7 @@ export const workItemTypeRemovalStrategySchema = z
 
 export const workItemTypeRemovalStrategiesSchema = z
   .array(workItemTypeRemovalStrategySchema)
-  .max(workItemTypeValues.length);
+  .max(50);
 
 export type WorkItemTypeRemovalStrategy = z.infer<
   typeof workItemTypeRemovalStrategySchema

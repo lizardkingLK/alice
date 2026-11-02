@@ -44,11 +44,14 @@ import {
   Minimize2,
 } from '@repo/ui/lib/icons';
 import {
-  CANONICAL_HIERARCHY_ORDER,
+  buildDefaultProjectTypeDefs,
   initialSprintSchema,
   isProductUsableUser,
-  type WorkItemType,
+  normalizeProjectWorkItemTypeDefs,
+  projectTypeKeys,
+  type ProjectWorkItemTypeDef,
 } from '@repo/types';
+import { WorkItemTypeCatalogEditor } from '@/app/projects/_components/work-item-type-catalog-editor';
 import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import type { User } from '@/app/users/_services/users.mutations.client';
@@ -153,7 +156,7 @@ function validateStep1({
   todayStr,
   originalStartDate,
   originalEndDate,
-  selectedWorkItemTypes,
+  workItemTypeDefs,
 }: {
   name: string;
   key: string;
@@ -164,7 +167,7 @@ function validateStep1({
   todayStr: string;
   originalStartDate?: string;
   originalEndDate?: string;
-  selectedWorkItemTypes: WorkItemType[];
+  workItemTypeDefs: ProjectWorkItemTypeDef[];
 }): string | null {
   const projectNameError = validateProjectName(name);
   if (projectNameError) return projectNameError;
@@ -193,8 +196,8 @@ function validateStep1({
   );
   if (endDateError) return endDateError;
 
-  if (!selectedWorkItemTypes || selectedWorkItemTypes.length === 0) {
-    return 'At least one work-item type must be selected.';
+  if (!workItemTypeDefs || workItemTypeDefs.length === 0) {
+    return 'At least one work-item type must be configured.';
   }
 
   return null;
@@ -289,7 +292,7 @@ function getStepError(
     todayStr: string;
     originalStartDate?: string;
     originalEndDate?: string;
-    selectedWorkItemTypes: WorkItemType[];
+    workItemTypeDefs: ProjectWorkItemTypeDef[];
     importFromJira: boolean;
     jiraConnectionId: string;
     jiraProjectKey: string;
@@ -317,7 +320,7 @@ function getStepError(
       todayStr: fields.todayStr,
       originalStartDate: fields.originalStartDate,
       originalEndDate: fields.originalEndDate,
-      selectedWorkItemTypes: fields.selectedWorkItemTypes,
+      workItemTypeDefs: fields.workItemTypeDefs,
     });
   }
   if (currentStep === 2) {
@@ -369,8 +372,8 @@ interface Step1Props {
   setStartDate: (_date: string) => void;
   endDate: string;
   setEndDate: (_date: string) => void;
-  selectedWorkItemTypes: WorkItemType[];
-  setSelectedWorkItemTypes: (_types: WorkItemType[]) => void;
+  workItemTypeDefs: ProjectWorkItemTypeDef[];
+  setWorkItemTypeDefs: (_defs: ProjectWorkItemTypeDef[]) => void;
   users: User[];
   isEditMode: boolean;
   getTodayDateString: () => string;
@@ -392,8 +395,8 @@ function Step1BasicDetails({
   setStartDate,
   endDate,
   setEndDate,
-  selectedWorkItemTypes,
-  setSelectedWorkItemTypes,
+  workItemTypeDefs,
+  setWorkItemTypeDefs,
   users,
   getTodayDateString,
 }: Readonly<Step1Props>) {
@@ -536,45 +539,15 @@ function Step1BasicDetails({
 
       <div className="space-y-3 pt-2">
         <div>
-          <Label className="text-sm font-medium">Allowed Work-Item Types</Label>
+          <Label className="text-sm font-medium">Work-Item Types</Label>
           <p className="text-muted-foreground text-xs">
-            Select the work-item types available for use within this project.
+            Configure names, icons, and hierarchy levels for this project.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {CANONICAL_HIERARCHY_ORDER.map((t) => {
-            const isChecked = selectedWorkItemTypes.includes(t);
-            return (
-              <label
-                key={t}
-                className={cn(
-                  'flex cursor-pointer items-center space-x-2 rounded-md border p-2.5 text-sm transition-colors',
-                  isChecked
-                    ? 'border-primary/50 bg-primary/5 font-medium'
-                    : 'border-border text-muted-foreground hover:border-primary/20'
-                )}
-              >
-                <Checkbox
-                  checked={isChecked}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      const next = CANONICAL_HIERARCHY_ORDER.filter(
-                        (item) =>
-                          item === t || selectedWorkItemTypes.includes(item)
-                      );
-                      setSelectedWorkItemTypes(next);
-                    } else {
-                      setSelectedWorkItemTypes(
-                        selectedWorkItemTypes.filter((item) => item !== t)
-                      );
-                    }
-                  }}
-                />
-                <span>{t}</span>
-              </label>
-            );
-          })}
-        </div>
+        <WorkItemTypeCatalogEditor
+          value={workItemTypeDefs}
+          onChange={setWorkItemTypeDefs}
+        />
       </div>
     </div>
   );
@@ -1109,9 +1082,11 @@ export function ProjectForm({
   );
   const initialWorkflowConfig = projectToEdit?.workflow_config as
     ProjectWorkflowConfig | null | undefined;
-  const [selectedWorkItemTypes, setSelectedWorkItemTypes] = useState<
-    WorkItemType[]
-  >(initialWorkflowConfig?.work_item_types ?? [...CANONICAL_HIERARCHY_ORDER]);
+  const [workItemTypeDefs, setWorkItemTypeDefs] = useState<
+    ProjectWorkItemTypeDef[]
+  >(() =>
+    normalizeProjectWorkItemTypeDefs(initialWorkflowConfig?.work_item_types)
+  );
 
   // Stepper state
   const [step, setStep] = useState(1);
@@ -1149,10 +1124,13 @@ export function ProjectForm({
   const [teamMemberIds, setTeamMemberIds] = useState<string[]>([]);
 
   const finalStep = isEditMode ? 3 : 5;
+  const defaultTypeDefs = buildDefaultProjectTypeDefs();
   const usesDefaultWorkItemTypes =
-    selectedWorkItemTypes.length === CANONICAL_HIERARCHY_ORDER.length &&
-    selectedWorkItemTypes.every(
-      (workItemType, index) => workItemType === CANONICAL_HIERARCHY_ORDER[index]
+    workItemTypeDefs.length === defaultTypeDefs.length &&
+    workItemTypeDefs.every(
+      (def, index) =>
+        def.key === defaultTypeDefs[index]?.key &&
+        def.level === defaultTypeDefs[index]?.level
     );
   const hasCreateFormChanges =
     !isEditMode &&
@@ -1195,7 +1173,7 @@ export function ProjectForm({
       status,
       startDate,
       endDate,
-      selectedWorkItemTypes,
+      selectedWorkItemTypes: projectTypeKeys(workItemTypeDefs),
     },
     imports: {
       importFromJira,
@@ -1232,7 +1210,7 @@ export function ProjectForm({
     setStatus('active');
     setStartDate(getTodayDateString());
     setEndDate('');
-    setSelectedWorkItemTypes([...CANONICAL_HIERARCHY_ORDER]);
+    setWorkItemTypeDefs(buildDefaultProjectTypeDefs());
     setStep(1);
     setImportFromJira(false);
     setJiraConnectionId('');
@@ -1268,9 +1246,11 @@ export function ProjectForm({
     setStatus(availableDraft.basicInfo.status);
     setStartDate(availableDraft.basicInfo.startDate);
     setEndDate(availableDraft.basicInfo.endDate);
-    setSelectedWorkItemTypes([
-      ...availableDraft.basicInfo.selectedWorkItemTypes,
-    ]);
+    setWorkItemTypeDefs(
+      buildDefaultProjectTypeDefs(
+        availableDraft.basicInfo.selectedWorkItemTypes
+      )
+    );
     setImportFromJira(availableDraft.imports.importFromJira);
     setJiraConnectionId(availableDraft.imports.jiraConnectionId);
     setJiraProjectKey(availableDraft.imports.jiraProjectKey);
@@ -1384,7 +1364,7 @@ export function ProjectForm({
       originalEndDate: projectToEdit
         ? formatDateForInput(projectToEdit.end_date)
         : undefined,
-      selectedWorkItemTypes,
+      workItemTypeDefs,
       importFromJira,
       jiraConnectionId,
       jiraProjectKey,
@@ -1411,7 +1391,7 @@ export function ProjectForm({
   useEffect(() => {
     if (!projectToEdit) {
       setStartDate(getTodayDateString());
-      setSelectedWorkItemTypes([...CANONICAL_HIERARCHY_ORDER]);
+      setWorkItemTypeDefs(buildDefaultProjectTypeDefs());
       return;
     }
 
@@ -1424,8 +1404,8 @@ export function ProjectForm({
     setEndDate(formatDateForInput(projectToEdit.end_date));
     const editWorkflowConfig = projectToEdit.workflow_config as
       ProjectWorkflowConfig | null | undefined;
-    setSelectedWorkItemTypes(
-      editWorkflowConfig?.work_item_types ?? [...CANONICAL_HIERARCHY_ORDER]
+    setWorkItemTypeDefs(
+      normalizeProjectWorkItemTypeDefs(editWorkflowConfig?.work_item_types)
     );
 
     const hasJira = Boolean(
@@ -1608,7 +1588,7 @@ export function ProjectForm({
         attributes_config: null,
         workflow_config: {
           ...existingConfig,
-          work_item_types: selectedWorkItemTypes,
+          work_item_types: workItemTypeDefs,
         },
         jira_connection_id: linkedJira ? jiraConnectionId : null,
         jira_project_key: linkedJira
@@ -1716,8 +1696,8 @@ export function ProjectForm({
                 setStartDate,
                 endDate,
                 setEndDate,
-                selectedWorkItemTypes,
-                setSelectedWorkItemTypes,
+                workItemTypeDefs,
+                setWorkItemTypeDefs,
                 users,
                 isEditMode,
                 getTodayDateString,

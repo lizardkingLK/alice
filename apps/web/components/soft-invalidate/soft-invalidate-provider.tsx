@@ -21,6 +21,11 @@ import {
 } from '@/lib/soft-invalidate/soft-invalidate-project-row';
 import { workflowConfigStamp } from '@/lib/soft-invalidate/workflow-config-stamp';
 import { SoftInvalidateBanner } from './soft-invalidate-banner';
+import { normalizeProjectWorkItemTypeDefs } from '@repo/types';
+import {
+  catalogRevisionFromDefs,
+  upsertWitCatalogProject,
+} from '@/app/work-items/_helpers/wit-catalog-storage';
 
 type SoftInvalidateActions = {
   readonly addProjectWatch: (
@@ -294,6 +299,15 @@ export function SoftInvalidateProvider({
         viewerUserId: userId,
       });
       projectBaselineRef.current = result.nextBaseline;
+      if (row.id && row.workflow_config != null && userId) {
+        const types = normalizeProjectWorkItemTypeDefs(
+          (row.workflow_config as { work_item_types?: unknown }).work_item_types
+        );
+        upsertWitCatalogProject(userId, row.id, {
+          revision: result.nextBaseline.stamp || catalogRevisionFromDefs(types),
+          types,
+        });
+      }
       if (result.shouldInvalidate) {
         markWorkflowStale();
       }

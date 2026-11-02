@@ -573,6 +573,7 @@ export function ProjectDetailsWorkspace({
             <ProjectSettingsTab
               project={project}
               isManagerOrAdmin={canEditProject}
+              userId={currentUserId}
             />
           </div>
         )}
