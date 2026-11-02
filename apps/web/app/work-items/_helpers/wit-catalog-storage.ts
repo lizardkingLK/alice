@@ -35,7 +35,7 @@ export function catalogRevisionFromDefs(
     .join(';;');
   let hash = 0;
   for (let i = 0; i < normalized.length; i++) {
-    hash = (hash * 31 + normalized.charCodeAt(i)) | 0;
+    hash = Math.trunc(hash * 31 + (normalized.codePointAt(i) ?? 0));
   }
   return `r${Math.abs(hash).toString(16)}`;
 }
