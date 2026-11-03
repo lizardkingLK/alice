@@ -420,6 +420,25 @@ export {
   type UpdateSavedViewBody,
 } from './saved-views.js';
 export {
+  ChatAgentAutonomyEnum,
+  chatAgentDetailSelect,
+  chatAgentDetailWireSchema,
+  chatAgentListSelect,
+  chatAgentSummaryWireSchema,
+  chatSkillCatalogWireSchema,
+  chatToolCatalogWireSchema,
+  listChatAgentsQuerySchema,
+  patchChatAgentBodySchema,
+  type ChatAgentDetailRow,
+  type ChatAgentDetailWire,
+  type ChatAgentListRow,
+  type ChatAgentSummaryWire,
+  type ChatSkillCatalogWire,
+  type ChatToolCatalogWire,
+  type ListChatAgentsQuery,
+  type PatchChatAgentBody,
+} from './chat-agents.js';
+export {
   chatAttachmentSignedUrlsSchema,
   chatAttachmentUploadSessionSchema,
   chatAttachmentWireSchema,

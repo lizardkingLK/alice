@@ -137,16 +137,19 @@ description).
 
 ## API (planned)
 
-Resource: `/api/v1/chat-agents` (kebab folder under `routes/api/`).
+Mounted at `/api/chat-agents` and `/api/v1/chat-agents`
+(`apps/api/src/routes/api/chat-agents/`).
 
 | Method   | Path               | Behavior                                                            |
 | -------- | ------------------ | ------------------------------------------------------------------- |
-| `GET`    | `/`                | Admin originals + caller’s forks; enabled tool/skill keys           |
-| `GET`    | `/:id`             | Detail (decrypted instructions when authorized)                     |
-| `POST`   | `/:id/fork`        | Member fork-once; copy enablement                                   |
+| `GET`    | `/`                | Admin originals + caller’s forks; enabled keys (no instructions)    |
+| `GET`    | `/tools`           | Active tool catalog (no instruction plaintext)                      |
+| `GET`    | `/skills`          | Active skill catalog                                                |
+| `GET`    | `/:id`             | Detail with **decrypted** instructions when visible                 |
+| `POST`   | `/:id/fork`        | Fork-once from workspace original; copy enablement                  |
 | `PATCH`  | `/:id`             | Admin on originals / owner on forks; persona, instructions, toggles |
-| `DELETE` | `/:id`             | Reject if last active agent; reassign `is_default` when needed      |
-| `POST`   | `/:id/set-default` | Admin only                                                          |
+| `DELETE` | `/:id`             | Reject if last active; promote oldest active when deleting default  |
+| `POST`   | `/:id/set-default` | Admin only; workspace originals only                                |
 
 Chat runtime resolves `agentId` when provided and visible; otherwise the
 active `is_default` agent. Provider tools are filtered to enabled keys that

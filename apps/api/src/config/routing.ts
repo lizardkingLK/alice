@@ -5,6 +5,7 @@ import {
   attachments,
   charts,
   chat,
+  chatAgents,
   comments,
   health,
   integrations,
@@ -35,6 +36,7 @@ routesConfig.use('/api/access-requests', accessRequests.router);
 routesConfig.use('/api/attachments', attachments.router);
 routesConfig.use('/api/charts', charts.router);
 routesConfig.use('/api/chat', chat.router);
+routesConfig.use('/api/chat-agents', chatAgents.router);
 routesConfig.use('/api/comments', comments.router);
 routesConfig.use('/api/integrations', integrations.router);
 routesConfig.use('/api/health', health.v1Router);
@@ -57,6 +59,7 @@ routesConfig.use('/api/v1/access-allowlist', accessAllowlist.router);
 routesConfig.use('/api/v1/attachments', attachments.router);
 routesConfig.use('/api/v1/charts', charts.router);
 routesConfig.use('/api/v1/chat', chat.router);
+routesConfig.use('/api/v1/chat-agents', chatAgents.router);
 routesConfig.use('/api/v1/comments', comments.router);
 routesConfig.use('/api/v1/github', github.router);
 routesConfig.use('/api/v1/health', health.v1Router);
