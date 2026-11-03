@@ -251,6 +251,7 @@ describe('ProjectsService backend tests', () => {
         'user-admin'
       );
       expect(result).toEqual(mockProject);
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
     });
 
     it('creates project with configured work_item_types', async () => {
@@ -339,6 +340,7 @@ describe('ProjectsService backend tests', () => {
         expect.objectContaining({ team }),
         'user-admin'
       );
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
     });
 
     it('rejects an inactive initial team manager', async () => {
@@ -725,6 +727,7 @@ describe('ProjectsService backend tests', () => {
         'user-new-owner',
         'user-manager'
       );
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
     });
 
     it('rejects updates for standard members', async () => {
@@ -892,6 +895,21 @@ describe('ProjectsService backend tests', () => {
 
       expect(addMemberMock).not.toHaveBeenCalled();
       expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
+    });
+
+    it('uses a new idempotency key for a legitimate future re-addition', async () => {
+      mockActorRole('manager');
+
+      await service.addMember('actor-1', 'project-1', 'user-member');
+      await service.addMember('actor-1', 'project-1', 'user-member');
+
+      const firstKey =
+        sendProjectMemberEmailMock.mock.calls[0]?.[0].idempotencyKey;
+      const secondKey =
+        sendProjectMemberEmailMock.mock.calls[1]?.[0].idempotencyKey;
+      expect(firstKey).toMatch(/^project-member-added:/);
+      expect(secondKey).toMatch(/^project-member-added:/);
+      expect(secondKey).not.toBe(firstKey);
     });
 
     it('does not notify when a concurrent request inserts first', async () => {

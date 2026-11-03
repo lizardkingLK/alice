@@ -13,6 +13,7 @@ import {
   type ContactRequestInput,
 } from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { randomUUID } from 'node:crypto';
 import { prisma } from '../../../lib/prisma';
 import { prismaAuditCreate } from '../../../lib/prisma-audit';
 import {
@@ -25,6 +26,11 @@ import type { AccessAllowlistRepository } from '../access-allowlist/access-allow
 import { notifyAllowlistedEmail } from '../access-allowlist/notify-allowlisted-email';
 import type { ProjectsRepository } from '../projects/projects.repository';
 import type { UsersRepository } from '../users/users.repository';
+import type { UserRow } from '../users/users.repository';
+import {
+  buildProjectMemberAddedEmail,
+  type ProjectMemberEmailSender,
+} from '../projects/project-member-email';
 
 async function requireAdmin(actorId: string) {
   return requireUserWithRole(
@@ -47,6 +53,8 @@ export type AccessRequestsGrantDeps = {
   readonly accessAllowlistRepository: AccessAllowlistRepository;
   readonly projectsRepository: ProjectsRepository;
   readonly usersRepository: UsersRepository;
+  readonly projectMemberEmailSender: ProjectMemberEmailSender;
+  readonly frontendUrl: string;
 };
 
 function requireExistingRequest(
@@ -104,17 +112,23 @@ async function assertAccessibleProjectIds(
   }
 }
 
-async function loadProjectKeysById(
+type GrantProject = {
+  readonly id: string;
+  readonly key: string;
+  readonly name: string;
+};
+
+async function loadProjectsById(
   projectIds: readonly string[]
-): Promise<Map<string, string>> {
+): Promise<Map<string, GrantProject>> {
   const projectRows = await prisma.projects.findMany({
     where: { id: { in: [...projectIds] } },
-    select: { id: true, key: true },
+    select: { id: true, key: true, name: true },
   });
   if (projectRows.length !== projectIds.length) {
     throw new Error('One or more selected projects were not found.');
   }
-  return new Map(projectRows.map((row) => [row.id, row.key]));
+  return new Map(projectRows.map((row) => [row.id, row]));
 }
 
 function memberProjectIdsForGrant(
@@ -130,11 +144,11 @@ function memberProjectIdsForGrant(
     .map((row) => row.projectId);
 }
 
-async function resolveRequesterUserId(
+async function resolveRequesterUser(
   usersRepository: UsersRepository,
   email: string,
   memberProjectIds: readonly string[]
-): Promise<string | null> {
+): Promise<UserRow | null> {
   if (memberProjectIds.length === 0) {
     return null;
   }
@@ -144,7 +158,7 @@ async function resolveRequesterUserId(
       'No Alice user exists for this email yet. Ask them to complete sign-up once, or invite them from Users, then grant again.'
     );
   }
-  return user.id;
+  return user;
 }
 
 async function notifyAllowlistedEmailQuietly(email: string): Promise<void> {
@@ -163,12 +177,12 @@ async function createEmailAllowlistForGrant(
     readonly email: string;
     readonly label: string | null;
     readonly projectIds: readonly string[];
-    readonly keyById: ReadonlyMap<string, string>;
+    readonly projectById: ReadonlyMap<string, GrantProject>;
   },
   transaction: AccessRequestsTransaction
 ): Promise<string | null> {
   const allowedKeys = params.projectIds
-    .map((id) => params.keyById.get(id))
+    .map((id) => params.projectById.get(id)?.key)
     .filter((key): key is string => Boolean(key));
 
   const existing = await accessAllowlistRepository.findEmailByValue(
@@ -260,25 +274,59 @@ async function ensureGrantProjectMemberships(
     readonly requesterUserId: string;
     readonly memberProjectIds: readonly string[];
   }
-): Promise<void> {
+): Promise<Array<{ projectId: string; eventId: string }>> {
   const { actorId, requesterUserId, memberProjectIds } = params;
+  const createdMemberships: Array<{ projectId: string; eventId: string }> = [];
   for (const projectId of memberProjectIds) {
-    const member = await transaction.project_members.findUnique({
-      where: {
-        project_id_user_id: { project_id: projectId, user_id: requesterUserId },
-      },
-      select: { user_id: true },
-    });
-    if (!member) {
-      await transaction.project_members.create({
-        data: {
+    const eventId = randomUUID();
+    const result = await transaction.project_members.createMany({
+      data: [
+        {
           project_id: projectId,
           user_id: requesterUserId,
           ...prismaAuditCreate(actorId),
         },
-      });
+      ],
+      skipDuplicates: true,
+    });
+    if (result.count === 1) {
+      createdMemberships.push({ projectId, eventId });
     }
   }
+  return createdMemberships;
+}
+
+async function notifyProjectMembershipsQuietly(params: {
+  readonly sender: ProjectMemberEmailSender;
+  readonly user: UserRow;
+  readonly projectById: ReadonlyMap<string, GrantProject>;
+  readonly frontendUrl: string;
+  readonly memberships: ReadonlyArray<{
+    projectId: string;
+    eventId: string;
+  }>;
+}): Promise<void> {
+  await Promise.all(
+    params.memberships.map(async ({ projectId, eventId }) => {
+      try {
+        const project = params.projectById.get(projectId);
+        if (!project) {
+          throw new Error('Project not found for membership notification.');
+        }
+        const email = buildProjectMemberAddedEmail({
+          recipientEmail: params.user.email,
+          recipientName: params.user.name,
+          projectId,
+          projectName: project.name,
+          frontendUrl: params.frontendUrl,
+          notificationEventId: eventId,
+        });
+        await params.sender.send(email);
+      } catch {
+        console.error('error. project member email notification failed');
+      }
+    })
+  );
 }
 
 export class AccessRequestsService {
@@ -506,15 +554,20 @@ export class AccessRequestsService {
       throw new Error('Access request grant is not configured.');
     }
 
-    const { accessAllowlistRepository, projectsRepository, usersRepository } =
-      this.grantDeps;
+    const {
+      accessAllowlistRepository,
+      projectsRepository,
+      usersRepository,
+      projectMemberEmailSender,
+      frontendUrl,
+    } = this.grantDeps;
 
     const existing = requireGrantableRequest(
       await this.accessRequestsRepository.findById(requestId)
     );
     const projectIds = uniqueGrantProjectIds(input);
     await assertAccessibleProjectIds(projectsRepository, actorId, projectIds);
-    const keyById = await loadProjectKeysById(projectIds);
+    const projectById = await loadProjectsById(projectIds);
 
     const domain = emailDomainFromAddress(existing.requester_email);
     const coveringDomain = domain
@@ -526,13 +579,13 @@ export class AccessRequestsService {
       projectIds,
       input
     );
-    const requesterUserId = await resolveRequesterUserId(
+    const requesterUser = await resolveRequesterUser(
       usersRepository,
       existing.requester_email,
       memberProjectIds
     );
 
-    const emailToNotify = await accessAllowlistRepository.withTransaction(
+    const result = await accessAllowlistRepository.withTransaction(
       async (transaction) => {
         const current = requireGrantableRequest(
           await this.accessRequestsRepository.findById(requestId, transaction)
@@ -554,18 +607,18 @@ export class AccessRequestsService {
                 email: current.requester_email,
                 label: current.requester_name,
                 projectIds,
-                keyById,
+                projectById,
               },
               transaction
             );
 
-        if (requesterUserId) {
-          await ensureGrantProjectMemberships(transaction, {
-            actorId,
-            requesterUserId,
-            memberProjectIds,
-          });
-        }
+        const createdMemberships = requesterUser
+          ? await ensureGrantProjectMemberships(transaction, {
+              actorId,
+              requesterUserId: requesterUser.id,
+              memberProjectIds,
+            })
+          : [];
 
         const resolved =
           current.status === 'pending'
@@ -590,12 +643,21 @@ export class AccessRequestsService {
           throw new Error('This access request is already resolved.');
         }
 
-        return notificationEmail;
+        return { notificationEmail, createdMemberships };
       }
     );
 
-    if (emailToNotify) {
-      await notifyAllowlistedEmailQuietly(emailToNotify);
+    if (result.notificationEmail) {
+      await notifyAllowlistedEmailQuietly(result.notificationEmail);
+    }
+    if (requesterUser && result.createdMemberships.length > 0) {
+      await notifyProjectMembershipsQuietly({
+        sender: projectMemberEmailSender,
+        user: requesterUser,
+        projectById,
+        frontendUrl,
+        memberships: result.createdMemberships,
+      });
     }
   }
 

@@ -35,6 +35,8 @@
         "PUSHER_KEY",
         "PUSHER_SECRET",
         "PUSHER_CLUSTER",
+        "RESEND_API_KEY",
+        "TRANSACTIONAL_EMAIL_FROM",
         "SUPABASE_SERVICE_ROLE_KEY",
         "STORAGE_BUCKET_ATTACHMENTS",
         "STORAGE_BUCKET_PROFILE_PICTURES",
@@ -62,6 +64,8 @@
         "PUSHER_KEY",
         "PUSHER_SECRET",
         "PUSHER_CLUSTER",
+        "RESEND_API_KEY",
+        "TRANSACTIONAL_EMAIL_FROM",
         "DATABASE_URL",
         "DATA_READS_VIA_API"
       ]

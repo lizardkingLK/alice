@@ -56,7 +56,6 @@ import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-up
 import type { ProjectsRepository } from './projects.repository';
 import type { UsersRepository } from '../users/users.repository';
 import {
-  boundaryOnlyProjectMemberEmailSender,
   buildProjectMemberAddedEmail,
   type ProjectMemberEmailSender,
 } from './project-member-email';
@@ -180,7 +179,7 @@ export class ProjectsService {
   constructor(
     private readonly projectsRepository: ProjectsRepository,
     private readonly usersRepository?: Pick<UsersRepository, 'findById'>,
-    private readonly projectMemberEmailSender: ProjectMemberEmailSender = boundaryOnlyProjectMemberEmailSender
+    private readonly projectMemberEmailSender?: ProjectMemberEmailSender
   ) {}
 
   async listProjectsPaginated(
@@ -302,6 +301,9 @@ export class ProjectsService {
     if (!this.usersRepository) {
       throw new Error('Project member notification is not configured.');
     }
+    if (!this.projectMemberEmailSender) {
+      throw new Error('Project member notification is not configured.');
+    }
 
     const [project, user] = await Promise.all([
       this.projectsRepository.findById(projectId),
@@ -330,6 +332,7 @@ export class ProjectsService {
         projectId: project.id,
         projectName: project.name,
         frontendUrl: env.FRONTEND_URL,
+        notificationEventId: randomUUID(),
       });
       await this.projectMemberEmailSender.send(email);
     } catch {

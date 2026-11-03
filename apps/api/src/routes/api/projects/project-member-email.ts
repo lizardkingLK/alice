@@ -3,6 +3,7 @@ export type ProjectMemberEmailMessage = {
   readonly subject: string;
   readonly text: string;
   readonly html: string;
+  readonly idempotencyKey: string;
 };
 
 export type ProjectMemberEmailSender = {
@@ -15,7 +16,19 @@ type ProjectMemberEmailInput = {
   readonly projectId: string;
   readonly projectName: string;
   readonly frontendUrl: string;
+  readonly notificationEventId: string;
 };
+
+type ResendProjectMemberEmailSenderConfig = {
+  readonly apiKey?: string;
+  readonly from?: string;
+  readonly timeoutMs?: number;
+  readonly fetchImplementation?: typeof fetch;
+};
+
+const RESEND_EMAILS_URL = 'https://api.resend.com/emails';
+const RESEND_TIMEOUT_MS = 5_000;
+const SAFE_IDEMPOTENCY_COMPONENT = /^[A-Za-z0-9_-]{1,200}$/;
 
 function escapeHtml(value: string): string {
   return value
@@ -50,6 +63,21 @@ function normalizeRecipientEmail(value: string): string {
     dotIndex === normalized.length - 1
   ) {
     throw new Error('Recipient email is invalid.');
+  }
+  return normalized;
+}
+
+function buildProjectMemberIdempotencyKey(eventId: string): string {
+  if (!SAFE_IDEMPOTENCY_COMPONENT.test(eventId)) {
+    throw new Error('Project member notification event id is invalid.');
+  }
+  return `project-member-added:${eventId}`;
+}
+
+function validResendSetting(value: string | undefined): string | null {
+  const normalized = value?.trim();
+  if (!normalized || /[\r\n]/.test(normalized)) {
+    return null;
   }
   return normalized;
 }
@@ -95,6 +123,9 @@ export function buildProjectMemberAddedEmail(
   const projectName = normalizeDisplayText(input.projectName, 'your project');
   const projectUrl = buildAliceProjectUrl(input.frontendUrl, input.projectId);
   const subject = `You've been added to ${projectName} in Alice`;
+  const idempotencyKey = buildProjectMemberIdempotencyKey(
+    input.notificationEventId
+  );
 
   const text = [
     `Hello ${recipientName},`,
@@ -122,13 +153,65 @@ export function buildProjectMemberAddedEmail(
   </body>
 </html>`;
 
-  return { to, subject, text, html };
+  return { to, subject, text, html, idempotencyKey };
 }
 
-/**
- * Delivery boundary for Phase 2. No approved custom transactional provider is
- * configured yet, so production intentionally performs no external delivery.
- */
-export const boundaryOnlyProjectMemberEmailSender: ProjectMemberEmailSender = {
-  send: () => Promise.resolve(),
-};
+export function createResendProjectMemberEmailSender(
+  config: ResendProjectMemberEmailSenderConfig
+): ProjectMemberEmailSender {
+  const apiKey = validResendSetting(config.apiKey);
+  const from = validResendSetting(config.from);
+  const timeoutMs = config.timeoutMs ?? RESEND_TIMEOUT_MS;
+  const fetchImplementation = config.fetchImplementation ?? globalThis.fetch;
+
+  return {
+    async send(message) {
+      if (!apiKey || !from) {
+        console.warn(
+          'warn. project member email delivery skipped; Resend is not configured'
+        );
+        return;
+      }
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetchImplementation(RESEND_EMAILS_URL, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'Idempotency-Key': message.idempotencyKey,
+          },
+          body: JSON.stringify({
+            from,
+            to: [message.to],
+            subject: message.subject,
+            text: message.text,
+            html: message.html,
+          }),
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `Resend email request failed with status ${response.status}.`
+          );
+        }
+      } catch (error) {
+        if (controller.signal.aborted) {
+          throw new Error('Resend email request timed out.');
+        }
+        if (
+          error instanceof Error &&
+          error.message.startsWith('Resend email request failed with status ')
+        ) {
+          throw error;
+        }
+        throw new Error('Resend email request failed.');
+      } finally {
+        clearTimeout(timeout);
+      }
+    },
+  };
+}

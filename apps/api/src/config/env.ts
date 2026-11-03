@@ -3,6 +3,10 @@ import { z } from 'zod';
 const serverSchema = z.object({
   PORT: z.coerce.number(),
   FRONTEND_URL: z.string().min(1),
+  // Blank values are treated as unconfigured by the Resend adapter so an
+  // optional email integration cannot prevent the API from starting.
+  RESEND_API_KEY: z.string().optional(),
+  TRANSACTIONAL_EMAIL_FROM: z.string().optional(),
   SUPABASE_URL: z.url(),
   SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
@@ -41,6 +45,8 @@ type EnvSchemaType = z.infer<typeof serverSchema>;
 const mock: EnvSchemaType = {
   PORT: 5000,
   FRONTEND_URL: 'http://localhost:3000',
+  RESEND_API_KEY: undefined,
+  TRANSACTIONAL_EMAIL_FROM: undefined,
   SUPABASE_URL: 'https://supabase.co',
   SUPABASE_ANON_KEY: 'mock',
   SUPABASE_SERVICE_ROLE_KEY: 'mock',
@@ -69,6 +75,8 @@ const mock: EnvSchemaType = {
 const processEnv = {
   PORT: process.env.PORT,
   FRONTEND_URL: process.env.FRONTEND_URL,
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
+  TRANSACTIONAL_EMAIL_FROM: process.env.TRANSACTIONAL_EMAIL_FROM,
   SUPABASE_URL: process.env.SUPABASE_URL,
   SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,

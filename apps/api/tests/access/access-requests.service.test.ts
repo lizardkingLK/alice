@@ -47,12 +47,10 @@ const repository = {
   rollingWindowStart: vi.fn(() => new Date('2026-01-01T00:00:00.000Z')),
 } as unknown as AccessRequestsRepository;
 
-const projectMemberFindUnique = vi.fn();
-const projectMemberCreate = vi.fn();
+const projectMemberCreateMany = vi.fn();
 const transactionClient = {
   project_members: {
-    findUnique: projectMemberFindUnique,
-    create: projectMemberCreate,
+    createMany: projectMemberCreateMany,
   },
 } as never;
 
@@ -202,6 +200,8 @@ describe('AccessRequestsService.denyAccessRequest', () => {
       accessAllowlistRepository: accessAllowlistRepository as never,
       projectsRepository: projectsRepository as never,
       usersRepository: usersRepository as never,
+      projectMemberEmailSender: { send: vi.fn() },
+      frontendUrl: 'https://alice.example',
     }
   );
 
@@ -332,6 +332,7 @@ describe('AccessRequestsService.deleteAccessRequest', () => {
 });
 
 describe('AccessRequestsService.grantAccessRequest', () => {
+  const sendProjectMemberEmail = vi.fn();
   const accessAllowlistRepository = {
     withTransaction: vi.fn(),
     findActiveDomainByValue: vi.fn(),
@@ -357,6 +358,8 @@ describe('AccessRequestsService.grantAccessRequest', () => {
       accessAllowlistRepository: accessAllowlistRepository as never,
       projectsRepository: projectsRepository as never,
       usersRepository: usersRepository as never,
+      projectMemberEmailSender: { send: sendProjectMemberEmail },
+      frontendUrl: 'https://alice.example',
     }
   );
 
@@ -379,16 +382,16 @@ describe('AccessRequestsService.grantAccessRequest', () => {
       async (args: { where?: { id?: { in?: string[] } } }) => {
         const ids = args.where?.id?.in ?? [];
         const all = [
-          { id: 'proj-1', key: 'ACME' },
-          { id: 'proj-2', key: 'BETA' },
+          { id: 'proj-1', key: 'ACME', name: 'Acme Project' },
+          { id: 'proj-2', key: 'BETA', name: 'Beta Project' },
         ];
         return all.filter((row) => ids.includes(row.id));
       }
     );
-    projectMemberFindUnique.mockResolvedValue(null);
-    projectMemberCreate.mockResolvedValue({});
+    projectMemberCreateMany.mockResolvedValue({ count: 1 });
     usersRepository.findByEmail.mockResolvedValue({
       id: 'user-guest',
+      name: 'Guest User',
       email: 'guest@partner.com',
     });
     accessAllowlistRepository.findEmailByValue.mockResolvedValue(null);
@@ -396,6 +399,7 @@ describe('AccessRequestsService.grantAccessRequest', () => {
       value: 'guest@partner.com',
     });
     notifyAllowlistedEmailMock.mockResolvedValue(undefined);
+    sendProjectMemberEmail.mockResolvedValue(undefined);
   });
 
   it('creates email allowlist + members when no covering domain', async () => {
@@ -419,14 +423,24 @@ describe('AccessRequestsService.grantAccessRequest', () => {
     expect(notifyAllowlistedEmailMock).toHaveBeenCalledWith(
       'guest@partner.com'
     );
-    expect(projectMemberCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        project_id: 'proj-1',
-        user_id: 'user-guest',
-        created_by: 'admin-1',
-      }),
+    expect(projectMemberCreateMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          project_id: 'proj-1',
+          user_id: 'user-guest',
+          created_by: 'admin-1',
+        }),
+      ],
+      skipDuplicates: true,
     });
-    expect(projectMemberCreate).toHaveBeenCalledTimes(1);
+    expect(projectMemberCreateMany).toHaveBeenCalledTimes(1);
+    expect(sendProjectMemberEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'guest@partner.com',
+        subject: "You've been added to Acme Project in Alice",
+        idempotencyKey: expect.stringMatching(/^project-member-added:/),
+      })
+    );
     expect(repository.resolvePendingAndArchive).toHaveBeenCalledWith(
       {
         id: 'req-1',
@@ -438,6 +452,40 @@ describe('AccessRequestsService.grantAccessRequest', () => {
     expect(
       vi.mocked(repository.resolvePendingAndArchive).mock.invocationCallOrder[0]
     ).toBeLessThan(notifyAllowlistedEmailMock.mock.invocationCallOrder[0]!);
+    expect(
+      vi.mocked(repository.resolvePendingAndArchive).mock.invocationCallOrder[0]
+    ).toBeLessThan(sendProjectMemberEmail.mock.invocationCallOrder[0]!);
+  });
+
+  it('does not notify for a membership that a concurrent insert already created', async () => {
+    accessAllowlistRepository.findActiveDomainByValue.mockResolvedValue(null);
+    projectMemberCreateMany.mockResolvedValue({ count: 0 });
+
+    await service.grantAccessRequest('admin-1', 'req-1', {
+      projects: [{ projectId: 'proj-1', addMember: true }],
+    });
+
+    expect(projectMemberCreateMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          project_id: 'proj-1',
+          user_id: 'user-guest',
+        }),
+      ],
+      skipDuplicates: true,
+    });
+    expect(sendProjectMemberEmail).not.toHaveBeenCalled();
+  });
+
+  it('does not notify for an allowlist-only approval', async () => {
+    accessAllowlistRepository.findActiveDomainByValue.mockResolvedValue(null);
+
+    await service.grantAccessRequest('admin-1', 'req-1', {
+      projects: [{ projectId: 'proj-1', addMember: false }],
+    });
+
+    expect(projectMemberCreateMany).not.toHaveBeenCalled();
+    expect(sendProjectMemberEmail).not.toHaveBeenCalled();
   });
 
   it('keeps a committed grant when admission email delivery fails', async () => {
@@ -456,6 +504,7 @@ describe('AccessRequestsService.grantAccessRequest', () => {
     ).resolves.toBeUndefined();
 
     expect(repository.resolvePendingAndArchive).toHaveBeenCalledOnce();
+    expect(sendProjectMemberEmail).toHaveBeenCalledOnce();
     expect(consoleError).toHaveBeenCalledWith(
       'error. allowlist admission email failed:',
       'email unavailable'
@@ -478,6 +527,7 @@ describe('AccessRequestsService.grantAccessRequest', () => {
 
     expect(accessAllowlistRepository.update).toHaveBeenCalledOnce();
     expect(notifyAllowlistedEmailMock).not.toHaveBeenCalled();
+    expect(sendProjectMemberEmail).toHaveBeenCalledOnce();
   });
 
   it('does not email when a concurrent resolver wins approval', async () => {
@@ -491,6 +541,7 @@ describe('AccessRequestsService.grantAccessRequest', () => {
     ).rejects.toThrow('This access request is already resolved.');
 
     expect(notifyAllowlistedEmailMock).not.toHaveBeenCalled();
+    expect(sendProjectMemberEmail).not.toHaveBeenCalled();
   });
 
   it('rejects when the transactional request email no longer matches', async () => {
@@ -511,6 +562,7 @@ describe('AccessRequestsService.grantAccessRequest', () => {
     expect(accessAllowlistRepository.create).not.toHaveBeenCalled();
     expect(repository.resolvePendingAndArchive).not.toHaveBeenCalled();
     expect(notifyAllowlistedEmailMock).not.toHaveBeenCalled();
+    expect(sendProjectMemberEmail).not.toHaveBeenCalled();
   });
 
   it('skips email allowlist and forces members when covering domain', async () => {
@@ -524,12 +576,16 @@ describe('AccessRequestsService.grantAccessRequest', () => {
     });
 
     expect(accessAllowlistRepository.create).not.toHaveBeenCalled();
-    expect(projectMemberCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        project_id: 'proj-1',
-        user_id: 'user-guest',
-      }),
+    expect(projectMemberCreateMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          project_id: 'proj-1',
+          user_id: 'user-guest',
+        }),
+      ],
+      skipDuplicates: true,
     });
+    expect(sendProjectMemberEmail).toHaveBeenCalledOnce();
     expect(repository.resolvePendingAndArchive).toHaveBeenCalledWith(
       {
         id: 'req-1',
@@ -596,6 +652,7 @@ describe('AccessRequestsService.grantAccessRequest', () => {
     expect(notifyAllowlistedEmailMock).toHaveBeenCalledWith(
       'guest@partner.com'
     );
+    expect(sendProjectMemberEmail).toHaveBeenCalledOnce();
     expect(repository.resolveFromStatusAndArchive).toHaveBeenCalledWith(
       {
         id: 'req-1',
@@ -605,6 +662,31 @@ describe('AccessRequestsService.grantAccessRequest', () => {
       },
       transactionClient
     );
+  });
+
+  it('keeps a committed approval when project-member email delivery fails', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    accessAllowlistRepository.findActiveDomainByValue.mockResolvedValue(null);
+    sendProjectMemberEmail.mockRejectedValue(
+      new Error('provider leaked guest@partner.com')
+    );
+
+    await expect(
+      service.grantAccessRequest('admin-1', 'req-1', {
+        projects: [{ projectId: 'proj-1', addMember: true }],
+      })
+    ).resolves.toBeUndefined();
+
+    expect(repository.resolvePendingAndArchive).toHaveBeenCalledOnce();
+    expect(consoleError).toHaveBeenCalledWith(
+      'error. project member email notification failed'
+    );
+    expect(consoleError).not.toHaveBeenCalledWith(
+      expect.stringContaining('guest@partner.com')
+    );
+    consoleError.mockRestore();
   });
 });
 
