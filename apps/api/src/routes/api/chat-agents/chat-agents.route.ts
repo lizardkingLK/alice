@@ -44,6 +44,18 @@ function sendRouteError(
   res.status(status).json({ error: message });
 }
 
+function parseAgentIdParam(
+  res: Response,
+  rawId: string | undefined
+): string | null {
+  const parsedId = z.uuid().safeParse(rawId);
+  if (!parsedId.success) {
+    res.status(400).json({ error: 'Invalid agent id' });
+    return null;
+  }
+  return parsedId.data;
+}
+
 export type ChatAgentsRouterDeps = {
   chatAgentsService: ChatAgentsService;
 };
@@ -74,46 +86,54 @@ export function createChatAgentsRouter(deps: ChatAgentsRouterDeps) {
     }
   );
 
+  const listCatalog =
+    (
+      load: (service: ChatAgentsService, actorId: string) => Promise<unknown>,
+      responseKey: 'tools' | 'skills',
+      fallbackMessage: string
+    ) =>
+    async (req: AuthenticatedRequest, res: Response) => {
+      try {
+        const actorId = requireActorId(req);
+        const items = await load(chatAgentsService, actorId);
+        res.json({ [responseKey]: items });
+      } catch (error) {
+        sendRouteError(res, error, fallbackMessage);
+      }
+    };
+
   chatAgentsRouter.get(
     '/tools',
     requireApiAuth,
-    async (req: AuthenticatedRequest, res) => {
-      try {
-        const actorId = requireActorId(req);
-        const tools = await chatAgentsService.listTools(actorId);
-        res.json({ tools });
-      } catch (error) {
-        sendRouteError(res, error, 'Failed to list chat tools');
-      }
-    }
+    listCatalog(
+      (service, actorId) => service.listTools(actorId),
+      'tools',
+      'Failed to list chat tools'
+    )
   );
 
   chatAgentsRouter.get(
     '/skills',
     requireApiAuth,
-    async (req: AuthenticatedRequest, res) => {
-      try {
-        const actorId = requireActorId(req);
-        const skills = await chatAgentsService.listSkills(actorId);
-        res.json({ skills });
-      } catch (error) {
-        sendRouteError(res, error, 'Failed to list chat skills');
-      }
-    }
+    listCatalog(
+      (service, actorId) => service.listSkills(actorId),
+      'skills',
+      'Failed to list chat skills'
+    )
   );
 
   chatAgentsRouter.get(
     '/:id',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
-      const parsedId = z.uuid().safeParse(req.params.id);
-      if (!parsedId.success) {
-        return res.status(400).json({ error: 'Invalid agent id' });
+      const agentId = parseAgentIdParam(res, req.params.id);
+      if (!agentId) {
+        return;
       }
 
       try {
         const actorId = requireActorId(req);
-        const agent = await chatAgentsService.getAgent(actorId, parsedId.data);
+        const agent = await chatAgentsService.getAgent(actorId, agentId);
         res.json({ agent });
       } catch (error) {
         sendRouteError(res, error, 'Failed to load chat agent');
@@ -125,14 +145,14 @@ export function createChatAgentsRouter(deps: ChatAgentsRouterDeps) {
     '/:id/fork',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
-      const parsedId = z.uuid().safeParse(req.params.id);
-      if (!parsedId.success) {
-        return res.status(400).json({ error: 'Invalid agent id' });
+      const agentId = parseAgentIdParam(res, req.params.id);
+      if (!agentId) {
+        return;
       }
 
       try {
         const actorId = requireActorId(req);
-        const agent = await chatAgentsService.forkAgent(actorId, parsedId.data);
+        const agent = await chatAgentsService.forkAgent(actorId, agentId);
         res.status(201).json({ agent });
       } catch (error) {
         sendRouteError(res, error, 'Failed to fork chat agent');
@@ -144,9 +164,9 @@ export function createChatAgentsRouter(deps: ChatAgentsRouterDeps) {
     '/:id',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
-      const parsedId = z.uuid().safeParse(req.params.id);
-      if (!parsedId.success) {
-        return res.status(400).json({ error: 'Invalid agent id' });
+      const agentId = parseAgentIdParam(res, req.params.id);
+      if (!agentId) {
+        return;
       }
 
       const parsedBody = patchChatAgentBodySchema.safeParse(req.body);
@@ -160,7 +180,7 @@ export function createChatAgentsRouter(deps: ChatAgentsRouterDeps) {
         const actorId = requireActorId(req);
         const agent = await chatAgentsService.patchAgent(
           actorId,
-          parsedId.data,
+          agentId,
           parsedBody.data
         );
         res.json({ agent });
@@ -174,14 +194,14 @@ export function createChatAgentsRouter(deps: ChatAgentsRouterDeps) {
     '/:id',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
-      const parsedId = z.uuid().safeParse(req.params.id);
-      if (!parsedId.success) {
-        return res.status(400).json({ error: 'Invalid agent id' });
+      const agentId = parseAgentIdParam(res, req.params.id);
+      if (!agentId) {
+        return;
       }
 
       try {
         const actorId = requireActorId(req);
-        await chatAgentsService.deleteAgent(actorId, parsedId.data);
+        await chatAgentsService.deleteAgent(actorId, agentId);
         res.json({ success: true });
       } catch (error) {
         sendRouteError(res, error, 'Failed to delete chat agent');
@@ -193,17 +213,14 @@ export function createChatAgentsRouter(deps: ChatAgentsRouterDeps) {
     '/:id/set-default',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
-      const parsedId = z.uuid().safeParse(req.params.id);
-      if (!parsedId.success) {
-        return res.status(400).json({ error: 'Invalid agent id' });
+      const agentId = parseAgentIdParam(res, req.params.id);
+      if (!agentId) {
+        return;
       }
 
       try {
         const actorId = requireActorId(req);
-        const agent = await chatAgentsService.setDefault(
-          actorId,
-          parsedId.data
-        );
+        const agent = await chatAgentsService.setDefault(actorId, agentId);
         res.json({ agent });
       } catch (error) {
         sendRouteError(res, error, 'Failed to set default chat agent');

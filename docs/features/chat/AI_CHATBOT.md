@@ -218,10 +218,12 @@ needed elsewhere in the API.
 2. The frontend sends that integration row's UUID as `integrationId`.
 3. The backend loads the active integration, validates its provider identity
    and endpoint, and decrypts its API key in-process.
-4. `ChatService` resolves the **chat agent** (`agentId` when visible, else
-   workspace `is_default`), decrypts `instructions` at rest, appends the
-   workspace snapshot, and filters tool declarations to that agent’s
-   **enabled** catalog keys that exist in the code registry.
+4. `ChatService` resolves the **chat agent** (`agentId` on `POST /api/v1/chat`
+   when visible, else the conversation’s stored `agent_id`, else workspace
+   `is_default`), decrypts `instructions` at rest, appends the workspace
+   snapshot, and filters tool declarations to that agent’s **enabled** catalog
+   keys that exist in the code registry. Chart / dynamic-fields helpers load
+   the matching tool `instruction` (with hardcoded fallback if unset).
 5. `ChatService` resolves the provider strategy and sends that system
    instruction, conversation history, and the filtered tool declarations.
 6. The provider returns text, tool requests, or both.

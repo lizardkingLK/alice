@@ -203,6 +203,19 @@ export class ChatAgentsService {
     return this.toDetailWire(created, enablementFor(enablement, created.id));
   }
 
+  private async requireMutatingActor(
+    actorId: string,
+    agent: Pick<ChatAgentDetailRow, 'owner_id'>
+  ) {
+    const actor = await requireUserWithRole(
+      actorId,
+      [UserRoleEnum.admin, UserRoleEnum.manager, UserRoleEnum.member],
+      'Unauthorized.'
+    );
+    assertCanMutate(actorId, actor.role, agent);
+    return actor;
+  }
+
   async patchAgent(
     actorId: string,
     id: string,
@@ -213,12 +226,7 @@ export class ChatAgentsService {
       throw new Error('Chat agent not found.');
     }
 
-    const actor = await requireUserWithRole(
-      actorId,
-      [UserRoleEnum.admin, UserRoleEnum.manager, UserRoleEnum.member],
-      'Unauthorized.'
-    );
-    assertCanMutate(actorId, actor.role, agent);
+    await this.requireMutatingActor(actorId, agent);
 
     if (body.status === 'archived' && agent.is_default) {
       throw new Error(
@@ -288,12 +296,7 @@ export class ChatAgentsService {
       throw new Error('Chat agent not found.');
     }
 
-    const actor = await requireUserWithRole(
-      actorId,
-      [UserRoleEnum.admin, UserRoleEnum.manager, UserRoleEnum.member],
-      'Unauthorized.'
-    );
-    assertCanMutate(actorId, actor.role, agent);
+    await this.requireMutatingActor(actorId, agent);
 
     if (agent.status === 'active') {
       const activeCount = await this.repository.countActiveAgents();

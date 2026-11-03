@@ -74,60 +74,31 @@ function visibleAgentWhere(actorId: string): Prisma.chat_agentsWhereInput {
   };
 }
 
-function upsertAgentToolToggle(
+function upsertAgentEnablementToggle(
   tx: ChatAgentsTx,
+  kind: 'tool' | 'skill',
   agentId: string,
-  toolId: string,
+  targetId: string,
   enabled: boolean,
   toggledAt: Date
 ) {
-  return tx.chat_agent_tools.upsert({
-    where: {
-      agent_id_tool_id: {
-        agent_id: agentId,
-        tool_id: toolId,
-      },
-    },
-    create: {
-      agent_id: agentId,
-      tool_id: toolId,
-      enabled,
-    },
-    update: {
-      enabled,
-      updated_at: toggledAt,
-    },
-  });
-}
-
-function upsertAgentSkillToggle(
-  tx: ChatAgentsTx,
-  agentId: string,
-  skillId: string,
-  enabled: boolean,
-  toggledAt: Date
-) {
+  const update = { enabled, updated_at: toggledAt };
+  if (kind === 'tool') {
+    return tx.chat_agent_tools.upsert({
+      where: { agent_id_tool_id: { agent_id: agentId, tool_id: targetId } },
+      create: { agent_id: agentId, tool_id: targetId, enabled },
+      update,
+    });
+  }
   return tx.chat_agent_skills.upsert({
-    where: {
-      agent_id_skill_id: {
-        agent_id: agentId,
-        skill_id: skillId,
-      },
-    },
-    create: {
-      agent_id: agentId,
-      skill_id: skillId,
-      enabled,
-    },
-    update: {
-      enabled,
-      updated_at: toggledAt,
-    },
+    where: { agent_id_skill_id: { agent_id: agentId, skill_id: targetId } },
+    create: { agent_id: agentId, skill_id: targetId, enabled },
+    update,
   });
 }
 
 export class ChatAgentsRepository {
-  async listVisible(
+  listVisible(
     actorId: string,
     query: ListChatAgentsQuery
   ): Promise<ChatAgentListRow[]> {
@@ -148,7 +119,7 @@ export class ChatAgentsRepository {
     });
   }
 
-  async findVisibleById(
+  findVisibleById(
     actorId: string,
     id: string
   ): Promise<ChatAgentDetailRow | null> {
@@ -161,20 +132,20 @@ export class ChatAgentsRepository {
     });
   }
 
-  async findById(id: string): Promise<ChatAgentDetailRow | null> {
+  findById(id: string): Promise<ChatAgentDetailRow | null> {
     return prisma.chat_agents.findUnique({
       where: { id },
       select: chatAgentDetailSelect,
     });
   }
 
-  async countActiveAgents(): Promise<number> {
+  countActiveAgents(): Promise<number> {
     return prisma.chat_agents.count({
       where: { status: RecordStatus.active },
     });
   }
 
-  async findActiveDefault(): Promise<ChatAgentDetailRow | null> {
+  findActiveDefault(): Promise<ChatAgentDetailRow | null> {
     return prisma.chat_agents.findFirst({
       where: {
         is_default: true,
@@ -184,7 +155,7 @@ export class ChatAgentsRepository {
     });
   }
 
-  async findExistingFork(
+  findExistingFork(
     actorId: string,
     forkedFromId: string
   ): Promise<ChatAgentListRow | null> {
@@ -236,7 +207,7 @@ export class ChatAgentsRepository {
     return result;
   }
 
-  async listActiveTools(): Promise<ChatToolCatalogRow[]> {
+  listActiveTools(): Promise<ChatToolCatalogRow[]> {
     return prisma.chat_tools.findMany({
       where: { status: RecordStatus.active },
       select: {
@@ -252,7 +223,7 @@ export class ChatAgentsRepository {
     });
   }
 
-  async listActiveSkills(): Promise<ChatSkillCatalogRow[]> {
+  listActiveSkills(): Promise<ChatSkillCatalogRow[]> {
     return prisma.chat_skills.findMany({
       where: { status: RecordStatus.active },
       select: {
@@ -267,37 +238,45 @@ export class ChatAgentsRepository {
     });
   }
 
-  async findToolIdsByKeys(keys: string[]): Promise<Map<string, string>> {
+  private async findCatalogIdsByKeys(
+    kind: 'tool' | 'skill',
+    keys: string[]
+  ): Promise<Map<string, string>> {
     if (keys.length === 0) {
       return new Map();
     }
-    const rows = await prisma.chat_tools.findMany({
-      where: { key: { in: keys } },
-      select: { id: true, key: true },
-    });
+    const rows =
+      kind === 'tool'
+        ? await prisma.chat_tools.findMany({
+            where: { key: { in: keys } },
+            select: { id: true, key: true },
+          })
+        : await prisma.chat_skills.findMany({
+            where: { key: { in: keys } },
+            select: { id: true, key: true },
+          });
     return new Map(rows.map((row) => [row.key, row.id]));
   }
 
-  async findSkillIdsByKeys(keys: string[]): Promise<Map<string, string>> {
-    if (keys.length === 0) {
-      return new Map();
+  findToolIdsByKeys(keys: string[]): Promise<Map<string, string>> {
+    return this.findCatalogIdsByKeys('tool', keys);
+  }
+
+  findSkillIdsByKeys(keys: string[]): Promise<Map<string, string>> {
+    return this.findCatalogIdsByKeys('skill', keys);
+  }
+
+  private async listEnabledTargetIds(
+    kind: 'tool' | 'skill',
+    agentId: string
+  ): Promise<string[]> {
+    if (kind === 'tool') {
+      const rows = await prisma.chat_agent_tools.findMany({
+        where: { agent_id: agentId, enabled: true },
+        select: { tool_id: true },
+      });
+      return rows.map((row) => row.tool_id);
     }
-    const rows = await prisma.chat_skills.findMany({
-      where: { key: { in: keys } },
-      select: { id: true, key: true },
-    });
-    return new Map(rows.map((row) => [row.key, row.id]));
-  }
-
-  async listEnabledToolIds(agentId: string): Promise<string[]> {
-    const rows = await prisma.chat_agent_tools.findMany({
-      where: { agent_id: agentId, enabled: true },
-      select: { tool_id: true },
-    });
-    return rows.map((row) => row.tool_id);
-  }
-
-  async listEnabledSkillIds(agentId: string): Promise<string[]> {
     const rows = await prisma.chat_agent_skills.findMany({
       where: { agent_id: agentId, enabled: true },
       select: { skill_id: true },
@@ -305,7 +284,15 @@ export class ChatAgentsRepository {
     return rows.map((row) => row.skill_id);
   }
 
-  async createFork(input: CreateForkInput): Promise<ChatAgentDetailRow> {
+  listEnabledToolIds(agentId: string): Promise<string[]> {
+    return this.listEnabledTargetIds('tool', agentId);
+  }
+
+  listEnabledSkillIds(agentId: string): Promise<string[]> {
+    return this.listEnabledTargetIds('skill', agentId);
+  }
+
+  createFork(input: CreateForkInput): Promise<ChatAgentDetailRow> {
     return prisma.$transaction(async (tx) => {
       const created = await tx.chat_agents.create({
         data: {
@@ -352,7 +339,7 @@ export class ChatAgentsRepository {
     });
   }
 
-  async patchAgent(input: PatchAgentInput): Promise<ChatAgentDetailRow> {
+  patchAgent(input: PatchAgentInput): Promise<ChatAgentDetailRow> {
     return prisma.$transaction(async (tx) => {
       const data: Prisma.chat_agentsUpdateInput = {
         ...prismaAuditUpdate(input.actorId),
@@ -398,8 +385,9 @@ export class ChatAgentsRepository {
 
       await Promise.all([
         ...toolToggles.map((toggle) =>
-          upsertAgentToolToggle(
+          upsertAgentEnablementToggle(
             tx,
+            'tool',
             input.id,
             toggle.toolId,
             toggle.enabled,
@@ -407,8 +395,9 @@ export class ChatAgentsRepository {
           )
         ),
         ...skillToggles.map((toggle) =>
-          upsertAgentSkillToggle(
+          upsertAgentEnablementToggle(
             tx,
+            'skill',
             input.id,
             toggle.skillId,
             toggle.enabled,
@@ -425,7 +414,7 @@ export class ChatAgentsRepository {
     await prisma.chat_agents.delete({ where: { id } });
   }
 
-  async setDefault(actorId: string, id: string): Promise<ChatAgentDetailRow> {
+  setDefault(actorId: string, id: string): Promise<ChatAgentDetailRow> {
     return prisma.$transaction(async (tx) => {
       await tx.chat_agents.updateMany({
         where: { is_default: true, id: { not: id } },
@@ -447,7 +436,7 @@ export class ChatAgentsRepository {
     });
   }
 
-  async findOldestActiveAgent(): Promise<ChatAgentDetailRow | null> {
+  findOldestActiveAgent(): Promise<ChatAgentDetailRow | null> {
     return prisma.chat_agents.findFirst({
       where: { status: RecordStatus.active },
       select: chatAgentDetailSelect,

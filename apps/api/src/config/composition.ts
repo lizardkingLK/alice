@@ -381,7 +381,8 @@ function createChatConfig(
   sprintsService: SprintsService,
   projectsService: ProjectsService,
   projectsRepository: ProjectsRepository,
-  integrationsService: IntegrationsService
+  integrationsService: IntegrationsService,
+  chatAgentsRepository: ChatAgentsRepository
 ) {
   const chatRepository = new ChatRepository(supabase);
   const chatAttachmentsRepository = new ChatAttachmentsRepository(supabase);
@@ -395,6 +396,7 @@ function createChatConfig(
     projectsService,
     projectsRepository,
     integrationsService,
+    chatAgents: chatAgentsRepository,
   });
   const router = createChatRouter({ chatService });
 
@@ -549,5 +551,6 @@ export const chat = createChatConfig(
   sprints.sprintsService,
   projects.projectsService,
   projects.projectsRepository,
-  integrations.integrationsService
+  integrations.integrationsService,
+  chatAgents.chatAgentsRepository
 );

@@ -438,6 +438,7 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
         conversationId: reqConversationId,
         modelId,
         integrationId,
+        agentId: requestAgentId,
         attachments: requestAttachments,
         viewContext,
         kind: conversationKind,
@@ -477,6 +478,13 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
 
         let conversationId = reqConversationId;
         let title = 'New Chat';
+        let resolvedAgentId = requestAgentId ?? null;
+        if (conversationId && !resolvedAgentId) {
+          resolvedAgentId = await chatService.getConversationAgentId(
+            req.userId!,
+            conversationId
+          );
+        }
 
         if (!conversationId) {
           // Process first message synchronously to ensure Gemini succeeds before database/sidebar creation
@@ -485,7 +493,8 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
               req.userId!,
               sanitizedInputMessages,
               chatModelConfig,
-              viewContext
+              viewContext,
+              resolvedAgentId
             );
 
           const firstMsgText =
@@ -496,7 +505,8 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
             req.userId!,
             title,
             false,
-            conversationKind ?? ChatConversationKinds.general
+            conversationKind ?? ChatConversationKinds.general,
+            resolvedAgentId
           );
 
           const newAssistantMessage: StoredChatMessage = {
@@ -556,7 +566,8 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
               conversationId,
               sanitizedInputMessages,
               chatModelConfig,
-              viewContext
+              viewContext,
+              resolvedAgentId
             )
             .catch((err) => {
               console.error('Error starting async process:', err);

@@ -145,7 +145,8 @@ export class ChatRepository {
     userId: string,
     title = 'New Chat',
     isProcessing = false,
-    kind: ChatConversationKindValue = ChatConversationKinds.general
+    kind: ChatConversationKindValue = ChatConversationKinds.general,
+    agentId?: string | null
   ): Promise<string> {
     const created = await prisma.chat_conversations.create({
       data: {
@@ -153,9 +154,21 @@ export class ChatRepository {
         title,
         is_processing: isProcessing,
         kind,
+        ...(agentId ? { agent_id: agentId } : {}),
       },
     });
     return created.id;
+  }
+
+  async getConversationAgentId(
+    userId: string,
+    conversationId: string
+  ): Promise<string | null> {
+    const row = await prisma.chat_conversations.findFirst({
+      where: { id: conversationId, user_id: userId },
+      select: { agent_id: true },
+    });
+    return row?.agent_id ?? null;
   }
 
   async setProcessingStatus(

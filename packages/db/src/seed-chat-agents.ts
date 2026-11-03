@@ -18,141 +18,88 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-async function upsertChatTools(
-  supabase: SupabaseClient
-): Promise<Map<string, string>> {
-  const idByKey = new Map<string, string>();
+type SeedCatalogRow = {
+  readonly key: string;
+  readonly label: string;
+  readonly description: string;
+  readonly sortOrder: number;
+  readonly instruction?: string;
+};
 
-  for (const tool of SEED_CHAT_TOOLS) {
-    const instruction =
-      tool.instruction !== undefined ? encryptSecret(tool.instruction) : null;
-
-    const { data: existing, error: lookupError } = await supabase
-      .from('chat_tools')
-      .select('id')
-      .eq('key', tool.key)
-      .maybeSingle();
-
-    if (lookupError) {
-      throw new Error(
-        `Failed to lookup chat_tools.${tool.key}: ${lookupError.message}`
-      );
-    }
-
-    if (existing?.id) {
-      const { error: updateError } = await supabase
-        .from('chat_tools')
-        .update({
-          label: tool.label,
-          description: tool.description,
-          instruction,
-          sort_order: tool.sortOrder,
-          status: RecordStatusEnum.active,
-          updated_at: nowIso(),
-        })
-        .eq('id', existing.id);
-
-      if (updateError) {
-        throw new Error(
-          `Failed to update chat_tools.${tool.key}: ${updateError.message}`
-        );
-      }
-
-      idByKey.set(tool.key, existing.id);
-      continue;
-    }
-
-    const { data: inserted, error: insertError } = await supabase
-      .from('chat_tools')
-      .insert({
-        key: tool.key,
-        label: tool.label,
-        description: tool.description,
-        instruction,
-        sort_order: tool.sortOrder,
-        status: RecordStatusEnum.active,
-        created_at: nowIso(),
-        updated_at: nowIso(),
-      })
-      .select('id')
-      .single();
-
-    if (insertError || !inserted?.id) {
-      throw new Error(
-        `Failed to insert chat_tools.${tool.key}: ${insertError?.message ?? 'missing id'}`
-      );
-    }
-
-    idByKey.set(tool.key, inserted.id);
+async function upsertCatalogRow(
+  supabase: SupabaseClient,
+  table: 'chat_tools' | 'chat_skills',
+  row: SeedCatalogRow,
+  options: { encryptInstruction: boolean }
+): Promise<[string, string]> {
+  const fields: Record<string, unknown> = {
+    label: row.label,
+    description: row.description,
+    sort_order: row.sortOrder,
+    status: RecordStatusEnum.active,
+    updated_at: nowIso(),
+  };
+  if (options.encryptInstruction) {
+    fields.instruction =
+      row.instruction !== undefined ? encryptSecret(row.instruction) : null;
   }
 
-  return idByKey;
+  const { data: existing, error: lookupError } = await supabase
+    .from(table)
+    .select('id')
+    .eq('key', row.key)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw new Error(
+      `Failed to lookup ${table}.${row.key}: ${lookupError.message}`
+    );
+  }
+
+  if (existing?.id) {
+    const { error: updateError } = await supabase
+      .from(table)
+      .update(fields)
+      .eq('id', existing.id);
+
+    if (updateError) {
+      throw new Error(
+        `Failed to update ${table}.${row.key}: ${updateError.message}`
+      );
+    }
+
+    return [row.key, existing.id];
+  }
+
+  const { data: inserted, error: insertError } = await supabase
+    .from(table)
+    .insert({
+      key: row.key,
+      ...fields,
+      created_at: nowIso(),
+    })
+    .select('id')
+    .single();
+
+  if (insertError || !inserted?.id) {
+    throw new Error(
+      `Failed to insert ${table}.${row.key}: ${insertError?.message ?? 'missing id'}`
+    );
+  }
+
+  return [row.key, inserted.id];
 }
 
-async function upsertChatSkills(
-  supabase: SupabaseClient
+async function upsertChatCatalog(
+  supabase: SupabaseClient,
+  table: 'chat_tools' | 'chat_skills',
+  rows: readonly SeedCatalogRow[],
+  options: { encryptInstruction: boolean }
 ): Promise<Map<string, string>> {
-  const idByKey = new Map<string, string>();
-
-  for (const skill of SEED_CHAT_SKILLS) {
-    const { data: existing, error: lookupError } = await supabase
-      .from('chat_skills')
-      .select('id')
-      .eq('key', skill.key)
-      .maybeSingle();
-
-    if (lookupError) {
-      throw new Error(
-        `Failed to lookup chat_skills.${skill.key}: ${lookupError.message}`
-      );
-    }
-
-    if (existing?.id) {
-      const { error: updateError } = await supabase
-        .from('chat_skills')
-        .update({
-          label: skill.label,
-          description: skill.description,
-          sort_order: skill.sortOrder,
-          status: RecordStatusEnum.active,
-          updated_at: nowIso(),
-        })
-        .eq('id', existing.id);
-
-      if (updateError) {
-        throw new Error(
-          `Failed to update chat_skills.${skill.key}: ${updateError.message}`
-        );
-      }
-
-      idByKey.set(skill.key, existing.id);
-      continue;
-    }
-
-    const { data: inserted, error: insertError } = await supabase
-      .from('chat_skills')
-      .insert({
-        key: skill.key,
-        label: skill.label,
-        description: skill.description,
-        sort_order: skill.sortOrder,
-        status: RecordStatusEnum.active,
-        created_at: nowIso(),
-        updated_at: nowIso(),
-      })
-      .select('id')
-      .single();
-
-    if (insertError || !inserted?.id) {
-      throw new Error(
-        `Failed to insert chat_skills.${skill.key}: ${insertError?.message ?? 'missing id'}`
-      );
-    }
-
-    idByKey.set(skill.key, inserted.id);
-  }
-
-  return idByKey;
+  const entries = await Promise.all(
+    rows.map((row) => upsertCatalogRow(supabase, table, row, options))
+  );
+  return new Map(entries);
 }
 
 async function ensureAliceDefaultAgent(
@@ -246,112 +193,70 @@ async function ensureAliceDefaultAgent(
   return inserted.id;
 }
 
-async function ensureAgentToolLinks(
+async function ensureAgentCatalogLink(
   supabase: SupabaseClient,
   agentId: string,
-  toolIds: Map<string, string>
+  targetId: string,
+  config: {
+    table: 'chat_agent_tools' | 'chat_agent_skills';
+    foreignKey: 'tool_id' | 'skill_id';
+  }
 ): Promise<void> {
-  for (const toolId of toolIds.values()) {
-    const { data: existing, error: lookupError } = await supabase
-      .from('chat_agent_tools')
-      .select('id, enabled')
-      .eq('agent_id', agentId)
-      .eq('tool_id', toolId)
-      .maybeSingle();
+  const { data: existing, error: lookupError } = await supabase
+    .from(config.table)
+    .select('id, enabled')
+    .eq('agent_id', agentId)
+    .eq(config.foreignKey, targetId)
+    .maybeSingle();
 
-    if (lookupError) {
+  if (lookupError) {
+    throw new Error(`Failed to lookup ${config.table}: ${lookupError.message}`);
+  }
+
+  if (existing?.id) {
+    if (existing.enabled) {
+      return;
+    }
+    const { error: updateError } = await supabase
+      .from(config.table)
+      .update({ enabled: true, updated_at: nowIso() })
+      .eq('id', existing.id);
+
+    if (updateError) {
       throw new Error(
-        `Failed to lookup chat_agent_tools: ${lookupError.message}`
+        `Failed to enable ${config.table}: ${updateError.message}`
       );
     }
+    return;
+  }
 
-    if (existing?.id) {
-      if (existing.enabled) {
-        continue;
-      }
-      const { error: updateError } = await supabase
-        .from('chat_agent_tools')
-        .update({ enabled: true, updated_at: nowIso() })
-        .eq('id', existing.id);
+  const { error: insertError } = await supabase.from(config.table).insert({
+    agent_id: agentId,
+    [config.foreignKey]: targetId,
+    enabled: true,
+    created_at: nowIso(),
+    updated_at: nowIso(),
+  });
 
-      if (updateError) {
-        throw new Error(
-          `Failed to enable chat_agent_tools: ${updateError.message}`
-        );
-      }
-      continue;
-    }
-
-    const { error: insertError } = await supabase
-      .from('chat_agent_tools')
-      .insert({
-        agent_id: agentId,
-        tool_id: toolId,
-        enabled: true,
-        created_at: nowIso(),
-        updated_at: nowIso(),
-      });
-
-    if (insertError) {
-      throw new Error(
-        `Failed to insert chat_agent_tools: ${insertError.message}`
-      );
-    }
+  if (insertError) {
+    throw new Error(`Failed to insert ${config.table}: ${insertError.message}`);
   }
 }
 
-async function ensureAgentSkillLinks(
+async function ensureAgentCatalogLinks(
   supabase: SupabaseClient,
   agentId: string,
-  skillIds: Map<string, string>
-): Promise<void> {
-  for (const skillId of skillIds.values()) {
-    const { data: existing, error: lookupError } = await supabase
-      .from('chat_agent_skills')
-      .select('id, enabled')
-      .eq('agent_id', agentId)
-      .eq('skill_id', skillId)
-      .maybeSingle();
-
-    if (lookupError) {
-      throw new Error(
-        `Failed to lookup chat_agent_skills: ${lookupError.message}`
-      );
-    }
-
-    if (existing?.id) {
-      if (existing.enabled) {
-        continue;
-      }
-      const { error: updateError } = await supabase
-        .from('chat_agent_skills')
-        .update({ enabled: true, updated_at: nowIso() })
-        .eq('id', existing.id);
-
-      if (updateError) {
-        throw new Error(
-          `Failed to enable chat_agent_skills: ${updateError.message}`
-        );
-      }
-      continue;
-    }
-
-    const { error: insertError } = await supabase
-      .from('chat_agent_skills')
-      .insert({
-        agent_id: agentId,
-        skill_id: skillId,
-        enabled: true,
-        created_at: nowIso(),
-        updated_at: nowIso(),
-      });
-
-    if (insertError) {
-      throw new Error(
-        `Failed to insert chat_agent_skills: ${insertError.message}`
-      );
-    }
+  targetIds: Map<string, string>,
+  config: {
+    table: 'chat_agent_tools' | 'chat_agent_skills';
+    foreignKey: 'tool_id' | 'skill_id';
   }
+): Promise<void> {
+  await Promise.all(
+    [...targetIds.values()].map((targetId) =>
+      ensureAgentCatalogLink(supabase, agentId, targetId, config)
+    )
+  );
 }
 
 /** Idempotent seed: catalogs + default Alice agent (encrypted instructions). */
@@ -359,9 +264,25 @@ export async function seedChatAgents(
   supabase: SupabaseClient,
   adminId: string
 ): Promise<void> {
-  const toolIds = await upsertChatTools(supabase);
-  const skillIds = await upsertChatSkills(supabase);
+  const toolIds = await upsertChatCatalog(
+    supabase,
+    'chat_tools',
+    SEED_CHAT_TOOLS,
+    { encryptInstruction: true }
+  );
+  const skillIds = await upsertChatCatalog(
+    supabase,
+    'chat_skills',
+    SEED_CHAT_SKILLS,
+    { encryptInstruction: false }
+  );
   const agentId = await ensureAliceDefaultAgent(supabase, adminId);
-  await ensureAgentToolLinks(supabase, agentId, toolIds);
-  await ensureAgentSkillLinks(supabase, agentId, skillIds);
+  await ensureAgentCatalogLinks(supabase, agentId, toolIds, {
+    table: 'chat_agent_tools',
+    foreignKey: 'tool_id',
+  });
+  await ensureAgentCatalogLinks(supabase, agentId, skillIds, {
+    table: 'chat_agent_skills',
+    foreignKey: 'skill_id',
+  });
 }
