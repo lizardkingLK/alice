@@ -14,6 +14,7 @@ import pg from 'pg';
 
 import { env } from './env.js';
 import { dbPackageRoot } from './package-root.js';
+import { seedChatAgents } from './seed-chat-agents.js';
 import { isSeedResetRequested, resetDevData } from './seed-reset.js';
 import { SEED_SQUAD_MEMBERS, squadSeedUsers } from './seed-squad.js';
 
@@ -918,6 +919,9 @@ async function main(): Promise<void> {
     requireUserId(userIds, 'member@alice.dev')
   );
   await seedNotifications(userIds, workItems.storyId, adminId);
+
+  console.log('info. seeding chat tools, skills, and default Alice agent...');
+  await seedChatAgents(supabase, adminId);
 
   console.log('info. seed completed.');
   console.log(
