@@ -1,7 +1,7 @@
 # Alice agents
 
-Personalize role agents (starting with **Project Manager**) and use them in
-Alice chat.
+Personalize the workspace **Alice** agent (or your own fork) and use it in
+chat.
 
 **Audience:** All users
 
@@ -9,14 +9,15 @@ Alice chat.
 
 ## What agents are
 
-An **agent** is a role with its own instructions, tone, and project scope. It is
-not the same as an **AI model** (Gemini, OpenAI, etc.) — admins still connect
-models under **Settings → Integrations**.
+An **agent** is a role with its own instructions, tone, skills, and tools. It
+is not the same as an **AI model** (Gemini, OpenAI, etc.) — admins still
+connect models under **Settings → Integrations**.
 
-Alice ships one system template for now: **Project Manager**, with a DiceBear
-character portrait on the gallery card. You can open it, customize a forked
-copy (including portrait style and seed), and chat with that agent bound to a
-conversation.
+Alice ships one workspace default agent: **Alice**. Admins can customize that
+agent for everyone. You can **fork** it once into a personal copy, customize
+that copy, and optionally prefer it as **your** default in this browser.
+
+Portraits use DiceBear (style + seed) on gallery cards and in bound chats.
 
 ---
 
@@ -35,14 +36,28 @@ to manage agents.
 
 ## Gallery tabs
 
-| Tab                | Contents                                                             |
-| ------------------ | -------------------------------------------------------------------- |
-| **Mine**           | System templates you can open, plus agents you own (including forks) |
-| **Shared with me** | Agents others shared with you (Views-style sharing)                  |
-| **Archived**       | Personal agents you archived                                         |
+| Tab          | Contents                                                           |
+| ------------ | ------------------------------------------------------------------ |
+| **Mine**     | Workspace (admin) agents you can open or fork, plus agents you own |
+| **Archived** | Personal agents you archived                                       |
+
+**Shared with me** is not available yet.
 
 Use **Search agents…** (to the right of the Agents heading) to filter the
 active tab by name, title, persona, description, or author.
+
+---
+
+## Defaults
+
+| Kind                       | Who sets it                  | Effect                                                                  |
+| -------------------------- | ---------------------------- | ----------------------------------------------------------------------- |
+| **Workspace default**      | Admins                       | Used when chat does not specify an agent (and for specialized AI areas) |
+| **Your preferred default** | You, in this browser (local) | Bound chats / composer prefer that agent when you choose it             |
+
+If only one agent remains in the workspace, Alice uses that agent everywhere.
+
+Admins cannot remove the last remaining agent.
 
 ---
 
@@ -50,27 +65,27 @@ active tab by name, title, persona, description, or author.
 
 In the Agents dialog detail view you can:
 
-- Set a **Name** (persona, e.g. Alex) and a **Title** (role, e.g. Project
-  Manager). The title appears under the name in the gallery, detail view, and
-  in chat.
-- View system templates as read-only text (non-admins). Admins can edit system
-  templates, including the portrait.
-- See the author byline as **by {name}** (no email). System templates show
-  Alice Admin; after you fork, the byline shows you.
-- Admins can **Mark as system** on a personal agent so others can fork it.
-- **Fork** only from system templates. Personal agents use **Save** instead.
+- Set a **Name** and **Title**. The title appears under the name in the
+  gallery, detail view, and in chat.
+- Edit **instructions** (admins on workspace agents; you on your forks).
+- Toggle **skills** and **tools** (admins on workspace agents; you on your
+  forks). Tool handlers are still enforced on the server — disabled tools are
+  not offered to the model.
+- Adjust the DiceBear portrait (style and seed) when editing is allowed.
+- See the author byline as **by {name}** (no email).
+- **Fork** once from each workspace (admin) agent. Personal agents use
+  **Save** instead of fork.
 - **Archive** a personal agent (confirmation). It becomes read-only and moves
-  to **Archived**. Use **Restore** to edit again, or **Delete** to remove it
-  from this browser.
+  to **Archived**. Use **Restore** to edit again, or **Delete** to remove it.
 - **Chat** opens a conversation with that agent (closes the dialog). Unsaved
   edits ask you to save first.
 
 In an open chat bound to an agent, the header and message labels use that
 agent’s name, title, and portrait (click the header identity to reopen the
-Agents dialog on that agent). Without a bound agent, the chat still shows
-Alice.
+Agents dialog on that agent). Without a bound agent, chat uses the workspace
+default (Alice branding unless another agent is the sole remaining default).
 
-Project Manager only uses **projects you are a member of**.
+Tools only use **projects you are a member of**.
 
 ---
 

@@ -3,14 +3,17 @@
 Status: **Implemented**
 
 Conversational assistant for creating and inspecting projects, sprints, and
-work items. UI labels: **Alice** / sidebar **Alice**. System prompt
-name: **Alice Assistant**. Alice supports configured Google Gemini, xAI,
-OpenAI, and Anthropic models through a shared provider interface with tool
-calling.
+work items. UI labels: **Alice** / sidebar **Alice**. Runtime system
+instructions come from the resolved **chat agent** (seeded default Alice,
+admin-customized original, or a member fork) — see
+[AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md). Alice supports
+configured Google Gemini, xAI, OpenAI, and Anthropic models through a shared
+provider interface with tool calling.
 
 Related:
 
 - Feature index: [README.md](./README.md)
+- Agents (persona, encrypted instructions, tools/skills): [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md)
 - Workspace integrations (model pool, DB): [SETTINGS_INTEGRATIONS.md](../integrations/SETTINGS_INTEGRATIONS.md)
 - Auth: [AUTHENTICATION.md](../../auth/AUTHENTICATION.md),
   [RBAC](../../auth/RBAC_AUTHORIZATION_SKELETON.md)
@@ -43,8 +46,10 @@ Related:
 - Vector RAG / embeddings over workspace content
 - Slack / Teams / external chat integrations (see ROADMAP)
 - Chat-specific RBAC beyond “authenticated user”
-- Dedicated `chat_messages` table (history lives in Storage)
+- Dedicated `chat_messages` table (history lives in Storage until a future
+  encrypted conversation-record migration — see agents [Future](./AGENT_PERSONALIZATION.md#future))
 - Automatic triage, NL backlog search, or other ROADMAP AI items
+- Views-style agent sharing (deferred; see [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md))
 
 ---
 
@@ -53,7 +58,7 @@ Related:
 | Surface         | Location                                  | Behavior                                                                                                                                                                           |
 | --------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Full page       | `/chat`                                   | Edge-to-edge in the dashboard shell; history sidebar; Agents gallery via header icon dialog; New Chat / model icons; breadcrumb shows active chat title; suggestions, action cards |
-| Agents          | Header **Agents** dialog on `/chat`       | Gallery (Mine / Shared / Archived) and customize detail in-panel — see [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md)                                                      |
+| Agents          | Header **Agents** dialog on `/chat`       | Gallery (Mine / Archived; Shared deferred) and customize detail in-panel — see [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md)                                              |
 | Navbar launcher | All `DashboardShell` pages except `/chat` | Header control between notifications and profile → right drawer; same `ChatClient` (`variant="drawer"`); conversation-only (no Agents panel)                                       |
 | Nav             | Platform → **Alice** (`Sparkles` icon)    | Links to `/chat`                                                                                                                                                                   |
 
@@ -213,14 +218,19 @@ needed elsewhere in the API.
 2. The frontend sends that integration row's UUID as `integrationId`.
 3. The backend loads the active integration, validates its provider identity
    and endpoint, and decrypts its API key in-process.
-4. `ChatService` resolves the provider strategy and sends the system
-   instruction, conversation history, and Alice tool declarations.
-5. The provider returns text, tool requests, or both.
-6. Alice validates provider tool-call structures and executes only known
-   server-side tools with the authenticated user's identity.
-7. Tool results are matched to their original call IDs and returned to the
+4. `ChatService` resolves the **chat agent** (`agentId` when visible, else
+   workspace `is_default`), decrypts `instructions` at rest, appends the
+   workspace snapshot, and filters tool declarations to that agent’s
+   **enabled** catalog keys that exist in the code registry.
+5. `ChatService` resolves the provider strategy and sends that system
+   instruction, conversation history, and the filtered tool declarations.
+6. The provider returns text, tool requests, or both.
+7. Alice validates provider tool-call structures and executes only known
+   **and agent-enabled** server-side tools with the authenticated user's
+   identity.
+8. Tool results are matched to their original call IDs and returned to the
    provider for the next round.
-8. Alice returns the final assistant text and any executed action cards.
+9. Alice returns the final assistant text and any executed action cards.
 
 | Provider       | API format                                                  | Authentication        |
 | -------------- | ----------------------------------------------------------- | --------------------- |
@@ -245,7 +255,15 @@ credentials.
 
 ## Tools (function calling)
 
-The 13 tools are declared in `chat.route.data.ts` and executed server-side:
+Tool **handlers and JSON schemas** are declared in `chat.route.data.ts` and
+executed server-side. Enablement and optional per-tool natural-language
+`instruction` text (dynamic fields, chart description, etc.) live in the
+seeded `chat_tools` catalog and per-agent `chat_agent_tools` rows — see
+[AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md). The code registry
+remains the source of truth for callable shapes; the DB cannot invent new
+handlers.
+
+The tools below are declared in `chat.route.data.ts` and executed server-side:
 
 | Tool                             | Effect                                                                                                      |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -458,11 +476,11 @@ See [SETTINGS_INTEGRATIONS.md](../integrations/SETTINGS_INTEGRATIONS.md).
 
 Per-model API keys and optional `config.api_url` live in encrypted JSONB — not in app env vars.
 
-| Variable                                     | Where                 | Purpose                                                                     |
-| -------------------------------------------- | --------------------- | --------------------------------------------------------------------------- |
-| `INTEGRATION_TOKEN_ENCRYPTION_KEY`           | `apps/api/.env`       | Encrypt/decrypt integration secrets (shared with GitHub/Jira tokens)        |
-| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Zod `env.ts` + sample | Shared service-role client (`lib/supabase.ts`) used by `chat.repository.ts` |
-| `STORAGE_BUCKET_CHAT_HISTORY`                | Zod `env.ts` + sample | Chat history bucket name (same pattern as attachments / profile pictures)   |
+| Variable                                     | Where                 | Purpose                                                                                                                   |
+| -------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `INTEGRATION_TOKEN_ENCRYPTION_KEY`           | `apps/api/.env`       | Encrypt/decrypt integration secrets **and** chat agent / tool instruction fields at rest (shared with GitHub/Jira tokens) |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Zod `env.ts` + sample | Shared service-role client (`lib/supabase.ts`) used by `chat.repository.ts`                                               |
+| `STORAGE_BUCKET_CHAT_HISTORY`                | Zod `env.ts` + sample | Chat history bucket name (same pattern as attachments / profile pictures)                                                 |
 
 Do **not** introduce `CHAT_SUPABASE_URL` / `CHAT_SUPABASE_SERVICE_ROLE_KEY` —
 chat must not maintain a second Supabase client or project. Prefer importing
@@ -472,8 +490,6 @@ chat must not maintain a second Supabase client or project. Prefer importing
 No active chat model rows → `POST /api/chat` returns **400** with a configuration message.
 
 ---
-
-## Reliability
 
 ## Reliability
 
@@ -563,3 +579,4 @@ For full step-by-step instructions for testing from the browser UI (with sample 
 5. Document attachment processing (upload-session, Supabase Storage direct upload, JSON/CSV parsing, deduplication engine, batch work item import, and strict project scope guardrails)
 6. Universal multi-format parser (TSV, Markdown tables, Indented text outlines, YAML), signed URL auto-refresh & expiration handling, atomic hierarchy pre-validation & user choice protocol, incremental backlog synchronization (`updateExisting`), and action card expansion (`update_work_item`).
 7. Comprehensive hierarchy & field change detection across all attachment formats with mandatory conversational reporting, strict work-item deletion disallowance via chat (omitted items retained in backlog with user notice), and resilient chat provider network error handling with retry and exponential backoff.
+8. **Agents DB slice (in progress):** `chat_agents` + `chat_tools` / `chat_skills` catalogs, encrypted instructions at rest, admin default Alice + member fork-once, ChatService tool filtering by agent enablement — see [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md). Conversation history remains in Storage until a later encrypted-records / worker migration.
