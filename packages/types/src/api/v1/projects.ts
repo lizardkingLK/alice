@@ -8,32 +8,13 @@ import {
 } from '../../generated/prisma/enums.js';
 import { UserRoleEnum, type UserRole } from '../../users.js';
 import type { WorkItemType } from '../../work-item-types.js';
-import {
-  projectWorkflowConfigSchema,
-  type ProjectWorkflowConfig,
-} from './board-config.js';
+import { projectWorkflowConfigSchema } from './board-config.js';
 import {
   emptyToUndefined,
   paginatedListLimitField,
   paginatedListPageField,
 } from './query-preprocess.js';
-import {
-  DynamicFieldTypeEnum,
-  TemplateFieldCategoryEnum,
-  TemplateFieldKeyEnum,
-  DynamicFieldConfirmationModeEnum,
-  DynamicFieldFormatEnum,
-  DynamicFieldInputTypeEnum,
-  DynamicFieldDocTypeEnum,
-  DynamicFieldConstantsEnum,
-  TypeofEnum,
-  SchemaValidationStatusEnum,
-  DYNAMIC_FIELD_TYPES,
-  DynamicFieldPropertySchema,
-  ProjectFieldsConfigSchema,
-  type DynamicFieldProperty,
-  type ProjectFieldsConfig,
-} from './dynamic-fields.js';
+import { ProjectFieldsConfigSchema } from './dynamic-fields.js';
 import { initialSprintSchema } from './sprints.js';
 import { initialProjectTeamSchema } from './teams.js';
 import { withJiraProjectDtoFields } from './pm-external.js';
@@ -41,7 +22,7 @@ import { withGithubProjectDtoFields } from './vc-external.js';
 
 export * from './jira-import-types.js';
 export { projectWorkflowConfigSchema };
-export type { ProjectWorkflowConfig };
+export type { ProjectWorkflowConfig } from './board-config.js';
 export {
   DynamicFieldTypeEnum,
   TemplateFieldCategoryEnum,
@@ -58,7 +39,7 @@ export {
   ProjectFieldsConfigSchema,
   type DynamicFieldProperty,
   type ProjectFieldsConfig,
-};
+} from './dynamic-fields.js';
 export { ProjectStatusEnum };
 
 /** Shared Supabase project column list for embeds / selects. */

@@ -1,9 +1,6 @@
 import { z } from 'zod';
 import { Constants } from '../../generated/supabase/database.types.js';
-import {
-  normalizeProjectWorkItemTypeDefs,
-  type ProjectWorkItemTypeDef,
-} from '../../work-item-types.js';
+import { normalizeProjectWorkItemTypeDefs } from '../../work-item-types.js';
 import {
   BOARD_WORK_ITEM_STATUSES,
   WORK_ITEM_STATUSES,
@@ -295,7 +292,7 @@ export const projectWorkflowConfigSchema = z
     validateStatusTransitions(config.statusTransitions ?? [], context);
   });
 
-export type { ProjectWorkItemTypeDef };
+export type { ProjectWorkItemTypeDef } from '../../work-item-types.js';
 
 export type BoardColumn = z.infer<typeof boardColumnSchema>;
 export type BoardRuleMatcher = z.infer<typeof boardRuleMatcherSchema>;
