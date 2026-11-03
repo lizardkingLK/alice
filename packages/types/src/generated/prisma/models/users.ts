@@ -288,6 +288,9 @@ export type usersWhereInput = {
   resolved_access_requests?: Prisma.Access_requestsListRelationFilter
   chat_conversations?: Prisma.Chat_conversationsListRelationFilter
   chat_attachments?: Prisma.Chat_attachmentsListRelationFilter
+  owned_chat_agents?: Prisma.Chat_agentsListRelationFilter
+  created_chat_agents?: Prisma.Chat_agentsListRelationFilter
+  updated_chat_agents?: Prisma.Chat_agentsListRelationFilter
   owned_saved_views?: Prisma.Saved_viewsListRelationFilter
   created_saved_views?: Prisma.Saved_viewsListRelationFilter
   updated_saved_views?: Prisma.Saved_viewsListRelationFilter
@@ -362,6 +365,9 @@ export type usersOrderByWithRelationInput = {
   resolved_access_requests?: Prisma.access_requestsOrderByRelationAggregateInput
   chat_conversations?: Prisma.chat_conversationsOrderByRelationAggregateInput
   chat_attachments?: Prisma.chat_attachmentsOrderByRelationAggregateInput
+  owned_chat_agents?: Prisma.chat_agentsOrderByRelationAggregateInput
+  created_chat_agents?: Prisma.chat_agentsOrderByRelationAggregateInput
+  updated_chat_agents?: Prisma.chat_agentsOrderByRelationAggregateInput
   owned_saved_views?: Prisma.saved_viewsOrderByRelationAggregateInput
   created_saved_views?: Prisma.saved_viewsOrderByRelationAggregateInput
   updated_saved_views?: Prisma.saved_viewsOrderByRelationAggregateInput
@@ -439,6 +445,9 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   resolved_access_requests?: Prisma.Access_requestsListRelationFilter
   chat_conversations?: Prisma.Chat_conversationsListRelationFilter
   chat_attachments?: Prisma.Chat_attachmentsListRelationFilter
+  owned_chat_agents?: Prisma.Chat_agentsListRelationFilter
+  created_chat_agents?: Prisma.Chat_agentsListRelationFilter
+  updated_chat_agents?: Prisma.Chat_agentsListRelationFilter
   owned_saved_views?: Prisma.Saved_viewsListRelationFilter
   created_saved_views?: Prisma.Saved_viewsListRelationFilter
   updated_saved_views?: Prisma.Saved_viewsListRelationFilter
@@ -549,6 +558,9 @@ export type usersCreateInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -621,6 +633,9 @@ export type usersUncheckedCreateInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -693,6 +708,9 @@ export type usersUpdateInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -765,6 +783,9 @@ export type usersUncheckedUpdateInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -1657,6 +1678,54 @@ export type usersUpdateOneRequiredWithoutChat_attachmentsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutChat_attachmentsInput, Prisma.usersUpdateWithoutChat_attachmentsInput>, Prisma.usersUncheckedUpdateWithoutChat_attachmentsInput>
 }
 
+export type usersCreateNestedOneWithoutOwned_chat_agentsInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutOwned_chat_agentsInput, Prisma.usersUncheckedCreateWithoutOwned_chat_agentsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutOwned_chat_agentsInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersCreateNestedOneWithoutCreated_chat_agentsInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutCreated_chat_agentsInput, Prisma.usersUncheckedCreateWithoutCreated_chat_agentsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutCreated_chat_agentsInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersCreateNestedOneWithoutUpdated_chat_agentsInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutUpdated_chat_agentsInput, Prisma.usersUncheckedCreateWithoutUpdated_chat_agentsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutUpdated_chat_agentsInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersUpdateOneWithoutOwned_chat_agentsNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutOwned_chat_agentsInput, Prisma.usersUncheckedCreateWithoutOwned_chat_agentsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutOwned_chat_agentsInput
+  upsert?: Prisma.usersUpsertWithoutOwned_chat_agentsInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutOwned_chat_agentsInput, Prisma.usersUpdateWithoutOwned_chat_agentsInput>, Prisma.usersUncheckedUpdateWithoutOwned_chat_agentsInput>
+}
+
+export type usersUpdateOneWithoutCreated_chat_agentsNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutCreated_chat_agentsInput, Prisma.usersUncheckedCreateWithoutCreated_chat_agentsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutCreated_chat_agentsInput
+  upsert?: Prisma.usersUpsertWithoutCreated_chat_agentsInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutCreated_chat_agentsInput, Prisma.usersUpdateWithoutCreated_chat_agentsInput>, Prisma.usersUncheckedUpdateWithoutCreated_chat_agentsInput>
+}
+
+export type usersUpdateOneWithoutUpdated_chat_agentsNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutUpdated_chat_agentsInput, Prisma.usersUncheckedCreateWithoutUpdated_chat_agentsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutUpdated_chat_agentsInput
+  upsert?: Prisma.usersUpsertWithoutUpdated_chat_agentsInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutUpdated_chat_agentsInput, Prisma.usersUpdateWithoutUpdated_chat_agentsInput>, Prisma.usersUncheckedUpdateWithoutUpdated_chat_agentsInput>
+}
+
 export type usersCreateNestedOneWithoutOwned_saved_viewsInput = {
   create?: Prisma.XOR<Prisma.usersCreateWithoutOwned_saved_viewsInput, Prisma.usersUncheckedCreateWithoutOwned_saved_viewsInput>
   connectOrCreate?: Prisma.usersCreateOrConnectWithoutOwned_saved_viewsInput
@@ -1926,6 +1995,9 @@ export type usersCreateWithoutCreated_usersInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -1997,6 +2069,9 @@ export type usersUncheckedCreateWithoutCreated_usersInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -2073,6 +2148,9 @@ export type usersCreateWithoutCreatorInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -2144,6 +2222,9 @@ export type usersUncheckedCreateWithoutCreatorInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -2225,6 +2306,9 @@ export type usersCreateWithoutUpdated_usersInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -2296,6 +2380,9 @@ export type usersUncheckedCreateWithoutUpdated_usersInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -2372,6 +2459,9 @@ export type usersCreateWithoutUpdaterInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -2443,6 +2533,9 @@ export type usersUncheckedCreateWithoutUpdaterInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -2535,6 +2628,9 @@ export type usersUpdateWithoutCreated_usersInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -2606,6 +2702,9 @@ export type usersUncheckedUpdateWithoutCreated_usersInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -2723,6 +2822,9 @@ export type usersUpdateWithoutUpdated_usersInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -2794,6 +2896,9 @@ export type usersUncheckedUpdateWithoutUpdated_usersInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -2881,6 +2986,9 @@ export type usersCreateWithoutOwned_projectsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -2952,6 +3060,9 @@ export type usersUncheckedCreateWithoutOwned_projectsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -3028,6 +3139,9 @@ export type usersCreateWithoutCreated_projectsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -3099,6 +3213,9 @@ export type usersUncheckedCreateWithoutCreated_projectsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -3175,6 +3292,9 @@ export type usersCreateWithoutUpdated_projectsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -3246,6 +3366,9 @@ export type usersUncheckedCreateWithoutUpdated_projectsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -3333,6 +3456,9 @@ export type usersUpdateWithoutOwned_projectsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -3404,6 +3530,9 @@ export type usersUncheckedUpdateWithoutOwned_projectsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -3486,6 +3615,9 @@ export type usersUpdateWithoutCreated_projectsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -3557,6 +3689,9 @@ export type usersUncheckedUpdateWithoutCreated_projectsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -3639,6 +3774,9 @@ export type usersUpdateWithoutUpdated_projectsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -3710,6 +3848,9 @@ export type usersUncheckedUpdateWithoutUpdated_projectsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -3781,6 +3922,9 @@ export type usersCreateWithoutProject_membershipsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -3852,6 +3996,9 @@ export type usersUncheckedCreateWithoutProject_membershipsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -3928,6 +4075,9 @@ export type usersCreateWithoutCreated_project_membersInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -3999,6 +4149,9 @@ export type usersUncheckedCreateWithoutCreated_project_membersInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -4075,6 +4228,9 @@ export type usersCreateWithoutUpdated_project_membersInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -4146,6 +4302,9 @@ export type usersUncheckedCreateWithoutUpdated_project_membersInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -4233,6 +4392,9 @@ export type usersUpdateWithoutProject_membershipsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -4304,6 +4466,9 @@ export type usersUncheckedUpdateWithoutProject_membershipsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -4386,6 +4551,9 @@ export type usersUpdateWithoutCreated_project_membersInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -4457,6 +4625,9 @@ export type usersUncheckedUpdateWithoutCreated_project_membersInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -4539,6 +4710,9 @@ export type usersUpdateWithoutUpdated_project_membersInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -4610,6 +4784,9 @@ export type usersUncheckedUpdateWithoutUpdated_project_membersInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -4681,6 +4858,9 @@ export type usersCreateWithoutManaged_teamsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -4752,6 +4932,9 @@ export type usersUncheckedCreateWithoutManaged_teamsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -4828,6 +5011,9 @@ export type usersCreateWithoutCreated_teamsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -4899,6 +5085,9 @@ export type usersUncheckedCreateWithoutCreated_teamsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -4975,6 +5164,9 @@ export type usersCreateWithoutUpdated_teamsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -5046,6 +5238,9 @@ export type usersUncheckedCreateWithoutUpdated_teamsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -5133,6 +5328,9 @@ export type usersUpdateWithoutManaged_teamsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -5204,6 +5402,9 @@ export type usersUncheckedUpdateWithoutManaged_teamsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -5286,6 +5487,9 @@ export type usersUpdateWithoutCreated_teamsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -5357,6 +5561,9 @@ export type usersUncheckedUpdateWithoutCreated_teamsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -5439,6 +5646,9 @@ export type usersUpdateWithoutUpdated_teamsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -5510,6 +5720,9 @@ export type usersUncheckedUpdateWithoutUpdated_teamsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -5581,6 +5794,9 @@ export type usersCreateWithoutTeam_membershipsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -5652,6 +5868,9 @@ export type usersUncheckedCreateWithoutTeam_membershipsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -5728,6 +5947,9 @@ export type usersCreateWithoutReporting_linesInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -5799,6 +6021,9 @@ export type usersUncheckedCreateWithoutReporting_linesInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -5875,6 +6100,9 @@ export type usersCreateWithoutCreated_team_membersInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -5946,6 +6174,9 @@ export type usersUncheckedCreateWithoutCreated_team_membersInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -6022,6 +6253,9 @@ export type usersCreateWithoutUpdated_team_membersInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -6093,6 +6327,9 @@ export type usersUncheckedCreateWithoutUpdated_team_membersInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -6180,6 +6417,9 @@ export type usersUpdateWithoutTeam_membershipsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -6251,6 +6491,9 @@ export type usersUncheckedUpdateWithoutTeam_membershipsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -6333,6 +6576,9 @@ export type usersUpdateWithoutReporting_linesInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -6404,6 +6650,9 @@ export type usersUncheckedUpdateWithoutReporting_linesInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -6486,6 +6735,9 @@ export type usersUpdateWithoutCreated_team_membersInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -6557,6 +6809,9 @@ export type usersUncheckedUpdateWithoutCreated_team_membersInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -6639,6 +6894,9 @@ export type usersUpdateWithoutUpdated_team_membersInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -6710,6 +6968,9 @@ export type usersUncheckedUpdateWithoutUpdated_team_membersInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -6781,6 +7042,9 @@ export type usersCreateWithoutCreated_sprintsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -6852,6 +7116,9 @@ export type usersUncheckedCreateWithoutCreated_sprintsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -6928,6 +7195,9 @@ export type usersCreateWithoutUpdated_sprintsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -6999,6 +7269,9 @@ export type usersUncheckedCreateWithoutUpdated_sprintsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -7086,6 +7359,9 @@ export type usersUpdateWithoutCreated_sprintsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -7157,6 +7433,9 @@ export type usersUncheckedUpdateWithoutCreated_sprintsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -7239,6 +7518,9 @@ export type usersUpdateWithoutUpdated_sprintsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -7310,6 +7592,9 @@ export type usersUncheckedUpdateWithoutUpdated_sprintsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -7381,6 +7666,9 @@ export type usersCreateWithoutAssigned_work_itemsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -7452,6 +7740,9 @@ export type usersUncheckedCreateWithoutAssigned_work_itemsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -7528,6 +7819,9 @@ export type usersCreateWithoutReported_work_itemsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -7599,6 +7893,9 @@ export type usersUncheckedCreateWithoutReported_work_itemsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -7675,6 +7972,9 @@ export type usersCreateWithoutCreated_work_itemsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -7746,6 +8046,9 @@ export type usersUncheckedCreateWithoutCreated_work_itemsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -7822,6 +8125,9 @@ export type usersCreateWithoutUpdated_work_itemsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -7893,6 +8199,9 @@ export type usersUncheckedCreateWithoutUpdated_work_itemsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -7980,6 +8289,9 @@ export type usersUpdateWithoutAssigned_work_itemsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -8051,6 +8363,9 @@ export type usersUncheckedUpdateWithoutAssigned_work_itemsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -8133,6 +8448,9 @@ export type usersUpdateWithoutReported_work_itemsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -8204,6 +8522,9 @@ export type usersUncheckedUpdateWithoutReported_work_itemsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -8286,6 +8607,9 @@ export type usersUpdateWithoutCreated_work_itemsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -8357,6 +8681,9 @@ export type usersUncheckedUpdateWithoutCreated_work_itemsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -8439,6 +8766,9 @@ export type usersUpdateWithoutUpdated_work_itemsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -8510,6 +8840,9 @@ export type usersUncheckedUpdateWithoutUpdated_work_itemsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -8581,6 +8914,9 @@ export type usersCreateWithoutCreated_work_item_linksInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -8652,6 +8988,9 @@ export type usersUncheckedCreateWithoutCreated_work_item_linksInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -8739,6 +9078,9 @@ export type usersUpdateWithoutCreated_work_item_linksInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -8810,6 +9152,9 @@ export type usersUncheckedUpdateWithoutCreated_work_item_linksInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -8881,6 +9226,9 @@ export type usersCreateWithoutActivitiesInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -8952,6 +9300,9 @@ export type usersUncheckedCreateWithoutActivitiesInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -9039,6 +9390,9 @@ export type usersUpdateWithoutActivitiesInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -9110,6 +9464,9 @@ export type usersUncheckedUpdateWithoutActivitiesInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -9181,6 +9538,9 @@ export type usersCreateWithoutChart_rollup_assignmentsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -9252,6 +9612,9 @@ export type usersUncheckedCreateWithoutChart_rollup_assignmentsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -9339,6 +9702,9 @@ export type usersUpdateWithoutChart_rollup_assignmentsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -9410,6 +9776,9 @@ export type usersUncheckedUpdateWithoutChart_rollup_assignmentsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -9481,6 +9850,9 @@ export type usersCreateWithoutChart_hierarchy_rollup_assignmentsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -9552,6 +9924,9 @@ export type usersUncheckedCreateWithoutChart_hierarchy_rollup_assignmentsInput =
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -9639,6 +10014,9 @@ export type usersUpdateWithoutChart_hierarchy_rollup_assignmentsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -9710,6 +10088,9 @@ export type usersUncheckedUpdateWithoutChart_hierarchy_rollup_assignmentsInput =
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -9781,6 +10162,9 @@ export type usersCreateWithoutWork_item_worklogsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -9852,6 +10236,9 @@ export type usersUncheckedCreateWithoutWork_item_worklogsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -9939,6 +10326,9 @@ export type usersUpdateWithoutWork_item_worklogsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -10010,6 +10400,9 @@ export type usersUncheckedUpdateWithoutWork_item_worklogsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -10081,6 +10474,9 @@ export type usersCreateWithoutCommentsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -10152,6 +10548,9 @@ export type usersUncheckedCreateWithoutCommentsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -10228,6 +10627,9 @@ export type usersCreateWithoutCreated_commentsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -10299,6 +10701,9 @@ export type usersUncheckedCreateWithoutCreated_commentsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -10375,6 +10780,9 @@ export type usersCreateWithoutUpdated_commentsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -10446,6 +10854,9 @@ export type usersUncheckedCreateWithoutUpdated_commentsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -10533,6 +10944,9 @@ export type usersUpdateWithoutCommentsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -10604,6 +11018,9 @@ export type usersUncheckedUpdateWithoutCommentsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -10686,6 +11103,9 @@ export type usersUpdateWithoutCreated_commentsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -10757,6 +11177,9 @@ export type usersUncheckedUpdateWithoutCreated_commentsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -10839,6 +11262,9 @@ export type usersUpdateWithoutUpdated_commentsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -10910,6 +11336,9 @@ export type usersUncheckedUpdateWithoutUpdated_commentsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -10981,6 +11410,9 @@ export type usersCreateWithoutAttachmentsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -11052,6 +11484,9 @@ export type usersUncheckedCreateWithoutAttachmentsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -11128,6 +11563,9 @@ export type usersCreateWithoutCreated_attachmentsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -11199,6 +11637,9 @@ export type usersUncheckedCreateWithoutCreated_attachmentsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -11275,6 +11716,9 @@ export type usersCreateWithoutUpdated_attachmentsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -11346,6 +11790,9 @@ export type usersUncheckedCreateWithoutUpdated_attachmentsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -11433,6 +11880,9 @@ export type usersUpdateWithoutAttachmentsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -11504,6 +11954,9 @@ export type usersUncheckedUpdateWithoutAttachmentsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -11586,6 +12039,9 @@ export type usersUpdateWithoutCreated_attachmentsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -11657,6 +12113,9 @@ export type usersUncheckedUpdateWithoutCreated_attachmentsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -11739,6 +12198,9 @@ export type usersUpdateWithoutUpdated_attachmentsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -11810,6 +12272,9 @@ export type usersUncheckedUpdateWithoutUpdated_attachmentsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -11881,6 +12346,9 @@ export type usersCreateWithoutNotificationsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -11952,6 +12420,9 @@ export type usersUncheckedCreateWithoutNotificationsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -12028,6 +12499,9 @@ export type usersCreateWithoutCreated_notificationsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -12099,6 +12573,9 @@ export type usersUncheckedCreateWithoutCreated_notificationsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -12175,6 +12652,9 @@ export type usersCreateWithoutUpdated_notificationsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -12246,6 +12726,9 @@ export type usersUncheckedCreateWithoutUpdated_notificationsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -12333,6 +12816,9 @@ export type usersUpdateWithoutNotificationsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -12404,6 +12890,9 @@ export type usersUncheckedUpdateWithoutNotificationsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -12486,6 +12975,9 @@ export type usersUpdateWithoutCreated_notificationsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -12557,6 +13049,9 @@ export type usersUncheckedUpdateWithoutCreated_notificationsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -12639,6 +13134,9 @@ export type usersUpdateWithoutUpdated_notificationsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -12710,6 +13208,9 @@ export type usersUncheckedUpdateWithoutUpdated_notificationsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -12781,6 +13282,9 @@ export type usersCreateWithoutCreated_access_allowlistInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -12852,6 +13356,9 @@ export type usersUncheckedCreateWithoutCreated_access_allowlistInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -12928,6 +13435,9 @@ export type usersCreateWithoutUpdated_access_allowlistInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -12999,6 +13509,9 @@ export type usersUncheckedCreateWithoutUpdated_access_allowlistInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -13086,6 +13599,9 @@ export type usersUpdateWithoutCreated_access_allowlistInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -13157,6 +13673,9 @@ export type usersUncheckedUpdateWithoutCreated_access_allowlistInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -13239,6 +13758,9 @@ export type usersUpdateWithoutUpdated_access_allowlistInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -13310,6 +13832,9 @@ export type usersUncheckedUpdateWithoutUpdated_access_allowlistInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -13381,6 +13906,9 @@ export type usersCreateWithoutResolved_access_requestsInput = {
   updated_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutUpdated_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -13452,6 +13980,9 @@ export type usersUncheckedCreateWithoutResolved_access_requestsInput = {
   updated_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutUpdated_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -13539,6 +14070,9 @@ export type usersUpdateWithoutResolved_access_requestsInput = {
   updated_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutUpdated_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -13610,6 +14144,9 @@ export type usersUncheckedUpdateWithoutResolved_access_requestsInput = {
   updated_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -13682,6 +14219,9 @@ export type usersCreateWithoutProject_management_connectionsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -13753,6 +14293,9 @@ export type usersUncheckedCreateWithoutProject_management_connectionsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -13840,6 +14383,9 @@ export type usersUpdateWithoutProject_management_connectionsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -13911,6 +14457,9 @@ export type usersUncheckedUpdateWithoutProject_management_connectionsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -13982,6 +14531,9 @@ export type usersCreateWithoutVersion_control_connectionsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -14053,6 +14605,9 @@ export type usersUncheckedCreateWithoutVersion_control_connectionsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -14140,6 +14695,9 @@ export type usersUpdateWithoutVersion_control_connectionsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -14211,6 +14769,9 @@ export type usersUncheckedUpdateWithoutVersion_control_connectionsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -14281,6 +14842,9 @@ export type usersCreateWithoutChat_conversationsInput = {
   updated_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutUpdated_by_userInput
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -14352,6 +14916,9 @@ export type usersUncheckedCreateWithoutChat_conversationsInput = {
   updated_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutUpdated_by_userInput
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -14439,6 +15006,9 @@ export type usersUpdateWithoutChat_conversationsInput = {
   updated_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutUpdated_by_userNestedInput
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -14510,6 +15080,9 @@ export type usersUncheckedUpdateWithoutChat_conversationsInput = {
   updated_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -14581,6 +15154,9 @@ export type usersCreateWithoutChat_attachmentsInput = {
   updated_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutUpdated_by_userInput
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -14652,6 +15228,9 @@ export type usersUncheckedCreateWithoutChat_attachmentsInput = {
   updated_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutUpdated_by_userInput
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -14739,6 +15318,9 @@ export type usersUpdateWithoutChat_attachmentsInput = {
   updated_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutUpdated_by_userNestedInput
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -14810,6 +15392,945 @@ export type usersUncheckedUpdateWithoutChat_attachmentsInput = {
   updated_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  project_management_connections?: Prisma.project_management_connectionsUncheckedUpdateManyWithoutUserNestedInput
+  version_control_connections?: Prisma.version_control_connectionsUncheckedUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersCreateWithoutOwned_chat_agentsInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
+  created_users?: Prisma.usersCreateNestedManyWithoutCreatorInput
+  updater?: Prisma.usersCreateNestedOneWithoutUpdated_usersInput
+  updated_users?: Prisma.usersCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutUserInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutActorInput
+  created_projects?: Prisma.projectsCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
+  created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
+  owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
+  project_management_connections?: Prisma.project_management_connectionsCreateNestedManyWithoutUserInput
+  version_control_connections?: Prisma.version_control_connectionsCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersUncheckedCreateWithoutOwned_chat_agentsInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  created_users?: Prisma.usersUncheckedCreateNestedManyWithoutCreatorInput
+  updated_users?: Prisma.usersUncheckedCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersUncheckedCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersUncheckedCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutUserInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutActorInput
+  created_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
+  created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  project_management_connections?: Prisma.project_management_connectionsUncheckedCreateNestedManyWithoutUserInput
+  version_control_connections?: Prisma.version_control_connectionsUncheckedCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersCreateOrConnectWithoutOwned_chat_agentsInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutOwned_chat_agentsInput, Prisma.usersUncheckedCreateWithoutOwned_chat_agentsInput>
+}
+
+export type usersCreateWithoutCreated_chat_agentsInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
+  created_users?: Prisma.usersCreateNestedManyWithoutCreatorInput
+  updater?: Prisma.usersCreateNestedOneWithoutUpdated_usersInput
+  updated_users?: Prisma.usersCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutUserInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutActorInput
+  created_projects?: Prisma.projectsCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
+  created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
+  owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
+  project_management_connections?: Prisma.project_management_connectionsCreateNestedManyWithoutUserInput
+  version_control_connections?: Prisma.version_control_connectionsCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersUncheckedCreateWithoutCreated_chat_agentsInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  created_users?: Prisma.usersUncheckedCreateNestedManyWithoutCreatorInput
+  updated_users?: Prisma.usersUncheckedCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersUncheckedCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersUncheckedCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutUserInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutActorInput
+  created_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
+  created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  project_management_connections?: Prisma.project_management_connectionsUncheckedCreateNestedManyWithoutUserInput
+  version_control_connections?: Prisma.version_control_connectionsUncheckedCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersCreateOrConnectWithoutCreated_chat_agentsInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutCreated_chat_agentsInput, Prisma.usersUncheckedCreateWithoutCreated_chat_agentsInput>
+}
+
+export type usersCreateWithoutUpdated_chat_agentsInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
+  created_users?: Prisma.usersCreateNestedManyWithoutCreatorInput
+  updater?: Prisma.usersCreateNestedOneWithoutUpdated_usersInput
+  updated_users?: Prisma.usersCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutUserInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutActorInput
+  created_projects?: Prisma.projectsCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
+  created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
+  project_management_connections?: Prisma.project_management_connectionsCreateNestedManyWithoutUserInput
+  version_control_connections?: Prisma.version_control_connectionsCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersUncheckedCreateWithoutUpdated_chat_agentsInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  created_users?: Prisma.usersUncheckedCreateNestedManyWithoutCreatorInput
+  updated_users?: Prisma.usersUncheckedCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersUncheckedCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersUncheckedCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutUserInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutActorInput
+  created_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
+  created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  project_management_connections?: Prisma.project_management_connectionsUncheckedCreateNestedManyWithoutUserInput
+  version_control_connections?: Prisma.version_control_connectionsUncheckedCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersCreateOrConnectWithoutUpdated_chat_agentsInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutUpdated_chat_agentsInput, Prisma.usersUncheckedCreateWithoutUpdated_chat_agentsInput>
+}
+
+export type usersUpsertWithoutOwned_chat_agentsInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutOwned_chat_agentsInput, Prisma.usersUncheckedUpdateWithoutOwned_chat_agentsInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutOwned_chat_agentsInput, Prisma.usersUncheckedCreateWithoutOwned_chat_agentsInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutOwned_chat_agentsInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutOwned_chat_agentsInput, Prisma.usersUncheckedUpdateWithoutOwned_chat_agentsInput>
+}
+
+export type usersUpdateWithoutOwned_chat_agentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
+  created_users?: Prisma.usersUpdateManyWithoutCreatorNestedInput
+  updater?: Prisma.usersUpdateOneWithoutUpdated_usersNestedInput
+  updated_users?: Prisma.usersUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUpdateManyWithoutUserNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutActorNestedInput
+  created_projects?: Prisma.projectsUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
+  created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
+  owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  project_management_connections?: Prisma.project_management_connectionsUpdateManyWithoutUserNestedInput
+  version_control_connections?: Prisma.version_control_connectionsUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersUncheckedUpdateWithoutOwned_chat_agentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  created_users?: Prisma.usersUncheckedUpdateManyWithoutCreatorNestedInput
+  updated_users?: Prisma.usersUncheckedUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUncheckedUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUncheckedUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUncheckedUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUncheckedUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutUserNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutActorNestedInput
+  created_projects?: Prisma.projectsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  project_management_connections?: Prisma.project_management_connectionsUncheckedUpdateManyWithoutUserNestedInput
+  version_control_connections?: Prisma.version_control_connectionsUncheckedUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersUpsertWithoutCreated_chat_agentsInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutCreated_chat_agentsInput, Prisma.usersUncheckedUpdateWithoutCreated_chat_agentsInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutCreated_chat_agentsInput, Prisma.usersUncheckedCreateWithoutCreated_chat_agentsInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutCreated_chat_agentsInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutCreated_chat_agentsInput, Prisma.usersUncheckedUpdateWithoutCreated_chat_agentsInput>
+}
+
+export type usersUpdateWithoutCreated_chat_agentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
+  created_users?: Prisma.usersUpdateManyWithoutCreatorNestedInput
+  updater?: Prisma.usersUpdateOneWithoutUpdated_usersNestedInput
+  updated_users?: Prisma.usersUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUpdateManyWithoutUserNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutActorNestedInput
+  created_projects?: Prisma.projectsUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
+  created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
+  owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  project_management_connections?: Prisma.project_management_connectionsUpdateManyWithoutUserNestedInput
+  version_control_connections?: Prisma.version_control_connectionsUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersUncheckedUpdateWithoutCreated_chat_agentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  created_users?: Prisma.usersUncheckedUpdateManyWithoutCreatorNestedInput
+  updated_users?: Prisma.usersUncheckedUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUncheckedUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUncheckedUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUncheckedUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUncheckedUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutUserNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutActorNestedInput
+  created_projects?: Prisma.projectsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  project_management_connections?: Prisma.project_management_connectionsUncheckedUpdateManyWithoutUserNestedInput
+  version_control_connections?: Prisma.version_control_connectionsUncheckedUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersUpsertWithoutUpdated_chat_agentsInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutUpdated_chat_agentsInput, Prisma.usersUncheckedUpdateWithoutUpdated_chat_agentsInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutUpdated_chat_agentsInput, Prisma.usersUncheckedCreateWithoutUpdated_chat_agentsInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutUpdated_chat_agentsInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutUpdated_chat_agentsInput, Prisma.usersUncheckedUpdateWithoutUpdated_chat_agentsInput>
+}
+
+export type usersUpdateWithoutUpdated_chat_agentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
+  created_users?: Prisma.usersUpdateManyWithoutCreatorNestedInput
+  updater?: Prisma.usersUpdateOneWithoutUpdated_usersNestedInput
+  updated_users?: Prisma.usersUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUpdateManyWithoutUserNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutActorNestedInput
+  created_projects?: Prisma.projectsUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
+  created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  project_management_connections?: Prisma.project_management_connectionsUpdateManyWithoutUserNestedInput
+  version_control_connections?: Prisma.version_control_connectionsUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersUncheckedUpdateWithoutUpdated_chat_agentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  created_users?: Prisma.usersUncheckedUpdateManyWithoutCreatorNestedInput
+  updated_users?: Prisma.usersUncheckedUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUncheckedUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUncheckedUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUncheckedUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUncheckedUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutUserNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutActorNestedInput
+  created_projects?: Prisma.projectsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -14882,6 +16403,9 @@ export type usersCreateWithoutOwned_saved_viewsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
@@ -14953,6 +16477,9 @@ export type usersUncheckedCreateWithoutOwned_saved_viewsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
@@ -15029,6 +16556,9 @@ export type usersCreateWithoutCreated_saved_viewsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
@@ -15100,6 +16630,9 @@ export type usersUncheckedCreateWithoutCreated_saved_viewsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
@@ -15176,6 +16709,9 @@ export type usersCreateWithoutUpdated_saved_viewsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
@@ -15247,6 +16783,9 @@ export type usersUncheckedCreateWithoutUpdated_saved_viewsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
@@ -15334,6 +16873,9 @@ export type usersUpdateWithoutOwned_saved_viewsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
@@ -15405,6 +16947,9 @@ export type usersUncheckedUpdateWithoutOwned_saved_viewsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
@@ -15487,6 +17032,9 @@ export type usersUpdateWithoutCreated_saved_viewsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
@@ -15558,6 +17106,9 @@ export type usersUncheckedUpdateWithoutCreated_saved_viewsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
@@ -15640,6 +17191,9 @@ export type usersUpdateWithoutUpdated_saved_viewsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
@@ -15711,6 +17265,9 @@ export type usersUncheckedUpdateWithoutUpdated_saved_viewsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
@@ -15782,6 +17339,9 @@ export type usersCreateWithoutSaved_view_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -15853,6 +17413,9 @@ export type usersUncheckedCreateWithoutSaved_view_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -15929,6 +17492,9 @@ export type usersCreateWithoutCreated_saved_view_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -16000,6 +17566,9 @@ export type usersUncheckedCreateWithoutCreated_saved_view_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -16076,6 +17645,9 @@ export type usersCreateWithoutUpdated_saved_view_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -16147,6 +17719,9 @@ export type usersUncheckedCreateWithoutUpdated_saved_view_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -16234,6 +17809,9 @@ export type usersUpdateWithoutSaved_view_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -16305,6 +17883,9 @@ export type usersUncheckedUpdateWithoutSaved_view_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -16387,6 +17968,9 @@ export type usersUpdateWithoutCreated_saved_view_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -16458,6 +18042,9 @@ export type usersUncheckedUpdateWithoutCreated_saved_view_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -16540,6 +18127,9 @@ export type usersUpdateWithoutUpdated_saved_view_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -16611,6 +18201,9 @@ export type usersUncheckedUpdateWithoutUpdated_saved_view_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -16682,6 +18275,9 @@ export type usersCreateWithoutOwned_chartsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -16753,6 +18349,9 @@ export type usersUncheckedCreateWithoutOwned_chartsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -16829,6 +18428,9 @@ export type usersCreateWithoutCreated_chartsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -16900,6 +18502,9 @@ export type usersUncheckedCreateWithoutCreated_chartsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -16976,6 +18581,9 @@ export type usersCreateWithoutUpdated_chartsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -17047,6 +18655,9 @@ export type usersUncheckedCreateWithoutUpdated_chartsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -17134,6 +18745,9 @@ export type usersUpdateWithoutOwned_chartsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -17205,6 +18819,9 @@ export type usersUncheckedUpdateWithoutOwned_chartsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -17287,6 +18904,9 @@ export type usersUpdateWithoutCreated_chartsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -17358,6 +18978,9 @@ export type usersUncheckedUpdateWithoutCreated_chartsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -17440,6 +19063,9 @@ export type usersUpdateWithoutUpdated_chartsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -17511,6 +19137,9 @@ export type usersUncheckedUpdateWithoutUpdated_chartsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -17582,6 +19211,9 @@ export type usersCreateWithoutChart_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -17653,6 +19285,9 @@ export type usersUncheckedCreateWithoutChart_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -17729,6 +19364,9 @@ export type usersCreateWithoutCreated_chart_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -17800,6 +19438,9 @@ export type usersUncheckedCreateWithoutCreated_chart_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -17876,6 +19517,9 @@ export type usersCreateWithoutUpdated_chart_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -17947,6 +19591,9 @@ export type usersUncheckedCreateWithoutUpdated_chart_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -18034,6 +19681,9 @@ export type usersUpdateWithoutChart_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -18105,6 +19755,9 @@ export type usersUncheckedUpdateWithoutChart_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -18187,6 +19840,9 @@ export type usersUpdateWithoutCreated_chart_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -18258,6 +19914,9 @@ export type usersUncheckedUpdateWithoutCreated_chart_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -18340,6 +19999,9 @@ export type usersUpdateWithoutUpdated_chart_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -18411,6 +20073,9 @@ export type usersUncheckedUpdateWithoutUpdated_chart_sharesInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -18482,6 +20147,9 @@ export type usersCreateWithoutCreated_integrationsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -18553,6 +20221,9 @@ export type usersUncheckedCreateWithoutCreated_integrationsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -18629,6 +20300,9 @@ export type usersCreateWithoutUpdated_integrationsInput = {
   resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
@@ -18700,6 +20374,9 @@ export type usersUncheckedCreateWithoutUpdated_integrationsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
   chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
   created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -18787,6 +20464,9 @@ export type usersUpdateWithoutCreated_integrationsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -18858,6 +20538,9 @@ export type usersUncheckedUpdateWithoutCreated_integrationsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -18940,6 +20623,9 @@ export type usersUpdateWithoutUpdated_integrationsInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -19011,6 +20697,9 @@ export type usersUncheckedUpdateWithoutUpdated_integrationsInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -19111,6 +20800,9 @@ export type usersUpdateWithoutCreatorInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -19182,6 +20874,9 @@ export type usersUncheckedUpdateWithoutCreatorInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -19268,6 +20963,9 @@ export type usersUpdateWithoutUpdaterInput = {
   resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
@@ -19339,6 +21037,9 @@ export type usersUncheckedUpdateWithoutUpdaterInput = {
   resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
   chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
   chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
   created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -19418,6 +21119,9 @@ export type UsersCountOutputType = {
   resolved_access_requests: number
   chat_conversations: number
   chat_attachments: number
+  owned_chat_agents: number
+  created_chat_agents: number
+  updated_chat_agents: number
   owned_saved_views: number
   created_saved_views: number
   updated_saved_views: number
@@ -19477,6 +21181,9 @@ export type UsersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   resolved_access_requests?: boolean | UsersCountOutputTypeCountResolved_access_requestsArgs
   chat_conversations?: boolean | UsersCountOutputTypeCountChat_conversationsArgs
   chat_attachments?: boolean | UsersCountOutputTypeCountChat_attachmentsArgs
+  owned_chat_agents?: boolean | UsersCountOutputTypeCountOwned_chat_agentsArgs
+  created_chat_agents?: boolean | UsersCountOutputTypeCountCreated_chat_agentsArgs
+  updated_chat_agents?: boolean | UsersCountOutputTypeCountUpdated_chat_agentsArgs
   owned_saved_views?: boolean | UsersCountOutputTypeCountOwned_saved_viewsArgs
   created_saved_views?: boolean | UsersCountOutputTypeCountCreated_saved_viewsArgs
   updated_saved_views?: boolean | UsersCountOutputTypeCountUpdated_saved_viewsArgs
@@ -19788,6 +21495,27 @@ export type UsersCountOutputTypeCountChat_attachmentsArgs<ExtArgs extends runtim
 /**
  * UsersCountOutputType without action
  */
+export type UsersCountOutputTypeCountOwned_chat_agentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.chat_agentsWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountCreated_chat_agentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.chat_agentsWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountUpdated_chat_agentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.chat_agentsWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
 export type UsersCountOutputTypeCountOwned_saved_viewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.saved_viewsWhereInput
 }
@@ -19954,6 +21682,9 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   resolved_access_requests?: boolean | Prisma.users$resolved_access_requestsArgs<ExtArgs>
   chat_conversations?: boolean | Prisma.users$chat_conversationsArgs<ExtArgs>
   chat_attachments?: boolean | Prisma.users$chat_attachmentsArgs<ExtArgs>
+  owned_chat_agents?: boolean | Prisma.users$owned_chat_agentsArgs<ExtArgs>
+  created_chat_agents?: boolean | Prisma.users$created_chat_agentsArgs<ExtArgs>
+  updated_chat_agents?: boolean | Prisma.users$updated_chat_agentsArgs<ExtArgs>
   owned_saved_views?: boolean | Prisma.users$owned_saved_viewsArgs<ExtArgs>
   created_saved_views?: boolean | Prisma.users$created_saved_viewsArgs<ExtArgs>
   updated_saved_views?: boolean | Prisma.users$updated_saved_viewsArgs<ExtArgs>
@@ -20069,6 +21800,9 @@ export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   resolved_access_requests?: boolean | Prisma.users$resolved_access_requestsArgs<ExtArgs>
   chat_conversations?: boolean | Prisma.users$chat_conversationsArgs<ExtArgs>
   chat_attachments?: boolean | Prisma.users$chat_attachmentsArgs<ExtArgs>
+  owned_chat_agents?: boolean | Prisma.users$owned_chat_agentsArgs<ExtArgs>
+  created_chat_agents?: boolean | Prisma.users$created_chat_agentsArgs<ExtArgs>
+  updated_chat_agents?: boolean | Prisma.users$updated_chat_agentsArgs<ExtArgs>
   owned_saved_views?: boolean | Prisma.users$owned_saved_viewsArgs<ExtArgs>
   created_saved_views?: boolean | Prisma.users$created_saved_viewsArgs<ExtArgs>
   updated_saved_views?: boolean | Prisma.users$updated_saved_viewsArgs<ExtArgs>
@@ -20141,6 +21875,9 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     resolved_access_requests: Prisma.$access_requestsPayload<ExtArgs>[]
     chat_conversations: Prisma.$chat_conversationsPayload<ExtArgs>[]
     chat_attachments: Prisma.$chat_attachmentsPayload<ExtArgs>[]
+    owned_chat_agents: Prisma.$chat_agentsPayload<ExtArgs>[]
+    created_chat_agents: Prisma.$chat_agentsPayload<ExtArgs>[]
+    updated_chat_agents: Prisma.$chat_agentsPayload<ExtArgs>[]
     owned_saved_views: Prisma.$saved_viewsPayload<ExtArgs>[]
     created_saved_views: Prisma.$saved_viewsPayload<ExtArgs>[]
     updated_saved_views: Prisma.$saved_viewsPayload<ExtArgs>[]
@@ -20608,6 +22345,9 @@ export interface Prisma__usersClient<T, Null = never, ExtArgs extends runtime.Ty
   resolved_access_requests<T extends Prisma.users$resolved_access_requestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$resolved_access_requestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$access_requestsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   chat_conversations<T extends Prisma.users$chat_conversationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$chat_conversationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$chat_conversationsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   chat_attachments<T extends Prisma.users$chat_attachmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$chat_attachmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$chat_attachmentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  owned_chat_agents<T extends Prisma.users$owned_chat_agentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$owned_chat_agentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$chat_agentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  created_chat_agents<T extends Prisma.users$created_chat_agentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$created_chat_agentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$chat_agentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  updated_chat_agents<T extends Prisma.users$updated_chat_agentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$updated_chat_agentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$chat_agentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   owned_saved_views<T extends Prisma.users$owned_saved_viewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$owned_saved_viewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$saved_viewsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   created_saved_views<T extends Prisma.users$created_saved_viewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$created_saved_viewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$saved_viewsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   updated_saved_views<T extends Prisma.users$updated_saved_viewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$updated_saved_viewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$saved_viewsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -22062,6 +23802,78 @@ export type users$chat_attachmentsArgs<ExtArgs extends runtime.Types.Extensions.
   take?: number
   skip?: number
   distinct?: Prisma.Chat_attachmentsScalarFieldEnum | Prisma.Chat_attachmentsScalarFieldEnum[]
+}
+
+/**
+ * users.owned_chat_agents
+ */
+export type users$owned_chat_agentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the chat_agents
+   */
+  select?: Prisma.chat_agentsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the chat_agents
+   */
+  omit?: Prisma.chat_agentsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.chat_agentsInclude<ExtArgs> | null
+  where?: Prisma.chat_agentsWhereInput
+  orderBy?: Prisma.chat_agentsOrderByWithRelationInput | Prisma.chat_agentsOrderByWithRelationInput[]
+  cursor?: Prisma.chat_agentsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Chat_agentsScalarFieldEnum | Prisma.Chat_agentsScalarFieldEnum[]
+}
+
+/**
+ * users.created_chat_agents
+ */
+export type users$created_chat_agentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the chat_agents
+   */
+  select?: Prisma.chat_agentsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the chat_agents
+   */
+  omit?: Prisma.chat_agentsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.chat_agentsInclude<ExtArgs> | null
+  where?: Prisma.chat_agentsWhereInput
+  orderBy?: Prisma.chat_agentsOrderByWithRelationInput | Prisma.chat_agentsOrderByWithRelationInput[]
+  cursor?: Prisma.chat_agentsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Chat_agentsScalarFieldEnum | Prisma.Chat_agentsScalarFieldEnum[]
+}
+
+/**
+ * users.updated_chat_agents
+ */
+export type users$updated_chat_agentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the chat_agents
+   */
+  select?: Prisma.chat_agentsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the chat_agents
+   */
+  omit?: Prisma.chat_agentsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.chat_agentsInclude<ExtArgs> | null
+  where?: Prisma.chat_agentsWhereInput
+  orderBy?: Prisma.chat_agentsOrderByWithRelationInput | Prisma.chat_agentsOrderByWithRelationInput[]
+  cursor?: Prisma.chat_agentsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Chat_agentsScalarFieldEnum | Prisma.Chat_agentsScalarFieldEnum[]
 }
 
 /**

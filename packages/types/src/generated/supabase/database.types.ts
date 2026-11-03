@@ -409,6 +409,185 @@ export type Database = {
           },
         ]
       }
+      chat_agent_skills: {
+        Row: {
+          agent_id: string
+          created_at: string
+          enabled: boolean
+          id: string
+          skill_id: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          skill_id: string
+          updated_at: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          skill_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_agent_skills_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "chat_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_agent_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "chat_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_agent_tools: {
+        Row: {
+          agent_id: string
+          created_at: string
+          enabled: boolean
+          id: string
+          tool_id: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          tool_id: string
+          updated_at: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          tool_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_agent_tools_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "chat_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_agent_tools_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "chat_tools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_agents: {
+        Row: {
+          autonomy: Database["public"]["Enums"]["ChatAgentAutonomy"]
+          avatar_seed: string
+          avatar_style: string
+          created_at: string
+          created_by: string | null
+          description: string
+          forked_from_id: string | null
+          id: string
+          instructions: string
+          is_default: boolean
+          key: string | null
+          name: string
+          owner_id: string | null
+          status: Database["public"]["Enums"]["RecordStatus"]
+          tagline: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          autonomy?: Database["public"]["Enums"]["ChatAgentAutonomy"]
+          avatar_seed?: string
+          avatar_style?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          forked_from_id?: string | null
+          id?: string
+          instructions: string
+          is_default?: boolean
+          key?: string | null
+          name: string
+          owner_id?: string | null
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          tagline?: string
+          title: string
+          updated_at: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          autonomy?: Database["public"]["Enums"]["ChatAgentAutonomy"]
+          avatar_seed?: string
+          avatar_style?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          forked_from_id?: string | null
+          id?: string
+          instructions?: string
+          is_default?: boolean
+          key?: string | null
+          name?: string
+          owner_id?: string | null
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          tagline?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_agents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_agents_forked_from_id_fkey"
+            columns: ["forked_from_id"]
+            isOneToOne: false
+            referencedRelation: "chat_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_agents_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_agents_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_attachments: {
         Row: {
           conversation_id: string | null
@@ -468,6 +647,7 @@ export type Database = {
       }
       chat_conversations: {
         Row: {
+          agent_id: string | null
           created_at: string
           id: string
           is_processing: boolean
@@ -477,6 +657,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agent_id?: string | null
           created_at?: string
           id?: string
           is_processing?: boolean
@@ -486,6 +667,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          agent_id?: string | null
           created_at?: string
           id?: string
           is_processing?: boolean
@@ -496,6 +678,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "chat_conversations_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "chat_agents"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "chat_conversations_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -503,6 +692,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      chat_skills: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          key: string
+          label: string
+          sort_order: number
+          status: Database["public"]["Enums"]["RecordStatus"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          key: string
+          label: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          updated_at: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          key?: string
+          label?: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chat_tools: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          instruction: string | null
+          key: string
+          label: string
+          sort_order: number
+          status: Database["public"]["Enums"]["RecordStatus"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          instruction?: string | null
+          key: string
+          label: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          updated_at: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          instruction?: string | null
+          key?: string
+          label?: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          updated_at?: string
+        }
+        Relationships: []
       }
       comments: {
         Row: {
@@ -2058,6 +2316,7 @@ export type Database = {
         | "commented"
         | "workflow_transition"
         | "escalation_resolved"
+      ChatAgentAutonomy: "suggest" | "approve"
       ChatConversationKind: "general" | "temporary"
       IntegrationCategory:
         | "ai_agent"
@@ -2236,6 +2495,7 @@ export const Constants = {
         "workflow_transition",
         "escalation_resolved",
       ],
+      ChatAgentAutonomy: ["suggest", "approve"],
       ChatConversationKind: ["general", "temporary"],
       IntegrationCategory: [
         "ai_agent",

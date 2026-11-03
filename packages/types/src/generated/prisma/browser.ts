@@ -133,6 +133,33 @@ export type chat_conversations = Prisma.chat_conversationsModel
  */
 export type chat_attachments = Prisma.chat_attachmentsModel
 /**
+ * Model chat_tools
+ * Seeded Alice chat tool catalog. `key` matches code registry tool `name`.
+ * `instruction` stores AES-GCM ciphertext (`v1:…`) when set.
+ */
+export type chat_tools = Prisma.chat_toolsModel
+/**
+ * Model chat_skills
+ * Seeded skill catalog (admin-/owner-toggleable labels on agents).
+ */
+export type chat_skills = Prisma.chat_skillsModel
+/**
+ * Model chat_agents
+ * Workspace Alice originals (`owner_id` null) and personal forks.
+ * `instructions` is AES-GCM ciphertext (`v1:…`).
+ */
+export type chat_agents = Prisma.chat_agentsModel
+/**
+ * Model chat_agent_tools
+ * 
+ */
+export type chat_agent_tools = Prisma.chat_agent_toolsModel
+/**
+ * Model chat_agent_skills
+ * 
+ */
+export type chat_agent_skills = Prisma.chat_agent_skillsModel
+/**
  * Model saved_views
  * Personal saved navigation snapshots (pathname + query); shareable via saved_view_shares.
  */

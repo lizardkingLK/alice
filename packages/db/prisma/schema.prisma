@@ -40,6 +40,12 @@ enum ChatConversationKind {
   temporary
 }
 
+/// Agent autonomy: suggest actions vs assume approval to mutate.
+enum ChatAgentAutonomy {
+  suggest
+  approve
+}
+
 enum ProjectStatus {
   active
   archived
@@ -209,6 +215,9 @@ model users {
   resolved_access_requests access_requests[]  @relation("AccessRequestResolvedBy")
   chat_conversations      chat_conversations[]
   chat_attachments        chat_attachments[]
+  owned_chat_agents       chat_agents[]       @relation("ChatAgentOwner")
+  created_chat_agents     chat_agents[]       @relation("ChatAgentCreatedBy")
+  updated_chat_agents     chat_agents[]       @relation("ChatAgentUpdatedBy")
   owned_saved_views       saved_views[]       @relation("SavedViewOwner")
   created_saved_views     saved_views[]       @relation("SavedViewCreatedBy")
   updated_saved_views     saved_views[]       @relation("SavedViewUpdatedBy")
@@ -712,14 +721,18 @@ model chat_conversations {
   is_processing Boolean              @default(false)
   /// `general` = `/chat` history; `temporary` = dock/widget (not listed in history).
   kind          ChatConversationKind @default(general)
+  /// Optional bound agent (URL `agentId` for new chats; persisted when set).
+  agent_id      String?              @db.Uuid
   created_at    DateTime             @default(now()) @db.Timestamptz(6)
   updated_at    DateTime             @updatedAt @db.Timestamptz(6)
 
   user        users              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  agent       chat_agents?       @relation(fields: [agent_id], references: [id], onDelete: SetNull)
   attachments chat_attachments[]
 
   @@index([user_id])
   @@index([user_id, kind])
+  @@index([agent_id])
 }
 
 model chat_attachments {
@@ -740,6 +753,113 @@ model chat_attachments {
 
   @@index([user_id])
   @@index([conversation_id])
+}
+
+/// Seeded Alice chat tool catalog. `key` matches code registry tool `name`.
+/// `instruction` stores AES-GCM ciphertext (`v1:…`) when set.
+model chat_tools {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key         String       @unique
+  label       String
+  description String       @default("")
+  /// Optional specialized system prompt (encrypted at rest).
+  instruction String?      @db.Text
+  sort_order  Int          @default(0)
+  status      RecordStatus @default(active)
+  created_at  DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime     @updatedAt @db.Timestamptz(6)
+
+  agent_tools chat_agent_tools[]
+
+  @@index([status, sort_order])
+}
+
+/// Seeded skill catalog (admin-/owner-toggleable labels on agents).
+model chat_skills {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key         String       @unique
+  label       String
+  description String       @default("")
+  sort_order  Int          @default(0)
+  status      RecordStatus @default(active)
+  created_at  DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime     @updatedAt @db.Timestamptz(6)
+
+  agent_skills chat_agent_skills[]
+
+  @@index([status, sort_order])
+}
+
+/// Workspace Alice originals (`owner_id` null) and personal forks.
+/// `instructions` is AES-GCM ciphertext (`v1:…`).
+model chat_agents {
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Stable seed key for admin originals (e.g. `alice-default`); null on forks.
+  key            String?           @unique
+  /// Null = admin/system original; set = personal fork owner.
+  owner_id       String?           @db.Uuid
+  name           String
+  title          String
+  description    String            @default("")
+  /// Encrypted main system prompt (`v1:…`).
+  instructions   String            @db.Text
+  autonomy       ChatAgentAutonomy @default(suggest)
+  status         RecordStatus      @default(active)
+  version        Int               @default(1)
+  forked_from_id String?           @db.Uuid
+  is_default     Boolean           @default(false)
+  tagline        String            @default("")
+  avatar_style   String            @default("lorelei")
+  avatar_seed    String            @default("")
+  created_by     String?           @db.Uuid
+  created_at     DateTime          @default(now()) @db.Timestamptz(6)
+  updated_by     String?           @db.Uuid
+  updated_at     DateTime          @updatedAt @db.Timestamptz(6)
+
+  owner           users?              @relation("ChatAgentOwner", fields: [owner_id], references: [id], onDelete: Cascade)
+  forked_from     chat_agents?        @relation("ChatAgentForks", fields: [forked_from_id], references: [id], onDelete: SetNull)
+  forks           chat_agents[]       @relation("ChatAgentForks")
+  created_by_user users?              @relation("ChatAgentCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users?              @relation("ChatAgentUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  agent_tools     chat_agent_tools[]
+  agent_skills    chat_agent_skills[]
+  conversations   chat_conversations[]
+
+  @@index([owner_id, status])
+  @@index([status, is_default])
+  @@index([forked_from_id])
+  /// Partial unique `chat_agents_one_active_default_key` — one active default.
+  /// Partial unique `chat_agents_one_fork_per_owner_source_key` — one fork per owner+source.
+}
+
+model chat_agent_tools {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agent_id   String       @db.Uuid
+  tool_id    String       @db.Uuid
+  enabled    Boolean      @default(true)
+  created_at DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at DateTime     @updatedAt @db.Timestamptz(6)
+
+  agent chat_agents @relation(fields: [agent_id], references: [id], onDelete: Cascade)
+  tool  chat_tools  @relation(fields: [tool_id], references: [id], onDelete: Cascade)
+
+  @@unique([agent_id, tool_id])
+  @@index([tool_id])
+}
+
+model chat_agent_skills {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agent_id   String       @db.Uuid
+  skill_id   String       @db.Uuid
+  enabled    Boolean      @default(true)
+  created_at DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at DateTime     @updatedAt @db.Timestamptz(6)
+
+  agent chat_agents @relation(fields: [agent_id], references: [id], onDelete: Cascade)
+  skill chat_skills @relation(fields: [skill_id], references: [id], onDelete: Cascade)
+
+  @@unique([agent_id, skill_id])
+  @@index([skill_id])
 }
 
 /// Personal saved navigation snapshots (pathname + query); shareable via saved_view_shares.

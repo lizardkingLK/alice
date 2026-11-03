@@ -101,14 +101,14 @@ beside the Agents heading.
 
 ## Data model
 
-| Table                | Role                                                                |
-| -------------------- | ------------------------------------------------------------------- |
-| `chat_tools`         | Seeded tool catalog (`key` matches code registry `name`)            |
-| `chat_skills`        | Seeded skill catalog (admin-toggleable labels)                      |
-| `chat_agents`        | Agent row (persona + **encrypted** `instructions`, `is_default`, …) |
-| `chat_agent_tools`   | Per-agent tool enablement (`enabled`)                               |
-| `chat_agent_skills`  | Per-agent skill enablement (`enabled`)                              |
-| `chat_conversations` | Optional nullable `agent_id` FK (bind persistence)                  |
+| Table                | Role                                                                                          |
+| -------------------- | --------------------------------------------------------------------------------------------- |
+| `chat_tools`         | Seeded tool catalog (`key` matches code registry `name`)                                      |
+| `chat_skills`        | Seeded skill catalog (admin-toggleable labels)                                                |
+| `chat_agents`        | Agent row (`key` for seed originals; persona + **encrypted** `instructions`, `is_default`, …) |
+| `chat_agent_tools`   | Per-agent tool enablement (`enabled`)                                                         |
+| `chat_agent_skills`  | Per-agent skill enablement (`enabled`)                                                        |
+| `chat_conversations` | Optional nullable `agent_id` FK (bind persistence)                                            |
 
 Tool **handlers and JSON schemas** stay in code
 (`apps/api/src/routes/api/chat/chat.route.data.ts`). The DB drives enablement

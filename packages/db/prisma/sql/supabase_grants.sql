@@ -25,6 +25,9 @@ REVOKE ALL ON TABLE public.integrations FROM anon, authenticated;
 REVOKE ALL ON TABLE public.project_management_connections FROM anon, authenticated;
 REVOKE ALL ON TABLE public.version_control_connections FROM anon, authenticated;
 REVOKE ALL ON TABLE public.chat_attachments FROM anon, authenticated;
+-- Chat agent catalogs: authenticated may SELECT (RLS); writes via service_role / API.
+REVOKE INSERT, UPDATE, DELETE ON TABLE public.chat_tools FROM anon, authenticated;
+REVOKE INSERT, UPDATE, DELETE ON TABLE public.chat_skills FROM anon, authenticated;
 REVOKE ALL ON TABLE public.access_allowlist FROM anon, authenticated;
 REVOKE ALL ON TABLE public.access_requests FROM anon, authenticated;
 REVOKE ALL ON TABLE public.work_item_links FROM anon, authenticated;
