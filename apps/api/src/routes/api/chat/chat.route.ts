@@ -479,12 +479,6 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
         let conversationId = reqConversationId;
         let title = 'New Chat';
         let resolvedAgentId = requestAgentId ?? null;
-        if (conversationId && !resolvedAgentId) {
-          resolvedAgentId = await chatService.getConversationAgentId(
-            req.userId!,
-            conversationId
-          );
-        }
 
         if (!conversationId) {
           // Process first message synchronously to ensure Gemini succeeds before database/sidebar creation
@@ -549,6 +543,13 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
             ))
           ) {
             return;
+          }
+
+          if (!resolvedAgentId) {
+            resolvedAgentId = await chatService.getConversationAgentId(
+              req.userId!,
+              conversationId
+            );
           }
 
           await chatService.setProcessingStatus(conversationId, true);

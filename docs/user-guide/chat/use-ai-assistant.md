@@ -10,7 +10,7 @@ Chat with Alice to inspect and create workspace data.
 
 1. Open **Alice** in the sidebar (`/chat`).
 2. Optionally open **Agents** from the grid icon in the chat header to browse
-   and customize role agents (see [Alice agents](./agents.md)).
+   and customize role agents (see [Alice agents](./alice-agents.md)).
 3. Optionally pick a **model** from the **Cpu** icon in the chat header (when
    your workspace has configured models). Models are grouped under **Gemini**,
    **SpaceXAI**, **OpenAI**, or **Anthropic**; open a provider and choose a model

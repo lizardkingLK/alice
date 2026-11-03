@@ -1,6 +1,6 @@
 # Alice agent personalization
 
-Status: **In progress** (DB slice)
+Status: **In progress** (web catalog on API; preferred default in localStorage)
 
 Personalized **agents** (persona, encrypted instructions, skill/tool
 enablement, autonomy) open from the chat header gallery panel. They are
@@ -13,7 +13,7 @@ Related:
 - Alice assistant (tools, API, storage): [AI_CHATBOT.md](./AI_CHATBOT.md)
 - Model pool / Settings: [SETTINGS_INTEGRATIONS.md](../integrations/SETTINGS_INTEGRATIONS.md)
 - Project access for tools: [UNIFIED_PROJECT_REGISTRY_AND_CHAT_VALIDATION.md](../projects/UNIFIED_PROJECT_REGISTRY_AND_CHAT_VALIDATION.md)
-- User guide: [agents.md](../../user-guide/chat/agents.md)
+- User guide: [alice-agents.md](../../user-guide/chat/alice-agents.md)
 - Views share pattern (deferred for agents): [FAVORITES_AND_VIEWS.md](../views/FAVORITES_AND_VIEWS.md)
 
 ---
@@ -213,12 +213,14 @@ Bound header identity →  reopen dialog on that agent’s detail
 
 ### Code anchors
 
-**Web (Slice 1 UI — migrating off localStorage catalog):**
+**Web (API-backed catalog; preferred default in localStorage only):**
 
 - Panel: `apps/web/app/chat/_components/chat-agents-panel-dialog.tsx`
 - Gallery: `apps/web/app/chat/_components/chat-agents-gallery.tsx`
 - Customize: `apps/web/app/chat/_components/chat-agent-customize-page.tsx`
-- Catalog helper: `apps/web/app/chat/_helpers/chat-agents-catalog.ts`
+- Catalog helpers / preferred id:
+  `apps/web/app/chat/_helpers/chat-agents-catalog.ts`
+- Client API: `apps/web/app/chat/_services/chat-agents-*.ts`
 - URL helpers: `apps/web/app/chat/_helpers/chat-url.ts`
 
 **API / DB (this slice):**
@@ -226,7 +228,7 @@ Bound header identity →  reopen dialog on that agent’s detail
 - Schema: `packages/db/prisma/schema.prisma` (`chat_tools`, `chat_skills`,
   `chat_agents`, joins)
 - Seed: `packages/db/src/seed.ts`
-- Routes: `apps/api/src/routes/api/chat-agents/` (planned)
+- Routes: `apps/api/src/routes/api/chat-agents/`
 - Runtime: `apps/api/src/routes/api/chat/chat.service.ts`
 
 ---

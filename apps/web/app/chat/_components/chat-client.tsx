@@ -38,6 +38,11 @@ import {
 import { isAdmin } from '@/lib/rbac';
 import { buildChatHref } from '../_helpers/chat-url';
 import {
+  chatAgentSummaryToRecord,
+  resolvePreferredChatAgentId,
+} from '../_helpers/chat-agents-catalog';
+import { listChatAgentsClient } from '../_services/chat-agents.reads.client';
+import {
   useChatClientBootstrap,
   useChatConversationsRealtime,
   useChatProcessingPoll,
@@ -150,7 +155,9 @@ function ChatClientInner({
   }, []);
   const [hasStartedEmptyConversation, setHasStartedEmptyConversation] =
     useState(Boolean(initialAgentId));
-  const [boundAgentId] = useState<string | undefined>(initialAgentId);
+  const [boundAgentId, setBoundAgentId] = useState<string | undefined>(
+    initialAgentId
+  );
   const {
     chatModels,
     selectedIntegrationId,
@@ -180,6 +187,43 @@ function ChatClientInner({
     setIsLoadingConversations,
     setError,
   });
+
+  useEffect(() => {
+    if (initialAgentId || !isPage) {
+      return;
+    }
+    let cancelled = false;
+    const applyPreferred = async () => {
+      try {
+        const agents = await listChatAgentsClient({ status: 'active' });
+        if (cancelled) {
+          return;
+        }
+        const preferred = resolvePreferredChatAgentId(
+          agents.map((row) => chatAgentSummaryToRecord(row))
+        );
+        if (!preferred) {
+          return;
+        }
+        setBoundAgentId(preferred);
+        setHasStartedEmptyConversation(true);
+        router.replace(
+          buildChatHref({
+            conversationId: activeConversationId,
+            agentId: preferred,
+          })
+        );
+      } catch (error) {
+        console.error('Failed to apply preferred chat agent:', error);
+      }
+    };
+    void applyPreferred();
+    return () => {
+      cancelled = true;
+    };
+    // Mount-only: seed preferred agent when URL has no agentId.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleNewChat = useCallback(
     (force = false) => {
@@ -413,7 +457,8 @@ function ChatClientInner({
         selectedIntegrationId,
         attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
         viewContext,
-        conversationKind
+        conversationKind,
+        boundAgentId
       );
 
       applySuccessfulChatResponse({

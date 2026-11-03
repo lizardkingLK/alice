@@ -200,7 +200,7 @@ export function ChatAgentCustomizeForm({
                 id="agent-skills"
                 rows={4}
                 value={draft.skills}
-                placeholder="One skill per line"
+                placeholder="One skill key per line"
                 onChange={(event) =>
                   onDraftChange({ skills: event.target.value })
                 }
@@ -212,7 +212,7 @@ export function ChatAgentCustomizeForm({
                 id="agent-tools"
                 rows={4}
                 value={draft.tools}
-                placeholder="One tool per line"
+                placeholder="One tool key per line"
                 className="font-mono text-xs"
                 onChange={(event) =>
                   onDraftChange({ tools: event.target.value })

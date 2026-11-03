@@ -40,7 +40,8 @@ export async function sendChatMessage(
   integrationId: string | undefined,
   attachments?: ChatAttachmentWire[],
   viewContext?: ChatViewContext | null,
-  kind: ChatConversationKindValue = ChatConversationKinds.general
+  kind: ChatConversationKindValue = ChatConversationKinds.general,
+  agentId?: string
 ): Promise<ChatPostResponse> {
   const parsed = postChatMessageBodySchema.safeParse({
     messages: history,
@@ -49,6 +50,7 @@ export async function sendChatMessage(
     attachments,
     viewContext: viewContext ?? undefined,
     kind,
+    agentId,
   });
   if (!parsed.success) {
     throw new Error(formatZodError(parsed.error));

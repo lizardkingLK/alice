@@ -151,4 +151,34 @@ export const chatSkillCatalogWireSchema = z.object({
 
 export type ChatSkillCatalogWire = z.infer<typeof chatSkillCatalogWireSchema>;
 
+export const listChatAgentsResponseSchema = z.object({
+  agents: z.array(chatAgentSummaryWireSchema),
+});
+
+export type ListChatAgentsResponse = z.infer<
+  typeof listChatAgentsResponseSchema
+>;
+
+export const chatAgentDetailResponseSchema = z.object({
+  agent: chatAgentDetailWireSchema,
+});
+
+export type ChatAgentDetailResponse = z.infer<
+  typeof chatAgentDetailResponseSchema
+>;
+
+export const listChatToolsResponseSchema = z.object({
+  tools: z.array(chatToolCatalogWireSchema),
+});
+
+export type ListChatToolsResponse = z.infer<typeof listChatToolsResponseSchema>;
+
+export const listChatSkillsResponseSchema = z.object({
+  skills: z.array(chatSkillCatalogWireSchema),
+});
+
+export type ListChatSkillsResponse = z.infer<
+  typeof listChatSkillsResponseSchema
+>;
+
 export { ChatAgentAutonomyEnum };

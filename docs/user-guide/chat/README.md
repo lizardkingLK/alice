@@ -11,7 +11,7 @@ Ask Alice to create projects, sprints, and work items in natural language.
 | Page                                          | What you'll learn                                                     |
 | --------------------------------------------- | --------------------------------------------------------------------- |
 | [Use the AI assistant](./use-ai-assistant.md) | Full page chat, header drawer, workflow designer sidebar              |
-| [Alice agents](./agents.md)                   | Agents gallery, workspace Alice default, fork-once customize and chat |
+| [Alice agents](./alice-agents.md)             | Agents gallery, workspace Alice default, fork-once customize and chat |
 | [User testing guide](./user-test-guide.md)    | Testing document attachments, parsing, and batch import               |
 
 Alice is the workspace AI assistant (powered by configured chat models such as

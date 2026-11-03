@@ -1,6 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import {
   Tabs,
   TabsContent,
@@ -18,13 +24,13 @@ import {
   type ViewsListTab,
 } from '@/lib/search-params';
 import {
-  listArchivedGalleryAgents,
-  listMineGalleryAgents,
-  listSharedGalleryAgents,
-  subscribeChatAgentsCatalog,
+  chatAgentSummaryToRecord,
+  partitionGalleryAgents,
   type ChatAgentRecord,
 } from '@/app/chat/_helpers/chat-agents-catalog';
+import { listChatAgentsClient } from '@/app/chat/_services/chat-agents.reads.client';
 import { ChatAgentAvatar } from '@/app/chat/_components/chat-agent-avatar';
+import { errorMessage } from '@/lib/errors/error-message';
 
 const GALLERY_TABS: ReadonlyArray<{
   id: ViewsListTab;
@@ -106,6 +112,11 @@ function AgentGalleryCard({
                   v{agent.version}
                 </Badge>
               )}
+              {agent.isDefault ? (
+                <Badge variant="outline" className="text-[10px] uppercase">
+                  Default
+                </Badge>
+              ) : null}
               {agent.status === 'archived' ? (
                 <Badge variant="outline" className="text-[10px] uppercase">
                   Archived
@@ -137,31 +148,45 @@ type ChatAgentsGalleryProps = {
   // eslint-disable-next-line no-unused-vars
   readonly onSelectAgent: (agentId: string) => void;
   readonly initialTab?: ViewsListTab;
+  readonly currentUserName?: string | null;
+  /** Bump to refetch after customize mutations. */
+  readonly refreshToken?: number;
 };
 
 export function ChatAgentsGallery({
   onSelectAgent,
   initialTab = 'mine',
+  currentUserName = null,
+  refreshToken = 0,
 }: Readonly<ChatAgentsGalleryProps>) {
   const [activeTab, setActiveTab] = useState<ViewsListTab>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
-  const [catalogTick, setCatalogTick] = useState(0);
+  const [agents, setAgents] = useState<ChatAgentRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const loadAgents = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const rows = await listChatAgentsClient();
+      setAgents(
+        rows.map((row) => chatAgentSummaryToRecord(row, { currentUserName }))
+      );
+    } catch (error) {
+      console.error('Failed to list chat agents:', error);
+      setLoadError(errorMessage(error, 'Could not load agents.'));
+      setAgents([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentUserName]);
 
   useEffect(() => {
-    return subscribeChatAgentsCatalog(() => {
-      setCatalogTick((tick) => tick + 1);
-    });
-  }, []);
+    void loadAgents();
+  }, [loadAgents, refreshToken]);
 
-  const agentsByTab = useMemo(
-    () => ({
-      mine: listMineGalleryAgents(),
-      shared: listSharedGalleryAgents(),
-      archived: listArchivedGalleryAgents(),
-    }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- catalogTick refreshes lists
-    [catalogTick]
-  );
+  const agentsByTab = useMemo(() => partitionGalleryAgents(agents), [agents]);
 
   const filteredAgentsByTab = useMemo(
     () => ({
@@ -218,29 +243,48 @@ export function ChatAgentsGallery({
           ))}
         </TabsList>
 
+        {loadError ? (
+          <p className="text-destructive px-1 py-8 text-center text-sm">
+            {loadError}
+          </p>
+        ) : null}
+
         {GALLERY_TABS.map((tab) => {
-          const agents = filteredAgentsByTab[tab.id];
+          const tabAgents = filteredAgentsByTab[tab.id];
+          let tabBody: ReactNode;
+          if (isLoading) {
+            tabBody = (
+              <div className="text-muted-foreground flex flex-1 items-center justify-center px-6 py-12 text-center text-sm">
+                Loading agents…
+              </div>
+            );
+          } else if (tabAgents.length === 0) {
+            tabBody = (
+              <div className="text-muted-foreground flex flex-1 items-center justify-center px-6 py-12 text-center text-sm">
+                {emptyGalleryMessage(tab.id, hasSearch)}
+              </div>
+            );
+          } else {
+            tabBody = (
+              <div className="no-scrollbar grid grid-cols-1 gap-4 overflow-y-auto pb-6 sm:grid-cols-2 xl:grid-cols-3">
+                {tabAgents.map((agent) => (
+                  <AgentGalleryCard
+                    key={agent.id}
+                    agent={agent}
+                    onSelect={onSelectAgent}
+                  />
+                ))}
+              </div>
+            );
+          }
+
           return (
             <TabsContent
               key={tab.id}
               value={tab.id}
               className="m-0 flex min-h-0 flex-1 flex-col focus-visible:ring-0 focus-visible:ring-offset-0"
             >
-              {agents.length === 0 ? (
-                <div className="text-muted-foreground flex flex-1 items-center justify-center px-6 py-12 text-center text-sm">
-                  {emptyGalleryMessage(tab.id, hasSearch)}
-                </div>
-              ) : (
-                <div className="no-scrollbar grid grid-cols-1 gap-4 overflow-y-auto pb-6 sm:grid-cols-2 xl:grid-cols-3">
-                  {agents.map((agent) => (
-                    <AgentGalleryCard
-                      key={agent.id}
-                      agent={agent}
-                      onSelect={onSelectAgent}
-                    />
-                  ))}
-                </div>
-              )}
+              {tabBody}
             </TabsContent>
           );
         })}

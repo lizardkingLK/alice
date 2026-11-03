@@ -1,3 +1,8 @@
+import type {
+  ChatAgentDetailWire,
+  ChatAgentSummaryWire,
+  PatchChatAgentBody,
+} from '@repo/types/api/v1';
 import {
   buildDicebearAvatarUrl,
   defaultAvatarSeedForAgent,
@@ -11,11 +16,10 @@ export type ChatAgentAutonomy = 'suggest' | 'approve';
 
 export type ChatAgentStatus = 'active' | 'archived';
 
+/** UI agent row mapped from chat-agents API wire. */
 export type ChatAgentRecord = {
   readonly id: string;
-  /** Display / persona name (e.g. Alex). */
   readonly name: string;
-  /** Role title shown under the name (e.g. Project Manager). */
   readonly title: string;
   readonly description: string;
   readonly instructions: string;
@@ -24,193 +28,108 @@ export type ChatAgentRecord = {
   readonly status: ChatAgentStatus;
   readonly version: number;
   readonly forkedFromId: string | null;
-  /** Short persona / tagline shown on gallery cards. */
   readonly tagline: string;
-  /** Capability notes (one per line in the UI). */
+  /** Newline-separated skill keys for the customize form. */
   readonly skills: string;
-  /** Tool allowlist notes (one per line in the UI). */
+  /** Newline-separated tool keys for the customize form. */
   readonly tools: string;
-  /** DiceBear style (e.g. lorelei). */
+  readonly enabledSkillKeys: readonly string[];
+  readonly enabledToolKeys: readonly string[];
   readonly avatarStyle: ChatAgentAvatarStyle;
-  /** DiceBear seed — changing it regenerates the portrait. */
   readonly avatarSeed: string;
+  readonly isDefault: boolean;
   readonly authorName: string;
-  readonly authorEmail: string;
 };
 
-/** Slice 1 hardcoded author for system templates (Monday-style byline). */
+/** Display byline for workspace (system) agents. */
 export const ALICE_SYSTEM_AUTHOR = {
-  name: 'Alice Admin',
+  name: 'Alice',
   email: 'admin@alice.dev',
 } as const;
 
-export const PROJECT_MANAGER_AGENT_ID = 'system-project-manager';
-
-export const SYSTEM_PROJECT_MANAGER: ChatAgentRecord = {
-  id: PROJECT_MANAGER_AGENT_ID,
-  name: 'Alex',
-  title: 'Project Manager',
-  description:
-    'Captures goals, scope, and milestones so projects start clear and stay on track.',
-  instructions: [
-    'Act as a concise project manager for Alice workspaces.',
-    'Prefer checklists, owners, due dates, and explicit next steps.',
-    'Only use projects the user is a member of.',
-    'Suggest actions first; do not assume approval to mutate unless autonomy allows it.',
-  ].join('\n'),
-  kind: 'system',
-  autonomy: 'suggest',
-  status: 'active',
-  version: 1,
-  forkedFromId: null,
-  tagline: 'Goals, scope, milestones, and status digests',
-  skills: [
-    'Project briefs',
-    'Milestone planning',
-    'Status digests',
-    'Risk and owner nags',
-  ].join('\n'),
-  tools: [
-    'list_projects',
-    'create_project',
-    'list_sprints',
-    'list_work_items',
-  ].join('\n'),
-  avatarStyle: 'lorelei',
-  avatarSeed: 'alice-project-manager-v1',
-  authorName: ALICE_SYSTEM_AUTHOR.name,
-  authorEmail: ALICE_SYSTEM_AUTHOR.email,
-};
-
-const SEED_SYSTEM_AGENTS: readonly ChatAgentRecord[] = [SYSTEM_PROJECT_MANAGER];
-
-/** localStorage so forks / admin system edits survive reloads (Slice 1). */
-const STORED_AGENTS_KEY = 'alice.chat.personal-agents.v1';
+/** Member preferred default agent id (uuid) — not the full catalog. */
+const PREFERRED_AGENT_ID_KEY = 'alice.chat.preferred-agent-id.v1';
+const PREFERRED_AGENT_CHANGED_EVENT = 'alice-chat-preferred-agent-changed';
 
 function isBrowser(): boolean {
   return typeof window !== 'undefined';
 }
 
-function resolveAvatarFields(record: Record<string, unknown>): {
+function resolveAvatarFields(wire: {
+  readonly id: string;
+  readonly name: string;
+  readonly avatarStyle: string;
+  readonly avatarSeed: string;
+}): {
   avatarStyle: ChatAgentAvatarStyle;
   avatarSeed: string;
 } {
-  const style =
-    typeof record.avatarStyle === 'string' &&
-    isChatAgentAvatarStyle(record.avatarStyle)
-      ? record.avatarStyle
-      : 'lorelei';
-  const name = typeof record.name === 'string' ? record.name : 'agent';
-  const id = typeof record.id === 'string' ? record.id : name;
+  const style = isChatAgentAvatarStyle(wire.avatarStyle)
+    ? wire.avatarStyle
+    : 'lorelei';
   const seed =
-    typeof record.avatarSeed === 'string' && record.avatarSeed.trim()
-      ? record.avatarSeed
-      : defaultAvatarSeedForAgent(id, name);
+    wire.avatarSeed.trim() || defaultAvatarSeedForAgent(wire.id, wire.name);
   return { avatarStyle: style, avatarSeed: seed };
 }
 
-function isChatAgentRecordShape(
-  value: unknown
-): value is Record<string, unknown> {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-  const record = value as Record<string, unknown>;
-  return (
-    typeof record.id === 'string' &&
-    typeof record.name === 'string' &&
-    typeof record.description === 'string' &&
-    typeof record.instructions === 'string' &&
-    (record.kind === 'system' || record.kind === 'personal') &&
-    (record.autonomy === 'suggest' || record.autonomy === 'approve') &&
-    (record.status === 'active' || record.status === 'archived') &&
-    typeof record.version === 'number' &&
-    (record.forkedFromId === null || typeof record.forkedFromId === 'string') &&
-    typeof record.tagline === 'string'
-  );
+function keysToMultiline(keys: readonly string[]): string {
+  return keys.join('\n');
 }
 
-function resolveAgentTitle(record: Record<string, unknown>): string {
-  if (typeof record.title === 'string' && record.title.trim()) {
-    return record.title.trim();
-  }
-  // Legacy Slice 1 rows baked the role into `name` (e.g. "Project Manager").
-  const name = typeof record.name === 'string' ? record.name : '';
-  if (/project manager/i.test(name)) {
-    return 'Project Manager';
-  }
-  return '';
+export function multilineToKeys(value: string): string[] {
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
-function normalizeChatAgentRecord(value: unknown): ChatAgentRecord | null {
-  if (!isChatAgentRecordShape(value)) {
-    return null;
+function authorNameForWire(
+  wire: Pick<ChatAgentSummaryWire, 'kind'>,
+  currentUserName?: string | null
+): string {
+  if (wire.kind === 'system') {
+    return ALICE_SYSTEM_AUTHOR.name;
   }
-  const avatar = resolveAvatarFields(value);
+  const name = currentUserName?.trim();
+  return name || 'You';
+}
+
+export function chatAgentSummaryToRecord(
+  wire: ChatAgentSummaryWire,
+  options?: { readonly currentUserName?: string | null }
+): ChatAgentRecord {
+  const avatar = resolveAvatarFields(wire);
   return {
-    id: value.id as string,
-    name: value.name as string,
-    title: resolveAgentTitle(value),
-    description: value.description as string,
-    instructions: value.instructions as string,
-    kind: value.kind as ChatAgentKind,
-    autonomy: value.autonomy as ChatAgentAutonomy,
-    status: value.status as ChatAgentStatus,
-    version: value.version as number,
-    forkedFromId: value.forkedFromId as string | null,
-    tagline: value.tagline as string,
-    skills: typeof value.skills === 'string' ? value.skills : '',
-    tools: typeof value.tools === 'string' ? value.tools : '',
+    id: wire.id,
+    name: wire.name,
+    title: wire.title,
+    description: wire.description,
+    instructions: '',
+    kind: wire.kind,
+    autonomy: wire.autonomy,
+    status: wire.status === 'archived' ? 'archived' : 'active',
+    version: wire.version,
+    forkedFromId: wire.forkedFromId,
+    tagline: wire.tagline,
+    skills: keysToMultiline(wire.enabledSkillKeys),
+    tools: keysToMultiline(wire.enabledToolKeys),
+    enabledSkillKeys: wire.enabledSkillKeys,
+    enabledToolKeys: wire.enabledToolKeys,
     avatarStyle: avatar.avatarStyle,
     avatarSeed: avatar.avatarSeed,
-    authorName:
-      typeof value.authorName === 'string' && value.authorName.trim()
-        ? value.authorName
-        : ALICE_SYSTEM_AUTHOR.name,
-    authorEmail:
-      typeof value.authorEmail === 'string' && value.authorEmail.trim()
-        ? value.authorEmail
-        : ALICE_SYSTEM_AUTHOR.email,
+    isDefault: wire.isDefault,
+    authorName: authorNameForWire(wire, options?.currentUserName),
   };
 }
 
-function parseStoredAgentsJson(raw: string): ChatAgentRecord[] {
-  const parsed: unknown = JSON.parse(raw);
-  if (!Array.isArray(parsed)) {
-    return [];
-  }
-  return parsed
-    .map(normalizeChatAgentRecord)
-    .filter((agent): agent is ChatAgentRecord => agent !== null);
-}
-
-function readStoredAgents(): ChatAgentRecord[] {
-  if (!isBrowser()) {
-    return [];
-  }
-  try {
-    const raw = window.localStorage.getItem(STORED_AGENTS_KEY);
-    if (!raw) {
-      const legacy = window.sessionStorage.getItem(STORED_AGENTS_KEY);
-      if (legacy) {
-        window.localStorage.setItem(STORED_AGENTS_KEY, legacy);
-        window.sessionStorage.removeItem(STORED_AGENTS_KEY);
-        return parseStoredAgentsJson(legacy);
-      }
-      return [];
-    }
-    return parseStoredAgentsJson(raw);
-  } catch {
-    return [];
-  }
-}
-
-function writeStoredAgents(agents: readonly ChatAgentRecord[]): void {
-  if (!isBrowser()) {
-    return;
-  }
-  window.localStorage.setItem(STORED_AGENTS_KEY, JSON.stringify(agents));
-  window.dispatchEvent(new Event('alice-chat-agents-changed'));
+export function chatAgentDetailToRecord(
+  wire: ChatAgentDetailWire,
+  options?: { readonly currentUserName?: string | null }
+): ChatAgentRecord {
+  return {
+    ...chatAgentSummaryToRecord(wire, options),
+    instructions: wire.instructions,
+  };
 }
 
 export function resolveChatAgentAvatarUrl(
@@ -224,113 +143,21 @@ export function resolveChatAgentAvatarUrl(
   });
 }
 
-export function upsertStoredAgent(agent: ChatAgentRecord): ChatAgentRecord {
-  const existing = readStoredAgents();
-  const without = existing.filter((row) => row.id !== agent.id);
-  writeStoredAgents([...without, agent]);
-  return agent;
-}
-
-export function listSystemAgents(): readonly ChatAgentRecord[] {
-  const stored = readStoredAgents();
-  const storedSystem = stored.filter(
-    (agent) => agent.kind === 'system' && agent.status === 'active'
-  );
-  const byId = new Map(storedSystem.map((agent) => [agent.id, agent]));
-  const mergedSeed = SEED_SYSTEM_AGENTS.map(
-    (seed) => byId.get(seed.id) ?? seed
-  );
-  const seedIds = new Set(SEED_SYSTEM_AGENTS.map((seed) => seed.id));
-  const extraSystem = storedSystem.filter((agent) => !seedIds.has(agent.id));
-  return [...mergedSeed, ...extraSystem];
-}
-
-export function listPersonalAgents(): readonly ChatAgentRecord[] {
-  return readStoredAgents().filter((agent) => agent.kind === 'personal');
-}
-
-export function getChatAgentById(agentId: string): ChatAgentRecord | null {
-  const stored = readStoredAgents().find((agent) => agent.id === agentId);
-  if (stored) {
-    return stored;
+export function partitionGalleryAgents(agents: readonly ChatAgentRecord[]): {
+  mine: ChatAgentRecord[];
+  shared: ChatAgentRecord[];
+  archived: ChatAgentRecord[];
+} {
+  const mine: ChatAgentRecord[] = [];
+  const archived: ChatAgentRecord[] = [];
+  for (const agent of agents) {
+    if (agent.status === 'archived') {
+      archived.push(agent);
+      continue;
+    }
+    mine.push(agent);
   }
-  return SEED_SYSTEM_AGENTS.find((agent) => agent.id === agentId) ?? null;
-}
-
-export function listMineGalleryAgents(): readonly ChatAgentRecord[] {
-  const personalActive = listPersonalAgents().filter(
-    (agent) => agent.status === 'active'
-  );
-  return [...listSystemAgents(), ...personalActive];
-}
-
-export function listSharedGalleryAgents(): readonly ChatAgentRecord[] {
-  return [];
-}
-
-export function listArchivedGalleryAgents(): readonly ChatAgentRecord[] {
-  return readStoredAgents().filter((agent) => agent.status === 'archived');
-}
-
-/** @deprecated Prefer upsertStoredAgent — kept for call-site clarity. */
-export function upsertPersonalAgent(agent: ChatAgentRecord): ChatAgentRecord {
-  return upsertStoredAgent(agent);
-}
-
-export function forkChatAgent(
-  source: ChatAgentRecord,
-  author?: { readonly name: string; readonly email?: string }
-): ChatAgentRecord | null {
-  if (source.kind !== 'system') {
-    return null;
-  }
-  const forkedId = `personal-${source.id}-${Date.now()}`;
-  const authorName = author?.name?.trim() || ALICE_SYSTEM_AUTHOR.name;
-  const authorEmail = author?.email?.trim() || ALICE_SYSTEM_AUTHOR.email;
-  const forked: ChatAgentRecord = {
-    ...source,
-    id: forkedId,
-    name: `${source.name} (copy)`,
-    kind: 'personal',
-    status: 'active',
-    version: source.version + 1,
-    forkedFromId: source.id,
-    avatarStyle: source.avatarStyle,
-    avatarSeed: `${source.avatarSeed}-v${source.version + 1}`,
-    authorName,
-    authorEmail,
-  };
-  return upsertStoredAgent(forked);
-}
-
-/** Slice 1: personal forks in this browser belong to the signed-in user. */
-export function claimPersonalAgentAuthor(
-  agentId: string,
-  author: { readonly name: string; readonly email?: string }
-): ChatAgentRecord | null {
-  const current = getChatAgentById(agentId);
-  if (current?.kind !== 'personal') {
-    return null;
-  }
-  const authorName = author.name.trim();
-  if (!authorName) {
-    return null;
-  }
-  if (
-    current.authorName === authorName &&
-    (!author.email || current.authorEmail === author.email.trim())
-  ) {
-    return current;
-  }
-  // Only rewrite the legacy system-author stamp from early forks.
-  if (current.authorName !== ALICE_SYSTEM_AUTHOR.name) {
-    return current;
-  }
-  return upsertStoredAgent({
-    ...current,
-    authorName,
-    authorEmail: author.email?.trim() || current.authorEmail,
-  });
+  return { mine, shared: [], archived };
 }
 
 export type ChatAgentDraftPatch = Partial<
@@ -350,105 +177,116 @@ export type ChatAgentDraftPatch = Partial<
   >
 >;
 
-export function saveAgentDraft(
-  agentId: string,
-  patch: ChatAgentDraftPatch,
-  options?: { readonly allowSystemEdit?: boolean }
-): ChatAgentRecord | null {
-  const current = getChatAgentById(agentId);
-  if (!current) {
-    return null;
+/** Build PATCH body from customize draft vs catalog key lists. */
+export function draftToPatchBody(
+  draft: ChatAgentDraftPatch,
+  catalog: {
+    readonly toolKeys: readonly string[];
+    readonly skillKeys: readonly string[];
   }
-  if (current.kind === 'system' && !options?.allowSystemEdit) {
-    return null;
-  }
-  if (current.status === 'archived' && patch.status !== 'active') {
-    return null;
-  }
-  const next: ChatAgentRecord = {
-    ...current,
-    ...patch,
+): PatchChatAgentBody {
+  const enabledToolKeys = new Set(multilineToKeys(draft.tools ?? ''));
+  const enabledSkillKeys = new Set(multilineToKeys(draft.skills ?? ''));
+
+  const body: PatchChatAgentBody = {
+    enabledTools: catalog.toolKeys.map((key) => ({
+      key,
+      enabled: enabledToolKeys.has(key),
+    })),
+    enabledSkills: catalog.skillKeys.map((key) => ({
+      key,
+      enabled: enabledSkillKeys.has(key),
+    })),
   };
-  return upsertStoredAgent(next);
+
+  if (draft.name !== undefined) {
+    body.name = draft.name;
+  }
+  if (draft.title !== undefined) {
+    body.title = draft.title;
+  }
+  if (draft.description !== undefined) {
+    body.description = draft.description;
+  }
+  if (draft.instructions !== undefined) {
+    body.instructions = draft.instructions;
+  }
+  if (draft.autonomy !== undefined) {
+    body.autonomy = draft.autonomy;
+  }
+  if (draft.tagline !== undefined) {
+    body.tagline = draft.tagline;
+  }
+  if (draft.status !== undefined) {
+    body.status = draft.status;
+  }
+  if (draft.avatarStyle !== undefined) {
+    body.avatarStyle = draft.avatarStyle;
+  }
+  if (draft.avatarSeed !== undefined) {
+    body.avatarSeed = draft.avatarSeed;
+  }
+
+  return body;
 }
 
-/** Promote a personal agent to a forkable system template (admin). */
-export function markAgentAsSystem(agentId: string): ChatAgentRecord | null {
-  const current = getChatAgentById(agentId);
-  if (current?.kind !== 'personal') {
+export function getPreferredChatAgentId(): string | null {
+  if (!isBrowser()) {
     return null;
   }
-  const next: ChatAgentRecord = {
-    ...current,
-    kind: 'system',
-    forkedFromId: null,
-    authorName: ALICE_SYSTEM_AUTHOR.name,
-    authorEmail: ALICE_SYSTEM_AUTHOR.email,
-  };
-  return upsertStoredAgent(next);
-}
-
-function setPersonalAgentStatus(
-  agentId: string,
-  status: ChatAgentStatus
-): ChatAgentRecord | null {
-  const current = getChatAgentById(agentId);
-  if (current?.kind !== 'personal') {
+  try {
+    const raw = window.localStorage.getItem(PREFERRED_AGENT_ID_KEY);
+    return raw?.trim() || null;
+  } catch {
     return null;
   }
-  if (current.status === status) {
-    return current;
+}
+
+export function setPreferredChatAgentId(agentId: string | null): void {
+  if (!isBrowser()) {
+    return;
   }
-  return upsertStoredAgent({ ...current, status });
-}
-
-/** Soft-archive a personal agent (Mine → Archived). */
-export function archivePersonalAgent(agentId: string): ChatAgentRecord | null {
-  return setPersonalAgentStatus(agentId, 'archived');
-}
-
-/** Restore an archived personal agent to Mine. */
-export function restorePersonalAgent(agentId: string): ChatAgentRecord | null {
-  return setPersonalAgentStatus(agentId, 'active');
-}
-
-/** Permanently delete a personal agent from this browser. */
-export function deletePersonalAgent(agentId: string): boolean {
-  const current = getChatAgentById(agentId);
-  if (current?.kind !== 'personal') {
-    return false;
+  if (!agentId) {
+    window.localStorage.removeItem(PREFERRED_AGENT_ID_KEY);
+  } else {
+    window.localStorage.setItem(PREFERRED_AGENT_ID_KEY, agentId);
   }
-  const existing = readStoredAgents();
-  const next = existing.filter((row) => row.id !== agentId);
-  if (next.length === existing.length) {
-    return false;
+  window.dispatchEvent(new Event(PREFERRED_AGENT_CHANGED_EVENT));
+}
+
+/** Prefer this agent when Chat is opened without `?agentId=`. */
+export function rememberPreferredChatAgent(agentId: string): void {
+  setPreferredChatAgentId(agentId);
+}
+
+export function resolvePreferredChatAgentId(
+  visibleAgents: readonly Pick<ChatAgentRecord, 'id' | 'status'>[]
+): string | null {
+  const preferred = getPreferredChatAgentId();
+  if (!preferred) {
+    return null;
   }
-  writeStoredAgents(next);
-  return true;
+  const match = visibleAgents.find(
+    (agent) => agent.id === preferred && agent.status === 'active'
+  );
+  return match?.id ?? null;
 }
 
-export function savePersonalAgentDraft(
-  agentId: string,
-  patch: ChatAgentDraftPatch
-): ChatAgentRecord | null {
-  return saveAgentDraft(agentId, patch, { allowSystemEdit: false });
-}
-
-export function subscribeChatAgentsCatalog(
+export function subscribePreferredChatAgent(
   onStoreChange: () => void
 ): () => void {
   if (!isBrowser()) {
     return () => undefined;
   }
   const onStorage = (event: StorageEvent) => {
-    if (event.key === STORED_AGENTS_KEY || event.key === null) {
+    if (event.key === PREFERRED_AGENT_ID_KEY || event.key === null) {
       onStoreChange();
     }
   };
   window.addEventListener('storage', onStorage);
-  window.addEventListener('alice-chat-agents-changed', onStoreChange);
+  window.addEventListener(PREFERRED_AGENT_CHANGED_EVENT, onStoreChange);
   return () => {
     window.removeEventListener('storage', onStorage);
-    window.removeEventListener('alice-chat-agents-changed', onStoreChange);
+    window.removeEventListener(PREFERRED_AGENT_CHANGED_EVENT, onStoreChange);
   };
 }

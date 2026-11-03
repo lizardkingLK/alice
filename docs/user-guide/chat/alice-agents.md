@@ -77,8 +77,9 @@ In the Agents dialog detail view you can:
   **Save** instead of fork.
 - **Archive** a personal agent (confirmation). It becomes read-only and moves
   to **Archived**. Use **Restore** to edit again, or **Delete** to remove it.
-- **Chat** opens a conversation with that agent (closes the dialog). Unsaved
-  edits ask you to save first.
+- **Chat** opens a conversation with that agent (closes the dialog) and
+  remembers it as your preferred default in this browser. Unsaved edits ask
+  you to save first.
 
 In an open chat bound to an agent, the header and message labels use that
 agent’s name, title, and portrait (click the header identity to reopen the

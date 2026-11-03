@@ -421,6 +421,7 @@ export {
 } from './saved-views.js';
 export {
   ChatAgentAutonomyEnum,
+  chatAgentDetailResponseSchema,
   chatAgentDetailSelect,
   chatAgentDetailWireSchema,
   chatAgentListSelect,
@@ -428,7 +429,11 @@ export {
   chatSkillCatalogWireSchema,
   chatToolCatalogWireSchema,
   listChatAgentsQuerySchema,
+  listChatAgentsResponseSchema,
+  listChatSkillsResponseSchema,
+  listChatToolsResponseSchema,
   patchChatAgentBodySchema,
+  type ChatAgentDetailResponse,
   type ChatAgentDetailRow,
   type ChatAgentDetailWire,
   type ChatAgentListRow,
@@ -436,6 +441,9 @@ export {
   type ChatSkillCatalogWire,
   type ChatToolCatalogWire,
   type ListChatAgentsQuery,
+  type ListChatAgentsResponse,
+  type ListChatSkillsResponse,
+  type ListChatToolsResponse,
   type PatchChatAgentBody,
 } from './chat-agents.js';
 export {

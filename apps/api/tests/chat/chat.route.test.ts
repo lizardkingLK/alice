@@ -9,6 +9,7 @@ const {
   setProcessingStatusMock,
   saveChatHistoryMock,
   processChatAsyncMock,
+  getConversationAgentIdMock,
 } = vi.hoisted(() => ({
   listConversationsMock: vi.fn(),
   loadChatHistoryMock: vi.fn(),
@@ -18,6 +19,7 @@ const {
   setProcessingStatusMock: vi.fn(),
   saveChatHistoryMock: vi.fn(),
   processChatAsyncMock: vi.fn(),
+  getConversationAgentIdMock: vi.fn(),
 }));
 
 vi.mock('../../src/middlewares/auth', async () => {
@@ -35,6 +37,7 @@ vi.mock('../../src/routes/api/chat/chat.service', () => {
     setProcessingStatus = setProcessingStatusMock;
     saveChatHistory = saveChatHistoryMock;
     processChatAsync = processChatAsyncMock;
+    getConversationAgentId = getConversationAgentIdMock;
   }
 
   return { ChatService, sanitizeLog: (value: string) => value };
@@ -54,6 +57,7 @@ const chatService = {
   setProcessingStatus: setProcessingStatusMock,
   saveChatHistory: saveChatHistoryMock,
   processChatAsync: processChatAsyncMock,
+  getConversationAgentId: getConversationAgentIdMock,
 } as unknown as ChatService;
 
 const chatRouter = createChatRouter({ chatService });
@@ -68,6 +72,7 @@ describe('chat routes', () => {
     setProcessingStatusMock.mockResolvedValue(undefined);
     saveChatHistoryMock.mockResolvedValue(undefined);
     processChatAsyncMock.mockResolvedValue(undefined);
+    getConversationAgentIdMock.mockResolvedValue(null);
   });
 
   it('returns 400 for invalid post bodies', async () => {
@@ -218,6 +223,10 @@ describe('chat routes', () => {
         }),
       ])
     );
+    expect(getConversationAgentIdMock).toHaveBeenCalledWith(
+      MOCK_AUTH_USER_ID,
+      conversationId
+    );
     expect(processChatAsyncMock).toHaveBeenCalledWith(
       MOCK_AUTH_USER_ID,
       conversationId,
@@ -228,7 +237,8 @@ describe('chat routes', () => {
         }),
       ]),
       chatModelConfig,
-      undefined
+      undefined,
+      null
     );
   });
 
@@ -263,6 +273,7 @@ describe('chat routes', () => {
       MOCK_AUTH_USER_ID,
       conversationId
     );
+    expect(getConversationAgentIdMock).not.toHaveBeenCalled();
     expect(setProcessingStatusMock).not.toHaveBeenCalled();
     expect(saveChatHistoryMock).not.toHaveBeenCalled();
     expect(processChatAsyncMock).not.toHaveBeenCalled();

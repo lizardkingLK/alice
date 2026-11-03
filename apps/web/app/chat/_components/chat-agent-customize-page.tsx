@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { Badge } from '@repo/ui/components/ui/badge';
@@ -17,22 +17,25 @@ import {
   GitFork,
   MessageSquare,
   Save,
-  Shield,
   Trash2,
 } from '@repo/ui/lib/icons';
 import {
-  archivePersonalAgent,
-  claimPersonalAgentAuthor,
-  deletePersonalAgent,
-  forkChatAgent,
-  getChatAgentById,
-  markAgentAsSystem,
-  restorePersonalAgent,
-  saveAgentDraft,
-  subscribeChatAgentsCatalog,
+  chatAgentDetailToRecord,
+  draftToPatchBody,
+  rememberPreferredChatAgent,
   type ChatAgentRecord,
 } from '@/app/chat/_helpers/chat-agents-catalog';
 import { buildChatWithAgentHref } from '@/app/chat/_helpers/chat-url';
+import {
+  deleteChatAgentClient,
+  forkChatAgentClient,
+  patchChatAgentClient,
+} from '@/app/chat/_services/chat-agents.mutations.client';
+import {
+  getChatAgentClient,
+  listChatSkillsClient,
+  listChatToolsClient,
+} from '@/app/chat/_services/chat-agents.reads.client';
 import { ChatAgentAvatar } from '@/app/chat/_components/chat-agent-avatar';
 import { ChatAgentAvatarDialog } from '@/app/chat/_components/chat-agent-avatar-dialog';
 import { ChatAgentConfirmDialog } from '@/app/chat/_components/chat-agent-confirm-dialog';
@@ -41,6 +44,7 @@ import {
   type ChatAgentCustomizeDraft,
 } from '@/app/chat/_components/chat-agent-customize-form';
 import { ChatAgentCustomizeSkeleton } from '@/app/chat/_components/chat-agent-customize-skeleton';
+import { errorMessage } from '@/lib/errors/error-message';
 
 type ChatAgentCustomizePageProps = {
   readonly agentId: string;
@@ -56,6 +60,8 @@ type ChatAgentCustomizePageProps = {
   readonly onDeleted?: () => void;
   /** Before navigating to chat (e.g. close panel). */
   readonly onBeforeChat?: () => void;
+  /** Notify parent that catalog data changed. */
+  readonly onCatalogChanged?: () => void;
 };
 
 function toDraft(agent: ChatAgentRecord): ChatAgentCustomizeDraft {
@@ -103,17 +109,22 @@ function randomAvatarSeed(): string {
   return `alice-${Date.now().toString(36)}`;
 }
 
+type CatalogKeys = {
+  readonly toolKeys: readonly string[];
+  readonly skillKeys: readonly string[];
+};
+
 type ChatAgentCustomizeLoadedProps = {
   readonly agent: ChatAgentRecord;
   readonly draft: ChatAgentCustomizeDraft;
+  readonly catalogKeys: CatalogKeys;
   readonly canManageSystemAgents: boolean;
-  readonly currentUserName: string | null;
-  readonly currentUserEmail: string | null;
   readonly onBack?: () => void;
   // eslint-disable-next-line no-unused-vars
   readonly onOpenAgent?: (agentId: string) => void;
   readonly onDeleted?: () => void;
   readonly onBeforeChat?: () => void;
+  readonly onCatalogChanged?: () => void;
   // eslint-disable-next-line no-unused-vars
   readonly onAgentChange: (agent: ChatAgentRecord) => void;
   // eslint-disable-next-line no-unused-vars
@@ -123,13 +134,13 @@ type ChatAgentCustomizeLoadedProps = {
 function ChatAgentCustomizeLoaded({
   agent,
   draft,
+  catalogKeys,
   canManageSystemAgents,
-  currentUserName,
-  currentUserEmail,
   onBack,
   onOpenAgent,
   onDeleted,
   onBeforeChat,
+  onCatalogChanged,
   onAgentChange,
   onDraftChange,
 }: Readonly<ChatAgentCustomizeLoadedProps>) {
@@ -152,17 +163,27 @@ function ChatAgentCustomizeLoaded({
   const canEdit = (!isSystem || canManageSystemAgents) && !isArchived;
   const showFork = isSystem && !isArchived;
   const showSave = canEdit;
-  const showMarkAsSystem = canManageSystemAgents && isPersonal && !isArchived;
   const showArchive = isPersonal && !isArchived;
   const showRestore = isPersonal && isArchived;
   const showDelete = isPersonal && isArchived;
 
-  const persistDraft = (): ChatAgentRecord | null =>
-    saveAgentDraft(agent.id, draft, {
-      allowSystemEdit: canManageSystemAgents && isSystem,
-    });
+  const persistDraft = async (): Promise<ChatAgentRecord | null> => {
+    try {
+      const updated = await patchChatAgentClient(
+        agent.id,
+        draftToPatchBody(draft, catalogKeys)
+      );
+      return chatAgentDetailToRecord(updated);
+    } catch (error) {
+      toast.error('Could not save agent', {
+        description: errorMessage(error, 'Try again in a moment.'),
+      });
+      return null;
+    }
+  };
 
   const goToChat = (id: string) => {
+    rememberPreferredChatAgent(id);
     onBeforeChat?.();
     router.push(buildChatWithAgentHref(id));
   };
@@ -170,16 +191,14 @@ function ChatAgentCustomizeLoaded({
   const applySavedAgent = (saved: ChatAgentRecord) => {
     onAgentChange(saved);
     onDraftChange(toDraft(saved));
+    onCatalogChanged?.();
   };
 
-  const handleConfirmedSave = () => {
+  const handleConfirmedSave = async () => {
     setIsSaving(true);
     try {
-      const saved = persistDraft();
+      const saved = await persistDraft();
       if (!saved) {
-        toast.error('Could not save agent', {
-          description: 'Try again, or check that you can edit this agent.',
-        });
         return;
       }
       applySavedAgent(saved);
@@ -192,14 +211,11 @@ function ChatAgentCustomizeLoaded({
     }
   };
 
-  const handleConfirmedSaveThenChat = () => {
+  const handleConfirmedSaveThenChat = async () => {
     setIsSaving(true);
     try {
-      const saved = persistDraft();
+      const saved = await persistDraft();
       if (!saved) {
-        toast.error('Could not save agent', {
-          description: 'Try again, or check that you can edit this agent.',
-        });
         return;
       }
       applySavedAgent(saved);
@@ -227,99 +243,91 @@ function ChatAgentCustomizeLoaded({
     goToChat(agent.id);
   };
 
-  const handleFork = () => {
+  const handleFork = async () => {
     setIsForking(true);
     try {
-      const authorName =
-        currentUserName?.trim() || currentUserEmail?.trim() || 'You';
-      const forked = forkChatAgent(agent, {
-        name: authorName,
-        email: currentUserEmail?.trim() || undefined,
-      });
-      if (!forked) {
-        toast.error('Could not fork agent', {
-          description: 'Only system templates can be forked.',
-        });
-        return;
-      }
+      const forked = await forkChatAgentClient(agent.id);
+      const record = chatAgentDetailToRecord(forked);
       toast.success('Agent forked', {
-        description: `${forked.name} · v${forked.version}`,
+        description: `${record.name} · v${record.version}`,
       });
-      onOpenAgent?.(forked.id);
+      onCatalogChanged?.();
+      onOpenAgent?.(record.id);
+    } catch (error) {
+      toast.error('Could not fork agent', {
+        description: errorMessage(
+          error,
+          'Only workspace agents can be forked once each.'
+        ),
+      });
     } finally {
       setIsForking(false);
     }
   };
 
-  const handleMarkAsSystem = () => {
-    const marked = markAgentAsSystem(agent.id);
-    if (!marked) {
-      toast.error('Could not update agent', {
-        description: 'Only personal agents can be marked as system templates.',
-      });
-      return;
-    }
-    applySavedAgent(marked);
-    toast.success('Marked as system', {
-      description: 'This agent is now a forkable system template.',
-    });
-  };
-
-  const handleArchive = () => {
+  const handleArchive = async () => {
     setIsLifecyclePending(true);
     try {
-      const archived = archivePersonalAgent(agent.id);
-      if (!archived) {
-        toast.error('Could not archive agent', {
-          description: 'Only personal agents can be archived.',
-        });
-        return;
-      }
-      applySavedAgent(archived);
+      const archived = await patchChatAgentClient(agent.id, {
+        status: 'archived',
+      });
+      applySavedAgent(chatAgentDetailToRecord(archived));
       setArchiveConfirmOpen(false);
       toast.success('Agent archived', {
         description: 'Find it under the Archived tab in Agents.',
       });
+    } catch (error) {
+      toast.error('Could not archive agent', {
+        description: errorMessage(
+          error,
+          'Only personal agents can be archived.'
+        ),
+      });
     } finally {
       setIsLifecyclePending(false);
     }
   };
 
-  const handleRestore = () => {
+  const handleRestore = async () => {
     setIsLifecyclePending(true);
     try {
-      const restored = restorePersonalAgent(agent.id);
-      if (!restored) {
-        toast.error('Could not restore agent', {
-          description: 'Only archived personal agents can be restored.',
-        });
-        return;
-      }
-      applySavedAgent(restored);
+      const restored = await patchChatAgentClient(agent.id, {
+        status: 'active',
+      });
+      applySavedAgent(chatAgentDetailToRecord(restored));
       setRestoreConfirmOpen(false);
       toast.success('Agent restored', {
         description: 'This agent is editable again under Mine.',
       });
+    } catch (error) {
+      toast.error('Could not restore agent', {
+        description: errorMessage(
+          error,
+          'Only archived personal agents can be restored.'
+        ),
+      });
     } finally {
       setIsLifecyclePending(false);
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     setIsLifecyclePending(true);
     try {
-      const removed = deletePersonalAgent(agent.id);
-      if (!removed) {
-        toast.error('Could not delete agent', {
-          description: 'Only personal agents can be deleted.',
-        });
-        return;
-      }
+      await deleteChatAgentClient(agent.id);
       setDeleteConfirmOpen(false);
       toast.success('Agent deleted', {
-        description: 'This agent was removed from this browser.',
+        description: 'This agent was removed from the workspace catalog.',
       });
+      onCatalogChanged?.();
       onDeleted?.();
+    } catch (error) {
+      toast.error('Could not delete agent', {
+        description: errorMessage(
+          error,
+          'Only personal agents can be deleted.'
+        ),
+      });
     } finally {
       setIsLifecyclePending(false);
     }
@@ -357,6 +365,11 @@ function ChatAgentCustomizeLoaded({
               <Badge variant="secondary" className="text-[10px] uppercase">
                 {isSystem ? 'System' : `v${agent.version}`}
               </Badge>
+              {agent.isDefault ? (
+                <Badge variant="outline" className="text-[10px] uppercase">
+                  Default
+                </Badge>
+              ) : null}
               {isArchived ? (
                 <Badge variant="outline" className="text-[10px] uppercase">
                   Archived
@@ -388,7 +401,7 @@ function ChatAgentCustomizeLoaded({
       {isArchived ? (
         <div className="border-border bg-muted/40 text-muted-foreground shrink-0 border-b px-4 py-2.5 text-xs sm:px-6">
           This agent is archived and read-only. Restore it to edit or chat, or
-          delete it permanently from this browser.
+          delete it permanently.
         </div>
       ) : null}
 
@@ -406,14 +419,14 @@ function ChatAgentCustomizeLoaded({
       </div>
 
       <CustomizeFooterActions
-        showMarkAsSystem={showMarkAsSystem}
         showFork={showFork}
         showSave={showSave}
         isForking={isForking}
         isSaving={isSaving}
         isDirty={isDirty}
-        onMarkAsSystem={handleMarkAsSystem}
-        onFork={handleFork}
+        onFork={() => {
+          void handleFork();
+        }}
         onSave={() => setSaveConfirmOpen(true)}
       />
 
@@ -438,7 +451,9 @@ function ChatAgentCustomizeLoaded({
         pendingLabel="Saving…"
         isPending={isSaving}
         onOpenChange={setSaveConfirmOpen}
-        onConfirm={handleConfirmedSave}
+        onConfirm={() => {
+          void handleConfirmedSave();
+        }}
       />
 
       <ChatAgentConfirmDialog
@@ -449,7 +464,9 @@ function ChatAgentCustomizeLoaded({
         pendingLabel="Saving…"
         isPending={isSaving}
         onOpenChange={setChatSaveConfirmOpen}
-        onConfirm={handleConfirmedSaveThenChat}
+        onConfirm={() => {
+          void handleConfirmedSaveThenChat();
+        }}
       />
 
       <ChatAgentConfirmDialog
@@ -460,7 +477,9 @@ function ChatAgentCustomizeLoaded({
         pendingLabel="Archiving…"
         isPending={isLifecyclePending}
         onOpenChange={setArchiveConfirmOpen}
-        onConfirm={handleArchive}
+        onConfirm={() => {
+          void handleArchive();
+        }}
       />
 
       <ChatAgentConfirmDialog
@@ -471,55 +490,49 @@ function ChatAgentCustomizeLoaded({
         pendingLabel="Restoring…"
         isPending={isLifecyclePending}
         onOpenChange={setRestoreConfirmOpen}
-        onConfirm={handleRestore}
+        onConfirm={() => {
+          void handleRestore();
+        }}
       />
 
       <ChatAgentConfirmDialog
         open={deleteConfirmOpen}
         title="Delete agent?"
-        description="This permanently removes the agent from this browser. This cannot be undone."
+        description="This permanently removes the agent. This cannot be undone."
         confirmLabel="Delete"
         pendingLabel="Deleting…"
         isPending={isLifecyclePending}
         destructive
         onOpenChange={setDeleteConfirmOpen}
-        onConfirm={handleDelete}
+        onConfirm={() => {
+          void handleDelete();
+        }}
       />
     </div>
   );
 }
 
 type CustomizeFooterActionsProps = {
-  readonly showMarkAsSystem: boolean;
   readonly showFork: boolean;
   readonly showSave: boolean;
   readonly isForking: boolean;
   readonly isSaving: boolean;
   readonly isDirty: boolean;
-  readonly onMarkAsSystem: () => void;
   readonly onFork: () => void;
   readonly onSave: () => void;
 };
 
 function CustomizeFooterActions({
-  showMarkAsSystem,
   showFork,
   showSave,
   isForking,
   isSaving,
   isDirty,
-  onMarkAsSystem,
   onFork,
   onSave,
 }: Readonly<CustomizeFooterActionsProps>) {
   return (
     <footer className="border-border bg-background flex shrink-0 flex-wrap items-center justify-end gap-2 border-t px-4 py-3 sm:px-6">
-      {showMarkAsSystem ? (
-        <Button type="button" variant="outline" onClick={onMarkAsSystem}>
-          <Shield data-icon="inline-start" />
-          Mark as system
-        </Button>
-      ) : null}
       {showFork ? (
         <Button
           type="button"
@@ -640,37 +653,50 @@ export function ChatAgentCustomizePage({
   agentId,
   canManageSystemAgents = false,
   currentUserName = null,
-  currentUserEmail = null,
   onBack,
   onOpenAgent,
   onDeleted,
   onBeforeChat,
+  onCatalogChanged,
 }: Readonly<ChatAgentCustomizePageProps>) {
   const [agent, setAgent] = useState<ChatAgentRecord | null>(null);
   const [draft, setDraft] = useState<ChatAgentCustomizeDraft | null>(null);
+  const [catalogKeys, setCatalogKeys] = useState<CatalogKeys>({
+    toolKeys: [],
+    skillKeys: [],
+  });
   const [isReady, setIsReady] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const sync = () => {
-      const found = getChatAgentById(agentId);
-      setAgent(found);
-      setDraft(found ? toDraft(found) : null);
+  const loadAgent = useCallback(async () => {
+    setIsReady(false);
+    setLoadError(null);
+    try {
+      const [detail, tools, skills] = await Promise.all([
+        getChatAgentClient(agentId),
+        listChatToolsClient(),
+        listChatSkillsClient(),
+      ]);
+      const record = chatAgentDetailToRecord(detail, { currentUserName });
+      setAgent(record);
+      setDraft(toDraft(record));
+      setCatalogKeys({
+        toolKeys: tools.map((tool) => tool.key),
+        skillKeys: skills.map((skill) => skill.key),
+      });
+    } catch (error) {
+      console.error('Failed to load chat agent:', error);
+      setAgent(null);
+      setDraft(null);
+      setLoadError(errorMessage(error, 'This agent is not available.'));
+    } finally {
       setIsReady(true);
-    };
-    sync();
-    return subscribeChatAgentsCatalog(sync);
-  }, [agentId]);
+    }
+  }, [agentId, currentUserName]);
 
   useEffect(() => {
-    const name = currentUserName?.trim();
-    if (!name || !agentId) {
-      return;
-    }
-    claimPersonalAgentAuthor(agentId, {
-      name,
-      email: currentUserEmail?.trim() || undefined,
-    });
-  }, [agentId, currentUserName, currentUserEmail]);
+    void loadAgent();
+  }, [loadAgent]);
 
   if (!isReady) {
     return <ChatAgentCustomizeSkeleton />;
@@ -680,8 +706,8 @@ export function ChatAgentCustomizePage({
     return (
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 px-6 py-12 pb-8 text-center">
         <p className="text-muted-foreground max-w-sm text-sm">
-          This agent isn&apos;t available in this browser. Forks are stored
-          locally for now — open the gallery and fork again if needed.
+          {loadError ??
+            'This agent is not available. Open the gallery and try again.'}
         </p>
         {onBack ? (
           <Button type="button" variant="outline" onClick={onBack}>
@@ -697,13 +723,13 @@ export function ChatAgentCustomizePage({
     <ChatAgentCustomizeLoaded
       agent={agent}
       draft={draft}
+      catalogKeys={catalogKeys}
       canManageSystemAgents={canManageSystemAgents}
-      currentUserName={currentUserName}
-      currentUserEmail={currentUserEmail}
       onBack={onBack}
       onOpenAgent={onOpenAgent}
       onDeleted={onDeleted}
       onBeforeChat={onBeforeChat}
+      onCatalogChanged={onCatalogChanged}
       onAgentChange={setAgent}
       onDraftChange={setDraft}
     />
