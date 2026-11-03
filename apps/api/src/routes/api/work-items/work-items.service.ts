@@ -50,8 +50,11 @@ import {
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { env } from '../../../config/env';
 import { removeStorageObjects } from '../../../lib/file-helpers';
-import { WorkItemRepository } from './work-items.repository';
-import type { DbWorkItem, DbGithubPullRequest } from './work-items.repository';
+import {
+  WorkItemRepository,
+  type DbWorkItem,
+  type DbGithubPullRequest,
+} from './work-items.repository';
 import type { WorkItemPaginatedList } from './work-items.prisma-query';
 import {
   collectWorkItemFieldChanges,

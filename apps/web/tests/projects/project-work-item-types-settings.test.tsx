@@ -119,6 +119,21 @@ describe('ProjectSettingsTab Component', () => {
     expect(screen.getByRole('button', { name: /Save Types/i })).toBeDisabled();
   });
 
+  it('blocks save when type display names collide', async () => {
+    render(
+      <ProjectSettingsTab project={mockProject} isManagerOrAdmin={true} />
+    );
+
+    const epicName = screen.getByDisplayValue('Epic');
+    fireEvent.change(epicName, { target: { value: 'Story' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save Types/i }));
+
+    expect(updateProject).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(/Type names must be unique\. Change a duplicate name\./i)
+    ).toBeInTheDocument();
+  });
+
   it('calls updateProject with catalog defs when saved', async () => {
     const nextDefs = buildDefaultProjectTypeDefs([
       'Epic',
@@ -148,7 +163,11 @@ describe('ProjectSettingsTab Component', () => {
           workflow_config: expect.objectContaining({
             work_item_types: expect.arrayContaining([
               expect.objectContaining({ key: 'Epic' }),
-              expect.objectContaining({ key: expect.any(String) }),
+              expect.objectContaining({
+                key: expect.stringMatching(
+                  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+                ),
+              }),
             ]),
           }),
         }),

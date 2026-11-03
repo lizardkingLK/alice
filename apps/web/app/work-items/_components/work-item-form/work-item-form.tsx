@@ -8,6 +8,7 @@ import {
   parseWorkItemLabels,
   normalizeProjectWorkItemTypeDefs,
   resolveProjectTypeKeys,
+  workItemTypeDisplayName,
   type WorkItemPriority,
   type WorkItemStatus,
   type WorkItemType,
@@ -274,6 +275,9 @@ export function WorkItemForm({
     allowedTypes,
     projectWorkflowConfig
   );
+  const typeDefs = normalizeProjectWorkItemTypeDefs(
+    projectWorkflowConfig?.work_item_types
+  );
   const typeLocked = lockType || availableTypes.length === 1;
 
   const [assigneeId, setAssigneeId] = useState(
@@ -349,7 +353,7 @@ export function WorkItemForm({
     parentLocked,
     availableTypes,
     projectWorkflowConfig?.hierarchy,
-    normalizeProjectWorkItemTypeDefs(projectWorkflowConfig?.work_item_types)
+    typeDefs
   );
 
   const effectiveParentId = parentLocked
@@ -585,6 +589,7 @@ export function WorkItemForm({
     projects,
     projectMembers: currentMembers,
     availableTypes,
+    typeDefs,
     projectId,
     assigneeId,
     sprintId,
@@ -596,7 +601,9 @@ export function WorkItemForm({
     parentId: effectiveParentId,
     parentOptions,
     parentOptionsLoading,
-    parentTypeLabel: allowedParentType,
+    parentTypeLabel: allowedParentType
+      ? workItemTypeDisplayName(allowedParentType, typeDefs)
+      : null,
     lockParent: parentLocked,
     lockSprintFromParent,
     lockProject,

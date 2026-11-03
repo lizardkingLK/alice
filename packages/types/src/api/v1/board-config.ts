@@ -212,6 +212,11 @@ export const projectWorkItemTypeDefSchema = z.object({
   name: z.string().trim().min(1, 'Type name is required'),
   description: z.string().optional(),
   icon: z.string().trim().min(1, 'Type icon is required'),
+  color: z
+    .string()
+    .trim()
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Type color must be a hex color (#RRGGBB)')
+    .optional(),
   level: z.number().int().min(0, 'Type level must be a non-negative integer'),
 });
 
@@ -232,12 +237,13 @@ export const projectWorkItemTypesConfigSchema = z.preprocess(
     .superRefine((defs, context) => {
       const keys = new Set<string>();
       const levels = new Set<number>();
+      const names = new Set<string>();
       for (const [index, def] of defs.entries()) {
         if (keys.has(def.key)) {
           context.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Duplicate work-item type key: ${def.key}`,
-            path: [index, 'key'],
+            message: 'Duplicate work-item type identity. Change the type name.',
+            path: [index, 'name'],
           });
         }
         keys.add(def.key);
@@ -249,6 +255,19 @@ export const projectWorkItemTypesConfigSchema = z.preprocess(
           });
         }
         levels.add(def.level);
+
+        const normalizedName = def.name.trim().toLowerCase();
+        if (normalizedName && names.has(normalizedName)) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message:
+              'Type names must be unique in this project. Change the name.',
+            path: [index, 'name'],
+          });
+        }
+        if (normalizedName) {
+          names.add(normalizedName);
+        }
       }
     })
 );

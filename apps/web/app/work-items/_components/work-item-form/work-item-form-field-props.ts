@@ -1,4 +1,5 @@
 import type {
+  ProjectWorkItemTypeDef,
   WorkItemPriority,
   WorkItemStatus,
   WorkItemType,
@@ -17,6 +18,8 @@ export type WorkItemFormSharedFieldProps = {
   readonly projects: DbProject[];
   readonly projectMembers: readonly WorkItemFormMember[];
   readonly availableTypes: readonly WorkItemType[];
+  /** Active project catalog (labels/icons); select values remain type keys. */
+  readonly typeDefs?: readonly ProjectWorkItemTypeDef[] | null;
   readonly projectId: string;
   readonly assigneeId: string;
   readonly sprintId: string;

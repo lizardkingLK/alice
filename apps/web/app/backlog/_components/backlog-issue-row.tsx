@@ -4,6 +4,7 @@ import { useMemo, type DragEvent } from 'react';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
+import { resolveWorkItemTypeDefFromProjects } from '@/app/work-items/_helpers/resolve-work-item-type-def-from-projects';
 import {
   projectDisplayKey,
   resolveBacklogAssigneeAvatar,
@@ -67,7 +68,16 @@ export function BacklogIssueRow({
           <GripVertical className="size-4" />
         </div>
 
-        <WorkItemTypeBadge type={item.type} compact />
+        <WorkItemTypeBadge
+          type={item.type}
+          compact
+          projectId={item.project_id}
+          typeDef={resolveWorkItemTypeDefFromProjects(
+            projects,
+            item.project_id,
+            item.type
+          )}
+        />
 
         <span className="text-muted-foreground shrink-0 font-mono text-xs font-semibold tracking-tight">
           {displayKey}

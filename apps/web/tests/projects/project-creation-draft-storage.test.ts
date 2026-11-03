@@ -72,8 +72,8 @@ describe('project creation draft storage', () => {
     const userOneKey = projectCreationDraftStorageKey('user-1');
     const userTwoKey = projectCreationDraftStorageKey('user-2');
 
-    expect(userOneKey).toBe('alice:project-creation-draft:v1:user-1');
-    expect(userTwoKey).toBe('alice:project-creation-draft:v1:user-2');
+    expect(userOneKey).toBe('alice:project-creation-draft:v2:user-1');
+    expect(userTwoKey).toBe('alice:project-creation-draft:v2:user-2');
     expect(saveProjectCreationDraft('user-1', userOneDraft)).toBe(true);
     expect(readProjectCreationDraft('user-2')).toBeNull();
 
@@ -120,10 +120,24 @@ describe('project creation draft storage', () => {
     expect(readProjectCreationDraft('user-1')).toBeNull();
   });
 
-  it.each([0, 6, -1, 2.5])('rejects unsupported wizard step %s', (step) => {
+  it.each([0, 7, -1, 2.5])('rejects unsupported wizard step %s', (step) => {
     const invalidDraft = { ...createDraft(), currentStep: step };
 
     expect(validateProjectCreationDraft(invalidDraft)).toBeNull();
+  });
+
+  it('migrates legacy v1 drafts by inserting the Types step', () => {
+    const legacyDraft = {
+      ...createDraft(),
+      version: 1 as const,
+      currentStep: 4 as const,
+    };
+
+    expect(validateProjectCreationDraft(legacyDraft)).toEqual({
+      ...createDraft(),
+      version: 2,
+      currentStep: 5,
+    });
   });
 
   it.each([

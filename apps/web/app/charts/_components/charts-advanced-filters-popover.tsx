@@ -85,9 +85,14 @@ const ADVANCED_COLUMN_IDS = CHARTS_FILTER_COLUMNS.map(
 
 function createFilterRow(
   column: ChartsFilterColumnId = 'status',
-  members: readonly ChartsSampleMember[] = []
+  members: readonly ChartsSampleMember[] = [],
+  projects: readonly ChartsProjectOption[] = [],
+  projectId?: string | null
 ): ChartsAdvancedFilterRow {
-  const values = chartsFilterValueOptions(column, members);
+  const values = chartsFilterValueOptions(column, members, {
+    projects,
+    projectId,
+  });
   return {
     id:
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -114,7 +119,9 @@ function firstAvailableColumn(
  */
 function dedupeRowsByColumn(
   rows: readonly ChartsAdvancedFilterRow[],
-  members: readonly ChartsSampleMember[] = []
+  members: readonly ChartsSampleMember[] = [],
+  projects: readonly ChartsProjectOption[] = [],
+  projectId?: string | null
 ): ChartsAdvancedFilterRow[] {
   const seen = new Set<ChartsFilterColumnId>();
   const next: ChartsAdvancedFilterRow[] = [];
@@ -126,14 +133,15 @@ function dedupeRowsByColumn(
     next.push({ ...row });
   }
   if (next.length === 0) {
-    return [createFilterRow('status', members)];
+    return [createFilterRow('status', members, projects, projectId)];
   }
   return next;
 }
 
 function hydrateFromApplied(
   applied: ChartsWidgetFilterDraft | null | undefined,
-  members: readonly ChartsSampleMember[] = []
+  members: readonly ChartsSampleMember[] = [],
+  projects: readonly ChartsProjectOption[] = []
 ): {
   mode: ChartsFilterMode;
   projectId: string;
@@ -145,7 +153,7 @@ function hydrateFromApplied(
     return {
       mode: 'quick',
       projectId: 'all',
-      rows: [createFilterRow('status', members)],
+      rows: [createFilterRow('status', members, projects, 'all')],
       quickSelections: { ...CHARTS_DEFAULT_QUICK_SELECTIONS },
       sprintId: undefined,
     };
@@ -161,8 +169,10 @@ function hydrateFromApplied(
     rows: dedupeRowsByColumn(
       applied.rows.length > 0
         ? applied.rows
-        : [createFilterRow('status', members)],
-      members
+        : [createFilterRow('status', members, projects, applied.projectId)],
+      members,
+      projects,
+      applied.projectId
     ),
     quickSelections: {
       ...CHARTS_DEFAULT_QUICK_SELECTIONS,
@@ -261,11 +271,15 @@ function toggleChartsFilterMode(
   setRows: Dispatch<SetStateAction<ChartsAdvancedFilterRow[]>>,
   setQuickField: Dispatch<SetStateAction<ChartsQuickFieldId>>,
   setQuickSearch: Dispatch<SetStateAction<string>>,
-  members: readonly ChartsSampleMember[]
+  members: readonly ChartsSampleMember[],
+  projects: readonly ChartsProjectOption[] = [],
+  projectId?: string | null
 ): ChartsFilterMode {
   const next = prev === 'advanced' ? 'quick' : 'advanced';
   if (next === 'advanced') {
-    setRows((current) => dedupeRowsByColumn(current, members));
+    setRows((current) =>
+      dedupeRowsByColumn(current, members, projects, projectId)
+    );
   }
   if (next === 'quick') {
     setQuickField(scopeLocked ? 'status' : 'project');
@@ -288,7 +302,7 @@ export function ChartsAdvancedFiltersPopover({
   trigger,
   className,
 }: Readonly<ChartsAdvancedFiltersPopoverProps>) {
-  const initial = hydrateFromApplied(appliedFilters, members);
+  const initial = hydrateFromApplied(appliedFilters, members, projects);
   const [mode, setMode] = useState<ChartsFilterMode>(initial.mode);
   const [projectId, setProjectId] = useState(initial.projectId);
   const [rows, setRows] = useState<ChartsAdvancedFilterRow[]>(initial.rows);
@@ -306,7 +320,7 @@ export function ChartsAdvancedFiltersPopover({
 
   useEffect(() => {
     if (open && !wasOpenRef.current) {
-      const next = hydrateFromApplied(appliedFilters, members);
+      const next = hydrateFromApplied(appliedFilters, members, projects);
       setMode(next.mode);
       setProjectId(next.projectId);
       setRows(next.rows);
@@ -316,7 +330,7 @@ export function ChartsAdvancedFiltersPopover({
       setQuickField(scopeLocked ? 'status' : 'project');
     }
     wasOpenRef.current = open;
-  }, [appliedFilters, members, open, scopeLocked]);
+  }, [appliedFilters, members, open, projects, scopeLocked]);
 
   const resolvedProjectId =
     mode === 'quick' ? quickSelections.project : projectId;
@@ -380,7 +394,7 @@ export function ChartsAdvancedFiltersPopover({
       return;
     }
     setProjectId('all');
-    setRows([createFilterRow('status', members)]);
+    setRows([createFilterRow('status', members, projects, 'all')]);
     setQuickSelections({ ...CHARTS_DEFAULT_QUICK_SELECTIONS });
     setSprintId(undefined);
   };
@@ -430,7 +444,10 @@ export function ChartsAdvancedFiltersPopover({
         }
         const next = { ...row, ...patch };
         if (patch.column && patch.column !== row.column) {
-          const values = chartsFilterValueOptions(patch.column, members);
+          const values = chartsFilterValueOptions(patch.column, members, {
+            projects,
+            projectId: resolvedProjectId,
+          });
           next.value = values[0]?.value ?? '';
           next.condition = 'is';
         }
@@ -453,7 +470,10 @@ export function ChartsAdvancedFiltersPopover({
     if (!column) {
       return;
     }
-    setRows((prev) => [...prev, createFilterRow(column, members)]);
+    setRows((prev) => [
+      ...prev,
+      createFilterRow(column, members, projects, resolvedProjectId),
+    ]);
   };
 
   const columnOptionsForRow = (rowId: string, current: ChartsFilterColumnId) =>
@@ -479,6 +499,14 @@ export function ChartsAdvancedFiltersPopover({
         members,
       }),
     [members, projects, quickField, resolvedProjectId, sprints]
+  );
+
+  const typeFilterContext = useMemo(
+    () => ({
+      projects,
+      projectId: resolvedProjectId,
+    }),
+    [projects, resolvedProjectId]
   );
 
   const filteredQuickOptions = useMemo(() => {
@@ -583,7 +611,8 @@ export function ChartsAdvancedFiltersPopover({
             {rows.map((row, index) => {
               const valueOptions = chartsFilterValueOptions(
                 row.column,
-                members
+                members,
+                typeFilterContext
               );
               return (
                 <div key={row.id} className="flex flex-wrap items-center gap-2">
@@ -765,7 +794,9 @@ export function ChartsAdvancedFiltersPopover({
                   setRows,
                   setQuickField,
                   setQuickSearch,
-                  members
+                  members,
+                  projects,
+                  resolvedProjectId
                 )
               )
             }

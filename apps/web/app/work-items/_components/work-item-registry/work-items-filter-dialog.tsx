@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@repo/ui/lib/utils';
 import {
   parseWorkItemLabelsFilterParam,
-  SEED_WORK_ITEM_TYPE_KEYS,
   WORK_ITEM_PRIORITIES,
 } from '@repo/types';
-import { collectTypeKeysFromWitCatalog } from '@/app/work-items/_helpers/wit-catalog-storage';
+import { collectWorkItemTypeFilterOptions } from '@/app/work-items/_helpers/collect-work-item-type-filter-options';
+import { useSoftInvalidateUserId } from '@/components/soft-invalidate/soft-invalidate-provider';
 import {
   applyProjectFilterToSearchParams,
   buildSprintFilterOptionsForQuery,
@@ -33,16 +33,6 @@ import {
   filterDialogOptionsBySearch,
   type FilterDialogOption,
 } from '@/components/filter-dialog-shell';
-
-function resolveFilterTypeKeys(userId?: string | null): readonly string[] {
-  if (userId) {
-    const cached = collectTypeKeysFromWitCatalog(userId);
-    if (cached.length > 0) {
-      return cached;
-    }
-  }
-  return SEED_WORK_ITEM_TYPE_KEYS;
-}
 
 /** Single-value draft fields updated by the same apply/clear path. */
 const SCALAR_DRAFT_FILTER_KEYS = [
@@ -188,7 +178,8 @@ function buildVisibleFields(
 function optionsForField(
   fieldId: WorkItemsFilterFieldId,
   props: WorkItemsFilterDialogProps,
-  draft: WorkItemsFilterDraft
+  draft: WorkItemsFilterDraft,
+  userId?: string | null
 ): FilterDialogOption[] {
   switch (fieldId) {
     case 'project':
@@ -221,11 +212,17 @@ function optionsForField(
         label: member.name,
       }));
     }
-    case 'type':
-      return resolveFilterTypeKeys(null).map((workItemType) => ({
-        value: workItemType,
-        label: workItemType,
-      }));
+    case 'type': {
+      const projectId = props.isProjectLocked
+        ? props.projectQuery.value
+        : draft.project;
+      return collectWorkItemTypeFilterOptions({
+        projects: props.projects,
+        projectId:
+          projectId && projectId !== QUERY_FILTER_ALL_VALUE ? projectId : null,
+        userId,
+      });
+    }
     case 'status':
       return WORK_ITEM_STATUSES.map((status) => ({
         value: status,
@@ -409,6 +406,7 @@ export function WorkItemsFilterDialog(
     sprints,
     visibleFieldIds,
   } = props;
+  const userId = useSoftInvalidateUserId();
 
   const fields = useMemo(
     () =>
@@ -454,7 +452,7 @@ export function WorkItemsFilterDialog(
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open transition only
   }, [open]);
 
-  const options = optionsForField(activeField.id, props, draft);
+  const options = optionsForField(activeField.id, props, draft, userId);
   const filteredOptions = filterDialogOptionsBySearch(options, optionSearch);
 
   const isLabelsField = activeField.id === 'labels';

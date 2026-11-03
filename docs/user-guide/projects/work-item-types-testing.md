@@ -28,15 +28,15 @@ mapping to catalog keys.
 ### 1. Project creation with default catalog
 
 1. Navigate to **Projects** (`/projects`) and open **+ New Project** / **Add Project**.
-2. In **Work-Item Types**:
+2. Complete **Details**, then open the **Types** step:
    - Verify defaults are present (Epic, Feature, Story, Task, Issue) with name,
-     icon, description, and level/order controls — not only bare checkboxes.
+     icon picker, color picker, description, and drag-to-reorder cards.
    - Clear all types (or remove until empty) and advance:
      - Expect validation: at least one type required.
 3. Keep Epic, Story, Task, Issue; remove or omit Feature (or leave Feature out of
    the active set).
-4. Optionally **add** a custom type (e.g. name `Spike`, place it at an unused
-   level).
+4. Optionally **add** a custom type (e.g. name `Spike`, drag it to an unused
+   level). Confirm name/icon/color updates reflect on the card immediately.
 5. Finish create and open the project **Types** tab:
    - Verify the saved catalog matches (including custom type if added).
 
@@ -75,13 +75,16 @@ mapping to catalog keys.
 
 ### 5. Types tab: add / rename / reorder
 
-1. On **Types**, rename a type’s **display name** (key unchanged).
-2. Save; open a work item of that type — badge/label shows the new name.
-3. Reorder **levels** so the linear chain changes (e.g. insert Feature between
+1. On **Types**, rename a type’s **display name** (hidden key unchanged).
+2. Try two types with the same name (different casing counts) — save is blocked
+   with a friendly unique-name error.
+3. Save a valid rename; open a work item of that type — badge/label shows the
+   new name (never a UUID).
+4. Reorder **levels** so the linear chain changes (e.g. insert Feature between
    Epic and Story).
-4. Save; verify create-subtask / parent rules follow the new adjacent levels.
-5. Add a new type at the leaf or middle level; save; confirm it appears in the
-   Type dropdown.
+5. Save; verify create-subtask / parent rules follow the new adjacent levels.
+6. Add a new type at the leaf or middle level; save; confirm it appears in the
+   Type dropdown as **name + icon**.
 
 ---
 

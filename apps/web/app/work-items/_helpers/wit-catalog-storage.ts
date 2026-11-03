@@ -30,7 +30,7 @@ export function catalogRevisionFromDefs(
     .sort((a, b) => a.level - b.level)
     .map(
       (def) =>
-        `${def.key}|${def.name}|${def.icon}|${def.level}|${def.description ?? ''}`
+        `${def.key}|${def.name}|${def.icon}|${def.color ?? ''}|${def.level}|${def.description ?? ''}`
     )
     .join(';;');
   let hash = 0;
@@ -170,12 +170,23 @@ export function resolveTypeFromWitCatalog(
 }
 
 export function collectTypeKeysFromWitCatalog(userId: string): string[] {
+  return collectTypeOptionsFromWitCatalog(userId).map((option) => option.key);
+}
+
+/** Unique catalog options (key + display name) across cached projects. */
+export function collectTypeOptionsFromWitCatalog(
+  userId: string
+): Array<{ key: string; name: string }> {
   const store = readWitCatalog(userId);
-  const keys = new Set<string>();
+  const byKey = new Map<string, string>();
   for (const entry of Object.values(store.projects)) {
     for (const def of entry.types) {
-      keys.add(def.key);
+      if (!byKey.has(def.key)) {
+        byKey.set(def.key, def.name.trim() || def.key);
+      }
     }
   }
-  return [...keys].sort((a, b) => a.localeCompare(b));
+  return [...byKey.entries()]
+    .map(([key, name]) => ({ key, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }

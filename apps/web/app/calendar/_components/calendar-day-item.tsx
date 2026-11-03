@@ -10,6 +10,7 @@ import { formatCalendarWorkItemDisplayKey } from '@/app/calendar/_components/cal
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
+import { resolveWorkItemTypeDefFromProjects } from '@/app/work-items/_helpers/resolve-work-item-type-def-from-projects';
 import { UserAvatar } from '@/components/user-avatar';
 import { useRealtime } from '@/components/realtime/realtime-provider';
 
@@ -113,7 +114,16 @@ export function CalendarDayItem({
       )}
     >
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <WorkItemTypeBadge type={item.type} compact />
+        <WorkItemTypeBadge
+          type={item.type}
+          compact
+          projectId={item.project_id}
+          typeDef={resolveWorkItemTypeDefFromProjects(
+            projects,
+            item.project_id,
+            item.type
+          )}
+        />
         <span className="text-muted-foreground shrink-0 font-mono text-xs font-semibold">
           {displayKey}
         </span>

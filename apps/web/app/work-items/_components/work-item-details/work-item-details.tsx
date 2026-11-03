@@ -13,6 +13,7 @@ import {
 } from 'react';
 import {
   getAllowedChildType,
+  workItemTypeDisplayName,
   type WorkItemType,
   type WorkItemStatus,
   type AttachmentWithUploader,
@@ -21,6 +22,7 @@ import {
   type WorkItemLinkListItem,
   type WorkItemWorkLog,
 } from '@repo/types';
+import { typeDefsFromWorkflowConfig } from '@/app/work-items/_helpers/resolve-work-item-type-def-from-projects';
 import type { JSONContent } from '@tiptap/react';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
@@ -879,6 +881,17 @@ export default function WorkItemDetails({
   };
 
   const allowedChildType = getAllowedChildType(workItem.type as WorkItemType);
+  const projectTypeDefs = useMemo(
+    () => typeDefsFromWorkflowConfig(project?.workflow_config),
+    [project?.workflow_config]
+  );
+  const parentTypeLabel = workItemTypeDisplayName(
+    workItem.type,
+    projectTypeDefs
+  );
+  const childTypeLabel = allowedChildType
+    ? workItemTypeDisplayName(allowedChildType, projectTypeDefs)
+    : null;
   const isArchived = workItem.record_status === 'archived';
   const isRecordReadOnly = workItem.status === 'Done' || isArchived;
   const canCreateSubtask = Boolean(
@@ -929,6 +942,7 @@ export default function WorkItemDetails({
         assignee: workItem.assignee,
         reporter: workItem.reporter,
         sprint: workItem.sprint,
+        typeDefs: projectTypeDefs,
       }),
     [
       projectMembers,
@@ -936,6 +950,7 @@ export default function WorkItemDetails({
       workItem.assignee,
       workItem.reporter,
       workItem.sprint,
+      projectTypeDefs,
     ]
   );
 
@@ -1219,7 +1234,7 @@ export default function WorkItemDetails({
               open={subtaskDialogOpen}
               onOpenChange={setSubtaskDialogOpen}
               title="Create Subtask"
-              description={`Create a ${allowedChildType} under this ${workItem.type}.`}
+              description={`Create a ${childTypeLabel} under this ${parentTypeLabel}.`}
               projects={[project]}
               projectMembers={projectMembers}
               parentId={workItem.id}
@@ -1236,7 +1251,9 @@ export default function WorkItemDetails({
               onOpenChange={setLinkSubtaskDialogOpen}
               parentWorkItemId={workItem.id}
               parentType={workItem.type as WorkItemType}
+              parentTypeLabel={parentTypeLabel}
               childType={allowedChildType}
+              childTypeLabel={childTypeLabel ?? allowedChildType}
               candidates={linkableWorkItems}
               onLinked={handleSubtaskLinked}
             />

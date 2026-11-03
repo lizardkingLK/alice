@@ -23,7 +23,6 @@ import { withGithubProjectDtoFields } from './vc-external.js';
 export * from './jira-import-types.js';
 export { projectWorkflowConfigSchema };
 export type { ProjectWorkflowConfig } from './board-config.js';
-
 export {
   DynamicFieldTypeEnum,
   TemplateFieldCategoryEnum,

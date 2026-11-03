@@ -6,6 +6,7 @@
 import { useRef, useState, useMemo } from 'react';
 import { useReactToPrint } from 'react-to-print';
 
+import { workItemTypeDisplayName } from '@repo/types';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import {
@@ -153,7 +154,7 @@ export function SprintReportView({
           : item.id.slice(0, 8).toUpperCase();
         const assigneeName = item.assignee?.name || 'Unassigned';
         const storyPoints = item.story_points ?? '–';
-        md += `| ${item.type} | ${itemKey} | ${item.title} | ${item.priority} | ${item.status} | ${assigneeName} | ${storyPoints} |\n`;
+        md += `| ${workItemTypeDisplayName(item.type)} | ${itemKey} | ${item.title} | ${item.priority} | ${item.status} | ${assigneeName} | ${storyPoints} |\n`;
       });
     }
 

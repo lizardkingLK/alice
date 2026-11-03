@@ -14,6 +14,7 @@ import {
   saveProjectCreationDraft,
   type ProjectCreationDraft,
 } from '@/app/projects/_helpers/project-creation-draft-storage';
+import { writeProjectCreationDraftAuto } from '@/app/projects/_helpers/project-creation-draft-preference';
 import {
   getComboboxOptions,
   pickComboboxOption,
@@ -34,7 +35,7 @@ vi.mock('@/app/projects/_services/projects.cache.actions.server', () => ({
 }));
 
 vi.mock('@/app/projects/_helpers/project-creation-draft-storage', () => ({
-  PROJECT_CREATION_DRAFT_VERSION: 1,
+  PROJECT_CREATION_DRAFT_VERSION: 2,
   saveProjectCreationDraft: vi.fn(),
   readProjectCreationDraft: vi.fn(),
   clearProjectCreationDraft: vi.fn(),
@@ -159,8 +160,8 @@ const mockGithubConnection = {
 };
 
 const mockProjectCreationDraft: ProjectCreationDraft = {
-  version: 1,
-  currentStep: 5,
+  version: 2,
+  currentStep: 6,
   basicInfo: {
     name: 'Restored Project',
     key: 'RESTORE',
@@ -249,14 +250,16 @@ async function fillStep1Basics() {
 
 import { clearGithubCache } from '@/app/projects/_services/github-connection-cache';
 
-async function advanceCreateFormToStep(targetStep: 1 | 2 | 3 | 4 | 5) {
+async function advanceCreateFormToStep(targetStep: 1 | 2 | 3 | 4 | 5 | 6) {
   for (let nextStep = 2; nextStep <= targetStep; nextStep += 1) {
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     if (nextStep === 2) {
-      await screen.findByText('Import sources');
+      await screen.findByText('Work-Item Types');
     } else if (nextStep === 3) {
-      await screen.findByText('Source control');
+      await screen.findByText('Import sources');
     } else if (nextStep === 4) {
+      await screen.findByText('Source control');
+    } else if (nextStep === 5) {
       await screen.findByRole('checkbox', {
         name: /Create an initial sprint/i,
       });
@@ -268,16 +271,25 @@ async function advanceCreateFormToStep(targetStep: 1 | 2 | 3 | 4 | 5) {
   }
 }
 
-async function advanceCreateFormToSprintStep() {
+async function advanceCreateFormToImportsStep() {
+  await advanceCreateFormToStep(3);
+}
+
+async function advanceCreateFormToSourceStep() {
   await advanceCreateFormToStep(4);
 }
 
-async function advanceCreateFormToTeamStep() {
+async function advanceCreateFormToSprintStep() {
   await advanceCreateFormToStep(5);
+}
+
+async function advanceCreateFormToTeamStep() {
+  await advanceCreateFormToStep(6);
 }
 
 describe('ProjectForm Component', () => {
   beforeEach(() => {
+    localStorage.clear();
     clearGithubCache();
     mockJiraApiFetch({ connections: [] });
     vi.mocked(invalidateProjectDropdownCache).mockResolvedValue(undefined);
@@ -680,7 +692,7 @@ describe('ProjectForm Component', () => {
     expect(onSuccess).not.toHaveBeenCalled();
     expect(clearProjectCreationDraft).not.toHaveBeenCalled();
 
-    for (let remainingSteps = 4; remainingSteps > 0; remainingSteps -= 1) {
+    for (let remainingSteps = 5; remainingSteps > 0; remainingSteps -= 1) {
       fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     }
     expect(screen.getByLabelText(/Project Name/i)).toHaveValue('Project Alice');
@@ -717,6 +729,7 @@ describe('ProjectForm Component', () => {
       target: { value: 'Project Alice Updated' },
     });
 
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     expect(
@@ -837,6 +850,12 @@ describe('ProjectForm Component', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByText('Work-Item Types')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Epic')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Story')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('Feature')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(screen.getByLabelText(/Project Name/i)).toHaveValue(
       'Restored Project'
     );
@@ -849,9 +868,6 @@ describe('ProjectForm Component', () => {
     );
     expect(screen.getByLabelText(/Start Date/i)).toHaveValue('2099-09-01');
     expect(screen.getByLabelText(/End Date/i)).toHaveValue('2099-10-01');
-    expect(screen.getByDisplayValue('Epic')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Story')).toBeInTheDocument();
-    expect(screen.queryByDisplayValue('Feature')).not.toBeInTheDocument();
     expect(onJiraImportToggle).toHaveBeenCalledWith(true);
 
     fireEvent.change(screen.getByLabelText(/Project Name/i), {
@@ -1034,8 +1050,8 @@ describe('ProjectForm Component', () => {
     expect(saveProjectCreationDraft).toHaveBeenCalledWith(
       'user-admin',
       expect.objectContaining({
-        version: 1,
-        currentStep: 5,
+        version: 2,
+        currentStep: 6,
         basicInfo: expect.objectContaining({
           name: 'Project Alice',
           key: 'alice',
@@ -1132,6 +1148,58 @@ describe('ProjectForm Component', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it('auto-resumes a saved draft when the preference is enabled', async () => {
+    writeProjectCreationDraftAuto('user-admin', true);
+    vi.mocked(readProjectCreationDraft).mockReturnValue(
+      mockProjectCreationDraft
+    );
+
+    render(
+      <ProjectForm
+        users={mockUsers}
+        currentUserId="user-admin"
+        onJiraImportToggle={vi.fn()}
+      />
+    );
+
+    expect(
+      await screen.findByRole('checkbox', {
+        name: /Create an initial team/i,
+      })
+    ).toBeChecked();
+    expect(screen.getByLabelText(/Team Name/i)).toHaveValue('Restored Team');
+    expect(
+      screen.queryByText('Resume saved project draft?')
+    ).not.toBeInTheDocument();
+  });
+
+  it('auto-saves and closes without a draft prompt when the preference is enabled', async () => {
+    writeProjectCreationDraftAuto('user-admin', true);
+    const onClose = vi.fn();
+    render(
+      <ProjectForm
+        users={mockUsers}
+        currentUserId="user-admin"
+        onClose={onClose}
+      />
+    );
+
+    await fillStep1Basics();
+    fireEvent.click(screen.getByRole('button', { name: /Close modal/i }));
+
+    expect(screen.queryByText('Save project draft?')).not.toBeInTheDocument();
+    expect(saveProjectCreationDraft).toHaveBeenCalledWith(
+      'user-admin',
+      expect.objectContaining({
+        basicInfo: expect.objectContaining({
+          name: 'Project Alice',
+          key: 'alice',
+        }),
+      })
+    );
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
   it('keeps the existing close behavior in edit mode', () => {
     const onClose = vi.fn();
     render(
@@ -1159,7 +1227,7 @@ describe('ProjectForm Component', () => {
 
     render(<ProjectForm users={mockUsers} />);
     await fillStep1Basics();
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await advanceCreateFormToImportsStep();
 
     fireEvent.click(screen.getByRole('checkbox', { name: /^Jira$/i }));
 
@@ -1183,7 +1251,7 @@ describe('ProjectForm Component', () => {
     expect(projectSelect).toHaveValue('TEST');
   });
 
-  it('advances from Imports to Source Control without creating the project', async () => {
+  it('advances from Imports to Source without creating the project', async () => {
     mockJiraApiFetch();
     vi.mocked(createProject).mockResolvedValue({
       accepted: true,
@@ -1193,7 +1261,7 @@ describe('ProjectForm Component', () => {
 
     render(<ProjectForm users={mockUsers} />);
     await fillStep1Basics();
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await advanceCreateFormToImportsStep();
 
     fireEvent.click(screen.getByRole('checkbox', { name: /^Jira$/i }));
     const selects = await screen.findAllByTestId('ui-select');
@@ -1228,7 +1296,7 @@ describe('ProjectForm Component', () => {
     render(<ProjectForm users={mockUsers} onSuccess={onSuccess} />);
 
     await fillStep1Basics();
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await advanceCreateFormToImportsStep();
 
     fireEvent.click(screen.getByRole('checkbox', { name: /^Jira$/i }));
 
@@ -1278,8 +1346,7 @@ describe('ProjectForm Component', () => {
     render(<ProjectForm users={mockUsers} />);
 
     await fillStep1Basics();
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await advanceCreateFormToSourceStep();
 
     fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
 
@@ -1307,8 +1374,7 @@ describe('ProjectForm Component', () => {
     render(<ProjectForm users={mockUsers} />);
 
     await fillStep1Basics();
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await advanceCreateFormToSourceStep();
 
     fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
 
@@ -1332,8 +1398,7 @@ describe('ProjectForm Component', () => {
     render(<ProjectForm users={mockUsers} />);
 
     await fillStep1Basics();
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await advanceCreateFormToSourceStep();
 
     fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
 
@@ -1357,8 +1422,7 @@ describe('ProjectForm Component', () => {
     render(<ProjectForm users={mockUsers} />);
 
     await fillStep1Basics();
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await advanceCreateFormToSourceStep();
 
     fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
 
@@ -1398,6 +1462,7 @@ describe('ProjectForm Component', () => {
       />
     );
 
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     fireEvent.click(screen.getByRole('button', { name: /Save Changes/i }));
@@ -1552,6 +1617,7 @@ describe('ProjectForm Component', () => {
       target: { value: 'Project Alice Updated' },
     });
 
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     fireEvent.click(screen.getByRole('button', { name: /Save Changes/i }));

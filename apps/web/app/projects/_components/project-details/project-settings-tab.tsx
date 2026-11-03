@@ -26,8 +26,10 @@ import {
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import {
+  findDuplicateWorkItemTypeName,
   normalizeProjectWorkItemTypeDefs,
   projectTypeKeys,
+  workItemTypeDisplayName,
   type ProjectWorkItemTypeDef,
   type WorkItemType,
   type WorkItemTypeRemovalPreviewResponse,
@@ -190,6 +192,13 @@ export function ProjectSettingsTab({
       setFeedback({
         type: 'error',
         text: 'Please configure at least one work-item type.',
+      });
+      return;
+    }
+    if (findDuplicateWorkItemTypeName(defs)) {
+      setFeedback({
+        type: 'error',
+        text: 'Type names must be unique. Change a duplicate name.',
       });
       return;
     }
@@ -382,12 +391,15 @@ export function ProjectSettingsTab({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              Remove {pendingRemoveKey} from this project?
+              Remove {workItemTypeDisplayName(pendingRemoveKey, defs)} from this
+              project?
             </DialogTitle>
             <DialogDescription>
               Existing work items of type{' '}
-              <span className="font-semibold">{pendingRemoveKey}</span> must be
-              deleted or converted when you save.
+              <span className="font-semibold">
+                {workItemTypeDisplayName(pendingRemoveKey, defs)}
+              </span>{' '}
+              must be deleted or converted when you save.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -416,6 +428,9 @@ export function ProjectSettingsTab({
         previewLoading={previewLoading}
         previewError={previewError}
         migrateTargets={selectedKeys as WorkItemType[]}
+        remainingTypeDefs={defs}
+        labelTypeDefs={initialDefs}
+        projectId={project.id}
         isSubmitting={isSaving}
         onConfirm={handleStrategyConfirm}
       />

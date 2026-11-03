@@ -109,6 +109,7 @@ export function BacklogItemDetailsSheet({
             <SheetHeader className="space-y-3 pb-2">
               <WorkItemTypeBadge
                 type={item.type}
+                projectId={item.project_id}
                 compact
                 className="text-[10px] font-semibold"
               />

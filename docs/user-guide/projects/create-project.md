@@ -19,12 +19,19 @@ during setup.
 ## Steps
 
 1. Go to **Projects** in the sidebar (`/projects`).
-2. Select **Add Project**.
-3. Complete the **Create New Project** form (name, description, dates, etc.).
-4. Optionally connect **Jira** or **GitHub** in the same flow if prompted.
-5. On the optional **Team** step, use **Search members…** next to **Team Members**
+2. Select **Add Project** (opens fullscreen by default; use minimize if you prefer
+   a smaller dialog). If a draft was saved earlier, choose **Resume Draft** or
+   **Start Fresh** inside the same form before continuing — unless
+   **Settings → Preferences → Auto-save project drafts** is on, in which case
+   the draft resumes automatically.
+3. Complete **Details** (name, key, description, owner, dates).
+4. On **Types**, configure the work-item catalog (drag to order; icon and color
+   pickers update cards live). Names must be unique; custom types get a hidden
+   key automatically.
+5. Optionally connect **Jira** (**Imports**) or **GitHub** (**Source**).
+6. On the optional **Team** step, use **Search members…** next to **Team Members**
    to filter the list by name or email before selecting people.
-6. Submit **Create Project**.
+7. Submit **Create Project**.
 
 Creation is accepted quickly — you are not left waiting on the form while the
 database finishes. Watch the [dashboard inbox](../notifications/dashboard-inbox.md)

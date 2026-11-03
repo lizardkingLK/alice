@@ -63,6 +63,61 @@ describe('projects schemas', () => {
       }
     });
 
+    it('accepts UUID catalog keys and unique display names', () => {
+      const customKey = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+      const parsed = createProjectSchema.safeParse({
+        ...validCreateInput,
+        workflow_config: {
+          work_item_types: [
+            {
+              key: 'Epic',
+              name: 'Epic',
+              icon: 'layers',
+              level: 0,
+            },
+            {
+              key: customKey,
+              name: 'Initiative',
+              icon: 'trophy',
+              color: '#123456',
+              level: 1,
+            },
+          ],
+        },
+      });
+      expect(parsed.success).toBe(true);
+    });
+
+    it('rejects duplicate type display names (case-insensitive)', () => {
+      const parsed = createProjectSchema.safeParse({
+        ...validCreateInput,
+        workflow_config: {
+          work_item_types: [
+            {
+              key: 'Epic',
+              name: 'Story',
+              icon: 'layers',
+              level: 0,
+            },
+            {
+              key: 'Story',
+              name: ' story ',
+              icon: 'bookmark',
+              level: 1,
+            },
+          ],
+        },
+      });
+      expect(parsed.success).toBe(false);
+      if (!parsed.success) {
+        expect(
+          parsed.error.issues.some((issue) =>
+            issue.message.includes('Type names must be unique')
+          )
+        ).toBe(true);
+      }
+    });
+
     it('accepts valid nested sprint configuration', () => {
       const parsed = createProjectSchema.safeParse({
         ...validCreateInput,

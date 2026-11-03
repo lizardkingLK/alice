@@ -7,7 +7,11 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { type WorkItemPriority, type WorkItemType } from '@repo/types';
+import {
+  workItemTypeDisplayName,
+  type WorkItemPriority,
+  type WorkItemType,
+} from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import {
@@ -173,6 +177,64 @@ function isWorkItemType(value: string): value is WorkItemType {
   return value.trim().length > 0;
 }
 
+function resolveModernContextLabel(
+  projects: WorkItemFormSharedFieldProps['projects'],
+  projectId: string
+): string | null {
+  const selectedProject = projects.find((project) => project.id === projectId);
+  if (!selectedProject) {
+    return null;
+  }
+  return selectedProject.key
+    ? `${selectedProject.key} · ${selectedProject.name}`
+    : selectedProject.name;
+}
+
+function ModernFormContextBreadcrumb({
+  contextLabel,
+  type,
+  typeDefs,
+}: Readonly<{
+  contextLabel: string | null;
+  type: string;
+  typeDefs: WorkItemFormSharedFieldProps['typeDefs'];
+}>) {
+  const TypeIcon = type && isWorkItemType(type) ? workItemTypeIcon(type) : null;
+  const typeLabel = type ? workItemTypeDisplayName(type, typeDefs) : null;
+
+  return (
+    // Always reserve breadcrumb height so the dialog close control never covers title.
+    <div className="text-muted-foreground flex min-h-7 items-center gap-1.5 pr-10 text-xs">
+      <TruncatedText
+        className={cn(
+          'inline-flex max-w-48 items-center rounded-md px-2 py-1 font-medium',
+          contextLabel ? 'bg-muted/60 text-foreground' : 'invisible'
+        )}
+        aria-hidden={!contextLabel}
+      >
+        {contextLabel || 'Project'}
+      </TruncatedText>
+      <ChevronRight
+        className={cn(
+          'size-3.5 shrink-0',
+          !(contextLabel || typeLabel) && 'invisible'
+        )}
+        aria-hidden
+      />
+      <span
+        className={cn(
+          'inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium capitalize',
+          typeLabel ? 'bg-muted/60 text-foreground' : 'invisible'
+        )}
+        aria-hidden={!typeLabel}
+      >
+        {TypeIcon ? <TypeIcon className="size-3.5 shrink-0" /> : null}
+        {typeLabel || 'Type'}
+      </span>
+    </div>
+  );
+}
+
 function ModernSprintField({
   sprintId,
   sprintOptions,
@@ -280,6 +342,7 @@ export function WorkItemFormModernFields({
   projects,
   projectMembers,
   availableTypes,
+  typeDefs,
   projectId,
   assigneeId,
   sprintId,
@@ -349,48 +412,16 @@ export function WorkItemFormModernFields({
     (option) => !optionalFields.has(option.id)
   );
 
-  const selectedProject = projects.find((project) => project.id === projectId);
-  let contextLabel: string | null = null;
-  if (selectedProject) {
-    contextLabel = selectedProject.key
-      ? `${selectedProject.key} · ${selectedProject.name}`
-      : selectedProject.name;
-  }
-
-  const TypeIcon = type && isWorkItemType(type) ? workItemTypeIcon(type) : null;
+  const contextLabel = resolveModernContextLabel(projects, projectId);
 
   return (
     <TooltipProvider delayDuration={200}>
       <div className="space-y-4">
-        {/* Always reserve breadcrumb height so the dialog close control never covers title. */}
-        <div className="text-muted-foreground flex min-h-7 items-center gap-1.5 pr-10 text-xs">
-          <TruncatedText
-            className={cn(
-              'inline-flex max-w-48 items-center rounded-md px-2 py-1 font-medium',
-              contextLabel ? 'bg-muted/60 text-foreground' : 'invisible'
-            )}
-            aria-hidden={!contextLabel}
-          >
-            {contextLabel || 'Project'}
-          </TruncatedText>
-          <ChevronRight
-            className={cn(
-              'size-3.5 shrink-0',
-              !(contextLabel || type) && 'invisible'
-            )}
-            aria-hidden
-          />
-          <span
-            className={cn(
-              'inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium capitalize',
-              type ? 'bg-muted/60 text-foreground' : 'invisible'
-            )}
-            aria-hidden={!type}
-          >
-            {TypeIcon ? <TypeIcon className="size-3.5 shrink-0" /> : null}
-            {type || 'Type'}
-          </span>
-        </div>
+        <ModernFormContextBreadcrumb
+          contextLabel={contextLabel}
+          type={type}
+          typeDefs={typeDefs}
+        />
 
         <Input
           ref={titleInputRef}
@@ -438,6 +469,7 @@ export function WorkItemFormModernFields({
                 type={type}
                 onTypeChange={onTypeChange}
                 availableTypes={availableTypes}
+                typeDefs={typeDefs}
                 typeLocked={typeLocked}
                 triggerClassName={pillTriggerClassName(Boolean(type))}
                 placeholder="Type"

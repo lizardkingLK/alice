@@ -19,10 +19,10 @@ import {
   Pencil,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import type { ChartsTableColumnId } from '@/app/charts/_components/charts.types';
 import {
   CHARTS_TABLE_COLUMN_LABELS,
   DEFAULT_CHARTS_VISIBLE_TABLE_COLUMNS,
+  type ChartsTableColumnId,
 } from '@/app/charts/_components/charts.types';
 import type { ChartsProjectOption } from '@/app/charts/_components/charts-sample.data';
 import type { ChartDrilldownTableItem } from '@/app/charts/_helpers/charts-analytics.ui';
@@ -164,7 +164,12 @@ function buildColumns(
     columns.push({
       accessorKey: 'type',
       header: CHARTS_TABLE_COLUMN_LABELS.type,
-      cell: ({ row }) => <WorkItemTypeBadge type={row.original.type} />,
+      cell: ({ row }) => (
+        <WorkItemTypeBadge
+          type={row.original.type}
+          projectId={row.original.projectId}
+        />
+      ),
     });
   }
   if (allowed.has('priority')) {

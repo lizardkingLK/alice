@@ -62,7 +62,7 @@ import type {
 } from './projects.types';
 import { WorkflowConfigError } from './workflow-config.errors';
 
-export type { CreateProjectInput, UpdateProjectInput } from './projects.types';
+export type { CreateProjectInput, UpdateProjectInput };
 
 export class ProjectTeamValidationError extends Error {
   constructor(message: string) {

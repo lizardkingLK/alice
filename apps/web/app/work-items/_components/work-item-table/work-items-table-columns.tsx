@@ -21,6 +21,7 @@ import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badg
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import { WorkItemOverdueBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-overdue';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
+import { resolveWorkItemTypeDefFromProjects } from '@/app/work-items/_helpers/resolve-work-item-type-def-from-projects';
 import { WorkItemLabelsTrain } from '@/app/work-items/_components/work-item-labels/work-item-labels-train';
 import {
   RegistryRowActions,
@@ -385,9 +386,20 @@ export function buildWorkItemColumns(options: {
     {
       id: 'type',
       header: 'Type',
-      cell: ({ row }) => (
-        <WorkItemTypeBadge type={row.original.workItem.type} />
-      ),
+      cell: ({ row }) => {
+        const workItem = row.original.workItem;
+        return (
+          <WorkItemTypeBadge
+            type={workItem.type}
+            projectId={workItem.project_id}
+            typeDef={resolveWorkItemTypeDefFromProjects(
+              projects,
+              workItem.project_id,
+              workItem.type
+            )}
+          />
+        );
+      },
     },
     {
       id: 'status',

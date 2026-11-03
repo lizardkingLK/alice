@@ -4,7 +4,10 @@ import {
   DEFAULT_WORK_ITEM_PRIORITY,
   WORK_ITEM_PRIORITIES,
   ProjectStatusEnum,
-  mapToWorkItemType,
+  mapToProjectWorkItemTypeKey,
+  normalizeProjectWorkItemTypeDefs,
+  resolveProjectHierarchyFromLevels,
+  type ProjectWorkItemTypeDef,
   ChatRoles,
   ChatTurnRoles,
   toChatTurnRole,
@@ -89,6 +92,14 @@ export type ChatServiceDeps = {
   >;
   integrationsService: Pick<IntegrationsService, 'resolveChatModelForChat'>;
 };
+
+function projectTypeDefsFromWorkflowConfig(
+  workflowConfig: unknown
+): ProjectWorkItemTypeDef[] {
+  return normalizeProjectWorkItemTypeDefs(
+    (workflowConfig as { work_item_types?: unknown } | null)?.work_item_types
+  );
+}
 
 function serializeDynamicFieldValue(value: unknown): string {
   if (value === null || value === undefined) {
@@ -1061,6 +1072,8 @@ export class ChatService {
         ),
       dismiss_workflow_proposal: () =>
         this.handleDismissWorkflowProposal(userId, args, toolActionsPerformed),
+      get_project_work_item_types: () =>
+        this.handleGetProjectWorkItemTypes(userId, args),
       create_work_item: () =>
         this.handleCreateWorkItem(userId, args, toolActionsPerformed),
       parse_work_item_attachment: () =>
@@ -1371,6 +1384,46 @@ export class ChatService {
     return result;
   }
 
+  private async handleGetProjectWorkItemTypes(
+    userId: string,
+    args: Record<string, unknown>
+  ): Promise<unknown> {
+    const projectId = typeof args.projectId === 'string' ? args.projectId : '';
+    if (!projectId) {
+      throw new Error('projectId is required.');
+    }
+
+    const accessible =
+      await this.deps.projectsRepository.listAccessibleProjectIds(userId);
+    if (!accessible.includes(projectId)) {
+      throw new WorkItemAccessError('You do not have access to this project.');
+    }
+
+    const project = await this.deps.projectsRepository.findById(projectId);
+    if (!project) {
+      throw new Error('Project not found.');
+    }
+
+    const typeDefs = projectTypeDefsFromWorkflowConfig(project.workflow_config);
+    const hierarchy = resolveProjectHierarchyFromLevels(typeDefs);
+
+    return {
+      projectId,
+      projectName: project.name,
+      projectKey: project.key,
+      types: typeDefs.map((def) => ({
+        key: def.key,
+        name: def.name,
+        icon: def.icon,
+        color: def.color ?? null,
+        level: def.level,
+        description: def.description ?? null,
+      })),
+      hierarchy: hierarchy.parentToChild,
+      defaultTypeKey: mapToProjectWorkItemTypeKey('task', typeDefs),
+    };
+  }
+
   private async handleCreateWorkItem(
     userId: string,
     args: Record<string, unknown>,
@@ -1382,10 +1435,20 @@ export class ChatService {
     const assigneeId =
       typeof args.assigneeId === 'string' ? args.assigneeId : null;
 
+    if (!projectId) {
+      throw new Error('projectId is required.');
+    }
+
+    const project = await this.deps.projectsRepository.findById(projectId);
+    if (!project) {
+      throw new Error('Project not found.');
+    }
+
+    const typeDefs = projectTypeDefsFromWorkflowConfig(project.workflow_config);
     const typeValue =
       typeof args.type === 'string'
-        ? mapToWorkItemType(args.type)
-        : WorkItemTypeEnum.Task;
+        ? mapToProjectWorkItemTypeKey(args.type, typeDefs)
+        : mapToProjectWorkItemTypeKey('task', typeDefs);
 
     const rawPriority =
       typeof args.priority === 'string'
@@ -1409,10 +1472,16 @@ export class ChatService {
       description: textToProseMirrorJson(description),
       due_date: null,
     });
-    const project = await this.deps.projectsRepository.findById(projectId);
-    const projectKey = project?.key || 'TASK';
+    const projectKey = project.key || 'TASK';
     const workItemKey = `${projectKey}-${workItem.id.slice(0, 4).toUpperCase()}`;
-    const result = { id: workItem.id, key: workItemKey, title: workItem.title };
+    const typeDef = typeDefs.find((def) => def.key === typeValue);
+    const result = {
+      id: workItem.id,
+      key: workItemKey,
+      title: workItem.title,
+      type: typeValue,
+      typeName: typeDef?.name ?? typeValue,
+    };
     toolActionsPerformed.push({ type: 'create_work_item', entity: result });
     return result;
   }

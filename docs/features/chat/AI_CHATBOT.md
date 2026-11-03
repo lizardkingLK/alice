@@ -257,7 +257,8 @@ The 13 tools are declared in `chat.route.data.ts` and executed server-side:
 | `get_workflow_config`            | Read the current workflow envelope, preferring a live designer draft when available                         |
 | `propose_workflow_patch`         | Create a reviewable workflow proposal; does not save until the user applies it                              |
 | `dismiss_workflow_proposal`      | Dismiss an unapplied workflow proposal without changing the canvas                                          |
-| `create_work_item`               | Create single work item; maps chat types (bug → Issue, task → Task, story → Story)                          |
+| `get_project_work_item_types`    | List a project's work-item type catalog (keys, names, levels, hierarchy) before create                      |
+| `create_work_item`               | Create single work item; maps type via project catalog (`mapToProjectWorkItemTypeKey`, not seed-only)       |
 | `parse_work_item_attachment`     | Fetch and parse attached document (JSON, CSV, TSV, Markdown, Outline, YAML) into structured work item trees |
 | `check_work_item_duplicates`     | Compare parsed items against existing project items to identify new vs duplicate items                      |
 | `batch_import_work_items`        | Bulk create or synchronize work items with hierarchy links, atomic rollback, and update/deletion controls   |

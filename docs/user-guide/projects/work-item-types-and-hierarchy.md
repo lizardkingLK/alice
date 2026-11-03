@@ -34,9 +34,10 @@ Level 0 (e.g. Epic)
   supported.
 
 > [!NOTE]
-> The stable identity of a type is its **key** (used in the database and in
-> imports). The **name** is what people see and can rename without breaking
-> existing work items.
+> Each type has a hidden stable **key** (stored on work items and used in
+> imports). New custom types get an opaque UUID key automatically. The **name**
+> is what people see in pickers and badges; names must be unique in the project.
+> Renaming does not break existing work items.
 
 ---
 
@@ -45,14 +46,16 @@ Level 0 (e.g. Epic)
 When creating a project as an administrator:
 
 1. Go to **Projects** (`/projects`) and select **Add Project** / **+ New Project**.
-2. In basic details, open the **Work-Item Types** section.
+2. Complete **Details**, then open the **Types** step.
 3. Start from the default catalog (or a subset). For each type you can adjust:
-   - **Name** and optional **description**
-   - **Icon** (from the allowed icon set)
-   - **Level** / order in the hierarchy
-4. **Add** custom types if needed (each gets a stable key).
-5. At least one type is required.
-6. Create the project. The catalog is stored in the project’s workflow
+   - **Name** and optional **description** (name updates the card immediately)
+   - **Icon** via the icon picker and **color** via the color picker
+   - **Level** / order by dragging cards
+4. **Add** custom types if needed (each gets a hidden stable key; pick a unique
+   name, icon, and color).
+5. At least one type is required; duplicate names are blocked.
+6. Continue through **Imports**, **Source**, optional **Sprint** / **Team**, then
+   create the project. The catalog is stored in the project’s workflow
    configuration.
 
 After sign-in, ALICE caches each accessible project’s type catalog locally so
@@ -64,7 +67,7 @@ truth and the cache refreshes when types change.
 ## 2. Create & edit work-item forms
 
 - The **Type** dropdown shows only types from the **active project’s** catalog
-  (display names; values are keys).
+  (name + icon; the form still submits the hidden key).
 - The API rejects create/update with a type key that is not in that catalog.
 - Filters on Work Items, Board-related views, and Calendar use the **union of
   types across projects you can access** when no single project is selected, and

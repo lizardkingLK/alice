@@ -8,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
-import { Loader2 } from '@repo/ui/lib/icons';
 import {
   WorkItemForm,
   type WorkItemFormProps,
@@ -40,10 +39,15 @@ type FormDialogBootstrap = {
   readonly itemToEdit: DbWorkItem | null;
   readonly projectSprints: readonly WorkItemSprintOption[];
   readonly projectMembers: WorkItemFormProps['projectMembers'];
+  /** Always true once open — form mounts immediately (create and edit). */
   readonly detailReady: boolean;
-  /** True when this open used dialog-level parallel prefetch. */
+  /** True when dialog-level sprints/members were preferred over form hooks. */
   readonly usedBootstrap: boolean;
-  readonly loadingLabel: string;
+  /**
+   * Bumps once when full edit detail replaces a list-row stub so the form
+   * remounts with TipTap description (and other omitted list fields).
+   */
+  readonly detailEpoch: number;
 };
 
 /**
@@ -80,8 +84,9 @@ function resolveBootstrapProjectId(
 }
 
 /**
- * Prefetch work-item detail (edit) plus project sprints/members in parallel so
- * one dialog spinner covers a ready form — create and edit.
+ * Edit and create both mount the form immediately (no dialog-level spinner).
+ * Edit still fetches full detail + sprints/members in the background so
+ * TipTap description and options hydrate without blocking first paint.
  */
 function useFormDialogBootstrap(params: {
   readonly open: boolean;
@@ -106,19 +111,13 @@ function useFormDialogBootstrap(params: {
   >([]);
   const [projectMembers, setProjectMembers] =
     useState<WorkItemFormProps['projectMembers']>(fallbackMembers);
-  const [detailReady, setDetailReady] = useState(
-    () => !(stableItemToEdit != null || bootstrapProjectId != null)
-  );
   const [usedBootstrap, setUsedBootstrap] = useState(false);
+  const [detailEpoch, setDetailEpoch] = useState(0);
 
   useEffect(() => {
     if (!open) {
-      const needsBootstrapNext =
-        stableItemToEdit != null ||
-        resolveBootstrapProjectId(stableItemToEdit, projects, lockProject) !=
-          null;
-      setDetailReady(!needsBootstrapNext);
       setUsedBootstrap(false);
+      setDetailEpoch(0);
       if (!stableItemToEdit) {
         setResolvedItem(null);
         setProjectSprints([]);
@@ -127,31 +126,35 @@ function useFormDialogBootstrap(params: {
       return;
     }
 
+    const isEdit = stableItemToEdit != null;
+
+    // Create / subtask: show the form immediately. Members/sprints load in-form.
+    if (!isEdit) {
+      setResolvedItem(null);
+      setProjectSprints([]);
+      setProjectMembers(fallbackMembers);
+      setUsedBootstrap(false);
+      setDetailEpoch(0);
+      return;
+    }
+
     const projectId = resolveBootstrapProjectId(
       stableItemToEdit,
       projects,
       lockProject
     );
-    const isEdit = stableItemToEdit != null;
-
-    if (!isEdit && !projectId) {
-      setResolvedItem(null);
-      setProjectSprints([]);
-      setProjectMembers(fallbackMembers);
-      setUsedBootstrap(false);
-      setDetailReady(true);
-      return;
-    }
 
     let cancelled = false;
-    setDetailReady(false);
+    // Show the list-row item immediately — do not gate on network.
     setUsedBootstrap(true);
     setResolvedItem(stableItemToEdit);
     setProjectMembers(fallbackMembers);
+    setProjectSprints([]);
+    setDetailEpoch(0);
 
-    const detailPromise = isEdit
-      ? getWorkItemById(stableItemToEdit.id).catch(() => stableItemToEdit)
-      : Promise.resolve(null);
+    const detailPromise = getWorkItemById(stableItemToEdit.id).catch(
+      () => stableItemToEdit
+    );
     const sprintsPromise = projectId
       ? fetchProjectSprintsForForm(projectId).catch(() => [])
       : Promise.resolve([] as WorkItemSprintOption[]);
@@ -170,14 +173,14 @@ function useFormDialogBootstrap(params: {
       setResolvedItem(full);
       setProjectSprints(sprints);
       setProjectMembers(members);
-      setDetailReady(true);
+      setDetailEpoch(1);
     });
 
     return () => {
       cancelled = true;
       bootstrapTask.catch(() => undefined);
     };
-    // Key off edit id + bootstrap project so create/subtask also reloads.
+    // Key off edit id + bootstrap project so reopen/refetch stays correct.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional keys
   }, [open, stableItemToEdit?.id, bootstrapProjectId, lockProject]);
 
@@ -185,9 +188,9 @@ function useFormDialogBootstrap(params: {
     itemToEdit: resolvedItem,
     projectSprints,
     projectMembers,
-    detailReady,
+    detailReady: true,
     usedBootstrap,
-    loadingLabel: stableItemToEdit ? 'Loading work item…' : 'Loading…',
+    detailEpoch,
   };
 }
 
@@ -221,7 +224,7 @@ export function WorkItemFormDialog({
     projectMembers: bootstrappedMembers,
     detailReady,
     usedBootstrap,
-    loadingLabel,
+    detailEpoch,
   } = useFormDialogBootstrap({
     open,
     stableItemToEdit,
@@ -240,7 +243,7 @@ export function WorkItemFormDialog({
   const createFormMode = createFormModeProp ?? sessionMode;
   const useModernLayout = createFormMode === 'modern';
   const formKey = resolvedItemToEdit
-    ? `${resolvedItemToEdit.id}:${resolvedItemToEdit.updated_at}`
+    ? `${resolvedItemToEdit.id}:${detailEpoch}:${resolvedItemToEdit.updated_at}`
     : `create:${resolveBootstrapProjectId(null, projects, lockProject) ?? 'any'}`;
   const projectSprints = usedBootstrap
     ? bootstrappedSprints
@@ -305,12 +308,7 @@ export function WorkItemFormDialog({
               usedBootstrap ? true : preferProvidedMembersProp
             }
           />
-        ) : (
-          <div className="text-muted-foreground flex min-h-48 flex-1 items-center justify-center gap-2 py-12 text-sm">
-            <Loader2 className="size-4 animate-spin" />
-            {loadingLabel}
-          </div>
-        )}
+        ) : null}
       </DialogContent>
     </Dialog>
   );
