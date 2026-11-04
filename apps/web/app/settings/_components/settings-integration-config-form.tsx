@@ -165,10 +165,10 @@ export function IntegrationConfigForm({
         {showModelWarning ? (
           <div
             className={cn(
-              'flex flex-col gap-2 rounded-lg border p-3 text-sm',
+              'flex flex-col gap-2 rounded-lg border p-3 text-sm font-medium',
               modelAssessment.status === 'retired'
-                ? 'border-destructive/20 bg-destructive/10 text-destructive'
-                : 'border-amber-500/20 bg-amber-500/10 text-amber-800 dark:text-amber-200'
+                ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                : 'border-amber-700/40 bg-amber-50 text-amber-950 dark:border-amber-400/50 dark:bg-amber-950/70 dark:text-amber-50'
             )}
             role="status"
           >

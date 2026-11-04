@@ -2,16 +2,22 @@
 
 Status: **Phase 1 complete** — DB-backed workspace integrations, the Settings
 management UI, and the Alice Chat model pool are live. Phase 2 (Slack OAuth,
-Figma/Eraser) remains planned.
+Figma/Eraser) remains planned. **Scoped integrations** (Organization / Project /
+Member, project create step, share rules) are designed in
+[INTEGRATION_SCOPES.md](./INTEGRATION_SCOPES.md) — not implemented yet.
 
-Managers and admins configure **workspace-wide** AI agents and tool
-integrations from **`/settings?tab=integrations`**. This is separate from
-**project-scoped** integrations (GitHub and Jira on
-`/projects/[id]?tab=integrations`).
+Managers and admins configure **organization-wide** AI agents and tool
+integrations from **`/settings?tab=integrations`** (the shareable **vault**).
+Project wiring (GitHub, Jira today; AI binds planned) lives on
+**`/projects/[id]?tab=integrations`** and on the project **create** wizard.
+Today’s Settings rows are **Organization** scope
+(`integrations.scope`, Phase A) — see
+[INTEGRATION_SCOPES.md](./INTEGRATION_SCOPES.md).
 
 Related:
 
 - Index: [README.md](./README.md)
+- Planned scopes: [INTEGRATION_SCOPES.md](./INTEGRATION_SCOPES.md)
 - Account settings: [features/profile/EDIT_PROFILE.md](../profile/EDIT_PROFILE.md)
 - Alice Chat: [features/chat/AI_CHATBOT.md](../chat/AI_CHATBOT.md)
 - Project GitHub/Jira: [features/projects/GITHUB_INTEGRATION.md](../projects/GITHUB_INTEGRATION.md), [JIRA_INTEGRATION.md](../projects/JIRA_INTEGRATION.md)
@@ -139,14 +145,22 @@ descriptions, filter tabs). **Configured instances** are stored in the
 
 ## UI structure
 
-Settings sidebar adds **Integrations** for managers and admins. Content sections:
+Settings sidebar adds **Integrations** for managers and admins. Marketplace
+filter tabs:
 
-1. **AI & chat** — configurable Gemini, SpaceXAI, OpenAI, and Anthropic cards.
-2. **Workspace & conversations** — Slack (mock).
-3. **Design & diagramming** — Figma, Eraser (mock).
-4. **Coming soon** — grid of suggested integrations with short descriptions.
+1. **All integrations** — full catalog.
+2. **Active** — only cards currently connected in this workspace (live DB
+   status, not catalog metadata).
+3. **AI agents** / **Communication** / **Design & diagramming** /
+   **Productivity** — category filters.
+4. **Coming soon** — catalog rows with `status: planned`.
 
-Card pattern reuses project integration visuals (`Card`, status `Badge`, disabled primary actions with “Coming soon” copy).
+Jira Cloud and GitHub stay on the **project** Integrations tab
+(`/projects/[id]?tab=integrations`); they are not listed in this workspace
+marketplace catalog.
+
+Card pattern reuses project integration visuals (`Card`, status `Badge`,
+disabled primary actions with “Coming soon” copy).
 
 Turning a connected card **switch off** opens the shared
 `RegistryConfirmDialog` (rose warning). Confirming disables every active

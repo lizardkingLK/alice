@@ -32,10 +32,15 @@ dialog shows **Connected** when the workspace has an active model with a
 stored API key. **Connected** does not guarantee that a live provider request
 will succeed.
 
+Use the filter tabs to narrow the catalog: **Active** shows only integrations
+that are currently connected, category tabs group by type, and **Coming soon**
+lists planned connectors. Use **Search** in the header to find a provider by
+name.
+
 ## Connect an AI model
 
 1. Find **Google Gemini**, **SpaceXAI**, **OpenAI**, or **Anthropic**. Use the
-   **AI agents** filter if helpful.
+   **AI agents** or **Active** filter if helpful.
 2. Select **View integration**. Turning on the card switch also opens the same
    configuration dialog.
 3. Choose one of the **Suggested models**, or enter the provider's exact

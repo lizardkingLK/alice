@@ -28,6 +28,7 @@ import { deleteChatAttachment } from '../_services/chat-attachments.client';
 import type { PendingChatAttachment } from './chat-attachment-tiles';
 import { loadConversationHistory } from './chat-client-bootstrap';
 import { writeChatHistorySidebarOpenCookie } from '@/app/chat/_helpers/chat-history-sidebar-storage';
+import { resolveChatProjectId } from '@/app/chat/_helpers/chat-project-context';
 import { revalidateChatConversations } from '../_services/chat.reads.actions.server';
 import { ChatClientFrame } from '@/app/chat/_components/chat-client-frame';
 import { useWorkspaceChatModels } from '@/app/chat/_components/use-workspace-chat-models';
@@ -420,7 +421,11 @@ function ChatClientInner({
         attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
         viewContext,
         conversationKind,
-        boundAgentId
+        boundAgentId,
+        resolveChatProjectId({
+          viewContext,
+          pathname: pageContext?.pathname,
+        })
       );
 
       applySuccessfulChatResponse({

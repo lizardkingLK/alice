@@ -64,14 +64,22 @@ connection to link and sync. Only the person who authorized Atlassian can
 
 ---
 
-## Workspace vs project
+## Organization vs project
 
-| Level         | Where                                   | Examples                  |
-| ------------- | --------------------------------------- | ------------------------- |
-| **Project**   | Project → **Integrations** tab          | GitHub repo, Jira import  |
-| **Workspace** | **Settings** → **Integrations** (admin) | AI providers, Slack mocks |
+| Level            | Where                                           | Examples                    |
+| ---------------- | ----------------------------------------------- | --------------------------- |
+| **Project**      | Project → **Integrations** tab                  | GitHub repo, Jira import    |
+| **Organization** | **Settings** → **Integrations** (manager/admin) | AI providers, Slack (vault) |
 
-Project integrations do not replace workspace-level AI settings on your profile.
+Today, AI chat models are configured only at organization (Settings) scope.
+Project integrations do not yet bind AI providers.
+
+> **Planned:** this tab uses the Settings-style integrations marketplace, with
+> **Source control** and **Project management** groups (radio: one each) plus
+> multi-select groups such as **AI agents**. Create-project uses the same
+> grouping. Organization providers are **bound**, not copied into project scope.
+> Saved API keys are masked and not revealable. See
+> [INTEGRATION_SCOPES.md](../../features/integrations/INTEGRATION_SCOPES.md).
 
 ---
 

@@ -32,6 +32,7 @@ const openAiRow: IntegrationWire = {
   id: '11111111-1111-4111-8111-111111111111',
   catalog_id: 'openai',
   category: 'ai_agent',
+  scope: 'organization',
   provider: 'openai',
   name: 'GPT-4o',
   status: 'active',

@@ -5,6 +5,7 @@ import {
 } from '../../../lib/prisma-audit';
 import {
   IntegrationCategory,
+  IntegrationScope,
   IntegrationStatus,
   Prisma,
   type integrations,
@@ -71,6 +72,7 @@ export class IntegrationsRepository {
     return prisma.integrations.findMany({
       where: {
         ...(query.category ? { category: query.category } : {}),
+        ...(query.scope ? { scope: query.scope } : {}),
         ...(query.status ? { status: query.status } : {}),
         ...(query.catalog_id ? { catalog_id: query.catalog_id } : {}),
       },
@@ -83,6 +85,7 @@ export class IntegrationsRepository {
     return prisma.integrations.findMany({
       where: {
         category: IntegrationCategory.ai_agent,
+        scope: IntegrationScope.organization,
         status: IntegrationStatus.active,
       },
       select: integrationListSelect,
@@ -104,6 +107,7 @@ export class IntegrationsRepository {
       where: {
         id,
         category: IntegrationCategory.ai_agent,
+        scope: IntegrationScope.organization,
         status: IntegrationStatus.active,
       },
       select: integrationDetailSelect,
@@ -114,11 +118,46 @@ export class IntegrationsRepository {
     return prisma.integrations.findFirst({
       where: {
         category: IntegrationCategory.ai_agent,
+        scope: IntegrationScope.organization,
         status: IntegrationStatus.active,
         is_default: true,
       },
       select: integrationDetailSelect,
     });
+  }
+
+  /**
+   * Active chat-model integrations bound to a project (org-scoped rows via
+   * `project_integration_bindings`). Empty ⇒ caller falls through to org pool.
+   */
+  async listActiveChatModelBindingsForProject(projectId: string): Promise<
+    Array<{
+      integration_id: string;
+      is_default_for_project: boolean;
+      integration: IntegrationDetailRow;
+    }>
+  > {
+    const rows = await prisma.project_integration_bindings.findMany({
+      where: {
+        project_id: projectId,
+        integration: {
+          category: IntegrationCategory.ai_agent,
+          status: IntegrationStatus.active,
+        },
+      },
+      select: {
+        integration_id: true,
+        is_default_for_project: true,
+        integration: { select: integrationDetailSelect },
+      },
+      orderBy: [{ is_default_for_project: 'desc' }, { created_at: 'asc' }],
+    });
+
+    return rows.map((row) => ({
+      integration_id: row.integration_id,
+      is_default_for_project: row.is_default_for_project,
+      integration: row.integration,
+    }));
   }
 
   async create(data: IntegrationCreateData): Promise<IntegrationDetailRow> {
@@ -131,6 +170,7 @@ export class IntegrationsRepository {
         data: {
           catalog_id: data.catalog_id,
           category: data.category,
+          scope: IntegrationScope.organization,
           provider: data.provider,
           name: data.name,
           status: data.status,

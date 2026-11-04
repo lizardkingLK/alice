@@ -854,6 +854,7 @@ export type Database = {
           is_default: boolean
           name: string
           provider: string
+          scope: Database["public"]["Enums"]["IntegrationScope"]
           sort_order: number
           status: Database["public"]["Enums"]["IntegrationStatus"]
           updated_at: string
@@ -869,6 +870,7 @@ export type Database = {
           is_default?: boolean
           name: string
           provider: string
+          scope?: Database["public"]["Enums"]["IntegrationScope"]
           sort_order?: number
           status?: Database["public"]["Enums"]["IntegrationStatus"]
           updated_at: string
@@ -884,6 +886,7 @@ export type Database = {
           is_default?: boolean
           name?: string
           provider?: string
+          scope?: Database["public"]["Enums"]["IntegrationScope"]
           sort_order?: number
           status?: Database["public"]["Enums"]["IntegrationStatus"]
           updated_at?: string
@@ -964,6 +967,68 @@ export type Database = {
           {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_integration_bindings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          integration_id: string
+          is_default_for_project: boolean
+          project_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          integration_id: string
+          is_default_for_project?: boolean
+          project_id: string
+          updated_at: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          integration_id?: string
+          is_default_for_project?: boolean
+          project_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_integration_bindings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_integration_bindings_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_integration_bindings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_integration_bindings_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -2323,6 +2388,7 @@ export type Database = {
         | "communication"
         | "design"
         | "productivity"
+      IntegrationScope: "organization" | "project" | "member"
       IntegrationStatus: "active" | "disabled" | "draft"
       NotificationType:
         | "assign"
@@ -2503,6 +2569,7 @@ export const Constants = {
         "design",
         "productivity",
       ],
+      IntegrationScope: ["organization", "project", "member"],
       IntegrationStatus: ["active", "disabled", "draft"],
       NotificationType: [
         "assign",

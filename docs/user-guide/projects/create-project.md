@@ -33,11 +33,21 @@ during setup.
    to filter the list by name or email before selecting people.
 7. Submit **Create Project**.
 
+> **Planned:** **Imports** and **Source** merge into one **Integrations** step
+> with grouped lists (**Source control**, **Project management**, **AI agents**,
+> and other catalog groups). Source control and project management stay
+> single-choice (radio). Organization providers stay in
+> **Settings → Integrations**; the create step **binds** them (does not clone
+> them as project-scoped copies). Drafts keep Integrations choices on resume;
+> saved API keys stay masked. See
+> [INTEGRATION_SCOPES.md](../../features/integrations/INTEGRATION_SCOPES.md).
+
 Creation is accepted quickly — you are not left waiting on the form while the
-database finishes. Watch the [dashboard inbox](../notifications/dashboard-inbox.md)
-for a **project ready** notification with a link to the new project, or a
-**failure** notice if something went wrong (includes a short reference id for
-support). The bell badge updates live when that alert arrives (no reload needed).
+database finishes (**async** acknowledge, then background create/import). Watch
+the [dashboard inbox](../notifications/dashboard-inbox.md) for a **project
+ready** notification with a link to the new project, or a **failure** notice if
+something went wrong (includes a short reference id for support). The bell
+badge updates live when that alert arrives (no reload needed).
 
 You become a **project member** (so the project stays in your accessible list).
 The manager you pick as **Project Owner** becomes the owner and is also added as

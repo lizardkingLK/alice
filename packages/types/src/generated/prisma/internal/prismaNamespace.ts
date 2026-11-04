@@ -429,7 +429,8 @@ export const ModelName = {
   charts: 'charts',
   chart_shares: 'chart_shares',
   version_control_pull_requests: 'version_control_pull_requests',
-  integrations: 'integrations'
+  integrations: 'integrations',
+  project_integration_bindings: 'project_integration_bindings'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -445,7 +446,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "chat_conversations" | "chat_attachments" | "chat_tools" | "chat_skills" | "chat_agents" | "chat_agent_tools" | "chat_agent_skills" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "integrations"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "chat_conversations" | "chat_attachments" | "chat_tools" | "chat_skills" | "chat_agents" | "chat_agent_tools" | "chat_agent_skills" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "integrations" | "project_integration_bindings"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2891,6 +2892,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    project_integration_bindings: {
+      payload: Prisma.$project_integration_bindingsPayload<ExtArgs>
+      fields: Prisma.project_integration_bindingsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.project_integration_bindingsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_integration_bindingsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.project_integration_bindingsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_integration_bindingsPayload>
+        }
+        findFirst: {
+          args: Prisma.project_integration_bindingsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_integration_bindingsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.project_integration_bindingsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_integration_bindingsPayload>
+        }
+        findMany: {
+          args: Prisma.project_integration_bindingsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_integration_bindingsPayload>[]
+        }
+        create: {
+          args: Prisma.project_integration_bindingsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_integration_bindingsPayload>
+        }
+        createMany: {
+          args: Prisma.project_integration_bindingsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.project_integration_bindingsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_integration_bindingsPayload>[]
+        }
+        delete: {
+          args: Prisma.project_integration_bindingsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_integration_bindingsPayload>
+        }
+        update: {
+          args: Prisma.project_integration_bindingsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_integration_bindingsPayload>
+        }
+        deleteMany: {
+          args: Prisma.project_integration_bindingsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.project_integration_bindingsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.project_integration_bindingsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_integration_bindingsPayload>[]
+        }
+        upsert: {
+          args: Prisma.project_integration_bindingsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$project_integration_bindingsPayload>
+        }
+        aggregate: {
+          args: Prisma.Project_integration_bindingsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProject_integration_bindings>
+        }
+        groupBy: {
+          args: Prisma.project_integration_bindingsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Project_integration_bindingsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.project_integration_bindingsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Project_integration_bindingsCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -3493,6 +3568,7 @@ export const IntegrationsScalarFieldEnum = {
   id: 'id',
   catalog_id: 'catalog_id',
   category: 'category',
+  scope: 'scope',
   provider: 'provider',
   name: 'name',
   status: 'status',
@@ -3506,6 +3582,20 @@ export const IntegrationsScalarFieldEnum = {
 } as const
 
 export type IntegrationsScalarFieldEnum = (typeof IntegrationsScalarFieldEnum)[keyof typeof IntegrationsScalarFieldEnum]
+
+
+export const Project_integration_bindingsScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  integration_id: 'integration_id',
+  is_default_for_project: 'is_default_for_project',
+  created_by: 'created_by',
+  created_at: 'created_at',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type Project_integration_bindingsScalarFieldEnum = (typeof Project_integration_bindingsScalarFieldEnum)[keyof typeof Project_integration_bindingsScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -3934,6 +4024,20 @@ export type ListEnumIntegrationCategoryFieldRefInput<$PrismaModel> = FieldRefInp
 
 
 /**
+ * Reference to a field of type 'IntegrationScope'
+ */
+export type EnumIntegrationScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IntegrationScope'>
+    
+
+
+/**
+ * Reference to a field of type 'IntegrationScope[]'
+ */
+export type ListEnumIntegrationScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IntegrationScope[]'>
+    
+
+
+/**
  * Reference to a field of type 'IntegrationStatus'
  */
 export type EnumIntegrationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IntegrationStatus'>
@@ -4130,6 +4234,7 @@ export type GlobalOmitConfig = {
   chart_shares?: Prisma.chart_sharesOmit
   version_control_pull_requests?: Prisma.version_control_pull_requestsOmit
   integrations?: Prisma.integrationsOmit
+  project_integration_bindings?: Prisma.project_integration_bindingsOmit
 }
 
 /* Types for Logging */

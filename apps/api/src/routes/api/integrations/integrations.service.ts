@@ -365,9 +365,27 @@ export class IntegrationsService {
 
   async resolveChatModelForChat(params: {
     integrationId?: string;
+    projectId?: string;
     legacyModelId?: string;
   }): Promise<ResolvedChatModelConfig> {
+    const projectBindings = params.projectId
+      ? await this.integrationsRepository.listActiveChatModelBindingsForProject(
+          params.projectId
+        )
+      : [];
+    const hasProjectPool = projectBindings.length > 0;
+
     if (params.integrationId) {
+      if (hasProjectPool) {
+        const bound = projectBindings.find(
+          (row) => row.integration_id === params.integrationId
+        );
+        if (!bound) {
+          throw new Error('Chat model is not enabled for this project context');
+        }
+        return mapIntegrationRowToChatModelConfig(bound.integration);
+      }
+
       const row = await this.integrationsRepository.findActiveChatModelById(
         params.integrationId
       );
@@ -375,6 +393,15 @@ export class IntegrationsService {
         throw new Error('Chat model integration not found or inactive');
       }
       return mapIntegrationRowToChatModelConfig(row);
+    }
+
+    if (hasProjectPool) {
+      const projectDefault =
+        projectBindings.find((row) => row.is_default_for_project) ??
+        projectBindings[0];
+      if (projectDefault) {
+        return mapIntegrationRowToChatModelConfig(projectDefault.integration);
+      }
     }
 
     const defaultRow =

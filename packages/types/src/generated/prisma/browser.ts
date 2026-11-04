@@ -190,3 +190,10 @@ export type version_control_pull_requests = Prisma.version_control_pull_requests
  * Secrets live encrypted inside `config` JSONB; API access is service-role only.
  */
 export type integrations = Prisma.integrationsModel
+/**
+ * Model project_integration_bindings
+ * Project enablement of an organization (or project-scoped) integration.
+ * Empty for a project ⇒ Alice Chat falls through to organization defaults.
+ * See docs/features/integrations/INTEGRATION_SCOPES.md (Phase B).
+ */
+export type project_integration_bindings = Prisma.project_integration_bindingsModel

@@ -282,6 +282,12 @@ export const postChatMessageBodySchema = z.object({
   conversationId: z.preprocess(emptyToUndefined, z.uuid().optional()),
   integrationId: z.preprocess(emptyToUndefined, z.uuid().optional()),
   modelId: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  /**
+   * Active project context for model resolution (project → page → org).
+   * Prefer explicit id from the dock page or view bridge; viewContext.projectId
+   * is a fallback when this is omitted.
+   */
+  projectId: z.preprocess(emptyToUndefined, z.uuid().optional()),
   /** Bound chat agent; omitted → workspace default Alice agent. */
   agentId: z.preprocess(emptyToUndefined, z.uuid().optional()),
   attachments: z.array(chatAttachmentWireSchema).optional(),

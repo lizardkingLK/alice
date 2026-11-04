@@ -17,6 +17,7 @@ const chatRow: IntegrationWire = {
   id: '11111111-1111-4111-8111-111111111111',
   catalog_id: 'alice-gemini',
   category: 'ai_agent',
+  scope: 'organization',
   provider: 'gemini',
   name: 'Gemini 3.6',
   status: 'active',

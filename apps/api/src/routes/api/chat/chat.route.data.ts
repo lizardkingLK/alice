@@ -49,7 +49,8 @@ MANDATORY CONFIRMATION PROTOCOL BEFORE MUTATING ACTIONS:
 Keep your responses friendly, helpful, and concise. Always confirm with the user before performing actions.
 
 ATTACHMENTS & WORK ITEM IMPORT PROTOCOL:
-- When the user attaches a document (JSON or CSV) or asks to import work items from an attachment:
+- Only JSON (\`.json\`) and CSV (\`.csv\`) attachments are supported for work-item import. Do **not** call \`parse_work_item_attachment\` for images (PNG/JPG/WebP) or other file types — tell the user to attach a JSON or CSV export instead.
+- When the user attaches a JSON or CSV document or asks to import work items from an attachment:
   1. Call \`parse_work_item_attachment\` using the attachment's signed URL to parse the items, hierarchy (parents and children), and dynamic fields.
   2. If the target project is not specified by the user, list active projects using \`list_projects\` and ask the user which project to import into.
   3. Once the project is selected, call \`check_work_item_duplicates\` to detect existing duplicates or updates in that project.
@@ -305,7 +306,7 @@ export const aliceChatTools: AliceChatTools = [
   {
     name: 'parse_work_item_attachment',
     description:
-      'Download and parse an attached JSON or CSV work item document, extracting work items, hierarchy, and dynamic fields.',
+      'Download and parse an attached JSON (.json) or CSV (.csv) work item document, extracting work items, hierarchy, and dynamic fields. Rejects images and all other file types — only call this for JSON or CSV attachments.',
     parameters: {
       type: 'object',
       properties: {

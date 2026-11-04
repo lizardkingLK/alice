@@ -98,7 +98,7 @@ Examples:
 - **Propose workflow designer changes** (managers) with Apply / Reject cards when
   the workflow side panel is open. Ask Alice to undo or cancel before you Apply
   to dismiss a pending proposal without changing the canvas
-- **Attach and inspect documents**: Click the paperclip icon (📎) to attach JSON, CSV, TSV, Markdown tables, Indented text outlines, YAML, or image files
+- **Attach and inspect documents**: Click the paperclip icon (📎) to attach **JSON** or **CSV** work-item files (other types, including images, are rejected)
 - **Universal file parsing**: Ask Alice to extract work items, estimates, priorities, parent links, and custom dynamic fields from any supported document format
 - **Check duplicates**: Ask Alice to compare parsed items against existing project items to spot duplicates before creating
 - **Atomic batch import**: Bulk create work items with strict hierarchy validation (`Epic` &rarr; `Feature` &rarr; `Story` &rarr; `Task` &rarr; `Issue`). If invalid, zero items are created and Alice asks whether you want to fix the file or skip invalid items

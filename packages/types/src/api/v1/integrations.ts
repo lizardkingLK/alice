@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   IntegrationCategory as IntegrationCategoryEnum,
+  IntegrationScope as IntegrationScopeEnum,
   IntegrationStatus as IntegrationStatusEnum,
 } from '../../generated/prisma/enums.js';
 import type { integrationsGetPayload } from '../../generated/prisma/models/integrations.js';
@@ -14,6 +15,8 @@ import { emptyToUndefined } from './query-preprocess.js';
 
 type IntegrationCategoryType =
   (typeof IntegrationCategoryEnum)[keyof typeof IntegrationCategoryEnum];
+type IntegrationScopeType =
+  (typeof IntegrationScopeEnum)[keyof typeof IntegrationScopeEnum];
 type IntegrationStatusType =
   (typeof IntegrationStatusEnum)[keyof typeof IntegrationStatusEnum];
 
@@ -21,6 +24,13 @@ const integrationCategorySchema = z.enum(
   Object.values(IntegrationCategoryEnum) as [
     IntegrationCategoryType,
     ...IntegrationCategoryType[],
+  ]
+);
+
+const integrationScopeSchema = z.enum(
+  Object.values(IntegrationScopeEnum) as [
+    IntegrationScopeType,
+    ...IntegrationScopeType[],
   ]
 );
 
@@ -35,6 +45,7 @@ export const integrationListSelect = {
   id: true,
   catalog_id: true,
   category: true,
+  scope: true,
   provider: true,
   name: true,
   status: true,
@@ -64,6 +75,7 @@ export const listIntegrationsQuerySchema = z.object({
     emptyToUndefined,
     integrationCategorySchema.optional()
   ),
+  scope: z.preprocess(emptyToUndefined, integrationScopeSchema.optional()),
   status: z.preprocess(emptyToUndefined, integrationStatusSchema.optional()),
   catalog_id: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
 });
@@ -121,6 +133,7 @@ export const integrationWireSchema = z.object({
   id: z.uuid(),
   catalog_id: z.string(),
   category: integrationCategorySchema,
+  scope: integrationScopeSchema,
   provider: z.string(),
   name: z.string(),
   status: integrationStatusSchema,
