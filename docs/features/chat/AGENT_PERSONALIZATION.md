@@ -135,7 +135,7 @@ description).
 
 ---
 
-## API (planned)
+## API
 
 Mounted at `/api/chat-agents` and `/api/v1/chat-agents`
 (`apps/api/src/routes/api/chat-agents/`).

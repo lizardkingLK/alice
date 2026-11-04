@@ -3,7 +3,6 @@ import {
   chatAgentDetailToRecord,
   chatAgentSummaryToRecord,
   draftToPatchBody,
-  multilineToKeys,
   partitionGalleryAgents,
   type ChatAgentRecord,
 } from '@/app/chat/_helpers/chat-agents-catalog';
@@ -41,8 +40,8 @@ describe('chat-agents-catalog helpers', () => {
     const record = chatAgentSummaryToRecord(summaryWire);
     expect(record.name).toBe('Alice');
     expect(record.authorName).toBe('Alice');
-    expect(record.tools).toBe('list_projects\ncreate_project');
-    expect(record.skills).toBe('planning');
+    expect(record.enabledToolKeys).toEqual(['list_projects', 'create_project']);
+    expect(record.enabledSkillKeys).toEqual(['planning']);
     expect(record.instructions).toBe('');
     expect(record.isDefault).toBe(true);
   });
@@ -71,13 +70,12 @@ describe('chat-agents-catalog helpers', () => {
     expect(parts.shared).toHaveLength(0);
   });
 
-  it('builds patch toggles from multiline draft keys', () => {
-    expect(multilineToKeys('a\n\nb\n')).toEqual(['a', 'b']);
+  it('builds patch toggles from enabled key arrays', () => {
     const body = draftToPatchBody(
       {
         name: 'Alice',
-        tools: 'list_projects',
-        skills: '',
+        enabledToolKeys: ['list_projects'],
+        enabledSkillKeys: [],
       },
       {
         toolKeys: ['list_projects', 'create_project'],

@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { Textarea } from '@repo/ui/components/ui/textarea';
+import { Switch } from '@repo/ui/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -25,14 +26,20 @@ import type {
 import type { ChatAgentAvatarStyle } from '@/app/chat/_helpers/chat-agent-avatar';
 import { ChatAgentAvatar } from '@/app/chat/_components/chat-agent-avatar';
 
+export type ChatAgentCatalogOption = {
+  readonly key: string;
+  readonly label: string;
+  readonly description: string;
+};
+
 export type ChatAgentCustomizeDraft = {
   name: string;
   title: string;
   description: string;
   instructions: string;
   tagline: string;
-  skills: string;
-  tools: string;
+  enabledSkillKeys: string[];
+  enabledToolKeys: string[];
   autonomy: ChatAgentAutonomy;
   avatarStyle: ChatAgentAvatarStyle;
   avatarSeed: string;
@@ -43,6 +50,8 @@ type ChatAgentCustomizeFormProps = {
   readonly kind: ChatAgentKind;
   readonly canEdit: boolean;
   readonly showCamera: boolean;
+  readonly skillOptions: readonly ChatAgentCatalogOption[];
+  readonly toolOptions: readonly ChatAgentCatalogOption[];
   readonly onOpenAvatarDialog: () => void;
   // eslint-disable-next-line no-unused-vars
   readonly onDraftChange: (patch: Partial<ChatAgentCustomizeDraft>) => void;
@@ -70,11 +79,104 @@ function ReadOnlyField({
   );
 }
 
+function toggleKey(
+  keys: readonly string[],
+  key: string,
+  enabled: boolean
+): string[] {
+  if (enabled) {
+    return keys.includes(key) ? [...keys] : [...keys, key];
+  }
+  return keys.filter((entry) => entry !== key);
+}
+
+function CatalogToggleList({
+  label,
+  options,
+  enabledKeys,
+  canEdit,
+  onToggle,
+}: Readonly<{
+  label: string;
+  options: readonly ChatAgentCatalogOption[];
+  enabledKeys: readonly string[];
+  canEdit: boolean;
+  // eslint-disable-next-line no-unused-vars
+  onToggle: (key: string, enabled: boolean) => void;
+}>) {
+  const enabledSet = new Set(enabledKeys);
+
+  if (options.length === 0) {
+    return (
+      <div className="space-y-2">
+        <Label>{label}</Label>
+        <p className="text-muted-foreground text-sm">No catalog items yet.</p>
+      </div>
+    );
+  }
+
+  if (!canEdit) {
+    const enabledLabels = options
+      .filter((option) => enabledSet.has(option.key))
+      .map((option) => option.label);
+    return (
+      <ReadOnlyField label={label}>
+        {enabledLabels.length > 0 ? (
+          <ul className="text-foreground list-inside list-disc text-sm leading-relaxed">
+            {enabledLabels.map((entry) => (
+              <li key={entry}>{entry}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-foreground text-sm">—</p>
+        )}
+      </ReadOnlyField>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <Label>{label}</Label>
+      <ul className="border-border divide-border divide-y rounded-md border">
+        {options.map((option) => {
+          const checked = enabledSet.has(option.key);
+          const switchId = `agent-catalog-${label}-${option.key}`;
+          return (
+            <li
+              key={option.key}
+              className="flex items-start justify-between gap-3 px-3 py-2.5"
+            >
+              <div className="min-w-0 space-y-0.5">
+                <Label htmlFor={switchId} className="text-sm font-medium">
+                  {option.label}
+                </Label>
+                {option.description.trim() ? (
+                  <p className="text-muted-foreground text-xs leading-relaxed">
+                    {option.description}
+                  </p>
+                ) : null}
+              </div>
+              <Switch
+                id={switchId}
+                checked={checked}
+                onCheckedChange={(next) => onToggle(option.key, next)}
+                aria-label={`Toggle ${option.label}`}
+              />
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 export function ChatAgentCustomizeForm({
   draft,
   kind,
   canEdit,
   showCamera,
+  skillOptions,
+  toolOptions,
   onOpenAvatarDialog,
   onDraftChange,
 }: Readonly<ChatAgentCustomizeFormProps>) {
@@ -115,7 +217,7 @@ export function ChatAgentCustomizeForm({
               <Input
                 id="agent-name"
                 value={draft.name}
-                placeholder="e.g. Alex"
+                placeholder="e.g. Alice"
                 onChange={(event) =>
                   onDraftChange({ name: event.target.value })
                 }
@@ -126,7 +228,7 @@ export function ChatAgentCustomizeForm({
               <Input
                 id="agent-title"
                 value={draft.title}
-                placeholder="e.g. Project Manager"
+                placeholder="e.g. Assistant"
                 onChange={(event) =>
                   onDraftChange({ title: event.target.value })
                 }
@@ -194,31 +296,36 @@ export function ChatAgentCustomizeForm({
                 Only projects you are a member of are in scope for this agent.
               </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="agent-skills">Skills</Label>
-              <Textarea
-                id="agent-skills"
-                rows={4}
-                value={draft.skills}
-                placeholder="One skill key per line"
-                onChange={(event) =>
-                  onDraftChange({ skills: event.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="agent-tools">Tools</Label>
-              <Textarea
-                id="agent-tools"
-                rows={4}
-                value={draft.tools}
-                placeholder="One tool key per line"
-                className="font-mono text-xs"
-                onChange={(event) =>
-                  onDraftChange({ tools: event.target.value })
-                }
-              />
-            </div>
+            <CatalogToggleList
+              label="Skills"
+              options={skillOptions}
+              enabledKeys={draft.enabledSkillKeys}
+              canEdit
+              onToggle={(key, enabled) =>
+                onDraftChange({
+                  enabledSkillKeys: toggleKey(
+                    draft.enabledSkillKeys,
+                    key,
+                    enabled
+                  ),
+                })
+              }
+            />
+            <CatalogToggleList
+              label="Tools"
+              options={toolOptions}
+              enabledKeys={draft.enabledToolKeys}
+              canEdit
+              onToggle={(key, enabled) =>
+                onDraftChange({
+                  enabledToolKeys: toggleKey(
+                    draft.enabledToolKeys,
+                    key,
+                    enabled
+                  ),
+                })
+              }
+            />
             <div className="space-y-2">
               <Label htmlFor="agent-autonomy">Autonomy</Label>
               <Select
@@ -245,14 +352,20 @@ export function ChatAgentCustomizeForm({
                 Only projects you are a member of are in scope for this agent.
               </p>
             </ReadOnlyField>
-            <ReadOnlyField label="Skills">
-              <MultilineText value={draft.skills} />
-            </ReadOnlyField>
-            <ReadOnlyField label="Tools">
-              <p className="text-foreground font-mono text-xs leading-relaxed whitespace-pre-wrap">
-                {draft.tools.trim() ? draft.tools : '—'}
-              </p>
-            </ReadOnlyField>
+            <CatalogToggleList
+              label="Skills"
+              options={skillOptions}
+              enabledKeys={draft.enabledSkillKeys}
+              canEdit={false}
+              onToggle={() => undefined}
+            />
+            <CatalogToggleList
+              label="Tools"
+              options={toolOptions}
+              enabledKeys={draft.enabledToolKeys}
+              canEdit={false}
+              onToggle={() => undefined}
+            />
             <ReadOnlyField label="Autonomy">
               <p className="text-foreground text-sm">
                 {draft.autonomy === 'approve'

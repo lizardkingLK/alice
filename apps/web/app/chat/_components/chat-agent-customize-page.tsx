@@ -17,12 +17,17 @@ import {
   GitFork,
   MessageSquare,
   Save,
+  Shield,
+  Star,
   Trash2,
 } from '@repo/ui/lib/icons';
 import {
   chatAgentDetailToRecord,
   draftToPatchBody,
+  getPreferredChatAgentId,
   rememberPreferredChatAgent,
+  setPreferredChatAgentId,
+  subscribePreferredChatAgent,
   type ChatAgentRecord,
 } from '@/app/chat/_helpers/chat-agents-catalog';
 import { buildChatWithAgentHref } from '@/app/chat/_helpers/chat-url';
@@ -30,6 +35,7 @@ import {
   deleteChatAgentClient,
   forkChatAgentClient,
   patchChatAgentClient,
+  setDefaultChatAgentClient,
 } from '@/app/chat/_services/chat-agents.mutations.client';
 import {
   getChatAgentClient,
@@ -41,6 +47,7 @@ import { ChatAgentAvatarDialog } from '@/app/chat/_components/chat-agent-avatar-
 import { ChatAgentConfirmDialog } from '@/app/chat/_components/chat-agent-confirm-dialog';
 import {
   ChatAgentCustomizeForm,
+  type ChatAgentCatalogOption,
   type ChatAgentCustomizeDraft,
 } from '@/app/chat/_components/chat-agent-customize-form';
 import { ChatAgentCustomizeSkeleton } from '@/app/chat/_components/chat-agent-customize-skeleton';
@@ -71,12 +78,23 @@ function toDraft(agent: ChatAgentRecord): ChatAgentCustomizeDraft {
     description: agent.description,
     instructions: agent.instructions,
     tagline: agent.tagline,
-    skills: agent.skills,
-    tools: agent.tools,
+    enabledSkillKeys: [...agent.enabledSkillKeys],
+    enabledToolKeys: [...agent.enabledToolKeys],
     autonomy: agent.autonomy,
     avatarStyle: agent.avatarStyle,
     avatarSeed: agent.avatarSeed,
   };
+}
+
+function sameKeySet(
+  left: readonly string[],
+  right: readonly string[]
+): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+  const rightSet = new Set(right);
+  return left.every((key) => rightSet.has(key));
 }
 
 function draftsEqual(
@@ -89,8 +107,8 @@ function draftsEqual(
     a.description === b.description &&
     a.instructions === b.instructions &&
     a.tagline === b.tagline &&
-    a.skills === b.skills &&
-    a.tools === b.tools &&
+    sameKeySet(a.enabledSkillKeys, b.enabledSkillKeys) &&
+    sameKeySet(a.enabledToolKeys, b.enabledToolKeys) &&
     a.autonomy === b.autonomy &&
     a.avatarStyle === b.avatarStyle &&
     a.avatarSeed === b.avatarSeed
@@ -109,15 +127,17 @@ function randomAvatarSeed(): string {
   return `alice-${Date.now().toString(36)}`;
 }
 
-type CatalogKeys = {
+type CatalogState = {
   readonly toolKeys: readonly string[];
   readonly skillKeys: readonly string[];
+  readonly toolOptions: readonly ChatAgentCatalogOption[];
+  readonly skillOptions: readonly ChatAgentCatalogOption[];
 };
 
 type ChatAgentCustomizeLoadedProps = {
   readonly agent: ChatAgentRecord;
   readonly draft: ChatAgentCustomizeDraft;
-  readonly catalogKeys: CatalogKeys;
+  readonly catalog: CatalogState;
   readonly canManageSystemAgents: boolean;
   readonly onBack?: () => void;
   // eslint-disable-next-line no-unused-vars
@@ -134,7 +154,7 @@ type ChatAgentCustomizeLoadedProps = {
 function ChatAgentCustomizeLoaded({
   agent,
   draft,
-  catalogKeys,
+  catalog,
   canManageSystemAgents,
   onBack,
   onOpenAgent,
@@ -148,12 +168,23 @@ function ChatAgentCustomizeLoaded({
   const [isSaving, setIsSaving] = useState(false);
   const [isForking, setIsForking] = useState(false);
   const [isLifecyclePending, setIsLifecyclePending] = useState(false);
+  const [isDefaultPending, setIsDefaultPending] = useState(false);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
   const [chatSaveConfirmOpen, setChatSaveConfirmOpen] = useState(false);
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
   const [restoreConfirmOpen, setRestoreConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [setDefaultConfirmOpen, setSetDefaultConfirmOpen] = useState(false);
+  const [preferredAgentId, setPreferredAgentIdState] = useState<string | null>(
+    () => getPreferredChatAgentId()
+  );
+
+  useEffect(() => {
+    return subscribePreferredChatAgent(() => {
+      setPreferredAgentIdState(getPreferredChatAgentId());
+    });
+  }, []);
 
   const baseline = useMemo(() => toDraft(agent), [agent]);
   const isDirty = !draftsEqual(draft, baseline);
@@ -166,12 +197,19 @@ function ChatAgentCustomizeLoaded({
   const showArchive = isPersonal && !isArchived;
   const showRestore = isPersonal && isArchived;
   const showDelete = isPersonal && isArchived;
+  const showSetDefault =
+    canManageSystemAgents && isSystem && !isArchived && !agent.isDefault;
+  const isPreferred = preferredAgentId === agent.id;
+  const showPrefer = !isArchived;
 
   const persistDraft = async (): Promise<ChatAgentRecord | null> => {
     try {
       const updated = await patchChatAgentClient(
         agent.id,
-        draftToPatchBody(draft, catalogKeys)
+        draftToPatchBody(draft, {
+          toolKeys: catalog.toolKeys,
+          skillKeys: catalog.skillKeys,
+        })
       );
       return chatAgentDetailToRecord(updated);
     } catch (error) {
@@ -333,6 +371,43 @@ function ChatAgentCustomizeLoaded({
     }
   };
 
+  const handleSetDefault = async () => {
+    setIsDefaultPending(true);
+    try {
+      const updated = await setDefaultChatAgentClient(agent.id);
+      applySavedAgent(chatAgentDetailToRecord(updated));
+      setSetDefaultConfirmOpen(false);
+      toast.success('Workspace default updated', {
+        description: `${updated.name} is now the default Alice agent.`,
+      });
+    } catch (error) {
+      toast.error('Could not set workspace default', {
+        description: errorMessage(
+          error,
+          'Only admins can set the workspace default agent.'
+        ),
+      });
+    } finally {
+      setIsDefaultPending(false);
+    }
+  };
+
+  const handleTogglePreferred = () => {
+    if (isPreferred) {
+      setPreferredChatAgentId(null);
+      setPreferredAgentIdState(null);
+      toast.success('Preferred agent cleared', {
+        description: 'Chat will use the workspace default when unbound.',
+      });
+      return;
+    }
+    rememberPreferredChatAgent(agent.id);
+    setPreferredAgentIdState(agent.id);
+    toast.success('Preferred agent saved', {
+      description: 'This browser will open chat with this agent by default.',
+    });
+  };
+
   const patchDraft = (patch: Partial<ChatAgentCustomizeDraft>) => {
     onDraftChange({ ...draft, ...patch });
   };
@@ -390,10 +465,13 @@ function ChatAgentCustomizeLoaded({
           showArchive={showArchive}
           showRestore={showRestore}
           showDelete={showDelete}
+          showPrefer={showPrefer}
+          isPreferred={isPreferred}
           isArchived={isArchived}
           onArchive={() => setArchiveConfirmOpen(true)}
           onRestore={() => setRestoreConfirmOpen(true)}
           onDelete={() => setDeleteConfirmOpen(true)}
+          onPrefer={handleTogglePreferred}
           onChat={handleChatClick}
         />
       </header>
@@ -412,6 +490,8 @@ function ChatAgentCustomizeLoaded({
             kind={agent.kind}
             canEdit={canEdit}
             showCamera={canEdit}
+            skillOptions={catalog.skillOptions}
+            toolOptions={catalog.toolOptions}
             onOpenAvatarDialog={() => setAvatarDialogOpen(true)}
             onDraftChange={patchDraft}
           />
@@ -419,11 +499,13 @@ function ChatAgentCustomizeLoaded({
       </div>
 
       <CustomizeFooterActions
+        showSetDefault={showSetDefault}
         showFork={showFork}
         showSave={showSave}
         isForking={isForking}
         isSaving={isSaving}
         isDirty={isDirty}
+        onSetDefault={() => setSetDefaultConfirmOpen(true)}
         onFork={() => {
           void handleFork();
         }}
@@ -508,31 +590,54 @@ function ChatAgentCustomizeLoaded({
           void handleDelete();
         }}
       />
+
+      <ChatAgentConfirmDialog
+        open={setDefaultConfirmOpen}
+        title="Set workspace default?"
+        description="Everyone without a preferred agent will use this agent in chat and specialized AI flows."
+        confirmLabel="Set as default"
+        pendingLabel="Updating…"
+        isPending={isDefaultPending}
+        onOpenChange={setSetDefaultConfirmOpen}
+        onConfirm={() => {
+          void handleSetDefault();
+        }}
+      />
     </div>
   );
 }
 
 type CustomizeFooterActionsProps = {
+  readonly showSetDefault: boolean;
   readonly showFork: boolean;
   readonly showSave: boolean;
   readonly isForking: boolean;
   readonly isSaving: boolean;
   readonly isDirty: boolean;
+  readonly onSetDefault: () => void;
   readonly onFork: () => void;
   readonly onSave: () => void;
 };
 
 function CustomizeFooterActions({
+  showSetDefault,
   showFork,
   showSave,
   isForking,
   isSaving,
   isDirty,
+  onSetDefault,
   onFork,
   onSave,
 }: Readonly<CustomizeFooterActionsProps>) {
   return (
     <footer className="border-border bg-background flex shrink-0 flex-wrap items-center justify-end gap-2 border-t px-4 py-3 sm:px-6">
+      {showSetDefault ? (
+        <Button type="button" variant="outline" onClick={onSetDefault}>
+          <Shield data-icon="inline-start" />
+          Set as workspace default
+        </Button>
+      ) : null}
       {showFork ? (
         <Button
           type="button"
@@ -563,10 +668,13 @@ type CustomizeLifecycleActionsProps = {
   readonly showArchive: boolean;
   readonly showRestore: boolean;
   readonly showDelete: boolean;
+  readonly showPrefer: boolean;
+  readonly isPreferred: boolean;
   readonly isArchived: boolean;
   readonly onArchive: () => void;
   readonly onRestore: () => void;
   readonly onDelete: () => void;
+  readonly onPrefer: () => void;
   readonly onChat: () => void;
 };
 
@@ -574,14 +682,42 @@ function CustomizeLifecycleActions({
   showArchive,
   showRestore,
   showDelete,
+  showPrefer,
+  isPreferred,
   isArchived,
   onArchive,
   onRestore,
   onDelete,
+  onPrefer,
   onChat,
 }: Readonly<CustomizeLifecycleActionsProps>) {
   return (
     <div className="flex shrink-0 items-center gap-0.5">
+      {showPrefer ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={
+                isPreferred
+                  ? 'Clear preferred agent'
+                  : 'Prefer this agent in this browser'
+              }
+              onClick={onPrefer}
+            >
+              <Star
+                className="size-4"
+                fill={isPreferred ? 'currentColor' : 'none'}
+              />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {isPreferred ? 'Clear preferred' : 'Prefer in this browser'}
+          </TooltipContent>
+        </Tooltip>
+      ) : null}
       {showArchive ? (
         <Tooltip>
           <TooltipTrigger asChild>
@@ -661,9 +797,11 @@ export function ChatAgentCustomizePage({
 }: Readonly<ChatAgentCustomizePageProps>) {
   const [agent, setAgent] = useState<ChatAgentRecord | null>(null);
   const [draft, setDraft] = useState<ChatAgentCustomizeDraft | null>(null);
-  const [catalogKeys, setCatalogKeys] = useState<CatalogKeys>({
+  const [catalog, setCatalog] = useState<CatalogState>({
     toolKeys: [],
     skillKeys: [],
+    toolOptions: [],
+    skillOptions: [],
   });
   const [isReady, setIsReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -680,9 +818,19 @@ export function ChatAgentCustomizePage({
       const record = chatAgentDetailToRecord(detail, { currentUserName });
       setAgent(record);
       setDraft(toDraft(record));
-      setCatalogKeys({
+      setCatalog({
         toolKeys: tools.map((tool) => tool.key),
         skillKeys: skills.map((skill) => skill.key),
+        toolOptions: tools.map((tool) => ({
+          key: tool.key,
+          label: tool.label,
+          description: tool.description,
+        })),
+        skillOptions: skills.map((skill) => ({
+          key: skill.key,
+          label: skill.label,
+          description: skill.description,
+        })),
       });
     } catch (error) {
       console.error('Failed to load chat agent:', error);
@@ -723,7 +871,7 @@ export function ChatAgentCustomizePage({
     <ChatAgentCustomizeLoaded
       agent={agent}
       draft={draft}
-      catalogKeys={catalogKeys}
+      catalog={catalog}
       canManageSystemAgents={canManageSystemAgents}
       onBack={onBack}
       onOpenAgent={onOpenAgent}

@@ -215,7 +215,8 @@ describe('ChatClient model selection lifecycle', () => {
       SELECTED_INTEGRATION_ID,
       undefined,
       null,
-      'general'
+      'general',
+      undefined
     );
     expect(mockReplace).toHaveBeenCalledWith(
       `/chat?conversationId=${CREATED_CONVERSATION_ID}`
@@ -253,7 +254,8 @@ describe('ChatClient model selection lifecycle', () => {
       SELECTED_INTEGRATION_ID,
       undefined,
       null,
-      'general'
+      'general',
+      undefined
     );
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), {

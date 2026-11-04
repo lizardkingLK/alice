@@ -76,13 +76,6 @@ function keysToMultiline(keys: readonly string[]): string {
   return keys.join('\n');
 }
 
-export function multilineToKeys(value: string): string[] {
-  return value
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
 function authorNameForWire(
   wire: Pick<ChatAgentSummaryWire, 'kind'>,
   currentUserName?: string | null
@@ -160,22 +153,19 @@ export function partitionGalleryAgents(agents: readonly ChatAgentRecord[]): {
   return { mine, shared: [], archived };
 }
 
-export type ChatAgentDraftPatch = Partial<
-  Pick<
-    ChatAgentRecord,
-    | 'name'
-    | 'title'
-    | 'description'
-    | 'instructions'
-    | 'autonomy'
-    | 'tagline'
-    | 'skills'
-    | 'tools'
-    | 'status'
-    | 'avatarStyle'
-    | 'avatarSeed'
-  >
->;
+export type ChatAgentDraftPatch = Partial<{
+  name: string;
+  title: string;
+  description: string;
+  instructions: string;
+  autonomy: ChatAgentAutonomy;
+  tagline: string;
+  enabledSkillKeys: readonly string[];
+  enabledToolKeys: readonly string[];
+  status: ChatAgentStatus;
+  avatarStyle: ChatAgentAvatarStyle;
+  avatarSeed: string;
+}>;
 
 /** Build PATCH body from customize draft vs catalog key lists. */
 export function draftToPatchBody(
@@ -185,8 +175,8 @@ export function draftToPatchBody(
     readonly skillKeys: readonly string[];
   }
 ): PatchChatAgentBody {
-  const enabledToolKeys = new Set(multilineToKeys(draft.tools ?? ''));
-  const enabledSkillKeys = new Set(multilineToKeys(draft.skills ?? ''));
+  const enabledToolKeys = new Set(draft.enabledToolKeys ?? []);
+  const enabledSkillKeys = new Set(draft.enabledSkillKeys ?? []);
 
   const body: PatchChatAgentBody = {
     enabledTools: catalog.toolKeys.map((key) => ({

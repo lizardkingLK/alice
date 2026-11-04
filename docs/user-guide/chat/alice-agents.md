@@ -50,10 +50,10 @@ active tab by name, title, persona, description, or author.
 
 ## Defaults
 
-| Kind                       | Who sets it                  | Effect                                                                  |
-| -------------------------- | ---------------------------- | ----------------------------------------------------------------------- |
-| **Workspace default**      | Admins                       | Used when chat does not specify an agent (and for specialized AI areas) |
-| **Your preferred default** | You, in this browser (local) | Bound chats / composer prefer that agent when you choose it             |
+| Kind                       | Who sets it                         | Effect                                                                  |
+| -------------------------- | ----------------------------------- | ----------------------------------------------------------------------- |
+| **Workspace default**      | Admins                              | Used when chat does not specify an agent (and for specialized AI areas) |
+| **Your preferred default** | You, in this browser (star or Chat) | Unbound `/chat` opens with that agent when it is still active           |
 
 If only one agent remains in the workspace, Alice uses that agent everywhere.
 
@@ -68,18 +68,22 @@ In the Agents dialog detail view you can:
 - Set a **Name** and **Title**. The title appears under the name in the
   gallery, detail view, and in chat.
 - Edit **instructions** (admins on workspace agents; you on your forks).
-- Toggle **skills** and **tools** (admins on workspace agents; you on your
-  forks). Tool handlers are still enforced on the server — disabled tools are
-  not offered to the model.
+- Toggle **skills** and **tools** from the catalog switches (admins on
+  workspace agents; you on your forks). Disabled tools are not offered to the
+  model.
 - Adjust the DiceBear portrait (style and seed) when editing is allowed.
 - See the author byline as **by {name}** (no email).
+- **Prefer** (star) saves this agent as your browser preferred default, or
+  clears it if it is already preferred. **Chat** also remembers the preferred
+  agent when you open a conversation.
+- Admins can **Set as workspace default** on a workspace agent so everyone
+  without a preferred agent uses it.
 - **Fork** once from each workspace (admin) agent. Personal agents use
   **Save** instead of fork.
 - **Archive** a personal agent (confirmation). It becomes read-only and moves
   to **Archived**. Use **Restore** to edit again, or **Delete** to remove it.
-- **Chat** opens a conversation with that agent (closes the dialog) and
-  remembers it as your preferred default in this browser. Unsaved edits ask
-  you to save first.
+- **Chat** opens a conversation with that agent (closes the dialog). Unsaved
+  edits ask you to save first.
 
 In an open chat bound to an agent, the header and message labels use that
 agent’s name, title, and portrait (click the header identity to reopen the
