@@ -261,6 +261,10 @@ export {
   getProjectRegistryPermissions,
   type ActorProjectsSummary,
   type ListProjectsForActorResponse,
+  projectIntegrationsSummarySchema,
+  projectIntegrationsSummaryResponseSchema,
+  type ProjectIntegrationsSummary,
+  type ProjectIntegrationsSummaryResponse,
 } from './projects.js';
 export {
   teamManagerSelect,

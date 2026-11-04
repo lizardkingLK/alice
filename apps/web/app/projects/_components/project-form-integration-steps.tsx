@@ -170,6 +170,8 @@ export interface Step3SourceControlProps {
   setGithubRepoName: (_repoName: string) => void;
   githubToken?: string;
   setGithubToken?: (_token: string) => void;
+  /** OAuth connection id → `projects.vc_connection_id` on create/update. */
+  setGithubConnectionId?: (_connectionId: string | null) => void;
 }
 /* eslint-enable no-unused-vars */
 
@@ -180,6 +182,7 @@ function SourceControlSection({
   setGithubOwner,
   githubRepoName,
   setGithubRepoName,
+  setGithubConnectionId,
 }: Readonly<Step3SourceControlProps>) {
   const {
     connections,
@@ -194,6 +197,17 @@ function SourceControlSection({
   } = useGithubConnectionPicker();
 
   const [isDisconnecting, setIsDisconnecting] = useState(false);
+
+  useEffect(() => {
+    if (!setGithubConnectionId) {
+      return;
+    }
+    if (!enableGithub) {
+      setGithubConnectionId(null);
+      return;
+    }
+    setGithubConnectionId(activeConnection?.id ?? null);
+  }, [activeConnection, enableGithub, setGithubConnectionId]);
 
   useEffect(() => {
     if (activeConnection?.authorized_repo && !githubOwner && !githubRepoName) {
@@ -390,6 +404,7 @@ export function StepIntegrations({
   setGithubRepoName,
   githubToken,
   setGithubToken,
+  setGithubConnectionId,
   aiBindingIds,
   setAiBindingIds,
   defaultAiIntegrationId,
@@ -415,6 +430,7 @@ export function StepIntegrations({
         setGithubRepoName={setGithubRepoName}
         githubToken={githubToken}
         setGithubToken={setGithubToken}
+        setGithubConnectionId={setGithubConnectionId}
       />
       {showAiAgents ? (
         <AiAgentsSection

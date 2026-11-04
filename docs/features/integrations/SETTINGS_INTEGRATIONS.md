@@ -518,14 +518,18 @@ same transaction. Disabling a row also clears its default flag.
 
 ### Relationship to project integrations
 
-| Scope                  | Storage today                                                 | Future                                                     |
-| ---------------------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
-| GitHub PAT + repo      | `projects.github_*`                                           | Unchanged                                                  |
-| Jira OAuth             | `project_management_connections` (`vendor=jira`) + project FK | Unchanged                                                  |
-| Alice Chat LLMs        | `integrations` (`ai_agent`)                                   | Multi-row model pool (Gemini, SpaceXAI, OpenAI, Anthropic) |
-| Slack / Figma / Eraser | —                                                             | `integrations` (by category)                               |
+| Scope                  | Storage today                                                                  | Product language  |
+| ---------------------- | ------------------------------------------------------------------------------ | ----------------- |
+| GitHub OAuth + repo    | `version_control_connections` + `projects.vc_connection_id` / `vc_external`    | Project-scoped    |
+| Jira OAuth + project   | `project_management_connections` + `projects.pm_connection_id` / `pm_external` | Project-scoped    |
+| Alice Chat LLMs        | `integrations` (`ai_agent`, org) + `project_integration_bindings`              | Org vault + binds |
+| Member preferred model | `member_chat_model_preferences`                                                | Member preferred  |
+| Slack / Figma / Eraser | —                                                                              | Planned org vault |
 
-Do **not** move GitHub/Jira into `integrations` without an explicit migration project — different scope, FKs, and UI surfaces.
+Phase **F** ships a **unified read facade** (`GET /api/projects/:id/integrations-summary`)
+and product-language naming. OAuth rows stay on `*_connections` — do **not** migrate
+GitHub/Jira into `integrations.scope = project` without a dedicated migration project
+(different ownership, FKs, and UI surfaces).
 
 ---
 

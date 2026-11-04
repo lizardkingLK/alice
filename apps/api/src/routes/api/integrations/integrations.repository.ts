@@ -134,7 +134,7 @@ export class IntegrationsRepository {
   async findMemberChatModelPreference(
     userId: string
   ): Promise<{ default_integration_id: string | null } | null> {
-    return prisma.member_chat_model_preferences.findUnique({
+    return await prisma.member_chat_model_preferences.findUnique({
       where: { user_id: userId },
       select: { default_integration_id: true },
     });

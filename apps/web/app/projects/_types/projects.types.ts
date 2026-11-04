@@ -70,6 +70,7 @@ type ProjectMutationInput = Omit<
   jira_connection_id?: string | null;
   jira_project_key?: string | null;
   github_repo?: string | null;
+  github_connection_id?: string | null;
   /** Write-only; omit on edit when blank to leave existing PAT unchanged. */
   github_token?: string | null;
   logo_url?: string | null;

@@ -1299,6 +1299,9 @@ export function ProjectForm({
   const [githubOwner, setGithubOwner] = useState('');
   const [githubRepoName, setGithubRepoName] = useState('');
   const [githubToken, setGithubToken] = useState('');
+  const [githubConnectionId, setGithubConnectionId] = useState<string | null>(
+    null
+  );
 
   // AI integration bindings (create mode; bind-by-reference)
   const [aiBindingIds, setAiBindingIds] = useState<string[]>([]);
@@ -1422,6 +1425,7 @@ export function ProjectForm({
     setGithubOwner('');
     setGithubRepoName('');
     setGithubToken('');
+    setGithubConnectionId(null);
     setAiBindingIds([]);
     setDefaultAiIntegrationId(null);
     setCreateInitialSprint(false);
@@ -1459,6 +1463,7 @@ export function ProjectForm({
     setGithubOwner(draft.sourceControl.githubOwner);
     setGithubRepoName(draft.sourceControl.githubRepoName);
     setGithubToken('');
+    setGithubConnectionId(null);
     setAiBindingIds(draft.integrations.aiBindingIds);
     setDefaultAiIntegrationId(draft.integrations.defaultAiIntegrationId);
     setCreateInitialSprint(draft.sprint.createInitialSprint);
@@ -1637,6 +1642,7 @@ export function ProjectForm({
     setGithubOwner(owner);
     setGithubRepoName(repoName);
     setGithubToken('');
+    setGithubConnectionId(projectToEdit.github_connection_id ?? null);
   }, [projectToEdit]);
 
   useEffect(() => {
@@ -1741,6 +1747,7 @@ export function ProjectForm({
       jira_connection_id: projectData.jira_connection_id,
       jira_project_key: projectData.jira_project_key,
       github_repo: projectData.github_repo,
+      github_connection_id: projectData.github_connection_id,
       github_token: projectData.github_token,
     };
     const result = await runLockedMutationOrThrow({
@@ -1849,6 +1856,42 @@ export function ProjectForm({
     return true;
   };
 
+  const buildSubmitProjectData = (): CreateProjectInput => {
+    const linkedJira = Boolean(
+      importFromJira && jiraConnectionId && jiraProjectKey
+    );
+    const existingConfig =
+      typeof projectToEdit?.workflow_config === 'object' &&
+      projectToEdit?.workflow_config !== null
+        ? (projectToEdit.workflow_config as Record<string, unknown>)
+        : {};
+
+    return {
+      name: name.trim(),
+      key: key.toUpperCase().trim(),
+      description: description.trim() || null,
+      owner_id: selectedOwnerId,
+      start_date: startDate || null,
+      end_date: endDate || null,
+      status: status,
+      attributes_config: null,
+      workflow_config: {
+        ...existingConfig,
+        work_item_types: workItemTypeDefs,
+      },
+      jira_connection_id: linkedJira ? jiraConnectionId : null,
+      jira_project_key: linkedJira ? jiraProjectKey.toUpperCase().trim() : null,
+      github_repo: enableGithub
+        ? formatGithubRepoPath(githubOwner, githubRepoName)
+        : null,
+      github_connection_id: enableGithub ? githubConnectionId : null,
+      github_token: resolveGithubToken(),
+      ...resolveInitialSprintInput(),
+      ...resolveInitialTeamInput(),
+      ...resolveIntegrationBindingsInput(),
+    };
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -1876,47 +1919,12 @@ export function ProjectForm({
     }
 
     try {
-      const linkedJira = Boolean(
-        importFromJira && jiraConnectionId && jiraProjectKey
-      );
-      const existingConfig =
-        typeof projectToEdit?.workflow_config === 'object' &&
-        projectToEdit?.workflow_config !== null
-          ? (projectToEdit.workflow_config as Record<string, unknown>)
-          : {};
-
-      const projectData: CreateProjectInput = {
-        name: name.trim(),
-        key: key.toUpperCase().trim(),
-        description: description.trim() || null,
-        owner_id: selectedOwnerId,
-        start_date: startDate || null,
-        end_date: endDate || null,
-        status: status,
-        attributes_config: null,
-        workflow_config: {
-          ...existingConfig,
-          work_item_types: workItemTypeDefs,
-        },
-        jira_connection_id: linkedJira ? jiraConnectionId : null,
-        jira_project_key: linkedJira
-          ? jiraProjectKey.toUpperCase().trim()
-          : null,
-        github_repo: enableGithub
-          ? formatGithubRepoPath(githubOwner, githubRepoName)
-          : null,
-        github_token: resolveGithubToken(),
-        ...resolveInitialSprintInput(),
-        ...resolveInitialTeamInput(),
-        ...resolveIntegrationBindingsInput(),
-      };
-
+      const projectData = buildSubmitProjectData();
       if (projectToEdit) {
         await handleProjectUpdate(projectData);
       } else {
         await handleProjectCreate(projectData);
       }
-
       setIsSuccess(true);
     } catch (error) {
       setMessage(resolveSubmitError(error, Boolean(projectToEdit)));
@@ -2034,6 +2042,7 @@ export function ProjectForm({
               setGithubRepoName,
               githubToken,
               setGithubToken,
+              setGithubConnectionId,
               aiBindingIds,
               setAiBindingIds,
               defaultAiIntegrationId,

@@ -1,14 +1,16 @@
 # Integration scopes (Organization / Project / Member)
 
-Status: **In progress** — Phases **A–E** (slice) shipped. Schema has
-`IntegrationScope` (default `organization`), `project_integration_bindings`,
-and `member_chat_model_preferences` (personal preferred org model). Chat
-resolves **project → member preferred → org**. Create wizard uses a single
-**Integrations** step (Jira + GitHub + AI binds). Project **Integrations** tab
-includes AI binds + import-from-project. Members set a personal preferred
-model under **Settings → Preferences**. Phase 1 Settings marketplace remains
-the **Organization vault** (`SETTINGS_INTEGRATIONS.md`). Member-scoped API key
-rows (`scope=member` + `owner_user_id`) remain deferred.
+Status: **Shipped (A–F facade)** — Schema has `IntegrationScope` (default
+`organization`), `project_integration_bindings`, and
+`member_chat_model_preferences`. Chat resolves **project → member preferred →
+org**. Create wizard and project **Integrations** tab cover Jira, GitHub, and AI
+binds (plus import-from-project). Members set a personal preferred model under
+**Settings → Preferences**. Phase **F** unifies SC/PM/AI as **project-scoped
+integrations in product language** via
+`GET /api/projects/:id/integrations-summary`; OAuth remains on
+`version_control_connections` / `project_management_connections` (not moved into
+`integrations` rows). Settings marketplace stays the **Organization vault**.
+Member-scoped API key rows remain deferred.
 
 Alice today stores chat-model (and future Slack/etc.) rows as **deployment-wide
 workspace integrations**. This document adds a first-class **scope** and the
@@ -270,9 +272,10 @@ Phase **B** ships the bindings table + chat resolution; with an empty bindings
 table, chat still uses the organization default (no user-visible change until
 Phase **C** writes rows).
 
-GitHub/Jira may remain on existing project tables in v1, documented as
-**project-scoped** in product language, with a later optional move into
-`integrations` + `scope = project`.
+GitHub/Jira remain on `version_control_connections` /
+`project_management_connections` plus `projects.vc_*` / `pm_*` link columns.
+They are **project-scoped in product language**; Phase **F** exposes a unified
+summary DTO without migrating OAuth ciphertext into `integrations`.
 
 ---
 
@@ -285,7 +288,7 @@ GitHub/Jira may remain on existing project tables in v1, documented as
 | **C** | **UX move:** create **Integrations** step (merge Imports+Source+AI); project Integrations tab AI binds (**done** — full Settings-style marketplace polish deferred) | B          |
 | **D** | Import-from-project-I-belong-to (org binds / metadata only) (**done**)                                                                                              | C          |
 | **E** | Member preferred org model (Preferences + resolve) (**done**); personal key rows deferred                                                                           | B          |
-| **F** | Optional: unify GitHub/Jira rows under `integrations.scope = project`                                                                                               | C          |
+| **F** | Unify SC/PM/AI as project integrations in product language + summary facade; keep OAuth on `*_connections` (**done** — no row migration into `integrations`)        | C          |
 
 **Shipping order intent:** land **C** as soon as **B** is safe — the product
 requirement is that project create/details are where integrations are wired.
@@ -334,4 +337,6 @@ requirement is that project create/details are where integrations are wired.
 - [x] Chat with project context uses that project’s enabled pool; without project, page then org (empty bindings ⇒ org).
 - [x] Project cannot import another project’s project-scoped integration (import only rebinds org rows the source already bound; actor must belong to source).
 - [x] Organization integrations are **bound** into projects (not copied to project scope by default).
-- [x] Feature + user-guide docs updated for shipped Phase C/D surfaces.
+- [x] Feature + user-guide docs updated for shipped Phase C/D/E/F surfaces.
+- [x] Phase F facade: `GET /api/projects/:id/integrations-summary` (SC/PM/AI);
+      GitHub save/create persist `vc_connection_id`; OAuth stays on `*_connections`.

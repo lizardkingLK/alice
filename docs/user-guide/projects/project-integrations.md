@@ -11,6 +11,9 @@ Connect GitHub and Jira, and bind organization AI chat models to a project.
 1. Go to **Projects** and open a project you can access.
 2. Select the **Integrations** tab.
 
+The tab opens with a short **summary** of source control, project management,
+and AI agent binds, then the GitHub, Jira, and AI agents cards.
+
 The **Integrations** tab is available to **managers and admins**. Connecting
 credentials and saving AI binds require those roles.
 

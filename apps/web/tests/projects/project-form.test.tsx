@@ -392,6 +392,7 @@ describe('ProjectForm Component', () => {
         jira_connection_id: null,
         jira_project_key: null,
         github_repo: null,
+        github_connection_id: null,
         github_token: null,
       });
     });
@@ -758,6 +759,7 @@ describe('ProjectForm Component', () => {
           jira_connection_id: null,
           jira_project_key: null,
           github_repo: null,
+          github_connection_id: null,
           github_token: null,
         },
         '2026-07-09T10:00:00Z'

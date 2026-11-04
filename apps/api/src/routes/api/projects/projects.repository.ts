@@ -1,7 +1,6 @@
 import {
   USER_PROJECTION_WITH_ROLE,
   userRelationSelect,
-  withoutIntegrationSecrets,
   mapProjectRowForWire,
   projectSessionPostgrestSelect,
   type Database,
@@ -41,7 +40,6 @@ import type {
   ProjectRow,
   ProjectRowWithOwner,
   ProjectUpdateInput,
-  UpdateProjectInput,
 } from './projects.types';
 
 export type {
@@ -50,8 +48,9 @@ export type {
   ProjectRow,
   ProjectRowWithOwner,
   ProjectUpdateInput,
-  UpdateProjectInput,
 };
+export type { UpdateProjectInput } from './projects.types';
+export { withoutIntegrationSecrets } from '@repo/types';
 
 export type ActiveProjectMember = {
   readonly id: string;
@@ -59,8 +58,6 @@ export type ActiveProjectMember = {
   readonly email: string;
   readonly role: string;
 };
-
-export { withoutIntegrationSecrets };
 
 function applyOptionalProjectIntegrations(
   patch: Record<string, unknown>,
@@ -81,6 +78,12 @@ function applyOptionalProjectIntegrations(
   if (data.github_repo !== undefined) {
     patch.vc_external =
       projectVcExternalFromGithubRepo(data.github_repo) ?? Prisma.DbNull;
+    if (!data.github_repo) {
+      patch.vc_connection_id = null;
+    }
+  }
+  if (data.github_connection_id !== undefined) {
+    patch.vc_connection_id = data.github_connection_id;
   }
   if (data.logo_url !== undefined) patch.logo_url = data.logo_url;
   if (data.cover_picture !== undefined) {
@@ -655,6 +658,9 @@ export class ProjectsRepository {
                 pm_external:
                   projectPmExternalFromJiraKey(data.jira_project_key) ??
                   Prisma.DbNull,
+                vc_connection_id: data.github_repo
+                  ? (data.github_connection_id ?? null)
+                  : null,
                 vc_external:
                   projectVcExternalFromGithubRepo(data.github_repo) ??
                   Prisma.DbNull,

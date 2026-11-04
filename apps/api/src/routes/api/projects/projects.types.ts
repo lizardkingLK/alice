@@ -22,6 +22,7 @@ export type ProjectRow = {
   jira_project_key: string | null;
   jira_connection_id: string | null;
   github_repo: string | null;
+  github_connection_id?: string | null;
   github_token: string | null;
   attributes_config?: unknown;
   workflow_config?: ProjectWorkflowConfig | null;
