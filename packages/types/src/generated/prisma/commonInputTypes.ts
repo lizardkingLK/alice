@@ -718,6 +718,23 @@ export type EnumChatConversationKindWithAggregatesFilter<$PrismaModel = never> =
   _max?: Prisma.NestedEnumChatConversationKindFilter<$PrismaModel>
 }
 
+export type EnumChatAgentAutonomyFilter<$PrismaModel = never> = {
+  equals?: $Enums.ChatAgentAutonomy | Prisma.EnumChatAgentAutonomyFieldRefInput<$PrismaModel>
+  in?: $Enums.ChatAgentAutonomy[] | Prisma.ListEnumChatAgentAutonomyFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ChatAgentAutonomy[] | Prisma.ListEnumChatAgentAutonomyFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumChatAgentAutonomyFilter<$PrismaModel> | $Enums.ChatAgentAutonomy
+}
+
+export type EnumChatAgentAutonomyWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ChatAgentAutonomy | Prisma.EnumChatAgentAutonomyFieldRefInput<$PrismaModel>
+  in?: $Enums.ChatAgentAutonomy[] | Prisma.ListEnumChatAgentAutonomyFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ChatAgentAutonomy[] | Prisma.ListEnumChatAgentAutonomyFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumChatAgentAutonomyWithAggregatesFilter<$PrismaModel> | $Enums.ChatAgentAutonomy
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumChatAgentAutonomyFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumChatAgentAutonomyFilter<$PrismaModel>
+}
+
 export type EnumSavedViewResourceKindFilter<$PrismaModel = never> = {
   equals?: $Enums.SavedViewResourceKind | Prisma.EnumSavedViewResourceKindFieldRefInput<$PrismaModel>
   in?: $Enums.SavedViewResourceKind[] | Prisma.ListEnumSavedViewResourceKindFieldRefInput<$PrismaModel>
@@ -1404,6 +1421,23 @@ export type NestedEnumChatConversationKindWithAggregatesFilter<$PrismaModel = ne
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumChatConversationKindFilter<$PrismaModel>
   _max?: Prisma.NestedEnumChatConversationKindFilter<$PrismaModel>
+}
+
+export type NestedEnumChatAgentAutonomyFilter<$PrismaModel = never> = {
+  equals?: $Enums.ChatAgentAutonomy | Prisma.EnumChatAgentAutonomyFieldRefInput<$PrismaModel>
+  in?: $Enums.ChatAgentAutonomy[] | Prisma.ListEnumChatAgentAutonomyFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ChatAgentAutonomy[] | Prisma.ListEnumChatAgentAutonomyFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumChatAgentAutonomyFilter<$PrismaModel> | $Enums.ChatAgentAutonomy
+}
+
+export type NestedEnumChatAgentAutonomyWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ChatAgentAutonomy | Prisma.EnumChatAgentAutonomyFieldRefInput<$PrismaModel>
+  in?: $Enums.ChatAgentAutonomy[] | Prisma.ListEnumChatAgentAutonomyFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ChatAgentAutonomy[] | Prisma.ListEnumChatAgentAutonomyFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumChatAgentAutonomyWithAggregatesFilter<$PrismaModel> | $Enums.ChatAgentAutonomy
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumChatAgentAutonomyFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumChatAgentAutonomyFilter<$PrismaModel>
 }
 
 export type NestedEnumSavedViewResourceKindFilter<$PrismaModel = never> = {

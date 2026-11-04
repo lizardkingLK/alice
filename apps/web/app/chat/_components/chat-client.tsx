@@ -150,7 +150,9 @@ function ChatClientInner({
   }, []);
   const [hasStartedEmptyConversation, setHasStartedEmptyConversation] =
     useState(Boolean(initialAgentId));
-  const [boundAgentId] = useState<string | undefined>(initialAgentId);
+  const [boundAgentId, setBoundAgentId] = useState<string | undefined>(
+    initialAgentId
+  );
   const {
     chatModels,
     selectedIntegrationId,
@@ -226,11 +228,15 @@ function ChatClientInner({
     if (isConversationBusy) return;
     if (id === activeConversationId && messages.length > 0) return;
 
+    const selected = conversations.find((row) => row.id === id);
+    const nextAgentId = selected?.agent_id ?? undefined;
+    setBoundAgentId(nextAgentId);
+
     if (isPage) {
       router.replace(
         buildChatHref({
           conversationId: id,
-          agentId: boundAgentId,
+          agentId: nextAgentId,
         })
       );
     }
@@ -413,7 +419,8 @@ function ChatClientInner({
         selectedIntegrationId,
         attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
         viewContext,
-        conversationKind
+        conversationKind,
+        boundAgentId
       );
 
       applySuccessfulChatResponse({

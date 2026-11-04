@@ -52,6 +52,14 @@ export const ChatConversationKind = {
 export type ChatConversationKind = (typeof ChatConversationKind)[keyof typeof ChatConversationKind]
 
 
+export const ChatAgentAutonomy = {
+  suggest: 'suggest',
+  approve: 'approve'
+} as const
+
+export type ChatAgentAutonomy = (typeof ChatAgentAutonomy)[keyof typeof ChatAgentAutonomy]
+
+
 export const ProjectStatus = {
   active: 'active',
   archived: 'archived'

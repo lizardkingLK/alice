@@ -36,17 +36,19 @@ import type { ProjectsRepository } from '../projects/projects.repository';
 import type { IntegrationsService } from '../integrations/integrations.service';
 import type { ResolvedChatModelConfig } from '../integrations/chat-providers/chat-provider.types';
 import { resolveChatProvider } from '../integrations/chat-providers/resolve-chat-provider';
-import {
-  systemInstruction,
-  aliceChatTools,
-  chartDescriptionSystemPrompt,
-  dynamicFieldsSystemPrompt,
-} from './chat.route.data';
+import { aliceChatTools } from './chat.route.data';
 import type { ChatRepository } from './chat.repository';
 import { ChatAttachmentsRepository } from './chat-attachments.repository';
 import { fetchAndParseWorkItemAttachment } from './chat-attachment-parser';
 import { WorkItemDeduplicationAgent } from './work-item-deduplication.agent';
 import { sanitizeLog } from './chat.utils';
+import type { ChatAgentsRepository } from '../chat-agents/chat-agents.repository';
+import {
+  CHART_DESCRIPTION_TOOL_KEY,
+  DYNAMIC_FIELDS_TOOL_KEY,
+  resolveChatAgentRuntime,
+  resolveSpecializedSystemInstruction,
+} from './chat-agent-runtime';
 import {
   parseDismissWorkflowProposalInput,
   parseProposeWorkflowPatchInput,
@@ -91,6 +93,13 @@ export type ChatServiceDeps = {
     'listAll' | 'findById' | 'listAccessibleProjectIds'
   >;
   integrationsService: Pick<IntegrationsService, 'resolveChatModelForChat'>;
+  chatAgents?: Pick<
+    ChatAgentsRepository,
+    | 'findVisibleById'
+    | 'findActiveDefault'
+    | 'listEnablementForAgents'
+    | 'listActiveTools'
+  >;
 };
 
 function projectTypeDefsFromWorkflowConfig(
@@ -982,7 +991,10 @@ export class ChatService {
   async callChatModelAPI(
     chatModel: ResolvedChatModelConfig,
     contents: ChatContentTurn[],
-    contextInstruction: string
+    options: {
+      readonly systemInstruction: string;
+      readonly tools?: typeof aliceChatTools;
+    }
   ): Promise<ChatLlmResponse> {
     const provider = resolveChatProvider(chatModel.provider);
     return provider.generateWithTools({
@@ -990,8 +1002,8 @@ export class ChatService {
       apiUrl: chatModel.apiUrl,
       model: chatModel.model,
       contents,
-      systemInstruction: systemInstruction + '\n' + contextInstruction,
-      tools: aliceChatTools,
+      systemInstruction: options.systemInstruction,
+      tools: options.tools ?? aliceChatTools,
     });
   }
 
@@ -1000,7 +1012,8 @@ export class ChatService {
     functionCalls: ChatContentPart[],
     toolActionsPerformed: ToolAction[],
     history: StoredChatMessage[] = [],
-    viewContext?: ChatViewContext | null
+    viewContext?: ChatViewContext | null,
+    enabledToolNames: ReadonlySet<string> | null = null
   ): Promise<ChatContentPart[]> {
     const callable = functionCalls.filter(
       (
@@ -1016,6 +1029,11 @@ export class ChatService {
         let result: unknown;
 
         try {
+          if (enabledToolNames && !enabledToolNames.has(name)) {
+            throw new Error(
+              `Tool "${name}" is not enabled for this chat agent.`
+            );
+          }
           result = await this.executeTool(
             userId,
             name,
@@ -1952,9 +1970,23 @@ export class ChatService {
     userId: string,
     title = 'New Chat',
     isProcessing = false,
-    kind: ChatConversationKindValue = ChatConversationKinds.general
+    kind: ChatConversationKindValue = ChatConversationKinds.general,
+    agentId?: string | null
   ): Promise<string> {
-    return this.chat.createConversation(userId, title, isProcessing, kind);
+    return this.chat.createConversation(
+      userId,
+      title,
+      isProcessing,
+      kind,
+      agentId
+    );
+  }
+
+  async getConversationAgentId(
+    userId: string,
+    conversationId: string
+  ): Promise<string | null> {
+    return this.chat.getConversationAgentId(userId, conversationId);
   }
 
   async setProcessingStatus(
@@ -2079,8 +2111,14 @@ Active UI View Context:
     userId: string,
     history: StoredChatMessage[],
     chatModel: ResolvedChatModelConfig,
-    viewContext?: ChatViewContext | null
+    viewContext?: ChatViewContext | null,
+    agentId?: string | null
   ): Promise<{ responseText: string; toolActionsPerformed: ToolAction[] }> {
+    const agentRuntime = await resolveChatAgentRuntime({
+      userId,
+      agentId,
+      chatAgents: this.deps.chatAgents,
+    });
     const contents: ChatContentTurn[] = history.map((msg) => {
       const role = toChatTurnRole(msg.role);
       let text = msg.content;
@@ -2136,11 +2174,10 @@ ${this.buildViewContextInstruction(viewContext)}
         return '';
       }
 
-      const llmResponse = await this.callChatModelAPI(
-        chatModel,
-        contents,
-        contextInstruction
-      );
+      const llmResponse = await this.callChatModelAPI(chatModel, contents, {
+        systemInstruction: `${agentRuntime.instructions}\n${contextInstruction}`,
+        tools: agentRuntime.tools,
+      });
       const candidate = llmResponse.candidates?.[0];
       const modelContent = candidate?.content;
 
@@ -2166,7 +2203,8 @@ ${this.buildViewContextInstruction(viewContext)}
         functionCalls,
         toolActionsPerformed,
         history,
-        viewContext
+        viewContext,
+        agentRuntime.enabledToolNames
       );
       contents.push({
         role: ChatTurnRoles.User,
@@ -2185,7 +2223,8 @@ ${this.buildViewContextInstruction(viewContext)}
     conversationId: string,
     history: StoredChatMessage[],
     chatModel: ResolvedChatModelConfig,
-    viewContext?: ChatViewContext | null
+    viewContext?: ChatViewContext | null,
+    agentId?: string | null
   ): Promise<void> {
     try {
       const { responseText, toolActionsPerformed } =
@@ -2193,7 +2232,8 @@ ${this.buildViewContextInstruction(viewContext)}
           userId,
           history,
           chatModel,
-          viewContext
+          viewContext,
+          agentId
         );
 
       const newAssistantMessage: StoredChatMessage = {
@@ -2277,11 +2317,17 @@ ${this.buildViewContextInstruction(viewContext)}
       },
     ];
 
-    const response = await this.callChatModelAPI(
-      chatModel,
-      contents,
-      chartDescriptionSystemPrompt
-    );
+    const agentRuntime = await resolveChatAgentRuntime({
+      userId: '',
+      chatAgents: this.deps.chatAgents,
+    });
+    const response = await this.callChatModelAPI(chatModel, contents, {
+      systemInstruction: resolveSpecializedSystemInstruction(
+        agentRuntime,
+        CHART_DESCRIPTION_TOOL_KEY
+      ),
+      tools: [],
+    });
 
     const parts = response.candidates?.[0]?.content?.parts ?? [];
     let text = '';
@@ -2316,11 +2362,25 @@ ${this.buildViewContextInstruction(viewContext)}
       },
     ];
 
-    const response = await this.callChatModelAPI(
-      chatModel,
-      contents,
-      dynamicFieldsSystemPrompt
+    const agentRuntime = await resolveChatAgentRuntime({
+      userId: '',
+      chatAgents: this.deps.chatAgents,
+    });
+    const dynamicFieldsTool = agentRuntime.tools.filter(
+      (tool) => tool.name === DYNAMIC_FIELDS_TOOL_KEY
     );
+    const response = await this.callChatModelAPI(chatModel, contents, {
+      systemInstruction: resolveSpecializedSystemInstruction(
+        agentRuntime,
+        DYNAMIC_FIELDS_TOOL_KEY
+      ),
+      tools:
+        dynamicFieldsTool.length > 0
+          ? dynamicFieldsTool
+          : aliceChatTools.filter(
+              (tool) => tool.name === DYNAMIC_FIELDS_TOOL_KEY
+            ),
+    });
 
     const parts = response.candidates?.[0]?.content?.parts ?? [];
     const toolCallParsed = tryExtractToolCallSchema(parts);

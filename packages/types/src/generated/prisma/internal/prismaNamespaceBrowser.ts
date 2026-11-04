@@ -73,6 +73,11 @@ export const ModelName = {
   version_control_connections: 'version_control_connections',
   chat_conversations: 'chat_conversations',
   chat_attachments: 'chat_attachments',
+  chat_tools: 'chat_tools',
+  chat_skills: 'chat_skills',
+  chat_agents: 'chat_agents',
+  chat_agent_tools: 'chat_agent_tools',
+  chat_agent_skills: 'chat_agent_skills',
   saved_views: 'saved_views',
   saved_view_shares: 'saved_view_shares',
   charts: 'charts',
@@ -469,6 +474,7 @@ export const Chat_conversationsScalarFieldEnum = {
   title: 'title',
   is_processing: 'is_processing',
   kind: 'kind',
+  agent_id: 'agent_id',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -491,6 +497,84 @@ export const Chat_attachmentsScalarFieldEnum = {
 } as const
 
 export type Chat_attachmentsScalarFieldEnum = (typeof Chat_attachmentsScalarFieldEnum)[keyof typeof Chat_attachmentsScalarFieldEnum]
+
+
+export const Chat_toolsScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  label: 'label',
+  description: 'description',
+  instruction: 'instruction',
+  sort_order: 'sort_order',
+  status: 'status',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_toolsScalarFieldEnum = (typeof Chat_toolsScalarFieldEnum)[keyof typeof Chat_toolsScalarFieldEnum]
+
+
+export const Chat_skillsScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  label: 'label',
+  description: 'description',
+  sort_order: 'sort_order',
+  status: 'status',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_skillsScalarFieldEnum = (typeof Chat_skillsScalarFieldEnum)[keyof typeof Chat_skillsScalarFieldEnum]
+
+
+export const Chat_agentsScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  owner_id: 'owner_id',
+  name: 'name',
+  title: 'title',
+  description: 'description',
+  instructions: 'instructions',
+  autonomy: 'autonomy',
+  status: 'status',
+  version: 'version',
+  forked_from_id: 'forked_from_id',
+  is_default: 'is_default',
+  tagline: 'tagline',
+  avatar_style: 'avatar_style',
+  avatar_seed: 'avatar_seed',
+  created_by: 'created_by',
+  created_at: 'created_at',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_agentsScalarFieldEnum = (typeof Chat_agentsScalarFieldEnum)[keyof typeof Chat_agentsScalarFieldEnum]
+
+
+export const Chat_agent_toolsScalarFieldEnum = {
+  id: 'id',
+  agent_id: 'agent_id',
+  tool_id: 'tool_id',
+  enabled: 'enabled',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_agent_toolsScalarFieldEnum = (typeof Chat_agent_toolsScalarFieldEnum)[keyof typeof Chat_agent_toolsScalarFieldEnum]
+
+
+export const Chat_agent_skillsScalarFieldEnum = {
+  id: 'id',
+  agent_id: 'agent_id',
+  skill_id: 'skill_id',
+  enabled: 'enabled',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_agent_skillsScalarFieldEnum = (typeof Chat_agent_skillsScalarFieldEnum)[keyof typeof Chat_agent_skillsScalarFieldEnum]
 
 
 export const Saved_viewsScalarFieldEnum = {

@@ -76,6 +76,9 @@ import { createChartsRouter } from '../routes/api/charts/charts.route';
 import { IntegrationsRepository } from '../routes/api/integrations/integrations.repository';
 import { IntegrationsService } from '../routes/api/integrations/integrations.service';
 import { createIntegrationsRouter } from '../routes/api/integrations/integrations.route';
+import { ChatAgentsRepository } from '../routes/api/chat-agents/chat-agents.repository';
+import { ChatAgentsService } from '../routes/api/chat-agents/chat-agents.service';
+import { createChatAgentsRouter } from '../routes/api/chat-agents/chat-agents.route';
 import { pusher as pusherClient } from '../lib/pusher';
 import { PusherService } from '../routes/api/pusher/pusher.service';
 import { createPusherRouter } from '../routes/api/pusher/pusher.route';
@@ -378,7 +381,8 @@ function createChatConfig(
   sprintsService: SprintsService,
   projectsService: ProjectsService,
   projectsRepository: ProjectsRepository,
-  integrationsService: IntegrationsService
+  integrationsService: IntegrationsService,
+  chatAgentsRepository: ChatAgentsRepository
 ) {
   const chatRepository = new ChatRepository(supabase);
   const chatAttachmentsRepository = new ChatAttachmentsRepository(supabase);
@@ -392,6 +396,7 @@ function createChatConfig(
     projectsService,
     projectsRepository,
     integrationsService,
+    chatAgents: chatAgentsRepository,
   });
   const router = createChatRouter({ chatService });
 
@@ -427,6 +432,18 @@ function createIntegrationsConfig() {
   return {
     integrationsRepository,
     integrationsService,
+    router,
+  };
+}
+
+function createChatAgentsConfig() {
+  const chatAgentsRepository = new ChatAgentsRepository();
+  const chatAgentsService = new ChatAgentsService(chatAgentsRepository);
+  const router = createChatAgentsRouter({ chatAgentsService });
+
+  return {
+    chatAgentsRepository,
+    chatAgentsService,
     router,
   };
 }
@@ -479,6 +496,7 @@ export const comments = createCommentsConfig(
 );
 export const worklogs = createWorklogsConfig(workItems.workItemRepository);
 export const integrations = createIntegrationsConfig();
+export const chatAgents = createChatAgentsConfig();
 export const sprints = createSprintsConfig(integrations.integrationsService);
 export const jira = createJiraConfig();
 export const projects = createProjectsConfig(
@@ -533,5 +551,6 @@ export const chat = createChatConfig(
   sprints.sprintsService,
   projects.projectsService,
   projects.projectsRepository,
-  integrations.integrationsService
+  integrations.integrationsService,
+  chatAgents.chatAgentsRepository
 );

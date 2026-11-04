@@ -419,6 +419,11 @@ export const ModelName = {
   version_control_connections: 'version_control_connections',
   chat_conversations: 'chat_conversations',
   chat_attachments: 'chat_attachments',
+  chat_tools: 'chat_tools',
+  chat_skills: 'chat_skills',
+  chat_agents: 'chat_agents',
+  chat_agent_tools: 'chat_agent_tools',
+  chat_agent_skills: 'chat_agent_skills',
   saved_views: 'saved_views',
   saved_view_shares: 'saved_view_shares',
   charts: 'charts',
@@ -440,7 +445,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "chat_conversations" | "chat_attachments" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "integrations"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "chat_conversations" | "chat_attachments" | "chat_tools" | "chat_skills" | "chat_agents" | "chat_agent_tools" | "chat_agent_skills" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "integrations"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2072,6 +2077,376 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    chat_tools: {
+      payload: Prisma.$chat_toolsPayload<ExtArgs>
+      fields: Prisma.chat_toolsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.chat_toolsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_toolsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.chat_toolsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_toolsPayload>
+        }
+        findFirst: {
+          args: Prisma.chat_toolsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_toolsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.chat_toolsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_toolsPayload>
+        }
+        findMany: {
+          args: Prisma.chat_toolsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_toolsPayload>[]
+        }
+        create: {
+          args: Prisma.chat_toolsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_toolsPayload>
+        }
+        createMany: {
+          args: Prisma.chat_toolsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.chat_toolsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_toolsPayload>[]
+        }
+        delete: {
+          args: Prisma.chat_toolsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_toolsPayload>
+        }
+        update: {
+          args: Prisma.chat_toolsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_toolsPayload>
+        }
+        deleteMany: {
+          args: Prisma.chat_toolsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.chat_toolsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.chat_toolsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_toolsPayload>[]
+        }
+        upsert: {
+          args: Prisma.chat_toolsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_toolsPayload>
+        }
+        aggregate: {
+          args: Prisma.Chat_toolsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateChat_tools>
+        }
+        groupBy: {
+          args: Prisma.chat_toolsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Chat_toolsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.chat_toolsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Chat_toolsCountAggregateOutputType> | number
+        }
+      }
+    }
+    chat_skills: {
+      payload: Prisma.$chat_skillsPayload<ExtArgs>
+      fields: Prisma.chat_skillsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.chat_skillsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_skillsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.chat_skillsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_skillsPayload>
+        }
+        findFirst: {
+          args: Prisma.chat_skillsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_skillsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.chat_skillsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_skillsPayload>
+        }
+        findMany: {
+          args: Prisma.chat_skillsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_skillsPayload>[]
+        }
+        create: {
+          args: Prisma.chat_skillsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_skillsPayload>
+        }
+        createMany: {
+          args: Prisma.chat_skillsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.chat_skillsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_skillsPayload>[]
+        }
+        delete: {
+          args: Prisma.chat_skillsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_skillsPayload>
+        }
+        update: {
+          args: Prisma.chat_skillsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_skillsPayload>
+        }
+        deleteMany: {
+          args: Prisma.chat_skillsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.chat_skillsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.chat_skillsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_skillsPayload>[]
+        }
+        upsert: {
+          args: Prisma.chat_skillsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_skillsPayload>
+        }
+        aggregate: {
+          args: Prisma.Chat_skillsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateChat_skills>
+        }
+        groupBy: {
+          args: Prisma.chat_skillsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Chat_skillsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.chat_skillsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Chat_skillsCountAggregateOutputType> | number
+        }
+      }
+    }
+    chat_agents: {
+      payload: Prisma.$chat_agentsPayload<ExtArgs>
+      fields: Prisma.chat_agentsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.chat_agentsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agentsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.chat_agentsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agentsPayload>
+        }
+        findFirst: {
+          args: Prisma.chat_agentsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agentsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.chat_agentsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agentsPayload>
+        }
+        findMany: {
+          args: Prisma.chat_agentsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agentsPayload>[]
+        }
+        create: {
+          args: Prisma.chat_agentsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agentsPayload>
+        }
+        createMany: {
+          args: Prisma.chat_agentsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.chat_agentsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agentsPayload>[]
+        }
+        delete: {
+          args: Prisma.chat_agentsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agentsPayload>
+        }
+        update: {
+          args: Prisma.chat_agentsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agentsPayload>
+        }
+        deleteMany: {
+          args: Prisma.chat_agentsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.chat_agentsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.chat_agentsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agentsPayload>[]
+        }
+        upsert: {
+          args: Prisma.chat_agentsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agentsPayload>
+        }
+        aggregate: {
+          args: Prisma.Chat_agentsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateChat_agents>
+        }
+        groupBy: {
+          args: Prisma.chat_agentsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Chat_agentsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.chat_agentsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Chat_agentsCountAggregateOutputType> | number
+        }
+      }
+    }
+    chat_agent_tools: {
+      payload: Prisma.$chat_agent_toolsPayload<ExtArgs>
+      fields: Prisma.chat_agent_toolsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.chat_agent_toolsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_toolsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.chat_agent_toolsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_toolsPayload>
+        }
+        findFirst: {
+          args: Prisma.chat_agent_toolsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_toolsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.chat_agent_toolsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_toolsPayload>
+        }
+        findMany: {
+          args: Prisma.chat_agent_toolsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_toolsPayload>[]
+        }
+        create: {
+          args: Prisma.chat_agent_toolsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_toolsPayload>
+        }
+        createMany: {
+          args: Prisma.chat_agent_toolsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.chat_agent_toolsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_toolsPayload>[]
+        }
+        delete: {
+          args: Prisma.chat_agent_toolsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_toolsPayload>
+        }
+        update: {
+          args: Prisma.chat_agent_toolsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_toolsPayload>
+        }
+        deleteMany: {
+          args: Prisma.chat_agent_toolsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.chat_agent_toolsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.chat_agent_toolsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_toolsPayload>[]
+        }
+        upsert: {
+          args: Prisma.chat_agent_toolsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_toolsPayload>
+        }
+        aggregate: {
+          args: Prisma.Chat_agent_toolsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateChat_agent_tools>
+        }
+        groupBy: {
+          args: Prisma.chat_agent_toolsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Chat_agent_toolsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.chat_agent_toolsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Chat_agent_toolsCountAggregateOutputType> | number
+        }
+      }
+    }
+    chat_agent_skills: {
+      payload: Prisma.$chat_agent_skillsPayload<ExtArgs>
+      fields: Prisma.chat_agent_skillsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.chat_agent_skillsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_skillsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.chat_agent_skillsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_skillsPayload>
+        }
+        findFirst: {
+          args: Prisma.chat_agent_skillsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_skillsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.chat_agent_skillsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_skillsPayload>
+        }
+        findMany: {
+          args: Prisma.chat_agent_skillsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_skillsPayload>[]
+        }
+        create: {
+          args: Prisma.chat_agent_skillsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_skillsPayload>
+        }
+        createMany: {
+          args: Prisma.chat_agent_skillsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.chat_agent_skillsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_skillsPayload>[]
+        }
+        delete: {
+          args: Prisma.chat_agent_skillsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_skillsPayload>
+        }
+        update: {
+          args: Prisma.chat_agent_skillsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_skillsPayload>
+        }
+        deleteMany: {
+          args: Prisma.chat_agent_skillsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.chat_agent_skillsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.chat_agent_skillsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_skillsPayload>[]
+        }
+        upsert: {
+          args: Prisma.chat_agent_skillsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_agent_skillsPayload>
+        }
+        aggregate: {
+          args: Prisma.Chat_agent_skillsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateChat_agent_skills>
+        }
+        groupBy: {
+          args: Prisma.chat_agent_skillsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Chat_agent_skillsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.chat_agent_skillsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Chat_agent_skillsCountAggregateOutputType> | number
+        }
+      }
+    }
     saved_views: {
       payload: Prisma.$saved_viewsPayload<ExtArgs>
       fields: Prisma.saved_viewsFieldRefs
@@ -2927,6 +3302,7 @@ export const Chat_conversationsScalarFieldEnum = {
   title: 'title',
   is_processing: 'is_processing',
   kind: 'kind',
+  agent_id: 'agent_id',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -2949,6 +3325,84 @@ export const Chat_attachmentsScalarFieldEnum = {
 } as const
 
 export type Chat_attachmentsScalarFieldEnum = (typeof Chat_attachmentsScalarFieldEnum)[keyof typeof Chat_attachmentsScalarFieldEnum]
+
+
+export const Chat_toolsScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  label: 'label',
+  description: 'description',
+  instruction: 'instruction',
+  sort_order: 'sort_order',
+  status: 'status',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_toolsScalarFieldEnum = (typeof Chat_toolsScalarFieldEnum)[keyof typeof Chat_toolsScalarFieldEnum]
+
+
+export const Chat_skillsScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  label: 'label',
+  description: 'description',
+  sort_order: 'sort_order',
+  status: 'status',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_skillsScalarFieldEnum = (typeof Chat_skillsScalarFieldEnum)[keyof typeof Chat_skillsScalarFieldEnum]
+
+
+export const Chat_agentsScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  owner_id: 'owner_id',
+  name: 'name',
+  title: 'title',
+  description: 'description',
+  instructions: 'instructions',
+  autonomy: 'autonomy',
+  status: 'status',
+  version: 'version',
+  forked_from_id: 'forked_from_id',
+  is_default: 'is_default',
+  tagline: 'tagline',
+  avatar_style: 'avatar_style',
+  avatar_seed: 'avatar_seed',
+  created_by: 'created_by',
+  created_at: 'created_at',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_agentsScalarFieldEnum = (typeof Chat_agentsScalarFieldEnum)[keyof typeof Chat_agentsScalarFieldEnum]
+
+
+export const Chat_agent_toolsScalarFieldEnum = {
+  id: 'id',
+  agent_id: 'agent_id',
+  tool_id: 'tool_id',
+  enabled: 'enabled',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_agent_toolsScalarFieldEnum = (typeof Chat_agent_toolsScalarFieldEnum)[keyof typeof Chat_agent_toolsScalarFieldEnum]
+
+
+export const Chat_agent_skillsScalarFieldEnum = {
+  id: 'id',
+  agent_id: 'agent_id',
+  skill_id: 'skill_id',
+  enabled: 'enabled',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_agent_skillsScalarFieldEnum = (typeof Chat_agent_skillsScalarFieldEnum)[keyof typeof Chat_agent_skillsScalarFieldEnum]
 
 
 export const Saved_viewsScalarFieldEnum = {
@@ -3438,6 +3892,20 @@ export type ListEnumChatConversationKindFieldRefInput<$PrismaModel> = FieldRefIn
 
 
 /**
+ * Reference to a field of type 'ChatAgentAutonomy'
+ */
+export type EnumChatAgentAutonomyFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ChatAgentAutonomy'>
+    
+
+
+/**
+ * Reference to a field of type 'ChatAgentAutonomy[]'
+ */
+export type ListEnumChatAgentAutonomyFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ChatAgentAutonomy[]'>
+    
+
+
+/**
  * Reference to a field of type 'SavedViewResourceKind'
  */
 export type EnumSavedViewResourceKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SavedViewResourceKind'>
@@ -3651,6 +4119,11 @@ export type GlobalOmitConfig = {
   version_control_connections?: Prisma.version_control_connectionsOmit
   chat_conversations?: Prisma.chat_conversationsOmit
   chat_attachments?: Prisma.chat_attachmentsOmit
+  chat_tools?: Prisma.chat_toolsOmit
+  chat_skills?: Prisma.chat_skillsOmit
+  chat_agents?: Prisma.chat_agentsOmit
+  chat_agent_tools?: Prisma.chat_agent_toolsOmit
+  chat_agent_skills?: Prisma.chat_agent_skillsOmit
   saved_views?: Prisma.saved_viewsOmit
   saved_view_shares?: Prisma.saved_view_sharesOmit
   charts?: Prisma.chartsOmit

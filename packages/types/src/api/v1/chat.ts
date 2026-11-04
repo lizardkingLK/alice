@@ -29,7 +29,7 @@ export type ChatConversationKind =
 
 /** PostgREST column list for chat conversation list reads (RSC + API parity). */
 export const CHAT_CONVERSATION_POSTGREST_SELECT =
-  'id, title, created_at, updated_at, is_processing, kind' as const;
+  'id, title, created_at, updated_at, is_processing, kind, agent_id' as const;
 
 export enum ChatTurnRoleEnum {
   USER = 'user',
@@ -258,6 +258,7 @@ export const chatConversationSummarySchema = z.object({
     ChatConversationKinds.general,
     ChatConversationKinds.temporary,
   ]),
+  agent_id: z.uuid().nullable().optional(),
 });
 
 export type ChatConversationSummaryWire = z.infer<
@@ -281,6 +282,8 @@ export const postChatMessageBodySchema = z.object({
   conversationId: z.preprocess(emptyToUndefined, z.uuid().optional()),
   integrationId: z.preprocess(emptyToUndefined, z.uuid().optional()),
   modelId: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  /** Bound chat agent; omitted → workspace default Alice agent. */
+  agentId: z.preprocess(emptyToUndefined, z.uuid().optional()),
   attachments: z.array(chatAttachmentWireSchema).optional(),
   viewContext: chatViewContextSchema.optional(),
   /** Defaults to `general` (`/chat`). Dock/widget send `temporary`. */

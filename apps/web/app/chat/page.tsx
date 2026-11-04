@@ -12,21 +12,35 @@ import {
   CHAT_HISTORY_SIDEBAR_COOKIE_NAME,
   parseChatHistorySidebarOpenCookie,
 } from './_helpers/chat-history-sidebar-storage';
+import {
+  PREFERRED_CHAT_AGENT_COOKIE_NAME,
+  parsePreferredChatAgentCookie,
+} from './_helpers/preferred-chat-agent-storage';
 
-async function readChatHistorySidebarDefaultOpen(): Promise<boolean> {
+async function readChatPageCookies(): Promise<{
+  historyOpen: boolean;
+  preferredAgentId: string | null;
+}> {
   const store = await cookies();
-  return parseChatHistorySidebarOpenCookie(
-    store.get(CHAT_HISTORY_SIDEBAR_COOKIE_NAME)?.value
-  );
+  return {
+    historyOpen: parseChatHistorySidebarOpenCookie(
+      store.get(CHAT_HISTORY_SIDEBAR_COOKIE_NAME)?.value
+    ),
+    preferredAgentId: parsePreferredChatAgentCookie(
+      store.get(PREFERRED_CHAT_AGENT_COOKIE_NAME)?.value
+    ),
+  };
 }
 
 async function ChatPageData({
   conversationId,
   agentId,
+  preferredAgentId,
   initialHistoryOpen,
 }: Readonly<{
   conversationId?: string;
   agentId?: string;
+  preferredAgentId: string | null;
   initialHistoryOpen: boolean;
 }>) {
   const [bootstrapResult, chatModels, dbUser] = await Promise.all([
@@ -44,15 +58,20 @@ async function ChatPageData({
   }
 
   const bootstrap = bootstrapResult.data;
+  const activeConversation = bootstrap.conversations.find(
+    (row) => row.id === bootstrap.activeConversationId
+  );
+  const resolvedAgentId =
+    agentId ?? activeConversation?.agent_id ?? preferredAgentId ?? undefined;
 
   return (
     <ChatClient
-      conversationStateKey={`${conversationId ?? 'new'}:${agentId ?? ''}`}
+      conversationStateKey={`${conversationId ?? 'new'}:${resolvedAgentId ?? ''}`}
       initialConversations={bootstrap.conversations}
       initialConversationId={bootstrap.activeConversationId}
       initialMessages={bootstrap.messages}
       initialChatModels={chatModels}
-      initialAgentId={agentId}
+      initialAgentId={resolvedAgentId}
       initialHistoryOpen={initialHistoryOpen}
       currentUserName={dbUser?.name}
       currentUserEmail={dbUser?.email}
@@ -74,7 +93,7 @@ export default async function ChatPage({
   const resolved = await searchParams;
   const conversationId = resolved.conversationId;
   const agentId = resolved.agentId;
-  const initialHistoryOpen = await readChatHistorySidebarDefaultOpen();
+  const { historyOpen, preferredAgentId } = await readChatPageCookies();
 
   return (
     <DashboardShell
@@ -87,7 +106,8 @@ export default async function ChatPage({
         <ChatPageData
           conversationId={conversationId}
           agentId={agentId}
-          initialHistoryOpen={initialHistoryOpen}
+          preferredAgentId={preferredAgentId}
+          initialHistoryOpen={historyOpen}
         />
       </Suspense>
     </DashboardShell>

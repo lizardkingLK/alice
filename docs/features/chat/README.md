@@ -9,7 +9,7 @@ synchronization, and signed URL auto-refresh.
 | Document                                               | Description                                                                                                                                                                                                | Status      |
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
 | [AI_CHATBOT.md](./AI_CHATBOT.md)                       | Architecture, four providers, 13 server-side tools, multi-format attachments (JSON, CSV, TSV, MD, Outline, YAML), atomic imports, backlog sync, signed URL auto-refresh, storage, and deduplication engine | Implemented |
-| [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md) | Chat header **Agents** gallery dialog + customize; Project Manager system template; archive/fork; distinct from Settings LLM models                                                                        | In progress |
+| [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md) | Chat header **Agents** gallery; DB-backed Alice default + forks; preferred cookie SSR; `agent_id` bind; Planned: Mongo, encrypted history, Shared                                                          | Implemented |
 | [USER_TEST_GUIDE.md](./USER_TEST_GUIDE.md)             | Step-by-step end-to-end testing guide with copy-pasteable sample JSON, CSV, Markdown, and Outline files, atomic failure handling, and backlog updates                                                      | Implemented |
 
 Quick links:
@@ -17,7 +17,8 @@ Quick links:
 - Web UI: `apps/web/app/chat/`, floating widget via `dashboard-shell.tsx`
 - API: `apps/api/src/routes/api/chat/` (composition → route → service → repository)
 - DI: [architecture/DI.md](../../architecture/DI.md)
-- Schema: `chat_conversations` and `chat_attachments` in `packages/db/prisma/schema.prisma`
+- Schema: `chat_conversations`, `chat_attachments`, and (DB slice) `chat_agents` /
+  `chat_tools` / `chat_skills` (+ joins) in `packages/db/prisma/schema.prisma`
 - Types: `packages/types/src/chat.ts`, `packages/types/src/chat-attachments.ts`, `packages/types/src/api/v1/chat.ts`
 - Related: [Projects](../projects/), [Work items](../work-items/), [Sprints](../sprints/),
   [Dashboard](../dashboard/),

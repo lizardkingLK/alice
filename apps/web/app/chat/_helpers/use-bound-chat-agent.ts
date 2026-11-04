@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import {
-  getChatAgentById,
-  subscribeChatAgentsCatalog,
+  chatAgentDetailToRecord,
   type ChatAgentKind,
   type ChatAgentRecord,
 } from '@/app/chat/_helpers/chat-agents-catalog';
 import type { ChatAgentAvatarStyle } from '@/app/chat/_helpers/chat-agent-avatar';
+import { getChatAgentClient } from '@/app/chat/_services/chat-agents.reads.client';
 
 /** Default product assistant when no agent is bound to the conversation. */
 export const DEFAULT_CHAT_ASSISTANT_NAME = 'Alice';
@@ -32,7 +32,7 @@ function toIdentity(agent: ChatAgentRecord): ChatAssistantIdentity {
   };
 }
 
-/** Resolve a bound agent from the local catalog (null = Alice fallback). */
+/** Resolve a bound agent from GET /chat-agents/:id (null = Alice fallback). */
 export function useBoundChatAgent(
   agentId: string | undefined
 ): ChatAssistantIdentity | null {
@@ -43,12 +43,27 @@ export function useBoundChatAgent(
       setIdentity(null);
       return;
     }
-    const sync = () => {
-      const found = getChatAgentById(agentId);
-      setIdentity(found ? toIdentity(found) : null);
+
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const detail = await getChatAgentClient(agentId);
+        if (cancelled) {
+          return;
+        }
+        setIdentity(toIdentity(chatAgentDetailToRecord(detail)));
+      } catch (error) {
+        console.error('Failed to resolve bound chat agent:', error);
+        if (!cancelled) {
+          setIdentity(null);
+        }
+      }
     };
-    sync();
-    return subscribeChatAgentsCatalog(sync);
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, [agentId]);
 
   return identity;
