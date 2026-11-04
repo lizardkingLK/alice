@@ -247,6 +247,18 @@ Validated with Zod discriminated unions in `@repo/types` (`integrations/config.t
 
 #### AI agent — chat model (`provider: gemini | spacexai | openai | anthropic`)
 
+**Model id policy (pinned, no auto-cron):**
+
+- Store **dated / explicit** provider model ids in `config.model` (e.g.
+  `claude-haiku-4-5-20251001`), not silent `*-latest` rewrites.
+- Curated suggestions live in `@repo/types` `PROVIDER_CHAT_MODEL_SUGGESTIONS`.
+- When a vendor retires a model: update that catalog via PR, add the old id to
+  `RETIRED_CHAT_MODEL_IDS`, and let Settings warn admins
+  (`resolveConfiguredChatModelStatus`). Do **not** overnight-rewrite workspace
+  rows.
+- Admins can keep a custom pin (warned as “not curated”) or click **Use
+  {recommended}** when the id is known-retired.
+
 ```json
 {
   "kind": "chat_model",

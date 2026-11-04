@@ -17,6 +17,11 @@ type ChatAgentInstructionsEditorProps = {
   // eslint-disable-next-line no-unused-vars
   readonly onChange: (markdown: string) => void;
   readonly className?: string;
+  /**
+   * When false, hide the maximize control and keep a tall embedded surface.
+   * Default true (work-item description parity).
+   */
+  readonly allowMaximize?: boolean;
 };
 
 /**
@@ -28,9 +33,11 @@ export function ChatAgentInstructionsEditor({
   value,
   onChange,
   className,
+  allowMaximize = true,
 }: Readonly<ChatAgentInstructionsEditorProps>) {
   const [isMaximized, setIsMaximized] = useState(false);
   const lastEmittedRef = useRef(value.trim());
+  const useMaximize = allowMaximize && isMaximized;
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -45,7 +52,7 @@ export function ChatAgentInstructionsEditor({
         id,
         role: 'textbox',
         'aria-label': 'Instructions',
-        class: getEditorStyles(false),
+        class: getEditorStyles(false, { tall: !allowMaximize }),
       },
     },
     onUpdate: ({ editor: next }) => {
@@ -79,14 +86,14 @@ export function ChatAgentInstructionsEditor({
           id,
           role: 'textbox',
           'aria-label': 'Instructions',
-          class: getEditorStyles(isMaximized),
+          class: getEditorStyles(useMaximize, { tall: !allowMaximize }),
         },
       },
     });
-  }, [editor, id, isMaximized]);
+  }, [allowMaximize, editor, id, useMaximize]);
 
   useEffect(() => {
-    if (!isMaximized) {
+    if (!useMaximize) {
       return;
     }
     const originalStyle = globalThis.getComputedStyle(document.body).overflow;
@@ -94,13 +101,13 @@ export function ChatAgentInstructionsEditor({
     return () => {
       document.body.style.overflow = originalStyle;
     };
-  }, [isMaximized]);
+  }, [useMaximize]);
 
   if (!editor) {
     return (
       <div
         className={cn(
-          'bg-background relative min-h-[200px] w-full rounded-lg border p-2',
+          'bg-background relative min-h-[28rem] w-full rounded-lg border p-2',
           className
         )}
       />
@@ -111,7 +118,7 @@ export function ChatAgentInstructionsEditor({
     <div
       className={cn(
         'bg-background flex flex-col border transition-all duration-200',
-        isMaximized
+        useMaximize
           ? 'fixed inset-0 z-50 h-screen w-screen gap-4 rounded-none p-6'
           : 'relative w-full gap-2 rounded-lg p-2',
         className
@@ -119,14 +126,15 @@ export function ChatAgentInstructionsEditor({
     >
       <EditorCommandsBar
         editor={editor}
-        isMaximized={isMaximized}
+        isMaximized={useMaximize}
+        allowMaximize={allowMaximize}
         onToggleMaximize={() => setIsMaximized((prev) => !prev)}
       />
 
       <div
         className={cn(
           'bg-background/50 overflow-y-auto rounded-md border',
-          isMaximized ? 'flex-1' : ''
+          useMaximize ? 'flex-1' : ''
         )}
       >
         <EditorContent editor={editor} />

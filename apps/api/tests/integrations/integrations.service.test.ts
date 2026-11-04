@@ -247,7 +247,12 @@ describe('IntegrationsService', () => {
       ['alice-gemini', 'gemini', 'gemini-3.6-flash', 'Gemini 3.6'],
       ['alice-spacexai', 'spacexai', 'grok-4.3', 'Grok 4.3'],
       ['openai', 'openai', 'gpt-4o', 'GPT-4o'],
-      ['anthropic', 'anthropic', 'claude-sonnet-4-20250514', 'Claude Sonnet 4'],
+      [
+        'anthropic',
+        'anthropic',
+        'claude-sonnet-4-5-20250929',
+        'Claude Sonnet 4.5',
+      ],
     ].map(([catalogId, provider, model, displayLabel], index) => ({
       ...integrationRow,
       id: `${index + 1}1111111-1111-4111-8111-111111111111`,

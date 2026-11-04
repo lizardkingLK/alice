@@ -63,8 +63,8 @@ describe('defaultModelForProvider', () => {
       label: 'GPT-4o',
     });
     expect(defaultModelForProvider('anthropic')).toEqual({
-      value: 'claude-sonnet-4-20250514',
-      label: 'Claude Sonnet 4',
+      value: 'claude-sonnet-4-5-20250929',
+      label: 'Claude Sonnet 4.5',
     });
   });
 });

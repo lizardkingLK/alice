@@ -13,10 +13,13 @@ const EditorCommandsBar = memo(function ({
   editor,
   isMaximized,
   onToggleMaximize,
+  allowMaximize = true,
 }: Readonly<{
   readonly editor: Editor;
   isMaximized: boolean;
   readonly onToggleMaximize: () => void;
+  /** When false, hide the maximize / minimize control. Default true. */
+  readonly allowMaximize?: boolean;
 }>) {
   const { openLinkDialog, dialog } = useEditorLinkDialog(editor, {
     submitLabel: 'Apply link',
@@ -51,20 +54,22 @@ const EditorCommandsBar = memo(function ({
           />
         </div>
 
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          className="ml-auto h-8 w-8 shrink-0 cursor-pointer"
-          onClick={onToggleMaximize}
-          title={isMaximized ? 'Minimize Editor' : 'Maximize Editor'}
-        >
-          {isMaximized ? (
-            <Minimize2 className="h-4 w-4" />
-          ) : (
-            <Maximize2 className="h-4 w-4" />
-          )}
-        </Button>
+        {allowMaximize ? (
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="ml-auto h-8 w-8 shrink-0 cursor-pointer"
+            onClick={onToggleMaximize}
+            title={isMaximized ? 'Minimize Editor' : 'Maximize Editor'}
+          >
+            {isMaximized ? (
+              <Minimize2 className="h-4 w-4" />
+            ) : (
+              <Maximize2 className="h-4 w-4" />
+            )}
+          </Button>
+        ) : null}
       </div>
       {dialog}
     </>

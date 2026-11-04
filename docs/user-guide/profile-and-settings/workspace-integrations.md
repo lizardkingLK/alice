@@ -39,11 +39,15 @@ will succeed.
 2. Select **View integration**. Turning on the card switch also opens the same
    configuration dialog.
 3. Choose one of the **Suggested models**, or enter the provider's exact
-   **Model id**.
+   **Model id** (prefer a dated id from the provider docs).
 4. Enter a clear **Display label** for the chat model menu.
 5. Paste the provider **API key**.
 6. Optionally select **Use as workspace default in chat**.
 7. Select **Connect model**.
+
+Suggested models are pinned versions Alice maintains. Alice does **not**
+auto-change your configured model when a vendor retires one. If a model id is
+retired, the dialog warns you and offers **Use {recommended model}**.
 
 The workspace default is the initial choice for new chat sessions. Only one
 active AI model is the workspace default at a time.
