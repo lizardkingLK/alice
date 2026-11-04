@@ -1,7 +1,7 @@
 # Alice agent personalization
 
-Status: **Implemented** (Mongo / encrypted conversation records / Shared tab
-deferred — see [Future](#future))
+Status: **Implemented** — follow-ups (Mongo, encrypted conversation records,
+Shared tab) are **Planned**; see [Planned next](#planned-next).
 
 Personalized **agents** (persona, encrypted instructions, skill/tool
 enablement, autonomy) open from the chat header gallery panel. They are
@@ -15,7 +15,7 @@ Related:
 - Model pool / Settings: [SETTINGS_INTEGRATIONS.md](../integrations/SETTINGS_INTEGRATIONS.md)
 - Project access for tools: [UNIFIED_PROJECT_REGISTRY_AND_CHAT_VALIDATION.md](../projects/UNIFIED_PROJECT_REGISTRY_AND_CHAT_VALIDATION.md)
 - User guide: [alice-agents.md](../../user-guide/chat/alice-agents.md)
-- Views share pattern (deferred for agents): [FAVORITES_AND_VIEWS.md](../views/FAVORITES_AND_VIEWS.md)
+- Views share pattern (reuse for agent shares): [FAVORITES_AND_VIEWS.md](../views/FAVORITES_AND_VIEWS.md)
 
 ---
 
@@ -35,17 +35,18 @@ Related:
 - Encrypt all natural-language instruction fields **at rest** so DB consoles
   only see ciphertext.
 
-## Non-goals (this slice)
+## Non-goals (shipped slice)
 
 - Monday-style Jobs / Channels / Activity run history
 - Custom agent builder from blank (admin originals + fork only)
 - Drawer Agents UI
 - Replacing Settings model integrations with personas
 - Deep-linking the Agents panel via query params
-- Views-style **agent shares** (Shared tab deferred)
 - `is_locked` / immutable templates (admins may edit originals)
-- MongoDB / worker migration for agents or encrypted conversation records
-  (see [Future](#future))
+
+Agent shares / Shared tab, MongoDB + worker migration, and encrypted
+conversation records are **not** non-goals — they are queued under
+[Planned next](#planned-next).
 
 ---
 
@@ -84,8 +85,8 @@ and skills enabled). No Project Manager / Alex seed.
   Client sends `agentId` when bound; API falls back to conversation `agent_id`,
   then global `is_default`, when omitted.
 
-**Gallery tabs:** **Mine** | **Archived** (Shared deferred / empty). Search
-beside the Agents heading.
+**Gallery tabs:** **Mine** | **Archived** today; **Shared** is Planned (tab
+may stay empty until shares ship). Search beside the Agents heading.
 
 ### Fork = new version
 
@@ -241,13 +242,16 @@ Bound header identity →  reopen dialog on that agent’s detail
 
 ---
 
-## Future
+## Planned next
 
-Out of scope for this slice; keep the current encrypt helpers and agent shape
-portable:
+Accepted follow-ups — not deferred. Keep encrypt helpers and the agent shape
+portable so these can land without a rewrite. Implementation timing is TBD.
 
-1. Move agentic / instructions data to **MongoDB** reached from a **worker**
-   app.
-2. Move chat conversation history **out of Supabase Storage** into encrypted
-   conversation records in that store.
-3. Views-style **agent shares** and a populated Shared gallery tab.
+| #   | Workstream                         | Intent                                                                                      |
+| --- | ---------------------------------- | ------------------------------------------------------------------------------------------- |
+| 1   | **MongoDB + worker**               | Move agentic / instructions data to MongoDB reached from a worker app                       |
+| 2   | **Encrypted conversation records** | Move chat history out of Supabase Storage into encrypted conversation records in that store |
+| 3   | **Agent shares + Shared tab**      | Views-style agent shares and a populated Shared gallery tab                                 |
+
+Until then: instructions stay encrypted in Postgres; conversation history stays
+in Storage; gallery Shared remains empty / unavailable in the UI.

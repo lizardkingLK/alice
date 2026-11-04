@@ -176,13 +176,13 @@ function ChatAgentCustomizeLoaded({
   const [restoreConfirmOpen, setRestoreConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [setDefaultConfirmOpen, setSetDefaultConfirmOpen] = useState(false);
-  const [preferredAgentId, setPreferredAgentIdState] = useState<string | null>(
-    () => getPreferredChatAgentId()
+  const [preferredAgentId, setPreferredAgentId] = useState<string | null>(() =>
+    getPreferredChatAgentId()
   );
 
   useEffect(() => {
     return subscribePreferredChatAgent(() => {
-      setPreferredAgentIdState(getPreferredChatAgentId());
+      setPreferredAgentId(getPreferredChatAgentId());
     });
   }, []);
 
@@ -395,14 +395,14 @@ function ChatAgentCustomizeLoaded({
   const handleTogglePreferred = () => {
     if (isPreferred) {
       setPreferredChatAgentId(null);
-      setPreferredAgentIdState(null);
+      setPreferredAgentId(null);
       toast.success('Preferred agent cleared', {
         description: 'Chat will use the workspace default when unbound.',
       });
       return;
     }
     rememberPreferredChatAgent(agent.id);
-    setPreferredAgentIdState(agent.id);
+    setPreferredAgentId(agent.id);
     toast.success('Preferred agent saved', {
       description: 'This browser will open chat with this agent by default.',
     });

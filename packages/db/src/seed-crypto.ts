@@ -8,10 +8,9 @@ import {
   decodeSecretEncryptionKey,
   decryptSecretWithKey,
   encryptSecretWithKey,
-  isEncryptedSecret,
 } from './secret-crypto.js';
 
-export { isEncryptedSecret };
+export { isEncryptedSecret } from './secret-crypto.js';
 
 /**
  * Same wire format as `apps/api` `token-crypto` (`v1:` + AES-256-GCM).

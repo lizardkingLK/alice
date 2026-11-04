@@ -46,10 +46,12 @@ Related:
 - Vector RAG / embeddings over workspace content
 - Slack / Teams / external chat integrations (see ROADMAP)
 - Chat-specific RBAC beyond “authenticated user”
-- Dedicated `chat_messages` table (history lives in Storage until a future
-  encrypted conversation-record migration — see agents [Future](./AGENT_PERSONALIZATION.md#future))
+- Dedicated `chat_messages` table (history lives in Storage until the Planned
+  encrypted conversation-record migration — see agents
+  [Planned next](./AGENT_PERSONALIZATION.md#planned-next))
 - Automatic triage, NL backlog search, or other ROADMAP AI items
-- Views-style agent sharing (deferred; see [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md))
+- Views-style agent sharing (Planned; see
+  [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md#planned-next))
 
 ---
 
@@ -58,7 +60,7 @@ Related:
 | Surface         | Location                                  | Behavior                                                                                                                                                                           |
 | --------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Full page       | `/chat`                                   | Edge-to-edge in the dashboard shell; history sidebar; Agents gallery via header icon dialog; New Chat / model icons; breadcrumb shows active chat title; suggestions, action cards |
-| Agents          | Header **Agents** dialog on `/chat`       | Gallery (Mine / Archived; Shared deferred) and customize detail in-panel — see [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md)                                              |
+| Agents          | Header **Agents** dialog on `/chat`       | Gallery (Mine / Archived; Shared Planned) and customize detail in-panel — see [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md)                                               |
 | Navbar launcher | All `DashboardShell` pages except `/chat` | Header control between notifications and profile → right drawer; same `ChatClient` (`variant="drawer"`); conversation-only (no Agents panel)                                       |
 | Nav             | Platform → **Alice** (`Sparkles` icon)    | Links to `/chat`                                                                                                                                                                   |
 
@@ -581,4 +583,4 @@ For full step-by-step instructions for testing from the browser UI (with sample 
 5. Document attachment processing (upload-session, Supabase Storage direct upload, JSON/CSV parsing, deduplication engine, batch work item import, and strict project scope guardrails)
 6. Universal multi-format parser (TSV, Markdown tables, Indented text outlines, YAML), signed URL auto-refresh & expiration handling, atomic hierarchy pre-validation & user choice protocol, incremental backlog synchronization (`updateExisting`), and action card expansion (`update_work_item`).
 7. Comprehensive hierarchy & field change detection across all attachment formats with mandatory conversational reporting, strict work-item deletion disallowance via chat (omitted items retained in backlog with user notice), and resilient chat provider network error handling with retry and exponential backoff.
-8. **Agents:** `chat_agents` + `chat_tools` / `chat_skills` catalogs, encrypted instructions at rest, admin default Alice + member fork-once, ChatService tool filtering by agent enablement, web gallery/customize on the chat-agents API, preferred agent cookie + SSR seed, conversation `agent_id` bind round-trip — see [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md). Conversation history remains in Storage until a later encrypted-records / worker migration.
+8. **Agents:** `chat_agents` + `chat_tools` / `chat_skills` catalogs, encrypted instructions at rest, admin default Alice + member fork-once, ChatService tool filtering by agent enablement, web gallery/customize on the chat-agents API, preferred agent cookie + SSR seed, conversation `agent_id` bind round-trip — see [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md). Conversation history remains in Storage until the Planned encrypted-records / worker migration.

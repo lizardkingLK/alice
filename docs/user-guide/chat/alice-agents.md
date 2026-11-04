@@ -41,7 +41,8 @@ to manage agents.
 | **Mine**     | Workspace (admin) agents you can open or fork, plus agents you own |
 | **Archived** | Personal agents you archived                                       |
 
-**Shared with me** is not available yet.
+**Shared with me** is planned (same idea as Views sharing) and will appear when
+agent shares ship.
 
 Use **Search agents…** (to the right of the Agents heading) to filter the
 active tab by name, title, persona, description, or author.
