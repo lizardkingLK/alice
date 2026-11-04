@@ -72,10 +72,8 @@ import {
   parseGithubRepoPath,
 } from '@/lib/projects/github-repo-path';
 import {
-  Step2Imports,
-  Step3SourceControl,
-  type Step2ImportsProps,
-  type Step3SourceControlProps,
+  StepIntegrations,
+  type StepIntegrationsProps,
 } from '@/app/projects/_components/project-form-integration-steps';
 import {
   Step5Team,
@@ -89,6 +87,7 @@ import {
   type ProjectCreationDraft,
 } from '@/app/projects/_helpers/project-creation-draft-storage';
 import { readProjectCreationDraftAuto } from '@/app/projects/_helpers/project-creation-draft-preference';
+import { mapAiBindingsToIntegrationBindings } from '@/app/projects/_helpers/project-ai-bindings';
 
 interface ProjectFormProps {
   readonly onClose?: () => void;
@@ -107,8 +106,7 @@ interface ProjectFormProps {
 const DRAFT_STEP_LABELS = [
   'Details',
   'Types',
-  'Imports',
-  'Source',
+  'Integrations',
   'Sprint',
   'Team',
 ] as const;
@@ -299,6 +297,20 @@ function validateTeamStep(
   return null;
 }
 
+function validateIntegrationsStep(
+  importFromJira: boolean,
+  jiraConnectionId: string,
+  jiraProjectKey: string,
+  enableGithub: boolean,
+  githubOwner: string,
+  githubRepoName: string
+): string | null {
+  return (
+    validateImportsStep(importFromJira, jiraConnectionId, jiraProjectKey) ??
+    validateSourceStep(enableGithub, githubOwner, githubRepoName)
+  );
+}
+
 function getStepError(
   currentStep: number,
   fields: {
@@ -345,20 +357,16 @@ function getStepError(
     return validateTypesStep(fields.workItemTypeDefs);
   }
   if (currentStep === 3) {
-    return validateImportsStep(
+    return validateIntegrationsStep(
       fields.importFromJira,
       fields.jiraConnectionId,
-      fields.jiraProjectKey
-    );
-  }
-  if (currentStep === 4) {
-    return validateSourceStep(
+      fields.jiraProjectKey,
       fields.enableGithub,
       fields.githubOwner,
       fields.githubRepoName
     );
   }
-  if (currentStep === 5) {
+  if (currentStep === 4) {
     return validateSprintStep(
       fields.createInitialSprint,
       fields.sprintName,
@@ -367,7 +375,7 @@ function getStepError(
       fields.sprintEndDate
     );
   }
-  if (currentStep === 6) {
+  if (currentStep === 5) {
     return validateTeamStep(
       fields.createInitialTeam,
       fields.teamName,
@@ -743,12 +751,11 @@ function ProjectFormStepper({
   const steps = [
     { number: 1, label: 'Details' },
     { number: 2, label: 'Types' },
-    { number: 3, label: 'Imports' },
-    { number: 4, label: 'Source' },
+    { number: 3, label: 'Integrations' },
     ...(!isEditMode
       ? [
-          { number: 5, label: 'Sprint' },
-          { number: 6, label: 'Team' },
+          { number: 4, label: 'Sprint' },
+          { number: 5, label: 'Team' },
         ]
       : []),
   ];
@@ -975,7 +982,7 @@ function getSafeDraftStep(
   currentStep: ProjectCreationDraft['currentStep']
 ): ProjectCreationDraft['currentStep'] {
   return Math.min(
-    6,
+    5,
     Math.max(1, currentStep)
   ) as ProjectCreationDraft['currentStep'];
 }
@@ -1065,8 +1072,7 @@ type ProjectFormStepBodyProps = {
   step: number;
   step1: ComponentProps<typeof Step1BasicDetails>;
   stepTypes: StepTypesProps;
-  stepImports: Step2ImportsProps;
-  stepSource: Step3SourceControlProps;
+  stepIntegrations: StepIntegrationsProps;
   stepSprint: Step4SprintProps;
   stepTeam: Step5TeamProps;
 };
@@ -1075,8 +1081,7 @@ function ProjectFormStepBody({
   step,
   step1,
   stepTypes,
-  stepImports,
-  stepSource,
+  stepIntegrations,
   stepSprint,
   stepTeam,
 }: Readonly<ProjectFormStepBodyProps>) {
@@ -1087,12 +1092,9 @@ function ProjectFormStepBody({
     return <StepTypes {...stepTypes} />;
   }
   if (step === 3) {
-    return <Step2Imports {...stepImports} />;
+    return <StepIntegrations {...stepIntegrations} />;
   }
   if (step === 4) {
-    return <Step3SourceControl {...stepSource} />;
-  }
-  if (step === 5) {
     return <Step4Sprint {...stepSprint} />;
   }
 
@@ -1298,6 +1300,12 @@ export function ProjectForm({
   const [githubRepoName, setGithubRepoName] = useState('');
   const [githubToken, setGithubToken] = useState('');
 
+  // AI integration bindings (create mode; bind-by-reference)
+  const [aiBindingIds, setAiBindingIds] = useState<string[]>([]);
+  const [defaultAiIntegrationId, setDefaultAiIntegrationId] = useState<
+    string | null
+  >(null);
+
   // Initial Sprint States (create mode only)
   const [createInitialSprint, setCreateInitialSprint] = useState(false);
   const [sprintName, setSprintName] = useState('');
@@ -1312,7 +1320,7 @@ export function ProjectForm({
   const [teamTechStack, setTeamTechStack] = useState('');
   const [teamMemberIds, setTeamMemberIds] = useState<string[]>([]);
 
-  const finalStep = isEditMode ? 4 : 6;
+  const finalStep = isEditMode ? 3 : 5;
   const defaultTypeDefs = buildDefaultProjectTypeDefs();
   const usesDefaultWorkItemTypes =
     workItemTypeDefs.length === defaultTypeDefs.length &&
@@ -1339,6 +1347,8 @@ export function ProjectForm({
       githubOwner !== '' ||
       githubRepoName !== '' ||
       githubToken !== '' ||
+      aiBindingIds.length > 0 ||
+      defaultAiIntegrationId !== null ||
       createInitialSprint ||
       sprintName !== '' ||
       sprintGoal !== '' ||
@@ -1374,6 +1384,10 @@ export function ProjectForm({
       githubOwner,
       githubRepoName,
     },
+    integrations: {
+      aiBindingIds,
+      defaultAiIntegrationId,
+    },
     sprint: {
       createInitialSprint,
       sprintName,
@@ -1408,6 +1422,8 @@ export function ProjectForm({
     setGithubOwner('');
     setGithubRepoName('');
     setGithubToken('');
+    setAiBindingIds([]);
+    setDefaultAiIntegrationId(null);
     setCreateInitialSprint(false);
     setSprintName('');
     setSprintGoal('');
@@ -1443,6 +1459,8 @@ export function ProjectForm({
     setGithubOwner(draft.sourceControl.githubOwner);
     setGithubRepoName(draft.sourceControl.githubRepoName);
     setGithubToken('');
+    setAiBindingIds(draft.integrations.aiBindingIds);
+    setDefaultAiIntegrationId(draft.integrations.defaultAiIntegrationId);
     setCreateInitialSprint(draft.sprint.createInitialSprint);
     setSprintName(draft.sprint.sprintName);
     setSprintGoal(draft.sprint.sprintGoal);
@@ -1692,6 +1710,8 @@ export function ProjectForm({
     enableGithub,
     githubOwner,
     githubRepoName,
+    aiBindingIds,
+    defaultAiIntegrationId,
     createInitialSprint,
     sprintName,
     sprintGoal,
@@ -1802,6 +1822,21 @@ export function ProjectForm({
     };
   };
 
+  const resolveIntegrationBindingsInput = (): Pick<
+    CreateProjectInput,
+    'integration_bindings'
+  > => {
+    if (projectToEdit) {
+      return {};
+    }
+
+    const bindings = mapAiBindingsToIntegrationBindings(
+      aiBindingIds,
+      defaultAiIntegrationId
+    );
+    return bindings ? { integration_bindings: bindings } : {};
+  };
+
   const validateFinalStep = (): boolean => {
     if (isEditMode) return true;
 
@@ -1873,6 +1908,7 @@ export function ProjectForm({
         github_token: resolveGithubToken(),
         ...resolveInitialSprintInput(),
         ...resolveInitialTeamInput(),
+        ...resolveIntegrationBindingsInput(),
       };
 
       if (projectToEdit) {
@@ -1983,15 +2019,13 @@ export function ProjectForm({
               workItemTypeDefs,
               setWorkItemTypeDefs,
             },
-            stepImports: {
+            stepIntegrations: {
               importFromJira,
               handleJiraCheckboxChange,
               jiraConnectionId,
               setJiraConnectionId,
               jiraProjectKey,
               setJiraProjectKey,
-            },
-            stepSource: {
               enableGithub,
               setEnableGithub,
               githubOwner,
@@ -2000,6 +2034,11 @@ export function ProjectForm({
               setGithubRepoName,
               githubToken,
               setGithubToken,
+              aiBindingIds,
+              setAiBindingIds,
+              defaultAiIntegrationId,
+              setDefaultAiIntegrationId,
+              showAiAgents: !isEditMode,
             },
             stepSprint: {
               createInitialSprint,

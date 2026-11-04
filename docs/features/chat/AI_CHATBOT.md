@@ -574,9 +574,9 @@ For full step-by-step instructions for testing from the browser UI (with sample 
     deep links from action cards.
 12. Broader AI roadmap items (smart triage, NL search, Slack/Teams) are **Plan**
     only and are not provided by this chatbot.
-13. Chat model **resolution** (project → page → org) and
-    `project_integration_bindings` are **shipped** (Phase B). Project create /
-    details AI bind UI (Phase C) and Member scope remain **Planned** — see
+13. Chat model **resolution** (project → page → org), bindings, and create /
+    details AI bind UI are **shipped** (Phases B–C). Member scope and
+    import-from-project remain **Planned** — see
     [INTEGRATION_SCOPES.md](../integrations/INTEGRATION_SCOPES.md).
 
 ---

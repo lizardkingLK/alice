@@ -746,6 +746,21 @@ export class ProjectsRepository {
               });
             }
 
+            if (
+              data.integration_bindings &&
+              data.integration_bindings.length > 0
+            ) {
+              await tx.project_integration_bindings.createMany({
+                data: data.integration_bindings.map((binding) => ({
+                  project_id: project.id,
+                  integration_id: binding.integration_id,
+                  is_default_for_project: binding.is_default_for_project,
+                  created_by: actorId,
+                  updated_by: actorId,
+                })),
+              });
+            }
+
             return project;
           },
           {

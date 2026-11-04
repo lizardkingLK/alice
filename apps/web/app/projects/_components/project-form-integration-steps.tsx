@@ -1,8 +1,13 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Label } from '@repo/ui/components/ui/label';
+import { Button } from '@repo/ui/components/ui/button';
+import { Star } from '@repo/ui/lib/icons';
+import { cn } from '@repo/ui/lib/utils';
+import type { ChatModelOption } from '@repo/types';
 import {
   GitHubLogo,
   JiraLogo,
@@ -13,6 +18,12 @@ import { useGithubConnectionPicker } from '@/app/projects/_hooks/use-github-conn
 import { deleteGithubConnection } from '@/app/projects/_services/projects.github.mutations.client';
 import { GithubConnectionFields } from '@/app/projects/_components/github-connection-fields';
 import { parseGithubRepoPath } from '@/lib/projects/github-repo-path';
+import { listChatModelsForChatClient } from '@/app/chat/_services/chat-models.reads.client';
+import {
+  chatModelDisplayLabel,
+  chatProviderDisplayLabel,
+} from '@/app/chat/_services/chat-models-api.shared';
+import { chatAiAgentsIntegrationsHref } from '@/app/chat/_services/chat-integrations-navigation.shared';
 
 function IntegrationProviderOption({
   id,
@@ -72,7 +83,7 @@ export interface Step2ImportsProps {
 }
 /* eslint-enable no-unused-vars */
 
-export function Step2Imports({
+function ImportsSection({
   importFromJira,
   handleJiraCheckboxChange,
   jiraConnectionId,
@@ -96,12 +107,11 @@ export function Step2Imports({
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-left-2 space-y-4 duration-300">
+    <div className="space-y-4">
       <div className="space-y-1">
         <p className="text-sm font-medium">Import sources</p>
         <p className="text-muted-foreground text-xs">
-          Choose product management systems to import work items from. More
-          options can be added over time.
+          Choose product management systems to import work items from.
         </p>
       </div>
 
@@ -147,6 +157,14 @@ export function Step2Imports({
   );
 }
 
+export function Step2Imports(props: Readonly<Step2ImportsProps>) {
+  return (
+    <div className="animate-in fade-in slide-in-from-left-2 duration-300">
+      <ImportsSection {...props} />
+    </div>
+  );
+}
+
 /* eslint-disable no-unused-vars */
 export interface Step3SourceControlProps {
   enableGithub: boolean;
@@ -160,7 +178,7 @@ export interface Step3SourceControlProps {
 }
 /* eslint-enable no-unused-vars */
 
-export function Step3SourceControl({
+function SourceControlSection({
   enableGithub,
   setEnableGithub,
   githubOwner,
@@ -214,12 +232,12 @@ export function Step3SourceControl({
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-left-2 space-y-4 duration-300">
+    <div className="space-y-4">
       <div className="space-y-1">
         <p className="text-sm font-medium">Source control</p>
         <p className="text-muted-foreground text-xs">
           Connect a repository host to link pull requests, commits, and
-          branches. More SCMs can be added over time.
+          branches.
         </p>
       </div>
 
@@ -258,6 +276,224 @@ export function Step3SourceControl({
           </IntegrationProviderOption>
         </li>
       </ul>
+    </div>
+  );
+}
+
+export function Step3SourceControl(props: Readonly<Step3SourceControlProps>) {
+  return (
+    <div className="animate-in fade-in slide-in-from-left-2 duration-300">
+      <SourceControlSection {...props} />
+    </div>
+  );
+}
+
+/* eslint-disable no-unused-vars */
+export interface StepAiAgentsProps {
+  aiBindingIds: string[];
+  setAiBindingIds: (_ids: string[]) => void;
+  defaultAiIntegrationId: string | null;
+  setDefaultAiIntegrationId: (_id: string | null) => void;
+}
+/* eslint-enable no-unused-vars */
+
+function AiAgentsSection({
+  aiBindingIds,
+  setAiBindingIds,
+  defaultAiIntegrationId,
+  setDefaultAiIntegrationId,
+}: Readonly<StepAiAgentsProps>) {
+  const [models, setModels] = useState<ChatModelOption[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const selected = new Set(aiBindingIds);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoading(true);
+    listChatModelsForChatClient()
+      .then((next) => {
+        if (!cancelled) {
+          setModels(next);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setModels([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggleModel = (modelId: string, checked: boolean) => {
+    if (checked) {
+      const nextIds = [...aiBindingIds, modelId];
+      setAiBindingIds(nextIds);
+      if (!defaultAiIntegrationId) {
+        setDefaultAiIntegrationId(modelId);
+      }
+      return;
+    }
+
+    const nextIds = aiBindingIds.filter((id) => id !== modelId);
+    setAiBindingIds(nextIds);
+    if (defaultAiIntegrationId === modelId) {
+      setDefaultAiIntegrationId(nextIds[0] ?? null);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <p className="text-sm font-medium">AI agents</p>
+        <p className="text-muted-foreground text-xs">
+          Bind org chat models to this project. Configure new keys in{' '}
+          <Link
+            href={chatAiAgentsIntegrationsHref()}
+            className="text-foreground underline underline-offset-2"
+          >
+            Settings → Integrations
+          </Link>
+          .
+        </p>
+      </div>
+
+      {isLoading ? (
+        <p className="text-muted-foreground text-xs">Loading chat models...</p>
+      ) : null}
+
+      {!isLoading && models.length === 0 ? (
+        <p className="text-muted-foreground text-xs">
+          No chat models are available yet. Add one under Settings →
+          Integrations.
+        </p>
+      ) : null}
+
+      {!isLoading && models.length > 0 ? (
+        <ul className="space-y-2">
+          {models.map((model) => {
+            const isSelected = selected.has(model.id);
+            const isDefault = defaultAiIntegrationId === model.id;
+            const label = chatModelDisplayLabel(model);
+            const provider = chatProviderDisplayLabel(model.provider);
+
+            return (
+              <li key={model.id}>
+                <div className="border-border bg-muted/20 flex items-center gap-3 rounded-lg border p-3">
+                  <Checkbox
+                    id={`ai-model-${model.id}`}
+                    checked={isSelected}
+                    onCheckedChange={(value) =>
+                      toggleModel(model.id, value === true)
+                    }
+                    className="cursor-pointer"
+                  />
+                  <div className="grid min-w-0 flex-1 gap-0.5">
+                    <Label
+                      htmlFor={`ai-model-${model.id}`}
+                      className="cursor-pointer truncate text-sm font-medium select-none"
+                      title={label}
+                    >
+                      {label}
+                    </Label>
+                    <p className="text-muted-foreground truncate text-xs">
+                      {provider}
+                    </p>
+                  </div>
+                  {isSelected ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 shrink-0"
+                      aria-label={
+                        isDefault
+                          ? `${label} is the project default`
+                          : `Set ${label} as project default`
+                      }
+                      aria-pressed={isDefault}
+                      onClick={() => setDefaultAiIntegrationId(model.id)}
+                    >
+                      <Star
+                        className={cn(
+                          'size-4',
+                          isDefault && 'fill-current text-amber-500'
+                        )}
+                      />
+                    </Button>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+export type StepIntegrationsProps = Step2ImportsProps &
+  Step3SourceControlProps &
+  StepAiAgentsProps & {
+    /** AI bindings are create-wizard only (edit uses project details later). */
+    showAiAgents?: boolean;
+  };
+
+export function StepIntegrations({
+  importFromJira,
+  handleJiraCheckboxChange,
+  jiraConnectionId,
+  setJiraConnectionId,
+  jiraProjectKey,
+  setJiraProjectKey,
+  enableGithub,
+  setEnableGithub,
+  githubOwner,
+  setGithubOwner,
+  githubRepoName,
+  setGithubRepoName,
+  githubToken,
+  setGithubToken,
+  aiBindingIds,
+  setAiBindingIds,
+  defaultAiIntegrationId,
+  setDefaultAiIntegrationId,
+  showAiAgents = true,
+}: Readonly<StepIntegrationsProps>) {
+  return (
+    <div className="animate-in fade-in slide-in-from-left-2 space-y-8 duration-300">
+      <ImportsSection
+        importFromJira={importFromJira}
+        handleJiraCheckboxChange={handleJiraCheckboxChange}
+        jiraConnectionId={jiraConnectionId}
+        setJiraConnectionId={setJiraConnectionId}
+        jiraProjectKey={jiraProjectKey}
+        setJiraProjectKey={setJiraProjectKey}
+      />
+      <SourceControlSection
+        enableGithub={enableGithub}
+        setEnableGithub={setEnableGithub}
+        githubOwner={githubOwner}
+        setGithubOwner={setGithubOwner}
+        githubRepoName={githubRepoName}
+        setGithubRepoName={setGithubRepoName}
+        githubToken={githubToken}
+        setGithubToken={setGithubToken}
+      />
+      {showAiAgents ? (
+        <AiAgentsSection
+          aiBindingIds={aiBindingIds}
+          setAiBindingIds={setAiBindingIds}
+          defaultAiIntegrationId={defaultAiIntegrationId}
+          setDefaultAiIntegrationId={setDefaultAiIntegrationId}
+        />
+      ) : null}
     </div>
   );
 }

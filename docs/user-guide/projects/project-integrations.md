@@ -1,6 +1,6 @@
 # Project integrations
 
-Connect GitHub and Jira to a project.
+Connect GitHub and Jira, and bind organization AI chat models to a project.
 
 **Audience:** Managers and admins
 
@@ -11,8 +11,8 @@ Connect GitHub and Jira to a project.
 1. Go to **Projects** and open a project you can access.
 2. Select the **Integrations** tab.
 
-Anyone with project workspace access can view the tab; connecting credentials
-requires appropriate permissions for each integration.
+The **Integrations** tab is available to **managers and admins**. Connecting
+credentials and saving AI binds require those roles.
 
 ---
 
@@ -64,22 +64,31 @@ connection to link and sync. Only the person who authorized Atlassian can
 
 ---
 
+## AI agents
+
+Use the **AI agents** card to bind organization chat models (from
+**Settings → Integrations**) to this project for Alice Chat.
+
+1. Enable one or more models with the checkboxes.
+2. Star one enabled model as the **project default**.
+3. Select **Save AI models**.
+
+Empty selection clears the project pool — chat falls through to organization
+defaults. New API keys are still created only in
+[Workspace integrations](../profile-and-settings/workspace-integrations.md)
+(bind-by-reference; keys are not copied onto the project).
+
+---
+
 ## Organization vs project
 
-| Level            | Where                                           | Examples                    |
-| ---------------- | ----------------------------------------------- | --------------------------- |
-| **Project**      | Project → **Integrations** tab                  | GitHub repo, Jira import    |
-| **Organization** | **Settings** → **Integrations** (manager/admin) | AI providers, Slack (vault) |
+| Level            | Where                                           | Examples                                 |
+| ---------------- | ----------------------------------------------- | ---------------------------------------- |
+| **Project**      | Project → **Integrations** tab                  | GitHub repo, Jira import, AI model binds |
+| **Organization** | **Settings** → **Integrations** (manager/admin) | AI providers (vault), Slack (planned)    |
 
-Today, AI chat models are configured only at organization (Settings) scope.
-Project integrations do not yet bind AI providers.
-
-> **Planned:** this tab uses the Settings-style integrations marketplace, with
-> **Source control** and **Project management** groups (radio: one each) plus
-> multi-select groups such as **AI agents**. Create-project uses the same
-> grouping. Organization providers are **bound**, not copied into project scope.
-> Saved API keys are masked and not revealable. See
-> [INTEGRATION_SCOPES.md](../../features/integrations/INTEGRATION_SCOPES.md).
+Organization providers are **bound**, not copied into project scope. See
+[INTEGRATION_SCOPES.md](../../features/integrations/INTEGRATION_SCOPES.md).
 
 ---
 

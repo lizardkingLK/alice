@@ -28,19 +28,19 @@ during setup.
 4. On **Types**, configure the work-item catalog (drag to order; icon and color
    pickers update cards live). Names must be unique; custom types get a hidden
    key automatically.
-5. Optionally connect **Jira** (**Imports**) or **GitHub** (**Source**).
-6. On the optional **Team** step, use **Search members…** next to **Team Members**
+5. On **Integrations**, optionally connect **Jira** (project management),
+   **GitHub** (source control), and bind one or more organization **AI agents**
+   (star one as the project default). Mint new AI keys in
+   [Workspace integrations](../profile-and-settings/workspace-integrations.md)
+   first — create only **binds** them (no API keys on this step).
+6. On the optional **Sprint** step, configure an initial sprint if needed.
+7. On the optional **Team** step, use **Search members…** next to **Team Members**
    to filter the list by name or email before selecting people.
-7. Submit **Create Project**.
+8. Submit **Create Project**.
 
-> **Planned:** **Imports** and **Source** merge into one **Integrations** step
-> with grouped lists (**Source control**, **Project management**, **AI agents**,
-> and other catalog groups). Source control and project management stay
-> single-choice (radio). Organization providers stay in
-> **Settings → Integrations**; the create step **binds** them (does not clone
-> them as project-scoped copies). Drafts keep Integrations choices on resume;
-> saved API keys stay masked. See
-> [INTEGRATION_SCOPES.md](../../features/integrations/INTEGRATION_SCOPES.md).
+Drafts keep Integrations choices (including AI binds) on resume; API keys are
+never stored in drafts. See
+[INTEGRATION_SCOPES.md](../../features/integrations/INTEGRATION_SCOPES.md).
 
 Creation is accepted quickly — you are not left waiting on the form while the
 database finishes (**async** acknowledge, then background create/import). Watch

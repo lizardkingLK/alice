@@ -19,6 +19,7 @@ import { initialSprintSchema } from './sprints.js';
 import { initialProjectTeamSchema } from './teams.js';
 import { withJiraProjectDtoFields } from './pm-external.js';
 import { withGithubProjectDtoFields } from './vc-external.js';
+import { projectIntegrationBindingItemSchema } from './integrations.js';
 
 export * from './jira-import-types.js';
 export { projectWorkflowConfigSchema };
@@ -90,6 +91,37 @@ export const createProjectSchema = baseCreateProjectSchema
   .extend({
     sprint: initialSprintSchema.optional(),
     team: initialProjectTeamSchema.optional(),
+    /** Org AI models to bind on create (bind-by-reference). */
+    integration_bindings: z
+      .array(projectIntegrationBindingItemSchema)
+      .optional(),
+  })
+  .superRefine((data, context) => {
+    if (!data.integration_bindings) {
+      return;
+    }
+    const seen = new Set<string>();
+    for (const [index, binding] of data.integration_bindings.entries()) {
+      if (seen.has(binding.integration_id)) {
+        context.addIssue({
+          code: 'custom',
+          message: 'Duplicate integration_id in bindings.',
+          path: ['integration_bindings', index, 'integration_id'],
+        });
+        return;
+      }
+      seen.add(binding.integration_id);
+    }
+    const defaults = data.integration_bindings.filter(
+      (row) => row.is_default_for_project
+    );
+    if (defaults.length > 1) {
+      context.addIssue({
+        code: 'custom',
+        message: 'At most one binding may be the project default.',
+        path: ['integration_bindings'],
+      });
+    }
   })
   .refine(
     (data) => {

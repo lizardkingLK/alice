@@ -370,6 +370,10 @@ export {
   integrationWireSchema,
   listIntegrationsQuerySchema,
   patchIntegrationBodySchema,
+  projectIntegrationBindingItemSchema,
+  projectIntegrationBindingsResponseSchema,
+  projectIntegrationBindingWireSchema,
+  putProjectIntegrationBindingsBodySchema,
   type ChatModelOption,
   type ChatModelOptionsResponse,
   type CreateIntegrationBody,
@@ -379,6 +383,10 @@ export {
   type IntegrationWire,
   type ListIntegrationsQuery,
   type PatchIntegrationBody,
+  type ProjectIntegrationBindingItem,
+  type ProjectIntegrationBindingWire,
+  type ProjectIntegrationBindingsResponse,
+  type PutProjectIntegrationBindingsBody,
 } from './integrations.js';
 export {
   listUsersQuerySchema,

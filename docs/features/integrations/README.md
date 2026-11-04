@@ -5,7 +5,7 @@ Workspace-level **AI agent** and **third-party tool** connections configured by 
 | Document                                               | Description                                                                                                                | Status                  |
 | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
 | [SETTINGS_INTEGRATIONS.md](./SETTINGS_INTEGRATIONS.md) | Settings tab, manager/admin RBAC, catalog, encrypted persistence, and the Gemini/xAI/OpenAI/Anthropic model pool           | **Phase 1 implemented** |
-| [INTEGRATION_SCOPES.md](./INTEGRATION_SCOPES.md)       | Scopes + chat project→page→org resolution (**A/B done**); create/details AI bind UX (**C** next); Settings stays org vault | **A/B shipped**         |
+| [INTEGRATION_SCOPES.md](./INTEGRATION_SCOPES.md)       | Scopes + chat resolution + create/details AI binds (**A/B/C**); import-from-project (**D** next); Settings stays org vault | **A/B/C shipped**       |
 
 Quick links:
 

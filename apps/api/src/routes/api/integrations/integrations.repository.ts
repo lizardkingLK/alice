@@ -160,6 +160,67 @@ export class IntegrationsRepository {
     }));
   }
 
+  /**
+   * Replace all AI bindings for a project. Empty `bindings` clears the pool
+   * (chat falls through to organization defaults).
+   */
+  async replaceProjectChatModelBindings(params: {
+    readonly projectId: string;
+    readonly actorId: string;
+    readonly bindings: ReadonlyArray<{
+      readonly integration_id: string;
+      readonly is_default_for_project: boolean;
+    }>;
+  }): Promise<
+    Array<{
+      integration_id: string;
+      is_default_for_project: boolean;
+      integration: IntegrationDetailRow;
+    }>
+  > {
+    const { projectId, actorId, bindings } = params;
+
+    if (bindings.length > 0) {
+      const ids = bindings.map((row) => row.integration_id);
+      const activeOrgModels = await prisma.integrations.findMany({
+        where: {
+          id: { in: ids },
+          category: IntegrationCategory.ai_agent,
+          scope: IntegrationScope.organization,
+          status: IntegrationStatus.active,
+        },
+        select: { id: true },
+      });
+      if (activeOrgModels.length !== ids.length) {
+        throw new Error(
+          'One or more integrations are not active organization AI models'
+        );
+      }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.project_integration_bindings.deleteMany({
+        where: { project_id: projectId },
+      });
+
+      if (bindings.length === 0) {
+        return;
+      }
+
+      await tx.project_integration_bindings.createMany({
+        data: bindings.map((row) => ({
+          project_id: projectId,
+          integration_id: row.integration_id,
+          is_default_for_project: row.is_default_for_project,
+          created_by: actorId,
+          updated_by: actorId,
+        })),
+      });
+    });
+
+    return this.listActiveChatModelBindingsForProject(projectId);
+  }
+
   async create(data: IntegrationCreateData): Promise<IntegrationDetailRow> {
     return prisma.$transaction(async (tx) => {
       if (data.is_default && data.category === IntegrationCategory.ai_agent) {

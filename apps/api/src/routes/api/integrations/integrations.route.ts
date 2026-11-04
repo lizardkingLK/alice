@@ -10,6 +10,7 @@ import {
   createIntegrationBodySchema,
   listIntegrationsQuerySchema,
   patchIntegrationBodySchema,
+  putProjectIntegrationBindingsBodySchema,
 } from './integrations.schemas';
 import { IntegrationsService } from './integrations.service';
 
@@ -95,6 +96,67 @@ export function createIntegrationsRouter(deps: IntegrationsRouterDeps) {
         res.json({ integrations });
       } catch (error) {
         sendRouteError(res, error, 'Failed to list integrations');
+      }
+    }
+  );
+
+  integrationsRouter.get(
+    '/project-bindings/:projectId',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.projectId);
+      if (!parsedId.success) {
+        return res.status(400).json({ error: 'Invalid project id' });
+      }
+
+      try {
+        const actorId = requireActorId(req);
+        const bindings = await integrationsService.listProjectChatModelBindings(
+          actorId,
+          parsedId.data
+        );
+        res.json({ bindings });
+      } catch (error) {
+        sendRouteError(
+          res,
+          error,
+          'Failed to list project integration bindings'
+        );
+      }
+    }
+  );
+
+  integrationsRouter.put(
+    '/project-bindings/:projectId',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.projectId);
+      if (!parsedId.success) {
+        return res.status(400).json({ error: 'Invalid project id' });
+      }
+
+      const parsed = putProjectIntegrationBindingsBodySchema.safeParse(
+        req.body
+      );
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        const actorId = requireActorId(req);
+        const bindings =
+          await integrationsService.replaceProjectChatModelBindings(
+            actorId,
+            parsedId.data,
+            parsed.data
+          );
+        res.json({ bindings });
+      } catch (error) {
+        sendRouteError(
+          res,
+          error,
+          'Failed to update project integration bindings'
+        );
       }
     }
   );

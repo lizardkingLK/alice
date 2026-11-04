@@ -42,10 +42,12 @@ import {
   type WorkflowStateRemap,
 } from '@repo/types';
 import {
+  IntegrationCategory,
+  IntegrationScope,
+  IntegrationStatus,
   NotificationType as NotificationTypeEnum,
   Prisma,
   type ProjectStatus,
-  type IntegrationStatus,
   type UserRole,
 } from '@repo/types/prisma';
 import { randomUUID } from 'node:crypto';
@@ -78,6 +80,30 @@ async function requireProjectManager(actorId: string) {
     [UserRoleEnum.admin, UserRoleEnum.manager],
     'Unauthorized. Only admins and managers can manage projects.'
   );
+}
+
+async function assertActiveOrgAiBindings(
+  bindings: CreateProjectInput['integration_bindings']
+): Promise<void> {
+  if (!bindings || bindings.length === 0) {
+    return;
+  }
+
+  const ids = bindings.map((row) => row.integration_id);
+  const activeOrgModels = await prisma.integrations.findMany({
+    where: {
+      id: { in: ids },
+      category: IntegrationCategory.ai_agent,
+      scope: IntegrationScope.organization,
+      status: IntegrationStatus.active,
+    },
+    select: { id: true },
+  });
+  if (activeOrgModels.length !== ids.length) {
+    throw new Error(
+      'One or more integrations are not active organization AI models'
+    );
+  }
 }
 
 function promoteWorkflowToDefaultOrThrow(
@@ -344,6 +370,8 @@ export class ProjectsService {
         throw new Error('Only one GitHub repository is allowed per project.');
       }
     }
+
+    await assertActiveOrgAiBindings(input.integration_bindings);
 
     const team = input.team;
 

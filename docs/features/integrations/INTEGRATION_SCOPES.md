@@ -1,17 +1,12 @@
 # Integration scopes (Organization / Project / Member)
 
-Status: **In progress** — Phases **A** + **B** shipped. Schema has
-`IntegrationScope` (default `organization`) and empty
+Status: **In progress** — Phases **A** + **B** + **C** (slice) shipped. Schema
+has `IntegrationScope` (default `organization`) and
 `project_integration_bindings`. Chat resolves models with **project → page →
-org** (`projectId` on chat POST + bindings fallthrough). Phase 1 Settings
-marketplace remains live (`SETTINGS_INTEGRATIONS.md`) as the **Organization
-vault**. Day-to-day project AI + tool wiring moves to:
-
-1. **Project create** — a single **Integrations** wizard step
-2. **Project details** — existing **Integrations** tab (expand beyond GitHub/Jira)
-
-Do not ship project AI bind UI (Phase **C**) until create/details UX lands on
-top of this resolution path.
+org**. Create wizard uses a single **Integrations** step (Jira + GitHub + AI
+binds). Project **Integrations** tab includes an **AI agents** bind card.
+Phase 1 Settings marketplace remains the **Organization vault**
+(`SETTINGS_INTEGRATIONS.md`).
 
 Alice today stores chat-model (and future Slack/etc.) rows as **deployment-wide
 workspace integrations**. This document adds a first-class **scope** and the
@@ -280,14 +275,14 @@ GitHub/Jira may remain on existing project tables in v1, documented as
 
 ## Phased delivery
 
-| Phase | Deliverable                                                                                                              | Depends on |
-| ----- | ------------------------------------------------------------------------------------------------------------------------ | ---------- |
-| **A** | Docs + `IntegrationScope` / `integrations.scope` default `organization` (**done**)                                       | —          |
-| **B** | Chat resolution project → page → org; `project_integration_bindings`; managers already configure org Settings (**done**) | A          |
-| **C** | **UX move:** create **Integrations** step (merge Imports+Source+AI); expand project Integrations tab with AI             | B          |
-| **D** | Import-from-project-I-belong-to (org binds / metadata only)                                                              | C          |
-| **E** | Member scope (optional personal models)                                                                                  | B          |
-| **F** | Optional: unify GitHub/Jira rows under `integrations.scope = project`                                                    | C          |
+| Phase | Deliverable                                                                                                                                                         | Depends on |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| **A** | Docs + `IntegrationScope` / `integrations.scope` default `organization` (**done**)                                                                                  | —          |
+| **B** | Chat resolution project → page → org; `project_integration_bindings`; managers already configure org Settings (**done**)                                            | A          |
+| **C** | **UX move:** create **Integrations** step (merge Imports+Source+AI); project Integrations tab AI binds (**done** — full Settings-style marketplace polish deferred) | B          |
+| **D** | Import-from-project-I-belong-to (org binds / metadata only)                                                                                                         | C          |
+| **E** | Member scope (optional personal models)                                                                                                                             | B          |
+| **F** | Optional: unify GitHub/Jira rows under `integrations.scope = project`                                                                                               | C          |
 
 **Shipping order intent:** land **C** as soon as **B** is safe — the product
 requirement is that project create/details are where integrations are wired.
@@ -328,12 +323,12 @@ requirement is that project create/details are where integrations are wired.
 
 - [x] Existing Settings integrations behave as organization scope with no regression.
 - [x] Managers can configure organization AI models in Settings (vault).
-- [ ] Create wizard exposes a single **Integrations** step with grouped lists.
-- [ ] Source control and project management use **radio** (single) selection.
-- [ ] Project **Integrations** tab mirrors Settings marketplace UI + SC/PM groups.
-- [ ] Draft resume restores Integrations selections; persisted keys stay masked.
-- [ ] Create remains async (ack → background work → inbox notification).
+- [x] Create wizard exposes a single **Integrations** step (Jira + GitHub + AI binds).
+- [ ] Source control and project management use **radio** (single) selection (still checkbox enable today).
+- [ ] Project **Integrations** tab mirrors Settings marketplace UI + SC/PM groups (AI card shipped; full marketplace polish deferred).
+- [x] Draft resume restores Integrations selections (incl. AI binds); keys never drafted.
+- [x] Create remains async (ack → background work → inbox notification).
 - [x] Chat with project context uses that project’s enabled pool; without project, page then org (empty bindings ⇒ org).
 - [ ] Project cannot import another project’s project-scoped integration.
-- [ ] Organization integrations are **bound** into projects (not copied to project scope by default).
-- [ ] Feature + user-guide docs updated for shipped surfaces (Phase C UX).
+- [x] Organization integrations are **bound** into projects (not copied to project scope by default).
+- [x] Feature + user-guide docs updated for shipped Phase C surfaces.

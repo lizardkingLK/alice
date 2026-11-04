@@ -20,8 +20,11 @@ import {
   type IntegrationWire,
   type ListIntegrationsQuery,
   type PatchIntegrationBody,
+  type ProjectIntegrationBindingWire,
+  type PutProjectIntegrationBindingsBody,
 } from '@repo/types';
 import { IntegrationStatus, Prisma } from '@repo/types/prisma';
+import { prisma } from '../../../lib/prisma';
 import { resolveApprovedChatProviderApiUrl } from './chat-providers/chat-provider-endpoints';
 import type { ResolvedChatModelConfig } from './chat-providers/chat-provider.types';
 import type { IntegrationsRepository } from './integrations.repository';
@@ -32,6 +35,16 @@ async function requireIntegrationManager(actorId: string) {
     [UserRoleEnum.admin, UserRoleEnum.manager],
     'Unauthorized. Only admins and managers can manage integrations.'
   );
+}
+
+async function assertProjectExists(projectId: string): Promise<void> {
+  const project = await prisma.projects.findFirst({
+    where: { id: projectId, deleted_at: null },
+    select: { id: true },
+  });
+  if (!project) {
+    throw new Error('Project not found');
+  }
 }
 
 function encryptConfigSecrets(
@@ -361,6 +374,62 @@ export class IntegrationsService {
   async deleteIntegration(actorId: string, id: string): Promise<void> {
     await requireIntegrationManager(actorId);
     await this.integrationsRepository.disable(id, actorId);
+  }
+
+  async listProjectChatModelBindings(
+    actorId: string,
+    projectId: string
+  ): Promise<ProjectIntegrationBindingWire[]> {
+    await requireIntegrationManager(actorId);
+    await assertProjectExists(projectId);
+
+    const rows =
+      await this.integrationsRepository.listActiveChatModelBindingsForProject(
+        projectId
+      );
+    return rows.flatMap((row) => {
+      const option = toChatModelOption(row.integration);
+      if (!option) {
+        return [];
+      }
+      return [
+        {
+          integration_id: row.integration_id,
+          is_default_for_project: row.is_default_for_project,
+          integration: option,
+        },
+      ];
+    });
+  }
+
+  async replaceProjectChatModelBindings(
+    actorId: string,
+    projectId: string,
+    body: PutProjectIntegrationBindingsBody
+  ): Promise<ProjectIntegrationBindingWire[]> {
+    await requireIntegrationManager(actorId);
+    await assertProjectExists(projectId);
+
+    const rows =
+      await this.integrationsRepository.replaceProjectChatModelBindings({
+        projectId,
+        actorId,
+        bindings: body.bindings,
+      });
+
+    return rows.flatMap((row) => {
+      const option = toChatModelOption(row.integration);
+      if (!option) {
+        return [];
+      }
+      return [
+        {
+          integration_id: row.integration_id,
+          is_default_for_project: row.is_default_for_project,
+          integration: option,
+        },
+      ];
+    });
   }
 
   async resolveChatModelForChat(params: {

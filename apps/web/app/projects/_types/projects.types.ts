@@ -2,6 +2,7 @@ import type { Tables } from '@repo/types';
 import type {
   InitialProjectTeamInput,
   InitialSprintInput,
+  ProjectIntegrationBindingItem,
   ProjectWorkflowConfig,
   WorkItemTypeRemovalStrategy,
 } from '@repo/types/api/v1';
@@ -80,6 +81,8 @@ type ProjectMutationInput = Omit<
 export type CreateProjectInput = ProjectMutationInput & {
   sprint?: InitialSprintInput;
   team?: InitialProjectTeamInput;
+  /** Org AI models to bind on create (bind-by-reference; no secrets). */
+  integration_bindings?: ProjectIntegrationBindingItem[];
 };
 
 export type UpdateProjectInput = Partial<ProjectMutationInput> & {

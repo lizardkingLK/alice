@@ -173,3 +173,71 @@ export const chatModelOptionsResponseSchema = z.object({
 export type ChatModelOptionsResponse = z.infer<
   typeof chatModelOptionsResponseSchema
 >;
+
+/** One org AI integration bound (or to bind) for a project. */
+export const projectIntegrationBindingItemSchema = z.object({
+  integration_id: z.uuid(),
+  is_default_for_project: z.boolean().default(false),
+});
+
+export type ProjectIntegrationBindingItem = z.infer<
+  typeof projectIntegrationBindingItemSchema
+>;
+
+function refineUniqueBindingIds(
+  bindings: readonly ProjectIntegrationBindingItem[],
+  context: z.RefinementCtx
+): void {
+  const seen = new Set<string>();
+  for (const [index, binding] of bindings.entries()) {
+    if (seen.has(binding.integration_id)) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Duplicate integration_id in bindings.',
+        path: ['bindings', index, 'integration_id'],
+      });
+      return;
+    }
+    seen.add(binding.integration_id);
+  }
+
+  const defaults = bindings.filter((row) => row.is_default_for_project);
+  if (defaults.length > 1) {
+    context.addIssue({
+      code: 'custom',
+      message: 'At most one binding may be the project default.',
+      path: ['bindings'],
+    });
+  }
+}
+
+/** Full replace of a project's AI model bindings (empty ⇒ fall through to org). */
+export const putProjectIntegrationBindingsBodySchema = z
+  .object({
+    bindings: z.array(projectIntegrationBindingItemSchema),
+  })
+  .superRefine((body, context) => {
+    refineUniqueBindingIds(body.bindings, context);
+  });
+
+export type PutProjectIntegrationBindingsBody = z.infer<
+  typeof putProjectIntegrationBindingsBodySchema
+>;
+
+export const projectIntegrationBindingWireSchema = z.object({
+  integration_id: z.uuid(),
+  is_default_for_project: z.boolean(),
+  integration: chatModelOptionSchema,
+});
+
+export type ProjectIntegrationBindingWire = z.infer<
+  typeof projectIntegrationBindingWireSchema
+>;
+
+export const projectIntegrationBindingsResponseSchema = z.object({
+  bindings: z.array(projectIntegrationBindingWireSchema),
+});
+
+export type ProjectIntegrationBindingsResponse = z.infer<
+  typeof projectIntegrationBindingsResponseSchema
+>;

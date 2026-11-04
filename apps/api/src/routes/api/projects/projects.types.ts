@@ -1,6 +1,7 @@
 import type {
   InitialProjectTeamInput,
   InitialSprintInput,
+  ProjectIntegrationBindingItem,
   ProjectWorkflowConfig,
   WorkItemTypeRemovalStrategy,
 } from '@repo/types/api/v1';
@@ -74,6 +75,7 @@ type ProjectMutationInput = Omit<
 export type CreateProjectInput = ProjectMutationInput & {
   sprint?: InitialSprintInput;
   team?: InitialProjectTeamInput;
+  integration_bindings?: ProjectIntegrationBindingItem[];
 };
 
 export type UpdateProjectInput = Partial<ProjectMutationInput> & {

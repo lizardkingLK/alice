@@ -4,6 +4,8 @@ const {
   listIntegrationsMock,
   getIntegrationDetailMock,
   listChatModelsMock,
+  listProjectChatModelBindingsMock,
+  replaceProjectChatModelBindingsMock,
   createIntegrationMock,
   patchIntegrationMock,
   deleteIntegrationMock,
@@ -11,6 +13,8 @@ const {
   listIntegrationsMock: vi.fn(),
   getIntegrationDetailMock: vi.fn(),
   listChatModelsMock: vi.fn(),
+  listProjectChatModelBindingsMock: vi.fn(),
+  replaceProjectChatModelBindingsMock: vi.fn(),
   createIntegrationMock: vi.fn(),
   patchIntegrationMock: vi.fn(),
   deleteIntegrationMock: vi.fn(),
@@ -26,6 +30,8 @@ vi.mock('../../src/routes/api/integrations/integrations.service', () => {
     listIntegrations = listIntegrationsMock;
     getIntegrationDetail = getIntegrationDetailMock;
     listChatModels = listChatModelsMock;
+    listProjectChatModelBindings = listProjectChatModelBindingsMock;
+    replaceProjectChatModelBindings = replaceProjectChatModelBindingsMock;
     createIntegration = createIntegrationMock;
     patchIntegration = patchIntegrationMock;
     deleteIntegration = deleteIntegrationMock;
@@ -43,6 +49,8 @@ const integrationsService = {
   listIntegrations: listIntegrationsMock,
   getIntegrationDetail: getIntegrationDetailMock,
   listChatModels: listChatModelsMock,
+  listProjectChatModelBindings: listProjectChatModelBindingsMock,
+  replaceProjectChatModelBindings: replaceProjectChatModelBindingsMock,
   createIntegration: createIntegrationMock,
   patchIntegration: patchIntegrationMock,
   deleteIntegration: deleteIntegrationMock,
@@ -253,6 +261,84 @@ describe('integrations routes', () => {
           `${baseUrl}/api/integrations/11111111-1111-4111-8111-111111111111`
         );
         expect(response.status).toBe(404);
+      }
+    );
+  });
+
+  it('lists project chat model bindings', async () => {
+    const projectId = '22222222-2222-4222-8222-222222222222';
+    const binding = {
+      integration_id: integrationWire.id,
+      is_default_for_project: true,
+      integration: {
+        id: integrationWire.id,
+        provider: 'openai',
+        name: 'GPT-4o',
+        is_default: false,
+        model: 'gpt-4o',
+        display_label: 'GPT-4o',
+      },
+    };
+    listProjectChatModelBindingsMock.mockResolvedValue([binding]);
+
+    await withMountedRouter(
+      '/api/integrations',
+      integrationsRouter,
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/api/integrations/project-bindings/${projectId}`
+        );
+        const body = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(body.bindings).toEqual([binding]);
+        expect(listProjectChatModelBindingsMock).toHaveBeenCalledWith(
+          MOCK_AUTH_USER_ID,
+          projectId
+        );
+      }
+    );
+  });
+
+  it('replaces project chat model bindings', async () => {
+    const projectId = '22222222-2222-4222-8222-222222222222';
+    replaceProjectChatModelBindingsMock.mockResolvedValue([]);
+
+    await withMountedRouter(
+      '/api/integrations',
+      integrationsRouter,
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/api/integrations/project-bindings/${projectId}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              bindings: [
+                {
+                  integration_id: integrationWire.id,
+                  is_default_for_project: true,
+                },
+              ],
+            }),
+          }
+        );
+        const body = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(body.bindings).toEqual([]);
+        expect(replaceProjectChatModelBindingsMock).toHaveBeenCalledWith(
+          MOCK_AUTH_USER_ID,
+          projectId,
+          {
+            bindings: [
+              {
+                integration_id: integrationWire.id,
+                is_default_for_project: true,
+              },
+            ],
+          }
+        );
       }
     );
   });

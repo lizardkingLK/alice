@@ -80,17 +80,17 @@ Project Details Workspace (/projects/[id])
 
 The active tab is tracked using the `tab` URL query parameter, preserving bookmarkability, deep linking, and browser back/forward history:
 
-| Tab ID         | URL Route                                        | Minimum Viewer Role  | Description                                                                                                                 |
-| :------------- | :----------------------------------------------- | :------------------- | :-------------------------------------------------------------------------------------------------------------------------- |
-| `details`      | `/projects/[id]` or `/projects/[id]?tab=details` | Member               | Overview, metrics, branding banner, start/end dates                                                                         |
-| `members`      | `/projects/[id]?tab=members`                     | Member               | Project member roster and assignments                                                                                       |
-| `teams`        | `/projects/[id]?tab=teams`                       | Manager+             | Teams associated with the project                                                                                           |
-| `work-items`   | `/projects/[id]?tab=work-items`                  | Member               | Flat/hierarchical work-item table & backlog                                                                                 |
-| `sprints`      | `/projects/[id]?tab=sprints`                     | Manager+             | Sprint registry for this project                                                                                            |
-| `integrations` | `/projects/[id]?tab=integrations`                | Manager+ (view/edit) | Jira Cloud & GitHub today; **Planned:** AI model binds too ([INTEGRATION_SCOPES.md](../integrations/INTEGRATION_SCOPES.md)) |
-| `fields`       | `/projects/[id]?tab=fields`                      | Manager+             | Dynamic fields JSON Schema configuration                                                                                    |
-| `workflow`     | `/projects/[id]?tab=workflow`                    | Manager+             | Workflow graph designer (states / transitions)                                                                              |
-| `types`        | `/projects/[id]?tab=types`                       | Manager+             | Allowed work-item types                                                                                                     |
+| Tab ID         | URL Route                                        | Minimum Viewer Role  | Description                                                                                             |
+| :------------- | :----------------------------------------------- | :------------------- | :------------------------------------------------------------------------------------------------------ |
+| `details`      | `/projects/[id]` or `/projects/[id]?tab=details` | Member               | Overview, metrics, branding banner, start/end dates                                                     |
+| `members`      | `/projects/[id]?tab=members`                     | Member               | Project member roster and assignments                                                                   |
+| `teams`        | `/projects/[id]?tab=teams`                       | Manager+             | Teams associated with the project                                                                       |
+| `work-items`   | `/projects/[id]?tab=work-items`                  | Member               | Flat/hierarchical work-item table & backlog                                                             |
+| `sprints`      | `/projects/[id]?tab=sprints`                     | Manager+             | Sprint registry for this project                                                                        |
+| `integrations` | `/projects/[id]?tab=integrations`                | Manager+ (view/edit) | Jira Cloud, GitHub, and AI model binds ([INTEGRATION_SCOPES.md](../integrations/INTEGRATION_SCOPES.md)) |
+| `fields`       | `/projects/[id]?tab=fields`                      | Manager+             | Dynamic fields JSON Schema configuration                                                                |
+| `workflow`     | `/projects/[id]?tab=workflow`                    | Manager+             | Workflow graph designer (states / transitions)                                                          |
+| `types`        | `/projects/[id]?tab=types`                       | Manager+             | Allowed work-item types                                                                                 |
 
 Legacy `?tab=board` bookmarks resolve to **Workflow** (Board designer retired).
 
