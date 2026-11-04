@@ -56,6 +56,7 @@ conversation records are **not** non-goals — they are queued under
 | ---------------- | ----------------------------------------------------------------------- |
 | **Model**        | Workspace LLM integration (Settings → AI models)                        |
 | **Agent**        | Persona + encrypted instructions + skill/tool enablement + autonomy     |
+| **Autonomy**     | `suggest` = propose in chat for confirm; `approve` = act after approval |
 | **Conversation** | Thread; optionally bound to an `agentId` (URL and/or `agent_id` column) |
 
 ### Roles
@@ -224,6 +225,9 @@ Bound header identity →  reopen dialog on that agent’s detail
 - Panel: `apps/web/app/chat/_components/chat-agents-panel-dialog.tsx`
 - Gallery: `apps/web/app/chat/_components/chat-agents-gallery.tsx`
 - Customize: `apps/web/app/chat/_components/chat-agent-customize-page.tsx`
+- Instructions TipTap: `apps/web/app/chat/_components/chat-agent-instructions-editor.tsx`
+  (same full editor chrome as work-item description; stores markdown string;
+  encrypted at rest like before)
 - Catalog helpers: `apps/web/app/chat/_helpers/chat-agents-catalog.ts`
 - Preferred storage: `apps/web/app/chat/_helpers/preferred-chat-agent-storage.ts`
 - Bound identity: `apps/web/app/chat/_helpers/use-bound-chat-agent.ts`

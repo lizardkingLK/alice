@@ -25,6 +25,8 @@ import type {
 } from '@/app/chat/_helpers/chat-agents-catalog';
 import type { ChatAgentAvatarStyle } from '@/app/chat/_helpers/chat-agent-avatar';
 import { ChatAgentAvatar } from '@/app/chat/_components/chat-agent-avatar';
+import { ChatAgentInstructionsEditor } from '@/app/chat/_components/chat-agent-instructions-editor';
+import { ChatMarkdown } from '@/app/chat/_components/chat-markdown';
 
 export type ChatAgentCatalogOption = {
   readonly key: string;
@@ -278,22 +280,19 @@ export function ChatAgentCustomizeForm({
         )}
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-4 pb-6">
         {canEdit ? (
           <>
             <div className="space-y-2">
               <Label htmlFor="agent-instructions">Instructions</Label>
-              <Textarea
+              <ChatAgentInstructionsEditor
                 id="agent-instructions"
-                rows={8}
                 value={draft.instructions}
-                className="font-mono text-xs leading-relaxed"
-                onChange={(event) =>
-                  onDraftChange({ instructions: event.target.value })
-                }
+                onChange={(instructions) => onDraftChange({ instructions })}
               />
               <p className="text-muted-foreground text-xs">
-                Only projects you are a member of are in scope for this agent.
+                Rich text with markdown. Only projects you are a member of are
+                in scope for this agent.
               </p>
             </div>
             <CatalogToggleList
@@ -342,12 +341,25 @@ export function ChatAgentCustomizeForm({
                   <SelectItem value="approve">Act with approval</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                How assertive this agent should be with workspace changes.
+                Suggest only keeps proposals in chat for you to confirm. Act
+                with approval lets the agent carry out approved mutating steps
+                more readily.
+              </p>
             </div>
           </>
         ) : (
           <>
             <ReadOnlyField label="Instructions">
-              <MultilineText value={draft.instructions} />
+              {draft.instructions.trim() ? (
+                <ChatMarkdown
+                  content={draft.instructions}
+                  className="text-sm"
+                />
+              ) : (
+                <p className="text-foreground text-sm">—</p>
+              )}
               <p className="text-muted-foreground mt-2 text-xs">
                 Only projects you are a member of are in scope for this agent.
               </p>
@@ -371,6 +383,11 @@ export function ChatAgentCustomizeForm({
                 {draft.autonomy === 'approve'
                   ? 'Act with approval'
                   : 'Suggest only'}
+              </p>
+              <p className="text-muted-foreground mt-1.5 text-xs leading-relaxed">
+                Suggest only keeps proposals in chat for you to confirm. Act
+                with approval lets the agent carry out approved mutating steps
+                more readily.
               </p>
             </ReadOnlyField>
           </>
