@@ -24,12 +24,14 @@ import {
 import {
   chatAgentDetailToRecord,
   draftToPatchBody,
+  type ChatAgentRecord,
+} from '@/app/chat/_helpers/chat-agents-catalog';
+import {
   getPreferredChatAgentId,
   rememberPreferredChatAgent,
   setPreferredChatAgentId,
   subscribePreferredChatAgent,
-  type ChatAgentRecord,
-} from '@/app/chat/_helpers/chat-agents-catalog';
+} from '@/app/chat/_helpers/preferred-chat-agent-storage';
 import { buildChatWithAgentHref } from '@/app/chat/_helpers/chat-url';
 import {
   deleteChatAgentClient,

@@ -9,19 +9,7 @@ import {
   isChatAgentAvatarStyle,
   type ChatAgentAvatarStyle,
 } from '@/app/chat/_helpers/chat-agent-avatar';
-import {
-  getPreferredChatAgentId,
-  rememberPreferredChatAgent,
-  setPreferredChatAgentId,
-  subscribePreferredChatAgent,
-} from '@/app/chat/_helpers/preferred-chat-agent-storage';
-
-export {
-  getPreferredChatAgentId,
-  rememberPreferredChatAgent,
-  setPreferredChatAgentId,
-  subscribePreferredChatAgent,
-};
+import { getPreferredChatAgentId } from '@/app/chat/_helpers/preferred-chat-agent-storage';
 
 export type ChatAgentKind = 'system' | 'personal';
 

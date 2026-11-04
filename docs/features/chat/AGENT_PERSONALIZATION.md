@@ -247,11 +247,13 @@ Bound header identity →  reopen dialog on that agent’s detail
 Accepted follow-ups — not deferred. Keep encrypt helpers and the agent shape
 portable so these can land without a rewrite. Implementation timing is TBD.
 
-| #   | Workstream                         | Intent                                                                                      |
-| --- | ---------------------------------- | ------------------------------------------------------------------------------------------- |
-| 1   | **MongoDB + worker**               | Move agentic / instructions data to MongoDB reached from a worker app                       |
-| 2   | **Encrypted conversation records** | Move chat history out of Supabase Storage into encrypted conversation records in that store |
-| 3   | **Agent shares + Shared tab**      | Views-style agent shares and a populated Shared gallery tab                                 |
+| #   | Workstream                         | Intent                                                                                                                                                   | Ready to start?                                                                                                                                      |
+| --- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **MongoDB + worker**               | Move agentic / instructions data to MongoDB reached from a worker app                                                                                    | Spec only — `apps/worker` is still [Plan](../../architecture/WORKER_AND_STREAMER.md); no Mongo package yet                                           |
+| 2   | **Encrypted conversation records** | Move `alice_storage_chat_history` markdown (`chat-history/{id}.md`) out of Supabase Storage into encrypted conversation records (same Mongo store as #1) | Spec only — same dependency on worker + Mongo; current Storage path documented in [AI_CHATBOT.md](./AI_CHATBOT.md#storage-buckets--supabase-storage) |
+| 3   | **Agent shares + Shared tab**      | Views-style agent shares and a populated Shared gallery tab                                                                                              | Spec only — reuse [FAVORITES_AND_VIEWS.md](../views/FAVORITES_AND_VIEWS.md) share pattern; UI tab can stay empty until shares ship                   |
+
+**Not available yet as runnable infra** — these are accepted product follow-ups you can schedule later. Do not expect an existing Mongo collection or worker job for chat history today.
 
 Until then: instructions stay encrypted in Postgres; conversation history stays
-in Storage; gallery Shared remains empty / unavailable in the UI.
+in the chat-history Storage bucket; gallery Shared remains empty / unavailable in the UI.
