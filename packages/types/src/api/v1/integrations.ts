@@ -241,3 +241,56 @@ export const projectIntegrationBindingsResponseSchema = z.object({
 export type ProjectIntegrationBindingsResponse = z.infer<
   typeof projectIntegrationBindingsResponseSchema
 >;
+
+/** Copy org AI binds from a source project the actor belongs to. */
+export const importProjectIntegrationBindingsBodySchema = z.object({
+  source_project_id: z.uuid(),
+});
+
+export type ImportProjectIntegrationBindingsBody = z.infer<
+  typeof importProjectIntegrationBindingsBodySchema
+>;
+
+export const projectIntegrationBindingImportSourceSchema = z.object({
+  project_id: z.uuid(),
+  name: z.string(),
+  key: z.string(),
+  binding_count: z.number().int().nonnegative(),
+});
+
+export type ProjectIntegrationBindingImportSource = z.infer<
+  typeof projectIntegrationBindingImportSourceSchema
+>;
+
+export const projectIntegrationBindingImportSourcesResponseSchema = z.object({
+  sources: z.array(projectIntegrationBindingImportSourceSchema),
+});
+
+export type ProjectIntegrationBindingImportSourcesResponse = z.infer<
+  typeof projectIntegrationBindingImportSourcesResponseSchema
+>;
+
+/** Member preferred org chat model (bind-by-reference; null ⇒ workspace default). */
+export const memberChatModelPreferenceWireSchema = z.object({
+  default_integration_id: z.uuid().nullable(),
+});
+
+export type MemberChatModelPreferenceWire = z.infer<
+  typeof memberChatModelPreferenceWireSchema
+>;
+
+export const memberChatModelPreferenceResponseSchema = z.object({
+  preference: memberChatModelPreferenceWireSchema,
+});
+
+export type MemberChatModelPreferenceResponse = z.infer<
+  typeof memberChatModelPreferenceResponseSchema
+>;
+
+export const putMemberChatModelPreferenceBodySchema = z.object({
+  default_integration_id: z.uuid().nullable(),
+});
+
+export type PutMemberChatModelPreferenceBody = z.infer<
+  typeof putMemberChatModelPreferenceBodySchema
+>;

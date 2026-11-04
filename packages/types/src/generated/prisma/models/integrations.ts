@@ -288,6 +288,7 @@ export type integrationsWhereInput = {
   created_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   updated_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   project_bindings?: Prisma.Project_integration_bindingsListRelationFilter
+  member_preferences?: Prisma.Member_chat_model_preferencesListRelationFilter
 }
 
 export type integrationsOrderByWithRelationInput = {
@@ -308,6 +309,7 @@ export type integrationsOrderByWithRelationInput = {
   created_by_user?: Prisma.usersOrderByWithRelationInput
   updated_by_user?: Prisma.usersOrderByWithRelationInput
   project_bindings?: Prisma.project_integration_bindingsOrderByRelationAggregateInput
+  member_preferences?: Prisma.member_chat_model_preferencesOrderByRelationAggregateInput
 }
 
 export type integrationsWhereUniqueInput = Prisma.AtLeast<{
@@ -331,6 +333,7 @@ export type integrationsWhereUniqueInput = Prisma.AtLeast<{
   created_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   updated_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   project_bindings?: Prisma.Project_integration_bindingsListRelationFilter
+  member_preferences?: Prisma.Member_chat_model_preferencesListRelationFilter
 }, "id">
 
 export type integrationsOrderByWithAggregationInput = {
@@ -391,6 +394,7 @@ export type integrationsCreateInput = {
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_integrationsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_integrationsInput
   project_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutIntegrationInput
+  member_preferences?: Prisma.member_chat_model_preferencesCreateNestedManyWithoutIntegrationInput
 }
 
 export type integrationsUncheckedCreateInput = {
@@ -409,6 +413,7 @@ export type integrationsUncheckedCreateInput = {
   updated_by?: string | null
   updated_at?: Date | string
   project_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutIntegrationInput
+  member_preferences?: Prisma.member_chat_model_preferencesUncheckedCreateNestedManyWithoutIntegrationInput
 }
 
 export type integrationsUpdateInput = {
@@ -427,6 +432,7 @@ export type integrationsUpdateInput = {
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_integrationsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_integrationsNestedInput
   project_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutIntegrationNestedInput
+  member_preferences?: Prisma.member_chat_model_preferencesUpdateManyWithoutIntegrationNestedInput
 }
 
 export type integrationsUncheckedUpdateInput = {
@@ -445,6 +451,7 @@ export type integrationsUncheckedUpdateInput = {
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutIntegrationNestedInput
+  member_preferences?: Prisma.member_chat_model_preferencesUncheckedUpdateManyWithoutIntegrationNestedInput
 }
 
 export type integrationsCreateManyInput = {
@@ -563,6 +570,11 @@ export type integrationsSumOrderByAggregateInput = {
   sort_order?: Prisma.SortOrder
 }
 
+export type IntegrationsNullableScalarRelationFilter = {
+  is?: Prisma.integrationsWhereInput | null
+  isNot?: Prisma.integrationsWhereInput | null
+}
+
 export type IntegrationsScalarRelationFilter = {
   is?: Prisma.integrationsWhereInput
   isNot?: Prisma.integrationsWhereInput
@@ -664,6 +676,22 @@ export type EnumIntegrationStatusFieldUpdateOperationsInput = {
   set?: $Enums.IntegrationStatus
 }
 
+export type integrationsCreateNestedOneWithoutMember_preferencesInput = {
+  create?: Prisma.XOR<Prisma.integrationsCreateWithoutMember_preferencesInput, Prisma.integrationsUncheckedCreateWithoutMember_preferencesInput>
+  connectOrCreate?: Prisma.integrationsCreateOrConnectWithoutMember_preferencesInput
+  connect?: Prisma.integrationsWhereUniqueInput
+}
+
+export type integrationsUpdateOneWithoutMember_preferencesNestedInput = {
+  create?: Prisma.XOR<Prisma.integrationsCreateWithoutMember_preferencesInput, Prisma.integrationsUncheckedCreateWithoutMember_preferencesInput>
+  connectOrCreate?: Prisma.integrationsCreateOrConnectWithoutMember_preferencesInput
+  upsert?: Prisma.integrationsUpsertWithoutMember_preferencesInput
+  disconnect?: Prisma.integrationsWhereInput | boolean
+  delete?: Prisma.integrationsWhereInput | boolean
+  connect?: Prisma.integrationsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.integrationsUpdateToOneWithWhereWithoutMember_preferencesInput, Prisma.integrationsUpdateWithoutMember_preferencesInput>, Prisma.integrationsUncheckedUpdateWithoutMember_preferencesInput>
+}
+
 export type integrationsCreateNestedOneWithoutProject_bindingsInput = {
   create?: Prisma.XOR<Prisma.integrationsCreateWithoutProject_bindingsInput, Prisma.integrationsUncheckedCreateWithoutProject_bindingsInput>
   connectOrCreate?: Prisma.integrationsCreateOrConnectWithoutProject_bindingsInput
@@ -693,6 +721,7 @@ export type integrationsCreateWithoutCreated_by_userInput = {
   updated_at?: Date | string
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_integrationsInput
   project_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutIntegrationInput
+  member_preferences?: Prisma.member_chat_model_preferencesCreateNestedManyWithoutIntegrationInput
 }
 
 export type integrationsUncheckedCreateWithoutCreated_by_userInput = {
@@ -710,6 +739,7 @@ export type integrationsUncheckedCreateWithoutCreated_by_userInput = {
   updated_by?: string | null
   updated_at?: Date | string
   project_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutIntegrationInput
+  member_preferences?: Prisma.member_chat_model_preferencesUncheckedCreateNestedManyWithoutIntegrationInput
 }
 
 export type integrationsCreateOrConnectWithoutCreated_by_userInput = {
@@ -737,6 +767,7 @@ export type integrationsCreateWithoutUpdated_by_userInput = {
   updated_at?: Date | string
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_integrationsInput
   project_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutIntegrationInput
+  member_preferences?: Prisma.member_chat_model_preferencesCreateNestedManyWithoutIntegrationInput
 }
 
 export type integrationsUncheckedCreateWithoutUpdated_by_userInput = {
@@ -754,6 +785,7 @@ export type integrationsUncheckedCreateWithoutUpdated_by_userInput = {
   created_at?: Date | string
   updated_at?: Date | string
   project_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutIntegrationInput
+  member_preferences?: Prisma.member_chat_model_preferencesUncheckedCreateNestedManyWithoutIntegrationInput
 }
 
 export type integrationsCreateOrConnectWithoutUpdated_by_userInput = {
@@ -818,6 +850,94 @@ export type integrationsUpdateManyWithWhereWithoutUpdated_by_userInput = {
   data: Prisma.XOR<Prisma.integrationsUpdateManyMutationInput, Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userInput>
 }
 
+export type integrationsCreateWithoutMember_preferencesInput = {
+  id?: string
+  catalog_id: string
+  category: $Enums.IntegrationCategory
+  scope?: $Enums.IntegrationScope
+  provider: string
+  name: string
+  status?: $Enums.IntegrationStatus
+  config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  is_default?: boolean
+  sort_order?: number
+  created_at?: Date | string
+  updated_at?: Date | string
+  created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_integrationsInput
+  updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_integrationsInput
+  project_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutIntegrationInput
+}
+
+export type integrationsUncheckedCreateWithoutMember_preferencesInput = {
+  id?: string
+  catalog_id: string
+  category: $Enums.IntegrationCategory
+  scope?: $Enums.IntegrationScope
+  provider: string
+  name: string
+  status?: $Enums.IntegrationStatus
+  config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  is_default?: boolean
+  sort_order?: number
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  project_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutIntegrationInput
+}
+
+export type integrationsCreateOrConnectWithoutMember_preferencesInput = {
+  where: Prisma.integrationsWhereUniqueInput
+  create: Prisma.XOR<Prisma.integrationsCreateWithoutMember_preferencesInput, Prisma.integrationsUncheckedCreateWithoutMember_preferencesInput>
+}
+
+export type integrationsUpsertWithoutMember_preferencesInput = {
+  update: Prisma.XOR<Prisma.integrationsUpdateWithoutMember_preferencesInput, Prisma.integrationsUncheckedUpdateWithoutMember_preferencesInput>
+  create: Prisma.XOR<Prisma.integrationsCreateWithoutMember_preferencesInput, Prisma.integrationsUncheckedCreateWithoutMember_preferencesInput>
+  where?: Prisma.integrationsWhereInput
+}
+
+export type integrationsUpdateToOneWithWhereWithoutMember_preferencesInput = {
+  where?: Prisma.integrationsWhereInput
+  data: Prisma.XOR<Prisma.integrationsUpdateWithoutMember_preferencesInput, Prisma.integrationsUncheckedUpdateWithoutMember_preferencesInput>
+}
+
+export type integrationsUpdateWithoutMember_preferencesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  catalog_id?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.EnumIntegrationCategoryFieldUpdateOperationsInput | $Enums.IntegrationCategory
+  scope?: Prisma.EnumIntegrationScopeFieldUpdateOperationsInput | $Enums.IntegrationScope
+  provider?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumIntegrationStatusFieldUpdateOperationsInput | $Enums.IntegrationStatus
+  config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sort_order?: Prisma.IntFieldUpdateOperationsInput | number
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  created_by_user?: Prisma.usersUpdateOneWithoutCreated_integrationsNestedInput
+  updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_integrationsNestedInput
+  project_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutIntegrationNestedInput
+}
+
+export type integrationsUncheckedUpdateWithoutMember_preferencesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  catalog_id?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.EnumIntegrationCategoryFieldUpdateOperationsInput | $Enums.IntegrationCategory
+  scope?: Prisma.EnumIntegrationScopeFieldUpdateOperationsInput | $Enums.IntegrationScope
+  provider?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumIntegrationStatusFieldUpdateOperationsInput | $Enums.IntegrationStatus
+  config?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sort_order?: Prisma.IntFieldUpdateOperationsInput | number
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  project_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutIntegrationNestedInput
+}
+
 export type integrationsCreateWithoutProject_bindingsInput = {
   id?: string
   catalog_id: string
@@ -833,6 +953,7 @@ export type integrationsCreateWithoutProject_bindingsInput = {
   updated_at?: Date | string
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_integrationsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_integrationsInput
+  member_preferences?: Prisma.member_chat_model_preferencesCreateNestedManyWithoutIntegrationInput
 }
 
 export type integrationsUncheckedCreateWithoutProject_bindingsInput = {
@@ -850,6 +971,7 @@ export type integrationsUncheckedCreateWithoutProject_bindingsInput = {
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
+  member_preferences?: Prisma.member_chat_model_preferencesUncheckedCreateNestedManyWithoutIntegrationInput
 }
 
 export type integrationsCreateOrConnectWithoutProject_bindingsInput = {
@@ -883,6 +1005,7 @@ export type integrationsUpdateWithoutProject_bindingsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_integrationsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_integrationsNestedInput
+  member_preferences?: Prisma.member_chat_model_preferencesUpdateManyWithoutIntegrationNestedInput
 }
 
 export type integrationsUncheckedUpdateWithoutProject_bindingsInput = {
@@ -900,6 +1023,7 @@ export type integrationsUncheckedUpdateWithoutProject_bindingsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  member_preferences?: Prisma.member_chat_model_preferencesUncheckedUpdateManyWithoutIntegrationNestedInput
 }
 
 export type integrationsCreateManyCreated_by_userInput = {
@@ -949,6 +1073,7 @@ export type integrationsUpdateWithoutCreated_by_userInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_integrationsNestedInput
   project_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutIntegrationNestedInput
+  member_preferences?: Prisma.member_chat_model_preferencesUpdateManyWithoutIntegrationNestedInput
 }
 
 export type integrationsUncheckedUpdateWithoutCreated_by_userInput = {
@@ -966,6 +1091,7 @@ export type integrationsUncheckedUpdateWithoutCreated_by_userInput = {
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutIntegrationNestedInput
+  member_preferences?: Prisma.member_chat_model_preferencesUncheckedUpdateManyWithoutIntegrationNestedInput
 }
 
 export type integrationsUncheckedUpdateManyWithoutCreated_by_userInput = {
@@ -999,6 +1125,7 @@ export type integrationsUpdateWithoutUpdated_by_userInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_integrationsNestedInput
   project_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutIntegrationNestedInput
+  member_preferences?: Prisma.member_chat_model_preferencesUpdateManyWithoutIntegrationNestedInput
 }
 
 export type integrationsUncheckedUpdateWithoutUpdated_by_userInput = {
@@ -1016,6 +1143,7 @@ export type integrationsUncheckedUpdateWithoutUpdated_by_userInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutIntegrationNestedInput
+  member_preferences?: Prisma.member_chat_model_preferencesUncheckedUpdateManyWithoutIntegrationNestedInput
 }
 
 export type integrationsUncheckedUpdateManyWithoutUpdated_by_userInput = {
@@ -1041,10 +1169,12 @@ export type integrationsUncheckedUpdateManyWithoutUpdated_by_userInput = {
 
 export type IntegrationsCountOutputType = {
   project_bindings: number
+  member_preferences: number
 }
 
 export type IntegrationsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project_bindings?: boolean | IntegrationsCountOutputTypeCountProject_bindingsArgs
+  member_preferences?: boolean | IntegrationsCountOutputTypeCountMember_preferencesArgs
 }
 
 /**
@@ -1062,6 +1192,13 @@ export type IntegrationsCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types
  */
 export type IntegrationsCountOutputTypeCountProject_bindingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.project_integration_bindingsWhereInput
+}
+
+/**
+ * IntegrationsCountOutputType without action
+ */
+export type IntegrationsCountOutputTypeCountMember_preferencesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.member_chat_model_preferencesWhereInput
 }
 
 
@@ -1083,6 +1220,7 @@ export type integrationsSelect<ExtArgs extends runtime.Types.Extensions.Internal
   created_by_user?: boolean | Prisma.integrations$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.integrations$updated_by_userArgs<ExtArgs>
   project_bindings?: boolean | Prisma.integrations$project_bindingsArgs<ExtArgs>
+  member_preferences?: boolean | Prisma.integrations$member_preferencesArgs<ExtArgs>
   _count?: boolean | Prisma.IntegrationsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["integrations"]>
 
@@ -1146,6 +1284,7 @@ export type integrationsInclude<ExtArgs extends runtime.Types.Extensions.Interna
   created_by_user?: boolean | Prisma.integrations$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.integrations$updated_by_userArgs<ExtArgs>
   project_bindings?: boolean | Prisma.integrations$project_bindingsArgs<ExtArgs>
+  member_preferences?: boolean | Prisma.integrations$member_preferencesArgs<ExtArgs>
   _count?: boolean | Prisma.IntegrationsCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type integrationsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1163,6 +1302,7 @@ export type $integrationsPayload<ExtArgs extends runtime.Types.Extensions.Intern
     created_by_user: Prisma.$usersPayload<ExtArgs> | null
     updated_by_user: Prisma.$usersPayload<ExtArgs> | null
     project_bindings: Prisma.$project_integration_bindingsPayload<ExtArgs>[]
+    member_preferences: Prisma.$member_chat_model_preferencesPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1594,6 +1734,7 @@ export interface Prisma__integrationsClient<T, Null = never, ExtArgs extends run
   created_by_user<T extends Prisma.integrations$created_by_userArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.integrations$created_by_userArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   updated_by_user<T extends Prisma.integrations$updated_by_userArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.integrations$updated_by_userArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   project_bindings<T extends Prisma.integrations$project_bindingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.integrations$project_bindingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$project_integration_bindingsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  member_preferences<T extends Prisma.integrations$member_preferencesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.integrations$member_preferencesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$member_chat_model_preferencesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2097,6 +2238,30 @@ export type integrations$project_bindingsArgs<ExtArgs extends runtime.Types.Exte
   take?: number
   skip?: number
   distinct?: Prisma.Project_integration_bindingsScalarFieldEnum | Prisma.Project_integration_bindingsScalarFieldEnum[]
+}
+
+/**
+ * integrations.member_preferences
+ */
+export type integrations$member_preferencesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the member_chat_model_preferences
+   */
+  select?: Prisma.member_chat_model_preferencesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the member_chat_model_preferences
+   */
+  omit?: Prisma.member_chat_model_preferencesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.member_chat_model_preferencesInclude<ExtArgs> | null
+  where?: Prisma.member_chat_model_preferencesWhereInput
+  orderBy?: Prisma.member_chat_model_preferencesOrderByWithRelationInput | Prisma.member_chat_model_preferencesOrderByWithRelationInput[]
+  cursor?: Prisma.member_chat_model_preferencesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Member_chat_model_preferencesScalarFieldEnum | Prisma.Member_chat_model_preferencesScalarFieldEnum[]
 }
 
 /**

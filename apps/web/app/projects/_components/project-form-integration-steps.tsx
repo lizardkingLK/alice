@@ -4,14 +4,12 @@ import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Label } from '@repo/ui/components/ui/label';
-import { Button } from '@repo/ui/components/ui/button';
-import { Star } from '@repo/ui/lib/icons';
-import { cn } from '@repo/ui/lib/utils';
 import type { ChatModelOption } from '@repo/types';
 import {
   GitHubLogo,
   JiraLogo,
 } from '@/app/projects/_components/project-details/integration-brand-logos';
+import { ProjectAiModelsPicker } from '@/app/projects/_components/project-ai-models-picker';
 import { useJiraConnectionPicker } from '@/app/projects/_hooks/use-jira-connection-picker';
 import { JiraConnectionFields } from '@/app/projects/_components/jira-connection-fields';
 import { useGithubConnectionPicker } from '@/app/projects/_hooks/use-github-connection-picker';
@@ -19,11 +17,8 @@ import { deleteGithubConnection } from '@/app/projects/_services/projects.github
 import { GithubConnectionFields } from '@/app/projects/_components/github-connection-fields';
 import { parseGithubRepoPath } from '@/lib/projects/github-repo-path';
 import { listChatModelsForChatClient } from '@/app/chat/_services/chat-models.reads.client';
-import {
-  chatModelDisplayLabel,
-  chatProviderDisplayLabel,
-} from '@/app/chat/_services/chat-models-api.shared';
 import { chatAiAgentsIntegrationsHref } from '@/app/chat/_services/chat-integrations-navigation.shared';
+import { toggleAiBindingSelection } from '@/app/projects/_helpers/project-ai-bindings';
 
 function IntegrationProviderOption({
   id,
@@ -305,7 +300,6 @@ function AiAgentsSection({
 }: Readonly<StepAiAgentsProps>) {
   const [models, setModels] = useState<ChatModelOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const selected = new Set(aiBindingIds);
 
   useEffect(() => {
     let cancelled = false;
@@ -332,20 +326,13 @@ function AiAgentsSection({
   }, []);
 
   const toggleModel = (modelId: string, checked: boolean) => {
-    if (checked) {
-      const nextIds = [...aiBindingIds, modelId];
-      setAiBindingIds(nextIds);
-      if (!defaultAiIntegrationId) {
-        setDefaultAiIntegrationId(modelId);
-      }
-      return;
-    }
-
-    const nextIds = aiBindingIds.filter((id) => id !== modelId);
-    setAiBindingIds(nextIds);
-    if (defaultAiIntegrationId === modelId) {
-      setDefaultAiIntegrationId(nextIds[0] ?? null);
-    }
+    const next = toggleAiBindingSelection(
+      { aiBindingIds, defaultAiIntegrationId },
+      modelId,
+      checked
+    );
+    setAiBindingIds([...next.aiBindingIds]);
+    setDefaultAiIntegrationId(next.defaultAiIntegrationId);
   };
 
   return (
@@ -366,74 +353,17 @@ function AiAgentsSection({
 
       {isLoading ? (
         <p className="text-muted-foreground text-xs">Loading chat models...</p>
-      ) : null}
-
-      {!isLoading && models.length === 0 ? (
-        <p className="text-muted-foreground text-xs">
-          No chat models are available yet. Add one under Settings →
-          Integrations.
-        </p>
-      ) : null}
-
-      {!isLoading && models.length > 0 ? (
-        <ul className="space-y-2">
-          {models.map((model) => {
-            const isSelected = selected.has(model.id);
-            const isDefault = defaultAiIntegrationId === model.id;
-            const label = chatModelDisplayLabel(model);
-            const provider = chatProviderDisplayLabel(model.provider);
-
-            return (
-              <li key={model.id}>
-                <div className="border-border bg-muted/20 flex items-center gap-3 rounded-lg border p-3">
-                  <Checkbox
-                    id={`ai-model-${model.id}`}
-                    checked={isSelected}
-                    onCheckedChange={(value) =>
-                      toggleModel(model.id, value === true)
-                    }
-                    className="cursor-pointer"
-                  />
-                  <div className="grid min-w-0 flex-1 gap-0.5">
-                    <Label
-                      htmlFor={`ai-model-${model.id}`}
-                      className="cursor-pointer truncate text-sm font-medium select-none"
-                      title={label}
-                    >
-                      {label}
-                    </Label>
-                    <p className="text-muted-foreground truncate text-xs">
-                      {provider}
-                    </p>
-                  </div>
-                  {isSelected ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 shrink-0"
-                      aria-label={
-                        isDefault
-                          ? `${label} is the project default`
-                          : `Set ${label} as project default`
-                      }
-                      aria-pressed={isDefault}
-                      onClick={() => setDefaultAiIntegrationId(model.id)}
-                    >
-                      <Star
-                        className={cn(
-                          'size-4',
-                          isDefault && 'fill-current text-amber-500'
-                        )}
-                      />
-                    </Button>
-                  ) : null}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      ) : null}
+      ) : (
+        <ProjectAiModelsPicker
+          models={models}
+          aiBindingIds={aiBindingIds}
+          defaultAiIntegrationId={defaultAiIntegrationId}
+          idPrefix="ai-model"
+          emptyMessage="No chat models are available yet. Add one under Settings → Integrations."
+          onToggleModel={toggleModel}
+          onSetDefault={setDefaultAiIntegrationId}
+        />
+      )}
     </div>
   );
 }

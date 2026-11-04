@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { ChatModelOption } from '@repo/types';
+import type { ProjectIntegrationBindingImportSource } from '@repo/types/api/v1';
 import {
   Card,
   CardContent,
@@ -11,22 +12,29 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { Button } from '@repo/ui/components/ui/button';
-import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Label } from '@repo/ui/components/ui/label';
-import { Loader2, Star } from '@repo/ui/lib/icons';
-import { cn } from '@repo/ui/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@repo/ui/components/ui/select';
+import { Loader2 } from '@repo/ui/lib/icons';
 import { REPORT_CARD_CLASS } from '@/app/projects/_components/project-details/project-details-shared';
 import { IntegrationFeedbackBanner } from '@/app/projects/_components/project-details/integration-settings-shared';
-import { mapAiBindingsToIntegrationBindings } from '@/app/projects/_helpers/project-ai-bindings';
+import { ProjectAiModelsPicker } from '@/app/projects/_components/project-ai-models-picker';
 import {
+  mapAiBindingsToIntegrationBindings,
+  toggleAiBindingSelection,
+} from '@/app/projects/_helpers/project-ai-bindings';
+import {
+  importProjectIntegrationBindingsFromProject,
+  listProjectIntegrationBindingImportSources,
   listProjectIntegrationBindings,
   putProjectIntegrationBindings,
 } from '@/app/projects/_services/projects.integration-bindings.client';
 import { listChatModelsForChatClient } from '@/app/chat/_services/chat-models.reads.client';
-import {
-  chatModelDisplayLabel,
-  chatProviderDisplayLabel,
-} from '@/app/chat/_services/chat-models-api.shared';
 import { chatAiAgentsIntegrationsHref } from '@/app/chat/_services/chat-integrations-navigation.shared';
 import { errorMessage } from '@/lib/errors/error-message';
 
@@ -34,6 +42,20 @@ export type ProjectAiModelsCardProps = {
   readonly projectId: string;
   readonly canEdit?: boolean;
 };
+
+function applyBindingsToState(
+  bindings: ReadonlyArray<{
+    integration_id: string;
+    is_default_for_project: boolean;
+  }>
+): { aiBindingIds: string[]; defaultAiIntegrationId: string | null } {
+  const aiBindingIds = bindings.map((row) => row.integration_id);
+  const projectDefault = bindings.find((row) => row.is_default_for_project);
+  return {
+    aiBindingIds,
+    defaultAiIntegrationId: projectDefault?.integration_id ?? null,
+  };
+}
 
 export function ProjectAiModelsCard({
   projectId,
@@ -44,8 +66,15 @@ export function ProjectAiModelsCard({
   const [defaultAiIntegrationId, setDefaultAiIntegrationId] = useState<
     string | null
   >(null);
+  const [importSources, setImportSources] = useState<
+    ProjectIntegrationBindingImportSource[]
+  >([]);
+  const [selectedSourceProjectId, setSelectedSourceProjectId] = useState<
+    string | undefined
+  >(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
 
@@ -53,49 +82,50 @@ export function ProjectAiModelsCard({
     setIsLoading(true);
     setFeedback(null);
     try {
-      const [orgModels, bindings] = await Promise.all([
+      const [orgModels, bindings, sources] = await Promise.all([
         listChatModelsForChatClient(),
         listProjectIntegrationBindings(projectId),
+        canEdit
+          ? listProjectIntegrationBindingImportSources(projectId)
+          : Promise.resolve([]),
       ]);
       setModels(orgModels);
-      setAiBindingIds(bindings.map((row) => row.integration_id));
-      const projectDefault = bindings.find((row) => row.is_default_for_project);
-      setDefaultAiIntegrationId(projectDefault?.integration_id ?? null);
+      const next = applyBindingsToState(bindings);
+      setAiBindingIds(next.aiBindingIds);
+      setDefaultAiIntegrationId(next.defaultAiIntegrationId);
+      setImportSources(sources);
+      setSelectedSourceProjectId((current) =>
+        current && sources.some((source) => source.project_id === current)
+          ? current
+          : undefined
+      );
     } catch (error: unknown) {
       setModels([]);
       setAiBindingIds([]);
       setDefaultAiIntegrationId(null);
+      setImportSources([]);
       setIsError(true);
       setFeedback(errorMessage(error, 'Failed to load AI model bindings'));
     } finally {
       setIsLoading(false);
     }
-  }, [projectId]);
+  }, [canEdit, projectId]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const selected = new Set(aiBindingIds);
-
   const toggleModel = (modelId: string, checked: boolean) => {
     if (!canEdit) {
       return;
     }
-    if (checked) {
-      const nextIds = [...aiBindingIds, modelId];
-      setAiBindingIds(nextIds);
-      if (!defaultAiIntegrationId) {
-        setDefaultAiIntegrationId(modelId);
-      }
-      return;
-    }
-
-    const nextIds = aiBindingIds.filter((id) => id !== modelId);
-    setAiBindingIds(nextIds);
-    if (defaultAiIntegrationId === modelId) {
-      setDefaultAiIntegrationId(nextIds[0] ?? null);
-    }
+    const next = toggleAiBindingSelection(
+      { aiBindingIds, defaultAiIntegrationId },
+      modelId,
+      checked
+    );
+    setAiBindingIds([...next.aiBindingIds]);
+    setDefaultAiIntegrationId(next.defaultAiIntegrationId);
   };
 
   const handleSave = async () => {
@@ -111,9 +141,9 @@ export function ProjectAiModelsCard({
           defaultAiIntegrationId
         ) ?? [];
       const saved = await putProjectIntegrationBindings(projectId, bindings);
-      setAiBindingIds(saved.map((row) => row.integration_id));
-      const projectDefault = saved.find((row) => row.is_default_for_project);
-      setDefaultAiIntegrationId(projectDefault?.integration_id ?? null);
+      const next = applyBindingsToState(saved);
+      setAiBindingIds(next.aiBindingIds);
+      setDefaultAiIntegrationId(next.defaultAiIntegrationId);
       setIsError(false);
       setFeedback(
         bindings.length === 0
@@ -128,6 +158,38 @@ export function ProjectAiModelsCard({
     }
   };
 
+  const handleImport = async () => {
+    if (!canEdit || !selectedSourceProjectId) {
+      return;
+    }
+    setIsImporting(true);
+    setFeedback(null);
+    try {
+      const saved = await importProjectIntegrationBindingsFromProject(
+        projectId,
+        selectedSourceProjectId
+      );
+      const next = applyBindingsToState(saved);
+      setAiBindingIds(next.aiBindingIds);
+      setDefaultAiIntegrationId(next.defaultAiIntegrationId);
+      setIsError(false);
+      setFeedback(
+        saved.length === 0
+          ? 'Imported an empty AI pool from the source project.'
+          : `Imported ${saved.length} AI model bind(s) from the source project.`
+      );
+    } catch (error: unknown) {
+      setIsError(true);
+      setFeedback(
+        errorMessage(error, 'Failed to import AI model bindings from project')
+      );
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const busy = isLoading || isSaving || isImporting;
+
   return (
     <Card className={REPORT_CARD_CLASS}>
       <CardHeader>
@@ -141,94 +203,85 @@ export function ProjectAiModelsCard({
           >
             Settings → Integrations
           </Link>
-          . Empty selection falls through to organization defaults.
+          . Empty selection falls through to organization defaults. Import
+          copies org binds from another project you belong to (no API keys).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <IntegrationFeedbackBanner message={feedback} isError={isError} />
+
+        {canEdit && importSources.length > 0 ? (
+          <div className="space-y-2">
+            <Label htmlFor="ai-import-source">Import from project</Label>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Select
+                value={selectedSourceProjectId}
+                onValueChange={setSelectedSourceProjectId}
+                disabled={busy}
+              >
+                <SelectTrigger id="ai-import-source" className="sm:max-w-sm">
+                  <SelectValue placeholder="Choose a project you belong to" />
+                </SelectTrigger>
+                <SelectContent>
+                  {importSources.map((source) => (
+                    <SelectItem
+                      key={source.project_id}
+                      value={source.project_id}
+                    >
+                      {source.name} ({source.key}) · {source.binding_count}{' '}
+                      model
+                      {source.binding_count === 1 ? '' : 's'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={busy || !selectedSourceProjectId}
+                onClick={() => void handleImport()}
+              >
+                {isImporting ? (
+                  <>
+                    <Loader2
+                      data-icon="inline-start"
+                      className="animate-spin"
+                    />
+                    Importing
+                  </>
+                ) : (
+                  'Import binds'
+                )}
+              </Button>
+            </div>
+          </div>
+        ) : null}
 
         {isLoading ? (
           <div className="text-muted-foreground flex items-center gap-2 text-xs">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             Loading chat models...
           </div>
-        ) : null}
-
-        {!isLoading && models.length === 0 ? (
-          <p className="text-muted-foreground text-xs">
-            No organization chat models yet. Add one under Settings →
-            Integrations.
-          </p>
-        ) : null}
-
-        {!isLoading && models.length > 0 ? (
-          <ul className="space-y-2">
-            {models.map((model) => {
-              const isSelected = selected.has(model.id);
-              const isDefault = defaultAiIntegrationId === model.id;
-              const label = chatModelDisplayLabel(model);
-              const provider = chatProviderDisplayLabel(model.provider);
-
-              return (
-                <li key={model.id}>
-                  <div className="border-border bg-muted/20 flex items-center gap-3 rounded-lg border p-3">
-                    <Checkbox
-                      id={`project-ai-model-${model.id}`}
-                      checked={isSelected}
-                      disabled={!canEdit || isSaving}
-                      onCheckedChange={(value) =>
-                        toggleModel(model.id, value === true)
-                      }
-                      className="cursor-pointer"
-                    />
-                    <div className="grid min-w-0 flex-1 gap-0.5">
-                      <Label
-                        htmlFor={`project-ai-model-${model.id}`}
-                        className="cursor-pointer truncate text-sm font-medium select-none"
-                        title={label}
-                      >
-                        {label}
-                      </Label>
-                      <p className="text-muted-foreground truncate text-xs">
-                        {provider}
-                      </p>
-                    </div>
-                    {isSelected ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 shrink-0"
-                        disabled={!canEdit || isSaving}
-                        aria-label={
-                          isDefault
-                            ? `${label} is the project default`
-                            : `Set ${label} as project default`
-                        }
-                        aria-pressed={isDefault}
-                        onClick={() => setDefaultAiIntegrationId(model.id)}
-                      >
-                        <Star
-                          className={cn(
-                            'size-4',
-                            isDefault && 'fill-current text-amber-500'
-                          )}
-                        />
-                      </Button>
-                    ) : null}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        ) : null}
+        ) : (
+          <ProjectAiModelsPicker
+            models={models}
+            aiBindingIds={aiBindingIds}
+            defaultAiIntegrationId={defaultAiIntegrationId}
+            idPrefix="project-ai-model"
+            disabled={!canEdit || busy}
+            emptyMessage="No organization chat models yet. Add one under Settings → Integrations."
+            onToggleModel={toggleModel}
+            onSetDefault={setDefaultAiIntegrationId}
+          />
+        )}
 
         {canEdit ? (
           <div className="flex justify-end">
             <Button
               type="button"
               size="sm"
-              disabled={isLoading || isSaving}
+              disabled={busy}
               onClick={() => void handleSave()}
             >
               {isSaving ? (

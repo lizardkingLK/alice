@@ -33,13 +33,13 @@ Update your name, profile photo, and cover image.
 
 ## Other settings tabs
 
-| Tab               | Examples                                                   |
-| ----------------- | ---------------------------------------------------------- |
-| **Security**      | Password-related options; **Danger zone** self-deactivate  |
-| **Notifications** | In-app notification preferences (where configured)         |
-| **Preferences**   | Browser UI prefs (create dialog layout, work-item details) |
+| Tab               | Examples                                                  |
+| ----------------- | --------------------------------------------------------- |
+| **Security**      | Password-related options; **Danger zone** self-deactivate |
+| **Notifications** | In-app notification preferences (where configured)        |
+| **Preferences**   | Browser UI prefs + personal Alice Chat model preference   |
 
-**Integrations** appears only for **admins** — see
+**Integrations** appears for **managers and admins** — see
 [Workspace integrations](./workspace-integrations.md).
 
 ### Preferences
@@ -52,8 +52,13 @@ Under **Settings → Preferences**:
   prompt or save-on-close dialog). When off, drafts stay manual.
 - **Work item details** — banner color, title icon, and which sections/fields
   appear on every work-item page (same as **Configure** on a work item)
+- **Alice Chat model** — prefer an organization chat model (synced to your
+  account). Project AI binds still constrain the pool when you chat in a
+  project. Choose **Workspace default** to clear the preference. New API keys
+  are still managed only under [Workspace integrations](./workspace-integrations.md).
 
-These stay in this browser only.
+Browser-only toggles (create layout, drafts, work-item details) stay on this
+device; the Alice Chat model preference syncs with your account.
 
 ---
 

@@ -8,8 +8,10 @@ import {
 } from '../../../middlewares/auth';
 import {
   createIntegrationBodySchema,
+  importProjectIntegrationBindingsBodySchema,
   listIntegrationsQuerySchema,
   patchIntegrationBodySchema,
+  putMemberChatModelPreferenceBodySchema,
   putProjectIntegrationBindingsBodySchema,
 } from './integrations.schemas';
 import { IntegrationsService } from './integrations.service';
@@ -77,6 +79,52 @@ export function createIntegrationsRouter(deps: IntegrationsRouterDeps) {
   );
 
   integrationsRouter.get(
+    '/member-chat-model-preference',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const actorId = requireActorId(req);
+        const preference =
+          await integrationsService.getMemberChatModelPreference(actorId);
+        res.json({ preference });
+      } catch (error) {
+        sendRouteError(
+          res,
+          error,
+          'Failed to get member chat model preference'
+        );
+      }
+    }
+  );
+
+  integrationsRouter.put(
+    '/member-chat-model-preference',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsed = putMemberChatModelPreferenceBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        const actorId = requireActorId(req);
+        const preference =
+          await integrationsService.putMemberChatModelPreference(
+            actorId,
+            parsed.data
+          );
+        res.json({ preference });
+      } catch (error) {
+        sendRouteError(
+          res,
+          error,
+          'Failed to update member chat model preference'
+        );
+      }
+    }
+  );
+
+  integrationsRouter.get(
     '/',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
@@ -96,6 +144,36 @@ export function createIntegrationsRouter(deps: IntegrationsRouterDeps) {
         res.json({ integrations });
       } catch (error) {
         sendRouteError(res, error, 'Failed to list integrations');
+      }
+    }
+  );
+
+  integrationsRouter.get(
+    '/project-bindings/import-sources',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const excludeRaw = firstQueryValue(req.query.excludeProjectId);
+      const excludeParsed = excludeRaw
+        ? z.uuid().safeParse(excludeRaw)
+        : undefined;
+      if (excludeParsed && !excludeParsed.success) {
+        return res.status(400).json({ error: 'Invalid excludeProjectId' });
+      }
+
+      try {
+        const actorId = requireActorId(req);
+        const sources =
+          await integrationsService.listProjectChatModelBindingImportSources(
+            actorId,
+            excludeParsed?.data
+          );
+        res.json({ sources });
+      } catch (error) {
+        sendRouteError(
+          res,
+          error,
+          'Failed to list project binding import sources'
+        );
       }
     }
   );
@@ -156,6 +234,41 @@ export function createIntegrationsRouter(deps: IntegrationsRouterDeps) {
           res,
           error,
           'Failed to update project integration bindings'
+        );
+      }
+    }
+  );
+
+  integrationsRouter.post(
+    '/project-bindings/:projectId/import-from',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.projectId);
+      if (!parsedId.success) {
+        return res.status(400).json({ error: 'Invalid project id' });
+      }
+
+      const parsed = importProjectIntegrationBindingsBodySchema.safeParse(
+        req.body
+      );
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        const actorId = requireActorId(req);
+        const bindings =
+          await integrationsService.importProjectChatModelBindingsFromProject(
+            actorId,
+            parsedId.data,
+            parsed.data
+          );
+        res.json({ bindings });
+      } catch (error) {
+        sendRouteError(
+          res,
+          error,
+          'Failed to import project integration bindings'
         );
       }
     }

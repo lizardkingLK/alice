@@ -984,6 +984,7 @@ export class ChatService {
   resolveChatModelForChat(params: {
     integrationId?: string;
     projectId?: string;
+    userId?: string;
     legacyModelId?: string;
   }): Promise<ResolvedChatModelConfig> {
     return this.deps.integrationsService.resolveChatModelForChat(params);

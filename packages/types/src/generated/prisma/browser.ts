@@ -191,6 +191,12 @@ export type version_control_pull_requests = Prisma.version_control_pull_requests
  */
 export type integrations = Prisma.integrationsModel
 /**
+ * Model member_chat_model_preferences
+ * Per-user preferred org chat model (bind-by-reference). Null id ⇒ workspace default.
+ * See docs/features/integrations/INTEGRATION_SCOPES.md (Phase E).
+ */
+export type member_chat_model_preferences = Prisma.member_chat_model_preferencesModel
+/**
  * Model project_integration_bindings
  * Project enablement of an organization (or project-scoped) integration.
  * Empty for a project ⇒ Alice Chat falls through to organization defaults.

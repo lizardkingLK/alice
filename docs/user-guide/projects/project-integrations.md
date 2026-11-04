@@ -69,9 +69,12 @@ connection to link and sync. Only the person who authorized Atlassian can
 Use the **AI agents** card to bind organization chat models (from
 **Settings → Integrations**) to this project for Alice Chat.
 
-1. Enable one or more models with the checkboxes.
-2. Star one enabled model as the **project default**.
-3. Select **Save AI models**.
+1. Optionally **Import from project** — pick another project you belong to that
+   already has AI binds, then **Import binds** (copies org model references
+   only; API keys are never copied).
+2. Enable one or more models with the checkboxes.
+3. Star one enabled model as the **project default**.
+4. Select **Save AI models**.
 
 Empty selection clears the project pool — chat falls through to organization
 defaults. New API keys are still created only in

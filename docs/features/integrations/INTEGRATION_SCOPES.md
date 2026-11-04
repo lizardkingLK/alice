@@ -1,12 +1,14 @@
 # Integration scopes (Organization / Project / Member)
 
-Status: **In progress** — Phases **A** + **B** + **C** (slice) shipped. Schema
-has `IntegrationScope` (default `organization`) and
-`project_integration_bindings`. Chat resolves models with **project → page →
-org**. Create wizard uses a single **Integrations** step (Jira + GitHub + AI
-binds). Project **Integrations** tab includes an **AI agents** bind card.
-Phase 1 Settings marketplace remains the **Organization vault**
-(`SETTINGS_INTEGRATIONS.md`).
+Status: **In progress** — Phases **A–E** (slice) shipped. Schema has
+`IntegrationScope` (default `organization`), `project_integration_bindings`,
+and `member_chat_model_preferences` (personal preferred org model). Chat
+resolves **project → member preferred → org**. Create wizard uses a single
+**Integrations** step (Jira + GitHub + AI binds). Project **Integrations** tab
+includes AI binds + import-from-project. Members set a personal preferred
+model under **Settings → Preferences**. Phase 1 Settings marketplace remains
+the **Organization vault** (`SETTINGS_INTEGRATIONS.md`). Member-scoped API key
+rows (`scope=member` + `owner_user_id`) remain deferred.
 
 Alice today stores chat-model (and future Slack/etc.) rows as **deployment-wide
 workspace integrations**. This document adds a first-class **scope** and the
@@ -90,8 +92,9 @@ When Alice needs a model (or later a tool integration):
 2. **Page context (second)** — if no project can be inferred, use page-level
    hints (e.g. Charts/Views with an associated project, deep link query). If
    still none, use **organization** defaults only.
-3. **Member overrides (later)** — optional personal default model when org/project
-   allow it; not required for the first delivery.
+3. **Member preferred (shipped)** — optional personal default org model
+   (`member_chat_model_preferences`). Applied when no explicit picker id is
+   sent; if a project pool exists, the preferred model must be in that pool.
 
 Explicit user model picker in the chat header continues to constrain the pool
 to models the resolved scope makes available (never leak another project’s
@@ -280,8 +283,8 @@ GitHub/Jira may remain on existing project tables in v1, documented as
 | **A** | Docs + `IntegrationScope` / `integrations.scope` default `organization` (**done**)                                                                                  | —          |
 | **B** | Chat resolution project → page → org; `project_integration_bindings`; managers already configure org Settings (**done**)                                            | A          |
 | **C** | **UX move:** create **Integrations** step (merge Imports+Source+AI); project Integrations tab AI binds (**done** — full Settings-style marketplace polish deferred) | B          |
-| **D** | Import-from-project-I-belong-to (org binds / metadata only)                                                                                                         | C          |
-| **E** | Member scope (optional personal models)                                                                                                                             | B          |
+| **D** | Import-from-project-I-belong-to (org binds / metadata only) (**done**)                                                                                              | C          |
+| **E** | Member preferred org model (Preferences + resolve) (**done**); personal key rows deferred                                                                           | B          |
 | **F** | Optional: unify GitHub/Jira rows under `integrations.scope = project`                                                                                               | C          |
 
 **Shipping order intent:** land **C** as soon as **B** is safe — the product
@@ -329,6 +332,6 @@ requirement is that project create/details are where integrations are wired.
 - [x] Draft resume restores Integrations selections (incl. AI binds); keys never drafted.
 - [x] Create remains async (ack → background work → inbox notification).
 - [x] Chat with project context uses that project’s enabled pool; without project, page then org (empty bindings ⇒ org).
-- [ ] Project cannot import another project’s project-scoped integration.
+- [x] Project cannot import another project’s project-scoped integration (import only rebinds org rows the source already bound; actor must belong to source).
 - [x] Organization integrations are **bound** into projects (not copied to project scope by default).
-- [x] Feature + user-guide docs updated for shipped Phase C surfaces.
+- [x] Feature + user-guide docs updated for shipped Phase C/D surfaces.

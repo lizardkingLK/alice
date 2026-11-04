@@ -623,6 +623,7 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
         chatModelConfig = await chatService.resolveChatModelForChat({
           integrationId,
           projectId,
+          userId: req.userId!,
           legacyModelId: modelId,
         });
       } catch (error: unknown) {

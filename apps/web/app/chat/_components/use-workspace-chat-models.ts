@@ -8,6 +8,7 @@ import {
   resolveSelectedChatIntegrationId,
   withDefaultChatIntegration,
 } from '@/app/chat/_services/chat-models-api.shared';
+import { getMemberChatModelPreference } from '@/app/chat/_services/member-chat-model-preference.client';
 import { patchWorkspaceIntegration } from '@/app/settings/_services/integrations.mutations.client';
 import { errorMessage } from '@/lib/errors/error-message';
 
@@ -47,10 +48,19 @@ export function useWorkspaceChatModels(
     inFlightRef.current = true;
     setIsLoadingModels(true);
     try {
-      const models = await listChatModelsForChatClient();
+      const [models, preference] = await Promise.all([
+        listChatModelsForChatClient(),
+        getMemberChatModelPreference().catch(() => ({
+          default_integration_id: null as string | null,
+        })),
+      ]);
       setChatModels(models);
       setSelectedIntegrationId((current) =>
-        resolveSelectedChatIntegrationId(models, current)
+        resolveSelectedChatIntegrationId(
+          models,
+          current,
+          preference.default_integration_id
+        )
       );
       loadedRef.current = true;
     } catch (error) {
@@ -64,11 +74,32 @@ export function useWorkspaceChatModels(
   useEffect(() => {
     if (initialChatModels !== undefined) {
       setChatModels(initialChatModels);
-      setSelectedIntegrationId((current) =>
-        resolveSelectedChatIntegrationId(initialChatModels, current)
-      );
+      let cancelled = false;
+      getMemberChatModelPreference()
+        .then((preference) => {
+          if (cancelled) {
+            return;
+          }
+          setSelectedIntegrationId((current) =>
+            resolveSelectedChatIntegrationId(
+              initialChatModels,
+              current,
+              preference.default_integration_id
+            )
+          );
+        })
+        .catch(() => {
+          if (cancelled) {
+            return;
+          }
+          setSelectedIntegrationId((current) =>
+            resolveSelectedChatIntegrationId(initialChatModels, current)
+          );
+        });
       loadedRef.current = true;
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     if (lazy) {

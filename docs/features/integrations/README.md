@@ -2,10 +2,10 @@
 
 Workspace-level **AI agent** and **third-party tool** connections configured by managers and admins from **Settings → Integrations**, plus the **planned** Organization / Project / Member scope model.
 
-| Document                                               | Description                                                                                                                | Status                  |
-| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| [SETTINGS_INTEGRATIONS.md](./SETTINGS_INTEGRATIONS.md) | Settings tab, manager/admin RBAC, catalog, encrypted persistence, and the Gemini/xAI/OpenAI/Anthropic model pool           | **Phase 1 implemented** |
-| [INTEGRATION_SCOPES.md](./INTEGRATION_SCOPES.md)       | Scopes + chat resolution + create/details AI binds (**A/B/C**); import-from-project (**D** next); Settings stays org vault | **A/B/C shipped**       |
+| Document                                               | Description                                                                                                                                                   | Status                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| [SETTINGS_INTEGRATIONS.md](./SETTINGS_INTEGRATIONS.md) | Settings tab, manager/admin RBAC, catalog, encrypted persistence, and the Gemini/xAI/OpenAI/Anthropic model pool                                              | **Phase 1 implemented** |
+| [INTEGRATION_SCOPES.md](./INTEGRATION_SCOPES.md)       | Scopes + chat resolution + create/details AI binds + import-from-project + member preferred model (**A–E**); personal keys deferred; Settings stays org vault | **A–E shipped**         |
 
 Quick links:
 

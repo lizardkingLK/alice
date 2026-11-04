@@ -430,6 +430,7 @@ export const ModelName = {
   chart_shares: 'chart_shares',
   version_control_pull_requests: 'version_control_pull_requests',
   integrations: 'integrations',
+  member_chat_model_preferences: 'member_chat_model_preferences',
   project_integration_bindings: 'project_integration_bindings'
 } as const
 
@@ -446,7 +447,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "chat_conversations" | "chat_attachments" | "chat_tools" | "chat_skills" | "chat_agents" | "chat_agent_tools" | "chat_agent_skills" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "integrations" | "project_integration_bindings"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "chat_conversations" | "chat_attachments" | "chat_tools" | "chat_skills" | "chat_agents" | "chat_agent_tools" | "chat_agent_skills" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "integrations" | "member_chat_model_preferences" | "project_integration_bindings"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2892,6 +2893,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    member_chat_model_preferences: {
+      payload: Prisma.$member_chat_model_preferencesPayload<ExtArgs>
+      fields: Prisma.member_chat_model_preferencesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.member_chat_model_preferencesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$member_chat_model_preferencesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.member_chat_model_preferencesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$member_chat_model_preferencesPayload>
+        }
+        findFirst: {
+          args: Prisma.member_chat_model_preferencesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$member_chat_model_preferencesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.member_chat_model_preferencesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$member_chat_model_preferencesPayload>
+        }
+        findMany: {
+          args: Prisma.member_chat_model_preferencesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$member_chat_model_preferencesPayload>[]
+        }
+        create: {
+          args: Prisma.member_chat_model_preferencesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$member_chat_model_preferencesPayload>
+        }
+        createMany: {
+          args: Prisma.member_chat_model_preferencesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.member_chat_model_preferencesCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$member_chat_model_preferencesPayload>[]
+        }
+        delete: {
+          args: Prisma.member_chat_model_preferencesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$member_chat_model_preferencesPayload>
+        }
+        update: {
+          args: Prisma.member_chat_model_preferencesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$member_chat_model_preferencesPayload>
+        }
+        deleteMany: {
+          args: Prisma.member_chat_model_preferencesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.member_chat_model_preferencesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.member_chat_model_preferencesUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$member_chat_model_preferencesPayload>[]
+        }
+        upsert: {
+          args: Prisma.member_chat_model_preferencesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$member_chat_model_preferencesPayload>
+        }
+        aggregate: {
+          args: Prisma.Member_chat_model_preferencesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateMember_chat_model_preferences>
+        }
+        groupBy: {
+          args: Prisma.member_chat_model_preferencesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Member_chat_model_preferencesGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.member_chat_model_preferencesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Member_chat_model_preferencesCountAggregateOutputType> | number
+        }
+      }
+    }
     project_integration_bindings: {
       payload: Prisma.$project_integration_bindingsPayload<ExtArgs>
       fields: Prisma.project_integration_bindingsFieldRefs
@@ -3584,6 +3659,16 @@ export const IntegrationsScalarFieldEnum = {
 export type IntegrationsScalarFieldEnum = (typeof IntegrationsScalarFieldEnum)[keyof typeof IntegrationsScalarFieldEnum]
 
 
+export const Member_chat_model_preferencesScalarFieldEnum = {
+  user_id: 'user_id',
+  default_integration_id: 'default_integration_id',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type Member_chat_model_preferencesScalarFieldEnum = (typeof Member_chat_model_preferencesScalarFieldEnum)[keyof typeof Member_chat_model_preferencesScalarFieldEnum]
+
+
 export const Project_integration_bindingsScalarFieldEnum = {
   id: 'id',
   project_id: 'project_id',
@@ -4234,6 +4319,7 @@ export type GlobalOmitConfig = {
   chart_shares?: Prisma.chart_sharesOmit
   version_control_pull_requests?: Prisma.version_control_pull_requestsOmit
   integrations?: Prisma.integrationsOmit
+  member_chat_model_preferences?: Prisma.member_chat_model_preferencesOmit
   project_integration_bindings?: Prisma.project_integration_bindingsOmit
 }
 

@@ -12,6 +12,9 @@ const {
   findActiveChatModelByIdMock,
   findDefaultActiveChatModelMock,
   listActiveChatModelBindingsForProjectMock,
+  findActiveMemberPreferredChatModelMock,
+  findMemberChatModelPreferenceMock,
+  upsertMemberChatModelPreferenceMock,
   createMock,
   updateMock,
   disableMock,
@@ -23,6 +26,9 @@ const {
   findActiveChatModelByIdMock: vi.fn(),
   findDefaultActiveChatModelMock: vi.fn(),
   listActiveChatModelBindingsForProjectMock: vi.fn(),
+  findActiveMemberPreferredChatModelMock: vi.fn(),
+  findMemberChatModelPreferenceMock: vi.fn(),
+  upsertMemberChatModelPreferenceMock: vi.fn(),
   createMock: vi.fn(),
   updateMock: vi.fn(),
   disableMock: vi.fn(),
@@ -49,6 +55,9 @@ const repository = {
   findDefaultActiveChatModel: findDefaultActiveChatModelMock,
   listActiveChatModelBindingsForProject:
     listActiveChatModelBindingsForProjectMock,
+  findActiveMemberPreferredChatModel: findActiveMemberPreferredChatModelMock,
+  findMemberChatModelPreference: findMemberChatModelPreferenceMock,
+  upsertMemberChatModelPreference: upsertMemberChatModelPreferenceMock,
   create: createMock,
   update: updateMock,
   disable: disableMock,
@@ -439,6 +448,7 @@ describe('IntegrationsService.resolveChatModelForChat', () => {
     vi.clearAllMocks();
     findDefaultActiveChatModelMock.mockResolvedValue(null);
     listActiveChatModelBindingsForProjectMock.mockResolvedValue([]);
+    findActiveMemberPreferredChatModelMock.mockResolvedValue(null);
   });
 
   it('resolves an active integration by id and decrypts api_key', async () => {
@@ -485,6 +495,39 @@ describe('IntegrationsService.resolveChatModelForChat', () => {
     expect(listActiveChatModelBindingsForProjectMock).toHaveBeenCalledWith(
       projectId
     );
+    expect(config.integrationId).toBe(integrationRow.id);
+  });
+
+  it('uses the member preferred org model when no project pool exists', async () => {
+    findActiveMemberPreferredChatModelMock.mockResolvedValue(decryptedRow);
+
+    const config = await service.resolveChatModelForChat({
+      userId: 'member-1',
+    });
+
+    expect(config.integrationId).toBe(integrationRow.id);
+    expect(findDefaultActiveChatModelMock).not.toHaveBeenCalled();
+  });
+
+  it('uses member preferred only when it is in the project binding pool', async () => {
+    const otherId = '33333333-3333-4333-8333-333333333333';
+    findActiveMemberPreferredChatModelMock.mockResolvedValue({
+      ...decryptedRow,
+      id: otherId,
+    });
+    listActiveChatModelBindingsForProjectMock.mockResolvedValue([
+      {
+        integration_id: integrationRow.id,
+        is_default_for_project: true,
+        integration: decryptedRow,
+      },
+    ]);
+
+    const config = await service.resolveChatModelForChat({
+      projectId,
+      userId: 'member-1',
+    });
+
     expect(config.integrationId).toBe(integrationRow.id);
   });
 

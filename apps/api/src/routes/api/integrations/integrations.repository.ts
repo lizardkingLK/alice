@@ -3,6 +3,7 @@ import {
   prismaAuditCreateWithoutStatus,
   prismaAuditUpdate,
 } from '../../../lib/prisma-audit';
+import { listAccessibleProjectIds } from '../../../lib/project-access';
 import {
   IntegrationCategory,
   IntegrationScope,
@@ -68,6 +69,10 @@ export type IntegrationUpdateData = {
 export class IntegrationsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
+  async listAccessibleProjectIds(actorId: string): Promise<string[]> {
+    return listAccessibleProjectIds(this.db, actorId);
+  }
+
   async list(query: ListIntegrationsQuery): Promise<IntegrationListRow[]> {
     return prisma.integrations.findMany({
       where: {
@@ -126,6 +131,58 @@ export class IntegrationsRepository {
     });
   }
 
+  async findMemberChatModelPreference(
+    userId: string
+  ): Promise<{ default_integration_id: string | null } | null> {
+    return prisma.member_chat_model_preferences.findUnique({
+      where: { user_id: userId },
+      select: { default_integration_id: true },
+    });
+  }
+
+  /**
+   * Active org chat model preferred by the member, if still valid.
+   */
+  async findActiveMemberPreferredChatModel(
+    userId: string
+  ): Promise<IntegrationDetailRow | null> {
+    const preference = await this.findMemberChatModelPreference(userId);
+    if (!preference?.default_integration_id) {
+      return null;
+    }
+    return this.findActiveChatModelById(preference.default_integration_id);
+  }
+
+  async upsertMemberChatModelPreference(params: {
+    readonly userId: string;
+    readonly defaultIntegrationId: string | null;
+  }): Promise<{ default_integration_id: string | null }> {
+    const { userId, defaultIntegrationId } = params;
+
+    if (defaultIntegrationId) {
+      const active = await this.findActiveChatModelById(defaultIntegrationId);
+      if (!active) {
+        throw new Error(
+          'Preferred chat model must be an active organization AI model'
+        );
+      }
+    }
+
+    return prisma.member_chat_model_preferences.upsert({
+      where: { user_id: userId },
+      create: {
+        user_id: userId,
+        default_integration_id: defaultIntegrationId,
+        updated_by: userId,
+      },
+      update: {
+        default_integration_id: defaultIntegrationId,
+        updated_by: userId,
+      },
+      select: { default_integration_id: true },
+    });
+  }
+
   /**
    * Active chat-model integrations bound to a project (org-scoped rows via
    * `project_integration_bindings`). Empty ⇒ caller falls through to org pool.
@@ -157,6 +214,65 @@ export class IntegrationsRepository {
       integration_id: row.integration_id,
       is_default_for_project: row.is_default_for_project,
       integration: row.integration,
+    }));
+  }
+
+  /**
+   * Projects the actor can access that already have AI bindings, excluding
+   * `excludeProjectId` (import-from sources).
+   */
+  async listProjectChatModelBindingImportSources(params: {
+    readonly accessibleProjectIds: readonly string[];
+    readonly excludeProjectId?: string;
+  }): Promise<
+    Array<{
+      project_id: string;
+      name: string;
+      key: string;
+      binding_count: number;
+    }>
+  > {
+    const projectIds = params.accessibleProjectIds.filter(
+      (id) => id !== params.excludeProjectId
+    );
+    if (projectIds.length === 0) {
+      return [];
+    }
+
+    const grouped = await prisma.project_integration_bindings.groupBy({
+      by: ['project_id'],
+      where: {
+        project_id: { in: [...projectIds] },
+        integration: {
+          category: IntegrationCategory.ai_agent,
+          scope: IntegrationScope.organization,
+          status: IntegrationStatus.active,
+        },
+      },
+      _count: { _all: true },
+    });
+
+    if (grouped.length === 0) {
+      return [];
+    }
+
+    const counts = new Map(
+      grouped.map((row) => [row.project_id, row._count._all])
+    );
+    const projects = await prisma.projects.findMany({
+      where: {
+        id: { in: [...counts.keys()] },
+        deleted_at: null,
+      },
+      select: { id: true, name: true, key: true },
+      orderBy: { name: 'asc' },
+    });
+
+    return projects.map((project) => ({
+      project_id: project.id,
+      name: project.name,
+      key: project.key,
+      binding_count: counts.get(project.id) ?? 0,
     }));
   }
 

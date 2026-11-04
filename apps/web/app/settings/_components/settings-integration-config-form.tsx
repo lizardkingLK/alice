@@ -163,14 +163,13 @@ export function IntegrationConfigForm({
           Provider model id sent to the API (e.g. {providerDefault.value}).
         </p>
         {showModelWarning ? (
-          <div
+          <output
             className={cn(
               'flex flex-col gap-2 rounded-lg border p-3 text-sm font-medium',
               modelAssessment.status === 'retired'
                 ? 'border-destructive/40 bg-destructive/10 text-destructive'
                 : 'border-amber-700/40 bg-amber-50 text-amber-950 dark:border-amber-400/50 dark:bg-amber-950/70 dark:text-amber-50'
             )}
-            role="status"
           >
             <div className="flex items-start gap-2">
               <AlertCircle className="mt-0.5 size-4 shrink-0" />
@@ -192,7 +191,7 @@ export function IntegrationConfigForm({
                 Use {modelAssessment.recommended.label}
               </Button>
             ) : null}
-          </div>
+          </output>
         ) : null}
       </div>
 

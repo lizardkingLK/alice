@@ -84,6 +84,7 @@ export const ModelName = {
   chart_shares: 'chart_shares',
   version_control_pull_requests: 'version_control_pull_requests',
   integrations: 'integrations',
+  member_chat_model_preferences: 'member_chat_model_preferences',
   project_integration_bindings: 'project_integration_bindings'
 } as const
 
@@ -680,6 +681,16 @@ export const IntegrationsScalarFieldEnum = {
 } as const
 
 export type IntegrationsScalarFieldEnum = (typeof IntegrationsScalarFieldEnum)[keyof typeof IntegrationsScalarFieldEnum]
+
+
+export const Member_chat_model_preferencesScalarFieldEnum = {
+  user_id: 'user_id',
+  default_integration_id: 'default_integration_id',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type Member_chat_model_preferencesScalarFieldEnum = (typeof Member_chat_model_preferencesScalarFieldEnum)[keyof typeof Member_chat_model_preferencesScalarFieldEnum]
 
 
 export const Project_integration_bindingsScalarFieldEnum = {

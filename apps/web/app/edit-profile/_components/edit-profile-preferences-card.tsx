@@ -17,6 +17,7 @@ import {
   readProjectCreationDraftAuto,
   writeProjectCreationDraftAuto,
 } from '@/app/projects/_helpers/project-creation-draft-preference';
+import { EditProfileChatModelPreferenceCard } from '@/app/edit-profile/_components/edit-profile-chat-model-preference-card';
 import {
   Card,
   CardContent,
@@ -131,6 +132,8 @@ export function EditProfilePreferencesCard({
           />
         </CardContent>
       </Card>
+
+      <EditProfileChatModelPreferenceCard />
     </div>
   );
 }

@@ -244,6 +244,8 @@ model users {
   updated_integrations    integrations[]      @relation("IntegrationUpdatedBy")
   created_project_integration_bindings project_integration_bindings[] @relation("ProjectIntegrationBindingCreatedBy")
   updated_project_integration_bindings project_integration_bindings[] @relation("ProjectIntegrationBindingUpdatedBy")
+  chat_model_preference   member_chat_model_preferences?
+  updated_member_chat_model_preferences member_chat_model_preferences[] @relation("MemberChatModelPreferenceUpdatedBy")
 }
 
 model projects {
@@ -1021,11 +1023,27 @@ model integrations {
   created_by_user users? @relation("IntegrationCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users? @relation("IntegrationUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
   project_bindings project_integration_bindings[]
+  member_preferences member_chat_model_preferences[]
 
   @@index([category, status])
   @@index([catalog_id])
   @@index([provider, status])
   @@index([scope, status])
+}
+
+/// Per-user preferred org chat model (bind-by-reference). Null id ⇒ workspace default.
+/// See docs/features/integrations/INTEGRATION_SCOPES.md (Phase E).
+model member_chat_model_preferences {
+  user_id                String   @id @db.Uuid
+  default_integration_id String?  @db.Uuid
+  updated_by             String?  @db.Uuid
+  updated_at             DateTime @updatedAt @db.Timestamptz(6)
+
+  user         users         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  integration  integrations? @relation(fields: [default_integration_id], references: [id], onDelete: SetNull)
+  updated_by_user users?     @relation("MemberChatModelPreferenceUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+
+  @@index([default_integration_id])
 }
 
 /// Project enablement of an organization (or project-scoped) integration.
