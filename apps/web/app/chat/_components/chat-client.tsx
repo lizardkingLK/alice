@@ -38,11 +38,6 @@ import {
 import { isAdmin } from '@/lib/rbac';
 import { buildChatHref } from '../_helpers/chat-url';
 import {
-  chatAgentSummaryToRecord,
-  resolvePreferredChatAgentId,
-} from '../_helpers/chat-agents-catalog';
-import { listChatAgentsClient } from '../_services/chat-agents.reads.client';
-import {
   useChatClientBootstrap,
   useChatConversationsRealtime,
   useChatProcessingPoll,
@@ -188,43 +183,6 @@ function ChatClientInner({
     setError,
   });
 
-  useEffect(() => {
-    if (initialAgentId || !isPage) {
-      return;
-    }
-    let cancelled = false;
-    const applyPreferred = async () => {
-      try {
-        const agents = await listChatAgentsClient({ status: 'active' });
-        if (cancelled) {
-          return;
-        }
-        const preferred = resolvePreferredChatAgentId(
-          agents.map((row) => chatAgentSummaryToRecord(row))
-        );
-        if (!preferred) {
-          return;
-        }
-        setBoundAgentId(preferred);
-        setHasStartedEmptyConversation(true);
-        router.replace(
-          buildChatHref({
-            conversationId: activeConversationId,
-            agentId: preferred,
-          })
-        );
-      } catch (error) {
-        console.error('Failed to apply preferred chat agent:', error);
-      }
-    };
-    void applyPreferred();
-    return () => {
-      cancelled = true;
-    };
-    // Mount-only: seed preferred agent when URL has no agentId.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleNewChat = useCallback(
     (force = false) => {
       if (isConversationBusy && !force) return;
@@ -270,11 +228,15 @@ function ChatClientInner({
     if (isConversationBusy) return;
     if (id === activeConversationId && messages.length > 0) return;
 
+    const selected = conversations.find((row) => row.id === id);
+    const nextAgentId = selected?.agent_id ?? undefined;
+    setBoundAgentId(nextAgentId);
+
     if (isPage) {
       router.replace(
         buildChatHref({
           conversationId: id,
-          agentId: boundAgentId,
+          agentId: nextAgentId,
         })
       );
     }

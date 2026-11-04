@@ -15,7 +15,13 @@ export type ChatConversationRow = Tables<'chat_conversations'>;
 
 export type ChatConversationSummary = Pick<
   ChatConversationRow,
-  'id' | 'title' | 'created_at' | 'updated_at' | 'is_processing' | 'kind'
+  | 'id'
+  | 'title'
+  | 'created_at'
+  | 'updated_at'
+  | 'is_processing'
+  | 'kind'
+  | 'agent_id'
 >;
 
 export type ChatUserSnapshot = {

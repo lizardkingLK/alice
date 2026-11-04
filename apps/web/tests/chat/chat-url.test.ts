@@ -12,8 +12,8 @@ describe('buildChatHref', () => {
 
   it('builds conversation with agent', () => {
     expect(buildChatAgentsGalleryHref()).toBe('/chat');
-    expect(buildChatWithAgentHref('system-project-manager')).toBe(
-      '/chat?agentId=system-project-manager'
+    expect(buildChatWithAgentHref('11111111-1111-4111-8111-111111111111')).toBe(
+      '/chat?agentId=11111111-1111-4111-8111-111111111111'
     );
     expect(
       buildChatHref({

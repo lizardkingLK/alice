@@ -9,7 +9,7 @@ synchronization, and signed URL auto-refresh.
 | Document                                               | Description                                                                                                                                                                                                | Status      |
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
 | [AI_CHATBOT.md](./AI_CHATBOT.md)                       | Architecture, four providers, 13 server-side tools, multi-format attachments (JSON, CSV, TSV, MD, Outline, YAML), atomic imports, backlog sync, signed URL auto-refresh, storage, and deduplication engine | Implemented |
-| [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md) | Chat header **Agents** gallery; DB-backed Alice default + forks; encrypted instructions; skill/tool catalogs; distinct from Settings LLM models                                                            | In progress |
+| [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md) | Chat header **Agents** gallery; DB-backed Alice default + forks; encrypted instructions; skill/tool catalogs; preferred cookie SSR; conversation `agent_id` bind; distinct from Settings LLM models        | Implemented |
 | [USER_TEST_GUIDE.md](./USER_TEST_GUIDE.md)             | Step-by-step end-to-end testing guide with copy-pasteable sample JSON, CSV, Markdown, and Outline files, atomic failure handling, and backlog updates                                                      | Implemented |
 
 Quick links:

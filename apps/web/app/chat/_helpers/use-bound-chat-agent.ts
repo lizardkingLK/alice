@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import {
-  chatAgentSummaryToRecord,
+  chatAgentDetailToRecord,
   type ChatAgentKind,
   type ChatAgentRecord,
 } from '@/app/chat/_helpers/chat-agents-catalog';
 import type { ChatAgentAvatarStyle } from '@/app/chat/_helpers/chat-agent-avatar';
-import { listChatAgentsClient } from '@/app/chat/_services/chat-agents.reads.client';
+import { getChatAgentClient } from '@/app/chat/_services/chat-agents.reads.client';
 
 /** Default product assistant when no agent is bound to the conversation. */
 export const DEFAULT_CHAT_ASSISTANT_NAME = 'Alice';
@@ -32,7 +32,7 @@ function toIdentity(agent: ChatAgentRecord): ChatAssistantIdentity {
   };
 }
 
-/** Resolve a bound agent from the API catalog (null = Alice fallback). */
+/** Resolve a bound agent from GET /chat-agents/:id (null = Alice fallback). */
 export function useBoundChatAgent(
   agentId: string | undefined
 ): ChatAssistantIdentity | null {
@@ -47,12 +47,11 @@ export function useBoundChatAgent(
     let cancelled = false;
     const load = async () => {
       try {
-        const agents = await listChatAgentsClient();
+        const detail = await getChatAgentClient(agentId);
         if (cancelled) {
           return;
         }
-        const found = agents.find((agent) => agent.id === agentId);
-        setIdentity(found ? toIdentity(chatAgentSummaryToRecord(found)) : null);
+        setIdentity(toIdentity(chatAgentDetailToRecord(detail)));
       } catch (error) {
         console.error('Failed to resolve bound chat agent:', error);
         if (!cancelled) {

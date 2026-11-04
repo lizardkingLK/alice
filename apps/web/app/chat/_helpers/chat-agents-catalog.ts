@@ -9,6 +9,19 @@ import {
   isChatAgentAvatarStyle,
   type ChatAgentAvatarStyle,
 } from '@/app/chat/_helpers/chat-agent-avatar';
+import {
+  getPreferredChatAgentId,
+  rememberPreferredChatAgent,
+  setPreferredChatAgentId,
+  subscribePreferredChatAgent,
+} from '@/app/chat/_helpers/preferred-chat-agent-storage';
+
+export {
+  getPreferredChatAgentId,
+  rememberPreferredChatAgent,
+  setPreferredChatAgentId,
+  subscribePreferredChatAgent,
+};
 
 export type ChatAgentKind = 'system' | 'personal';
 
@@ -46,14 +59,6 @@ export const ALICE_SYSTEM_AUTHOR = {
   name: 'Alice',
   email: 'admin@alice.dev',
 } as const;
-
-/** Member preferred default agent id (uuid) — not the full catalog. */
-const PREFERRED_AGENT_ID_KEY = 'alice.chat.preferred-agent-id.v1';
-const PREFERRED_AGENT_CHANGED_EVENT = 'alice-chat-preferred-agent-changed';
-
-function isBrowser(): boolean {
-  return typeof window !== 'undefined';
-}
 
 function resolveAvatarFields(wire: {
   readonly id: string;
@@ -220,63 +225,15 @@ export function draftToPatchBody(
   return body;
 }
 
-export function getPreferredChatAgentId(): string | null {
-  if (!isBrowser()) {
-    return null;
-  }
-  try {
-    const raw = window.localStorage.getItem(PREFERRED_AGENT_ID_KEY);
-    return raw?.trim() || null;
-  } catch {
-    return null;
-  }
-}
-
-export function setPreferredChatAgentId(agentId: string | null): void {
-  if (!isBrowser()) {
-    return;
-  }
-  if (!agentId) {
-    window.localStorage.removeItem(PREFERRED_AGENT_ID_KEY);
-  } else {
-    window.localStorage.setItem(PREFERRED_AGENT_ID_KEY, agentId);
-  }
-  window.dispatchEvent(new Event(PREFERRED_AGENT_CHANGED_EVENT));
-}
-
-/** Prefer this agent when Chat is opened without `?agentId=`. */
-export function rememberPreferredChatAgent(agentId: string): void {
-  setPreferredChatAgentId(agentId);
-}
-
 export function resolvePreferredChatAgentId(
-  visibleAgents: readonly Pick<ChatAgentRecord, 'id' | 'status'>[]
+  visibleAgents: readonly Pick<ChatAgentRecord, 'id' | 'status'>[],
+  preferredId: string | null = getPreferredChatAgentId()
 ): string | null {
-  const preferred = getPreferredChatAgentId();
-  if (!preferred) {
+  if (!preferredId) {
     return null;
   }
   const match = visibleAgents.find(
-    (agent) => agent.id === preferred && agent.status === 'active'
+    (agent) => agent.id === preferredId && agent.status === 'active'
   );
   return match?.id ?? null;
-}
-
-export function subscribePreferredChatAgent(
-  onStoreChange: () => void
-): () => void {
-  if (!isBrowser()) {
-    return () => undefined;
-  }
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === PREFERRED_AGENT_ID_KEY || event.key === null) {
-      onStoreChange();
-    }
-  };
-  window.addEventListener('storage', onStorage);
-  window.addEventListener(PREFERRED_AGENT_CHANGED_EVENT, onStoreChange);
-  return () => {
-    window.removeEventListener('storage', onStorage);
-    window.removeEventListener(PREFERRED_AGENT_CHANGED_EVENT, onStoreChange);
-  };
 }

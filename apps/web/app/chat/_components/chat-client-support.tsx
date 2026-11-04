@@ -294,6 +294,7 @@ export function applySuccessfulChatResponse(params: {
         updated_at: new Date().toISOString(),
         is_processing: response.is_processing ?? false,
         kind: conversationKind,
+        agent_id: agentId ?? null,
       },
       ...prev,
     ]);

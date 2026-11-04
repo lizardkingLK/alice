@@ -50,10 +50,10 @@ active tab by name, title, persona, description, or author.
 
 ## Defaults
 
-| Kind                       | Who sets it                         | Effect                                                                  |
-| -------------------------- | ----------------------------------- | ----------------------------------------------------------------------- |
-| **Workspace default**      | Admins                              | Used when chat does not specify an agent (and for specialized AI areas) |
-| **Your preferred default** | You, in this browser (star or Chat) | Unbound `/chat` opens with that agent when it is still active           |
+| Kind                       | Who sets it                 | Effect                                                                  |
+| -------------------------- | --------------------------- | ----------------------------------------------------------------------- |
+| **Workspace default**      | Admins                      | Used when chat does not specify an agent (and for specialized AI areas) |
+| **Your preferred default** | You, in this browser (star) | Unbound `/chat` opens with that agent on this device                    |
 
 If only one agent remains in the workspace, Alice uses that agent everywhere.
 
@@ -74,8 +74,9 @@ In the Agents dialog detail view you can:
 - Adjust the DiceBear portrait (style and seed) when editing is allowed.
 - See the author byline as **by {name}** (no email).
 - **Prefer** (star) saves this agent as your browser preferred default, or
-  clears it if it is already preferred. **Chat** also remembers the preferred
-  agent when you open a conversation.
+  clears it if it is already preferred. Returning to `/chat` without an agent
+  in the URL uses that preference. Opening a past conversation restores the
+  agent that conversation was bound to.
 - Admins can **Set as workspace default** on a workspace agent so everyone
   without a preferred agent uses it.
 - **Fork** once from each workspace (admin) agent. Personal agents use

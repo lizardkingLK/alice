@@ -1,6 +1,7 @@
 # Alice agent personalization
 
-Status: **In progress** (web catalog on API; preferred default in localStorage)
+Status: **Implemented** (Mongo / encrypted conversation records / Shared tab
+deferred — see [Future](#future))
 
 Personalized **agents** (persona, encrypted instructions, skill/tool
 enablement, autonomy) open from the chat header gallery panel. They are
@@ -24,8 +25,8 @@ Related:
   skill/tool toggles, persona) used across chat and specialized AI flows.
 - Let **members** **fork** each admin original **at most once** and further
   customize that fork.
-- Persist agents in Postgres (`chat_agents` + catalogs); keep member “preferred
-  default agent” in **localStorage** only.
+- Persist agents in Postgres (`chat_agents` + catalogs); keep member preferred
+  default agent in a **browser cookie + localStorage** (SSR reads the cookie).
 - Keep **/chat** conversation-first; Agents live in a **header gallery dialog**
   (fullscreenable), not a second page tab.
 - Scope agent tool use to projects the actor can access
@@ -58,10 +59,10 @@ Related:
 
 ### Roles
 
-| Actor      | Can                                                                                                                                                   |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Admin**  | Create/edit/archive/delete admin originals (`owner_id` null); toggle skills/tools; set exactly one global `is_default`; must keep ≥1 active agent     |
-| **Member** | List admin originals + own forks; fork each original **once**; edit/archive/delete **own** forks only; set personal preferred default in localStorage |
+| Actor      | Can                                                                                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Admin**  | Create/edit/archive/delete admin originals (`owner_id` null); toggle skills/tools; set exactly one global `is_default`; must keep ≥1 active agent             |
+| **Member** | List admin originals + own forks; fork each original **once**; edit/archive/delete **own** forks only; set personal preferred default (cookie + localStorage) |
 
 ### Catalog kinds (this slice)
 
@@ -78,8 +79,10 @@ and skills enabled). No Project Manager / Alex seed.
 - Workspace: exactly one active `is_default` agent (admins reassign).
 - If only one active agent remains, all Alice chat / specialized AI areas use
   that agent.
-- Member preferred default: **localStorage** agent id; client sends `agentId`
-  when bound; API falls back to global `is_default` when omitted.
+- Member preferred default: cookie + localStorage agent id; `/chat` SSR seeds
+  `initialAgentId` from the cookie when URL / conversation bind is absent.
+  Client sends `agentId` when bound; API falls back to conversation `agent_id`,
+  then global `is_default`, when omitted.
 
 **Gallery tabs:** **Mine** | **Archived** (Shared deferred / empty). Search
 beside the Agents heading.
@@ -123,7 +126,7 @@ description).
 | `chat_tools.instruction`      | Same (all rows, including seed)          |
 | Persona / skill labels / keys | Plaintext                                |
 
-- Helper: `apps/api/src/lib/secrets/token-crypto.ts`
+- Helpers: `@repo/db` `secret-crypto` / `seed-crypto` (`encryptSecret`)
 - Key: existing `INTEGRATION_TOKEN_ENCRYPTION_KEY` (shared with integrations /
   GitHub / Jira) — no new env var in this slice.
 - Service layer encrypts on write and decrypts on authorized read / chat
@@ -151,10 +154,10 @@ Mounted at `/api/chat-agents` and `/api/v1/chat-agents`
 | `DELETE` | `/:id`             | Reject if last active; promote oldest active when deleting default  |
 | `POST`   | `/:id/set-default` | Admin only; workspace originals only                                |
 
-Chat runtime resolves `agentId` when provided and visible; otherwise the
-active `is_default` agent. Provider tools are filtered to enabled keys that
-exist in the code registry. Specialized flows load + decrypt the matching
-tool `instruction`.
+Chat runtime resolves `agentId` when provided and visible; else the
+conversation’s stored `agent_id`; else the active `is_default` agent.
+Provider tools are filtered to enabled keys that exist in the code registry.
+Specialized flows load + decrypt the matching tool `instruction`.
 
 ---
 
@@ -182,8 +185,10 @@ Bound header identity →  reopen dialog on that agent’s detail
 - When `agentId` is set on `/chat`, the conversation header and assistant
   message rows show that agent’s **name**, **title**, and DiceBear avatar.
 - Header identity opens the Agents panel on that agent (not a separate route).
-- Unbound chats use localStorage preferred id when still visible; otherwise
-  the API global default (Alice brand until a fork is bound).
+- Unbound chats use the preferred cookie / localStorage id when set; otherwise
+  the API global default (Alice brand until a fork is bound). Selecting a
+  conversation restores its stored `agent_id` into the URL and header identity.
+- Bound identity loads via `GET /chat-agents/:id` (not a full catalog list).
 
 ---
 
@@ -213,23 +218,26 @@ Bound header identity →  reopen dialog on that agent’s detail
 
 ### Code anchors
 
-**Web (API-backed catalog; preferred default in localStorage only):**
+**Web (API-backed catalog; preferred cookie SSR + conversation `agent_id`):**
 
 - Panel: `apps/web/app/chat/_components/chat-agents-panel-dialog.tsx`
 - Gallery: `apps/web/app/chat/_components/chat-agents-gallery.tsx`
 - Customize: `apps/web/app/chat/_components/chat-agent-customize-page.tsx`
-- Catalog helpers / preferred id:
-  `apps/web/app/chat/_helpers/chat-agents-catalog.ts`
+- Catalog helpers: `apps/web/app/chat/_helpers/chat-agents-catalog.ts`
+- Preferred storage: `apps/web/app/chat/_helpers/preferred-chat-agent-storage.ts`
+- Bound identity: `apps/web/app/chat/_helpers/use-bound-chat-agent.ts`
 - Client API: `apps/web/app/chat/_services/chat-agents-*.ts`
 - URL helpers: `apps/web/app/chat/_helpers/chat-url.ts`
+- Page SSR: `apps/web/app/chat/page.tsx`
 
 **API / DB (this slice):**
 
 - Schema: `packages/db/prisma/schema.prisma` (`chat_tools`, `chat_skills`,
-  `chat_agents`, joins)
+  `chat_agents`, joins; `chat_conversations.agent_id`)
 - Seed: `packages/db/src/seed.ts`
 - Routes: `apps/api/src/routes/api/chat-agents/`
-- Runtime: `apps/api/src/routes/api/chat/chat.service.ts`
+- Runtime: `apps/api/src/routes/api/chat/chat-agent-runtime.ts`,
+  `chat.service.ts`
 
 ---
 
