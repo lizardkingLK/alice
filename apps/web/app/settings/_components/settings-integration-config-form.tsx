@@ -1,11 +1,16 @@
 'use client';
 
 import type { IntegrationWire } from '@repo/types';
-import { chatModelSuggestionsForProvider } from '@repo/types';
+import {
+  chatModelSuggestionsForProvider,
+  resolveConfiguredChatModelStatus,
+} from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
+import { AlertCircle } from '@repo/ui/lib/icons';
+import { cn } from '@repo/ui/lib/utils';
 import {
   configuredModelLabel,
   defaultModelForProvider,
@@ -58,6 +63,8 @@ export function IntegrationConfigForm({
 }: Readonly<IntegrationConfigFormProps>) {
   const suggestions = chatModelSuggestionsForProvider(provider);
   const providerDefault = defaultModelForProvider(provider);
+  const modelAssessment = resolveConfiguredChatModelStatus(provider, modelId);
+  const showModelWarning = modelAssessment.warning !== null;
 
   return (
     <div className="space-y-4">
@@ -77,19 +84,30 @@ export function IntegrationConfigForm({
             </Button>
           </div>
           <ul className="space-y-2">
-            {activeRows.map((row) => (
-              <li key={row.id}>
-                <Button
-                  type="button"
-                  variant={selectedRowId === row.id ? 'secondary' : 'outline'}
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => onSelectRow(row)}
-                >
-                  {configuredModelLabel(row)}
-                </Button>
-              </li>
-            ))}
+            {activeRows.map((row) => {
+              const rowModel =
+                row.config.kind === 'chat_model' ? row.config.model : '';
+              const rowStatus = resolveConfiguredChatModelStatus(
+                provider,
+                rowModel
+              );
+              return (
+                <li key={row.id}>
+                  <Button
+                    type="button"
+                    variant={selectedRowId === row.id ? 'secondary' : 'outline'}
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => onSelectRow(row)}
+                  >
+                    <span className="truncate">
+                      {configuredModelLabel(row)}
+                      {rowStatus.status === 'retired' ? ' (retired)' : ''}
+                    </span>
+                  </Button>
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : null}
@@ -116,6 +134,10 @@ export function IntegrationConfigForm({
               );
             })}
           </div>
+          <p className="text-muted-foreground text-xs">
+            Suggested ids are pinned dated versions. Alice does not auto-update
+            configured models when a vendor retires one.
+          </p>
         </div>
       ) : null}
 
@@ -140,6 +162,37 @@ export function IntegrationConfigForm({
         <p className="text-muted-foreground text-xs">
           Provider model id sent to the API (e.g. {providerDefault.value}).
         </p>
+        {showModelWarning ? (
+          <output
+            className={cn(
+              'flex flex-col gap-2 rounded-lg border p-3 text-sm font-medium',
+              modelAssessment.status === 'retired'
+                ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                : 'border-amber-700/40 bg-amber-50 text-amber-950 dark:border-amber-400/50 dark:bg-amber-950/70 dark:text-amber-50'
+            )}
+          >
+            <div className="flex items-start gap-2">
+              <AlertCircle className="mt-0.5 size-4 shrink-0" />
+              <span>{modelAssessment.warning}</span>
+            </div>
+            {modelAssessment.status === 'retired' ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="self-start"
+                onClick={() =>
+                  onApplySuggestedModel(
+                    modelAssessment.recommended.value,
+                    modelAssessment.recommended.label
+                  )
+                }
+              >
+                Use {modelAssessment.recommended.label}
+              </Button>
+            ) : null}
+          </output>
+        ) : null}
       </div>
 
       <div className="space-y-2">

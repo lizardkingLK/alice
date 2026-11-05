@@ -3,9 +3,18 @@ import integrationCatalogData from '@/app/settings/_components/settings-integrat
 export type IntegrationCatalogStatus = 'active' | 'mock' | 'planned';
 
 export type IntegrationFilterTab =
-  'all' | 'ai-agents' | 'communication' | 'design' | 'productivity' | 'planned';
+  | 'all'
+  | 'active'
+  | 'ai-agents'
+  | 'communication'
+  | 'design'
+  | 'productivity'
+  | 'planned';
 
-type IntegrationCategory = Exclude<IntegrationFilterTab, 'all' | 'planned'>;
+type IntegrationCategory = Exclude<
+  IntegrationFilterTab,
+  'all' | 'active' | 'planned'
+>;
 
 export type WorkspaceIntegration = {
   readonly id: string;
@@ -63,6 +72,7 @@ export const INTEGRATION_FILTER_TABS: ReadonlyArray<{
   readonly label: string;
 }> = [
   { id: 'all', label: 'All integrations' },
+  { id: 'active', label: 'Active' },
   { id: 'ai-agents', label: 'AI agents' },
   { id: 'communication', label: 'Communication' },
   { id: 'design', label: 'Design & diagramming' },
@@ -88,17 +98,36 @@ export function integrationStatusLabel(
   }
 }
 
+export type FilterWorkspaceIntegrationsOptions = {
+  /** Catalog ids currently connected in the workspace (for the Active tab). */
+  readonly connectedCatalogIds?: ReadonlySet<string>;
+};
+
 export function filterWorkspaceIntegrations(
   items: readonly WorkspaceIntegration[],
   tab: IntegrationFilterTab,
-  searchQuery: string
+  searchQuery: string,
+  options: FilterWorkspaceIntegrationsOptions = {}
 ): WorkspaceIntegration[] {
   const normalizedSearch = searchQuery.trim().toLowerCase();
+  const connectedCatalogIds = options.connectedCatalogIds;
 
   return items.filter((item) => {
-    const matchesTab =
-      tab === 'all' ||
-      (tab === 'planned' ? item.status === 'planned' : item.filterTab === tab);
+    let matchesTab = false;
+    switch (tab) {
+      case 'all':
+        matchesTab = true;
+        break;
+      case 'active':
+        matchesTab = connectedCatalogIds?.has(item.id) === true;
+        break;
+      case 'planned':
+        matchesTab = item.status === 'planned';
+        break;
+      default:
+        matchesTab = item.filterTab === tab;
+        break;
+    }
 
     if (!matchesTab) {
       return false;

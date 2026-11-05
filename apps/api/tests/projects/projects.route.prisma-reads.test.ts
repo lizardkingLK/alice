@@ -31,11 +31,13 @@ const {
   getProjectDetailMock,
   listProjectMembersPrismaMock,
   enqueueCreateProjectMock,
+  getProjectIntegrationsSummaryMock,
 } = vi.hoisted(() => ({
   listProjectsPaginatedMock: vi.fn(),
   getProjectDetailMock: vi.fn(),
   listProjectMembersPrismaMock: vi.fn(),
   enqueueCreateProjectMock: vi.fn(),
+  getProjectIntegrationsSummaryMock: vi.fn(),
 }));
 
 vi.mock('../../src/middlewares/auth', () => ({
@@ -54,6 +56,7 @@ const projectsService = {
   getProjectDetail: getProjectDetailMock,
   listProjectMembersPrisma: listProjectMembersPrismaMock,
   enqueueCreateProject: enqueueCreateProjectMock,
+  getProjectIntegrationsSummary: getProjectIntegrationsSummaryMock,
 } as unknown as ProjectsService;
 
 const workItemService = {
@@ -192,6 +195,43 @@ describe('projects unused Prisma GET routes', () => {
 
       expect(response.status).toBe(404);
       expect(body).toEqual({ data: null, error: 'Project not found' });
+    });
+  });
+
+  it('returns project integrations summary facade', async () => {
+    const summary = {
+      project_id: mockProjectDetail.id,
+      source_control: {
+        provider: 'github' as const,
+        connected: true,
+        repo: 'acme/alice',
+        connection_id: '11111111-1111-4111-8111-111111111111',
+      },
+      project_management: {
+        provider: null,
+        connected: false,
+        project_key: null,
+        connection_id: null,
+      },
+      ai_agents: {
+        binding_count: 0,
+        default_integration_id: null,
+      },
+    };
+    getProjectIntegrationsSummaryMock.mockResolvedValue(summary);
+
+    await withApp(async (baseUrl) => {
+      const response = await fetch(
+        `${baseUrl}/api/projects/${mockProjectDetail.id}/integrations-summary`
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body).toEqual({ summary });
+      expect(getProjectIntegrationsSummaryMock).toHaveBeenCalledWith(
+        mockProjectDetail.id,
+        '11111111-1111-4111-8111-111111111111'
+      );
     });
   });
 

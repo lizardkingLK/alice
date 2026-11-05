@@ -41,12 +41,14 @@ export async function sendChatMessage(
   attachments?: ChatAttachmentWire[],
   viewContext?: ChatViewContext | null,
   kind: ChatConversationKindValue = ChatConversationKinds.general,
-  agentId?: string
+  agentId?: string,
+  projectId?: string
 ): Promise<ChatPostResponse> {
   const parsed = postChatMessageBodySchema.safeParse({
     messages: history,
     conversationId,
     integrationId,
+    projectId,
     attachments,
     viewContext: viewContext ?? undefined,
     kind,

@@ -8,7 +8,7 @@ const ORDERED_LINE = /^\d+\.\s+/;
 const QUOTE_LINE = /^>\s?/;
 
 function escapeMarkdownInline(text: string): string {
-  return text.replaceAll(/([\\`*_[\]()])/g, '\\$1');
+  return text.replaceAll(/([\\`*_[\]()])/g, String.raw`\$1`);
 }
 
 function applyInlineMarks(text: string, marks: Mark[] | undefined): string {
@@ -301,8 +301,11 @@ function parseCodeFence(
   };
 }
 
+const HEADING_MARKERS = /^#+/;
+
 function parseHeadingLine(line: string): JSONContent {
-  const level = Math.min(line.match(/^#+/)?.[0].length ?? 2, 3);
+  const markers = HEADING_MARKERS.exec(line);
+  const level = Math.min(markers?.[0].length ?? 2, 3);
   return {
     type: 'heading',
     attrs: { level },

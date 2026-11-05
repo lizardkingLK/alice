@@ -132,7 +132,7 @@ export function ChatAgentsPanelDialog({
           'flex flex-col gap-0 overflow-hidden p-0',
           isFullscreen
             ? 'h-[100dvh] max-h-[100dvh] w-screen max-w-none rounded-none sm:max-w-none'
-            : 'h-[min(90dvh,52rem)] max-h-[90dvh] w-[min(96vw,72rem)] sm:max-w-[72rem]'
+            : 'h-[min(92dvh,56rem)] max-h-[92dvh] w-[min(98vw,90rem)] sm:max-w-[90rem]'
         )}
       >
         <div className="border-border flex shrink-0 items-center justify-between gap-2 border-b px-4 py-2.5 pr-12">

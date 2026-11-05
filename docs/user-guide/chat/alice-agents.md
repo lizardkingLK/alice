@@ -69,7 +69,7 @@ In the Agents dialog detail view you can:
 - Set a **Name** and **Title**. The title appears under the name in the
   gallery, detail view, and in chat.
 - Edit **instructions** in the same rich text editor used for work-item
-  descriptions (toolbar, code blocks, maximize). Content is saved as markdown
+  descriptions (toolbar, lists, code blocks). Content is saved as markdown
   (admins on workspace agents; you on your forks).
 - Set **Autonomy**:
   - **Suggest only** — the agent proposes changes in chat for you to confirm.

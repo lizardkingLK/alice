@@ -983,6 +983,8 @@ export class ChatService {
 
   resolveChatModelForChat(params: {
     integrationId?: string;
+    projectId?: string;
+    userId?: string;
     legacyModelId?: string;
   }): Promise<ResolvedChatModelConfig> {
     return this.deps.integrationsService.resolveChatModelForChat(params);
@@ -2153,7 +2155,7 @@ Active UI View Context:
       attachmentsInstruction = `
 User Attached Documents in Conversation:
 ${attachmentsList}
-You should access and parse these attachments using "parse_work_item_attachment". When calling "check_work_item_duplicates" or "batch_import_work_items", pass the attachmentUrl (or file name) or the parsed items.
+Only JSON (.json) and CSV (.csv) attachments can be parsed as work items. If an attachment is an image or another unsupported type, tell the user to upload a JSON or CSV file instead — do not call "parse_work_item_attachment" for those. For supported attachments, use "parse_work_item_attachment". When calling "check_work_item_duplicates" or "batch_import_work_items", pass the attachmentUrl (or file name) or the parsed items.
 `;
     }
 

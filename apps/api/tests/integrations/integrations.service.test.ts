@@ -11,6 +11,10 @@ const {
   findByIdMock,
   findActiveChatModelByIdMock,
   findDefaultActiveChatModelMock,
+  listActiveChatModelBindingsForProjectMock,
+  findActiveMemberPreferredChatModelMock,
+  findMemberChatModelPreferenceMock,
+  upsertMemberChatModelPreferenceMock,
   createMock,
   updateMock,
   disableMock,
@@ -21,6 +25,10 @@ const {
   findByIdMock: vi.fn(),
   findActiveChatModelByIdMock: vi.fn(),
   findDefaultActiveChatModelMock: vi.fn(),
+  listActiveChatModelBindingsForProjectMock: vi.fn(),
+  findActiveMemberPreferredChatModelMock: vi.fn(),
+  findMemberChatModelPreferenceMock: vi.fn(),
+  upsertMemberChatModelPreferenceMock: vi.fn(),
   createMock: vi.fn(),
   updateMock: vi.fn(),
   disableMock: vi.fn(),
@@ -45,6 +53,11 @@ const repository = {
   findById: findByIdMock,
   findActiveChatModelById: findActiveChatModelByIdMock,
   findDefaultActiveChatModel: findDefaultActiveChatModelMock,
+  listActiveChatModelBindingsForProject:
+    listActiveChatModelBindingsForProjectMock,
+  findActiveMemberPreferredChatModel: findActiveMemberPreferredChatModelMock,
+  findMemberChatModelPreference: findMemberChatModelPreferenceMock,
+  upsertMemberChatModelPreference: upsertMemberChatModelPreferenceMock,
   create: createMock,
   update: updateMock,
   disable: disableMock,
@@ -55,6 +68,7 @@ const integrationRow = {
   id: '11111111-1111-4111-8111-111111111111',
   catalog_id: 'openai',
   category: 'ai_agent' as const,
+  scope: 'organization' as const,
   provider: 'openai',
   name: 'GPT-4o',
   status: 'active' as const,
@@ -247,7 +261,12 @@ describe('IntegrationsService', () => {
       ['alice-gemini', 'gemini', 'gemini-3.6-flash', 'Gemini 3.6'],
       ['alice-spacexai', 'spacexai', 'grok-4.3', 'Grok 4.3'],
       ['openai', 'openai', 'gpt-4o', 'GPT-4o'],
-      ['anthropic', 'anthropic', 'claude-sonnet-4-20250514', 'Claude Sonnet 4'],
+      [
+        'anthropic',
+        'anthropic',
+        'claude-sonnet-4-5-20250929',
+        'Claude Sonnet 4.5',
+      ],
     ].map(([catalogId, provider, model, displayLabel], index) => ({
       ...integrationRow,
       id: `${index + 1}1111111-1111-4111-8111-111111111111`,
@@ -414,22 +433,26 @@ describe('IntegrationsService', () => {
 
 describe('IntegrationsService.resolveChatModelForChat', () => {
   const service = new IntegrationsService(repository);
+  const projectId = '22222222-2222-4222-8222-222222222222';
+  const decryptedRow = {
+    ...integrationRow,
+    config: {
+      kind: 'chat_model' as const,
+      model: 'gpt-4o',
+      display_label: 'GPT-4o',
+      api_key: 'sk-test',
+    },
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
     findDefaultActiveChatModelMock.mockResolvedValue(null);
+    listActiveChatModelBindingsForProjectMock.mockResolvedValue([]);
+    findActiveMemberPreferredChatModelMock.mockResolvedValue(null);
   });
 
   it('resolves an active integration by id and decrypts api_key', async () => {
-    findActiveChatModelByIdMock.mockResolvedValue({
-      ...integrationRow,
-      config: {
-        kind: 'chat_model',
-        model: 'gpt-4o',
-        display_label: 'GPT-4o',
-        api_key: 'sk-test',
-      },
-    });
+    findActiveChatModelByIdMock.mockResolvedValue(decryptedRow);
 
     const config = await service.resolveChatModelForChat({
       integrationId: integrationRow.id,
@@ -456,20 +479,103 @@ describe('IntegrationsService.resolveChatModelForChat', () => {
   });
 
   it('uses the workspace default integration when integrationId is omitted', async () => {
-    findDefaultActiveChatModelMock.mockResolvedValue({
-      ...integrationRow,
-      config: {
-        kind: 'chat_model',
-        model: 'gpt-4o',
-        display_label: 'GPT-4o',
-        api_key: 'sk-test',
-      },
-    });
+    findDefaultActiveChatModelMock.mockResolvedValue(decryptedRow);
 
     const config = await service.resolveChatModelForChat({});
 
     expect(config.integrationId).toBe(integrationRow.id);
     expect(config.model).toBe('gpt-4o');
+  });
+
+  it('falls through to organization default when the project has no bindings', async () => {
+    findDefaultActiveChatModelMock.mockResolvedValue(decryptedRow);
+
+    const config = await service.resolveChatModelForChat({ projectId });
+
+    expect(listActiveChatModelBindingsForProjectMock).toHaveBeenCalledWith(
+      projectId
+    );
+    expect(config.integrationId).toBe(integrationRow.id);
+  });
+
+  it('uses the member preferred org model when no project pool exists', async () => {
+    findActiveMemberPreferredChatModelMock.mockResolvedValue(decryptedRow);
+
+    const config = await service.resolveChatModelForChat({
+      userId: 'member-1',
+    });
+
+    expect(config.integrationId).toBe(integrationRow.id);
+    expect(findDefaultActiveChatModelMock).not.toHaveBeenCalled();
+  });
+
+  it('uses member preferred only when it is in the project binding pool', async () => {
+    const otherId = '33333333-3333-4333-8333-333333333333';
+    findActiveMemberPreferredChatModelMock.mockResolvedValue({
+      ...decryptedRow,
+      id: otherId,
+    });
+    listActiveChatModelBindingsForProjectMock.mockResolvedValue([
+      {
+        integration_id: integrationRow.id,
+        is_default_for_project: true,
+        integration: decryptedRow,
+      },
+    ]);
+
+    const config = await service.resolveChatModelForChat({
+      projectId,
+      userId: 'member-1',
+    });
+
+    expect(config.integrationId).toBe(integrationRow.id);
+  });
+
+  it('uses the project default binding when bindings exist', async () => {
+    const otherId = '33333333-3333-4333-8333-333333333333';
+    listActiveChatModelBindingsForProjectMock.mockResolvedValue([
+      {
+        integration_id: otherId,
+        is_default_for_project: false,
+        integration: {
+          ...decryptedRow,
+          id: otherId,
+          config: {
+            ...decryptedRow.config,
+            model: 'gpt-4o-mini',
+            display_label: 'GPT-4o mini',
+          },
+        },
+      },
+      {
+        integration_id: integrationRow.id,
+        is_default_for_project: true,
+        integration: decryptedRow,
+      },
+    ]);
+
+    const config = await service.resolveChatModelForChat({ projectId });
+
+    expect(config.integrationId).toBe(integrationRow.id);
+    expect(findDefaultActiveChatModelMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects a picked model that is not bound to the project pool', async () => {
+    listActiveChatModelBindingsForProjectMock.mockResolvedValue([
+      {
+        integration_id: '33333333-3333-4333-8333-333333333333',
+        is_default_for_project: true,
+        integration: decryptedRow,
+      },
+    ]);
+
+    await expect(
+      service.resolveChatModelForChat({
+        projectId,
+        integrationId: integrationRow.id,
+      })
+    ).rejects.toThrow('Chat model is not enabled for this project context');
+    expect(findActiveChatModelByIdMock).not.toHaveBeenCalled();
   });
 
   it('rejects an unsafe endpoint from an existing integration without exposing it', async () => {

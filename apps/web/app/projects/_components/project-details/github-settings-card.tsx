@@ -244,6 +244,9 @@ export function GithubSettingsCard({
     }
     const body: Record<string, unknown> = {
       github_repo: repoPath,
+      github_connection_id: repoPath
+        ? (activeConnection?.id ?? project.github_connection_id ?? null)
+        : null,
     };
     if (!repoPath) {
       body.github_token = null;

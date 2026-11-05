@@ -16,10 +16,13 @@ const {
   applyWorkItemTypeRemovalStrategiesMock,
   listAccessibleProjectIdsMock,
   listAccessibleSummariesMock,
+  getDetailByIdMock,
   usersFindManyMock,
   integrationFindFirstMock,
   teamFindFirstMock,
   notificationsCreateMock,
+  projectBindingsFindManyMock,
+  versionControlFindFirstMock,
 } = vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
   return {
@@ -38,10 +41,13 @@ const {
     applyWorkItemTypeRemovalStrategiesMock: vi.fn(),
     listAccessibleProjectIdsMock: vi.fn(),
     listAccessibleSummariesMock: vi.fn(),
+    getDetailByIdMock: vi.fn(),
     usersFindManyMock: vi.fn(),
     integrationFindFirstMock: vi.fn(),
     teamFindFirstMock: vi.fn(),
     notificationsCreateMock: vi.fn(),
+    projectBindingsFindManyMock: vi.fn(),
+    versionControlFindFirstMock: vi.fn(),
   };
 });
 
@@ -63,6 +69,8 @@ vi.mock('../../src/lib/prisma', () => ({
     integrations: { findFirst: integrationFindFirstMock },
     teams: { findFirst: teamFindFirstMock },
     notifications: { create: notificationsCreateMock },
+    project_integration_bindings: { findMany: projectBindingsFindManyMock },
+    version_control_connections: { findFirst: versionControlFindFirstMock },
   },
 }));
 
@@ -123,6 +131,7 @@ describe('ProjectsService backend tests', () => {
     applyWorkItemTypeRemovalStrategies: applyWorkItemTypeRemovalStrategiesMock,
     listAccessibleProjectIds: listAccessibleProjectIdsMock,
     listAccessibleSummaries: listAccessibleSummariesMock,
+    getDetailById: getDetailByIdMock,
   } as unknown as ProjectsRepository;
 
   const service = new ProjectsService(projectsRepository);
@@ -732,6 +741,122 @@ describe('ProjectsService backend tests', () => {
       );
 
       expect(updateMock).not.toHaveBeenCalled();
+    });
+
+    it('blocks non-owner managers from changing an admin-owned GitHub repo', async () => {
+      mockActorRole('manager');
+      findByKeyMock.mockResolvedValue(null);
+      findByIdMock.mockResolvedValue({
+        ...mockProject,
+        github_repo: 'acme/old-repo',
+        github_connection_id: 'conn-admin-1',
+      });
+      versionControlFindFirstMock.mockResolvedValue({
+        user_id: 'user-admin',
+        user: { role: 'admin' },
+      });
+
+      await expect(
+        service.updateProject(
+          'user-manager',
+          'project-1',
+          { github_repo: 'acme/new-repo' },
+          mockProject.updated_at
+        )
+      ).rejects.toThrow(
+        /GitHub connection was established by an administrator/
+      );
+
+      expect(versionControlFindFirstMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'conn-admin-1' },
+        })
+      );
+      expect(updateMock).not.toHaveBeenCalled();
+    });
+
+    it('allows the admin who owns the GitHub connection to change the repo', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      findByIdMock.mockResolvedValue({
+        ...mockProject,
+        github_repo: 'acme/old-repo',
+        github_connection_id: 'conn-admin-1',
+      });
+      versionControlFindFirstMock.mockResolvedValue({
+        user_id: 'user-admin',
+        user: { role: 'admin' },
+      });
+      updateMock.mockResolvedValue({
+        ...mockProject,
+        github_repo: 'acme/new-repo',
+        github_connection_id: 'conn-admin-1',
+      });
+
+      await service.updateProject(
+        'user-admin',
+        'project-1',
+        { github_repo: 'acme/new-repo' },
+        mockProject.updated_at
+      );
+
+      expect(updateMock).toHaveBeenCalled();
+    });
+  });
+
+  describe('getProjectIntegrationsSummary', () => {
+    it('aggregates SC, PM, and AI binding state for an accessible project', async () => {
+      listAccessibleProjectIdsMock.mockResolvedValue(['project-1']);
+      getDetailByIdMock.mockResolvedValue({
+        ...mockProject,
+        vc_connection_id: '11111111-1111-4111-8111-111111111111',
+        vc_external: { vendor: 'github', repo: 'acme/alice' },
+        pm_connection_id: '22222222-2222-4222-8222-222222222222',
+        pm_external: { vendor: 'jira', project_key: 'ALICE' },
+      });
+      projectBindingsFindManyMock.mockResolvedValue([
+        {
+          integration_id: '33333333-3333-4333-8333-333333333333',
+          is_default_for_project: true,
+        },
+        {
+          integration_id: '44444444-4444-4444-8444-444444444444',
+          is_default_for_project: false,
+        },
+      ]);
+
+      const summary = await service.getProjectIntegrationsSummary(
+        'project-1',
+        'user-manager'
+      );
+
+      expect(summary).toEqual({
+        project_id: 'project-1',
+        source_control: {
+          provider: 'github',
+          connected: true,
+          repo: 'acme/alice',
+          connection_id: '11111111-1111-4111-8111-111111111111',
+        },
+        project_management: {
+          provider: 'jira',
+          connected: true,
+          project_key: 'ALICE',
+          connection_id: '22222222-2222-4222-8222-222222222222',
+        },
+        ai_agents: {
+          binding_count: 2,
+          default_integration_id: '33333333-3333-4333-8333-333333333333',
+        },
+      });
+    });
+
+    it('rejects actors without project access', async () => {
+      listAccessibleProjectIdsMock.mockResolvedValue([]);
+
+      await expect(
+        service.getProjectIntegrationsSummary('project-1', 'user-outsider')
+      ).rejects.toThrow('Unauthorized project workspace access.');
     });
   });
 

@@ -59,6 +59,33 @@ describe('filterWorkspaceIntegrations', () => {
     expect(planned.some((item) => item.id === 'figma')).toBe(true);
   });
 
+  it('filters connected integrations only on the active tab', () => {
+    const active = filterWorkspaceIntegrations(
+      WORKSPACE_INTEGRATIONS,
+      'active',
+      '',
+      { connectedCatalogIds: new Set(['anthropic', 'openai']) }
+    );
+    expect(active.map((item) => item.id).sort()).toEqual([
+      'anthropic',
+      'openai',
+    ]);
+  });
+
+  it('returns an empty active tab when nothing is connected', () => {
+    expect(
+      filterWorkspaceIntegrations(WORKSPACE_INTEGRATIONS, 'active', '', {
+        connectedCatalogIds: new Set(),
+      })
+    ).toEqual([]);
+  });
+
+  it('does not list Jira Cloud in the workspace marketplace catalog', () => {
+    expect(
+      WORKSPACE_INTEGRATIONS.some((item) => item.id === 'jira-cloud')
+    ).toBe(false);
+  });
+
   it('matches search query against name, description, and website', () => {
     expect(
       filterWorkspaceIntegrations(

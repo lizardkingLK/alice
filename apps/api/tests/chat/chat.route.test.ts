@@ -206,6 +206,8 @@ describe('chat routes', () => {
 
     expect(resolveChatModelForChatMock).toHaveBeenCalledWith({
       integrationId,
+      projectId: undefined,
+      userId: MOCK_AUTH_USER_ID,
       legacyModelId: undefined,
     });
     expect(verifyConversationOwnerMock).toHaveBeenCalledWith(

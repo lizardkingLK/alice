@@ -32,18 +32,27 @@ dialog shows **Connected** when the workspace has an active model with a
 stored API key. **Connected** does not guarantee that a live provider request
 will succeed.
 
+Use the filter tabs to narrow the catalog: **Active** shows only integrations
+that are currently connected, category tabs group by type, and **Coming soon**
+lists planned connectors. Use **Search** in the header to find a provider by
+name.
+
 ## Connect an AI model
 
 1. Find **Google Gemini**, **SpaceXAI**, **OpenAI**, or **Anthropic**. Use the
-   **AI agents** filter if helpful.
+   **AI agents** or **Active** filter if helpful.
 2. Select **View integration**. Turning on the card switch also opens the same
    configuration dialog.
 3. Choose one of the **Suggested models**, or enter the provider's exact
-   **Model id**.
+   **Model id** (prefer a dated id from the provider docs).
 4. Enter a clear **Display label** for the chat model menu.
 5. Paste the provider **API key**.
 6. Optionally select **Use as workspace default in chat**.
 7. Select **Connect model**.
+
+Suggested models are pinned versions Alice maintains. Alice does **not**
+auto-change your configured model when a vendor retires one. If a model id is
+retired, the dialog warns you and offers **Use {recommended model}**.
 
 The workspace default is the initial choice for new chat sessions. Only one
 active AI model is the workspace default at a time.

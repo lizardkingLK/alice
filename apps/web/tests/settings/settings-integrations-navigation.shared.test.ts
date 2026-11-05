@@ -27,6 +27,8 @@ describe('settingsIntegrationsHref', () => {
 describe('parseIntegrationsCategoryFilter', () => {
   it('accepts known marketplace filter tabs', () => {
     expect(parseIntegrationsCategoryFilter('ai-agents')).toBe('ai-agents');
+    expect(parseIntegrationsCategoryFilter('active')).toBe('active');
+    expect(parseIntegrationsCategoryFilter('planned')).toBe('planned');
   });
 
   it('returns undefined for missing or unknown values', () => {

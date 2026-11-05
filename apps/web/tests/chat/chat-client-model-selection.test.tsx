@@ -216,6 +216,7 @@ describe('ChatClient model selection lifecycle', () => {
       undefined,
       null,
       'general',
+      undefined,
       undefined
     );
     expect(mockReplace).toHaveBeenCalledWith(
@@ -255,6 +256,7 @@ describe('ChatClient model selection lifecycle', () => {
       undefined,
       null,
       'general',
+      undefined,
       undefined
     );
 

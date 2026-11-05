@@ -213,3 +213,12 @@ export const IntegrationStatus = {
 } as const
 
 export type IntegrationStatus = (typeof IntegrationStatus)[keyof typeof IntegrationStatus]
+
+
+export const IntegrationScope = {
+  organization: 'organization',
+  project: 'project',
+  member: 'member'
+} as const
+
+export type IntegrationScope = (typeof IntegrationScope)[keyof typeof IntegrationScope]

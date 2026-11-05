@@ -15,7 +15,10 @@ import {
   finalizeChatAttachmentUploadSchema,
   postChatMessageBodySchema,
   renameChatConversationBodySchema,
+  type ChatViewContext,
+  type PostChatMessageBody,
 } from '@repo/types/api/v1';
+import type { ResolvedChatModelConfig } from '../integrations/chat-providers/chat-provider.types';
 import type { StoredChatMessage } from './chat.route.types';
 
 const chatUpload: Multer = multer({
@@ -114,6 +117,174 @@ async function resolveOwnedConversationId(
   }
 
   return conversationId;
+}
+
+function resolveRequestProjectId(
+  requestProjectId: string | undefined,
+  viewContext: ChatViewContext | undefined
+): string | undefined {
+  if (requestProjectId) {
+    return requestProjectId;
+  }
+  if (viewContext && 'projectId' in viewContext) {
+    return viewContext.projectId;
+  }
+  return undefined;
+}
+
+function sanitizeChatInputMessages(
+  messages: PostChatMessageBody['messages'],
+  requestAttachments: PostChatMessageBody['attachments']
+): StoredChatMessage[] {
+  return messages.map((msg, index) => {
+    const isLastMessage = index === messages.length - 1;
+    const effectiveAttachments =
+      msg.attachments ||
+      (isLastMessage && requestAttachments?.length
+        ? requestAttachments
+        : undefined);
+
+    return {
+      id: msg.id || `msg-${Date.now()}-${index}`,
+      role: parseChatRole(msg.role),
+      content: msg.content || msg.text || '',
+      actions: msg.actions || [],
+      attachments: effectiveAttachments,
+    };
+  });
+}
+
+async function handleNewChatPost(params: {
+  readonly chatService: ChatService;
+  readonly res: Response;
+  readonly userId: string;
+  readonly messages: PostChatMessageBody['messages'];
+  readonly sanitizedInputMessages: StoredChatMessage[];
+  readonly chatModelConfig: ResolvedChatModelConfig;
+  readonly viewContext: ChatViewContext | undefined;
+  readonly conversationKind: PostChatMessageBody['kind'];
+  readonly agentId: string | null;
+}): Promise<void> {
+  const {
+    chatService,
+    res,
+    userId,
+    messages,
+    sanitizedInputMessages,
+    chatModelConfig,
+    viewContext,
+    conversationKind,
+    agentId,
+  } = params;
+
+  // Process first message synchronously so Gemini succeeds before DB/sidebar creation
+  const { responseText, toolActionsPerformed } =
+    await chatService.generateChatResponse(
+      userId,
+      sanitizedInputMessages,
+      chatModelConfig,
+      viewContext,
+      agentId
+    );
+
+  const firstMsgText = messages[0]?.content || messages[0]?.text || 'New Chat';
+  let title = firstMsgText.slice(0, 30);
+  if (firstMsgText.length > 30) {
+    title += '...';
+  }
+
+  const conversationId = await chatService.createConversation(
+    userId,
+    title,
+    false,
+    conversationKind ?? ChatConversationKinds.general,
+    agentId
+  );
+
+  const newAssistantMessage: StoredChatMessage = {
+    id: `msg-${Date.now()}`,
+    role: ChatRoles.Assistant,
+    content: responseText,
+    actions: toolActionsPerformed,
+  };
+  const fullHistory = [...sanitizedInputMessages, newAssistantMessage];
+  await chatService.saveChatHistory(conversationId, fullHistory);
+
+  try {
+    await chatService.notifyChatProcessed({
+      userId,
+      message: `Your request in "${title}" has been processed.`,
+      relatedItemId: conversationId,
+    });
+  } catch (error) {
+    console.error('Failed to create notification for synchronous chat:', error);
+  }
+
+  res.json({
+    reply: responseText,
+    history: fullHistory,
+    actions: toolActionsPerformed,
+    conversationId,
+    title,
+    is_processing: false,
+  });
+}
+
+async function handleExistingChatPost(params: {
+  readonly chatService: ChatService;
+  readonly res: Response;
+  readonly userId: string;
+  readonly conversationId: string;
+  readonly sanitizedInputMessages: StoredChatMessage[];
+  readonly chatModelConfig: ResolvedChatModelConfig;
+  readonly viewContext: ChatViewContext | undefined;
+  readonly agentId: string | null;
+}): Promise<boolean> {
+  const {
+    chatService,
+    res,
+    userId,
+    conversationId,
+    sanitizedInputMessages,
+    chatModelConfig,
+    viewContext,
+  } = params;
+
+  if (
+    !(await requireConversationOwner(chatService, res, userId, conversationId))
+  ) {
+    return false;
+  }
+
+  const resolvedAgentId =
+    params.agentId ??
+    (await chatService.getConversationAgentId(userId, conversationId));
+
+  await chatService.setProcessingStatus(conversationId, true);
+  await chatService.saveChatHistory(conversationId, sanitizedInputMessages);
+
+  chatService
+    .processChatAsync(
+      userId,
+      conversationId,
+      sanitizedInputMessages,
+      chatModelConfig,
+      viewContext,
+      resolvedAgentId
+    )
+    .catch((err) => {
+      console.error('Error starting async process:', err);
+    });
+
+  res.json({
+    reply: 'Processing request...',
+    history: sanitizedInputMessages,
+    actions: [],
+    conversationId,
+    title: 'New Chat',
+    is_processing: true,
+  });
+  return true;
 }
 
 export function createChatRouter(deps: ChatRouterDeps): Router {
@@ -438,16 +609,21 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
         conversationId: reqConversationId,
         modelId,
         integrationId,
+        projectId: requestProjectId,
         agentId: requestAgentId,
         attachments: requestAttachments,
         viewContext,
         kind: conversationKind,
       } = validation.data;
 
-      let chatModelConfig;
+      const projectId = resolveRequestProjectId(requestProjectId, viewContext);
+
+      let chatModelConfig: ResolvedChatModelConfig;
       try {
         chatModelConfig = await chatService.resolveChatModelForChat({
           integrationId,
+          projectId,
+          userId: req.userId!,
           legacyModelId: modelId,
         });
       } catch (error: unknown) {
@@ -457,132 +633,37 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
       }
 
       try {
-        const sanitizedInputMessages: StoredChatMessage[] = messages.map(
-          (msg, index) => {
-            const isLastMessage = index === messages.length - 1;
-            const effectiveAttachments =
-              msg.attachments ||
-              (isLastMessage && requestAttachments?.length
-                ? requestAttachments
-                : undefined);
-
-            return {
-              id: msg.id || `msg-${Date.now()}-${index}`,
-              role: parseChatRole(msg.role),
-              content: msg.content || msg.text || '',
-              actions: msg.actions || [],
-              attachments: effectiveAttachments,
-            };
-          }
+        const sanitizedInputMessages = sanitizeChatInputMessages(
+          messages,
+          requestAttachments
         );
+        const agentId = requestAgentId ?? null;
 
-        let conversationId = reqConversationId;
-        let title = 'New Chat';
-        let resolvedAgentId = requestAgentId ?? null;
-
-        if (!conversationId) {
-          // Process first message synchronously to ensure Gemini succeeds before database/sidebar creation
-          const { responseText, toolActionsPerformed } =
-            await chatService.generateChatResponse(
-              req.userId!,
-              sanitizedInputMessages,
-              chatModelConfig,
-              viewContext,
-              resolvedAgentId
-            );
-
-          const firstMsgText =
-            messages[0]?.content || messages[0]?.text || 'New Chat';
-          title = firstMsgText.slice(0, 30);
-          if (firstMsgText.length > 30) title += '...';
-          conversationId = await chatService.createConversation(
-            req.userId!,
-            title,
-            false,
-            conversationKind ?? ChatConversationKinds.general,
-            resolvedAgentId
-          );
-
-          const newAssistantMessage: StoredChatMessage = {
-            id: `msg-${Date.now()}`,
-            role: ChatRoles.Assistant,
-            content: responseText,
-            actions: toolActionsPerformed,
-          };
-          const fullHistory = [...sanitizedInputMessages, newAssistantMessage];
-          await chatService.saveChatHistory(conversationId, fullHistory);
-
-          try {
-            await chatService.notifyChatProcessed({
-              userId: req.userId!,
-              message: `Your request in "${title}" has been processed.`,
-              relatedItemId: conversationId,
-            });
-          } catch (error) {
-            console.error(
-              'Failed to create notification for synchronous chat:',
-              error
-            );
-          }
-
-          return res.json({
-            reply: responseText,
-            history: fullHistory,
-            actions: toolActionsPerformed,
-            conversationId,
-            title,
-            is_processing: false,
+        if (!reqConversationId) {
+          await handleNewChatPost({
+            chatService,
+            res,
+            userId: req.userId!,
+            messages,
+            sanitizedInputMessages,
+            chatModelConfig,
+            viewContext,
+            conversationKind,
+            agentId,
           });
-        } else {
-          if (
-            !(await requireConversationOwner(
-              chatService,
-              res,
-              req.userId!,
-              conversationId
-            ))
-          ) {
-            return;
-          }
-
-          if (!resolvedAgentId) {
-            resolvedAgentId = await chatService.getConversationAgentId(
-              req.userId!,
-              conversationId
-            );
-          }
-
-          await chatService.setProcessingStatus(conversationId, true);
-
-          // Save the user's incoming message immediately to history
-          await chatService.saveChatHistory(
-            conversationId,
-            sanitizedInputMessages
-          );
-
-          // Start background processing
-          chatService
-            .processChatAsync(
-              req.userId!,
-              conversationId,
-              sanitizedInputMessages,
-              chatModelConfig,
-              viewContext,
-              resolvedAgentId
-            )
-            .catch((err) => {
-              console.error('Error starting async process:', err);
-            });
-
-          return res.json({
-            reply: 'Processing request...',
-            history: sanitizedInputMessages,
-            actions: [],
-            conversationId,
-            title,
-            is_processing: true,
-          });
+          return;
         }
+
+        await handleExistingChatPost({
+          chatService,
+          res,
+          userId: req.userId!,
+          conversationId: reqConversationId,
+          sanitizedInputMessages,
+          chatModelConfig,
+          viewContext,
+          agentId,
+        });
       } catch (error: unknown) {
         sendChatError(
           res,
