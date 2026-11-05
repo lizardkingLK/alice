@@ -12,7 +12,12 @@ Connect GitHub and Jira, and bind organization AI chat models to a project.
 2. Select the **Integrations** tab.
 
 The tab opens with a short **summary** of source control, project management,
-and AI agent binds, then the GitHub, Jira, and AI agents cards.
+and AI agent binds, then a Settings-style marketplace: search, category tabs,
+and grouped providers.
+
+**Source control** and **project management** are single-select (**None** or one
+provider). **AI agents** allow multiple organization model binds. Other catalog
+groups show as **Coming soon**.
 
 The **Integrations** tab is available to **managers and admins**. Connecting
 credentials and saving AI binds require those roles.
@@ -21,9 +26,11 @@ credentials and saving AI binds require those roles.
 
 ## GitHub
 
-Use the **GitHub** card to authorize your GitHub account with OAuth and bind one
-repository (`owner/repo`) to the project. Alice uses that link for pull
-requests, commits, and branch activity on work items.
+On **Source control**, choose **GitHub** (or **None**). Use the **GitHub** card
+to authorize your GitHub account with OAuth and bind one repository
+(`owner/repo`) to the project. Alice uses that link for pull requests, commits,
+and branch activity on work items. After a link is saved, clear it with
+**Disconnect** on the card before **None** stays available.
 
 ### Connect or update
 
@@ -53,7 +60,8 @@ Without a connected account, Alice can only work with **public** repositories.
 
 ## Jira Cloud
 
-Use the **Jira** card to:
+On **Project management**, choose **Jira** (or **None**). Use the **Jira** card
+to:
 
 1. **Connect** with Atlassian OAuth (3LO) as a manager.
 2. Link a Jira site and **project key** to this Alice project.

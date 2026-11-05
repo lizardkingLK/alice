@@ -1,9 +1,6 @@
 'use client';
 
-import { JiraSettingsCard } from '@/app/projects/_components/project-details/jira-settings-card';
-import { GithubSettingsCard } from '@/app/projects/_components/project-details/github-settings-card';
-import { ProjectAiModelsCard } from '@/app/projects/_components/project-details/project-ai-models-card';
-import { ProjectIntegrationsSummaryBar } from '@/app/projects/_components/project-details/project-integrations-summary-bar';
+import { ProjectIntegrationsMarketplace } from '@/app/projects/_components/project-details/project-integrations-marketplace';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 
 export type ProjectIntegrationsTabProps = {
@@ -20,18 +17,11 @@ export function ProjectIntegrationsTab({
   canEditProject = true,
 }: Readonly<ProjectIntegrationsTabProps>) {
   return (
-    <div className="grid gap-6">
-      <ProjectIntegrationsSummaryBar projectId={project.id} />
-      <div className="grid gap-6 md:grid-cols-2">
-        <JiraSettingsCard project={project} />
-        <GithubSettingsCard
-          project={project}
-          currentUserId={currentUserId}
-          currentUserRole={currentUserRole}
-          canEditProject={canEditProject}
-        />
-      </div>
-      <ProjectAiModelsCard projectId={project.id} canEdit={canEditProject} />
-    </div>
+    <ProjectIntegrationsMarketplace
+      project={project}
+      currentUserId={currentUserId}
+      currentUserRole={currentUserRole}
+      canEditProject={canEditProject}
+    />
   );
 }

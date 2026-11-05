@@ -264,7 +264,7 @@ async function advanceCreateFormToStep(targetStep: 1 | 2 | 3 | 4 | 5) {
     if (nextStep === 2) {
       await screen.findByText('Work-Item Types');
     } else if (nextStep === 3) {
-      await screen.findByText('Import sources');
+      await screen.findByText('Project management');
       await screen.findByText('Source control');
       await screen.findByText('AI agents');
     } else if (nextStep === 4) {
@@ -840,12 +840,12 @@ describe('ProjectForm Component', () => {
     expect(screen.getByLabelText(/Sprint End Date/i)).toHaveValue('2099-09-14');
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-    expect(screen.getByRole('checkbox', { name: /^GitHub$/i })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /^GitHub$/i })).toBeChecked();
     expect(screen.getByLabelText(/GitHub Repository URL/i)).toHaveValue(
       'https://github.com/octocat/hello-world'
     );
     expect(screen.queryByLabelText(/Personal Access Token/i)).toBeNull();
-    expect(screen.getByRole('checkbox', { name: /^Jira$/i })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /^Jira$/i })).toBeChecked();
     await waitFor(() => {
       const jiraSelects = screen.getAllByTestId('ui-select');
       expect(jiraSelects[0]).toHaveValue('conn-1');
@@ -1230,14 +1230,14 @@ describe('ProjectForm Component', () => {
     expect(readProjectCreationDraft).not.toHaveBeenCalled();
   });
 
-  it('shows Jira OAuth fields when checkbox is toggled with an existing connection', async () => {
+  it('shows Jira OAuth fields when Jira radio is selected with an existing connection', async () => {
     mockJiraApiFetch();
 
     render(<ProjectForm users={mockUsers} />);
     await fillStep1Basics();
     await advanceCreateFormToIntegrationsStep();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /^Jira$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^Jira$/i }));
 
     expect(
       await screen.findByRole('button', { name: /Connect Jira/i })
@@ -1271,7 +1271,7 @@ describe('ProjectForm Component', () => {
     await fillStep1Basics();
     await advanceCreateFormToIntegrationsStep();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /^Jira$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^Jira$/i }));
     const selects = await screen.findAllByTestId('ui-select');
     fireEvent.change(selects[0]!, { target: { value: 'conn-1' } });
     await waitFor(() => {
@@ -1284,7 +1284,7 @@ describe('ProjectForm Component', () => {
     });
 
     expect(
-      screen.getByRole('checkbox', { name: /^GitHub$/i })
+      screen.getByRole('radio', { name: /^GitHub$/i })
     ).toBeInTheDocument();
     expect(screen.getByText('AI agents')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Next/i })).toBeInTheDocument();
@@ -1305,7 +1305,7 @@ describe('ProjectForm Component', () => {
     await fillStep1Basics();
     await advanceCreateFormToIntegrationsStep();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /^Jira$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^Jira$/i }));
 
     const selects = await screen.findAllByTestId('ui-select');
     fireEvent.change(selects[0]!, { target: { value: 'conn-1' } });
@@ -1353,7 +1353,7 @@ describe('ProjectForm Component', () => {
     await fillStep1Basics();
     await advanceCreateFormToIntegrationsStep();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^GitHub$/i }));
 
     fireEvent.change(screen.getByLabelText(/GitHub Repository URL/i), {
       target: { value: 'https://github.com/facebook/react' },
@@ -1381,7 +1381,7 @@ describe('ProjectForm Component', () => {
     await fillStep1Basics();
     await advanceCreateFormToIntegrationsStep();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^GitHub$/i }));
 
     expect(
       await screen.findByText(/Status: Not connected/i)
@@ -1405,7 +1405,7 @@ describe('ProjectForm Component', () => {
     await fillStep1Basics();
     await advanceCreateFormToIntegrationsStep();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^GitHub$/i }));
 
     expect(await screen.findByText('@octocat')).toBeInTheDocument();
     expect(screen.getByText('Connected')).toBeInTheDocument();
@@ -1429,7 +1429,7 @@ describe('ProjectForm Component', () => {
     await fillStep1Basics();
     await advanceCreateFormToIntegrationsStep();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^GitHub$/i }));
 
     fireEvent.change(screen.getByLabelText(/GitHub Repository URL/i), {
       target: { value: 'https://github.com/facebook/react.git' },

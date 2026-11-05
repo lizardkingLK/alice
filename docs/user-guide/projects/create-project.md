@@ -28,9 +28,10 @@ during setup.
 4. On **Types**, configure the work-item catalog (drag to order; icon and color
    pickers update cards live). Names must be unique; custom types get a hidden
    key automatically.
-5. On **Integrations**, optionally connect **Jira** (project management),
-   **GitHub** (source control), and bind one or more organization **AI agents**
-   (star one as the project default). Mint new AI keys in
+5. On **Integrations**, pick **None** or one **project management** provider
+   (Jira) and **None** or one **source control** provider (GitHub), then bind
+   one or more organization **AI agents** (star one as the project default).
+   Mint new AI keys in
    [Workspace integrations](../profile-and-settings/workspace-integrations.md)
    first — create only **binds** them (no API keys on this step).
 6. On the optional **Sprint** step, configure an initial sprint if needed.

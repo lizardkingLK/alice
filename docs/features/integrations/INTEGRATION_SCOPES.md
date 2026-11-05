@@ -281,14 +281,14 @@ summary DTO without migrating OAuth ciphertext into `integrations`.
 
 ## Phased delivery
 
-| Phase | Deliverable                                                                                                                                                         | Depends on |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| **A** | Docs + `IntegrationScope` / `integrations.scope` default `organization` (**done**)                                                                                  | —          |
-| **B** | Chat resolution project → page → org; `project_integration_bindings`; managers already configure org Settings (**done**)                                            | A          |
-| **C** | **UX move:** create **Integrations** step (merge Imports+Source+AI); project Integrations tab AI binds (**done** — full Settings-style marketplace polish deferred) | B          |
-| **D** | Import-from-project-I-belong-to (org binds / metadata only) (**done**)                                                                                              | C          |
-| **E** | Member preferred org model (Preferences + resolve) (**done**); personal key rows deferred                                                                           | B          |
-| **F** | Unify SC/PM/AI as project integrations in product language + summary facade; keep OAuth on `*_connections` (**done** — no row migration into `integrations`)        | C          |
+| Phase | Deliverable                                                                                                                                                  | Depends on |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| **A** | Docs + `IntegrationScope` / `integrations.scope` default `organization` (**done**)                                                                           | —          |
+| **B** | Chat resolution project → page → org; `project_integration_bindings`; managers already configure org Settings (**done**)                                     | A          |
+| **C** | **UX move:** create **Integrations** step (merge Imports+Source+AI); project Integrations marketplace (SC/PM radios + AI + catalog Coming soon) (**done**)   | B          |
+| **D** | Import-from-project-I-belong-to (org binds / metadata only) (**done**)                                                                                       | C          |
+| **E** | Member preferred org model (Preferences + resolve) (**done**); personal key rows deferred                                                                    | B          |
+| **F** | Unify SC/PM/AI as project integrations in product language + summary facade; keep OAuth on `*_connections` (**done** — no row migration into `integrations`) | C          |
 
 **Shipping order intent:** land **C** as soon as **B** is safe — the product
 requirement is that project create/details are where integrations are wired.
@@ -330,8 +330,9 @@ requirement is that project create/details are where integrations are wired.
 - [x] Existing Settings integrations behave as organization scope with no regression.
 - [x] Managers can configure organization AI models in Settings (vault).
 - [x] Create wizard exposes a single **Integrations** step (Jira + GitHub + AI binds).
-- [ ] Source control and project management use **radio** (single) selection (still checkbox enable today).
-- [ ] Project **Integrations** tab mirrors Settings marketplace UI + SC/PM groups (AI card shipped; full marketplace polish deferred).
+- [x] Source control and project management use **radio** (single) selection (+ None).
+- [x] Project **Integrations** tab mirrors Settings marketplace UI + SC/PM groups
+      (search, category tabs, SC/PM radios, AI binds; other catalog groups Coming soon).
 - [x] Draft resume restores Integrations selections (incl. AI binds); keys never drafted.
 - [x] Create remains async (ack → background work → inbox notification).
 - [x] Chat with project context uses that project’s enabled pool; without project, page then org (empty bindings ⇒ org).

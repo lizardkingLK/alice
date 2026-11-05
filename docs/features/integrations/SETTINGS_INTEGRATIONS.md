@@ -3,12 +3,13 @@
 Status: **Phase 1 complete** — DB-backed workspace integrations, the Settings
 management UI, and the Alice Chat model pool are live. Phase 2 (Slack OAuth,
 Figma/Eraser) remains planned. **Scoped integrations** (Organization / Project /
-Member, project create step, share rules) are designed in
-[INTEGRATION_SCOPES.md](./INTEGRATION_SCOPES.md) — not implemented yet.
+Member preferred model, create wizard, project marketplace) are **shipped** in
+[INTEGRATION_SCOPES.md](./INTEGRATION_SCOPES.md) (A–F facade; member personal
+API key rows deferred).
 
 Managers and admins configure **organization-wide** AI agents and tool
 integrations from **`/settings?tab=integrations`** (the shareable **vault**).
-Project wiring (GitHub, Jira today; AI binds planned) lives on
+Project wiring (GitHub, Jira, AI binds) lives on
 **`/projects/[id]?tab=integrations`** and on the project **create** wizard.
 Today’s Settings rows are **Organization** scope
 (`integrations.scope`, Phase A) — see
