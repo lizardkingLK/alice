@@ -457,6 +457,25 @@ describe('AccessRequestsService.grantAccessRequest', () => {
     ).toBeLessThan(sendProjectMemberEmail.mock.invocationCallOrder[0]!);
   });
 
+  it('stops membership creation after the first transactional failure', async () => {
+    accessAllowlistRepository.findActiveDomainByValue.mockResolvedValue(null);
+    projectMemberCreateMany.mockRejectedValueOnce(new Error('write failed'));
+
+    await expect(
+      service.grantAccessRequest('admin-1', 'req-1', {
+        projects: [
+          { projectId: 'proj-1', addMember: true },
+          { projectId: 'proj-2', addMember: true },
+        ],
+      })
+    ).rejects.toThrow('write failed');
+
+    expect(projectMemberCreateMany).toHaveBeenCalledOnce();
+    expect(repository.resolvePendingAndArchive).not.toHaveBeenCalled();
+    expect(notifyAllowlistedEmailMock).not.toHaveBeenCalled();
+    expect(sendProjectMemberEmail).not.toHaveBeenCalled();
+  });
+
   it('does not notify for a membership that a concurrent insert already created', async () => {
     accessAllowlistRepository.findActiveDomainByValue.mockResolvedValue(null);
     projectMemberCreateMany.mockResolvedValue({ count: 0 });

@@ -79,7 +79,7 @@ function toAccessAllowlistRow(row: {
 export class AccessAllowlistRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
-  async withTransaction<T>(
+  withTransaction<T>(
     operation: (transaction: AccessAllowlistTransaction) => Promise<T>
   ): Promise<T> {
     return prisma.$transaction(operation);

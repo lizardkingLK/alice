@@ -25,8 +25,7 @@ import type { NotificationsRepository } from '../notifications/notifications.rep
 import type { AccessAllowlistRepository } from '../access-allowlist/access-allowlist.repository';
 import { notifyAllowlistedEmail } from '../access-allowlist/notify-allowlisted-email';
 import type { ProjectsRepository } from '../projects/projects.repository';
-import type { UsersRepository } from '../users/users.repository';
-import type { UserRow } from '../users/users.repository';
+import type { UserRow, UsersRepository } from '../users/users.repository';
 import {
   buildProjectMemberAddedEmail,
   type ProjectMemberEmailSender,
@@ -277,7 +276,13 @@ async function ensureGrantProjectMemberships(
 ): Promise<Array<{ projectId: string; eventId: string }>> {
   const { actorId, requesterUserId, memberProjectIds } = params;
   const createdMemberships: Array<{ projectId: string; eventId: string }> = [];
-  for (const projectId of memberProjectIds) {
+
+  async function createNextMembership(index: number): Promise<void> {
+    const projectId = memberProjectIds[index];
+    if (projectId === undefined) {
+      return;
+    }
+
     const eventId = randomUUID();
     const result = await transaction.project_members.createMany({
       data: [
@@ -292,7 +297,12 @@ async function ensureGrantProjectMemberships(
     if (result.count === 1) {
       createdMemberships.push({ projectId, eventId });
     }
+
+    // Preserve stop-on-first-error ordering inside the transaction.
+    await createNextMembership(index + 1);
   }
+
+  await createNextMembership(0);
   return createdMemberships;
 }
 
