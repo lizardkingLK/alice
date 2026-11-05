@@ -54,7 +54,7 @@ import { prisma } from '../../../lib/prisma';
 import { env } from '../../../config/env';
 import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
 import type { ProjectsRepository } from './projects.repository';
-import type { UsersRepository } from '../users/users.repository';
+import type { UserRow, UsersRepository } from '../users/users.repository';
 import {
   buildProjectMemberAddedEmail,
   type ProjectMemberEmailSender,
@@ -286,6 +286,69 @@ export class ProjectsService {
     return await this.projectsRepository.listMembers(projectId);
   }
 
+  private async sendProjectMemberAddedEmail(
+    project: Pick<ProjectRow, 'id' | 'name'>,
+    user: Pick<UserRow, 'email' | 'name'>
+  ): Promise<void> {
+    if (!this.projectMemberEmailSender) {
+      throw new Error('Project member notification is not configured.');
+    }
+
+    const email = buildProjectMemberAddedEmail({
+      recipientEmail: user.email,
+      recipientName: user.name,
+      projectId: project.id,
+      projectName: project.name,
+      frontendUrl: env.FRONTEND_URL,
+      notificationEventId: randomUUID(),
+    });
+    await this.projectMemberEmailSender.send(email);
+  }
+
+  private async notifyInitialProjectMembers(
+    actorId: string,
+    input: CreateProjectInput,
+    project: ProjectRow
+  ): Promise<void> {
+    const initialTeamMembers =
+      input.team?.members ??
+      input.team?.member_ids?.map((user_id) => ({ user_id })) ??
+      [];
+    const memberIds = [
+      ...new Set([
+        actorId,
+        ...(input.team ? [input.team.manager_id] : []),
+        ...initialTeamMembers.map((member) => member.user_id),
+      ]),
+    ].filter((userId) => userId !== input.owner_id);
+
+    await Promise.all(
+      memberIds.map(async (userId) => {
+        try {
+          if (!this.usersRepository) {
+            throw new Error('Project member notification is not configured.');
+          }
+          const user = await this.usersRepository.findById(userId);
+          if (!user) {
+            throw new Error('User not found.');
+          }
+          await this.sendProjectMemberAddedEmail(project, user);
+        } catch {
+          console.error('error. project member email notification failed');
+        }
+      })
+    );
+  }
+
+  private async persistProjectAndNotifyMembers(
+    actorId: string,
+    input: CreateProjectInput
+  ): Promise<ProjectRow> {
+    const project = await this.projectsRepository.create(input, actorId);
+    await this.notifyInitialProjectMembers(actorId, input, project);
+    return project;
+  }
+
   async addMember(
     actorId: string,
     projectId: string,
@@ -326,15 +389,7 @@ export class ProjectsService {
     }
 
     try {
-      const email = buildProjectMemberAddedEmail({
-        recipientEmail: user.email,
-        recipientName: user.name,
-        projectId: project.id,
-        projectName: project.name,
-        frontendUrl: env.FRONTEND_URL,
-        notificationEventId: randomUUID(),
-      });
-      await this.projectMemberEmailSender.send(email);
+      await this.sendProjectMemberAddedEmail(project, user);
     } catch {
       console.error('error. project member email notification failed');
     }
@@ -486,7 +541,7 @@ export class ProjectsService {
   ): Promise<void> {
     let project: ProjectRow;
     try {
-      project = await this.projectsRepository.create(prepared, actorId);
+      project = await this.persistProjectAndNotifyMembers(actorId, prepared);
     } catch (error: unknown) {
       const reason =
         error instanceof Error ? error.message : 'Unknown create failure';
@@ -558,7 +613,7 @@ export class ProjectsService {
     input: CreateProjectInput
   ): Promise<ProjectRow> {
     const prepared = await this.prepareCreateProjectInput(actorId, input);
-    return await this.projectsRepository.create(prepared, actorId);
+    return await this.persistProjectAndNotifyMembers(actorId, prepared);
   }
 
   async updateProject(
