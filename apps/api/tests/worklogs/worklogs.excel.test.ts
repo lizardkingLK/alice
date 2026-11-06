@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import { describe, expect, it } from 'vitest';
 import {
+  MAX_WORKLOG_EXCEL_DATA_ROWS,
   WORKLOG_EXCEL_HEADERS,
   WORKLOG_EXCEL_SHEET_NAME,
   WorklogExcelValidationError,
@@ -259,5 +260,32 @@ describe('parseWorklogExcel', () => {
 
     expect(error.issues[0]?.rowNumber).toBe(1);
     expect(error.issues[0]?.message).toContain('Expected columns');
+  });
+
+  it('rejects workbooks with more than 200 non-blank data rows', async () => {
+    const rows = Array.from(
+      { length: MAX_WORKLOG_EXCEL_DATA_ROWS + 1 },
+      () => ['2026-11-05 08:00', '2026-11-05 09:00', 'Imported work'] as const
+    );
+    const input = await workbookBuffer(rows);
+
+    const error = await validationErrors(input);
+
+    expect(error.issues).toEqual([
+      {
+        rowNumber: 202,
+        message: 'A maximum of 200 worklog rows is allowed.',
+      },
+    ]);
+  });
+
+  it('accepts exactly 200 data rows', async () => {
+    const rows = Array.from(
+      { length: MAX_WORKLOG_EXCEL_DATA_ROWS },
+      () => ['2026-11-05 08:00', '2026-11-05 09:00', 'Imported work'] as const
+    );
+    const input = await workbookBuffer(rows);
+
+    await expect(parseWorklogExcel(input)).resolves.toHaveLength(200);
   });
 });

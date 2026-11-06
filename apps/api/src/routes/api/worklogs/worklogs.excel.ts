@@ -6,6 +6,7 @@ export const WORKLOG_EXCEL_HEADERS = [
   'End Date/Time',
   'Description',
 ] as const;
+export const MAX_WORKLOG_EXCEL_DATA_ROWS = 200;
 
 const INSTRUCTIONS_SHEET_NAME = 'Instructions';
 const MAX_LOGGED_HOURS = 1000;
@@ -89,7 +90,7 @@ function addInstructionsSheet(workbook: ExcelJS.Workbook): void {
   sheet.getCell('A7').value =
     'Description is optional and must not exceed 2000 characters. Each duration must be 1000 hours or less.';
   sheet.getCell('A8').value =
-    'Keep the Worklogs sheet name and the three column headers unchanged. Fully blank rows are ignored.';
+    `Keep the Worklogs sheet name and the three column headers unchanged. Fully blank rows are ignored. A maximum of ${MAX_WORKLOG_EXCEL_DATA_ROWS} worklog rows is allowed.`;
   for (let rowNumber = 4; rowNumber <= 8; rowNumber += 1) {
     const row = sheet.getRow(rowNumber);
     row.getCell(1).font = { name: 'Arial', size: 10 };
@@ -402,10 +403,19 @@ export async function parseWorklogExcel(
 
   const issues: WorklogExcelValidationIssue[] = [];
   const rows: ParsedWorklogExcelRow[] = [];
+  let dataRowCount = 0;
   for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber += 1) {
     const row = sheet.getRow(rowNumber);
     if (rowIsBlank(row)) {
       continue;
+    }
+    dataRowCount += 1;
+    if (dataRowCount > MAX_WORKLOG_EXCEL_DATA_ROWS) {
+      issues.push({
+        rowNumber,
+        message: `A maximum of ${MAX_WORKLOG_EXCEL_DATA_ROWS} worklog rows is allowed.`,
+      });
+      break;
     }
     const parsed = validateRow(row, issues);
     if (parsed) {
