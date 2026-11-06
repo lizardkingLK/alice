@@ -18,7 +18,7 @@ export function createDefaultWorkLogDateTimes(now = new Date()): {
   readonly startAt: string;
   readonly endAt: string;
 } {
-  const start = new Date(now.getTime());
+  const start = new Date(now);
   start.setSeconds(0, 0);
   const end = new Date(start.getTime() + MILLISECONDS_PER_HOUR);
   return {

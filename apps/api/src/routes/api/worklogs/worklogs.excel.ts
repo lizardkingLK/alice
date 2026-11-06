@@ -135,7 +135,7 @@ function splitTimezone(value: string): {
   }
   const candidate = value.slice(-6);
   if (
-    (candidate[0] === '+' || candidate[0] === '-') &&
+    (candidate.startsWith('+') || candidate.startsWith('-')) &&
     candidate[3] === ':' &&
     isFixedDigits(candidate.slice(1, 3), 2) &&
     isFixedDigits(candidate.slice(4, 6), 2)
@@ -241,7 +241,7 @@ function parseDateTimeText(value: string): Date | null {
 
   let offsetMinutes = 0;
   if (timezone && timezone !== 'Z') {
-    const sign = timezone[0] === '+' ? 1 : -1;
+    const sign = timezone.startsWith('+') ? 1 : -1;
     const offsetHours = Number(timezone.slice(1, 3));
     const offsetRemainder = Number(timezone.slice(4, 6));
     if (offsetHours > 23 || offsetRemainder > 59) {
@@ -256,7 +256,7 @@ function parseDateTimeText(value: string): Date | null {
 
 function dateFromCellValue(value: CellValue): Date | null {
   if (value instanceof Date) {
-    return Number.isFinite(value.getTime()) ? new Date(value.getTime()) : null;
+    return Number.isFinite(value.getTime()) ? new Date(value) : null;
   }
   if (typeof value === 'string') {
     return parseDateTimeText(value);

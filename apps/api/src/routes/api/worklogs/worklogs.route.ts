@@ -54,7 +54,7 @@ function getExcelUpload(
     return null;
   }
 
-  if (!req.file || !req.file.originalname.toLowerCase().endsWith('.xlsx')) {
+  if (!req.file?.originalname.toLowerCase().endsWith('.xlsx')) {
     res.status(400).json({ error: 'An .xlsx file is required.' });
     return null;
   }
