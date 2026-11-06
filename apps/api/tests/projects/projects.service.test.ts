@@ -21,6 +21,8 @@ const {
   integrationFindFirstMock,
   teamFindFirstMock,
   notificationsCreateMock,
+  findUserByIdMock,
+  sendProjectMemberEmailMock,
   projectBindingsFindManyMock,
   versionControlFindFirstMock,
 } = vi.hoisted(() => {
@@ -46,6 +48,8 @@ const {
     integrationFindFirstMock: vi.fn(),
     teamFindFirstMock: vi.fn(),
     notificationsCreateMock: vi.fn(),
+    findUserByIdMock: vi.fn(),
+    sendProjectMemberEmailMock: vi.fn(),
     projectBindingsFindManyMock: vi.fn(),
     versionControlFindFirstMock: vi.fn(),
   };
@@ -134,7 +138,13 @@ describe('ProjectsService backend tests', () => {
     getDetailById: getDetailByIdMock,
   } as unknown as ProjectsRepository;
 
-  const service = new ProjectsService(projectsRepository);
+  const usersRepository = { findById: findUserByIdMock };
+  const projectMemberEmailSender = { send: sendProjectMemberEmailMock };
+  const service = new ProjectsService(
+    projectsRepository,
+    usersRepository,
+    projectMemberEmailSender
+  );
 
   const createProjectInput = (
     overrides: Partial<CreateProjectInput> = {}
@@ -174,6 +184,12 @@ describe('ProjectsService backend tests', () => {
       findByKeyMock.mockResolvedValue(null);
       createMock.mockResolvedValue(mockProject);
       notificationsCreateMock.mockResolvedValue({});
+      findUserByIdMock.mockResolvedValueOnce({
+        id: 'user-admin',
+        name: 'Admin User',
+        email: 'admin@example.com',
+      });
+      sendProjectMemberEmailMock.mockResolvedValue(undefined);
 
       const accepted = await service.enqueueCreateProject(
         'user-admin',
@@ -195,7 +211,16 @@ describe('ProjectsService backend tests', () => {
             message: `Project [**${mockProject.name}**](/projects/${mockProject.id}) is ready`,
           }),
         });
+        expect(sendProjectMemberEmailMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            to: 'admin@example.com',
+            subject: "You've been added to Alice Project in Alice",
+          })
+        );
       });
+      expect(createMock.mock.invocationCallOrder[0]).toBeLessThan(
+        sendProjectMemberEmailMock.mock.invocationCallOrder[0]!
+      );
     });
 
     it('does not send create_failed when create succeeds but notify fails', async () => {
@@ -234,6 +259,12 @@ describe('ProjectsService backend tests', () => {
       mockActorRole('admin');
       findByKeyMock.mockResolvedValue(null);
       createMock.mockResolvedValue(mockProject);
+      findUserByIdMock.mockResolvedValueOnce({
+        id: 'user-admin',
+        name: 'Admin User',
+        email: 'admin@example.com',
+      });
+      sendProjectMemberEmailMock.mockResolvedValue(undefined);
 
       const input = createProjectInput();
 
@@ -250,6 +281,12 @@ describe('ProjectsService backend tests', () => {
         'user-admin'
       );
       expect(result).toEqual(mockProject);
+      expect(sendProjectMemberEmailMock).toHaveBeenCalledWith(
+        expect.objectContaining({ to: 'admin@example.com' })
+      );
+      expect(createMock.mock.invocationCallOrder[0]).toBeLessThan(
+        sendProjectMemberEmailMock.mock.invocationCallOrder[0]!
+      );
     });
 
     it('creates project with configured work_item_types', async () => {
@@ -315,6 +352,23 @@ describe('ProjectsService backend tests', () => {
         { id: 'team-manager', role: 'manager' },
         { id: 'team-member', role: 'member' },
       ]);
+      findUserByIdMock
+        .mockResolvedValueOnce({
+          id: 'user-admin',
+          name: 'Admin User',
+          email: 'admin@example.com',
+        })
+        .mockResolvedValueOnce({
+          id: 'team-manager',
+          name: 'Team Manager',
+          email: 'manager@example.com',
+        })
+        .mockResolvedValueOnce({
+          id: 'team-member',
+          name: 'Team Member',
+          email: 'member@example.com',
+        });
+      sendProjectMemberEmailMock.mockResolvedValue(undefined);
       const team = {
         name: 'Platform Team',
         description: null,
@@ -338,6 +392,58 @@ describe('ProjectsService backend tests', () => {
         expect.objectContaining({ team }),
         'user-admin'
       );
+      expect(findUserByIdMock).toHaveBeenCalledTimes(3);
+      expect(findUserByIdMock).not.toHaveBeenCalledWith('user-manager');
+      expect(sendProjectMemberEmailMock).toHaveBeenCalledTimes(3);
+      expect(
+        sendProjectMemberEmailMock.mock.calls.map(([message]) => message.to)
+      ).toEqual([
+        'admin@example.com',
+        'manager@example.com',
+        'member@example.com',
+      ]);
+    });
+
+    it('does not notify any member when project persistence fails', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      createMock.mockRejectedValue(new Error('transaction rolled back'));
+
+      await expect(
+        service.createProject('user-admin', createProjectInput())
+      ).rejects.toThrow('transaction rolled back');
+
+      expect(findUserByIdMock).not.toHaveBeenCalled();
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
+    });
+
+    it('keeps the committed project when an initial member email fails', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      createMock.mockResolvedValue(mockProject);
+      findUserByIdMock.mockResolvedValueOnce({
+        id: 'user-admin',
+        name: 'Admin User',
+        email: 'admin@example.com',
+      });
+      sendProjectMemberEmailMock.mockRejectedValueOnce(
+        new Error('provider included admin@example.com in its error')
+      );
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+
+      await expect(
+        service.createProject('user-admin', createProjectInput())
+      ).resolves.toEqual(mockProject);
+
+      expect(consoleError).toHaveBeenCalledWith(
+        'error. project member email notification failed'
+      );
+      expect(consoleError).not.toHaveBeenCalledWith(
+        expect.stringContaining('admin@example.com')
+      );
+      consoleError.mockRestore();
     });
 
     it('rejects an inactive initial team manager', async () => {
@@ -724,6 +830,7 @@ describe('ProjectsService backend tests', () => {
         'user-new-owner',
         'user-manager'
       );
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
     });
 
     it('rejects updates for standard members', async () => {
@@ -947,6 +1054,174 @@ describe('ProjectsService backend tests', () => {
       );
 
       expect(updateMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('addMember', () => {
+    const targetUser = {
+      id: 'user-member',
+      name: 'Taylor Member',
+      email: 'taylor@example.com',
+      role: 'member' as const,
+      active: true,
+      membership_status: 'active' as const,
+      created_at: '2026-01-01T00:00:00.000Z',
+      updated_at: '2026-01-01T00:00:00.000Z',
+    };
+
+    beforeEach(() => {
+      listMembersMock.mockResolvedValue([]);
+      findByIdMock.mockResolvedValue(mockProject);
+      findUserByIdMock.mockResolvedValue(targetUser);
+      addMemberMock.mockResolvedValue(true);
+      sendProjectMemberEmailMock.mockResolvedValue(undefined);
+    });
+
+    it.each(['manager', 'admin'] as const)(
+      'notifies the existing user after an authorized %s persists membership',
+      async (role) => {
+        mockActorRole(role);
+
+        await service.addMember('actor-1', 'project-1', 'user-member');
+
+        expect(addMemberMock).toHaveBeenCalledWith(
+          'project-1',
+          'user-member',
+          'actor-1'
+        );
+        expect(sendProjectMemberEmailMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            to: 'taylor@example.com',
+            subject: "You've been added to Alice Project in Alice",
+          })
+        );
+        expect(sendProjectMemberEmailMock.mock.calls[0]?.[0].text).toContain(
+          'http://localhost:3000/projects/project-1'
+        );
+        expect(addMemberMock.mock.invocationCallOrder[0]).toBeLessThan(
+          sendProjectMemberEmailMock.mock.invocationCallOrder[0]!
+        );
+      }
+    );
+
+    it('does not write or notify when the user is already a member', async () => {
+      mockActorRole('manager');
+      listMembersMock.mockResolvedValue([{ user_id: 'user-member' }]);
+
+      await expect(
+        service.addMember('actor-1', 'project-1', 'user-member')
+      ).rejects.toThrow('User is already a member of this project.');
+
+      expect(addMemberMock).not.toHaveBeenCalled();
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
+    });
+
+    it('uses a new idempotency key for a legitimate future re-addition', async () => {
+      mockActorRole('manager');
+
+      await service.addMember('actor-1', 'project-1', 'user-member');
+      await service.addMember('actor-1', 'project-1', 'user-member');
+
+      const firstKey =
+        sendProjectMemberEmailMock.mock.calls[0]?.[0].idempotencyKey;
+      const secondKey =
+        sendProjectMemberEmailMock.mock.calls[1]?.[0].idempotencyKey;
+      expect(firstKey).toMatch(/^project-member-added:/);
+      expect(secondKey).toMatch(/^project-member-added:/);
+      expect(secondKey).not.toBe(firstKey);
+    });
+
+    it('does not notify when a concurrent request inserts first', async () => {
+      mockActorRole('manager');
+      addMemberMock.mockResolvedValue(false);
+
+      await expect(
+        service.addMember('actor-1', 'project-1', 'user-member')
+      ).rejects.toThrow('User is already a member of this project.');
+
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
+    });
+
+    it('does not inspect membership or notify after failed authorization', async () => {
+      mockActorRole('member');
+
+      await expect(
+        service.addMember('actor-1', 'project-1', 'user-member')
+      ).rejects.toThrow(
+        'Unauthorized. Only admins and managers can manage projects.'
+      );
+
+      expect(listMembersMock).not.toHaveBeenCalled();
+      expect(addMemberMock).not.toHaveBeenCalled();
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
+    });
+
+    it('does not notify when membership persistence fails', async () => {
+      mockActorRole('manager');
+      addMemberMock.mockRejectedValue(new Error('database unavailable'));
+
+      await expect(
+        service.addMember('actor-1', 'project-1', 'user-member')
+      ).rejects.toThrow('database unavailable');
+
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
+    });
+
+    it('keeps a successful membership when email delivery fails', async () => {
+      mockActorRole('manager');
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      sendProjectMemberEmailMock.mockRejectedValue(
+        new Error('provider included recipient@example.com in its error')
+      );
+
+      await expect(
+        service.addMember('actor-1', 'project-1', 'user-member')
+      ).resolves.toBeUndefined();
+
+      expect(addMemberMock).toHaveBeenCalledOnce();
+      expect(consoleError).toHaveBeenCalledWith(
+        'error. project member email notification failed'
+      );
+      expect(consoleError).not.toHaveBeenCalledWith(
+        expect.stringContaining('recipient@example.com')
+      );
+      consoleError.mockRestore();
+    });
+
+    it('keeps a successful membership when safe template construction fails', async () => {
+      mockActorRole('manager');
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      findUserByIdMock.mockResolvedValue({
+        ...targetUser,
+        email: 'member@example.com\r\nBcc: attacker@example.com',
+      });
+
+      await expect(
+        service.addMember('actor-1', 'project-1', 'user-member')
+      ).resolves.toBeUndefined();
+
+      expect(addMemberMock).toHaveBeenCalledOnce();
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
+      expect(consoleError).toHaveBeenCalledWith(
+        'error. project member email notification failed'
+      );
+      consoleError.mockRestore();
+    });
+
+    it('requires trusted project and user records before persistence', async () => {
+      mockActorRole('manager');
+      findUserByIdMock.mockResolvedValue(null);
+
+      await expect(
+        service.addMember('actor-1', 'project-1', 'missing-user')
+      ).rejects.toThrow('User not found.');
+
+      expect(addMemberMock).not.toHaveBeenCalled();
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
     });
   });
 

@@ -51,6 +51,10 @@ import {
 import { createRootRouter } from '../routes';
 import { ProjectsRepository } from '../routes/api/projects/projects.repository';
 import { ProjectsService } from '../routes/api/projects/projects.service';
+import {
+  createResendProjectMemberEmailSender,
+  type ProjectMemberEmailSender,
+} from '../routes/api/projects/project-member-email';
 import { createProjectsRouter } from '../routes/api/projects/projects.route';
 import { JiraRepository } from '../routes/api/jira/jira.repository';
 import { JiraService } from '../routes/api/jira/jira.service';
@@ -86,6 +90,7 @@ import { ReportsRepository } from '../routes/api/reports/reports.repository';
 import { ReportsAiInsightsService } from '../routes/api/reports/reports.ai-insights.service';
 import { ReportsService } from '../routes/api/reports/reports.service';
 import { createReportsRouter } from '../routes/api/reports/reports.route';
+import { env } from './env';
 
 function createRootConfig() {
   const router = createRootRouter();
@@ -118,6 +123,8 @@ function createAccessRequestsConfig(grantDeps: {
   accessAllowlistRepository: AccessAllowlistRepository;
   projectsRepository: ProjectsRepository;
   usersRepository: UsersRepository;
+  projectMemberEmailSender: ProjectMemberEmailSender;
+  frontendUrl: string;
 }) {
   const notificationsRepository = new NotificationsRepository(supabase);
   const accessRequestsRepository = new AccessRequestsRepository();
@@ -306,9 +313,15 @@ function createGithubConfig() {
 function createProjectsConfig(
   workItemService: WorkItemService,
   jiraService: JiraService,
-  projectsRepository: ProjectsRepository
+  projectsRepository: ProjectsRepository,
+  usersRepository: UsersRepository,
+  projectMemberEmailSender: ProjectMemberEmailSender
 ) {
-  const projectsService = new ProjectsService(projectsRepository);
+  const projectsService = new ProjectsService(
+    projectsRepository,
+    usersRepository,
+    projectMemberEmailSender
+  );
   const router = createProjectsRouter({
     projectsService,
     workItemService,
@@ -464,6 +477,10 @@ function createPusherConfig(
 const sharedAccessAllowlistRepository = new AccessAllowlistRepository(supabase);
 const sharedProjectsRepository = new ProjectsRepository(supabase);
 const sharedUsersRepository = new UsersRepository(supabase);
+const projectMemberEmailSender = createResendProjectMemberEmailSender({
+  apiKey: env.RESEND_API_KEY,
+  from: env.TRANSACTIONAL_EMAIL_FROM,
+});
 
 /** Production configs graph (repo → service → router). */
 export const root = createRootConfig();
@@ -472,6 +489,8 @@ export const accessRequests = createAccessRequestsConfig({
   accessAllowlistRepository: sharedAccessAllowlistRepository,
   projectsRepository: sharedProjectsRepository,
   usersRepository: sharedUsersRepository,
+  projectMemberEmailSender,
+  frontendUrl: env.FRONTEND_URL,
 });
 export const accessAllowlist = createAccessAllowlistConfig(
   accessRequests.accessRequestsService,
@@ -502,7 +521,9 @@ export const jira = createJiraConfig();
 export const projects = createProjectsConfig(
   workItems.workItemService,
   jira.jiraService,
-  sharedProjectsRepository
+  sharedProjectsRepository,
+  sharedUsersRepository,
+  projectMemberEmailSender
 );
 export const users = createUsersConfig(sharedUsersRepository);
 export const teams = createTeamsConfig();
