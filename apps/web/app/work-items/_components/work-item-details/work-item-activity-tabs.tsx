@@ -24,7 +24,14 @@ import {
   TabsList,
   TabsTrigger,
 } from '@repo/ui/components/ui/tabs';
-import { Maximize2, Minimize2, Plus } from '@repo/ui/lib/icons';
+import {
+  Download,
+  Loader2,
+  Maximize2,
+  Minimize2,
+  Plus,
+  Upload,
+} from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import {
   useEffect,
@@ -55,11 +62,76 @@ type WorkItemActivityTabsProps = {
   currentUserId?: string;
   workLogs: WorkItemWorkLog[];
   onAddWorkLogClick?: () => void;
+  onExcelUploadClick?: () => void;
+  onDownloadTemplateClick?: () => void;
+  isDownloadingTemplate?: boolean;
   /** When true, hide work-log add control (Done work items). Discussion stays available. */
   readOnly?: boolean;
   /** Unified online presence strip — sits left of the maximize control. */
   onlineMembersSlot?: ReactNode;
 };
+
+function WorkLogActions({
+  readOnly,
+  onAddWorkLogClick,
+  onExcelUploadClick,
+  onDownloadTemplateClick,
+  isDownloadingTemplate,
+}: Readonly<
+  Pick<
+    WorkItemActivityTabsProps,
+    | 'readOnly'
+    | 'onAddWorkLogClick'
+    | 'onExcelUploadClick'
+    | 'onDownloadTemplateClick'
+    | 'isDownloadingTemplate'
+  >
+>) {
+  return (
+    <div className="flex items-center gap-1">
+      {!readOnly && onAddWorkLogClick ? (
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          className="cursor-pointer"
+          aria-label="Log work"
+          title="Log work"
+          onClick={onAddWorkLogClick}
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      ) : null}
+      {onDownloadTemplateClick ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          disabled={isDownloadingTemplate}
+          onClick={onDownloadTemplateClick}
+        >
+          {isDownloadingTemplate ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Download className="size-4" />
+          )}
+          Download template
+        </Button>
+      ) : null}
+      {!readOnly && onExcelUploadClick ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={onExcelUploadClick}
+        >
+          <Upload className="size-4" />
+          Excel upload
+        </Button>
+      ) : null}
+    </div>
+  );
+}
 
 /**
  * Radix Tabs focuses the newly active panel, which makes the browser
@@ -102,6 +174,9 @@ export function WorkItemActivityTabs({
   currentUserId,
   workLogs,
   onAddWorkLogClick,
+  onExcelUploadClick,
+  onDownloadTemplateClick,
+  isDownloadingTemplate = false,
   readOnly = false,
   onlineMembersSlot,
 }: Readonly<WorkItemActivityTabsProps>) {
@@ -193,18 +268,14 @@ export function WorkItemActivityTabs({
             />
           ) : null}
 
-          {activeTab === 'work-log' && !readOnly && onAddWorkLogClick ? (
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="cursor-pointer"
-              aria-label="Log work"
-              title="Log work"
-              onClick={onAddWorkLogClick}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+          {activeTab === 'work-log' ? (
+            <WorkLogActions
+              readOnly={readOnly}
+              onAddWorkLogClick={onAddWorkLogClick}
+              onExcelUploadClick={onExcelUploadClick}
+              onDownloadTemplateClick={onDownloadTemplateClick}
+              isDownloadingTemplate={isDownloadingTemplate}
+            />
           ) : null}
 
           <div className="ml-auto flex items-center gap-2">

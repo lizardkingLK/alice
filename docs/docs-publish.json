@@ -237,6 +237,10 @@
         {
           "path": "user-guide/work-items/attachments.md",
           "order": 7
+        },
+        {
+          "path": "user-guide/work-items/work-log-excel-upload.md",
+          "order": 8
         }
       ]
     },
