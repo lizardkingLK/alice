@@ -8,14 +8,15 @@ Create, track, and discuss tasks, stories, bugs, and epics across projects.
 
 ## In this topic
 
-| Page                                                | What you'll learn                     |
-| --------------------------------------------------- | ------------------------------------- |
-| [Create a work item](./create-work-item.md)         | Add new items                         |
-| [Edit a work item](./edit-work-item.md)             | Update title, description, and fields |
-| [Assign and status](./assign-and-status.md)         | Ownership and workflow                |
-| [Labels and priority](./labels-and-priority.md)     | Tags and urgency                      |
-| [Comments and activity](./comments-and-activity.md) | Discussion and history                |
-| [Attachments](./attachments.md)                     | Files on an item                      |
+| Page                                                     | What you'll learn                     |
+| -------------------------------------------------------- | ------------------------------------- |
+| [Create a work item](./create-work-item.md)              | Add new items                         |
+| [Edit a work item](./edit-work-item.md)                  | Update title, description, and fields |
+| [Assign and status](./assign-and-status.md)              | Ownership and workflow                |
+| [Labels and priority](./labels-and-priority.md)          | Tags and urgency                      |
+| [Comments and activity](./comments-and-activity.md)      | Discussion and history                |
+| [Upload worklogs from Excel](./work-log-excel-upload.md) | Preview and import time entries       |
+| [Attachments](./attachments.md)                          | Files on an item                      |
 
 ---
 

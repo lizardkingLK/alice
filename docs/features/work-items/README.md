@@ -7,6 +7,7 @@
 | [LABELS.md](./LABELS.md)                                            | JSONB text-array labels, create/details edit, search UX      | Implemented |
 | [ACTIVITY.md](./ACTIVITY.md)                                        | Work-item activity timeline next to Discussion               | Plan        |
 | [REALTIME_DISCUSSION.md](./REALTIME_DISCUSSION.md)                  | Planned realtime for Discussion / Activity / Work Log tabs   | Planned     |
+| [WORKLOG_EXCEL_UPLOAD.md](./WORKLOG_EXCEL_UPLOAD.md)                | Excel template, preview, atomic import, and worklog UI       | Implemented |
 
 > Workflow transitions and escalation resolutions will write to `activities`
 > when [Workflow](../workflow/) ships — see ACTIVITY.md extensions and
