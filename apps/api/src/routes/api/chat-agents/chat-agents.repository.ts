@@ -1,3 +1,4 @@
+import { withBusyRetry } from '@repo/db';
 import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditCreateWithoutStatus,
@@ -15,6 +16,12 @@ import {
   type ChatAgentListRow,
   type ListChatAgentsQuery,
 } from '@repo/types';
+
+/** Same raised waits as project create — interactive tx needs spare pool slots. */
+const CHAT_AGENT_TX_OPTIONS = {
+  maxWait: 10_000,
+  timeout: 15_000,
+} as const;
 
 export type ChatAgentEnablement = {
   enabledToolKeys: string[];
@@ -293,121 +300,129 @@ export class ChatAgentsRepository {
   }
 
   createFork(input: CreateForkInput): Promise<ChatAgentDetailRow> {
-    return prisma.$transaction(async (tx) => {
-      const created = await tx.chat_agents.create({
-        data: {
-          key: null,
-          owner_id: input.actorId,
-          name: input.name,
-          title: input.title,
-          description: input.source.description,
-          instructions: input.instructionsCiphertext,
-          autonomy: input.source.autonomy,
-          status: RecordStatus.active,
-          version: input.source.version + 1,
-          forked_from_id: input.source.id,
-          is_default: false,
-          tagline: input.source.tagline,
-          avatar_style: input.source.avatar_style,
-          avatar_seed: input.source.avatar_seed,
-          ...prismaAuditCreateWithoutStatus(input.actorId),
-        },
-        select: chatAgentDetailSelect,
-      });
+    return withBusyRetry(
+      () =>
+        prisma.$transaction(async (tx) => {
+          const created = await tx.chat_agents.create({
+            data: {
+              key: null,
+              owner_id: input.actorId,
+              name: input.name,
+              title: input.title,
+              description: input.source.description,
+              instructions: input.instructionsCiphertext,
+              autonomy: input.source.autonomy,
+              status: RecordStatus.active,
+              version: input.source.version + 1,
+              forked_from_id: input.source.id,
+              is_default: false,
+              tagline: input.source.tagline,
+              avatar_style: input.source.avatar_style,
+              avatar_seed: input.source.avatar_seed,
+              ...prismaAuditCreateWithoutStatus(input.actorId),
+            },
+            select: chatAgentDetailSelect,
+          });
 
-      if (input.enabledToolIds.length > 0) {
-        await tx.chat_agent_tools.createMany({
-          data: input.enabledToolIds.map((toolId) => ({
-            agent_id: created.id,
-            tool_id: toolId,
-            enabled: true,
-          })),
-        });
-      }
+          if (input.enabledToolIds.length > 0) {
+            await tx.chat_agent_tools.createMany({
+              data: input.enabledToolIds.map((toolId) => ({
+                agent_id: created.id,
+                tool_id: toolId,
+                enabled: true,
+              })),
+            });
+          }
 
-      if (input.enabledSkillIds.length > 0) {
-        await tx.chat_agent_skills.createMany({
-          data: input.enabledSkillIds.map((skillId) => ({
-            agent_id: created.id,
-            skill_id: skillId,
-            enabled: true,
-          })),
-        });
-      }
+          if (input.enabledSkillIds.length > 0) {
+            await tx.chat_agent_skills.createMany({
+              data: input.enabledSkillIds.map((skillId) => ({
+                agent_id: created.id,
+                skill_id: skillId,
+                enabled: true,
+              })),
+            });
+          }
 
-      return created;
-    });
+          return created;
+        }, CHAT_AGENT_TX_OPTIONS),
+      { maxAttempts: 3 }
+    );
   }
 
   patchAgent(input: PatchAgentInput): Promise<ChatAgentDetailRow> {
-    return prisma.$transaction(async (tx) => {
-      const data: Prisma.chat_agentsUpdateInput = {
-        ...prismaAuditUpdate(input.actorId),
-      };
+    return withBusyRetry(
+      () =>
+        prisma.$transaction(async (tx) => {
+          const data: Prisma.chat_agentsUpdateInput = {
+            ...prismaAuditUpdate(input.actorId),
+          };
 
-      if (input.name !== undefined) {
-        data.name = input.name;
-      }
-      if (input.title !== undefined) {
-        data.title = input.title;
-      }
-      if (input.description !== undefined) {
-        data.description = input.description;
-      }
-      if (input.instructionsCiphertext !== undefined) {
-        data.instructions = input.instructionsCiphertext;
-      }
-      if (input.autonomy !== undefined) {
-        data.autonomy = input.autonomy;
-      }
-      if (input.status !== undefined) {
-        data.status = input.status;
-      }
-      if (input.tagline !== undefined) {
-        data.tagline = input.tagline;
-      }
-      if (input.avatarStyle !== undefined) {
-        data.avatar_style = input.avatarStyle;
-      }
-      if (input.avatarSeed !== undefined) {
-        data.avatar_seed = input.avatarSeed;
-      }
+          if (input.name !== undefined) {
+            data.name = input.name;
+          }
+          if (input.title !== undefined) {
+            data.title = input.title;
+          }
+          if (input.description !== undefined) {
+            data.description = input.description;
+          }
+          if (input.instructionsCiphertext !== undefined) {
+            data.instructions = input.instructionsCiphertext;
+          }
+          if (input.autonomy !== undefined) {
+            data.autonomy = input.autonomy;
+          }
+          if (input.status !== undefined) {
+            data.status = input.status;
+          }
+          if (input.tagline !== undefined) {
+            data.tagline = input.tagline;
+          }
+          if (input.avatarStyle !== undefined) {
+            data.avatar_style = input.avatarStyle;
+          }
+          if (input.avatarSeed !== undefined) {
+            data.avatar_seed = input.avatarSeed;
+          }
 
-      const updated = await tx.chat_agents.update({
-        where: { id: input.id },
-        data,
-        select: chatAgentDetailSelect,
-      });
+          const updated = await tx.chat_agents.update({
+            where: { id: input.id },
+            data,
+            select: chatAgentDetailSelect,
+          });
 
-      const toolToggles = input.toolToggles ?? [];
-      const skillToggles = input.skillToggles ?? [];
-      const toggledAt = new Date();
+          const toolToggles = input.toolToggles ?? [];
+          const skillToggles = input.skillToggles ?? [];
+          const toggledAt = new Date();
 
-      await Promise.all([
-        ...toolToggles.map((toggle) =>
-          upsertAgentEnablementToggle(
-            tx,
-            'tool',
-            input.id,
-            toggle.toolId,
-            toggle.enabled,
-            toggledAt
-          )
-        ),
-        ...skillToggles.map((toggle) =>
-          upsertAgentEnablementToggle(
-            tx,
-            'skill',
-            input.id,
-            toggle.skillId,
-            toggle.enabled,
-            toggledAt
-          )
-        ),
-      ]);
+          await Promise.all([
+            ...toolToggles.map((toggle) =>
+              upsertAgentEnablementToggle(
+                tx,
+                'tool',
+                input.id,
+                toggle.toolId,
+                toggle.enabled,
+                toggledAt
+              )
+            ),
+            ...skillToggles.map((toggle) =>
+              upsertAgentEnablementToggle(
+                tx,
+                'skill',
+                input.id,
+                toggle.skillId,
+                toggle.enabled,
+                toggledAt
+              )
+            ),
+          ]);
 
-      return updated;
-    });
+          return updated;
+        }, CHAT_AGENT_TX_OPTIONS),
+      { maxAttempts: 3 }
+    );
   }
 
   async deleteAgent(id: string): Promise<void> {
@@ -415,25 +430,29 @@ export class ChatAgentsRepository {
   }
 
   setDefault(actorId: string, id: string): Promise<ChatAgentDetailRow> {
-    return prisma.$transaction(async (tx) => {
-      await tx.chat_agents.updateMany({
-        where: { is_default: true, id: { not: id } },
-        data: {
-          is_default: false,
-          ...prismaAuditUpdate(actorId),
-        },
-      });
+    return withBusyRetry(
+      () =>
+        prisma.$transaction(async (tx) => {
+          await tx.chat_agents.updateMany({
+            where: { is_default: true, id: { not: id } },
+            data: {
+              is_default: false,
+              ...prismaAuditUpdate(actorId),
+            },
+          });
 
-      return tx.chat_agents.update({
-        where: { id },
-        data: {
-          is_default: true,
-          status: RecordStatus.active,
-          ...prismaAuditUpdate(actorId),
-        },
-        select: chatAgentDetailSelect,
-      });
-    });
+          return tx.chat_agents.update({
+            where: { id },
+            data: {
+              is_default: true,
+              status: RecordStatus.active,
+              ...prismaAuditUpdate(actorId),
+            },
+            select: chatAgentDetailSelect,
+          });
+        }, CHAT_AGENT_TX_OPTIONS),
+      { maxAttempts: 3 }
+    );
   }
 
   findOldestActiveAgent(): Promise<ChatAgentDetailRow | null> {

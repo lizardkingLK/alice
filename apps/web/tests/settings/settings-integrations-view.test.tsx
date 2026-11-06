@@ -32,6 +32,7 @@ const openAiRow: IntegrationWire = {
   id: '11111111-1111-4111-8111-111111111111',
   catalog_id: 'openai',
   category: 'ai_agent',
+  scope: 'organization',
   provider: 'openai',
   name: 'GPT-4o',
   status: 'active',
@@ -87,7 +88,7 @@ describe('SettingsIntegrationsView', () => {
 
   it.each([
     ['openai', 'OpenAI', 'GPT-4o'],
-    ['anthropic', 'Anthropic', 'Claude Sonnet 4'],
+    ['anthropic', 'Anthropic', 'Claude Sonnet 4.5'],
   ])(
     'opens the configuration dialog for %s',
     async (catalogId, providerName, suggestedModel) => {
@@ -120,8 +121,8 @@ describe('SettingsIntegrationsView', () => {
       'anthropic',
       'sk-ant-test',
       'anthropic',
-      'claude-sonnet-4-20250514',
-      'Claude Sonnet 4',
+      'claude-sonnet-4-5-20250929',
+      'Claude Sonnet 4.5',
     ],
   ])(
     'creates an active %s configuration from the dialog',

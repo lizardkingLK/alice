@@ -19,6 +19,7 @@ import { initialSprintSchema } from './sprints.js';
 import { initialProjectTeamSchema } from './teams.js';
 import { withJiraProjectDtoFields } from './pm-external.js';
 import { withGithubProjectDtoFields } from './vc-external.js';
+import { projectIntegrationBindingItemSchema } from './integrations.js';
 
 export * from './jira-import-types.js';
 export { projectWorkflowConfigSchema };
@@ -81,6 +82,8 @@ const baseCreateProjectSchema = z.object({
   jira_project_key: z.string().nullable().optional(),
   jira_connection_id: z.uuid().nullable().optional(),
   github_repo: z.string().nullable().optional(),
+  /** Links `projects.vc_connection_id` to the OAuth connection used for this repo. */
+  github_connection_id: z.uuid().nullable().optional(),
   github_token: z.string().nullable().optional(),
   attributes_config: ProjectFieldsConfigSchema.nullable().optional(),
   workflow_config: projectWorkflowConfigSchema.nullable().optional(),
@@ -90,6 +93,37 @@ export const createProjectSchema = baseCreateProjectSchema
   .extend({
     sprint: initialSprintSchema.optional(),
     team: initialProjectTeamSchema.optional(),
+    /** Org AI models to bind on create (bind-by-reference). */
+    integration_bindings: z
+      .array(projectIntegrationBindingItemSchema)
+      .optional(),
+  })
+  .superRefine((data, context) => {
+    if (!data.integration_bindings) {
+      return;
+    }
+    const seen = new Set<string>();
+    for (const [index, binding] of data.integration_bindings.entries()) {
+      if (seen.has(binding.integration_id)) {
+        context.addIssue({
+          code: 'custom',
+          message: 'Duplicate integration_id in bindings.',
+          path: ['integration_bindings', index, 'integration_id'],
+        });
+        return;
+      }
+      seen.add(binding.integration_id);
+    }
+    const defaults = data.integration_bindings.filter(
+      (row) => row.is_default_for_project
+    );
+    if (defaults.length > 1) {
+      context.addIssue({
+        code: 'custom',
+        message: 'At most one binding may be the project default.',
+        path: ['integration_bindings'],
+      });
+    }
   })
   .refine(
     (data) => {
@@ -148,13 +182,13 @@ export const workItemTypeRemovalStrategySchema = z
     if (value.action === 'migrate') {
       if (!value.migrateTo) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: 'custom',
           message: 'migrateTo is required when action is migrate',
           path: ['migrateTo'],
         });
       } else if (value.migrateTo === value.type) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: 'custom',
           message: 'migrateTo must differ from the removed type',
           path: ['migrateTo'],
         });
@@ -441,3 +475,39 @@ export type ListProjectsForActorResponse = {
   userRole: UserRole;
   permissions: ProjectRegistryPermissions;
 };
+
+/**
+ * Unified project integrations read model (Phase F facade).
+ * Source control / PM stay on `*_connections` + `pm_*`/`vc_*`; AI on bindings.
+ */
+export const projectIntegrationsSummarySchema = z.object({
+  project_id: z.uuid(),
+  source_control: z.object({
+    provider: z.literal('github').nullable(),
+    connected: z.boolean(),
+    repo: z.string().nullable(),
+    connection_id: z.uuid().nullable(),
+  }),
+  project_management: z.object({
+    provider: z.literal('jira').nullable(),
+    connected: z.boolean(),
+    project_key: z.string().nullable(),
+    connection_id: z.uuid().nullable(),
+  }),
+  ai_agents: z.object({
+    binding_count: z.number().int().nonnegative(),
+    default_integration_id: z.uuid().nullable(),
+  }),
+});
+
+export type ProjectIntegrationsSummary = z.infer<
+  typeof projectIntegrationsSummarySchema
+>;
+
+export const projectIntegrationsSummaryResponseSchema = z.object({
+  summary: projectIntegrationsSummarySchema,
+});
+
+export type ProjectIntegrationsSummaryResponse = z.infer<
+  typeof projectIntegrationsSummaryResponseSchema
+>;

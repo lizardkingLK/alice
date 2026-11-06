@@ -2,16 +2,23 @@
 
 Status: **Phase 1 complete** — DB-backed workspace integrations, the Settings
 management UI, and the Alice Chat model pool are live. Phase 2 (Slack OAuth,
-Figma/Eraser) remains planned.
+Figma/Eraser) remains planned. **Scoped integrations** (Organization / Project /
+Member preferred model, create wizard, project marketplace) are **shipped** in
+[INTEGRATION_SCOPES.md](./INTEGRATION_SCOPES.md) (A–F facade; member personal
+API key rows deferred).
 
-Managers and admins configure **workspace-wide** AI agents and tool
-integrations from **`/settings?tab=integrations`**. This is separate from
-**project-scoped** integrations (GitHub and Jira on
-`/projects/[id]?tab=integrations`).
+Managers and admins configure **organization-wide** AI agents and tool
+integrations from **`/settings?tab=integrations`** (the shareable **vault**).
+Project wiring (GitHub, Jira, AI binds) lives on
+**`/projects/[id]?tab=integrations`** and on the project **create** wizard.
+Today’s Settings rows are **Organization** scope
+(`integrations.scope`, Phase A) — see
+[INTEGRATION_SCOPES.md](./INTEGRATION_SCOPES.md).
 
 Related:
 
 - Index: [README.md](./README.md)
+- Planned scopes: [INTEGRATION_SCOPES.md](./INTEGRATION_SCOPES.md)
 - Account settings: [features/profile/EDIT_PROFILE.md](../profile/EDIT_PROFILE.md)
 - Alice Chat: [features/chat/AI_CHATBOT.md](../chat/AI_CHATBOT.md)
 - Project GitHub/Jira: [features/projects/GITHUB_INTEGRATION.md](../projects/GITHUB_INTEGRATION.md), [JIRA_INTEGRATION.md](../projects/JIRA_INTEGRATION.md)
@@ -139,14 +146,22 @@ descriptions, filter tabs). **Configured instances** are stored in the
 
 ## UI structure
 
-Settings sidebar adds **Integrations** for managers and admins. Content sections:
+Settings sidebar adds **Integrations** for managers and admins. Marketplace
+filter tabs:
 
-1. **AI & chat** — configurable Gemini, SpaceXAI, OpenAI, and Anthropic cards.
-2. **Workspace & conversations** — Slack (mock).
-3. **Design & diagramming** — Figma, Eraser (mock).
-4. **Coming soon** — grid of suggested integrations with short descriptions.
+1. **All integrations** — full catalog.
+2. **Active** — only cards currently connected in this workspace (live DB
+   status, not catalog metadata).
+3. **AI agents** / **Communication** / **Design & diagramming** /
+   **Productivity** — category filters.
+4. **Coming soon** — catalog rows with `status: planned`.
 
-Card pattern reuses project integration visuals (`Card`, status `Badge`, disabled primary actions with “Coming soon” copy).
+Jira Cloud and GitHub stay on the **project** Integrations tab
+(`/projects/[id]?tab=integrations`); they are not listed in this workspace
+marketplace catalog.
+
+Card pattern reuses project integration visuals (`Card`, status `Badge`,
+disabled primary actions with “Coming soon” copy).
 
 Turning a connected card **switch off** opens the shared
 `RegistryConfirmDialog` (rose warning). Confirming disables every active
@@ -246,6 +261,18 @@ Category values map to Settings filter tabs:
 Validated with Zod discriminated unions in `@repo/types` (`integrations/config.ts`). Secret field names are fixed so the service layer can encrypt/decrypt on write/read.
 
 #### AI agent — chat model (`provider: gemini | spacexai | openai | anthropic`)
+
+**Model id policy (pinned, no auto-cron):**
+
+- Store **dated / explicit** provider model ids in `config.model` (e.g.
+  `claude-haiku-4-5-20251001`), not silent `*-latest` rewrites.
+- Curated suggestions live in `@repo/types` `PROVIDER_CHAT_MODEL_SUGGESTIONS`.
+- When a vendor retires a model: update that catalog via PR, add the old id to
+  `RETIRED_CHAT_MODEL_IDS`, and let Settings warn admins
+  (`resolveConfiguredChatModelStatus`). Do **not** overnight-rewrite workspace
+  rows.
+- Admins can keep a custom pin (warned as “not curated”) or click **Use
+  {recommended}** when the id is known-retired.
 
 ```json
 {
@@ -492,14 +519,18 @@ same transaction. Disabling a row also clears its default flag.
 
 ### Relationship to project integrations
 
-| Scope                  | Storage today                                                 | Future                                                     |
-| ---------------------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
-| GitHub PAT + repo      | `projects.github_*`                                           | Unchanged                                                  |
-| Jira OAuth             | `project_management_connections` (`vendor=jira`) + project FK | Unchanged                                                  |
-| Alice Chat LLMs        | `integrations` (`ai_agent`)                                   | Multi-row model pool (Gemini, SpaceXAI, OpenAI, Anthropic) |
-| Slack / Figma / Eraser | —                                                             | `integrations` (by category)                               |
+| Scope                  | Storage today                                                                  | Product language  |
+| ---------------------- | ------------------------------------------------------------------------------ | ----------------- |
+| GitHub OAuth + repo    | `version_control_connections` + `projects.vc_connection_id` / `vc_external`    | Project-scoped    |
+| Jira OAuth + project   | `project_management_connections` + `projects.pm_connection_id` / `pm_external` | Project-scoped    |
+| Alice Chat LLMs        | `integrations` (`ai_agent`, org) + `project_integration_bindings`              | Org vault + binds |
+| Member preferred model | `member_chat_model_preferences`                                                | Member preferred  |
+| Slack / Figma / Eraser | —                                                                              | Planned org vault |
 
-Do **not** move GitHub/Jira into `integrations` without an explicit migration project — different scope, FKs, and UI surfaces.
+Phase **F** ships a **unified read facade** (`GET /api/projects/:id/integrations-summary`)
+and product-language naming. OAuth rows stay on `*_connections` — do **not** migrate
+GitHub/Jira into `integrations.scope = project` without a dedicated migration project
+(different ownership, FKs, and UI surfaces).
 
 ---
 

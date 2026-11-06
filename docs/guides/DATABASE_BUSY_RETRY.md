@@ -13,7 +13,8 @@ Tracked in [alice#562](https://github.com/lizardkingLK/alice/issues/562).
 
 1. **Pool size** — `PG_POOL_MAX` in `packages/db/src/client.ts` (20).
 2. **Server** — `withBusyRetry` from `@repo/db` around sensitive `$transaction`
-   calls (e.g. project create), with raised `maxWait` / `timeout`.
+   calls (e.g. project create, chat-agent fork / patch / set-default), with
+   raised `maxWait` / `timeout`.
 3. **API contract** — exhausted / detected busy failures return **503** with
    `code: DATABASE_BUSY` and a friendly message.
 4. **Client** — `apiFetch` (browser) wraps requests in `withApiBusyRetry` and

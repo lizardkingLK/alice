@@ -1,6 +1,6 @@
 # Project integrations
 
-Connect GitHub and Jira to a project.
+Connect GitHub and Jira, and bind organization AI chat models to a project.
 
 **Audience:** Managers and admins
 
@@ -11,16 +11,26 @@ Connect GitHub and Jira to a project.
 1. Go to **Projects** and open a project you can access.
 2. Select the **Integrations** tab.
 
-Anyone with project workspace access can view the tab; connecting credentials
-requires appropriate permissions for each integration.
+The tab opens with a short **summary** of source control, project management,
+and AI agent binds, then a Settings-style marketplace: search, category tabs,
+and grouped providers.
+
+**Source control** and **project management** are single-select (**None** or one
+provider). **AI agents** allow multiple organization model binds. Other catalog
+groups show as **Coming soon**.
+
+The **Integrations** tab is available to **managers and admins**. Connecting
+credentials and saving AI binds require those roles.
 
 ---
 
 ## GitHub
 
-Use the **GitHub** card to authorize your GitHub account with OAuth and bind one
-repository (`owner/repo`) to the project. Alice uses that link for pull
-requests, commits, and branch activity on work items.
+On **Source control**, choose **GitHub** (or **None**). Use the **GitHub** card
+to authorize your GitHub account with OAuth and bind one repository
+(`owner/repo`) to the project. Alice uses that link for pull requests, commits,
+and branch activity on work items. After a link is saved, clear it with
+**Disconnect** on the card before **None** stays available.
 
 ### Connect or update
 
@@ -50,7 +60,8 @@ Without a connected account, Alice can only work with **public** repositories.
 
 ## Jira Cloud
 
-Use the **Jira** card to:
+On **Project management**, choose **Jira** (or **None**). Use the **Jira** card
+to:
 
 1. **Connect** with Atlassian OAuth (3LO) as a manager.
 2. Link a Jira site and **project key** to this Alice project.
@@ -64,14 +75,34 @@ connection to link and sync. Only the person who authorized Atlassian can
 
 ---
 
-## Workspace vs project
+## AI agents
 
-| Level         | Where                                   | Examples                  |
-| ------------- | --------------------------------------- | ------------------------- |
-| **Project**   | Project → **Integrations** tab          | GitHub repo, Jira import  |
-| **Workspace** | **Settings** → **Integrations** (admin) | AI providers, Slack mocks |
+Use the **AI agents** card to bind organization chat models (from
+**Settings → Integrations**) to this project for Alice Chat.
 
-Project integrations do not replace workspace-level AI settings on your profile.
+1. Optionally **Import from project** — pick another project you belong to that
+   already has AI binds, then **Import binds** (copies org model references
+   only; API keys are never copied).
+2. Enable one or more models with the checkboxes.
+3. Star one enabled model as the **project default**.
+4. Select **Save AI models**.
+
+Empty selection clears the project pool — chat falls through to organization
+defaults. New API keys are still created only in
+[Workspace integrations](../profile-and-settings/workspace-integrations.md)
+(bind-by-reference; keys are not copied onto the project).
+
+---
+
+## Organization vs project
+
+| Level            | Where                                           | Examples                                 |
+| ---------------- | ----------------------------------------------- | ---------------------------------------- |
+| **Project**      | Project → **Integrations** tab                  | GitHub repo, Jira import, AI model binds |
+| **Organization** | **Settings** → **Integrations** (manager/admin) | AI providers (vault), Slack (planned)    |
+
+Organization providers are **bound**, not copied into project scope. See
+[INTEGRATION_SCOPES.md](../../features/integrations/INTEGRATION_SCOPES.md).
 
 ---
 

@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader } from '@repo/ui/components/ui/card';
 import { Input } from '@repo/ui/components/ui/input';
 import { Switch } from '@repo/ui/components/ui/switch';
 import { Tabs, TabsList, TabsTrigger } from '@repo/ui/components/ui/tabs';
-import { Plus, Search } from '@repo/ui/lib/icons';
+import { Search } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import {
   INTEGRATION_FILTER_TABS,
@@ -149,14 +149,25 @@ export function SettingsIntegrationsView({
     }
   }, [autoOpenPopup, autoOpenIntegration]);
 
+  const connectedCatalogIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const item of WORKSPACE_INTEGRATIONS) {
+      if (isCatalogConnected(item.id, initialIntegrations)) {
+        ids.add(item.id);
+      }
+    }
+    return ids;
+  }, [initialIntegrations]);
+
   const filteredIntegrations = useMemo(
     () =>
       filterWorkspaceIntegrations(
         WORKSPACE_INTEGRATIONS,
         activeFilter,
-        searchQuery
+        searchQuery,
+        { connectedCatalogIds }
       ),
-    [activeFilter, searchQuery]
+    [activeFilter, searchQuery, connectedCatalogIds]
   );
 
   const disconnectCopy = useMemo(
@@ -233,14 +244,23 @@ export function SettingsIntegrationsView({
             </h1>
             <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
               Supercharge your workflow and connect the tools your team uses
-              every day. Project-level GitHub and Jira stay on each
-              project&apos;s Integrations tab.
+              every day.
             </p>
           </div>
-          <Button type="button" variant="outline" disabled className="shrink-0">
-            <Plus className="size-4" data-icon="inline-start" />
-            Custom integration
-          </Button>
+          <div className="relative w-full shrink-0 sm:max-w-xs">
+            <Search
+              className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+              aria-hidden="true"
+            />
+            <Input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search"
+              className="pl-9"
+              aria-label="Search integrations"
+            />
+          </div>
         </div>
 
         {listError ? (
@@ -255,43 +275,25 @@ export function SettingsIntegrationsView({
             setActiveFilter(value as IntegrationFilterTab)
           }
         >
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <TabsList className="h-auto w-full justify-start gap-4 overflow-x-auto rounded-none border-0 bg-transparent p-0 lg:w-auto">
-              {INTEGRATION_FILTER_TABS.map((tab) => (
-                <TabsTrigger
-                  key={tab.id}
-                  value={tab.id}
-                  className={cn(
-                    FILTER_TAB_TRIGGER_CLASS,
-                    'shrink-0 cursor-pointer'
-                  )}
-                >
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            <div className="relative w-full lg:max-w-xs">
-              <Search
-                className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-                aria-hidden="true"
-              />
-              <Input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search"
-                className="pl-9"
-                aria-label="Search integrations"
-              />
-            </div>
-          </div>
+          <TabsList className="h-auto w-full flex-wrap justify-start gap-x-4 gap-y-1 rounded-none border-0 bg-transparent p-0">
+            {INTEGRATION_FILTER_TABS.map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className={cn(FILTER_TAB_TRIGGER_CLASS, 'cursor-pointer')}
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
         </Tabs>
 
         {filteredIntegrations.length === 0 ? (
           <div className="border-border rounded-lg border border-dashed px-6 py-12 text-center">
             <p className="text-muted-foreground text-sm">
-              No integrations match your search in this category.
+              {activeFilter === 'active'
+                ? 'No active integrations yet. Connect a provider from All integrations or a category tab.'
+                : 'No integrations match your search in this category.'}
             </p>
           </div>
         ) : (

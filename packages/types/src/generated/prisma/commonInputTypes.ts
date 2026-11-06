@@ -759,6 +759,13 @@ export type EnumIntegrationCategoryFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumIntegrationCategoryFilter<$PrismaModel> | $Enums.IntegrationCategory
 }
 
+export type EnumIntegrationScopeFilter<$PrismaModel = never> = {
+  equals?: $Enums.IntegrationScope | Prisma.EnumIntegrationScopeFieldRefInput<$PrismaModel>
+  in?: $Enums.IntegrationScope[] | Prisma.ListEnumIntegrationScopeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.IntegrationScope[] | Prisma.ListEnumIntegrationScopeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumIntegrationScopeFilter<$PrismaModel> | $Enums.IntegrationScope
+}
+
 export type EnumIntegrationStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.IntegrationStatus | Prisma.EnumIntegrationStatusFieldRefInput<$PrismaModel>
   in?: $Enums.IntegrationStatus[] | Prisma.ListEnumIntegrationStatusFieldRefInput<$PrismaModel>
@@ -774,6 +781,16 @@ export type EnumIntegrationCategoryWithAggregatesFilter<$PrismaModel = never> = 
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumIntegrationCategoryFilter<$PrismaModel>
   _max?: Prisma.NestedEnumIntegrationCategoryFilter<$PrismaModel>
+}
+
+export type EnumIntegrationScopeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.IntegrationScope | Prisma.EnumIntegrationScopeFieldRefInput<$PrismaModel>
+  in?: $Enums.IntegrationScope[] | Prisma.ListEnumIntegrationScopeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.IntegrationScope[] | Prisma.ListEnumIntegrationScopeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumIntegrationScopeWithAggregatesFilter<$PrismaModel> | $Enums.IntegrationScope
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumIntegrationScopeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumIntegrationScopeFilter<$PrismaModel>
 }
 
 export type EnumIntegrationStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -1464,6 +1481,13 @@ export type NestedEnumIntegrationCategoryFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumIntegrationCategoryFilter<$PrismaModel> | $Enums.IntegrationCategory
 }
 
+export type NestedEnumIntegrationScopeFilter<$PrismaModel = never> = {
+  equals?: $Enums.IntegrationScope | Prisma.EnumIntegrationScopeFieldRefInput<$PrismaModel>
+  in?: $Enums.IntegrationScope[] | Prisma.ListEnumIntegrationScopeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.IntegrationScope[] | Prisma.ListEnumIntegrationScopeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumIntegrationScopeFilter<$PrismaModel> | $Enums.IntegrationScope
+}
+
 export type NestedEnumIntegrationStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.IntegrationStatus | Prisma.EnumIntegrationStatusFieldRefInput<$PrismaModel>
   in?: $Enums.IntegrationStatus[] | Prisma.ListEnumIntegrationStatusFieldRefInput<$PrismaModel>
@@ -1479,6 +1503,16 @@ export type NestedEnumIntegrationCategoryWithAggregatesFilter<$PrismaModel = nev
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumIntegrationCategoryFilter<$PrismaModel>
   _max?: Prisma.NestedEnumIntegrationCategoryFilter<$PrismaModel>
+}
+
+export type NestedEnumIntegrationScopeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.IntegrationScope | Prisma.EnumIntegrationScopeFieldRefInput<$PrismaModel>
+  in?: $Enums.IntegrationScope[] | Prisma.ListEnumIntegrationScopeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.IntegrationScope[] | Prisma.ListEnumIntegrationScopeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumIntegrationScopeWithAggregatesFilter<$PrismaModel> | $Enums.IntegrationScope
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumIntegrationScopeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumIntegrationScopeFilter<$PrismaModel>
 }
 
 export type NestedEnumIntegrationStatusWithAggregatesFilter<$PrismaModel = never> = {

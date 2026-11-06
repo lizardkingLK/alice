@@ -155,6 +155,14 @@ enum IntegrationStatus {
   draft
 }
 
+/// Who owns the integration row. Phase A: all rows are organization.
+/// Project/member scopes land with bindings UI later — see INTEGRATION_SCOPES.md.
+enum IntegrationScope {
+  organization
+  project
+  member
+}
+
 /// App profile + RBAC. `id` matches Supabase `auth.users.id` (set on invite, no DB default).
 model users {
   id              String       @id @db.Uuid
@@ -234,6 +242,10 @@ model users {
   version_control_connections    version_control_connections[]
   created_integrations    integrations[]      @relation("IntegrationCreatedBy")
   updated_integrations    integrations[]      @relation("IntegrationUpdatedBy")
+  created_project_integration_bindings project_integration_bindings[] @relation("ProjectIntegrationBindingCreatedBy")
+  updated_project_integration_bindings project_integration_bindings[] @relation("ProjectIntegrationBindingUpdatedBy")
+  chat_model_preference   member_chat_model_preferences?
+  updated_member_chat_model_preferences member_chat_model_preferences[] @relation("MemberChatModelPreferenceUpdatedBy")
 }
 
 model projects {
@@ -277,6 +289,7 @@ model projects {
   chart_hierarchy_rollups work_item_chart_hierarchy_rollups[]
   burndown_rollups        sprint_burndown_rollups[]
   saved_views             saved_views[]
+  integration_bindings    project_integration_bindings[]
 }
 
 model project_members {
@@ -990,6 +1003,8 @@ model integrations {
   /// Static catalog id, e.g. "alice-gemini", "openai", "slack".
   catalog_id String
   category   IntegrationCategory
+  /// organization (default) | project | member — see INTEGRATION_SCOPES.md.
+  scope      IntegrationScope    @default(organization)
   /// Provider slug for strategy dispatch: gemini, openai, anthropic, slack, …
   provider   String
   /// Admin-facing label, e.g. "Gemini 3.6", "GPT-4o (production)".
@@ -1007,9 +1022,50 @@ model integrations {
 
   created_by_user users? @relation("IntegrationCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users? @relation("IntegrationUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  project_bindings project_integration_bindings[]
+  member_preferences member_chat_model_preferences[]
 
   @@index([category, status])
   @@index([catalog_id])
   @@index([provider, status])
+  @@index([scope, status])
+}
+
+/// Per-user preferred org chat model (bind-by-reference). Null id ⇒ workspace default.
+/// See docs/features/integrations/INTEGRATION_SCOPES.md (Phase E).
+model member_chat_model_preferences {
+  user_id                String   @id @db.Uuid
+  default_integration_id String?  @db.Uuid
+  updated_by             String?  @db.Uuid
+  updated_at             DateTime @updatedAt @db.Timestamptz(6)
+
+  user         users         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  integration  integrations? @relation(fields: [default_integration_id], references: [id], onDelete: SetNull)
+  updated_by_user users?     @relation("MemberChatModelPreferenceUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+
+  @@index([default_integration_id])
+}
+
+/// Project enablement of an organization (or project-scoped) integration.
+/// Empty for a project ⇒ Alice Chat falls through to organization defaults.
+/// See docs/features/integrations/INTEGRATION_SCOPES.md (Phase B).
+model project_integration_bindings {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id             String   @db.Uuid
+  integration_id         String   @db.Uuid
+  is_default_for_project Boolean  @default(false)
+  created_by             String?  @db.Uuid
+  created_at             DateTime @default(now()) @db.Timestamptz(6)
+  updated_by             String?  @db.Uuid
+  updated_at             DateTime @updatedAt @db.Timestamptz(6)
+
+  project         projects     @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  integration     integrations @relation(fields: [integration_id], references: [id], onDelete: Cascade)
+  created_by_user users?       @relation("ProjectIntegrationBindingCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users?       @relation("ProjectIntegrationBindingUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+
+  @@unique([project_id, integration_id])
+  @@index([project_id])
+  @@index([integration_id])
 }
 

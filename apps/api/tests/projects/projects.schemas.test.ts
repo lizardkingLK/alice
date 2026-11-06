@@ -404,5 +404,25 @@ describe('projects schemas', () => {
         );
       }
     });
+
+    it('accepts github_connection_id on update', () => {
+      const parsed = updateProjectSchema.safeParse({
+        github_repo: 'acme/alice',
+        github_connection_id: '11111111-1111-4111-8111-111111111111',
+        expectedUpdatedAt: '2026-08-25T12:00:00.000Z',
+      });
+      expect(parsed.success).toBe(true);
+    });
+  });
+
+  describe('createProjectSchema github_connection_id', () => {
+    it('accepts optional github_connection_id with a repo', () => {
+      const parsed = createProjectSchema.safeParse({
+        ...validCreateInput,
+        github_repo: 'acme/alice',
+        github_connection_id: '11111111-1111-4111-8111-111111111111',
+      });
+      expect(parsed.success).toBe(true);
+    });
   });
 });

@@ -8,10 +8,18 @@ export type ChatModelOptionsResponse = {
 };
 
 export function pickDefaultChatIntegrationId(
-  models: readonly ChatModelOption[]
+  models: readonly ChatModelOption[],
+  preferredIntegrationId?: string | null
 ): string | undefined {
   if (models.length === 0) {
     return undefined;
+  }
+
+  if (
+    preferredIntegrationId &&
+    models.some((model) => model.id === preferredIntegrationId)
+  ) {
+    return preferredIntegrationId;
   }
 
   const first = models[0];
@@ -25,12 +33,13 @@ export function pickDefaultChatIntegrationId(
 
 export function resolveSelectedChatIntegrationId(
   models: readonly ChatModelOption[],
-  current: string | undefined
+  current: string | undefined,
+  preferredIntegrationId?: string | null
 ): string | undefined {
   if (current && models.some((model) => model.id === current)) {
     return current;
   }
-  return pickDefaultChatIntegrationId(models);
+  return pickDefaultChatIntegrationId(models, preferredIntegrationId);
 }
 
 export function chatModelDisplayLabel(model: ChatModelOption): string {

@@ -13,6 +13,9 @@ import {
   normalizeProjectWorkItemTypeDefs,
   resolveProjectTypeKeys,
   type ProjectWorkItemTypeDef,
+  type ProjectIntegrationsSummary,
+  withGithubProjectDtoFields,
+  withJiraProjectDtoFields,
   type ProjectWorkflowConfig,
   type WorkItemTypeRemovalApplyResult,
   type WorkflowConfigEnvelope,
@@ -42,11 +45,12 @@ import {
   type WorkflowStateRemap,
 } from '@repo/types';
 import {
+  IntegrationCategory,
+  IntegrationScope,
+  IntegrationStatus,
   NotificationType as NotificationTypeEnum,
   Prisma,
   type ProjectStatus,
-  type IntegrationStatus,
-  type UserRole,
 } from '@repo/types/prisma';
 import { randomUUID } from 'node:crypto';
 import { withBusyRetry } from '@repo/db';
@@ -84,6 +88,30 @@ async function requireProjectManager(actorId: string) {
     [UserRoleEnum.admin, UserRoleEnum.manager],
     'Unauthorized. Only admins and managers can manage projects.'
   );
+}
+
+async function assertActiveOrgAiBindings(
+  bindings: CreateProjectInput['integration_bindings']
+): Promise<void> {
+  if (!bindings || bindings.length === 0) {
+    return;
+  }
+
+  const ids = bindings.map((row) => row.integration_id);
+  const activeOrgModels = await prisma.integrations.findMany({
+    where: {
+      id: { in: ids },
+      category: IntegrationCategory.ai_agent,
+      scope: IntegrationScope.organization,
+      status: IntegrationStatus.active,
+    },
+    select: { id: true },
+  });
+  if (activeOrgModels.length !== ids.length) {
+    throw new Error(
+      'One or more integrations are not active organization AI models'
+    );
+  }
 }
 
 function promoteWorkflowToDefaultOrThrow(
@@ -164,6 +192,56 @@ function prepareGithubTokenForPersist(
   const rest = { ...input };
   delete rest.github_token;
   return rest;
+}
+
+function assertSingleGithubRepoOrThrow(githubRepo: string): void {
+  const repo = githubRepo.trim();
+  const parts = repo.split('/');
+  if (
+    parts.length !== 2 ||
+    !parts[0] ||
+    !parts[1] ||
+    repo.includes(',') ||
+    repo.includes(' ')
+  ) {
+    throw new Error('Only one GitHub repository is allowed per project.');
+  }
+}
+
+async function assertActorCanChangeLinkedGithubRepo(
+  actorId: string,
+  previous: Pick<ProjectRow, 'github_repo' | 'github_connection_id'> | null,
+  nextGithubRepo: string | null | undefined
+): Promise<void> {
+  if (
+    !previous?.github_repo ||
+    nextGithubRepo === undefined ||
+    nextGithubRepo === previous.github_repo
+  ) {
+    return;
+  }
+
+  const connectionId = previous.github_connection_id;
+  if (!connectionId) {
+    return;
+  }
+
+  const linkedConnection = await prisma.version_control_connections.findFirst({
+    where: { id: connectionId },
+    select: {
+      user_id: true,
+      user: { select: { role: true } },
+    },
+  });
+
+  if (
+    linkedConnection?.user?.role === UserRoleEnum.admin &&
+    linkedConnection.user_id !== actorId
+  ) {
+    throw new Error(
+      'This project’s GitHub connection was established by an administrator and can only be modified or disconnected by that administrator.'
+    );
+  }
 }
 
 type ProjectImageField = 'logo_url' | 'cover_picture';
@@ -260,6 +338,58 @@ export class ProjectsService {
       throw new Error('Unauthorized project workspace access.');
     }
     return await this.projectsRepository.getDetailById(projectId);
+  }
+
+  /**
+   * Unified read model for project Integrations (SC / PM / AI) without moving
+   * OAuth rows into `integrations` (Phase F facade).
+   */
+  async getProjectIntegrationsSummary(
+    projectId: string,
+    actorId: string
+  ): Promise<ProjectIntegrationsSummary> {
+    const project = await this.getProjectDetail(projectId, actorId);
+    if (!project) {
+      throw new Error('Project not found');
+    }
+
+    const bindings = await prisma.project_integration_bindings.findMany({
+      where: {
+        project_id: projectId,
+        integration: {
+          category: IntegrationCategory.ai_agent,
+          status: IntegrationStatus.active,
+        },
+      },
+      select: {
+        integration_id: true,
+        is_default_for_project: true,
+      },
+      orderBy: [{ is_default_for_project: 'desc' }, { created_at: 'asc' }],
+    });
+
+    const projectDefault = bindings.find((row) => row.is_default_for_project);
+    const wire = withGithubProjectDtoFields(withJiraProjectDtoFields(project));
+
+    return {
+      project_id: projectId,
+      source_control: {
+        provider: wire.github_repo ? 'github' : null,
+        connected: Boolean(wire.github_connection_id || wire.github_repo),
+        repo: wire.github_repo,
+        connection_id: wire.github_connection_id,
+      },
+      project_management: {
+        provider: wire.jira_project_key ? 'jira' : null,
+        connected: Boolean(wire.jira_connection_id || wire.jira_project_key),
+        project_key: wire.jira_project_key,
+        connection_id: wire.jira_connection_id,
+      },
+      ai_agents: {
+        binding_count: bindings.length,
+        default_integration_id: projectDefault?.integration_id ?? null,
+      },
+    };
   }
 
   async listProjectMembersPrisma(
@@ -449,6 +579,8 @@ export class ProjectsService {
       }
     }
 
+    await assertActiveOrgAiBindings(input.integration_bindings);
+
     const team = input.team;
 
     if (team) {
@@ -628,17 +760,7 @@ export class ProjectsService {
     await requireProjectManager(actorId);
 
     if (input.github_repo !== undefined && input.github_repo !== null) {
-      const repo = input.github_repo.trim();
-      const parts = repo.split('/');
-      if (
-        parts.length !== 2 ||
-        !parts[0] ||
-        !parts[1] ||
-        repo.includes(',') ||
-        repo.includes(' ')
-      ) {
-        throw new Error('Only one GitHub repository is allowed per project.');
-      }
+      assertSingleGithubRepoOrThrow(input.github_repo);
     }
 
     if (input.key) {
@@ -660,28 +782,11 @@ export class ProjectsService {
 
     const previous = await this.projectsRepository.findById(projectId);
 
-    if (
-      previous?.github_repo &&
-      input.github_repo !== undefined &&
-      input.github_repo !== previous.github_repo
-    ) {
-      const activeAdminConn = await prisma.integrations.findFirst({
-        where: {
-          provider: 'github',
-          status: 'active' as IntegrationStatus,
-          created_by_user: {
-            role: 'admin' as UserRole,
-          },
-        },
-        select: { created_by: true },
-      });
-
-      if (activeAdminConn && activeAdminConn.created_by !== actorId) {
-        throw new Error(
-          'This project’s GitHub connection was established by an administrator and can only be modified or disconnected by that administrator.'
-        );
-      }
-    }
+    await assertActorCanChangeLinkedGithubRepo(
+      actorId,
+      previous,
+      input.github_repo
+    );
 
     const removalResult = await this.handleWorkItemTypeMigrationIfNeeded(
       projectId,

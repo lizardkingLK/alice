@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearProjectCreationDraft,
+  migrateV2DraftStep,
   PROJECT_CREATION_DRAFT_VERSION,
   projectCreationDraftStorageKey,
   readProjectCreationDraft,
@@ -9,10 +10,12 @@ import {
   type ProjectCreationDraft,
 } from '@/app/projects/_helpers/project-creation-draft-storage';
 
-function createDraft(): ProjectCreationDraft {
+function createDraft(
+  overrides: Partial<ProjectCreationDraft> = {}
+): ProjectCreationDraft {
   return {
     version: PROJECT_CREATION_DRAFT_VERSION,
-    currentStep: 4,
+    currentStep: 3,
     basicInfo: {
       name: 'Draft Project',
       key: 'DRAFT',
@@ -33,6 +36,10 @@ function createDraft(): ProjectCreationDraft {
       githubOwner: 'alice-org',
       githubRepoName: 'alice-web',
     },
+    integrations: {
+      aiBindingIds: [],
+      defaultAiIntegrationId: null,
+    },
     sprint: {
       createInitialSprint: true,
       sprintName: 'Sprint 1',
@@ -48,6 +55,7 @@ function createDraft(): ProjectCreationDraft {
       teamTechStack: 'TypeScript',
       teamMemberIds: ['user-member'],
     },
+    ...overrides,
   };
 }
 
@@ -65,15 +73,14 @@ describe('project creation draft storage', () => {
 
   it('uses versioned user-specific keys and isolates users', () => {
     const userOneDraft = createDraft();
-    const userTwoDraft = {
-      ...createDraft(),
+    const userTwoDraft = createDraft({
       basicInfo: { ...createDraft().basicInfo, name: 'User Two Draft' },
-    };
+    });
     const userOneKey = projectCreationDraftStorageKey('user-1');
     const userTwoKey = projectCreationDraftStorageKey('user-2');
 
-    expect(userOneKey).toBe('alice:project-creation-draft:v2:user-1');
-    expect(userTwoKey).toBe('alice:project-creation-draft:v2:user-2');
+    expect(userOneKey).toBe('alice:project-creation-draft:v3:user-1');
+    expect(userTwoKey).toBe('alice:project-creation-draft:v3:user-2');
     expect(saveProjectCreationDraft('user-1', userOneDraft)).toBe(true);
     expect(readProjectCreationDraft('user-2')).toBeNull();
 
@@ -120,24 +127,96 @@ describe('project creation draft storage', () => {
     expect(readProjectCreationDraft('user-1')).toBeNull();
   });
 
-  it.each([0, 7, -1, 2.5])('rejects unsupported wizard step %s', (step) => {
+  it.each([0, 6, 7, -1, 2.5])('rejects unsupported wizard step %s', (step) => {
     const invalidDraft = { ...createDraft(), currentStep: step };
 
     expect(validateProjectCreationDraft(invalidDraft)).toBeNull();
   });
 
-  it('migrates legacy v1 drafts by inserting the Types step', () => {
+  it.each([
+    [1, 1],
+    [2, 2],
+    [3, 3],
+    [4, 3],
+    [5, 4],
+    [6, 5],
+  ] as const)('maps v2 step %i to v3 step %i', (from, to) => {
+    expect(migrateV2DraftStep(from)).toBe(to);
+  });
+
+  it('migrates legacy v1 drafts through Types insert and Integrations merge', () => {
     const legacyDraft = {
-      ...createDraft(),
       version: 1 as const,
       currentStep: 4 as const,
+      basicInfo: createDraft().basicInfo,
+      imports: createDraft().imports,
+      sourceControl: createDraft().sourceControl,
+      sprint: createDraft().sprint,
+      team: createDraft().team,
     };
 
+    // v1 step 4 (Sprint) → v2 step 5 → v3 step 4
     expect(validateProjectCreationDraft(legacyDraft)).toEqual({
       ...createDraft(),
-      version: 2,
-      currentStep: 5,
+      version: 3,
+      currentStep: 4,
+      integrations: {
+        aiBindingIds: [],
+        defaultAiIntegrationId: null,
+      },
     });
+  });
+
+  it('migrates v2 drafts by collapsing Imports+Source and adding empty AI bindings', () => {
+    const v2Draft = {
+      version: 2 as const,
+      currentStep: 6 as const,
+      basicInfo: createDraft().basicInfo,
+      imports: createDraft().imports,
+      sourceControl: createDraft().sourceControl,
+      sprint: createDraft().sprint,
+      team: createDraft().team,
+    };
+
+    expect(validateProjectCreationDraft(v2Draft)).toEqual({
+      ...createDraft(),
+      version: 3,
+      currentStep: 5,
+      integrations: {
+        aiBindingIds: [],
+        defaultAiIntegrationId: null,
+      },
+    });
+  });
+
+  it('migrates a stored v2 draft key into the v3 key on read', () => {
+    const v2Draft = {
+      version: 2 as const,
+      currentStep: 4 as const,
+      basicInfo: createDraft().basicInfo,
+      imports: createDraft().imports,
+      sourceControl: createDraft().sourceControl,
+      sprint: createDraft().sprint,
+      team: createDraft().team,
+    };
+    localStorage.setItem(
+      'alice:project-creation-draft:v2:user-1',
+      JSON.stringify(v2Draft)
+    );
+
+    const migrated = readProjectCreationDraft('user-1');
+    expect(migrated?.version).toBe(3);
+    expect(migrated?.currentStep).toBe(3);
+    expect(migrated?.integrations).toEqual({
+      aiBindingIds: [],
+      defaultAiIntegrationId: null,
+    });
+    expect(
+      localStorage.getItem('alice:project-creation-draft:v2:user-1')
+    ).toBeNull();
+    expect(
+      localStorage.getItem(projectCreationDraftStorageKey('user-1'))
+    ).not.toBeNull();
   });
 
   it.each([

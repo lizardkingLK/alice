@@ -177,6 +177,31 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
   );
 
   projectsRouter.get(
+    '/:id/integrations-summary',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.id);
+      if (!parsedId.success) {
+        return res.status(400).json({ error: 'Invalid project id' });
+      }
+
+      try {
+        const summary = await projectsService.getProjectIntegrationsSummary(
+          parsedId.data,
+          req.userId!
+        );
+        res.json({ summary });
+      } catch (error) {
+        const { status, error: message } = jsonErrorFromCaught(
+          error,
+          'Failed to load project integrations summary'
+        );
+        res.status(status).json({ error: message });
+      }
+    }
+  );
+
+  projectsRouter.get(
     '/:id/workflow-config',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {

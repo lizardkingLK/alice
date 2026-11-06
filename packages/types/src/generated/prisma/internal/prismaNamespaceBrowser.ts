@@ -83,7 +83,9 @@ export const ModelName = {
   charts: 'charts',
   chart_shares: 'chart_shares',
   version_control_pull_requests: 'version_control_pull_requests',
-  integrations: 'integrations'
+  integrations: 'integrations',
+  member_chat_model_preferences: 'member_chat_model_preferences',
+  project_integration_bindings: 'project_integration_bindings'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -665,6 +667,7 @@ export const IntegrationsScalarFieldEnum = {
   id: 'id',
   catalog_id: 'catalog_id',
   category: 'category',
+  scope: 'scope',
   provider: 'provider',
   name: 'name',
   status: 'status',
@@ -678,6 +681,30 @@ export const IntegrationsScalarFieldEnum = {
 } as const
 
 export type IntegrationsScalarFieldEnum = (typeof IntegrationsScalarFieldEnum)[keyof typeof IntegrationsScalarFieldEnum]
+
+
+export const Member_chat_model_preferencesScalarFieldEnum = {
+  user_id: 'user_id',
+  default_integration_id: 'default_integration_id',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type Member_chat_model_preferencesScalarFieldEnum = (typeof Member_chat_model_preferencesScalarFieldEnum)[keyof typeof Member_chat_model_preferencesScalarFieldEnum]
+
+
+export const Project_integration_bindingsScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  integration_id: 'integration_id',
+  is_default_for_project: 'is_default_for_project',
+  created_by: 'created_by',
+  created_at: 'created_at',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type Project_integration_bindingsScalarFieldEnum = (typeof Project_integration_bindingsScalarFieldEnum)[keyof typeof Project_integration_bindingsScalarFieldEnum]
 
 
 export const SortOrder = {

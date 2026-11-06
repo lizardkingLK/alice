@@ -151,6 +151,19 @@ describe('ChatAttachmentsRepository', () => {
       expect(session.upload.path).toContain('chat-attachments/user-uuid-1/');
     });
 
+    it('rejects image upload sessions before minting a signed URL', async () => {
+      await expect(
+        repository.createUploadSession({
+          userId: 'user-uuid-1',
+          fileName: 'board.png',
+          contentType: 'image/png',
+          fileSize: 2048,
+        })
+      ).rejects.toThrow(
+        'Only JSON (.json) and CSV (.csv) files are supported for work-item import.'
+      );
+    });
+
     it('finalizes an upload session and returns ChatAttachmentWire', async () => {
       const mockRecord = {
         id: 'attachment-uuid-1',

@@ -5,11 +5,13 @@ import {
   setLocalStorageJson,
 } from '@/lib/local-storage';
 
-export const PROJECT_CREATION_DRAFT_VERSION = 2 as const;
-const LEGACY_DRAFT_VERSION = 1 as const;
+export const PROJECT_CREATION_DRAFT_VERSION = 3 as const;
+const PREVIOUS_DRAFT_VERSION = 2 as const;
+const V1_DRAFT_VERSION = 1 as const;
 
 const STORAGE_PREFIX = `alice:project-creation-draft:v${PROJECT_CREATION_DRAFT_VERSION}:`;
-const LEGACY_STORAGE_PREFIX = `alice:project-creation-draft:v${LEGACY_DRAFT_VERSION}:`;
+const PREVIOUS_STORAGE_PREFIX = `alice:project-creation-draft:v${PREVIOUS_DRAFT_VERSION}:`;
+const V1_STORAGE_PREFIX = `alice:project-creation-draft:v${V1_DRAFT_VERSION}:`;
 const DATE_INPUT_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 function isValidDateInput(value: string): boolean {
@@ -34,8 +36,12 @@ const wizardStepSchema = z.union([
   z.literal(3),
   z.literal(4),
   z.literal(5),
-  z.literal(6),
 ]);
+
+const emptyIntegrations = {
+  aiBindingIds: [] as string[],
+  defaultAiIntegrationId: null as string | null,
+};
 
 const draftBodySchema = z.object({
   currentStep: wizardStepSchema,
@@ -59,6 +65,10 @@ const draftBodySchema = z.object({
     githubOwner: z.string(),
     githubRepoName: z.string(),
   }),
+  integrations: z.object({
+    aiBindingIds: z.array(z.string()),
+    defaultAiIntegrationId: z.string().nullable(),
+  }),
   sprint: z.object({
     createInitialSprint: z.boolean(),
     sprintName: z.string(),
@@ -80,8 +90,27 @@ const projectCreationDraftSchema = draftBodySchema.extend({
   version: z.literal(PROJECT_CREATION_DRAFT_VERSION),
 });
 
-const legacyDraftSchema = draftBodySchema.omit({ currentStep: true }).extend({
-  version: z.literal(LEGACY_DRAFT_VERSION),
+const draftBodyWithoutIntegrationsSchema = draftBodySchema.omit({
+  currentStep: true,
+  integrations: true,
+});
+
+/** v2: Details, Types, Imports, Source, Sprint, Team (1–6); no AI bindings. */
+const v2DraftSchema = draftBodyWithoutIntegrationsSchema.extend({
+  version: z.literal(PREVIOUS_DRAFT_VERSION),
+  currentStep: z.union([
+    z.literal(1),
+    z.literal(2),
+    z.literal(3),
+    z.literal(4),
+    z.literal(5),
+    z.literal(6),
+  ]),
+});
+
+/** v1: Details(+types), Imports, Source, Sprint, Team (1–5). */
+const v1DraftSchema = draftBodyWithoutIntegrationsSchema.extend({
+  version: z.literal(V1_DRAFT_VERSION),
   currentStep: z.union([
     z.literal(1),
     z.literal(2),
@@ -113,8 +142,12 @@ export function projectCreationDraftStorageKey(userId: string): string {
   return `${STORAGE_PREFIX}${userId}`;
 }
 
-function legacyProjectCreationDraftStorageKey(userId: string): string {
-  return `${LEGACY_STORAGE_PREFIX}${userId}`;
+function previousProjectCreationDraftStorageKey(userId: string): string {
+  return `${PREVIOUS_STORAGE_PREFIX}${userId}`;
+}
+
+function v1ProjectCreationDraftStorageKey(userId: string): string {
+  return `${V1_STORAGE_PREFIX}${userId}`;
 }
 
 function resolveStorageKey(
@@ -125,20 +158,48 @@ function resolveStorageKey(
 }
 
 /** v1 steps: Details(+types), Imports, Source, Sprint, Team → insert Types at 2. */
-function migrateLegacyDraftStep(
-  step: 1 | 2 | 3 | 4 | 5
-): 1 | 2 | 3 | 4 | 5 | 6 {
+function migrateV1DraftStep(step: 1 | 2 | 3 | 4 | 5): 1 | 2 | 3 | 4 | 5 | 6 {
   return step === 1 ? 1 : ((step + 1) as 2 | 3 | 4 | 5 | 6);
 }
 
-function migrateLegacyDraft(
-  draft: z.infer<typeof legacyDraftSchema>
+/**
+ * v2 → v3: merge Imports (3) + Source (4) into Integrations (3);
+ * Sprint 5→4, Team 6→5.
+ */
+export function migrateV2DraftStep(
+  step: 1 | 2 | 3 | 4 | 5 | 6
+): 1 | 2 | 3 | 4 | 5 {
+  if (step === 1 || step === 2) {
+    return step;
+  }
+  if (step === 3 || step === 4) {
+    return 3;
+  }
+  if (step === 5) {
+    return 4;
+  }
+  return 5;
+}
+
+function migrateV2Draft(
+  draft: z.infer<typeof v2DraftSchema>
 ): ProjectCreationDraft {
   return {
     ...draft,
     version: PROJECT_CREATION_DRAFT_VERSION,
-    currentStep: migrateLegacyDraftStep(draft.currentStep),
+    currentStep: migrateV2DraftStep(draft.currentStep),
+    integrations: { ...emptyIntegrations },
   };
+}
+
+function migrateV1Draft(
+  draft: z.infer<typeof v1DraftSchema>
+): ProjectCreationDraft {
+  return migrateV2Draft({
+    ...draft,
+    version: PREVIOUS_DRAFT_VERSION,
+    currentStep: migrateV1DraftStep(draft.currentStep),
+  });
 }
 
 /** Validate and sanitize unknown stored data. */
@@ -150,11 +211,17 @@ export function validateProjectCreationDraft(
     return parsed.data;
   }
 
-  const legacy = legacyDraftSchema.safeParse(value);
-  if (!legacy.success) {
-    return null;
+  const v2 = v2DraftSchema.safeParse(value);
+  if (v2.success) {
+    return migrateV2Draft(v2.data);
   }
-  return migrateLegacyDraft(legacy.data);
+
+  const v1 = v1DraftSchema.safeParse(value);
+  if (v1.success) {
+    return migrateV1Draft(v1.data);
+  }
+
+  return null;
 }
 
 export function saveProjectCreationDraft(
@@ -190,14 +257,25 @@ export function readProjectCreationDraft(
     return validatedDraft;
   }
 
-  const legacyKey = legacyProjectCreationDraftStorageKey(userId);
-  const legacyStored = getLocalStorageJson<unknown>(legacyKey);
-  if (legacyStored === null) {
+  const previousKey = previousProjectCreationDraftStorageKey(userId);
+  const previousStored = getLocalStorageJson<unknown>(previousKey);
+  if (previousStored !== null) {
+    const migrated = validateProjectCreationDraft(previousStored);
+    removeLocalStorageItem(previousKey);
+    if (migrated) {
+      setLocalStorageJson(storageKey, migrated);
+    }
+    return migrated;
+  }
+
+  const v1Key = v1ProjectCreationDraftStorageKey(userId);
+  const v1Stored = getLocalStorageJson<unknown>(v1Key);
+  if (v1Stored === null) {
     return null;
   }
 
-  const migrated = validateProjectCreationDraft(legacyStored);
-  removeLocalStorageItem(legacyKey);
+  const migrated = validateProjectCreationDraft(v1Stored);
+  removeLocalStorageItem(v1Key);
   if (migrated) {
     setLocalStorageJson(storageKey, migrated);
   }
@@ -214,8 +292,11 @@ export function clearProjectCreationDraft(
   const clearedCurrent = removeLocalStorageItem(
     projectCreationDraftStorageKey(userId)
   );
-  const clearedLegacy = removeLocalStorageItem(
-    legacyProjectCreationDraftStorageKey(userId)
+  const clearedPrevious = removeLocalStorageItem(
+    previousProjectCreationDraftStorageKey(userId)
   );
-  return clearedCurrent || clearedLegacy;
+  const clearedV1 = removeLocalStorageItem(
+    v1ProjectCreationDraftStorageKey(userId)
+  );
+  return clearedCurrent || clearedPrevious || clearedV1;
 }

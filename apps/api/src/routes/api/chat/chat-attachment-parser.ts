@@ -1,6 +1,7 @@
 import {
   type ParsedWorkItemNode,
   ChatAttachmentFileTypeEnum,
+  assertWorkItemImportFileType,
 } from '@repo/types';
 import { parseJsonWorkItemDocument } from './chat-attachment-parser.json';
 import { parseDelimitedWorkItemDocument } from './chat-attachment-parser.delimited';
@@ -118,6 +119,7 @@ export interface AttachmentParserEntry {
   readonly parse: AttachmentParser;
 }
 
+/** Parsers used for work-item import (JSON + CSV only). */
 export const PARSER_REGISTRY: readonly AttachmentParserEntry[] = [
   {
     name: 'json',
@@ -126,17 +128,19 @@ export const PARSER_REGISTRY: readonly AttachmentParserEntry[] = [
     parse: parseJsonWorkItemDocument,
   },
   {
+    name: 'csv',
+    matches: (name, type) =>
+      type === ChatAttachmentFileTypeEnum.Csv || name.endsWith('.csv'),
+    parse: parseDelimitedWorkItemDocument,
+  },
+];
+
+/** Kept for unit tests / format experiments; not used by work-item import. */
+export const LEGACY_PARSER_REGISTRY: readonly AttachmentParserEntry[] = [
+  {
     name: 'yaml',
     matches: (name) => name.endsWith('.yaml') || name.endsWith('.yml'),
     parse: parseYamlWorkItemDocument,
-  },
-  {
-    name: 'csv',
-    matches: (name, type) =>
-      type === ChatAttachmentFileTypeEnum.Csv ||
-      name.endsWith('.csv') ||
-      name.endsWith('.tsv'),
-    parse: parseDelimitedWorkItemDocument,
   },
   {
     name: 'markdown_table',
@@ -163,6 +167,7 @@ export function parseAttachmentContent(
   fileName: string,
   fileType: ChatAttachmentFileTypeEnum
 ): ParsedWorkItemNode[] {
+  assertWorkItemImportFileType(fileType, fileName);
   const lowerName = fileName.toLowerCase();
 
   const matchedEntry = PARSER_REGISTRY.find((entry) =>
@@ -185,6 +190,9 @@ export async function fetchAndParseWorkItemAttachment(
   items: ParsedWorkItemNode[];
   summary: string;
 }> {
+  // Fail before downloading binaries (e.g. PNG) as UTF-8 text.
+  assertWorkItemImportFileType(fileType, fileName);
+
   let textContent = '';
   const approvedUrl = assertApprovedAttachmentUrl(
     attachmentUrl,

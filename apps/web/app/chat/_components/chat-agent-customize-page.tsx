@@ -486,7 +486,7 @@ function ChatAgentCustomizeLoaded({
       ) : null}
 
       <div className="no-scrollbar flex min-h-0 flex-1 justify-center overflow-y-auto px-4 py-6 pb-16 sm:px-6">
-        <div className="w-full max-w-5xl">
+        <div className="w-full max-w-7xl">
           <ChatAgentCustomizeForm
             draft={draft}
             kind={agent.kind}

@@ -24,7 +24,10 @@ import {
   PanelLeftClose,
   Paperclip,
 } from '@repo/ui/lib/icons';
-import type { ChatModelOption } from '@repo/types';
+import {
+  WORK_ITEM_IMPORT_FILE_ACCEPT,
+  type ChatModelOption,
+} from '@repo/types';
 import {
   isCompactChatChrome,
   type ChatClientVariant,
@@ -334,6 +337,7 @@ function ChatFrameComposer({
             ref={fileInputRef}
             type="file"
             multiple
+            accept={WORK_ITEM_IMPORT_FILE_ACCEPT}
             className="hidden"
             onChange={(e) => {
               if (e.target.files && e.target.files.length > 0) {
@@ -349,13 +353,13 @@ function ChatFrameComposer({
                 size={isCompact ? 'icon' : 'icon-lg'}
                 disabled={isInputDisabled}
                 onClick={() => fileInputRef.current?.click()}
-                aria-label="Attach files (JSON, CSV, etc.)"
+                aria-label="Attach JSON or CSV work-item files"
               >
                 <Paperclip className={isCompact ? 'size-4' : 'size-5'} />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">
-              Attach files (or paste with Ctrl+V)
+              Attach JSON or CSV (or paste with Ctrl+V)
             </TooltipContent>
           </Tooltip>
 

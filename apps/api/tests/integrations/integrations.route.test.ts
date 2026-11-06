@@ -4,6 +4,12 @@ const {
   listIntegrationsMock,
   getIntegrationDetailMock,
   listChatModelsMock,
+  listProjectChatModelBindingsMock,
+  replaceProjectChatModelBindingsMock,
+  listProjectChatModelBindingImportSourcesMock,
+  importProjectChatModelBindingsFromProjectMock,
+  getMemberChatModelPreferenceMock,
+  putMemberChatModelPreferenceMock,
   createIntegrationMock,
   patchIntegrationMock,
   deleteIntegrationMock,
@@ -11,6 +17,12 @@ const {
   listIntegrationsMock: vi.fn(),
   getIntegrationDetailMock: vi.fn(),
   listChatModelsMock: vi.fn(),
+  listProjectChatModelBindingsMock: vi.fn(),
+  replaceProjectChatModelBindingsMock: vi.fn(),
+  listProjectChatModelBindingImportSourcesMock: vi.fn(),
+  importProjectChatModelBindingsFromProjectMock: vi.fn(),
+  getMemberChatModelPreferenceMock: vi.fn(),
+  putMemberChatModelPreferenceMock: vi.fn(),
   createIntegrationMock: vi.fn(),
   patchIntegrationMock: vi.fn(),
   deleteIntegrationMock: vi.fn(),
@@ -26,6 +38,14 @@ vi.mock('../../src/routes/api/integrations/integrations.service', () => {
     listIntegrations = listIntegrationsMock;
     getIntegrationDetail = getIntegrationDetailMock;
     listChatModels = listChatModelsMock;
+    listProjectChatModelBindings = listProjectChatModelBindingsMock;
+    replaceProjectChatModelBindings = replaceProjectChatModelBindingsMock;
+    listProjectChatModelBindingImportSources =
+      listProjectChatModelBindingImportSourcesMock;
+    importProjectChatModelBindingsFromProject =
+      importProjectChatModelBindingsFromProjectMock;
+    getMemberChatModelPreference = getMemberChatModelPreferenceMock;
+    putMemberChatModelPreference = putMemberChatModelPreferenceMock;
     createIntegration = createIntegrationMock;
     patchIntegration = patchIntegrationMock;
     deleteIntegration = deleteIntegrationMock;
@@ -43,6 +63,14 @@ const integrationsService = {
   listIntegrations: listIntegrationsMock,
   getIntegrationDetail: getIntegrationDetailMock,
   listChatModels: listChatModelsMock,
+  listProjectChatModelBindings: listProjectChatModelBindingsMock,
+  replaceProjectChatModelBindings: replaceProjectChatModelBindingsMock,
+  listProjectChatModelBindingImportSources:
+    listProjectChatModelBindingImportSourcesMock,
+  importProjectChatModelBindingsFromProject:
+    importProjectChatModelBindingsFromProjectMock,
+  getMemberChatModelPreference: getMemberChatModelPreferenceMock,
+  putMemberChatModelPreference: putMemberChatModelPreferenceMock,
   createIntegration: createIntegrationMock,
   patchIntegration: patchIntegrationMock,
   deleteIntegration: deleteIntegrationMock,
@@ -54,6 +82,7 @@ const integrationWire = {
   id: '11111111-1111-4111-8111-111111111111',
   catalog_id: 'openai',
   category: 'ai_agent',
+  scope: 'organization',
   provider: 'openai',
   name: 'GPT-4o',
   status: 'active',
@@ -252,6 +281,186 @@ describe('integrations routes', () => {
           `${baseUrl}/api/integrations/11111111-1111-4111-8111-111111111111`
         );
         expect(response.status).toBe(404);
+      }
+    );
+  });
+
+  it('lists project chat model bindings', async () => {
+    const projectId = '22222222-2222-4222-8222-222222222222';
+    const binding = {
+      integration_id: integrationWire.id,
+      is_default_for_project: true,
+      integration: {
+        id: integrationWire.id,
+        provider: 'openai',
+        name: 'GPT-4o',
+        is_default: false,
+        model: 'gpt-4o',
+        display_label: 'GPT-4o',
+      },
+    };
+    listProjectChatModelBindingsMock.mockResolvedValue([binding]);
+
+    await withMountedRouter(
+      '/api/integrations',
+      integrationsRouter,
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/api/integrations/project-bindings/${projectId}`
+        );
+        const body = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(body.bindings).toEqual([binding]);
+        expect(listProjectChatModelBindingsMock).toHaveBeenCalledWith(
+          MOCK_AUTH_USER_ID,
+          projectId
+        );
+      }
+    );
+  });
+
+  it('replaces project chat model bindings', async () => {
+    const projectId = '22222222-2222-4222-8222-222222222222';
+    replaceProjectChatModelBindingsMock.mockResolvedValue([]);
+
+    await withMountedRouter(
+      '/api/integrations',
+      integrationsRouter,
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/api/integrations/project-bindings/${projectId}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              bindings: [
+                {
+                  integration_id: integrationWire.id,
+                  is_default_for_project: true,
+                },
+              ],
+            }),
+          }
+        );
+        const body = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(body.bindings).toEqual([]);
+        expect(replaceProjectChatModelBindingsMock).toHaveBeenCalledWith(
+          MOCK_AUTH_USER_ID,
+          projectId,
+          {
+            bindings: [
+              {
+                integration_id: integrationWire.id,
+                is_default_for_project: true,
+              },
+            ],
+          }
+        );
+      }
+    );
+  });
+
+  it('lists import sources for project chat model bindings', async () => {
+    const projectId = '22222222-2222-4222-8222-222222222222';
+    const sources = [
+      {
+        project_id: '33333333-3333-4333-8333-333333333333',
+        name: 'Source',
+        key: 'SRC',
+        binding_count: 2,
+      },
+    ];
+    listProjectChatModelBindingImportSourcesMock.mockResolvedValue(sources);
+
+    await withMountedRouter(
+      '/api/integrations',
+      integrationsRouter,
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/api/integrations/project-bindings/import-sources?excludeProjectId=${projectId}`
+        );
+        const body = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(body.sources).toEqual(sources);
+        expect(
+          listProjectChatModelBindingImportSourcesMock
+        ).toHaveBeenCalledWith(MOCK_AUTH_USER_ID, projectId);
+      }
+    );
+  });
+
+  it('imports project chat model bindings from a source project', async () => {
+    const projectId = '22222222-2222-4222-8222-222222222222';
+    const sourceProjectId = '33333333-3333-4333-8333-333333333333';
+    importProjectChatModelBindingsFromProjectMock.mockResolvedValue([]);
+
+    await withMountedRouter(
+      '/api/integrations',
+      integrationsRouter,
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/api/integrations/project-bindings/${projectId}/import-from`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source_project_id: sourceProjectId }),
+          }
+        );
+        const body = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(body.bindings).toEqual([]);
+        expect(
+          importProjectChatModelBindingsFromProjectMock
+        ).toHaveBeenCalledWith(MOCK_AUTH_USER_ID, projectId, {
+          source_project_id: sourceProjectId,
+        });
+      }
+    );
+  });
+
+  it('gets and updates the member chat model preference', async () => {
+    getMemberChatModelPreferenceMock.mockResolvedValue({
+      default_integration_id: null,
+    });
+    putMemberChatModelPreferenceMock.mockResolvedValue({
+      default_integration_id: integrationWire.id,
+    });
+
+    await withMountedRouter(
+      '/api/integrations',
+      integrationsRouter,
+      async (baseUrl) => {
+        const getResponse = await fetch(
+          `${baseUrl}/api/integrations/member-chat-model-preference`
+        );
+        expect(getResponse.status).toBe(200);
+        expect(await getResponse.json()).toEqual({
+          preference: { default_integration_id: null },
+        });
+
+        const putResponse = await fetch(
+          `${baseUrl}/api/integrations/member-chat-model-preference`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              default_integration_id: integrationWire.id,
+            }),
+          }
+        );
+        expect(putResponse.status).toBe(200);
+        expect(await putResponse.json()).toEqual({
+          preference: { default_integration_id: integrationWire.id },
+        });
+        expect(putMemberChatModelPreferenceMock).toHaveBeenCalledWith(
+          MOCK_AUTH_USER_ID,
+          { default_integration_id: integrationWire.id }
+        );
       }
     );
   });

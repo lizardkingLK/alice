@@ -28,16 +28,27 @@ during setup.
 4. On **Types**, configure the work-item catalog (drag to order; icon and color
    pickers update cards live). Names must be unique; custom types get a hidden
    key automatically.
-5. Optionally connect **Jira** (**Imports**) or **GitHub** (**Source**).
-6. On the optional **Team** step, use **Search members…** next to **Team Members**
+5. On **Integrations**, pick **None** or one **project management** provider
+   (Jira) and **None** or one **source control** provider (GitHub), then bind
+   one or more organization **AI agents** (star one as the project default).
+   Mint new AI keys in
+   [Workspace integrations](../profile-and-settings/workspace-integrations.md)
+   first — create only **binds** them (no API keys on this step).
+6. On the optional **Sprint** step, configure an initial sprint if needed.
+7. On the optional **Team** step, use **Search members…** next to **Team Members**
    to filter the list by name or email before selecting people.
-7. Submit **Create Project**.
+8. Submit **Create Project**.
+
+Drafts keep Integrations choices (including AI binds) on resume; API keys are
+never stored in drafts. See
+[INTEGRATION_SCOPES.md](../../features/integrations/INTEGRATION_SCOPES.md).
 
 Creation is accepted quickly — you are not left waiting on the form while the
-database finishes. Watch the [dashboard inbox](../notifications/dashboard-inbox.md)
-for a **project ready** notification with a link to the new project, or a
-**failure** notice if something went wrong (includes a short reference id for
-support). The bell badge updates live when that alert arrives (no reload needed).
+database finishes (**async** acknowledge, then background create/import). Watch
+the [dashboard inbox](../notifications/dashboard-inbox.md) for a **project
+ready** notification with a link to the new project, or a **failure** notice if
+something went wrong (includes a short reference id for support). The bell
+badge updates live when that alert arrives (no reload needed).
 
 You become a **project member** (so the project stays in your accessible list).
 The manager you pick as **Project Owner** becomes the owner and is also added as

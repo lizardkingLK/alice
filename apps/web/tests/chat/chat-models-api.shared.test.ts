@@ -48,6 +48,15 @@ describe('pickDefaultChatIntegrationId', () => {
       )
     ).toBe('11111111-1111-4111-8111-111111111111');
   });
+
+  it('prefers the member preferred model over the workspace default', () => {
+    expect(
+      pickDefaultChatIntegrationId(
+        models,
+        '11111111-1111-4111-8111-111111111111'
+      )
+    ).toBe('11111111-1111-4111-8111-111111111111');
+  });
 });
 
 describe('resolveSelectedChatIntegrationId', () => {

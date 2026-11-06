@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { cn } from '@repo/ui/lib/utils';
 import {
   ChatConversationKinds,
+  WORK_ITEM_IMPORT_UNSUPPORTED_MESSAGE,
+  assertWorkItemImportAttachment,
   detectChatAttachmentFileType,
 } from '@repo/types';
 import type { ChatMessage, ActionItem } from './chat-client.types';
@@ -187,8 +189,34 @@ export async function uploadSelectedChatFiles(params: {
   const fileArray = Array.from(selectedFiles);
   if (fileArray.length === 0) return;
 
+  const unsupportedNames: string[] = [];
+  const acceptedFiles: File[] = [];
+  for (const file of fileArray) {
+    try {
+      assertWorkItemImportAttachment(file.name, file.type || '');
+      acceptedFiles.push(file);
+    } catch {
+      unsupportedNames.push(file.name);
+    }
+  }
+
+  if (unsupportedNames.length > 0) {
+    setError(
+      unsupportedNames.length === 1
+        ? `${unsupportedNames[0]}: ${WORK_ITEM_IMPORT_UNSUPPORTED_MESSAGE}`
+        : `${WORK_ITEM_IMPORT_UNSUPPORTED_MESSAGE} Skipped: ${unsupportedNames.join(', ')}`
+    );
+  }
+
+  if (acceptedFiles.length === 0) {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    return;
+  }
+
   await Promise.all(
-    fileArray.map(async (file) => {
+    acceptedFiles.map(async (file) => {
       const tempId = `temp-${Date.now()}-${++attachmentCounter}`;
       const optimisticAttachment: PendingChatAttachment = {
         id: tempId,
