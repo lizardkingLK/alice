@@ -29,6 +29,12 @@ type IntegrationConfigFormProps = {
   readonly apiKey: string;
   readonly isDefault: boolean;
   readonly feedback: IntegrationSaveFeedback;
+  /** When false, hides the configured-models picker (project mint). Default true. */
+  readonly showConfiguredModels?: boolean;
+  /** When false, hides the default checkbox (e.g. project edit). Default true. */
+  readonly showDefaultCheckbox?: boolean;
+  readonly defaultCheckboxLabel?: string;
+  readonly fieldIdPrefix?: string;
   /* eslint-disable no-unused-vars -- callback param names document values */
   readonly onSelectRow: (row: IntegrationWire) => void;
   readonly onAddModel: () => void;
@@ -53,6 +59,10 @@ export function IntegrationConfigForm({
   apiKey,
   isDefault,
   feedback,
+  showConfiguredModels = true,
+  showDefaultCheckbox = true,
+  defaultCheckboxLabel = 'Use as workspace default in chat',
+  fieldIdPrefix = 'integration',
   onSelectRow,
   onAddModel,
   onDisplayLabelChange,
@@ -65,12 +75,16 @@ export function IntegrationConfigForm({
   const providerDefault = defaultModelForProvider(provider);
   const modelAssessment = resolveConfiguredChatModelStatus(provider, modelId);
   const showModelWarning = modelAssessment.warning !== null;
+  const displayLabelId = `${fieldIdPrefix}-display-label`;
+  const modelIdField = `${fieldIdPrefix}-model-id`;
+  const apiKeyId = `${fieldIdPrefix}-api-key`;
+  const defaultId = `${fieldIdPrefix}-is-default`;
 
   return (
     <div className="space-y-4">
       <FormStatusAlerts error={feedback.error} success={feedback.success} />
 
-      {activeRows.length > 0 ? (
+      {showConfiguredModels && activeRows.length > 0 ? (
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
             <Label>Configured models</Label>
@@ -142,9 +156,9 @@ export function IntegrationConfigForm({
       ) : null}
 
       <div className="space-y-2">
-        <Label htmlFor="integration-display-label">Display label</Label>
+        <Label htmlFor={displayLabelId}>Display label</Label>
         <Input
-          id="integration-display-label"
+          id={displayLabelId}
           value={displayLabel}
           onChange={(event) => onDisplayLabelChange(event.target.value)}
           placeholder={providerDefault.label}
@@ -152,9 +166,9 @@ export function IntegrationConfigForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="integration-model-id">Model id</Label>
+        <Label htmlFor={modelIdField}>Model id</Label>
         <Input
-          id="integration-model-id"
+          id={modelIdField}
           value={modelId}
           onChange={(event) => onModelIdChange(event.target.value)}
           placeholder={providerDefault.value}
@@ -196,9 +210,9 @@ export function IntegrationConfigForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="integration-api-key">API key</Label>
+        <Label htmlFor={apiKeyId}>API key</Label>
         <Input
-          id="integration-api-key"
+          id={apiKeyId}
           type="password"
           value={apiKey}
           onChange={(event) => onApiKeyChange(event.target.value)}
@@ -207,16 +221,16 @@ export function IntegrationConfigForm({
         />
       </div>
 
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id="integration-is-default"
-          checked={isDefault}
-          onCheckedChange={(checked) => onIsDefaultChange(checked === true)}
-        />
-        <Label htmlFor="integration-is-default">
-          Use as workspace default in chat
-        </Label>
-      </div>
+      {showDefaultCheckbox ? (
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id={defaultId}
+            checked={isDefault}
+            onCheckedChange={(checked) => onIsDefaultChange(checked === true)}
+          />
+          <Label htmlFor={defaultId}>{defaultCheckboxLabel}</Label>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -69,6 +69,7 @@ const integrationRow = {
   catalog_id: 'openai',
   category: 'ai_agent' as const,
   scope: 'organization' as const,
+  project_id: null,
   provider: 'openai',
   name: 'GPT-4o',
   status: 'active' as const,
@@ -81,6 +82,11 @@ const integrationRow = {
   is_default: false,
   sort_order: 0,
   created_by: 'admin-1',
+  created_by_user: {
+    id: 'admin-1',
+    name: 'Admin One',
+    email: 'admin@alice.dev',
+  },
   created_at: new Date('2026-01-01T00:00:00.000Z'),
   updated_by: 'admin-1',
   updated_at: new Date('2026-01-01T00:00:00.000Z'),
@@ -248,6 +254,11 @@ describe('IntegrationsService', () => {
         is_default: false,
         model: 'gpt-4o',
         display_label: 'GPT-4o',
+        model_version: undefined,
+        scope: 'organization',
+        project_id: null,
+        created_by: 'admin-1',
+        created_by_name: 'Admin One',
       },
     ]);
   });

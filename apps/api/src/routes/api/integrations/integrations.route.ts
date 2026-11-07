@@ -8,7 +8,6 @@ import {
 } from '../../../middlewares/auth';
 import {
   createIntegrationBodySchema,
-  importProjectIntegrationBindingsBodySchema,
   listIntegrationsQuerySchema,
   patchIntegrationBodySchema,
   putMemberChatModelPreferenceBodySchema,
@@ -31,6 +30,7 @@ function firstQueryValue(value: unknown): string | undefined {
 function listIntegrationsQueryFromRequest(query: Record<string, unknown>) {
   return listIntegrationsQuerySchema.safeParse({
     category: firstQueryValue(query.category),
+    scope: firstQueryValue(query.scope),
     status: firstQueryValue(query.status),
     catalog_id: firstQueryValue(query.catalog_id),
   });
@@ -149,31 +149,23 @@ export function createIntegrationsRouter(deps: IntegrationsRouterDeps) {
   );
 
   integrationsRouter.get(
-    '/project-bindings/import-sources',
+    '/project-ai-models/:projectId',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
-      const excludeRaw = firstQueryValue(req.query.excludeProjectId);
-      const excludeParsed = excludeRaw
-        ? z.uuid().safeParse(excludeRaw)
-        : undefined;
-      if (excludeParsed && !excludeParsed.success) {
-        return res.status(400).json({ error: 'Invalid excludeProjectId' });
+      const parsedId = z.uuid().safeParse(req.params.projectId);
+      if (!parsedId.success) {
+        return res.status(400).json({ error: 'Invalid project id' });
       }
 
       try {
         const actorId = requireActorId(req);
-        const sources =
-          await integrationsService.listProjectChatModelBindingImportSources(
-            actorId,
-            excludeParsed?.data
-          );
-        res.json({ sources });
-      } catch (error) {
-        sendRouteError(
-          res,
-          error,
-          'Failed to list project binding import sources'
+        const models = await integrationsService.listProjectAiModels(
+          actorId,
+          parsedId.data
         );
+        res.json({ models });
+      } catch (error) {
+        sendRouteError(res, error, 'Failed to list project AI models');
       }
     }
   );
@@ -234,41 +226,6 @@ export function createIntegrationsRouter(deps: IntegrationsRouterDeps) {
           res,
           error,
           'Failed to update project integration bindings'
-        );
-      }
-    }
-  );
-
-  integrationsRouter.post(
-    '/project-bindings/:projectId/import-from',
-    requireApiAuth,
-    async (req: AuthenticatedRequest, res) => {
-      const parsedId = z.uuid().safeParse(req.params.projectId);
-      if (!parsedId.success) {
-        return res.status(400).json({ error: 'Invalid project id' });
-      }
-
-      const parsed = importProjectIntegrationBindingsBodySchema.safeParse(
-        req.body
-      );
-      if (!parsed.success) {
-        return res.status(400).json({ error: z.treeifyError(parsed.error) });
-      }
-
-      try {
-        const actorId = requireActorId(req);
-        const bindings =
-          await integrationsService.importProjectChatModelBindingsFromProject(
-            actorId,
-            parsedId.data,
-            parsed.data
-          );
-        res.json({ bindings });
-      } catch (error) {
-        sendRouteError(
-          res,
-          error,
-          'Failed to import project integration bindings'
         );
       }
     }
