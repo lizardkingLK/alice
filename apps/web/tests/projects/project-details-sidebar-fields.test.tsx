@@ -489,22 +489,22 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       />
     );
 
-    // Sidebar uses Next.js Links with tab hrefs (prefetchable).
+    // Sidebar uses Next.js Links with tab hrefs (prefetchable, key-canonical).
     expect(screen.getByRole('link', { name: /fields/i })).toHaveAttribute(
       'href',
-      '/projects/project-1?tab=fields'
+      '/projects/MOB?tab=fields'
     );
     expect(screen.getByRole('link', { name: /work items/i })).toHaveAttribute(
       'href',
-      '/projects/project-1?tab=work-items'
+      '/projects/MOB?tab=work-items'
     );
     expect(screen.getByRole('link', { name: /members/i })).toHaveAttribute(
       'href',
-      '/projects/project-1?tab=members'
+      '/projects/MOB?tab=members'
     );
     expect(screen.getByRole('link', { name: /details/i })).toHaveAttribute(
       'href',
-      '/projects/project-1'
+      '/projects/MOB'
     );
   });
 

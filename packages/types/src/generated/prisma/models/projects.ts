@@ -309,6 +309,7 @@ export type projectsWhereInput = {
   burndown_rollups?: Prisma.Sprint_burndown_rollupsListRelationFilter
   saved_views?: Prisma.Saved_viewsListRelationFilter
   integration_bindings?: Prisma.Project_integration_bindingsListRelationFilter
+  project_integrations?: Prisma.IntegrationsListRelationFilter
 }
 
 export type projectsOrderByWithRelationInput = {
@@ -348,6 +349,7 @@ export type projectsOrderByWithRelationInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsOrderByRelationAggregateInput
   saved_views?: Prisma.saved_viewsOrderByRelationAggregateInput
   integration_bindings?: Prisma.project_integration_bindingsOrderByRelationAggregateInput
+  project_integrations?: Prisma.integrationsOrderByRelationAggregateInput
 }
 
 export type projectsWhereUniqueInput = Prisma.AtLeast<{
@@ -390,6 +392,7 @@ export type projectsWhereUniqueInput = Prisma.AtLeast<{
   burndown_rollups?: Prisma.Sprint_burndown_rollupsListRelationFilter
   saved_views?: Prisma.Saved_viewsListRelationFilter
   integration_bindings?: Prisma.Project_integration_bindingsListRelationFilter
+  project_integrations?: Prisma.IntegrationsListRelationFilter
 }, "id" | "key">
 
 export type projectsOrderByWithAggregationInput = {
@@ -478,6 +481,7 @@ export type projectsCreateInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateInput = {
@@ -512,6 +516,7 @@ export type projectsUncheckedCreateInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUpdateInput = {
@@ -546,6 +551,7 @@ export type projectsUpdateInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateInput = {
@@ -580,6 +586,7 @@ export type projectsUncheckedUpdateInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateManyInput = {
@@ -1081,6 +1088,22 @@ export type projectsUpdateOneWithoutSaved_viewsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.projectsUpdateToOneWithWhereWithoutSaved_viewsInput, Prisma.projectsUpdateWithoutSaved_viewsInput>, Prisma.projectsUncheckedUpdateWithoutSaved_viewsInput>
 }
 
+export type projectsCreateNestedOneWithoutProject_integrationsInput = {
+  create?: Prisma.XOR<Prisma.projectsCreateWithoutProject_integrationsInput, Prisma.projectsUncheckedCreateWithoutProject_integrationsInput>
+  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutProject_integrationsInput
+  connect?: Prisma.projectsWhereUniqueInput
+}
+
+export type projectsUpdateOneWithoutProject_integrationsNestedInput = {
+  create?: Prisma.XOR<Prisma.projectsCreateWithoutProject_integrationsInput, Prisma.projectsUncheckedCreateWithoutProject_integrationsInput>
+  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutProject_integrationsInput
+  upsert?: Prisma.projectsUpsertWithoutProject_integrationsInput
+  disconnect?: Prisma.projectsWhereInput | boolean
+  delete?: Prisma.projectsWhereInput | boolean
+  connect?: Prisma.projectsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.projectsUpdateToOneWithWhereWithoutProject_integrationsInput, Prisma.projectsUpdateWithoutProject_integrationsInput>, Prisma.projectsUncheckedUpdateWithoutProject_integrationsInput>
+}
+
 export type projectsCreateNestedOneWithoutIntegration_bindingsInput = {
   create?: Prisma.XOR<Prisma.projectsCreateWithoutIntegration_bindingsInput, Prisma.projectsUncheckedCreateWithoutIntegration_bindingsInput>
   connectOrCreate?: Prisma.projectsCreateOrConnectWithoutIntegration_bindingsInput
@@ -1126,6 +1149,7 @@ export type projectsCreateWithoutOwnerInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutOwnerInput = {
@@ -1159,6 +1183,7 @@ export type projectsUncheckedCreateWithoutOwnerInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutOwnerInput = {
@@ -1202,6 +1227,7 @@ export type projectsCreateWithoutCreated_by_userInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutCreated_by_userInput = {
@@ -1235,6 +1261,7 @@ export type projectsUncheckedCreateWithoutCreated_by_userInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutCreated_by_userInput = {
@@ -1278,6 +1305,7 @@ export type projectsCreateWithoutUpdated_by_userInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutUpdated_by_userInput = {
@@ -1311,6 +1339,7 @@ export type projectsUncheckedCreateWithoutUpdated_by_userInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutUpdated_by_userInput = {
@@ -1429,6 +1458,7 @@ export type projectsCreateWithoutMembersInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutMembersInput = {
@@ -1462,6 +1492,7 @@ export type projectsUncheckedCreateWithoutMembersInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutMembersInput = {
@@ -1511,6 +1542,7 @@ export type projectsUpdateWithoutMembersInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutMembersInput = {
@@ -1544,6 +1576,7 @@ export type projectsUncheckedUpdateWithoutMembersInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutTeamsInput = {
@@ -1577,6 +1610,7 @@ export type projectsCreateWithoutTeamsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutTeamsInput = {
@@ -1610,6 +1644,7 @@ export type projectsUncheckedCreateWithoutTeamsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutTeamsInput = {
@@ -1659,6 +1694,7 @@ export type projectsUpdateWithoutTeamsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutTeamsInput = {
@@ -1692,6 +1728,7 @@ export type projectsUncheckedUpdateWithoutTeamsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutSprintsInput = {
@@ -1725,6 +1762,7 @@ export type projectsCreateWithoutSprintsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutSprintsInput = {
@@ -1758,6 +1796,7 @@ export type projectsUncheckedCreateWithoutSprintsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutSprintsInput = {
@@ -1807,6 +1846,7 @@ export type projectsUpdateWithoutSprintsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutSprintsInput = {
@@ -1840,6 +1880,7 @@ export type projectsUncheckedUpdateWithoutSprintsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutWork_itemsInput = {
@@ -1873,6 +1914,7 @@ export type projectsCreateWithoutWork_itemsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutWork_itemsInput = {
@@ -1906,6 +1948,7 @@ export type projectsUncheckedCreateWithoutWork_itemsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutWork_itemsInput = {
@@ -1955,6 +1998,7 @@ export type projectsUpdateWithoutWork_itemsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutWork_itemsInput = {
@@ -1988,6 +2032,7 @@ export type projectsUncheckedUpdateWithoutWork_itemsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutWork_item_linksInput = {
@@ -2021,6 +2066,7 @@ export type projectsCreateWithoutWork_item_linksInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutWork_item_linksInput = {
@@ -2054,6 +2100,7 @@ export type projectsUncheckedCreateWithoutWork_item_linksInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutWork_item_linksInput = {
@@ -2103,6 +2150,7 @@ export type projectsUpdateWithoutWork_item_linksInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutWork_item_linksInput = {
@@ -2136,6 +2184,7 @@ export type projectsUncheckedUpdateWithoutWork_item_linksInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutBurndown_rollupsInput = {
@@ -2169,6 +2218,7 @@ export type projectsCreateWithoutBurndown_rollupsInput = {
   chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutBurndown_rollupsInput = {
@@ -2202,6 +2252,7 @@ export type projectsUncheckedCreateWithoutBurndown_rollupsInput = {
   chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutBurndown_rollupsInput = {
@@ -2251,6 +2302,7 @@ export type projectsUpdateWithoutBurndown_rollupsInput = {
   chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutBurndown_rollupsInput = {
@@ -2284,6 +2336,7 @@ export type projectsUncheckedUpdateWithoutBurndown_rollupsInput = {
   chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutChart_rollupsInput = {
@@ -2317,6 +2370,7 @@ export type projectsCreateWithoutChart_rollupsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutChart_rollupsInput = {
@@ -2350,6 +2404,7 @@ export type projectsUncheckedCreateWithoutChart_rollupsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutChart_rollupsInput = {
@@ -2399,6 +2454,7 @@ export type projectsUpdateWithoutChart_rollupsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutChart_rollupsInput = {
@@ -2432,6 +2488,7 @@ export type projectsUncheckedUpdateWithoutChart_rollupsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutChart_hierarchy_rollupsInput = {
@@ -2465,6 +2522,7 @@ export type projectsCreateWithoutChart_hierarchy_rollupsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutChart_hierarchy_rollupsInput = {
@@ -2498,6 +2556,7 @@ export type projectsUncheckedCreateWithoutChart_hierarchy_rollupsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutChart_hierarchy_rollupsInput = {
@@ -2547,6 +2606,7 @@ export type projectsUpdateWithoutChart_hierarchy_rollupsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutChart_hierarchy_rollupsInput = {
@@ -2580,6 +2640,7 @@ export type projectsUncheckedUpdateWithoutChart_hierarchy_rollupsInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutPm_connectionInput = {
@@ -2613,6 +2674,7 @@ export type projectsCreateWithoutPm_connectionInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutPm_connectionInput = {
@@ -2646,6 +2708,7 @@ export type projectsUncheckedCreateWithoutPm_connectionInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutPm_connectionInput = {
@@ -2705,6 +2768,7 @@ export type projectsCreateWithoutVc_connectionInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutVc_connectionInput = {
@@ -2738,6 +2802,7 @@ export type projectsUncheckedCreateWithoutVc_connectionInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutVc_connectionInput = {
@@ -2797,6 +2862,7 @@ export type projectsCreateWithoutSaved_viewsInput = {
   chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutProjectInput
   burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutSaved_viewsInput = {
@@ -2830,6 +2896,7 @@ export type projectsUncheckedCreateWithoutSaved_viewsInput = {
   chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutProjectInput
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutSaved_viewsInput = {
@@ -2879,6 +2946,7 @@ export type projectsUpdateWithoutSaved_viewsInput = {
   chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutProjectNestedInput
   burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutSaved_viewsInput = {
@@ -2911,6 +2979,159 @@ export type projectsUncheckedUpdateWithoutSaved_viewsInput = {
   chart_rollups?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
+}
+
+export type projectsCreateWithoutProject_integrationsInput = {
+  id?: string
+  name: string
+  key: string
+  description?: string | null
+  start_date?: Date | string | null
+  end_date?: Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: $Enums.ProjectStatus
+  deleted_at?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  logo_url?: string | null
+  cover_picture?: string | null
+  owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
+  created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
+  updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
+  members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
+  teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
+  sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
+  work_items?: Prisma.work_itemsCreateNestedManyWithoutProjectInput
+  work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutProjectInput
+  chart_rollups?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutProjectInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutProjectInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
+  saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
+  integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+}
+
+export type projectsUncheckedCreateWithoutProject_integrationsInput = {
+  id?: string
+  name: string
+  key: string
+  description?: string | null
+  owner_id: string
+  start_date?: Date | string | null
+  end_date?: Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: $Enums.ProjectStatus
+  deleted_at?: Date | string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  logo_url?: string | null
+  cover_picture?: string | null
+  members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
+  teams?: Prisma.teamsUncheckedCreateNestedManyWithoutProjectInput
+  sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutProjectInput
+  work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutProjectInput
+  work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutProjectInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
+  integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+}
+
+export type projectsCreateOrConnectWithoutProject_integrationsInput = {
+  where: Prisma.projectsWhereUniqueInput
+  create: Prisma.XOR<Prisma.projectsCreateWithoutProject_integrationsInput, Prisma.projectsUncheckedCreateWithoutProject_integrationsInput>
+}
+
+export type projectsUpsertWithoutProject_integrationsInput = {
+  update: Prisma.XOR<Prisma.projectsUpdateWithoutProject_integrationsInput, Prisma.projectsUncheckedUpdateWithoutProject_integrationsInput>
+  create: Prisma.XOR<Prisma.projectsCreateWithoutProject_integrationsInput, Prisma.projectsUncheckedCreateWithoutProject_integrationsInput>
+  where?: Prisma.projectsWhereInput
+}
+
+export type projectsUpdateToOneWithWhereWithoutProject_integrationsInput = {
+  where?: Prisma.projectsWhereInput
+  data: Prisma.XOR<Prisma.projectsUpdateWithoutProject_integrationsInput, Prisma.projectsUncheckedUpdateWithoutProject_integrationsInput>
+}
+
+export type projectsUpdateWithoutProject_integrationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: Prisma.EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
+  created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
+  updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
+  members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
+  teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
+  sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
+  work_items?: Prisma.work_itemsUpdateManyWithoutProjectNestedInput
+  work_item_links?: Prisma.work_item_linksUpdateManyWithoutProjectNestedInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUpdateManyWithoutProjectNestedInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutProjectNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
+  saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
+  integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+}
+
+export type projectsUncheckedUpdateWithoutProject_integrationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  owner_id?: Prisma.StringFieldUpdateOperationsInput | string
+  start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: Prisma.EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
+  teams?: Prisma.teamsUncheckedUpdateManyWithoutProjectNestedInput
+  sprints?: Prisma.sprintsUncheckedUpdateManyWithoutProjectNestedInput
+  work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutProjectNestedInput
+  work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutProjectNestedInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
@@ -2945,6 +3166,7 @@ export type projectsCreateWithoutIntegration_bindingsInput = {
   chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutProjectInput
   burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutIntegration_bindingsInput = {
@@ -2978,6 +3200,7 @@ export type projectsUncheckedCreateWithoutIntegration_bindingsInput = {
   chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutProjectInput
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
   saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutIntegration_bindingsInput = {
@@ -3027,6 +3250,7 @@ export type projectsUpdateWithoutIntegration_bindingsInput = {
   chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutProjectNestedInput
   burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutIntegration_bindingsInput = {
@@ -3060,6 +3284,7 @@ export type projectsUncheckedUpdateWithoutIntegration_bindingsInput = {
   chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateManyOwnerInput = {
@@ -3162,6 +3387,7 @@ export type projectsUpdateWithoutOwnerInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutOwnerInput = {
@@ -3195,6 +3421,7 @@ export type projectsUncheckedUpdateWithoutOwnerInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateManyWithoutOwnerInput = {
@@ -3251,6 +3478,7 @@ export type projectsUpdateWithoutCreated_by_userInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutCreated_by_userInput = {
@@ -3284,6 +3512,7 @@ export type projectsUncheckedUpdateWithoutCreated_by_userInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateManyWithoutCreated_by_userInput = {
@@ -3340,6 +3569,7 @@ export type projectsUpdateWithoutUpdated_by_userInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutUpdated_by_userInput = {
@@ -3373,6 +3603,7 @@ export type projectsUncheckedUpdateWithoutUpdated_by_userInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateManyWithoutUpdated_by_userInput = {
@@ -3452,6 +3683,7 @@ export type projectsUpdateWithoutPm_connectionInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutPm_connectionInput = {
@@ -3485,6 +3717,7 @@ export type projectsUncheckedUpdateWithoutPm_connectionInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateManyWithoutPm_connectionInput = {
@@ -3564,6 +3797,7 @@ export type projectsUpdateWithoutVc_connectionInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutVc_connectionInput = {
@@ -3597,6 +3831,7 @@ export type projectsUncheckedUpdateWithoutVc_connectionInput = {
   burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
   saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateManyWithoutVc_connectionInput = {
@@ -3638,6 +3873,7 @@ export type ProjectsCountOutputType = {
   burndown_rollups: number
   saved_views: number
   integration_bindings: number
+  project_integrations: number
 }
 
 export type ProjectsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3651,6 +3887,7 @@ export type ProjectsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensio
   burndown_rollups?: boolean | ProjectsCountOutputTypeCountBurndown_rollupsArgs
   saved_views?: boolean | ProjectsCountOutputTypeCountSaved_viewsArgs
   integration_bindings?: boolean | ProjectsCountOutputTypeCountIntegration_bindingsArgs
+  project_integrations?: boolean | ProjectsCountOutputTypeCountProject_integrationsArgs
 }
 
 /**
@@ -3733,6 +3970,13 @@ export type ProjectsCountOutputTypeCountIntegration_bindingsArgs<ExtArgs extends
   where?: Prisma.project_integration_bindingsWhereInput
 }
 
+/**
+ * ProjectsCountOutputType without action
+ */
+export type ProjectsCountOutputTypeCountProject_integrationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.integrationsWhereInput
+}
+
 
 export type projectsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -3771,6 +4015,7 @@ export type projectsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   burndown_rollups?: boolean | Prisma.projects$burndown_rollupsArgs<ExtArgs>
   saved_views?: boolean | Prisma.projects$saved_viewsArgs<ExtArgs>
   integration_bindings?: boolean | Prisma.projects$integration_bindingsArgs<ExtArgs>
+  project_integrations?: boolean | Prisma.projects$project_integrationsArgs<ExtArgs>
   _count?: boolean | Prisma.ProjectsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["projects"]>
 
@@ -3873,6 +4118,7 @@ export type projectsInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   burndown_rollups?: boolean | Prisma.projects$burndown_rollupsArgs<ExtArgs>
   saved_views?: boolean | Prisma.projects$saved_viewsArgs<ExtArgs>
   integration_bindings?: boolean | Prisma.projects$integration_bindingsArgs<ExtArgs>
+  project_integrations?: boolean | Prisma.projects$project_integrationsArgs<ExtArgs>
   _count?: boolean | Prisma.ProjectsCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type projectsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3908,6 +4154,7 @@ export type $projectsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     burndown_rollups: Prisma.$sprint_burndown_rollupsPayload<ExtArgs>[]
     saved_views: Prisma.$saved_viewsPayload<ExtArgs>[]
     integration_bindings: Prisma.$project_integration_bindingsPayload<ExtArgs>[]
+    project_integrations: Prisma.$integrationsPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -4352,6 +4599,7 @@ export interface Prisma__projectsClient<T, Null = never, ExtArgs extends runtime
   burndown_rollups<T extends Prisma.projects$burndown_rollupsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$burndown_rollupsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$sprint_burndown_rollupsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   saved_views<T extends Prisma.projects$saved_viewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$saved_viewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$saved_viewsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   integration_bindings<T extends Prisma.projects$integration_bindingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$integration_bindingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$project_integration_bindingsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  project_integrations<T extends Prisma.projects$project_integrationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$project_integrationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$integrationsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5116,6 +5364,30 @@ export type projects$integration_bindingsArgs<ExtArgs extends runtime.Types.Exte
   take?: number
   skip?: number
   distinct?: Prisma.Project_integration_bindingsScalarFieldEnum | Prisma.Project_integration_bindingsScalarFieldEnum[]
+}
+
+/**
+ * projects.project_integrations
+ */
+export type projects$project_integrationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the integrations
+   */
+  select?: Prisma.integrationsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the integrations
+   */
+  omit?: Prisma.integrationsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.integrationsInclude<ExtArgs> | null
+  where?: Prisma.integrationsWhereInput
+  orderBy?: Prisma.integrationsOrderByWithRelationInput | Prisma.integrationsOrderByWithRelationInput[]
+  cursor?: Prisma.integrationsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.IntegrationsScalarFieldEnum | Prisma.IntegrationsScalarFieldEnum[]
 }
 
 /**

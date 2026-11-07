@@ -8,6 +8,7 @@ import {
   buildProjectBreadcrumbOverrides,
   isProjectUuid,
   looksLikeProjectKey,
+  normalizeProjectKey,
   projectDetailHref,
   withProjectSearchParams,
 } from '@/app/projects/_helpers/project-links';
@@ -29,34 +30,53 @@ export default async function ProjectDetailsPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<RawSearchParams>;
 }>) {
-  const { id } = await params;
+  const { id: rawParam } = await params;
   const resolvedSearchParams = await searchParams;
 
-  if (!isProjectUuid(id)) {
-    if (!looksLikeProjectKey(id)) {
-      notFound();
-    }
-
-    const projectId = await safeServerFetch(
-      getProjectIdByKey(id),
+  if (isProjectUuid(rawParam)) {
+    const projectById = await safeServerFetch(
+      getProject(rawParam),
       null,
-      'resolve project id from key'
+      'load project for key redirect'
     );
-
-    if (!projectId) {
+    if (!projectById) {
       notFound();
     }
 
     redirect(
       withProjectSearchParams(
-        projectDetailHref(projectId),
+        projectDetailHref(projectById.key),
         resolvedSearchParams
       )
     );
   }
 
+  if (!looksLikeProjectKey(rawParam)) {
+    notFound();
+  }
+
+  const canonicalKey = normalizeProjectKey(rawParam);
+  if (rawParam !== canonicalKey) {
+    redirect(
+      withProjectSearchParams(
+        projectDetailHref(canonicalKey),
+        resolvedSearchParams
+      )
+    );
+  }
+
+  const projectId = await safeServerFetch(
+    getProjectIdByKey(canonicalKey),
+    null,
+    'resolve project id from key'
+  );
+
+  if (!projectId) {
+    notFound();
+  }
+
   const [project, cookieStore] = await Promise.all([
-    safeServerFetch(getProject(id), null, 'load project for breadcrumb'),
+    safeServerFetch(getProject(projectId), null, 'load project for breadcrumb'),
     cookies(),
   ]);
 
@@ -73,13 +93,16 @@ export default async function ProjectDetailsPage({
       description="Workspace configurations for this project"
       contentScrollable={false}
       contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
-      breadcrumbOverrides={buildProjectBreadcrumbOverrides(id, project.name)}
+      breadcrumbOverrides={buildProjectBreadcrumbOverrides(
+        project.key,
+        project.name
+      )}
       favoriteLabel={project.name}
-      projectId={id}
+      projectId={projectId}
     >
       <Suspense fallback={<ProjectDetailsSkeleton sidebarOpen={sidebarOpen} />}>
         <ProjectDetailsData
-          projectId={id}
+          projectId={projectId}
           project={project}
           searchParams={searchParams}
         />

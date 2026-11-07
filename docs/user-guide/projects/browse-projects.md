@@ -35,8 +35,9 @@ Use search and pagination when the registry is large.
 ## Open a project
 
 1. Select a project from the list.
-2. You'll open the project workspace (`/projects/[id]`) with overview metrics
-   and tabs such as **Members**, **Teams**, and **Work items**.
+2. You'll open the project workspace at `/projects/{KEY}` (for example
+   `/projects/ABC`) with overview metrics and tabs such as **Members**,
+   **Teams**, and **Work items**.
 
 If you're not a member and not an admin, the workspace shows **No access to
 this project** — ask the owner to add you via
@@ -53,10 +54,9 @@ Each project has a short key (for example `ABC`). You can share:
 1. Open the project and stay on **Details**.
 2. Next to the key badge, select the copy icon to copy the full share URL.
 3. Anyone who opens that link signs in first (if needed), then lands on the
-   project workspace.
+   same key URL in the address bar.
 
-The short key URL redirects to the project's normal workspace address after
-sign-in.
+Older UUID-style links still work and redirect to the project key URL.
 
 ---
 

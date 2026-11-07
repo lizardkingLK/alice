@@ -24,6 +24,7 @@ export default async function WorkItemPage({
     {
       workItemTitle: workItem.title,
       projectName: workItem.project?.name,
+      projectKey: workItem.project?.key,
     }
   );
 

@@ -20,7 +20,18 @@ export function normalizeProjectKey(value: string): string {
   return value.trim().toUpperCase();
 }
 
-/** Jira-style share path: `/projects/{KEY}`. */
+/**
+ * Canonical project workspace path segment: uppercase key when the value looks
+ * like a key; otherwise pass through (UUID links still resolve via redirect).
+ */
+function projectPathSegment(projectKeyOrId: string): string {
+  if (looksLikeProjectKey(projectKeyOrId)) {
+    return normalizeProjectKey(projectKeyOrId);
+  }
+  return projectKeyOrId.trim();
+}
+
+/** Canonical page path: `/projects/{KEY}` (Jira-style). */
 export function projectShareHref(projectKey: string): string {
   return `/projects/${normalizeProjectKey(projectKey)}`;
 }
@@ -33,7 +44,7 @@ export function buildProjectShareUrl(
   return `${base}${projectShareHref(projectKey)}`;
 }
 
-/** Append raw page search params when redirecting key → UUID. */
+/** Append raw page search params when redirecting between project path forms. */
 export function withProjectSearchParams(
   href: string,
   searchParams?: RawSearchParams
@@ -57,26 +68,32 @@ export function withProjectSearchParams(
   return `${href}?${serialized}`;
 }
 
+/**
+ * In-app project workspace href. Prefer the project **key** so the address bar
+ * stays shareable; UUID values still work and redirect to the key URL.
+ */
 export function projectDetailHref(
-  projectId: string,
+  projectKeyOrId: string,
   tab?: ProjectDetailsTab
 ): string {
+  const segment = projectPathSegment(projectKeyOrId);
   if (tab && tab !== 'details') {
-    return `/projects/${projectId}?tab=${tab}`;
+    return `/projects/${segment}?tab=${tab}`;
   }
-  return `/projects/${projectId}`;
+  return `/projects/${segment}`;
 }
 
 export function buildProjectBreadcrumbOverrides(
-  projectId: string,
+  projectKeyOrId: string,
   projectName?: string
 ): DashboardBreadcrumbOverride[] {
+  const href = projectDetailHref(projectKeyOrId);
   return [
     { label: 'Dashboard', url: '/dashboard' },
     { label: 'Projects', url: '/projects' },
     {
-      label: projectName || projectId,
-      url: `/projects/${projectId}`,
+      label: projectName || projectPathSegment(projectKeyOrId),
+      url: href,
     },
   ];
 }

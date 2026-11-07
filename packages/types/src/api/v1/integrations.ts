@@ -46,6 +46,7 @@ export const integrationListSelect = {
   catalog_id: true,
   category: true,
   scope: true,
+  project_id: true,
   provider: true,
   name: true,
   status: true,
@@ -54,11 +55,18 @@ export const integrationListSelect = {
   sort_order: true,
   created_at: true,
   updated_at: true,
+  created_by: true,
+  created_by_user: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  },
 } as const;
 
 export const integrationDetailSelect = {
   ...integrationListSelect,
-  created_by: true,
   updated_by: true,
 } as const;
 
@@ -92,6 +100,8 @@ export const createIntegrationBodySchema = z
     config: integrationConfigStoredSchema,
     is_default: z.boolean().optional(),
     sort_order: z.coerce.number().int().optional(),
+    scope: integrationScopeSchema.optional(),
+    project_id: z.uuid().optional(),
   })
   .superRefine((body, context) => {
     const message = integrationIdentityValidationMessage({
@@ -105,6 +115,42 @@ export const createIntegrationBodySchema = z
         code: 'custom',
         message,
         path: ['catalog_id'],
+      });
+    }
+
+    const scope = body.scope ?? 'organization';
+    if (scope === 'member') {
+      context.addIssue({
+        code: 'custom',
+        message: 'Member-scoped integrations are not supported yet.',
+        path: ['scope'],
+      });
+      return;
+    }
+
+    if (scope === 'project') {
+      if (!body.project_id) {
+        context.addIssue({
+          code: 'custom',
+          message: 'project_id is required when scope is project.',
+          path: ['project_id'],
+        });
+      }
+      if (body.category !== 'ai_agent') {
+        context.addIssue({
+          code: 'custom',
+          message: 'Only AI agent integrations may be project-scoped.',
+          path: ['category'],
+        });
+      }
+      return;
+    }
+
+    if (body.project_id) {
+      context.addIssue({
+        code: 'custom',
+        message: 'project_id is only allowed when scope is project.',
+        path: ['project_id'],
       });
     }
   });
@@ -134,12 +180,15 @@ export const integrationWireSchema = z.object({
   catalog_id: z.string(),
   category: integrationCategorySchema,
   scope: integrationScopeSchema,
+  project_id: z.uuid().nullable(),
   provider: z.string(),
   name: z.string(),
   status: integrationStatusSchema,
   config: integrationConfigPublicSchema,
   is_default: z.boolean(),
   sort_order: z.number().int(),
+  created_by: z.uuid().nullable(),
+  created_by_name: z.string().nullable(),
   created_at: z.coerce.date(),
   updated_at: z.coerce.date(),
 });
@@ -147,7 +196,6 @@ export const integrationWireSchema = z.object({
 export type IntegrationWire = z.infer<typeof integrationWireSchema>;
 
 export const integrationDetailWireSchema = integrationWireSchema.extend({
-  created_by: z.uuid().nullable(),
   updated_by: z.uuid().nullable(),
 });
 
@@ -162,6 +210,10 @@ export const chatModelOptionSchema = z.object({
   model: z.string(),
   display_label: z.string(),
   model_version: z.string().optional(),
+  scope: integrationScopeSchema.optional(),
+  project_id: z.uuid().nullable().optional(),
+  created_by: z.uuid().nullable().optional(),
+  created_by_name: z.string().nullable().optional(),
 });
 
 export type ChatModelOption = z.infer<typeof chatModelOptionSchema>;
@@ -172,6 +224,26 @@ export const chatModelOptionsResponseSchema = z.object({
 
 export type ChatModelOptionsResponse = z.infer<
   typeof chatModelOptionsResponseSchema
+>;
+
+/** Org + project-scoped AI models available on a project Integrations tab. */
+export const projectAiModelOptionSchema = chatModelOptionSchema.extend({
+  catalog_id: z.string(),
+  scope: integrationScopeSchema,
+  project_id: z.uuid().nullable(),
+  created_by: z.uuid().nullable(),
+  created_by_name: z.string().nullable(),
+  has_api_key: z.boolean(),
+});
+
+export type ProjectAiModelOption = z.infer<typeof projectAiModelOptionSchema>;
+
+export const projectAiModelsResponseSchema = z.object({
+  models: z.array(projectAiModelOptionSchema),
+});
+
+export type ProjectAiModelsResponse = z.infer<
+  typeof projectAiModelsResponseSchema
 >;
 
 /** One org AI integration bound (or to bind) for a project. */
@@ -240,34 +312,6 @@ export const projectIntegrationBindingsResponseSchema = z.object({
 
 export type ProjectIntegrationBindingsResponse = z.infer<
   typeof projectIntegrationBindingsResponseSchema
->;
-
-/** Copy org AI binds from a source project the actor belongs to. */
-export const importProjectIntegrationBindingsBodySchema = z.object({
-  source_project_id: z.uuid(),
-});
-
-export type ImportProjectIntegrationBindingsBody = z.infer<
-  typeof importProjectIntegrationBindingsBodySchema
->;
-
-export const projectIntegrationBindingImportSourceSchema = z.object({
-  project_id: z.uuid(),
-  name: z.string(),
-  key: z.string(),
-  binding_count: z.number().int().nonnegative(),
-});
-
-export type ProjectIntegrationBindingImportSource = z.infer<
-  typeof projectIntegrationBindingImportSourceSchema
->;
-
-export const projectIntegrationBindingImportSourcesResponseSchema = z.object({
-  sources: z.array(projectIntegrationBindingImportSourceSchema),
-});
-
-export type ProjectIntegrationBindingImportSourcesResponse = z.infer<
-  typeof projectIntegrationBindingImportSourcesResponseSchema
 >;
 
 /** Member preferred org chat model (bind-by-reference; null ⇒ workspace default). */

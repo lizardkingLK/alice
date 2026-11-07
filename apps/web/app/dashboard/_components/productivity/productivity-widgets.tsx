@@ -34,6 +34,7 @@ import { cn } from '@repo/ui/lib/utils';
 import { ChatClient } from '@/app/chat/_components/chat-client';
 import { DashboardWidgetShell } from '@/app/dashboard/_components/dashboard-widget-shell';
 import { PRODUCTIVITY_WIDGET_CATALOG } from '@/app/dashboard/_components/productivity/productivity-catalog';
+import { projectDetailHref } from '@/app/projects/_helpers/project-links';
 import {
   clampPomodoroMinutes,
   hydratePomodoroState,
@@ -111,7 +112,7 @@ function ProjectsWidget({
           {projects.map((project) => (
             <li key={project.id}>
               <Link
-                href={`/projects/${project.id}`}
+                href={projectDetailHref(project.key ?? project.id)}
                 className="hover:bg-muted/60 flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors"
               >
                 <FolderKanban

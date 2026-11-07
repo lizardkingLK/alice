@@ -77,11 +77,11 @@ describe('sprint report links', () => {
       { label: 'Projects', url: '/projects' },
       {
         label: 'Alice Platform',
-        url: `/projects/${projectId}`,
+        url: '/projects/AP',
       },
       {
         label: 'Sprints',
-        url: `/projects/${projectId}?tab=sprints`,
+        url: '/projects/AP?tab=sprints',
       },
       {
         label: 'Sprint 4',

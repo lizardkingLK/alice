@@ -40,6 +40,7 @@ import {
   hardDeleteProject as clientHardDeleteProject,
   type Project,
 } from '@/app/projects/_services/projects.mutations.client';
+import { projectDetailHref } from '@/app/projects/_helpers/project-links';
 import {
   ProjectStatusEnum,
   PROJECT_STATUS_TABS,
@@ -120,7 +121,7 @@ function ProjectNameCell({ proj }: Readonly<{ proj: Project }>) {
   return (
     <div className="flex items-center gap-3">
       <Link
-        href={`/projects/${proj.id}`}
+        href={projectDetailHref(proj.key)}
         className="group/row flex min-w-0 flex-1 items-center gap-3 transition-opacity hover:opacity-85"
       >
         <Avatar
@@ -161,7 +162,7 @@ function ProjectNameCell({ proj }: Readonly<{ proj: Project }>) {
         asChild
       >
         <Link
-          href={`/projects/${proj.id}?tab=teams`}
+          href={projectDetailHref(proj.key, 'teams')}
           className="inline-flex items-center gap-1"
         >
           <Network className="size-3" />

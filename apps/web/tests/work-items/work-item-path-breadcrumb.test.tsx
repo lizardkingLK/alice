@@ -45,7 +45,7 @@ describe('WorkItemPathBreadcrumb', () => {
     // Assert
     expect(screen.getByRole('link', { name: 'PAL' })).toHaveAttribute(
       'href',
-      '/projects/proj-1'
+      '/projects/PAL'
     );
     expect(screen.getByText('Epic')).toBeInTheDocument();
     expect(screen.getByText('Root epic title')).toBeInTheDocument();

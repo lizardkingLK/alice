@@ -6,7 +6,7 @@ describe('ProjectSummaryMetrics', () => {
   it('links metric cards to project tabs and hides Sprints for members', () => {
     const { rerender } = render(
       <ProjectSummaryMetrics
-        projectId="project-1"
+        projectKey="ABC"
         memberCount={4}
         teamCount={0}
         workItemCount={20}
@@ -19,32 +19,32 @@ describe('ProjectSummaryMetrics', () => {
 
     expect(screen.getByRole('link', { name: /members/i })).toHaveAttribute(
       'href',
-      '/projects/project-1?tab=members'
+      '/projects/ABC?tab=members'
     );
     expect(screen.getByRole('link', { name: /teams/i })).toHaveAttribute(
       'href',
-      '/projects/project-1?tab=teams'
+      '/projects/ABC?tab=teams'
     );
     expect(screen.getByRole('link', { name: /work items/i })).toHaveAttribute(
       'href',
-      '/projects/project-1?tab=work-items'
+      '/projects/ABC?tab=work-items'
     );
     expect(screen.getByRole('link', { name: /sprints/i })).toHaveAttribute(
       'href',
-      '/projects/project-1?tab=sprints'
+      '/projects/ABC?tab=sprints'
     );
     expect(screen.getByRole('link', { name: /integrations/i })).toHaveAttribute(
       'href',
-      '/projects/project-1?tab=integrations'
+      '/projects/ABC?tab=integrations'
     );
     expect(screen.getByRole('link', { name: /fields/i })).toHaveAttribute(
       'href',
-      '/projects/project-1?tab=fields'
+      '/projects/ABC?tab=fields'
     );
 
     rerender(
       <ProjectSummaryMetrics
-        projectId="project-1"
+        projectKey="ABC"
         memberCount={4}
         teamCount={0}
         workItemCount={20}

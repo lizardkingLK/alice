@@ -4,10 +4,9 @@ const {
   listIntegrationsMock,
   getIntegrationDetailMock,
   listChatModelsMock,
+  listProjectAiModelsMock,
   listProjectChatModelBindingsMock,
   replaceProjectChatModelBindingsMock,
-  listProjectChatModelBindingImportSourcesMock,
-  importProjectChatModelBindingsFromProjectMock,
   getMemberChatModelPreferenceMock,
   putMemberChatModelPreferenceMock,
   createIntegrationMock,
@@ -17,10 +16,9 @@ const {
   listIntegrationsMock: vi.fn(),
   getIntegrationDetailMock: vi.fn(),
   listChatModelsMock: vi.fn(),
+  listProjectAiModelsMock: vi.fn(),
   listProjectChatModelBindingsMock: vi.fn(),
   replaceProjectChatModelBindingsMock: vi.fn(),
-  listProjectChatModelBindingImportSourcesMock: vi.fn(),
-  importProjectChatModelBindingsFromProjectMock: vi.fn(),
   getMemberChatModelPreferenceMock: vi.fn(),
   putMemberChatModelPreferenceMock: vi.fn(),
   createIntegrationMock: vi.fn(),
@@ -38,12 +36,9 @@ vi.mock('../../src/routes/api/integrations/integrations.service', () => {
     listIntegrations = listIntegrationsMock;
     getIntegrationDetail = getIntegrationDetailMock;
     listChatModels = listChatModelsMock;
+    listProjectAiModels = listProjectAiModelsMock;
     listProjectChatModelBindings = listProjectChatModelBindingsMock;
     replaceProjectChatModelBindings = replaceProjectChatModelBindingsMock;
-    listProjectChatModelBindingImportSources =
-      listProjectChatModelBindingImportSourcesMock;
-    importProjectChatModelBindingsFromProject =
-      importProjectChatModelBindingsFromProjectMock;
     getMemberChatModelPreference = getMemberChatModelPreferenceMock;
     putMemberChatModelPreference = putMemberChatModelPreferenceMock;
     createIntegration = createIntegrationMock;
@@ -63,12 +58,9 @@ const integrationsService = {
   listIntegrations: listIntegrationsMock,
   getIntegrationDetail: getIntegrationDetailMock,
   listChatModels: listChatModelsMock,
+  listProjectAiModels: listProjectAiModelsMock,
   listProjectChatModelBindings: listProjectChatModelBindingsMock,
   replaceProjectChatModelBindings: replaceProjectChatModelBindingsMock,
-  listProjectChatModelBindingImportSources:
-    listProjectChatModelBindingImportSourcesMock,
-  importProjectChatModelBindingsFromProject:
-    importProjectChatModelBindingsFromProjectMock,
   getMemberChatModelPreference: getMemberChatModelPreferenceMock,
   putMemberChatModelPreference: putMemberChatModelPreferenceMock,
   createIntegration: createIntegrationMock,
@@ -83,6 +75,7 @@ const integrationWire = {
   catalog_id: 'openai',
   category: 'ai_agent',
   scope: 'organization',
+  project_id: null,
   provider: 'openai',
   name: 'GPT-4o',
   status: 'active',
@@ -94,6 +87,8 @@ const integrationWire = {
   },
   is_default: false,
   sort_order: 0,
+  created_by: null,
+  created_by_name: null,
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: '2026-01-01T00:00:00.000Z',
 };
@@ -363,62 +358,41 @@ describe('integrations routes', () => {
     );
   });
 
-  it('lists import sources for project chat model bindings', async () => {
+  it('lists project AI models for managers', async () => {
     const projectId = '22222222-2222-4222-8222-222222222222';
-    const sources = [
+    const models = [
       {
-        project_id: '33333333-3333-4333-8333-333333333333',
-        name: 'Source',
-        key: 'SRC',
-        binding_count: 2,
+        id: integrationWire.id,
+        catalog_id: 'openai',
+        provider: 'openai',
+        name: 'GPT-4o',
+        is_default: false,
+        model: 'gpt-4o',
+        display_label: 'GPT-4o',
+        scope: 'organization',
+        project_id: null,
+        created_by: null,
+        created_by_name: null,
+        has_api_key: true,
       },
     ];
-    listProjectChatModelBindingImportSourcesMock.mockResolvedValue(sources);
+    listProjectAiModelsMock.mockResolvedValue(models);
 
     await withMountedRouter(
       '/api/integrations',
       integrationsRouter,
       async (baseUrl) => {
         const response = await fetch(
-          `${baseUrl}/api/integrations/project-bindings/import-sources?excludeProjectId=${projectId}`
+          `${baseUrl}/api/integrations/project-ai-models/${projectId}`
         );
         const body = await response.json();
 
         expect(response.status).toBe(200);
-        expect(body.sources).toEqual(sources);
-        expect(
-          listProjectChatModelBindingImportSourcesMock
-        ).toHaveBeenCalledWith(MOCK_AUTH_USER_ID, projectId);
-      }
-    );
-  });
-
-  it('imports project chat model bindings from a source project', async () => {
-    const projectId = '22222222-2222-4222-8222-222222222222';
-    const sourceProjectId = '33333333-3333-4333-8333-333333333333';
-    importProjectChatModelBindingsFromProjectMock.mockResolvedValue([]);
-
-    await withMountedRouter(
-      '/api/integrations',
-      integrationsRouter,
-      async (baseUrl) => {
-        const response = await fetch(
-          `${baseUrl}/api/integrations/project-bindings/${projectId}/import-from`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ source_project_id: sourceProjectId }),
-          }
+        expect(body.models).toEqual(models);
+        expect(listProjectAiModelsMock).toHaveBeenCalledWith(
+          MOCK_AUTH_USER_ID,
+          projectId
         );
-        const body = await response.json();
-
-        expect(response.status).toBe(200);
-        expect(body.bindings).toEqual([]);
-        expect(
-          importProjectChatModelBindingsFromProjectMock
-        ).toHaveBeenCalledWith(MOCK_AUTH_USER_ID, projectId, {
-          source_project_id: sourceProjectId,
-        });
       }
     );
   });
