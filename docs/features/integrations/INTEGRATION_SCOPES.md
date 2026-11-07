@@ -1,16 +1,18 @@
 # Integration scopes (Organization / Project / Member)
 
-Status: **Shipped (A–F facade)** — Schema has `IntegrationScope` (default
-`organization`), `project_integration_bindings`, and
+Status: **Shipped (A–F + project AI mint)** — Schema has `IntegrationScope`
+(default `organization`), `integrations.project_id` (required when
+`scope=project`), `project_integration_bindings`, and
 `member_chat_model_preferences`. Chat resolves **project → member preferred →
 org**. Create wizard and project **Integrations** tab cover Jira, GitHub, and AI
-binds (plus import-from-project). Members set a personal preferred model under
-**Settings → Preferences**. Phase **F** unifies SC/PM/AI as **project-scoped
-integrations in product language** via
-`GET /api/projects/:id/integrations-summary`; OAuth remains on
-`version_control_connections` / `project_management_connections` (not moved into
-`integrations` rows). Settings marketplace stays the **Organization vault**.
-Member-scoped API key rows remain deferred.
+enables. Managers mint **project-scoped** AI keys on the project Integrations
+tab (provider accordion + scope/owner filters). **Import-from-project** was
+removed. Members set a personal preferred model under **Settings →
+Preferences**. Phase **F** unifies SC/PM/AI as **project-scoped integrations in
+product language** via `GET /api/projects/:id/integrations-summary`; OAuth
+remains on `version_control_connections` / `project_management_connections`
+(not moved into `integrations` rows). Settings marketplace stays the
+**Organization vault**. Member-scoped API key rows remain deferred.
 
 Alice today stores chat-model (and future Slack/etc.) rows as **deployment-wide
 workspace integrations**. This document adds a first-class **scope** and the
@@ -254,23 +256,20 @@ Additive; exact migration TBD.
 
 ```text
 integrations
-  + scope            enum organization | project | member  -- default organization
-  + project_id       uuid null  -- required when scope = project
-  + owner_user_id    uuid null  -- required when scope = member
-  + source_integration_id uuid null  -- optional bind/import lineage
+  scope            enum organization | project | member  -- default organization
+  project_id       uuid null  -- required when scope = project; cascade on project delete
+  created_by       uuid null  -- owner for filters / audit
 
--- Optional join if “enabled for project” without cloning rows:
 project_integration_bindings
   project_id
-  integration_id          -- usually organization-scoped row
+  integration_id          -- organization or this project's project-scoped row
   is_default_for_project
   created_by / timestamps
 ```
 
 **Migration of current rows:** set `scope = organization`, `project_id = null`.
-Phase **B** ships the bindings table + chat resolution; with an empty bindings
-table, chat still uses the organization default (no user-visible change until
-Phase **C** writes rows).
+Project-scoped AI mint sets `scope=project`, `project_id`, encrypts the key, and
+**auto-binds** the new row to that project.
 
 GitHub/Jira remain on `version_control_connections` /
 `project_management_connections` plus `projects.vc_*` / `pm_*` link columns.
@@ -286,7 +285,7 @@ summary DTO without migrating OAuth ciphertext into `integrations`.
 | **A** | Docs + `IntegrationScope` / `integrations.scope` default `organization` (**done**)                                                                           | —          |
 | **B** | Chat resolution project → page → org; `project_integration_bindings`; managers already configure org Settings (**done**)                                     | A          |
 | **C** | **UX move:** create **Integrations** step (merge Imports+Source+AI); project Integrations marketplace (SC/PM radios + AI + catalog Coming soon) (**done**)   | B          |
-| **D** | Import-from-project-I-belong-to (org binds / metadata only) (**done**)                                                                                       | C          |
+| **D** | Import-from-project removed; project AI mint (`scope=project` + `project_id`) + enable org rows on Integrations tab (**done**)                               | C          |
 | **E** | Member preferred org model (Preferences + resolve) (**done**); personal key rows deferred                                                                    | B          |
 | **F** | Unify SC/PM/AI as project integrations in product language + summary facade; keep OAuth on `*_connections` (**done** — no row migration into `integrations`) | C          |
 

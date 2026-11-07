@@ -97,6 +97,8 @@ async function assertActiveOrgAiBindings(
     return;
   }
 
+  // Project create can only seed org-scoped binds (project-scoped rows do not
+  // exist until the project id is known).
   const ids = bindings.map((row) => row.integration_id);
   const activeOrgModels = await prisma.integrations.findMany({
     where: {

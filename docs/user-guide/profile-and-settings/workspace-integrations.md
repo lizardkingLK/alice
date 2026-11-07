@@ -109,12 +109,13 @@ Users cannot fix this themselves — only admins manage workspace integrations.
 
 ## vs project integrations
 
-| Scope         | Where                          | Examples                 |
-| ------------- | ------------------------------ | ------------------------ |
-| **Workspace** | Settings → **Integrations**    | Chat models, Slack       |
-| **Project**   | Project → **Integrations** tab | GitHub OAuth, Jira OAuth |
+| Scope            | Where                          | Examples                                                        |
+| ---------------- | ------------------------------ | --------------------------------------------------------------- |
+| **Organization** | Settings → **Integrations**    | Shareable chat model vault, Slack (planned)                     |
+| **Project**      | Project → **Integrations** tab | GitHub/Jira OAuth, enable org models, mint project-only AI keys |
 
-Do not confuse workspace AI settings with per-project GitHub/Jira — see
+Organization AI rows can be enabled on many projects by reference. Project AI
+rows keep their own keys and are not shared across projects. See
 [Project integrations](../projects/project-integrations.md).
 
 ---

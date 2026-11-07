@@ -33,6 +33,7 @@ const openAiRow: IntegrationWire = {
   catalog_id: 'openai',
   category: 'ai_agent',
   scope: 'organization',
+  project_id: null,
   provider: 'openai',
   name: 'GPT-4o',
   status: 'active',
@@ -44,6 +45,8 @@ const openAiRow: IntegrationWire = {
   },
   is_default: true,
   sort_order: 0,
+  created_by: null,
+  created_by_name: null,
   created_at: new Date('2026-01-01T00:00:00.000Z'),
   updated_at: new Date('2026-01-01T00:00:00.000Z'),
 };

@@ -35,7 +35,7 @@ vi.mock('@/app/projects/_services/projects.cache.actions.server', () => ({
 }));
 
 vi.mock('@/app/projects/_helpers/project-creation-draft-storage', () => ({
-  PROJECT_CREATION_DRAFT_VERSION: 3,
+  PROJECT_CREATION_DRAFT_VERSION: 4,
   saveProjectCreationDraft: vi.fn(),
   readProjectCreationDraft: vi.fn(),
   clearProjectCreationDraft: vi.fn(),
@@ -164,7 +164,7 @@ const mockGithubConnection = {
 };
 
 const mockProjectCreationDraft: ProjectCreationDraft = {
-  version: 3,
+  version: 4,
   currentStep: 5,
   basicInfo: {
     name: 'Restored Project',
@@ -174,7 +174,24 @@ const mockProjectCreationDraft: ProjectCreationDraft = {
     status: 'archived',
     startDate: '2099-09-01',
     endDate: '2099-10-01',
-    selectedWorkItemTypes: ['Epic', 'Story'],
+    workItemTypeDefs: [
+      {
+        key: 'Epic',
+        name: 'Epic',
+        description: 'Top-level initiative',
+        icon: 'layers',
+        color: '#6B5B95',
+        level: 0,
+      },
+      {
+        key: 'Story',
+        name: 'Story',
+        description: 'User story / deliverable',
+        icon: 'bookmark',
+        color: '#3B6FDB',
+        level: 1,
+      },
+    ],
   },
   imports: {
     importFromJira: true,
@@ -1054,7 +1071,7 @@ describe('ProjectForm Component', () => {
     expect(saveProjectCreationDraft).toHaveBeenCalledWith(
       'user-admin',
       expect.objectContaining({
-        version: 3,
+        version: 4,
         currentStep: 5,
         basicInfo: expect.objectContaining({
           name: 'Project Alice',

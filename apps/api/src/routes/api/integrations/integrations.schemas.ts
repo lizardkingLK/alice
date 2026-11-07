@@ -1,6 +1,5 @@
 export {
   createIntegrationBodySchema,
-  importProjectIntegrationBindingsBodySchema,
   listIntegrationsQuerySchema,
   patchIntegrationBodySchema,
   putMemberChatModelPreferenceBodySchema,
