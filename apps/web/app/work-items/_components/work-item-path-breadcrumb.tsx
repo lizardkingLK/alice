@@ -9,6 +9,7 @@ import {
   BreadcrumbSeparator,
 } from '@repo/ui/components/ui/breadcrumb';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import { projectDetailHref } from '@/app/projects/_helpers/project-links';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
 import type {
   DbWorkItem,
@@ -60,7 +61,10 @@ export function WorkItemPathBreadcrumb({
   ancestors = [],
 }: Readonly<WorkItemPathBreadcrumbProps>) {
   const projectKey = workItem.project?.key?.trim() || '—';
+  const projectHrefKey = workItem.project?.key?.trim();
   const projectId = workItem.project?.id;
+  const projectHrefRef = projectHrefKey || projectId;
+  const projectHref = projectHrefRef ? projectDetailHref(projectHrefRef) : null;
   const sprintName = workItem.sprint?.name?.trim() ?? null;
   const hasSprint = Boolean(workItem.sprint_id && sprintName);
   // Guard against duplicate ids (e.g. parent cycles) so React keys stay unique.
@@ -78,12 +82,12 @@ export function WorkItemPathBreadcrumb({
     <Breadcrumb>
       <BreadcrumbList className="gap-1.5 text-xs sm:gap-2">
         <BreadcrumbItem>
-          {projectId ? (
+          {projectHref ? (
             <BreadcrumbLink
               asChild
               className="text-muted-foreground hover:text-primary font-mono tracking-wide uppercase"
             >
-              <Link href={`/projects/${projectId}`}>{projectKey}</Link>
+              <Link href={projectHref}>{projectKey}</Link>
             </BreadcrumbLink>
           ) : (
             <span className="text-muted-foreground font-mono tracking-wide uppercase">

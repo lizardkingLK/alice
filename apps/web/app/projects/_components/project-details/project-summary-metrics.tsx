@@ -89,7 +89,7 @@ type MetricDefinition = {
 };
 
 type ProjectSummaryMetricsProps = {
-  readonly projectId: string;
+  readonly projectKey: string;
   readonly memberCount: number;
   readonly teamCount: number;
   readonly workItemCount: number;
@@ -100,7 +100,7 @@ type ProjectSummaryMetricsProps = {
 };
 
 export function ProjectSummaryMetrics({
-  projectId,
+  projectKey,
   memberCount,
   teamCount,
   workItemCount,
@@ -178,7 +178,7 @@ export function ProjectSummaryMetrics({
           caption={metric.caption}
           tone={metric.tone}
           icon={metric.icon}
-          href={projectDetailHref(projectId, metric.tab)}
+          href={projectDetailHref(projectKey, metric.tab)}
         />
       ))}
     </div>

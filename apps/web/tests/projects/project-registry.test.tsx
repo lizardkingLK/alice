@@ -165,13 +165,13 @@ describe('ProjectRegistry Component', () => {
       />
     );
 
-    // Verify Project names link to the project detail page
+    // Verify Project names link to the project detail page (key-canonical)
     expect(
       screen.getByRole('link', { name: /Project Alpha/i })
-    ).toHaveAttribute('href', '/projects/proj-1');
+    ).toHaveAttribute('href', '/projects/PAL');
     expect(screen.getByRole('link', { name: /Project Beta/i })).toHaveAttribute(
       'href',
-      '/projects/proj-2'
+      '/projects/PBE'
     );
 
     // Verify key slices (first 2 characters)
@@ -184,7 +184,7 @@ describe('ProjectRegistry Component', () => {
     expect(screen.getByText('Description Alpha')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '2 teams' })).toHaveAttribute(
       'href',
-      '/projects/proj-1?tab=teams'
+      '/projects/PAL?tab=teams'
     );
     expect(screen.getByText('Description Beta')).toBeInTheDocument();
 
