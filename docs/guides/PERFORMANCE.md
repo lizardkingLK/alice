@@ -459,7 +459,8 @@ Legend:
 | `GET /api/attachments`                   | **Plan (toggle)** | RSC default               | Dual readers on work-item detail (`?work_item_id=`)                                                                       |
 | `GET /api/attachments/:id`               | **Kept**          | Attachments UI            | Mints signed preview/download URLs (private bucket)                                                                       |
 | `GET /api/access-allowlist`              | **Plan (toggle)** | RSC default               | Dual readers for admin list; mutations stay Express                                                                       |
-| `GET /api/notifications/check-due-dates` | **Kept**          | Vercel cron               | Not a page read                                                                                                           |
+| `GET /api/notifications/check-due-dates` | **Kept**          | Vercel cron               | Due-date-only; prefer `daily-reminders`                                                                                   |
+| `GET /api/notifications/daily-reminders` | **Kept**          | Vercel cron               | Parallel due-date + worklog burndown pending                                                                              |
 | `GET /api/notifications/prune-read`      | **Kept**          | Vercel cron               | Deletes read/archived rows older than 30 days                                                                             |
 | `GET /api/health`, `GET /api/v1/health`  | **Kept**          | Deploy / probes           | v1 health router; static version details, no DB                                                                           |
 | `GET /api/v2/health`                     | **Kept**          | Deploy / probes           | v2 reference (adds `checkedAt`); shared repository, separate service/router                                               |

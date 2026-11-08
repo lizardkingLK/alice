@@ -1,6 +1,6 @@
 # Dashboard inbox
 
-Read and clear alerts from the header bell menu.
+Read and clear alerts from the header bell or the Notifications page.
 
 **Audience:** All users
 
@@ -12,6 +12,9 @@ Read and clear alerts from the header bell menu.
    **View notifications**). The page itself does not wait for this list — the
    inbox loads in the background so slow connections still open Users, Board,
    and other dashboard routes.
+2. Or open **Notifications** in the sidebar, which goes to `/notifications`.
+3. From the bell dropdown, use the expand control to open the same full inbox
+   page.
 
 A dropdown panel opens with your recent notifications. If the list fails to
 load, select **Try again**.
@@ -20,17 +23,19 @@ load, select **Try again**.
 
 ## Panel actions
 
-| Control                  | Action                                           |
-| ------------------------ | ------------------------------------------------ |
-| Notification row         | Mark read and navigate to the related item       |
-| **Mark all as read**     | Clear unread state (shown when unread count > 0) |
-| **Archive** (X on hover) | Remove item from the list                        |
+| Control                            | Action                                           |
+| ---------------------------------- | ------------------------------------------------ |
+| Notification row                   | Mark read and navigate to the related item       |
+| **Mark all as read**               | Clear unread state (shown when unread count > 0) |
+| **Archive** (X on hover)           | Remove item from the list                        |
+| Expand / **Notifications** sidebar | Open the full `/notifications` inbox             |
 
 When empty: **No notifications yet** — mentions and updates will appear here.
 
-The inbox shows up to **50** recent active items. Each alert is for you only
-(not a shared feed). Notifications you have already read, or archived, that are
-older than **30 days** are removed automatically.
+The header dropdown shows up to **50** recent active items. The Notifications
+page shows up to **100**. Each alert is for you only (not a shared feed).
+Notifications you have already read, or archived, that are older than **30
+days** are removed automatically.
 
 ---
 
@@ -43,6 +48,7 @@ Examples you may see:
 | **mention** / **comment**      | Work item discussion                                   |
 | **assign** / **status_change** | Work item detail                                       |
 | **due_date**                   | Work item detail                                       |
+| **worklog_pending**            | My Work (pace gap vs today’s ideal burndown)           |
 | **sprint**                     | Sprint or work context                                 |
 | **view_shared**                | Saved view                                             |
 | **chart_shared**               | Charts workspace                                       |
@@ -50,6 +56,10 @@ Examples you may see:
 | **access_request**             | Users → Requests (admins)                              |
 | **project_created**            | New project details (e.g. “Project **Acme** is ready”) |
 | **project_create_failed**      | Message only (no link)                                 |
+
+**Worklog pace alerts** appear when your logged hours on active sprint work are
+behind the ideal amount for the end of today. The message tells you roughly how
+many hours to log to catch up.
 
 Project-ready alerts bold the project name and link it to the project page.
 Other types usually open from the whole row using the related item.

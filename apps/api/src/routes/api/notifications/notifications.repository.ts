@@ -26,6 +26,15 @@ export type ExistingDueDateNotificationRow = {
   message: string;
 };
 
+export type WorklogBurndownPendingRow = {
+  assignee_id: string;
+  sprint_id: string;
+  estimated_points: number;
+  logged_hours: number;
+  ideal_spent_eod: number;
+  pending_hours: number;
+};
+
 export class NotificationsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
@@ -177,6 +186,52 @@ export class NotificationsRepository {
     }
 
     return existingNotifications ?? [];
+  }
+
+  async findWorklogBurndownPending(
+    asOfDate: string
+  ): Promise<WorklogBurndownPendingRow[]> {
+    const { data, error } = await this.db.rpc('get_worklog_burndown_pending', {
+      p_as_of: asOfDate,
+    });
+
+    if (error) {
+      console.error('Failed to fetch worklog burndown pending:', error);
+      throw new Error(
+        `Failed to fetch worklog burndown pending: ${error.message}`
+      );
+    }
+
+    return (data ?? []) as WorklogBurndownPendingRow[];
+  }
+
+  async findExistingWorklogPendingUserIds(
+    userIds: string[],
+    createdOnOrAfterIso: string
+  ): Promise<string[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    const { data, error } = await this.db
+      .from('notifications')
+      .select('user_id')
+      .eq('type', 'worklog_pending')
+      .eq('status', 'active')
+      .in('user_id', userIds)
+      .gte('created_at', createdOnOrAfterIso);
+
+    if (error) {
+      console.error(
+        'Failed to fetch existing worklog_pending notifications:',
+        error
+      );
+      throw new Error(
+        `Failed to fetch existing worklog_pending notifications: ${error.message}`
+      );
+    }
+
+    return [...new Set((data ?? []).map((row) => row.user_id))];
   }
 
   async deleteReadOrArchivedOlderThan(cutoff: Date): Promise<number> {

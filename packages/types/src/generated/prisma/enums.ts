@@ -120,7 +120,8 @@ export const NotificationType = {
   chat_processed: 'chat_processed',
   access_request: 'access_request',
   project_created: 'project_created',
-  project_create_failed: 'project_create_failed'
+  project_create_failed: 'project_create_failed',
+  worklog_pending: 'worklog_pending'
 } as const
 
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType]

@@ -75,4 +75,19 @@ describe('resolveNotificationHref', () => {
       )
     ).toBeNull();
   });
+
+  it('routes worklog_pending to My Work', () => {
+    expect(
+      resolveNotificationHref(
+        { type: 'worklog_pending', related_item_id: 'sprint-1' },
+        null
+      )
+    ).toBe('/member');
+    expect(
+      resolveNotificationHref(
+        { type: 'worklog_pending', related_item_id: null },
+        null
+      )
+    ).toBe('/member');
+  });
 });
