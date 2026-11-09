@@ -176,6 +176,25 @@ Parents orchestrate on the orchestration queue; children run on specialist queue
 - [ ] Align charts Tier 2 wording with BullMQ + Upstash Redis
 - [ ] User-guide only when job progress is user-visible
 
+### Source-control / agent job kinds (planned)
+
+GitHub App sync and later agent workflows are first-class candidates for worker
+job kinds. Product phases live in
+[GITHUB_INTEGRATION.md](../features/projects/GITHUB_INTEGRATION.md)
+(Phased delivery). Draft names (finalize in `@repo/jobs`):
+
+| Kind (draft) | Phase | Role |
+| ------------ | ----- | ---- |
+| `github.webhook.ingest` | 2 | After API HMAC verify — normalize payload, idempotency key, fan-out |
+| `github.sync.pull_request` | 2 | Upsert PR (+ link work item when resolvable) |
+| `github.sync.push` | 2 | Commits / branch tip updates |
+| `github.sync.branch` | 2 | Branch create/delete |
+| `workflow.run` | 4 | Orchestrator parent flow (FlowProducer) |
+| `agent.tool.cursor` (and peers) | 4 | Long agent tool execution; never on `apps/api` |
+
+Webhook HTTP handlers on `apps/api` **verify + enqueue only**. Agent tool loops
+and sync apply logic run on `apps/worker`.
+
 ---
 
 ## Enrich / brainstorm backlog
@@ -189,3 +208,5 @@ Capture follow-ups here as the design deepens:
 - Auth: how workers call Supabase / internal APIs (service role vs signed job tokens)
 - Agent tool sandboxing and timeout budgets
 - Whether chart Tier 2 apply jobs share `heavy` with other rebuilds
+- GitHub webhook retry / delivery replay vs Alice idempotency keys
+- Human-in-the-loop gates for PR-comment → agent resolve workflows

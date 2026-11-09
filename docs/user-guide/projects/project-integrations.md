@@ -32,6 +32,13 @@ to authorize your GitHub account with OAuth and bind one repository
 and branch activity on work items. After a link is saved, clear it with
 **Disconnect** on the card before **None** stays available.
 
+**Today:** connect with GitHub OAuth and link PRs to work items (often manually).
+**Planned:** install an Alice GitHub App, sync PRs/commits/branches automatically,
+and (later) run in-app workflows that can call agent tools such as Cursor — see
+the engineering plan in
+[GITHUB_INTEGRATION.md](../../features/projects/GITHUB_INTEGRATION.md#phased-delivery-planned).
+Those App install steps are **not** available in the product UI yet.
+
 ### Connect or update
 
 1. Select **Modify GitHub Settings** (or **Connect GitHub** if nothing is linked

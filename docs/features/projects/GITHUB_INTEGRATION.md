@@ -1,13 +1,135 @@
-# GitHub Integration — OAuth 2.1 & Secrets Configuration
+# GitHub Integration — OAuth today, GitHub App + orchestrator planned
 
-**Status:** Implemented (GitHub OAuth 2.1/OIDC with AES-256-GCM encryption-at-rest & JIT refresh)  
-**Related:** [Projects README](./README.md), [JIRA_INTEGRATION.md](./JIRA_INTEGRATION.md) (shared crypto and popup UX pattern), work-item PR link/list
+**Status (shipped):** GitHub **OAuth App** (Authorization Code) with AES-256-GCM
+encryption-at-rest and JIT refresh — enough to connect an account, bind one
+`owner/repo` per project, and **manually** link PRs to work items.
+
+**Status (planned):** Migrate source control to a **GitHub App** (install +
+webhooks + installation tokens), sync PRs/commits/branches automatically, then
+feed an in-app **workflow orchestrator** that can enqueue **agent tools**
+(e.g. Cursor) on `apps/worker`. See [Phased delivery (planned)](#phased-delivery-planned).
+
+**Related:** [Projects README](./README.md),
+[JIRA_INTEGRATION.md](./JIRA_INTEGRATION.md) (shared crypto and popup UX),
+[WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md),
+[INTEGRATION_SCOPES.md](../integrations/INTEGRATION_SCOPES.md),
+user guide [project-integrations.md](../../user-guide/projects/project-integrations.md)
 
 ---
 
-## Architecture & Model
+## North-star topology (planned)
 
-GitHub integration enables Alice workspaces to link pull requests, commits, and branches to work items, following the same OAuth UX pattern established by the Jira integration.
+GitHub App is the **event and install identity** plane. It must not call agent
+tools directly. Alice normalizes domain state and events; the orchestrator
+decides; workers execute.
+
+```mermaid
+flowchart TB
+  gh[GitHub_App_webhooks]
+  api[apps_api_verify_enqueue]
+  redis[(BullMQ_Redis)]
+  worker[apps_worker]
+  db[(Postgres_domain_state)]
+  orch[Workflow_orchestrator]
+  cursor[Cursor_or_agent_tools]
+  streamer[apps_streamer]
+
+  gh -->|PR_push_comment| api
+  api -->|normalize_and_persist| db
+  api -->|enqueue_sync_or_workflow| redis
+  worker -->|consume| redis
+  worker --> db
+  orch -->|decide_next_steps| redis
+  worker -->|invoke| cursor
+  worker -->|progress| streamer
+```
+
+| Layer | Owns | Does not own |
+| ----- | ---- | ------------ |
+| **GitHub App** | Install identity, permissions, webhooks, installation tokens, repo list | Agent prompts, workflow graphs, Cursor credentials |
+| **SC sync** | Upsert PRs / commits / branches / comment refs; link to work items | “Resolve this issue” product decisions |
+| **Workflow orchestrator** | Triggers, conditions, approvals, multi-step runs | Raw GitHub HMAC / token minting |
+| **Agent integrations** | Cursor (and peers) as tools on the worker | GitHub App private keys |
+
+---
+
+## Phased delivery (planned)
+
+| Phase | Deliverable | Depends on |
+| ----- | ----------- | ---------- |
+| **0** | App registration checklist + env shape in docs (this section) | — |
+| **1** | Install UX + `installation_id` on `version_control_connections`; project bind via `vc_*` | 0 |
+| **2** | Signed webhooks → enqueue → worker sync for **PRs, commits, branches** | 1 + worker skeleton |
+| **3** | Normalized SC domain events + job kinds aligned with [WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md) | 2 |
+| **4** | Workflow orchestrator MVP; agent tools (e.g. Cursor) with human-in-the-loop | 3 |
+| **5** | Migrate off user OAuth; optional write-back (checks/comments); Issues policy TBD | 4 |
+
+### Phase 0 — Foundations
+
+- Register Alice **GitHub App** (draft permissions: Contents / Metadata / Pull
+  requests / Commits **read**; webhook events `push`, `pull_request`,
+  `create` / `delete`; **write** scopes deferred until Phase 4–5).
+- Env shape (planned): `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`,
+  `GITHUB_APP_WEBHOOK_SECRET`, install + callback URLs (alongside today’s
+  `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` until Phase 5).
+- Non-goal: no runtime App code required for Phase 0 beyond documentation.
+
+### Phase 1 — Install + project bind
+
+- Install UX: trust App on org/user → select repos (same product rhyme as Jira
+  “connect then pick resource”; **auth model is App install**, not user 3LO).
+- Persist `installation_id` (and account metadata) in
+  `version_control_connections.provider_config`.
+- Mint short-lived **installation tokens** for API calls.
+- Keep project binding on `projects.vc_connection_id` /
+  `projects.vc_external` (wire aliases `github_connection_id` / `github_repo`).
+- New connects prefer App; legacy user OAuth remains until Phase 5.
+
+### Phase 2 — Webhook ingest + domain sync
+
+- Signed webhook endpoint on `apps/api` → verify → idempotent enqueue → **202**.
+- Worker job kinds upsert into `version_control_pull_requests` (and
+  commit/branch tables as designed).
+- Auto and/or manual link to Alice work items (branch naming / commit trailers
+  where possible). Manual PR link remains as fallback.
+- **Out of scope:** GitHub Issues → Alice work items (avoids dual ontology with
+  Jira import). Revisit as an explicit product choice later.
+
+### Phase 3 — Normalized SC events + worker bridge
+
+- Emit Alice domain events (e.g. `PullRequestOpened`, `PushReceived`, later
+  `ReviewCommentReceived`) as orchestrator inputs — not raw GitHub payloads.
+- Queue names / `job_runs` follow WORKER_AND_STREAMER; API never runs agent
+  loops or BullMQ `Worker` processes.
+
+### Phase 4 — Workflow orchestrator + agent tools
+
+- In-app workflows subscribe to SC events; enqueue agent steps on `apps/worker`.
+- Cursor (and peers) live as **org agent integrations/tools** (Settings vault /
+  agent connectors), **not** columns on `version_control_connections`.
+- Default **human-in-the-loop** for “resolve from PR comment” and architecture
+  proposals; optional post-back to GitHub when write permissions exist.
+
+### Phase 5 — Migration + write-back
+
+- Migrate or require re-install off user OAuth App connections.
+- Expand App permissions for checks / PR comments as workflows need.
+- Optional GitHub Issues policy (link vs import) as a separate decision.
+
+### Locks
+
+- Auth: **GitHub App install**, not “more user OAuth scopes.”
+- v1 sync: **PRs + commits + branches**; Issues later.
+- Binding: **one** primary repo per Alice project (`vc_*`).
+- Storage: extend `version_control_connections`; do **not** fold SC into
+  Settings `integrations` rows (Phase F facade stays valid).
+- Execution: sync and agents on **worker**; orchestrator reacts to Alice events.
+
+---
+
+## Architecture & Model (current — OAuth App)
+
+GitHub integration today enables Alice workspaces to link pull requests, commits, and branches to work items, following the same OAuth UX pattern established by the Jira integration.
 
 | Concern                 | Approach                                                                                                                                                                                                                |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

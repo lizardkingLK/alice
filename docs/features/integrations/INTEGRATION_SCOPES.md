@@ -276,6 +276,18 @@ GitHub/Jira remain on `version_control_connections` /
 They are **project-scoped in product language**; Phase **F** exposes a unified
 summary DTO without migrating OAuth ciphertext into `integrations`.
 
+### Source control future (planned — not Phase A–F)
+
+GitHub today is a **user OAuth App** connection plus project repo bind (manual
+PR links). The planned path is a **GitHub App** install, webhook-driven sync of
+PRs/commits/branches, then an in-app **workflow orchestrator** that can enqueue
+**agent tools** (e.g. Cursor) on `apps/worker`. SC credentials still stay on
+`version_control_connections` — they are **not** folded into Settings
+`integrations` rows. Phases **0–5**:
+[GITHUB_INTEGRATION.md](../projects/GITHUB_INTEGRATION.md#phased-delivery-planned).
+Runtime contract:
+[WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md).
+
 ---
 
 ## Phased delivery
