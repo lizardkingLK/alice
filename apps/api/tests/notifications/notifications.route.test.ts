@@ -9,8 +9,10 @@ import type { NotificationsService } from '../../src/routes/api/notifications/no
 import { withMountedRouter } from '../helpers/route-test.harness';
 
 const pruneReadNotifications = vi.fn();
+const runDailyReminders = vi.fn();
 const notificationsService = {
   pruneReadNotifications,
+  runDailyReminders,
 } as unknown as NotificationsService;
 
 const notificationsRouter = createNotificationsRouter({
@@ -63,6 +65,56 @@ describe('GET /api/notifications/prune-read', () => {
           retentionDays: 30,
         });
         expect(pruneReadNotifications).toHaveBeenCalledTimes(1);
+      }
+    );
+  });
+});
+
+describe('GET /api/notifications/daily-reminders', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('rejects requests without the cron bearer token', async () => {
+    await withMountedRouter(
+      '/api/notifications',
+      notificationsRouter,
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/api/notifications/daily-reminders`
+        );
+
+        expect(response.status).toBe(401);
+        expect(await response.json()).toEqual({ error: 'Unauthorized' });
+        expect(runDailyReminders).not.toHaveBeenCalled();
+      }
+    );
+  });
+
+  it('runs both reminder jobs when authorized', async () => {
+    runDailyReminders.mockResolvedValue({
+      dueDates: { checkedCount: 2, createdCount: 1 },
+      worklogPending: { checkedCount: 3, createdCount: 2 },
+    });
+
+    await withMountedRouter(
+      '/api/notifications',
+      notificationsRouter,
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/api/notifications/daily-reminders`,
+          {
+            headers: { Authorization: 'Bearer mock-cron-secret' },
+          }
+        );
+
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual({
+          success: true,
+          dueDates: { checkedCount: 2, createdCount: 1 },
+          worklogPending: { checkedCount: 3, createdCount: 2 },
+        });
+        expect(runDailyReminders).toHaveBeenCalledTimes(1);
       }
     );
   });

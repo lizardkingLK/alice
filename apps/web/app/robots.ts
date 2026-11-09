@@ -11,6 +11,7 @@ export default function robots(): MetadataRoute.Robots {
         '/projects',
         '/manager',
         '/member',
+        '/notifications',
         '/files',
         '/help',
         '/docs',

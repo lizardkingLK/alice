@@ -2278,6 +2278,17 @@ export type Database = {
         Args: { p_project_ids: string[] }
         Returns: Json
       }
+      get_worklog_burndown_pending: {
+        Args: { p_as_of?: string }
+        Returns: {
+          assignee_id: string
+          estimated_points: number
+          ideal_spent_eod: number
+          logged_hours: number
+          pending_hours: number
+          sprint_id: string
+        }[]
+      }
       get_project_workspace_bundle: {
         Args: { p_project_id: string }
         Returns: Json
@@ -2403,6 +2414,7 @@ export type Database = {
         | "chart_shared"
         | "project_created"
         | "project_create_failed"
+        | "worklog_pending"
       ProjectManagementConnectionStatus: "active" | "revoked" | "expired"
       ProjectManagementVendor: "jira"
       ProjectStatus: "active" | "archived"
@@ -2584,6 +2596,7 @@ export const Constants = {
         "chart_shared",
         "project_created",
         "project_create_failed",
+        "worklog_pending",
       ],
       ProjectManagementConnectionStatus: ["active", "revoked", "expired"],
       ProjectManagementVendor: ["jira"],

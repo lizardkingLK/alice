@@ -3,6 +3,8 @@ import {
   AssignNotification,
   MentionNotification,
   DueDateNotification,
+  WorklogPendingNotification,
+  formatWorklogPendingMessage,
   todayDateString,
   type NotificationType,
 } from '@repo/types';
@@ -192,6 +194,83 @@ export class NotificationsService {
       checkedCount: workItems.length,
       createdCount: notificationsToInsert.length,
     };
+  }
+
+  async checkAndSendWorklogBurndownNotifications(now = new Date()) {
+    const todayStr = todayDateString(now);
+    const rows =
+      await this.notificationsRepository.findWorklogBurndownPending(todayStr);
+
+    if (rows.length === 0) {
+      return { checkedCount: 0, createdCount: 0 };
+    }
+
+    const pendingByAssignee = new Map<
+      string,
+      { pendingHours: number; sprintIds: Set<string> }
+    >();
+
+    for (const row of rows) {
+      const pendingHours = Number(row.pending_hours);
+      if (!Number.isFinite(pendingHours) || pendingHours <= 0) {
+        continue;
+      }
+      const existing = pendingByAssignee.get(row.assignee_id);
+      if (existing) {
+        existing.pendingHours += pendingHours;
+        existing.sprintIds.add(row.sprint_id);
+        continue;
+      }
+      pendingByAssignee.set(row.assignee_id, {
+        pendingHours,
+        sprintIds: new Set([row.sprint_id]),
+      });
+    }
+
+    if (pendingByAssignee.size === 0) {
+      return { checkedCount: rows.length, createdCount: 0 };
+    }
+
+    const assigneeIds = [...pendingByAssignee.keys()];
+    const dayStartIso = `${todayStr}T00:00:00.000Z`;
+    const alreadyNotified =
+      await this.notificationsRepository.findExistingWorklogPendingUserIds(
+        assigneeIds,
+        dayStartIso
+      );
+    const alreadyNotifiedSet = new Set(alreadyNotified);
+
+    const notificationsToInsert: WorklogPendingNotification[] = [];
+
+    for (const [assigneeId, aggregate] of pendingByAssignee) {
+      if (alreadyNotifiedSet.has(assigneeId)) {
+        continue;
+      }
+      const relatedSprintId =
+        aggregate.sprintIds.size === 1
+          ? ([...aggregate.sprintIds][0] ?? null)
+          : null;
+      const notification = new NotificationBuilder(WorklogPendingNotification)
+        .ToUser(assigneeId)
+        .WithMessage(formatWorklogPendingMessage(aggregate.pendingHours))
+        .WithRelatedItem(relatedSprintId)
+        .Build();
+      notificationsToInsert.push(notification);
+    }
+
+    await this.notificationsRepository.insertMany(notificationsToInsert);
+    return {
+      checkedCount: rows.length,
+      createdCount: notificationsToInsert.length,
+    };
+  }
+
+  async runDailyReminders(now = new Date()) {
+    const [dueDates, worklogPending] = await Promise.all([
+      this.checkAndSendDueDateNotifications(),
+      this.checkAndSendWorklogBurndownNotifications(now),
+    ]);
+    return { dueDates, worklogPending };
   }
 
   async pruneReadNotifications(now = new Date()) {

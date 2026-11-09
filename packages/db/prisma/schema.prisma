@@ -93,6 +93,7 @@ enum NotificationType {
   access_request
   project_created
   project_create_failed
+  worklog_pending
 }
 
 /// Append-only work-item activity feed actions (see docs/features/work-items/ACTIVITY.md).

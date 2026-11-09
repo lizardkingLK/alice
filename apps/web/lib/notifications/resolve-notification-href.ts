@@ -26,6 +26,10 @@ export function resolveNotificationHref(
   notif: NotificationNavInput,
   sharedView: SavedViewNavSnapshot | null | undefined
 ): string | null {
+  if (notif.type === 'worklog_pending') {
+    return '/member';
+  }
+
   if (!notif.related_item_id) {
     return null;
   }

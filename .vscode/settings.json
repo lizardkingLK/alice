@@ -7,9 +7,5 @@
     "*.css": "tailwindcss"
   },
   "js/ts.preferences.importModuleSpecifier": "non-relative",
-  "js/ts.tsdk.path": "node_modules/typescript/lib",
-  "sonarlint.connectedMode.project": {
-    "connectionId": "alice",
-    "projectKey": "lizardkingLK_alice"
-  }
+  "js/ts.tsdk.path": "node_modules/typescript/lib"
 }

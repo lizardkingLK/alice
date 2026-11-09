@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Bell,
   BookOpen,
   CircleDot,
   CircleHelp,
@@ -37,6 +38,7 @@ export const PLATFORM_NAV: readonly DashboardNavItem[] = [
   { path: '/board', label: 'Board', icon: Kanban },
   { path: '/work-items', label: 'Work Items', icon: ClipboardPenIcon },
   { path: '/member', label: 'My Work', icon: CircleDot },
+  { path: '/notifications', label: 'Notifications', icon: Bell },
   { path: '/reports', label: 'Reports', icon: FileText },
   { path: '/chat', label: 'Alice', icon: Sparkles },
   { path: '/views', label: 'Views', icon: Layers },

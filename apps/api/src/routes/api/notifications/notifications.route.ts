@@ -111,6 +111,12 @@ export function createNotificationsRouter(deps: NotificationsRouterDeps) {
     );
   });
 
+  notificationsRouter.get('/daily-reminders', async (req, res) => {
+    await runAuthorizedCron(req, res, () =>
+      notificationsService.runDailyReminders()
+    );
+  });
+
   notificationsRouter.get('/prune-read', async (req, res) => {
     await runAuthorizedCron(req, res, () =>
       notificationsService.pruneReadNotifications()
