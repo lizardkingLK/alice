@@ -131,4 +131,67 @@ describe('getResponse', () => {
     ).rejects.toMatchObject({ name: 'BackendUnreachableError' });
     expect(requestSignal?.aborted).toBe(true);
   });
+
+  it('returns successful binary responses as blobs', async () => {
+    vi.stubEnv('INTERNAL_API_URL', 'http://api.test');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response('xlsx-bytes', {
+          status: 200,
+          headers: {
+            'Content-Type':
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          },
+        })
+      )
+    );
+
+    const blob = await getResponse<Blob>('/api/worklogs/template', 'token', {
+      responseType: 'blob',
+    });
+
+    expect(blob).toBeInstanceOf(Blob);
+    await expect(blob.text()).resolves.toBe('xlsx-bytes');
+  });
+
+  it('keeps structured Excel row errors on ApiError details', async () => {
+    vi.stubEnv('INTERNAL_API_URL', 'http://api.test');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: 'Excel validation failed.',
+            errors: [
+              {
+                row_number: 7,
+                field: 'End Date/Time',
+                message: 'End must be later than start.',
+              },
+            ],
+          }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      )
+    );
+
+    await expect(
+      getResponse('/api/worklogs/preview', 'token', {
+        method: 'POST',
+      })
+    ).rejects.toMatchObject({
+      status: 400,
+      details: [
+        {
+          row_number: 7,
+          field: 'End Date/Time',
+          message: 'End must be later than start.',
+        },
+      ],
+    });
+  });
 });

@@ -13,6 +13,7 @@ type ApiErrorResponse = {
   serverEntity?: unknown;
   childCount?: number;
   details?: unknown;
+  errors?: unknown;
 };
 
 /** Error carrying the HTTP status so callers can branch (e.g. 410 Gone). */
@@ -175,6 +176,8 @@ export type GetResponseInit = RequestInit & {
    * call returns before the busy `$transaction` runs.
    */
   skipDatabaseBusyRetry?: boolean;
+  /** Return a successful response body as a Blob instead of JSON. */
+  responseType?: 'json' | 'blob';
 };
 
 function mergeAbortSignals(
@@ -201,10 +204,16 @@ function readApiErrorChildCount(data: unknown): number | undefined {
 }
 
 function readApiErrorDetails(data: unknown): unknown {
-  if (typeof data !== 'object' || data === null || !('details' in data)) {
+  if (typeof data !== 'object' || data === null) {
     return undefined;
   }
-  return (data as ApiErrorResponse).details;
+  if ('details' in data) {
+    return (data as ApiErrorResponse).details;
+  }
+  if ('errors' in data) {
+    return (data as ApiErrorResponse).errors;
+  }
+  return undefined;
 }
 
 function throwApiErrorFromResponse(response: Response, data: unknown): never {
@@ -237,7 +246,11 @@ export async function getResponse<T>(
     throw new BackendUnreachableError();
   }
 
-  const { timeoutMs = FETCH_TIMEOUT_MS, ...fetchInit } = init ?? {};
+  const {
+    timeoutMs = FETCH_TIMEOUT_MS,
+    responseType = 'json',
+    ...fetchInit
+  } = init ?? {};
 
   const headers = new Headers(fetchInit.headers);
   headers.set('Authorization', `Bearer ${token}`);
@@ -271,6 +284,10 @@ export async function getResponse<T>(
       throw new BackendUnreachableError();
     }
     throw error;
+  }
+
+  if (response.ok && responseType === 'blob') {
+    return (await response.blob()) as T;
   }
 
   let data: T | ApiErrorResponse;

@@ -70,6 +70,45 @@ export const createWorkLogResponseSchema = z.object({
 
 export type CreateWorkLogResponse = z.infer<typeof createWorkLogResponseSchema>;
 
+export const worklogExcelPreviewRowSchema = z.object({
+  row_number: z.number().int().positive(),
+  start_at: z.string(),
+  end_at: z.string(),
+  logged_hours: z.number().positive().max(1000),
+  description: z.string().nullable(),
+});
+
+export type WorklogExcelPreviewRow = z.infer<
+  typeof worklogExcelPreviewRowSchema
+>;
+
+export const worklogExcelPreviewResponseSchema = z.object({
+  row_count: z.number().int().positive().max(200),
+  rows: z.array(worklogExcelPreviewRowSchema).min(1).max(200),
+});
+
+export type WorklogExcelPreviewResponse = z.infer<
+  typeof worklogExcelPreviewResponseSchema
+>;
+
+export const worklogExcelImportResponseSchema = z.object({
+  imported_count: z.number().int().positive().max(200),
+});
+
+export type WorklogExcelImportResponse = z.infer<
+  typeof worklogExcelImportResponseSchema
+>;
+
+export const worklogExcelValidationIssueSchema = z.object({
+  row_number: z.number().int().positive(),
+  field: z.string().optional(),
+  message: z.string(),
+});
+
+export type WorklogExcelValidationIssue = z.infer<
+  typeof worklogExcelValidationIssueSchema
+>;
+
 /** GET `/api/worklogs` query (unused by Next; Prisma list escape hatch). */
 export const listWorkLogsQuerySchema = z.object({
   work_item_id: z.uuid({ message: 'Invalid work item id.' }),

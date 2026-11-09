@@ -74,6 +74,8 @@ log-work dialog. Done or archived items may hide that control.
 
 New work-log entries from teammates appear live while the page stays open.
 
+To add several entries, see [Upload worklogs from Excel](./work-log-excel-upload.md).
+
 ---
 
 ## Related
