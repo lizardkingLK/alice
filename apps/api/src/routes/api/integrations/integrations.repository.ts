@@ -23,7 +23,20 @@ import { SupabaseClient } from '@supabase/supabase-js';
 
 type IntegrationsTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
-async function clearAiAgentDefaults(
+/** Org vault rows, or project-scoped rows for the given project. */
+function orgOrProjectAiWhere(projectId: string): Prisma.integrationsWhereInput {
+  return {
+    OR: [
+      { scope: IntegrationScope.organization },
+      {
+        scope: IntegrationScope.project,
+        project_id: projectId,
+      },
+    ],
+  };
+}
+
+async function clearOrgAiAgentDefaults(
   tx: IntegrationsTx,
   actorId: string,
   excludeId?: string
@@ -31,6 +44,7 @@ async function clearAiAgentDefaults(
   await tx.integrations.updateMany({
     where: {
       category: IntegrationCategory.ai_agent,
+      scope: IntegrationScope.organization,
       is_default: true,
       ...(excludeId ? { id: { not: excludeId } } : {}),
     },
@@ -51,6 +65,8 @@ export type IntegrationCreateData = {
   config: Prisma.InputJsonValue;
   is_default: boolean;
   sort_order: number;
+  scope: IntegrationScope;
+  project_id: string | null;
 };
 
 export type IntegrationUpdateData = {
@@ -77,7 +93,7 @@ export class IntegrationsRepository {
     return prisma.integrations.findMany({
       where: {
         ...(query.category ? { category: query.category } : {}),
-        ...(query.scope ? { scope: query.scope } : {}),
+        scope: query.scope ?? IntegrationScope.organization,
         ...(query.status ? { status: query.status } : {}),
         ...(query.catalog_id ? { catalog_id: query.catalog_id } : {}),
       },
@@ -95,6 +111,21 @@ export class IntegrationsRepository {
       },
       select: integrationListSelect,
       orderBy: [{ sort_order: 'asc' }, { name: 'asc' }],
+    });
+  }
+
+  /**
+   * Org vault AI models plus this project's own project-scoped AI models.
+   */
+  async listProjectAiModels(projectId: string): Promise<IntegrationListRow[]> {
+    return prisma.integrations.findMany({
+      where: {
+        category: IntegrationCategory.ai_agent,
+        status: IntegrationStatus.active,
+        ...orgOrProjectAiWhere(projectId),
+      },
+      select: integrationListSelect,
+      orderBy: [{ provider: 'asc' }, { sort_order: 'asc' }, { name: 'asc' }],
     });
   }
 
@@ -184,8 +215,9 @@ export class IntegrationsRepository {
   }
 
   /**
-   * Active chat-model integrations bound to a project (org-scoped rows via
-   * `project_integration_bindings`). Empty ⇒ caller falls through to org pool.
+   * Active chat-model integrations bound to a project (org- or project-scoped
+   * rows via `project_integration_bindings`). Empty ⇒ caller falls through to
+   * org pool.
    */
   async listActiveChatModelBindingsForProject(projectId: string): Promise<
     Array<{
@@ -200,6 +232,7 @@ export class IntegrationsRepository {
         integration: {
           category: IntegrationCategory.ai_agent,
           status: IntegrationStatus.active,
+          ...orgOrProjectAiWhere(projectId),
         },
       },
       select: {
@@ -214,65 +247,6 @@ export class IntegrationsRepository {
       integration_id: row.integration_id,
       is_default_for_project: row.is_default_for_project,
       integration: row.integration,
-    }));
-  }
-
-  /**
-   * Projects the actor can access that already have AI bindings, excluding
-   * `excludeProjectId` (import-from sources).
-   */
-  async listProjectChatModelBindingImportSources(params: {
-    readonly accessibleProjectIds: readonly string[];
-    readonly excludeProjectId?: string;
-  }): Promise<
-    Array<{
-      project_id: string;
-      name: string;
-      key: string;
-      binding_count: number;
-    }>
-  > {
-    const projectIds = params.accessibleProjectIds.filter(
-      (id) => id !== params.excludeProjectId
-    );
-    if (projectIds.length === 0) {
-      return [];
-    }
-
-    const grouped = await prisma.project_integration_bindings.groupBy({
-      by: ['project_id'],
-      where: {
-        project_id: { in: [...projectIds] },
-        integration: {
-          category: IntegrationCategory.ai_agent,
-          scope: IntegrationScope.organization,
-          status: IntegrationStatus.active,
-        },
-      },
-      _count: { _all: true },
-    });
-
-    if (grouped.length === 0) {
-      return [];
-    }
-
-    const counts = new Map(
-      grouped.map((row) => [row.project_id, row._count._all])
-    );
-    const projects = await prisma.projects.findMany({
-      where: {
-        id: { in: [...counts.keys()] },
-        deleted_at: null,
-      },
-      select: { id: true, name: true, key: true },
-      orderBy: { name: 'asc' },
-    });
-
-    return projects.map((project) => ({
-      project_id: project.id,
-      name: project.name,
-      key: project.key,
-      binding_count: counts.get(project.id) ?? 0,
     }));
   }
 
@@ -298,18 +272,18 @@ export class IntegrationsRepository {
 
     if (bindings.length > 0) {
       const ids = bindings.map((row) => row.integration_id);
-      const activeOrgModels = await prisma.integrations.findMany({
+      const eligible = await prisma.integrations.findMany({
         where: {
           id: { in: ids },
           category: IntegrationCategory.ai_agent,
-          scope: IntegrationScope.organization,
           status: IntegrationStatus.active,
+          ...orgOrProjectAiWhere(projectId),
         },
         select: { id: true },
       });
-      if (activeOrgModels.length !== ids.length) {
+      if (eligible.length !== ids.length) {
         throw new Error(
-          'One or more integrations are not active organization AI models'
+          'One or more integrations are not eligible AI models for this project'
         );
       }
     }
@@ -338,26 +312,66 @@ export class IntegrationsRepository {
   }
 
   async create(data: IntegrationCreateData): Promise<IntegrationDetailRow> {
+    const isOrgAiDefault =
+      data.is_default &&
+      data.category === IntegrationCategory.ai_agent &&
+      data.scope === IntegrationScope.organization;
+
     return prisma.$transaction(async (tx) => {
-      if (data.is_default && data.category === IntegrationCategory.ai_agent) {
-        await clearAiAgentDefaults(tx, data.actorId);
+      if (isOrgAiDefault) {
+        await clearOrgAiAgentDefaults(tx, data.actorId);
       }
 
-      return tx.integrations.create({
+      const row = await tx.integrations.create({
         data: {
           catalog_id: data.catalog_id,
           category: data.category,
-          scope: IntegrationScope.organization,
+          scope: data.scope,
+          project_id: data.project_id,
           provider: data.provider,
           name: data.name,
           status: data.status,
           config: data.config,
-          is_default: data.is_default,
+          is_default:
+            data.scope === IntegrationScope.organization
+              ? data.is_default
+              : false,
           sort_order: data.sort_order,
           ...prismaAuditCreateWithoutStatus(data.actorId),
         },
         select: integrationDetailSelect,
       });
+
+      if (
+        data.scope === IntegrationScope.project &&
+        data.project_id &&
+        data.category === IntegrationCategory.ai_agent
+      ) {
+        if (data.is_default) {
+          await tx.project_integration_bindings.updateMany({
+            where: {
+              project_id: data.project_id,
+              is_default_for_project: true,
+            },
+            data: {
+              is_default_for_project: false,
+              ...prismaAuditUpdate(data.actorId),
+            },
+          });
+        }
+
+        await tx.project_integration_bindings.create({
+          data: {
+            project_id: data.project_id,
+            integration_id: row.id,
+            is_default_for_project: data.is_default,
+            created_by: data.actorId,
+            updated_by: data.actorId,
+          },
+        });
+      }
+
+      return row;
     });
   }
 
@@ -369,6 +383,7 @@ export class IntegrationsRepository {
           category: true,
           status: true,
           is_default: true,
+          scope: true,
         },
       });
 
@@ -383,9 +398,10 @@ export class IntegrationsRepository {
       if (
         nextIsDefault &&
         nextCategory === IntegrationCategory.ai_agent &&
-        nextStatus === IntegrationStatus.active
+        nextStatus === IntegrationStatus.active &&
+        existing.scope === IntegrationScope.organization
       ) {
-        await clearAiAgentDefaults(tx, data.actorId, data.id);
+        await clearOrgAiAgentDefaults(tx, data.actorId, data.id);
       }
 
       return tx.integrations.update({
@@ -399,7 +415,8 @@ export class IntegrationsRepository {
           ...(data.name !== undefined ? { name: data.name } : {}),
           ...(data.status !== undefined ? { status: data.status } : {}),
           ...(data.config !== undefined ? { config: data.config } : {}),
-          ...(data.is_default !== undefined
+          ...(data.is_default !== undefined &&
+          existing.scope === IntegrationScope.organization
             ? { is_default: data.is_default }
             : {}),
           ...(data.sort_order !== undefined

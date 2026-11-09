@@ -77,31 +77,38 @@ connection to link and sync. Only the person who authorized Atlassian can
 
 ## AI agents
 
-Use the **AI agents** card to bind organization chat models (from
-**Settings → Integrations**) to this project for Alice Chat.
+Use the **AI agents** card to enable organization chat models and mint
+**project-only** models for Alice Chat.
 
-1. Optionally **Import from project** — pick another project you belong to that
-   already has AI binds, then **Import binds** (copies org model references
-   only; API keys are never copied).
-2. Enable one or more models with the checkboxes.
+Models are grouped by provider (for example Anthropic, Gemini). Expand a group
+to see rows with **Enable**, label, model id, **Scope**, **Owner**, project
+**Default**, and actions. Use **Scope** and **Owner** filters to reduce
+clutter.
+
+1. **Organization** rows — enable or disable for this project. Credentials stay
+   read-only here; edit keys in
+   [Workspace integrations](../profile-and-settings/workspace-integrations.md).
+2. **Project** rows — mint with **+** on a provider group, or edit an existing
+   project model. Each mint stores its own API key for this project only
+   (not shareable to other projects). Optionally **Mark as project default**
+   when connecting.
 3. Star one enabled model as the **project default**.
 4. Select **Save AI models**.
 
 Empty selection clears the project pool — chat falls through to organization
-defaults. New API keys are still created only in
-[Workspace integrations](../profile-and-settings/workspace-integrations.md)
-(bind-by-reference; keys are not copied onto the project).
+defaults.
 
 ---
 
 ## Organization vs project
 
-| Level            | Where                                           | Examples                                 |
-| ---------------- | ----------------------------------------------- | ---------------------------------------- |
-| **Project**      | Project → **Integrations** tab                  | GitHub repo, Jira import, AI model binds |
-| **Organization** | **Settings** → **Integrations** (manager/admin) | AI providers (vault), Slack (planned)    |
+| Level            | Where                                           | Examples                                                     |
+| ---------------- | ----------------------------------------------- | ------------------------------------------------------------ |
+| **Project**      | Project → **Integrations** tab                  | GitHub repo, Jira import, project AI keys, org model enables |
+| **Organization** | **Settings** → **Integrations** (manager/admin) | Shareable AI vault, Slack (planned)                          |
 
-Organization providers are **bound**, not copied into project scope. See
+Organization models are **enabled by reference**. Project models keep their own
+keys on that project. See
 [INTEGRATION_SCOPES.md](../../features/integrations/INTEGRATION_SCOPES.md).
 
 ---

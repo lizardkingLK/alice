@@ -3644,6 +3644,7 @@ export const IntegrationsScalarFieldEnum = {
   catalog_id: 'catalog_id',
   category: 'category',
   scope: 'scope',
+  project_id: 'project_id',
   provider: 'provider',
   name: 'name',
   status: 'status',

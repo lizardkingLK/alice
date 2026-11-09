@@ -7,6 +7,7 @@ import {
   GitHubLogo,
   JiraLogo,
 } from '@/app/projects/_components/project-details/integration-brand-logos';
+import { ProjectAiModelsLoading } from '@/app/projects/_components/project-ai-models-loading';
 import { ProjectAiModelsPicker } from '@/app/projects/_components/project-ai-models-picker';
 import { useJiraConnectionPicker } from '@/app/projects/_hooks/use-jira-connection-picker';
 import { JiraConnectionFields } from '@/app/projects/_components/jira-connection-fields';
@@ -329,7 +330,7 @@ function AiAgentsSection({
       </div>
 
       {isLoading ? (
-        <p className="text-muted-foreground text-xs">Loading chat models...</p>
+        <ProjectAiModelsLoading />
       ) : (
         <ProjectAiModelsPicker
           models={models}

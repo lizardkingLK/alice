@@ -49,7 +49,6 @@ import {
   initialSprintSchema,
   isProductUsableUser,
   normalizeProjectWorkItemTypeDefs,
-  projectTypeKeys,
   type ProjectWorkItemTypeDef,
 } from '@repo/types';
 import { WorkItemTypeCatalogEditor } from '@/app/projects/_components/work-item-type-catalog-editor';
@@ -1375,7 +1374,7 @@ export function ProjectForm({
       status,
       startDate,
       endDate,
-      selectedWorkItemTypes: projectTypeKeys(workItemTypeDefs),
+      workItemTypeDefs,
     },
     imports: {
       importFromJira,
@@ -1454,7 +1453,7 @@ export function ProjectForm({
     setStartDate(draft.basicInfo.startDate);
     setEndDate(draft.basicInfo.endDate);
     setWorkItemTypeDefs(
-      buildDefaultProjectTypeDefs(draft.basicInfo.selectedWorkItemTypes)
+      normalizeProjectWorkItemTypeDefs(draft.basicInfo.workItemTypeDefs)
     );
     setImportFromJira(draft.imports.importFromJira);
     setJiraConnectionId(draft.imports.jiraConnectionId);

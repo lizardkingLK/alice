@@ -290,6 +290,7 @@ model projects {
   burndown_rollups        sprint_burndown_rollups[]
   saved_views             saved_views[]
   integration_bindings    project_integration_bindings[]
+  project_integrations    integrations[] @relation("ProjectIntegrations")
 }
 
 model project_members {
@@ -1005,6 +1006,8 @@ model integrations {
   category   IntegrationCategory
   /// organization (default) | project | member — see INTEGRATION_SCOPES.md.
   scope      IntegrationScope    @default(organization)
+  /// Required when scope = project; null for organization/member.
+  project_id String?             @db.Uuid
   /// Provider slug for strategy dispatch: gemini, openai, anthropic, slack, …
   provider   String
   /// Admin-facing label, e.g. "Gemini 3.6", "GPT-4o (production)".
@@ -1020,8 +1023,9 @@ model integrations {
   updated_by String?             @db.Uuid
   updated_at DateTime            @updatedAt @db.Timestamptz(6)
 
-  created_by_user users? @relation("IntegrationCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
-  updated_by_user users? @relation("IntegrationUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  project         projects? @relation("ProjectIntegrations", fields: [project_id], references: [id], onDelete: Cascade)
+  created_by_user users?    @relation("IntegrationCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users?    @relation("IntegrationUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
   project_bindings project_integration_bindings[]
   member_preferences member_chat_model_preferences[]
 
@@ -1029,6 +1033,7 @@ model integrations {
   @@index([catalog_id])
   @@index([provider, status])
   @@index([scope, status])
+  @@index([project_id, category, status])
 }
 
 /// Per-user preferred org chat model (bind-by-reference). Null id ⇒ workspace default.
