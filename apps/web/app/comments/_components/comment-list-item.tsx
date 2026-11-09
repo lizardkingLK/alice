@@ -30,6 +30,7 @@ import {
   type CommentUserMentionTarget,
 } from '@/app/comments/_components/comment-content-view';
 import { CommentEditorFormShell } from '@/app/comments/_components/comment-editor-form-shell';
+import type { CommentMentionAgent } from '@/app/comments/_components/comment-mention-list';
 import { CommentReactionBar } from '@/app/comments/_components/comment-reaction-bar';
 import { CommentRelativeTime } from '@/app/comments/_components/comment-relative-time';
 import type {
@@ -55,6 +56,7 @@ type CommentListItemProps = {
   isEditing: boolean;
   isReplying: boolean;
   users: CommentUser[];
+  agents: CommentMentionAgent[];
   workItems: CommentWorkItemOption[];
   replySlot?: ReactNode;
   // eslint-disable-next-line no-unused-vars -- click callback
@@ -238,6 +240,7 @@ export function CommentListItem({
   isEditing,
   isReplying,
   users,
+  agents,
   workItems,
   replySlot,
   onUserMentionClick,
@@ -304,6 +307,7 @@ export function CommentListItem({
         {isEditing ? (
           <CommentEditorFormShell
             users={users}
+            agents={agents}
             workItems={workItems}
             initialContent={comment.content}
             autoFocus

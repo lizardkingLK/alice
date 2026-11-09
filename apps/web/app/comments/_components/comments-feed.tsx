@@ -59,6 +59,8 @@ import {
   CommentEditor,
   type CommentEditorHandle,
 } from '@/app/comments/_components/comment-editor';
+import type { CommentMentionAgent } from '@/app/comments/_components/comment-mention-list';
+import { listChatAgentsClient } from '@/app/chat/_services/chat-agents.reads.client';
 import { CommentsFeedStatCard } from '@/app/comments/_components/comments-feed-stat-card';
 import { CommentsSortMenu } from '@/app/comments/_components/comments-sort-menu';
 import {
@@ -254,6 +256,7 @@ export function CommentsFeed({
 }: Readonly<CommentsFeedProps>) {
   const [comments, setComments] = useState<CommentItem[]>(initialComments);
   const [users, setUsers] = useState<CommentUser[]>([]);
+  const [agents, setAgents] = useState<CommentMentionAgent[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedWorkItemId, setSelectedWorkItemId] = useState('all');
   const [selectedStatus, setSelectedStatus] =
@@ -367,6 +370,15 @@ export function CommentsFeed({
         console.error('error. failed to load comment users', error);
       });
   }, [targetWorkItemId]);
+
+  useEffect(() => {
+    listChatAgentsClient({ status: 'active' })
+      .then(setAgents)
+      .catch((error) => {
+        console.error('error. failed to load comment mention agents', error);
+        setAgents([]);
+      });
+  }, []);
 
   useScopedTableRealtime<CommentRealtimeRow>({
     enabled: Boolean(workItemId),
@@ -605,6 +617,7 @@ export function CommentsFeed({
         replyingParentId={replyingParentId}
         isSubmitting={isSubmitting}
         users={users}
+        agents={agents}
         workItems={scopedWorkItems}
         currentUserName={currentUserName}
         currentUserImageUrl={currentUserImageUrl}
@@ -734,6 +747,7 @@ export function CommentsFeed({
             currentUserName={currentUserName}
             currentUserImageUrl={currentUserImageUrl}
             users={users}
+            agents={agents}
             workItems={mentionWorkItems}
             isSubmitting={isSubmitting}
             enableMShortcut={embedded}
@@ -811,6 +825,7 @@ export function CommentsFeed({
                 <CommentEditor
                   ref={modalEditorRef}
                   users={users}
+                  agents={agents}
                   workItems={mentionWorkItems}
                   placeholder="Share your thoughts, feedback, or update..."
                 />

@@ -246,7 +246,7 @@ export function extractMentionedUserIdsFromContent(
       return;
     }
     const mentionType = getAttrString(node.attrs, 'mentionType');
-    if (mentionType === 'workItem') {
+    if (mentionType !== 'user') {
       return;
     }
     const id = getAttrString(node.attrs, 'id');

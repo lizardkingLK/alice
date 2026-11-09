@@ -10,9 +10,21 @@ export type NormalizedMentionAttrs = {
   id: string;
   label: string;
   title?: string;
-  mentionType: 'user' | 'workItem';
+  mentionType: 'user' | 'agent' | 'workItem';
   mentionSuggestionChar: '@' | '#';
 };
+
+export type AgentMentionId = `agent:${string}`;
+
+export function toAgentMentionId(agentId: string): AgentMentionId {
+  return (
+    agentId.startsWith('agent:') ? agentId : `agent:${agentId}`
+  ) as AgentMentionId;
+}
+
+export function agentIdFromMentionId(id: string): string | null {
+  return id.startsWith('agent:') ? id.slice('agent:'.length) || null : null;
+}
 
 export type NormalizedMentionNode = {
   type: 'mention' | 'workItemMention';
@@ -50,6 +62,14 @@ export function normalizeMentionNode(node: {
   const isWorkItem =
     node.type === 'workItemMention' ||
     nonEmptyAttrString(attrs, 'mentionType') === 'workItem';
+  const isAgent =
+    !isWorkItem && nonEmptyAttrString(attrs, 'mentionType') === 'agent';
+  let mentionType: NormalizedMentionAttrs['mentionType'] = 'user';
+  if (isWorkItem) {
+    mentionType = 'workItem';
+  } else if (isAgent) {
+    mentionType = 'agent';
+  }
 
   return {
     type: isWorkItem ? 'workItemMention' : 'mention',
@@ -57,7 +77,7 @@ export function normalizeMentionNode(node: {
       id,
       label,
       ...(title ? { title } : {}),
-      mentionType: isWorkItem ? 'workItem' : 'user',
+      mentionType,
       mentionSuggestionChar: isWorkItem ? '#' : '@',
     },
   };

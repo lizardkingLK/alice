@@ -32,6 +32,8 @@ import { serializeCommentDoc } from '@/lib/editor/serialize-comment-doc';
 import { createCommentMentionExtensions } from '@/app/comments/_components/comment-mention-extensions';
 import {
   CommentMentionList,
+  atMentionItems,
+  type CommentMentionAgent,
   type CommentMentionItem,
 } from '@/app/comments/_components/comment-mention-list';
 import type {
@@ -56,6 +58,7 @@ type CommentEditorProps = {
   initialContent?: Json | string | null;
   placeholder?: string;
   users: CommentUser[];
+  agents: CommentMentionAgent[];
   workItems: Pick<CommentWorkItemOption, 'id' | 'key' | 'title'>[];
   className?: string;
   editorClassName?: string;
@@ -66,7 +69,7 @@ type CommentEditorProps = {
 };
 
 type TriggerState = {
-  kind: 'user' | 'workItem';
+  kind: 'at' | 'workItem';
   query: string;
   from: number;
   to: number;
@@ -76,7 +79,7 @@ function matchTrigger(
   textBefore: string,
   caretFrom: number,
   marker: '@' | '#',
-  kind: 'user' | 'workItem'
+  kind: 'at' | 'workItem'
 ): TriggerState {
   const pattern =
     marker === '@' ? /(?:^|\s)@([^\s@#]*)$/ : /(?:^|\s)#([^\s@#]*)$/;
@@ -108,7 +111,7 @@ function getTriggerState(editor: Editor): TriggerState {
   );
 
   return (
-    matchTrigger(textBefore, from, '@', 'user') ??
+    matchTrigger(textBefore, from, '@', 'at') ??
     matchTrigger(textBefore, from, '#', 'workItem')
   );
 }
@@ -121,6 +124,7 @@ export const CommentEditor = forwardRef<
     initialContent,
     placeholder = 'Add a comment...',
     users,
+    agents,
     workItems,
     className,
     editorClassName,
@@ -270,19 +274,8 @@ export const CommentEditor = forwardRef<
       return [];
     }
     const q = trigger.query.toLowerCase();
-    if (trigger.kind === 'user') {
-      return users
-        .filter((u) => {
-          const haystack = `${u.name ?? ''} ${u.email ?? ''}`.toLowerCase();
-          return haystack.includes(q);
-        })
-        .slice(0, 8)
-        .map((u) => ({
-          id: u.id,
-          label: (u.name?.trim() || u.email || 'User').trim(),
-          description: u.email,
-          kind: 'user' as const,
-        }));
+    if (trigger.kind === 'at') {
+      return atMentionItems(users, agents, q);
     }
     return workItems
       .filter(
@@ -296,7 +289,7 @@ export const CommentEditor = forwardRef<
         description: w.title,
         kind: 'workItem' as const,
       }));
-  }, [trigger, users, workItems]);
+  }, [trigger, users, agents, workItems]);
 
   useLayoutEffect(() => {
     if (!trigger || !shellRef.current) {
@@ -324,28 +317,22 @@ export const CommentEditor = forwardRef<
         return;
       }
 
-      const nodeType = item.kind === 'user' ? 'mention' : 'workItemMention';
+      const nodeType = item.kind === 'workItem' ? 'workItemMention' : 'mention';
       if (!editor.schema.nodes[nodeType]) {
         console.error(`Missing TipTap node type: ${nodeType}`);
         setTrigger(null);
         return;
       }
 
-      const mentionAttrs =
-        item.kind === 'user'
-          ? {
-              id: item.id,
-              label: item.label,
-              mentionType: 'user' as const,
-              mentionSuggestionChar: '@' as const,
-            }
-          : {
-              id: item.id,
-              label: item.label,
-              title: item.description ?? item.label,
-              mentionType: 'workItem' as const,
-              mentionSuggestionChar: '#' as const,
-            };
+      const mentionAttrs = {
+        id: item.id,
+        label: item.label,
+        mentionType: item.kind,
+        mentionSuggestionChar: item.kind === 'workItem' ? '#' : '@',
+        ...(item.kind === 'workItem'
+          ? { title: item.description ?? item.label }
+          : {}),
+      };
 
       editor
         .chain()

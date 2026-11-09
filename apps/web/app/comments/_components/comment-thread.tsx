@@ -5,6 +5,7 @@ import type { CommentReactionEmoji } from '@repo/types';
 import { X } from '@repo/ui/lib/icons';
 import { CommentEditorFormShell } from '@/app/comments/_components/comment-editor-form-shell';
 import { CommentListItem } from '@/app/comments/_components/comment-list-item';
+import type { CommentMentionAgent } from '@/app/comments/_components/comment-mention-list';
 import type { CommentUserMentionTarget } from '@/app/comments/_components/comment-content-view';
 import type {
   CommentItem,
@@ -29,6 +30,7 @@ type CommentThreadProps = {
   replyingParentId: string | null;
   isSubmitting: boolean;
   users: CommentUser[];
+  agents: CommentMentionAgent[];
   workItems: CommentWorkItemOption[];
   currentUserName?: string | null;
   currentUserImageUrl?: string | null;
@@ -109,6 +111,7 @@ export function CommentThread({
   replyingParentId,
   isSubmitting,
   users,
+  agents,
   workItems,
   currentUserName,
   currentUserImageUrl,
@@ -154,6 +157,7 @@ export function CommentThread({
         isEditing={editingCommentId === parent.id}
         isReplying={isReplying}
         users={users}
+        agents={agents}
         workItems={workItems}
         isReactionSyncing={isReactionSyncing?.(parent.id)}
         {...parentHandlers}
@@ -163,6 +167,7 @@ export function CommentThread({
             <CommentEditorFormShell
               className="mt-2"
               users={users}
+              agents={agents}
               workItems={workItems}
               placeholder="Write a reply..."
               avatarName={currentUserName}
@@ -197,6 +202,7 @@ export function CommentThread({
               isEditing={editingCommentId === reply.id}
               isReplying={false}
               users={users}
+              agents={agents}
               workItems={workItems}
               isReactionSyncing={isReactionSyncing?.(reply.id)}
               {...bindCommentItemHandlers({

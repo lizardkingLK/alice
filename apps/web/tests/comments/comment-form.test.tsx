@@ -18,6 +18,10 @@ vi.mock('@/components/realtime/realtime-provider', () => ({
   useRealtime: () => ({ isUserOnline: () => false }),
 }));
 
+vi.mock('@/app/chat/_services/chat-agents.reads.client', () => ({
+  listChatAgentsClient: vi.fn().mockResolvedValue([]),
+}));
+
 const { mockOrder, mockGetUser } = vi.hoisted(() => ({
   mockOrder: vi
     .fn()
