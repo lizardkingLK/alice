@@ -36,7 +36,8 @@ rules, forms, and Jira mapping.
 
 Project name, dates, description, and owner appear on the **Details** banner.
 The key badge includes a **copy** control for the shareable `/projects/{KEY}`
-link (see [Browse projects](./browse-projects.md#share-a-project-link)).
+link — the same path shown in the address bar while you work in the project
+(see [Browse projects](./browse-projects.md#share-a-project-link)).
 Managers and admins on an **active** project can select **Edit** to open a light
 dialog for those fields plus status (active/archived). Owner options are limited
 to users with the **manager** role. Cover and logo actions appear only on

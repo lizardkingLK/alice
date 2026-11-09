@@ -26,7 +26,7 @@ export function ProjectDetailsTab({
 }: Readonly<ProjectDetailsTabProps>) {
   return (
     <ProjectSummaryMetrics
-      projectId={project.id}
+      projectKey={project.key}
       memberCount={memberCount}
       teamCount={teamCount}
       workItemCount={workItemCount}

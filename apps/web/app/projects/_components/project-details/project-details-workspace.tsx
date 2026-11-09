@@ -384,7 +384,7 @@ export function ProjectDetailsWorkspace({
 
                 const link = (
                   <Link
-                    href={projectDetailHref(project.id, id)}
+                    href={projectDetailHref(project.key, id)}
                     prefetch
                     className={linkClassName}
                     aria-current={isActive ? 'page' : undefined}

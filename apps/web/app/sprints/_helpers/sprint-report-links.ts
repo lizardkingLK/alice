@@ -5,7 +5,10 @@
 
 import { isUuidSegment, toShortId } from '@/app/_shared/utility';
 import type { DashboardBreadcrumbOverride } from '@/app/dashboard/_components/dashboard-breadcrumb';
-import { projectDetailHref } from '@/app/projects/_helpers/project-links';
+import {
+  looksLikeProjectKey,
+  projectDetailHref,
+} from '@/app/projects/_helpers/project-links';
 
 export const SPRINT_REPORT_FROM_QUERY = 'from';
 
@@ -41,7 +44,11 @@ export function sprintReportBackNav(
   readonly href: string;
   readonly label: string;
 } {
-  if (from === 'project' && projectId && isUuidSegment(projectId)) {
+  if (
+    from === 'project' &&
+    projectId &&
+    (isUuidSegment(projectId) || looksLikeProjectKey(projectId))
+  ) {
     return {
       href: projectDetailHref(projectId, 'sprints'),
       label: 'Back to Sprints',
@@ -85,6 +92,7 @@ export function buildSprintReportBreadcrumbOverrides(
   const project = sprint.project;
 
   if (project?.id && isUuidSegment(project.id)) {
+    const projectRef = project.key?.trim() || project.id;
     const projectLabel =
       project.name?.trim() || project.key?.trim() || toShortId(project.id);
     return [
@@ -92,11 +100,11 @@ export function buildSprintReportBreadcrumbOverrides(
       { label: 'Projects', url: '/projects' },
       {
         label: projectLabel,
-        url: projectDetailHref(project.id),
+        url: projectDetailHref(projectRef),
       },
       {
         label: 'Sprints',
-        url: projectDetailHref(project.id, 'sprints'),
+        url: projectDetailHref(projectRef, 'sprints'),
       },
       {
         label: sprintLabel,

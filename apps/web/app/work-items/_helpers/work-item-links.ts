@@ -1,5 +1,6 @@
 import { isUuidSegment, toShortId } from '@/app/_shared/utility';
 import type { DashboardBreadcrumbOverride } from '@/app/dashboard/_components/dashboard-breadcrumb';
+import { projectDetailHref } from '@/app/projects/_helpers/project-links';
 
 /** Query flag: open a work item from a project workspace tab. */
 export const FROM_PROJECT_QUERY = 'fromProject';
@@ -15,6 +16,7 @@ export type WorkItemDetailLinkContext = {
 export type WorkItemBreadcrumbLabels = {
   readonly workItemTitle?: string | null;
   readonly projectName?: string | null;
+  readonly projectKey?: string | null;
 };
 
 /**
@@ -51,21 +53,24 @@ export function buildWorkItemBreadcrumbOverrides(
   labels: WorkItemBreadcrumbLabels = {}
 ): DashboardBreadcrumbOverride[] {
   const workItemLabel = labels.workItemTitle?.trim() || toShortId(workItemId);
+  const projectKey = labels.projectKey?.trim() || null;
+  const projectRef = projectKey || projectId;
   const projectLabel =
     labels.projectName?.trim() ||
+    projectKey ||
     (projectId && isUuidSegment(projectId) ? toShortId(projectId) : 'Project');
 
-  if (projectId && isUuidSegment(projectId)) {
+  if (projectRef && (projectKey || isUuidSegment(projectId ?? ''))) {
     return [
       { label: 'Dashboard', url: '/dashboard' },
       { label: 'Projects', url: '/projects' },
       {
         label: projectLabel,
-        url: `/projects/${projectId}`,
+        url: projectDetailHref(projectRef),
       },
       {
         label: 'Work Items',
-        url: `/projects/${projectId}?tab=work-items`,
+        url: projectDetailHref(projectRef, 'work-items'),
       },
       {
         label: workItemLabel,

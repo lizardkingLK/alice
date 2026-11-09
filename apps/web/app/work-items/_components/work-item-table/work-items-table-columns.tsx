@@ -34,6 +34,7 @@ import type {
 import type { WorkItemWorkspaceProps } from '@/app/work-items/_components/work-items-workspace';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { isWorkItemOverdue } from '@/app/work-items/_helpers/work-item-due-date';
+import { projectDetailHref } from '@/app/projects/_helpers/project-links';
 import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import { resolveWorkItemStateColumnModel } from '@/app/work-items/_helpers/work-item-state-column';
 import { RegistryTitleCell } from '@/components/registry-title-cell';
@@ -191,6 +192,22 @@ function nameByIdMap(
   return new Map(items.map((item) => [item.id, item.name]));
 }
 
+function projectKeyByIdMap(
+  items: readonly {
+    readonly id: string;
+    readonly key?: string | null;
+  }[]
+): ReadonlyMap<string, string> {
+  const entries: Array<[string, string]> = [];
+  for (const item of items) {
+    const key = item.key?.trim();
+    if (key) {
+      entries.push([item.id, key]);
+    }
+  }
+  return new Map(entries);
+}
+
 function nameFromMap(
   namesById: ReadonlyMap<string, string>,
   id: string | null | undefined
@@ -247,17 +264,20 @@ function RelationBadge({
 function ProjectCell({
   projectId,
   projectNamesById,
+  projectKeysById,
 }: Readonly<{
   projectId: string | null | undefined;
   projectNamesById: ReadonlyMap<string, string>;
+  projectKeysById: ReadonlyMap<string, string>;
 }>) {
   const name = nameFromMap(projectNamesById, projectId);
   if (!projectId || name === '—') {
     return <span className="text-muted-foreground">—</span>;
   }
+  const projectKey = projectKeysById.get(projectId);
   return (
     <RelationBadge
-      href={`/projects/${projectId}`}
+      href={projectDetailHref(projectKey ?? projectId)}
       label={name}
       icon={<FolderDot data-icon="inline-start" />}
     />
@@ -368,6 +388,7 @@ export function buildWorkItemColumns(options: {
   } = options;
 
   const projectNamesById = nameByIdMap(projects);
+  const projectKeysById = projectKeyByIdMap(projects);
   const sprintNamesById = nameByIdMap(sprints);
 
   const columns: ColumnDef<DisplayRow>[] = [
@@ -455,6 +476,7 @@ export function buildWorkItemColumns(options: {
         <ProjectCell
           projectId={row.original.workItem.project_id}
           projectNamesById={projectNamesById}
+          projectKeysById={projectKeysById}
         />
       ),
     });
