@@ -173,13 +173,21 @@ export function collectTypeKeysFromWitCatalog(userId: string): string[] {
   return collectTypeOptionsFromWitCatalog(userId).map((option) => option.key);
 }
 
-/** Unique catalog options (key + display name) across cached projects. */
+/** Unique catalog options (key + display name), optionally scoped to one project. */
 export function collectTypeOptionsFromWitCatalog(
-  userId: string
+  userId: string,
+  projectId?: string | null
 ): Array<{ key: string; name: string }> {
   const store = readWitCatalog(userId);
   const byKey = new Map<string, string>();
-  for (const entry of Object.values(store.projects)) {
+  const entries =
+    projectId && store.projects[projectId]
+      ? [store.projects[projectId]]
+      : Object.values(store.projects);
+  for (const entry of entries) {
+    if (!entry) {
+      continue;
+    }
     for (const def of entry.types) {
       if (!byKey.has(def.key)) {
         byKey.set(def.key, def.name.trim() || def.key);

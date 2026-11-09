@@ -157,6 +157,25 @@ const mockProject: Project = {
   workflow_config: null,
 };
 
+const emptyProjectWorkItems = {
+  initialWorkItems: [],
+  initialChildrenByParentId: {},
+  searchPanelItems: [],
+  searchMatchIds: [],
+  ancestorsById: {},
+  hierarchyMode: 'tree' as const,
+  totalCount: 0,
+  page: 1,
+  limit: 10,
+  totalPages: 1,
+  search: '',
+  typeFilter: '',
+  assigneeFilter: '',
+  sprintFilter: '',
+  listView: 'flat' as const,
+  tab: 'active' as const,
+};
+
 describe('parseProjectDetailsTab', () => {
   it('parses "fields" tab parameter', () => {
     expect(parseProjectDetailsTab('fields')).toBe('fields');
@@ -198,19 +217,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
         allUsers={[]}
         currentUserId="user-manager-1"
         currentUserRole="manager"
-        workItems={{
-          initialWorkItems: [],
-          totalCount: 0,
-          page: 1,
-          limit: 10,
-          totalPages: 1,
-          search: '',
-          typeFilter: '',
-          assigneeFilter: '',
-          sprintFilter: '',
-          listView: 'flat',
-          tab: 'active',
-        }}
+        workItems={emptyProjectWorkItems}
         teams={{
           items: [],
           totalCount: 0,
@@ -244,19 +251,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
         allUsers={[]}
         currentUserId="user-manager-1"
         currentUserRole="manager"
-        workItems={{
-          initialWorkItems: [],
-          totalCount: 0,
-          page: 1,
-          limit: 10,
-          totalPages: 1,
-          search: '',
-          typeFilter: '',
-          assigneeFilter: '',
-          sprintFilter: '',
-          listView: 'flat',
-          tab: 'active',
-        }}
+        workItems={emptyProjectWorkItems}
         teams={{
           items: [],
           totalCount: 0,
@@ -288,19 +283,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
         allUsers={[]}
         currentUserId="user-manager-1"
         currentUserRole="manager"
-        workItems={{
-          initialWorkItems: [],
-          totalCount: 0,
-          page: 1,
-          limit: 10,
-          totalPages: 1,
-          search: '',
-          typeFilter: '',
-          assigneeFilter: '',
-          sprintFilter: '',
-          listView: 'flat',
-          tab: 'active',
-        }}
+        workItems={emptyProjectWorkItems}
         teams={{
           items: [],
           totalCount: 0,
@@ -348,19 +331,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
         allUsers={[]}
         currentUserId="user-member-1"
         currentUserRole="member"
-        workItems={{
-          initialWorkItems: [],
-          totalCount: 0,
-          page: 1,
-          limit: 10,
-          totalPages: 1,
-          search: '',
-          typeFilter: '',
-          assigneeFilter: '',
-          sprintFilter: '',
-          listView: 'flat',
-          tab: 'active',
-        }}
+        workItems={emptyProjectWorkItems}
         teams={{
           items: [],
           totalCount: 0,
@@ -415,19 +386,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
         allUsers={[]}
         currentUserId="user-manager-1"
         currentUserRole="manager"
-        workItems={{
-          initialWorkItems: [],
-          totalCount: 0,
-          page: 1,
-          limit: 10,
-          totalPages: 1,
-          search: '',
-          typeFilter: '',
-          assigneeFilter: '',
-          sprintFilter: '',
-          listView: 'flat',
-          tab: 'active',
-        }}
+        workItems={emptyProjectWorkItems}
         teams={{
           items: [],
           totalCount: 0,
@@ -458,19 +417,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
         allUsers={[]}
         currentUserId="user-manager-1"
         currentUserRole="manager"
-        workItems={{
-          initialWorkItems: [],
-          totalCount: 0,
-          page: 1,
-          limit: 10,
-          totalPages: 1,
-          search: '',
-          typeFilter: '',
-          assigneeFilter: '',
-          sprintFilter: '',
-          listView: 'flat',
-          tab: 'active',
-        }}
+        workItems={emptyProjectWorkItems}
         teams={{
           items: [],
           totalCount: 0,
@@ -519,19 +466,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
         allUsers={[]}
         currentUserId="user-manager-1"
         currentUserRole="manager"
-        workItems={{
-          initialWorkItems: [],
-          totalCount: 0,
-          page: 1,
-          limit: 10,
-          totalPages: 1,
-          search: '',
-          typeFilter: '',
-          assigneeFilter: '',
-          sprintFilter: '',
-          listView: 'flat',
-          tab: 'active',
-        }}
+        workItems={emptyProjectWorkItems}
         teams={{
           items: [],
           totalCount: 0,
@@ -566,19 +501,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
         allUsers={[]}
         currentUserId="user-manager-1"
         currentUserRole="manager"
-        workItems={{
-          initialWorkItems: [],
-          totalCount: 0,
-          page: 1,
-          limit: 10,
-          totalPages: 1,
-          search: '',
-          typeFilter: '',
-          assigneeFilter: '',
-          sprintFilter: '',
-          listView: 'flat',
-          tab: 'active',
-        }}
+        workItems={emptyProjectWorkItems}
         teams={{
           items: [],
           totalCount: 0,

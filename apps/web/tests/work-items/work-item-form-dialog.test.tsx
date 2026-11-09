@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form/work-item-form-dialog';
 import { getWorkItemById } from '@/app/work-items/_services/work-items.reads.client';
 import {
@@ -182,5 +182,135 @@ describe('WorkItemFormDialog', () => {
     expect(screen.getByTestId('form-prefer-sprints')).toHaveTextContent(
       'false'
     );
+  });
+
+  it('exposes expand and close chrome for classic create (no float)', () => {
+    render(
+      <WorkItemFormDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Create Work Item"
+        description="Create a new work item."
+        projects={projects}
+        projectMembers={projectMembers}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.queryByRole('button', { name: /float dialog/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /expand dialog/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /^close$/i })
+    ).toBeInTheDocument();
+  });
+
+  it('exposes minimize, float, and expand chrome for modern create', () => {
+    render(
+      <WorkItemFormDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Create Work Item"
+        description="Create a new work item."
+        projects={projects}
+        projectMembers={projectMembers}
+        createFormMode="modern"
+        onSuccess={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.getByRole('button', { name: /minimize dialog/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /float dialog/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /expand dialog/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /^close$/i })
+    ).toBeInTheDocument();
+  });
+
+  it('restores the previous layout after minimize', () => {
+    render(
+      <WorkItemFormDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Create Work Item"
+        description="Create a new work item."
+        projects={projects}
+        projectMembers={projectMembers}
+        createFormMode="modern"
+        onSuccess={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /minimize dialog/i }));
+    expect(
+      screen.getByRole('button', { name: /restore create dialog/i })
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /restore create dialog/i })
+    );
+
+    expect(
+      screen.getByRole('button', { name: /minimize dialog/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /float dialog/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /restore create dialog/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows draft warning when create is requested again while open', async () => {
+    const { rerender } = render(
+      <WorkItemFormDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Create Work Item"
+        description="Create a new work item."
+        projects={projects}
+        projectMembers={projectMembers}
+        createFormMode="modern"
+        createIntentKey={0}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.queryByRole('alertdialog', { name: /draft work item/i })
+    ).not.toBeInTheDocument();
+
+    rerender(
+      <WorkItemFormDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Create Work Item"
+        description="Create a new work item."
+        projects={projects}
+        projectMembers={projectMembers}
+        createFormMode="modern"
+        createIntentKey={1}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    expect(
+      await screen.findByRole('alertdialog', { name: /draft work item/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /discard draft/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /keep editing/i })
+    ).toBeInTheDocument();
   });
 });

@@ -27,13 +27,18 @@ type WorkItemFormTypeSelectProps = {
   readonly triggerClassName?: string;
   readonly placeholder?: string;
   readonly 'aria-label'?: string;
-  /** Optional leading icon (modern pill layout). */
+  /** Optional leading icon (classic layout). Prefer off for modern pills. */
   readonly triggerStart?: ReactNode;
+  /**
+   * When false, options are label-only so the closed trigger does not stack a
+   * catalog icon beside `triggerStart` (modern create/edit pills).
+   */
+  readonly showOptionIcons?: boolean;
 };
 
 /**
  * Shared type Select + hidden FormData input for classic and modern forms.
- * Options show catalog name + icon; the stored/submitted value is the type key.
+ * Options show catalog name (+ optional icon); submitted value is the type key.
  */
 export function WorkItemFormTypeSelect({
   type,
@@ -45,6 +50,7 @@ export function WorkItemFormTypeSelect({
   placeholder = 'Select type...',
   'aria-label': ariaLabel,
   triggerStart,
+  showOptionIcons = true,
 }: Readonly<WorkItemFormTypeSelectProps>) {
   return (
     <>
@@ -65,8 +71,15 @@ export function WorkItemFormTypeSelect({
               icon: 'square-check',
               level: 0,
             };
-            const Icon = workItemTypeIconFromDef(def);
             const label = workItemTypeDisplayName(taskType, typeDefs);
+            if (!showOptionIcons) {
+              return (
+                <SelectItem key={taskType} value={taskType}>
+                  {label}
+                </SelectItem>
+              );
+            }
+            const Icon = workItemTypeIconFromDef(def);
             return (
               <SelectItem key={taskType} value={taskType}>
                 <span className="flex items-center gap-2">

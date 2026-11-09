@@ -646,6 +646,7 @@ export function KanbanBoard({
     useBoardSyncPrefs(userId);
   const [workItems, setWorkItems] = useState<DbWorkItem[]>(initialWorkItems);
   const [createStatus, setCreateStatus] = useState<BoardStatus | null>(null);
+  const [createIntentKey, setCreateIntentKey] = useState(0);
   const [search, setSearch] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
@@ -698,6 +699,18 @@ export function KanbanBoard({
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<DbWorkItem | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+
+  const openBoardCreate = (column: BoardColumn) => {
+    if (createStatus !== null) {
+      setCreateIntentKey((key) => key + 1);
+      return;
+    }
+    setCreateStatus(column.status);
+  };
+  const openBoardDetail = (item: DbWorkItem) => {
+    setSelectedTask(item);
+    setIsDetailOpen(true);
+  };
 
   const { pendingStatusIds, dimPendingCards, applyStatusChange } =
     useBoardStatusMoves({
@@ -947,11 +960,8 @@ export function KanbanBoard({
           activeDropCol={activeDropCol}
           draggedTaskId={draggedTaskId}
           pendingStatusIds={dimPendingCards ? pendingStatusIds : new Set()}
-          onSelectItem={(item) => {
-            setSelectedTask(item);
-            setIsDetailOpen(true);
-          }}
-          onCreateInColumn={(column) => setCreateStatus(column.status)}
+          onSelectItem={openBoardDetail}
+          onCreateInColumn={openBoardCreate}
           onItemDragStart={handleDragStart}
           onItemDragEnd={handleDragEnd}
           onColumnDragOver={handleDragOver}
@@ -966,11 +976,8 @@ export function KanbanBoard({
           draggedTaskId={draggedTaskId}
           pendingStatusIds={pendingStatusIds}
           dimPendingCards={dimPendingCards}
-          onSelectItem={(item) => {
-            setSelectedTask(item);
-            setIsDetailOpen(true);
-          }}
-          onCreateInColumn={(column) => setCreateStatus(column.status)}
+          onSelectItem={openBoardDetail}
+          onCreateInColumn={openBoardCreate}
           onItemDragStart={handleDragStart}
           onItemDragEnd={handleDragEnd}
           onColumnDragOver={handleDragOver}
@@ -1012,6 +1019,7 @@ export function KanbanBoard({
           sprintQuery.value,
           sprintQuery.allValue
         )}
+        createIntentKey={createIntentKey}
         onClose={() => setCreateStatus(null)}
         onSuccess={(created) => {
           setWorkItems((current) => [created, ...current]);

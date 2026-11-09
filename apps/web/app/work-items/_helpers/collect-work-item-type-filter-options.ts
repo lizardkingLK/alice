@@ -59,12 +59,13 @@ function addProjectCatalogLabels(
 
 function addWitCatalogLabels(
   byKey: Map<string, string>,
-  userId: string | null | undefined
+  userId: string | null | undefined,
+  projectId?: string | null
 ): void {
   if (!userId) {
     return;
   }
-  for (const option of collectTypeOptionsFromWitCatalog(userId)) {
+  for (const option of collectTypeOptionsFromWitCatalog(userId, projectId)) {
     if (!byKey.has(option.key)) {
       byKey.set(option.key, option.name);
     }
@@ -93,11 +94,12 @@ export function collectWorkItemTypeFilterOptions(params: {
   const { projects, projectId, userId } = params;
   const byKey = new Map<string, string>();
 
+  const scopedProjectId = projectId && projectId !== 'all' ? projectId : null;
   addProjectCatalogLabels(
     byKey,
-    scopedProjectsForTypeFilter(projects, projectId)
+    scopedProjectsForTypeFilter(projects, scopedProjectId)
   );
-  addWitCatalogLabels(byKey, userId);
+  addWitCatalogLabels(byKey, userId, scopedProjectId);
   ensureSeedTypeLabels(byKey);
 
   return [...byKey.entries()]

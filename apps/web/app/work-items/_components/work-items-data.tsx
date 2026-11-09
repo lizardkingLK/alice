@@ -1,10 +1,9 @@
 import WorkItemsWorkspace from '@/app/work-items/_components/work-items-workspace';
-import {
-  getWorkItemsHierarchyPage,
-  getWorkItemsPaginated,
-  type DbWorkItem,
-  type WorkItemAncestor,
-  type WorkItemListFilters,
+import { loadWorkItemsListPage } from '@/app/work-items/_services/work-items.list-page.server';
+import type {
+  DbWorkItem,
+  WorkItemAncestor,
+  WorkItemListFilters,
 } from '@/app/work-items/_services/work-items.reads.server';
 import { needsWorkspaceProjectBootstrap } from '@/app/board/_helpers/workspace-defaults-shared';
 import { EMPTY_ACTIVE_SPRINTS_PAGE } from '@/app/board/_services/board.reads.defaults.server';
@@ -23,6 +22,7 @@ import { readWorkItemTableColumnVisibilityBootstrap } from '@/app/work-items/_he
 import {
   parseStandardParams,
   parseWorkItemFilters,
+  parseWorkItemFocusId,
   parseWorkItemListView,
   parseWorkItemRecordStatus,
   workItemHierarchyListFilter,
@@ -95,6 +95,7 @@ export async function WorkItemsData({
   const { page, limit, search } = parseStandardParams(resolvedSearchParams, 10);
   const filters = parseWorkItemFilters(resolvedSearchParams);
   const listView = parseWorkItemListView(resolvedSearchParams.view);
+  const focusId = parseWorkItemFocusId(resolvedSearchParams.focus);
   const parsedTab = parseWorkItemRecordStatus(resolvedSearchParams);
   const projectId = lockedProjectId ?? filters.projectId;
   const assigneeId = lockedAssigneeId ?? filters.assigneeId;
@@ -161,28 +162,18 @@ export async function WorkItemsData({
         };
       }
 
-      if (listView === 'hierarchy') {
-        return safeServerFetch(
-          getWorkItemsHierarchyPage(page, limit, search, scoped),
-          EMPTY_WORK_ITEMS,
-          'fetch work items hierarchy page'
-        );
-      }
-
-      const flat = await safeServerFetch(
-        getWorkItemsPaginated(page, limit, search, scoped),
+      return safeServerFetch(
+        loadWorkItemsListPage({
+          page,
+          limit,
+          search,
+          filters: scoped,
+          listView,
+          focusId,
+        }),
         EMPTY_WORK_ITEMS,
-        'fetch work items list'
+        'fetch work items list page'
       );
-      return {
-        ...flat,
-        childrenByParentId: {},
-        mode: 'tree' as const,
-        searchPanelItems: [],
-        searchMatchIds: [],
-        ancestorsById: {},
-        focusId: null,
-      };
     })(),
   ]);
 

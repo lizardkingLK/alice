@@ -183,14 +183,14 @@ job kinds. Product phases live in
 [GITHUB_INTEGRATION.md](../features/projects/GITHUB_INTEGRATION.md)
 (Phased delivery). Draft names (finalize in `@repo/jobs`):
 
-| Kind (draft) | Phase | Role |
-| ------------ | ----- | ---- |
-| `github.webhook.ingest` | 2 | After API HMAC verify — normalize payload, idempotency key, fan-out |
-| `github.sync.pull_request` | 2 | Upsert PR (+ link work item when resolvable) |
-| `github.sync.push` | 2 | Commits / branch tip updates |
-| `github.sync.branch` | 2 | Branch create/delete |
-| `workflow.run` | 4 | Orchestrator parent flow (FlowProducer) |
-| `agent.tool.cursor` (and peers) | 4 | Long agent tool execution; never on `apps/api` |
+| Kind (draft)                    | Phase | Role                                                                |
+| ------------------------------- | ----- | ------------------------------------------------------------------- |
+| `github.webhook.ingest`         | 2     | After API HMAC verify — normalize payload, idempotency key, fan-out |
+| `github.sync.pull_request`      | 2     | Upsert PR (+ link work item when resolvable)                        |
+| `github.sync.push`              | 2     | Commits / branch tip updates                                        |
+| `github.sync.branch`            | 2     | Branch create/delete                                                |
+| `workflow.run`                  | 4     | Orchestrator parent flow (FlowProducer)                             |
+| `agent.tool.cursor` (and peers) | 4     | Long agent tool execution; never on `apps/api`                      |
 
 Webhook HTTP handlers on `apps/api` **verify + enqueue only**. Agent tool loops
 and sync apply logic run on `apps/worker`.

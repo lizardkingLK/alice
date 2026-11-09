@@ -48,7 +48,10 @@ import type {
 import type { Team } from '@/app/manager/_services/teams.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import WorkItemsWorkspace from '@/app/work-items/_components/work-items-workspace';
-import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import type {
+  DbWorkItem,
+  WorkItemAncestor,
+} from '@/app/work-items/_services/work-items.reads.server';
 import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import {
@@ -79,6 +82,11 @@ const WorkflowDesignerWorkspace = dynamic(
 
 interface ProjectWorkItemsProps {
   readonly initialWorkItems: DbWorkItem[];
+  readonly initialChildrenByParentId: Record<string, DbWorkItem[]>;
+  readonly searchPanelItems: DbWorkItem[];
+  readonly searchMatchIds: readonly string[];
+  readonly ancestorsById: Record<string, WorkItemAncestor[]>;
+  readonly hierarchyMode: 'tree' | 'search';
   readonly totalCount: number;
   readonly page: number;
   readonly limit: number;
@@ -502,6 +510,11 @@ export function ProjectDetailsWorkspace({
               projectMembersByProjectId={{ [project.id]: members }}
               sprints={sprints.sprints}
               initialWorkItems={workItems.initialWorkItems}
+              initialChildrenByParentId={workItems.initialChildrenByParentId}
+              searchPanelItems={workItems.searchPanelItems}
+              searchMatchIds={workItems.searchMatchIds}
+              ancestorsById={workItems.ancestorsById}
+              hierarchyMode={workItems.hierarchyMode}
               totalCount={workItems.totalCount}
               page={workItems.page}
               limit={workItems.limit}

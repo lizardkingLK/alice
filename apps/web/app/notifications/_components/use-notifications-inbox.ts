@@ -68,12 +68,18 @@ export function useNotificationsInbox(params: {
   limit?: number;
   initialNotifications?: Notification[];
   initialLoadFailed?: boolean;
+  /**
+   * Disambiguates Supabase Realtime channel names when multiple inboxes
+   * mount at once (header bell + `/notifications` page).
+   */
+  realtimeChannelScope?: string;
 }) {
   const {
     userId,
     limit = DASHBOARD_INBOX_LIMIT,
     initialNotifications,
     initialLoadFailed = false,
+    realtimeChannelScope = 'inbox',
   } = params;
   const skipClientFetch = initialNotifications !== undefined;
   const [notifications, setNotifications] = useState<Notification[]>(
@@ -159,7 +165,7 @@ export function useNotificationsInbox(params: {
     };
 
     const channel = supabase
-      .channel(`notifications:${userId}`)
+      .channel(`notifications:${realtimeChannelScope}:${userId}`)
       .on(
         'postgres_changes',
         {
@@ -173,9 +179,11 @@ export function useNotificationsInbox(params: {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      // removeChannel may return void (mocks) or a Promise (supabase-js).
+      const teardown = Promise.resolve(supabase.removeChannel(channel));
+      teardown.catch(() => {});
     };
-  }, [limit, userId]);
+  }, [limit, realtimeChannelScope, userId]);
 
   const handleRetry = () => {
     loadInbox().catch(onInboxLoadRejected);

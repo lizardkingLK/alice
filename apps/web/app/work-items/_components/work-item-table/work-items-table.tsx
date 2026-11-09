@@ -464,6 +464,7 @@ export default function WorkItemsTable({
   };
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [createIntentKey, setCreateIntentKey] = useState(0);
   const [itemToEdit, setItemToEdit] = useState<DbWorkItem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const lifecycle = useWorkItemLifecycleActions({
@@ -517,6 +518,10 @@ export default function WorkItemsTable({
 
   const openCreateDialog = () => {
     cancelPendingEditClear();
+    if (dialogOpen && itemToEdit == null) {
+      setCreateIntentKey((key) => key + 1);
+      return;
+    }
     setItemToEdit(null);
     setDialogOpen(true);
   };
@@ -721,6 +726,7 @@ export default function WorkItemsTable({
         projectMembers={projectMembers}
         lockProject={isProjectLocked}
         lockAssigneeId={lockedAssigneeId}
+        createIntentKey={createIntentKey}
         onClose={() => handleDialogChange(false)}
         onSuccess={handleFormSuccess}
       />

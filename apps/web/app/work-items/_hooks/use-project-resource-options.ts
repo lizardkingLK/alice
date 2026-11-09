@@ -10,6 +10,11 @@ export type UseProjectResourceOptionsArgs<T extends { readonly id: string }> = {
    * (e.g. always for sprints; only when assignee is not locked).
    */
   readonly clearWhenMissing?: boolean;
+  /**
+   * Module-level cache scope (e.g. `members`, `sprints`) so remounts /
+   * layout switches reuse the last successful fetch for a project id.
+   */
+  readonly cacheScope?: string;
   // eslint-disable-next-line no-unused-vars
   readonly onSelectionChange: (selectedId: string | null) => void;
   // eslint-disable-next-line no-unused-vars
@@ -24,20 +29,63 @@ export type UseProjectResourceOptionsResult<T extends { readonly id: string }> =
     readonly isLoading: boolean;
   };
 
+/** Survives form remounts within the same browser session. */
+const projectResourceCache = new Map<
+  string,
+  readonly { readonly id: string }[]
+>();
+
+function cacheKey(scope: string, projectId: string): string {
+  return `${scope}:${projectId}`;
+}
+
+function readCache<T extends { readonly id: string }>(
+  scope: string | undefined,
+  projectId: string
+): readonly T[] | null {
+  if (!scope || !projectId) {
+    return null;
+  }
+  const hit = projectResourceCache.get(cacheKey(scope, projectId));
+  return hit ? (hit as readonly T[]) : null;
+}
+
+function writeCache<T extends { readonly id: string }>(
+  scope: string | undefined,
+  projectId: string,
+  options: readonly T[]
+): void {
+  if (!scope || !projectId) {
+    return;
+  }
+  projectResourceCache.set(cacheKey(scope, projectId), options);
+}
+
 function initialOptions<T extends { readonly id: string }>(args: {
   readonly projectId: string;
   readonly provided: readonly T[];
   readonly selectedId: string | null | undefined;
   readonly preferProvided: boolean;
   readonly noProjectOptions: readonly T[];
+  readonly cacheScope?: string;
 }): readonly T[] {
-  const { projectId, provided, selectedId, preferProvided, noProjectOptions } =
-    args;
+  const {
+    projectId,
+    provided,
+    selectedId,
+    preferProvided,
+    noProjectOptions,
+    cacheScope,
+  } = args;
   if (!projectId) {
     return noProjectOptions;
   }
   if (preferProvided) {
     return provided;
+  }
+  const cached = readCache<T>(cacheScope, projectId);
+  if (cached) {
+    return cached;
   }
   if (selectedId) {
     const initial = provided.find((item) => item.id === selectedId);
@@ -69,7 +117,7 @@ function clearIfMissing(
 
 /**
  * Shared project-scoped option loader (members, sprints, …): prefer-provided,
- * seed-while-fetch, and clear-selection-when-missing.
+ * seed-while-fetch, session cache, and clear-selection-when-missing.
  */
 export function useProjectResourceOptions<T extends { readonly id: string }>({
   projectId,
@@ -77,6 +125,7 @@ export function useProjectResourceOptions<T extends { readonly id: string }>({
   selectedId,
   preferProvided = false,
   clearWhenMissing = true,
+  cacheScope,
   onSelectionChange,
   fetchOptions,
   noProjectOptions = [],
@@ -88,11 +137,15 @@ export function useProjectResourceOptions<T extends { readonly id: string }>({
       selectedId,
       preferProvided,
       noProjectOptions,
+      cacheScope,
     })
   );
-  const [isLoading, setIsLoading] = useState(
-    () => Boolean(projectId) && !preferProvided
-  );
+  const [isLoading, setIsLoading] = useState(() => {
+    if (!projectId || preferProvided) {
+      return false;
+    }
+    return readCache(cacheScope, projectId) == null;
+  });
 
   const selectedIdRef = useRef(selectedId);
   useEffect(() => {
@@ -150,6 +203,21 @@ export function useProjectResourceOptions<T extends { readonly id: string }>({
       };
     }
 
+    const cached = readCache<T>(cacheScope, projectId);
+    if (cached) {
+      setOptions(cached);
+      setIsLoading(false);
+      clearIfMissing(
+        selectedIdRef.current,
+        cached,
+        clearWhenMissing,
+        onSelectionChangeRef.current
+      );
+      return () => {
+        isMounted = false;
+      };
+    }
+
     setIsLoading(true);
     fetchOptionsRef
       .current(projectId)
@@ -157,6 +225,7 @@ export function useProjectResourceOptions<T extends { readonly id: string }>({
         if (!isMounted) {
           return;
         }
+        writeCache(cacheScope, projectId, next);
         setOptions(next);
         setIsLoading(false);
         clearIfMissing(
@@ -177,7 +246,7 @@ export function useProjectResourceOptions<T extends { readonly id: string }>({
     return () => {
       isMounted = false;
     };
-  }, [projectId, preferProvided, clearWhenMissing]);
+  }, [projectId, preferProvided, clearWhenMissing, cacheScope]);
 
   return { options, isLoading };
 }

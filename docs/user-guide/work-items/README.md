@@ -57,10 +57,12 @@ Right side (views and actions):
 | **Active** / **Archived** | Same icon segment style as Flat/Hierarchy (managers/admins on `/work-items`; members use **My Work**) |
 | **Add Work-Item**         | Open the create form                                                                                  |
 
-In hierarchy mode, the registry pages a **forest** of up to **100** rows
-(parents and children count together). If a large parent is split across pages,
-the next page shows that parent again with the remaining children so you can
-still expand locally.
+In hierarchy mode (Work Items, My Work, and a project’s **Work items** tab),
+the registry pages a **forest** of up to **100** rows (parents and children
+count together). Children for that page are loaded with the parents, so
+expanding a row is instant. If a large parent is split across pages, the next
+page shows that parent again with the remaining children so you can still
+expand locally.
 
 ### Hierarchy + search
 

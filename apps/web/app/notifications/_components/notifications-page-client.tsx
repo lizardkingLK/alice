@@ -14,6 +14,7 @@ export function NotificationsPageClient({
   const inbox = useNotificationsInbox({
     userId,
     limit: NOTIFICATIONS_PAGE_LIMIT,
+    realtimeChannelScope: 'page',
   });
   const listHandlers = createNotificationsInboxListHandlers(inbox);
 
