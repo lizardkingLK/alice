@@ -6,7 +6,7 @@ Project administration registry: list, create, edit, soft delete, restore, and h
 | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------ |
 | [PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md](./PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md) | Sidebar navigation, banner isolation, JSON Schema dynamic fields, and AI bot  | Living |
 | [JIRA_INTEGRATION.md](./JIRA_INTEGRATION.md)                                     | Manager OAuth (3LO) → persisted Jira link → import                            | Living |
-| [GITHUB_INTEGRATION.md](./GITHUB_INTEGRATION.md)                                 | Per-project PAT, encrypt-at-rest, write-only client contract                  | Living |
+| [GITHUB_INTEGRATION.md](./GITHUB_INTEGRATION.md)                                 | OAuth App shipped (connect + repo bind + manual PR links); GitHub App → sync → orchestrator → agents **planned** (Phases 0–5) | Living |
 | —                                                                                | See [ARD](../../product/ARD.md) (PROJ-1) and [TRD](../../architecture/TRD.md) | Living |
 
 Quick links:
