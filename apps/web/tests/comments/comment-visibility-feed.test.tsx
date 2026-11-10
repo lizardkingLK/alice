@@ -472,7 +472,7 @@ describe('CommentsFeed AI Discussion Private Hiding', () => {
     );
 
     // For AUTHOR_ID: commentA is hidden, commentB is visible
-    expect(screen.queryByText(/suggest a title/i)).toBeInTheDocument();
+    expect(screen.getByText(/suggest a title/i)).toBeInTheDocument();
     expect(screen.getByTestId('toggle-hidden-comments-btn')).toHaveTextContent(
       '1 item hidden for you'
     );

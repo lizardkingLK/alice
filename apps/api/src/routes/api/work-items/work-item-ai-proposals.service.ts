@@ -642,46 +642,56 @@ export class WorkItemAiProposalService {
   private async loadCommentContext(
     input: GenerateWorkItemAiProposalsInput
   ): Promise<string[]> {
-    const result: string[] = [];
-    for (const commentId of input.commentIds ?? []) {
-      let context: Awaited<
-        ReturnType<CommentsRepository['requireProjectMember']>
-      >;
-      try {
-        context = await this.comments.requireProjectMember(
-          commentId,
-          input.actorId
-        );
-      } catch (error) {
-        if (
-          error instanceof Error &&
-          /comment not found/i.test(error.message)
-        ) {
-          throw new WorkItemAiProposalError('not_found', 'Comment not found.');
-        }
-        throw error;
-      }
-      if (
-        context.workItemId !== input.workItemId ||
-        context.status !== 'active'
-      ) {
-        throw new WorkItemAiProposalError(
-          'invalid_context',
-          'Comments must be active and belong to the requested work item.'
-        );
-      }
-      const comment = await this.comments.getById(commentId);
-      if (!comment) {
-        throw new WorkItemAiProposalError('not_found', 'Comment not found.');
-      }
-      result.push(
-        bounded(
-          commentContentToPlainText(comment.content),
-          MAX_COMMENT_INPUT_CHARS
-        )
-      );
-    }
-    return result;
+    // Keep authorization and reads serial to preserve input order and fail fast.
+    return (input.commentIds ?? []).reduce<Promise<string[]>>(
+      (resultPromise, commentId) =>
+        resultPromise.then(async (result) => {
+          let context: Awaited<
+            ReturnType<CommentsRepository['requireProjectMember']>
+          >;
+          try {
+            context = await this.comments.requireProjectMember(
+              commentId,
+              input.actorId
+            );
+          } catch (error) {
+            if (
+              error instanceof Error &&
+              /comment not found/i.test(error.message)
+            ) {
+              throw new WorkItemAiProposalError(
+                'not_found',
+                'Comment not found.'
+              );
+            }
+            throw error;
+          }
+          if (
+            context.workItemId !== input.workItemId ||
+            context.status !== 'active'
+          ) {
+            throw new WorkItemAiProposalError(
+              'invalid_context',
+              'Comments must be active and belong to the requested work item.'
+            );
+          }
+          const comment = await this.comments.getById(commentId);
+          if (!comment) {
+            throw new WorkItemAiProposalError(
+              'not_found',
+              'Comment not found.'
+            );
+          }
+          result.push(
+            bounded(
+              commentContentToPlainText(comment.content),
+              MAX_COMMENT_INPUT_CHARS
+            )
+          );
+          return result;
+        }),
+      Promise.resolve([])
+    );
   }
 
   private buildPrompt(

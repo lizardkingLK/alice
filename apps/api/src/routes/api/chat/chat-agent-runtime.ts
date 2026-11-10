@@ -69,7 +69,7 @@ export async function resolveChatAgentRuntime(params: {
   let agent: ChatAgentDetailRow | null;
   if (agentId) {
     agent = await chatAgents.findVisibleById(userId, agentId);
-    if (!agent || agent.status !== 'active') {
+    if (agent?.status !== 'active') {
       throw new ChatAgentRuntimeAccessError();
     }
   } else {
