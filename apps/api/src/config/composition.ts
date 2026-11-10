@@ -3,6 +3,8 @@ import { NotificationsService } from '../routes/api/notifications/notifications.
 import { WorkItemRepository } from '../routes/api/work-items/work-items.repository';
 import { WorkItemService } from '../routes/api/work-items/work-items.service';
 import { createWorkItemsRouter } from '../routes/api/work-items/work-items.route';
+import { WorkItemAiProposalService } from '../routes/api/work-items/work-item-ai-proposals.service';
+import { createWorkItemAiProposalsRouter } from '../routes/api/work-items/work-item-ai-proposals.route';
 import {
   SprintsRepository,
   SprintBurndownRepository,
@@ -461,6 +463,22 @@ function createChatAgentsConfig() {
   };
 }
 
+function createWorkItemAiProposalsConfig(
+  workItemRepository: WorkItemRepository,
+  commentsRepository: CommentsRepository,
+  chatAgentsRepository: ChatAgentsRepository,
+  integrationsService: IntegrationsService
+) {
+  const proposalService = new WorkItemAiProposalService(
+    workItemRepository,
+    commentsRepository,
+    chatAgentsRepository,
+    integrationsService
+  );
+  const router = createWorkItemAiProposalsRouter({ proposalService });
+  return { proposalService, router };
+}
+
 function createPusherConfig(
   usersRepository: Pick<UsersRepository, 'findById'>
 ) {
@@ -516,6 +534,12 @@ export const comments = createCommentsConfig(
 export const worklogs = createWorklogsConfig(workItems.workItemRepository);
 export const integrations = createIntegrationsConfig();
 export const chatAgents = createChatAgentsConfig();
+export const workItemAiProposals = createWorkItemAiProposalsConfig(
+  workItems.workItemRepository,
+  comments.commentsRepository,
+  chatAgents.chatAgentsRepository,
+  integrations.integrationsService
+);
 export const sprints = createSprintsConfig(integrations.integrationsService);
 export const jira = createJiraConfig();
 export const projects = createProjectsConfig(
