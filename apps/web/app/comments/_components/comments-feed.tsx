@@ -40,6 +40,8 @@ import {
   Users,
   Tag,
   Loader2,
+  Eye,
+  EyeOff,
 } from '@repo/ui/lib/icons';
 import {
   CommentItem,
@@ -91,6 +93,12 @@ import { useScopedTableRealtime } from '@/lib/realtime/use-scoped-table-realtime
 import { WorkItemAiProposalCard } from '@/app/work-items/_components/work-item-details/work-item-ai-proposal-card';
 import { generateWorkItemAiProposals } from '@/app/work-items/_services/work-item-ai-proposals.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import {
+  readHiddenCommentIds,
+  hideCommentForUser,
+  unhideCommentForUser,
+  filterVisibleComments,
+} from '@/app/comments/_helpers/comment-visibility-storage';
 
 type CommentsFeedProps = {
   initialComments: CommentItem[];
@@ -118,7 +126,44 @@ type WorkItemDiscussionHeaderProps = {
   sortOrder: CommentsSortOrder;
   // eslint-disable-next-line no-unused-vars -- callback signature
   onSortOrderChange: (order: CommentsSortOrder) => void;
+  hiddenCount?: number;
+  showHidden?: boolean;
+  onToggleShowHidden?: () => void;
 };
+
+function HiddenCommentsToggleButton({
+  hiddenCount,
+  showHidden,
+  onToggle,
+}: Readonly<{
+  hiddenCount: number;
+  showHidden: boolean;
+  onToggle: () => void;
+}>) {
+  if (hiddenCount <= 0) return null;
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="xs"
+      className="text-muted-foreground hover:text-foreground gap-1.5 text-xs"
+      data-testid="toggle-hidden-comments-btn"
+      onClick={onToggle}
+    >
+      {showHidden ? (
+        <>
+          <EyeOff className="size-3.5" />
+          Hide hidden items
+        </>
+      ) : (
+        <>
+          <Eye className="size-3.5" />
+          {hiddenCount} {hiddenCount === 1 ? 'item' : 'items'} hidden for you
+        </>
+      )}
+    </Button>
+  );
+}
 
 function WorkItemDiscussionHeader({
   embedded,
@@ -126,8 +171,12 @@ function WorkItemDiscussionHeader({
   activeCount,
   sortOrder,
   onSortOrderChange,
+  hiddenCount = 0,
+  showHidden = false,
+  onToggleShowHidden,
 }: Readonly<WorkItemDiscussionHeaderProps>) {
-  if (!showSortControl && embedded) {
+  const hasHiddenButton = hiddenCount > 0 && Boolean(onToggleShowHidden);
+  if (!showSortControl && embedded && !hasHiddenButton) {
     return null;
   }
 
@@ -141,12 +190,21 @@ function WorkItemDiscussionHeader({
           Discussion ({activeCount})
         </h3>
       )}
-      {showSortControl ? (
-        <CommentsSortMenu
-          sortOrder={sortOrder}
-          onSortOrderChange={onSortOrderChange}
-        />
-      ) : null}
+      <div className="flex items-center gap-2">
+        {onToggleShowHidden ? (
+          <HiddenCommentsToggleButton
+            hiddenCount={hiddenCount}
+            showHidden={showHidden}
+            onToggle={onToggleShowHidden}
+          />
+        ) : null}
+        {showSortControl ? (
+          <CommentsSortMenu
+            sortOrder={sortOrder}
+            onSortOrderChange={onSortOrderChange}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -256,6 +314,131 @@ export async function loadActiveCommentUsers(
   }
 }
 
+function resolveTargetWorkItemId(
+  workItemId?: string,
+  newWorkItemId?: string,
+  selectedWorkItemId?: string
+): string | undefined {
+  if (workItemId) return workItemId;
+  if (newWorkItemId && newWorkItemId !== 'all') return newWorkItemId;
+  if (selectedWorkItemId && selectedWorkItemId !== 'all')
+    return selectedWorkItemId;
+  return undefined;
+}
+
+type CommentsFeedProposalSectionProps = {
+  readonly proposalState:
+    | { status: 'idle' }
+    | { status: 'generating'; agentName: string; commentId: string }
+    | {
+        status: 'ready';
+        agentName: string;
+        suggestions: WorkItemAiProposalSuggestion[];
+        commentId: string;
+      }
+    | { status: 'error'; agentName: string; error: string; commentId: string };
+  readonly workItemId?: string;
+  readonly currentWorkItemTitle?: string;
+  readonly currentWorkItemUpdatedAt?: string;
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  readonly onWorkItemPatched?: (updated: Partial<DbWorkItem>) => void;
+  readonly onDismiss: () => void;
+  readonly onRefresh: () => void;
+};
+
+function CommentsFeedProposalSection({
+  proposalState,
+  workItemId,
+  currentWorkItemTitle,
+  currentWorkItemUpdatedAt,
+  onWorkItemPatched,
+  onDismiss,
+  onRefresh,
+}: Readonly<CommentsFeedProposalSectionProps>) {
+  if (proposalState.status === 'idle') {
+    return null;
+  }
+
+  if (proposalState.status === 'generating') {
+    return (
+      <div
+        className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-950 dark:text-emerald-300"
+        data-testid="ai-proposal-loading"
+      >
+        <Loader2 className="size-4 animate-spin text-emerald-600 dark:text-emerald-400" />
+        <span>Generating suggestions from @{proposalState.agentName}…</span>
+      </div>
+    );
+  }
+
+  if (proposalState.status === 'ready') {
+    return (
+      <WorkItemAiProposalCard
+        agentName={proposalState.agentName}
+        suggestions={proposalState.suggestions}
+        workItemId={workItemId ?? ''}
+        currentTitle={currentWorkItemTitle}
+        expectedUpdatedAt={currentWorkItemUpdatedAt ?? ''}
+        onApplySuccess={(updated) => {
+          onWorkItemPatched?.(updated);
+          toast.success('Work item updated from AI suggestions');
+          onRefresh();
+        }}
+        onReject={onDismiss}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="border-destructive/30 bg-destructive/5 text-destructive flex items-center justify-between gap-2 rounded-lg border p-3 text-xs"
+      data-testid="ai-proposal-generation-error"
+    >
+      <span>
+        Failed to get suggestions from @{proposalState.agentName}:{' '}
+        {proposalState.error}
+      </span>
+      <Button type="button" variant="ghost" size="xs" onClick={onDismiss}>
+        Dismiss
+      </Button>
+    </div>
+  );
+}
+
+function CommentsFeedEmptyState({
+  hasFilters,
+  onOpenNewCommentModal,
+}: Readonly<{
+  hasFilters: boolean;
+  onOpenNewCommentModal: () => void;
+}>) {
+  return (
+    <Card className="border-dashed">
+      <CardContent className="space-y-3 py-12 text-center">
+        <div className="bg-muted mx-auto flex size-12 items-center justify-center rounded-full">
+          <MessageSquareText className="text-muted-foreground size-6" />
+        </div>
+        <h3 className="text-foreground text-base font-semibold">
+          No comments found
+        </h3>
+        <p className="text-muted-foreground mx-auto max-w-sm text-sm">
+          {hasFilters
+            ? 'Try adjusting your search query or filter settings.'
+            : 'Be the first to start a conversation!'}
+        </p>
+        <Button
+          onClick={onOpenNewCommentModal}
+          variant="outline"
+          className="mt-2"
+        >
+          <Plus className="size-4" />
+          Add Comment
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function CommentsFeed({
   initialComments,
   workItems,
@@ -296,6 +479,16 @@ export function CommentsFeed({
       }
     | { status: 'error'; agentName: string; error: string; commentId: string }
   >({ status: 'idle' });
+  const [hiddenCommentIds, setHiddenCommentIds] = useState<Set<string>>(() =>
+    readHiddenCommentIds(currentUserId)
+  );
+  const [showHidden, setShowHidden] = useState(false);
+
+  useEffect(() => {
+    setHiddenCommentIds(readHiddenCommentIds(currentUserId));
+    setProposalState({ status: 'idle' });
+  }, [currentUserId]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyingParentId, setReplyingParentId] = useState<string | null>(null);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -351,12 +544,11 @@ export function CommentsFeed({
 
   usePendingMutationUnload(reactionQueue);
 
-  const targetWorkItemId =
-    workItemId ||
-    (newWorkItemId && newWorkItemId !== 'all' ? newWorkItemId : undefined) ||
-    (selectedWorkItemId && selectedWorkItemId !== 'all'
-      ? selectedWorkItemId
-      : undefined);
+  const targetWorkItemId = resolveTargetWorkItemId(
+    workItemId,
+    newWorkItemId,
+    selectedWorkItemId
+  );
 
   const handleUserMentionClick = (mention: CommentUserMentionTarget) => {
     if (workItemId) {
@@ -442,15 +634,25 @@ export function CommentsFeed({
     [comments, workItemId, selectedWorkItemId, selectedStatus, searchQuery]
   );
 
+  const visibleComments = useMemo(
+    () => filterVisibleComments(filteredComments, hiddenCommentIds, showHidden),
+    [filteredComments, hiddenCommentIds, showHidden]
+  );
+
   const parentComments = useMemo(
-    () => sortParentComments(filteredComments, sortOrder),
-    [filteredComments, sortOrder]
+    () => sortParentComments(visibleComments, sortOrder),
+    [visibleComments, sortOrder]
   );
 
   const repliesByParent = useMemo(
-    () => groupRepliesByParent(filteredComments),
-    [filteredComments]
+    () => groupRepliesByParent(visibleComments),
+    [visibleComments]
   );
+
+  const hiddenCount = useMemo(() => {
+    if (hiddenCommentIds.size === 0) return 0;
+    return filteredComments.filter((c) => hiddenCommentIds.has(c.id)).length;
+  }, [filteredComments, hiddenCommentIds]);
 
   const scopedWorkItems = useMemo(
     () => scopeMentionWorkItems(workItems, targetWorkItemId),
@@ -670,6 +872,27 @@ export function CommentsFeed({
     }
   };
 
+  const handleHideComment = (commentId: string) => {
+    const updated = hideCommentForUser(activeUserId, commentId);
+    setHiddenCommentIds(new Set(updated));
+    if (proposalState.status !== 'idle' && 'commentId' in proposalState) {
+      const isDirectMatch = proposalState.commentId === commentId;
+      const isChildOfHiddenParent = comments.some(
+        (c) => c.id === proposalState.commentId && c.parent_id === commentId
+      );
+      if (isDirectMatch || isChildOfHiddenParent) {
+        setProposalState({ status: 'idle' });
+      }
+    }
+    toast.success('Discussion item hidden from your view');
+  };
+
+  const handleUnhideComment = (commentId: string) => {
+    const updated = unhideCommentForUser(activeUserId, commentId);
+    setHiddenCommentIds(new Set(updated));
+    toast.success('Discussion item unhidden');
+  };
+
   const renderParentThreads = (showWorkItemBadge: boolean) =>
     parentComments.map((parent) => (
       <CommentThread
@@ -699,6 +922,9 @@ export function CommentsFeed({
         onToggleReaction={handleToggleReaction}
         isReactionSyncing={(commentId) => reactionSyncingIds.has(commentId)}
         onRequestAiSuggestions={handleRequestAiSuggestions}
+        hiddenCommentIds={hiddenCommentIds}
+        onHideComment={handleHideComment}
+        onUnhideComment={handleUnhideComment}
       />
     ));
 
@@ -806,6 +1032,9 @@ export function CommentsFeed({
             activeCount={stats.active}
             sortOrder={sortOrder}
             onSortOrderChange={setSortOrder}
+            hiddenCount={hiddenCount}
+            showHidden={showHidden}
+            onToggleShowHidden={() => setShowHidden((prev) => !prev)}
           />
 
           <CommentComposer
@@ -820,84 +1049,32 @@ export function CommentsFeed({
             onSubmit={(doc) => handleCreateComment(doc)}
           />
 
-          {proposalState.status === 'generating' && (
-            <div
-              className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-950 dark:text-emerald-300"
-              data-testid="ai-proposal-loading"
-            >
-              <Loader2 className="size-4 animate-spin text-emerald-600 dark:text-emerald-400" />
-              <span>
-                Generating suggestions from @{proposalState.agentName}…
-              </span>
-            </div>
-          )}
-
-          {proposalState.status === 'ready' && (
-            <WorkItemAiProposalCard
-              agentName={proposalState.agentName}
-              suggestions={proposalState.suggestions}
-              workItemId={workItemId}
-              currentTitle={currentWorkItemTitle}
-              expectedUpdatedAt={currentWorkItemUpdatedAt ?? ''}
-              onApplySuccess={(updated) => {
-                onWorkItemPatched?.(updated);
-                toast.success('Work item updated from AI suggestions');
-                router.refresh();
-              }}
-              onReject={() => {
-                setProposalState({ status: 'idle' });
-              }}
-            />
-          )}
-
-          {proposalState.status === 'error' && (
-            <div
-              className="border-destructive/30 bg-destructive/5 text-destructive flex items-center justify-between gap-2 rounded-lg border p-3 text-xs"
-              data-testid="ai-proposal-generation-error"
-            >
-              <span>
-                Failed to get suggestions from @{proposalState.agentName}:{' '}
-                {proposalState.error}
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="xs"
-                onClick={() => setProposalState({ status: 'idle' })}
-              >
-                Dismiss
-              </Button>
-            </div>
-          )}
+          <CommentsFeedProposalSection
+            proposalState={proposalState}
+            workItemId={workItemId}
+            currentWorkItemTitle={currentWorkItemTitle}
+            currentWorkItemUpdatedAt={currentWorkItemUpdatedAt}
+            onWorkItemPatched={onWorkItemPatched}
+            onDismiss={() => setProposalState({ status: 'idle' })}
+            onRefresh={() => router.refresh()}
+          />
 
           <div className="space-y-6 pb-2">{renderParentThreads(false)}</div>
         </div>
       ) : (
         <div className="space-y-4">
+          <div className="flex justify-end">
+            <HiddenCommentsToggleButton
+              hiddenCount={hiddenCount}
+              showHidden={showHidden}
+              onToggle={() => setShowHidden((prev) => !prev)}
+            />
+          </div>
           {parentComments.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="space-y-3 py-12 text-center">
-                <div className="bg-muted mx-auto flex size-12 items-center justify-center rounded-full">
-                  <MessageSquareText className="text-muted-foreground size-6" />
-                </div>
-                <h3 className="text-foreground text-base font-semibold">
-                  No comments found
-                </h3>
-                <p className="text-muted-foreground mx-auto max-w-sm text-sm">
-                  {searchQuery || selectedWorkItemId !== 'all'
-                    ? 'Try adjusting your search query or filter settings.'
-                    : 'Be the first to start a conversation!'}
-                </p>
-                <Button
-                  onClick={() => setShowNewCommentModal(true)}
-                  variant="outline"
-                  className="mt-2"
-                >
-                  <Plus className="size-4" />
-                  Add Comment
-                </Button>
-              </CardContent>
-            </Card>
+            <CommentsFeedEmptyState
+              hasFilters={Boolean(searchQuery || selectedWorkItemId !== 'all')}
+              onOpenNewCommentModal={() => setShowNewCommentModal(true)}
+            />
           ) : (
             renderParentThreads(true)
           )}

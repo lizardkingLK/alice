@@ -17,6 +17,8 @@ import {
   Archive,
   Bot,
   ExternalLink,
+  Eye,
+  EyeOff,
   MoreHorizontal,
   Pencil,
   Reply,
@@ -67,6 +69,11 @@ type CommentListItemProps = {
   agents: CommentMentionAgent[];
   workItems: CommentWorkItemOption[];
   replySlot?: ReactNode;
+  isHidden?: boolean;
+  canHide?: boolean;
+  isParent?: boolean;
+  onHide?: () => void;
+  onUnhide?: () => void;
   // eslint-disable-next-line no-unused-vars -- click callback
   onUserMentionClick?: (mention: CommentUserMentionTarget) => void;
   onStartEdit: () => void;
@@ -104,7 +111,16 @@ function CommentWorkItemBadge({
 function CommentOwnerActions({
   onStartEdit,
   onArchive,
-}: Readonly<{ onStartEdit: () => void; onArchive: () => void }>) {
+  canHide,
+  isParent,
+  onHide,
+}: Readonly<{
+  onStartEdit: () => void;
+  onArchive: () => void;
+  canHide?: boolean;
+  isParent?: boolean;
+  onHide?: () => void;
+}>) {
   return (
     <>
       <Button
@@ -130,6 +146,16 @@ function CommentOwnerActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
+          {canHide && onHide ? (
+            <DropdownMenuItem
+              onClick={onHide}
+              className="text-muted-foreground focus:text-foreground gap-2"
+              data-testid="hide-comment-btn"
+            >
+              <EyeOff className="size-3.5" />
+              {isParent ? 'Hide thread from my view' : 'Hide from my view'}
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem
             onClick={onArchive}
             className="gap-2 text-amber-600 focus:text-amber-600"
@@ -148,10 +174,15 @@ function CommentActiveFooter({
   activeUserId,
   users,
   isOwner,
+  isHidden,
+  canHide,
+  isParent,
   isReactionSyncing,
   onStartReply,
   onStartEdit,
   onArchive,
+  onHide,
+  onUnhide,
   onToggleReaction,
   onRequestAiSuggestions,
 }: Readonly<{
@@ -159,10 +190,15 @@ function CommentActiveFooter({
   activeUserId?: string;
   users: CommentUser[];
   isOwner: boolean;
+  isHidden?: boolean;
+  canHide?: boolean;
+  isParent?: boolean;
   isReactionSyncing?: boolean;
   onStartReply: () => void;
   onStartEdit: () => void;
   onArchive: () => void;
+  onHide?: () => void;
+  onUnhide?: () => void;
   onToggleReaction?: ReactionToggleHandler;
   onRequestAiSuggestions?: AiSuggestionsRequestHandler;
 }>) {
@@ -218,10 +254,26 @@ function CommentActiveFooter({
         >
           <Reply className="size-3.5" />
         </Button>
+        {isHidden && onUnhide ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="xs"
+            className="text-muted-foreground hover:text-foreground gap-1 text-xs"
+            data-testid="unhide-comment-btn"
+            onClick={onUnhide}
+          >
+            <Eye className="size-3.5" />
+            {isParent ? 'Unhide thread' : 'Unhide'}
+          </Button>
+        ) : null}
         {isOwner ? (
           <CommentOwnerActions
             onStartEdit={onStartEdit}
             onArchive={onArchive}
+            canHide={canHide}
+            isParent={isParent}
+            onHide={onHide}
           />
         ) : null}
       </div>
@@ -281,6 +333,11 @@ export function CommentListItem({
   agents,
   workItems,
   replySlot,
+  isHidden = false,
+  canHide = false,
+  isParent = false,
+  onHide,
+  onUnhide,
   onUserMentionClick,
   onStartEdit,
   onCancelEdit,
@@ -302,7 +359,9 @@ export function CommentListItem({
     <div
       className={cn(
         'flex items-start gap-3',
-        comment.status === 'archived' && 'opacity-70'
+        comment.status === 'archived' && 'opacity-70',
+        isHidden &&
+          'border-muted-foreground/30 bg-muted/20 rounded-md border border-dashed p-2 opacity-75'
       )}
     >
       <UserAvatar
@@ -326,6 +385,16 @@ export function CommentListItem({
                   className="border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400"
                 >
                   Archived
+                </Badge>
+              ) : null}
+              {isHidden ? (
+                <Badge
+                  variant="outline"
+                  className="border-muted-foreground/30 text-muted-foreground gap-1 text-xs"
+                  data-testid="hidden-comment-badge"
+                >
+                  <EyeOff className="size-3" />
+                  Hidden from your view
                 </Badge>
               ) : null}
               {comment.edited ? (
@@ -369,10 +438,15 @@ export function CommentListItem({
             activeUserId={activeUserId}
             users={users}
             isOwner={isOwner}
+            isHidden={isHidden}
+            canHide={canHide}
+            isParent={isParent}
             isReactionSyncing={isReactionSyncing}
             onStartReply={onStartReply}
             onStartEdit={onStartEdit}
             onArchive={onArchive}
+            onHide={onHide}
+            onUnhide={onUnhide}
             onToggleReaction={onToggleReaction}
             onRequestAiSuggestions={onRequestAiSuggestions}
           />
