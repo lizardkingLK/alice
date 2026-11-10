@@ -22,6 +22,7 @@ vi.mock('../../src/middlewares/auth', () => {
 });
 
 import { createWorkItemAiProposalsRouter } from '../../src/routes/api/work-items/work-item-ai-proposals.route';
+import { WorkItemAiProposalTokenError } from '../../src/routes/api/work-items/work-item-ai-proposal-token';
 import {
   WorkItemAiProposalError,
   type WorkItemAiProposalService,
@@ -65,9 +66,11 @@ const validSuggestions = {
 };
 
 const generateMock = vi.fn();
+const applyMock = vi.fn();
 
 const proposalService = {
   generate: generateMock,
+  apply: applyMock,
 } as unknown as WorkItemAiProposalService;
 
 const router = createWorkItemAiProposalsRouter({ proposalService });
@@ -298,26 +301,265 @@ describe('POST /api/v1/work-items/:id/ai-proposals', () => {
   );
 
   it('aborts service generation when client disconnects', async () => {
-    generateMock.mockImplementation(
-      ({ signal }: { signal: AbortSignal }) =>
-        new Promise((_, reject) => {
-          signal.addEventListener('abort', () => {
+    let observedSignal: AbortSignal | undefined;
+    generateMock.mockImplementation(({ signal }: { signal: AbortSignal }) => {
+      observedSignal = signal;
+      return new Promise((_, reject) => {
+        signal.addEventListener(
+          'abort',
+          () => {
             reject(
               new WorkItemAiProposalError(
                 'cancelled',
                 'AI work-item suggestion generation was cancelled.'
               )
             );
-          });
-        })
-    );
+          },
+          { once: true }
+        );
+      });
+    });
 
     await withMountedRouter('/api/v1/work-items', router, async (baseUrl) => {
       const controller = new AbortController();
       const reqPromise = postProposal(baseUrl, { signal: controller.signal });
+      await vi.waitFor(() => expect(observedSignal).toBeDefined());
       controller.abort();
 
-      await expect(reqPromise).rejects.toThrow();
+      await expect(reqPromise).rejects.toMatchObject({ name: 'AbortError' });
+      await vi.waitFor(() => expect(observedSignal?.aborted).toBe(true));
+    });
+  });
+});
+
+function postApply(
+  baseUrl: string,
+  options: {
+    mountPath?: '/api/v1/work-items' | '/api/work-items';
+    workItemId?: string;
+    body?: unknown;
+    token?: string | null;
+  } = {}
+) {
+  const {
+    mountPath = '/api/v1/work-items',
+    workItemId = WORK_ITEM_ID,
+    body = {
+      token: 'valid-signed-token',
+      title: 'New suggested title',
+      description: {
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'New description' }],
+          },
+        ],
+      },
+      expectedUpdatedAt: '2026-11-10T09:00:00.000Z',
+    },
+    token = 'valid-token',
+  } = options;
+
+  return fetch(`${baseUrl}${mountPath}/${workItemId}/ai-proposals/apply`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+}
+
+describe('POST /api/v1/work-items/:id/ai-proposals/apply', () => {
+  const appliedWorkItem = {
+    id: WORK_ITEM_ID,
+    title: 'New suggested title',
+    description: {
+      type: 'doc',
+      content: [
+        { type: 'paragraph', content: [{ type: 'text', text: 'New' }] },
+      ],
+    },
+    updated_at: '2026-11-10T09:05:00.000Z',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    applyMock.mockResolvedValue(appliedWorkItem);
+  });
+
+  it('returns 200 and updated work item for a valid apply request', async () => {
+    await withMountedRouter('/api/v1/work-items', router, async (baseUrl) => {
+      const response = await postApply(baseUrl);
+      expect(response.status).toBe(200);
+      const json = await response.json();
+      expect(json).toEqual({
+        data: appliedWorkItem,
+        error: null,
+      });
+      expect(applyMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actorId: '55555555-5555-4555-8555-555555555555',
+          workItemId: WORK_ITEM_ID,
+          token: 'valid-signed-token',
+          title: 'New suggested title',
+          expectedUpdatedAt: '2026-11-10T09:00:00.000Z',
+        })
+      );
+    });
+  });
+
+  it('returns 401 when request is unauthenticated', async () => {
+    await withMountedRouter('/api/v1/work-items', router, async (baseUrl) => {
+      const response = await postApply(baseUrl, { token: null });
+      expect(response.status).toBe(401);
+    });
+  });
+
+  it('returns 400 when workItemId is not a valid UUID', async () => {
+    await withMountedRouter('/api/v1/work-items', router, async (baseUrl) => {
+      const response = await postApply(baseUrl, { workItemId: 'invalid-id' });
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.data).toBeNull();
+      expect(json.error).toBe('Invalid work item id');
+    });
+  });
+
+  it('returns 400 when body fails schema validation', async () => {
+    await withMountedRouter('/api/v1/work-items', router, async (baseUrl) => {
+      const response = await postApply(baseUrl, {
+        body: {
+          token: '',
+          title: '',
+        },
+      });
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.data).toBeNull();
+      expect(json.error).toBeDefined();
+    });
+  });
+
+  it('returns 403 when user is not a project member', async () => {
+    applyMock.mockRejectedValue(new WorkItemAccessError());
+    await withMountedRouter('/api/v1/work-items', router, async (baseUrl) => {
+      const response = await postApply(baseUrl);
+      expect(response.status).toBe(403);
+      const json = await response.json();
+      expect(json.data).toBeNull();
+      expect(json.error).toContain("You're not a member of this project.");
+    });
+  });
+
+  it('returns 403 when proposal token user does not match', async () => {
+    applyMock.mockRejectedValue(
+      new WorkItemAiProposalTokenError(
+        'user_mismatch',
+        'Suggestion proposal token does not match the current user.'
+      )
+    );
+    await withMountedRouter('/api/v1/work-items', router, async (baseUrl) => {
+      const response = await postApply(baseUrl);
+      expect(response.status).toBe(403);
+      const json = await response.json();
+      expect(json.data).toBeNull();
+      expect(json.error).toContain('does not match the current user');
+      expect(json.code).toBe('user_mismatch');
+    });
+  });
+
+  it('returns 400 when proposal token is tampered or invalid', async () => {
+    applyMock.mockRejectedValue(
+      new WorkItemAiProposalTokenError(
+        'invalid_token',
+        'Invalid work-item proposal confirmation token.'
+      )
+    );
+    await withMountedRouter('/api/v1/work-items', router, async (baseUrl) => {
+      const response = await postApply(baseUrl);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.data).toBeNull();
+      expect(json.code).toBe('invalid_token');
+    });
+  });
+
+  it('returns 400 when proposal token is expired', async () => {
+    applyMock.mockRejectedValue(
+      new WorkItemAiProposalTokenError(
+        'expired',
+        'This suggestion proposal has expired. Request new suggestions.'
+      )
+    );
+    await withMountedRouter('/api/v1/work-items', router, async (baseUrl) => {
+      const response = await postApply(baseUrl);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.data).toBeNull();
+      expect(json.code).toBe('expired');
+    });
+  });
+
+  it('returns 409 when proposal token version is stale', async () => {
+    applyMock.mockRejectedValue(
+      new WorkItemAiProposalTokenError(
+        'stale',
+        'The work item has been modified since this suggestion was generated.'
+      )
+    );
+    await withMountedRouter('/api/v1/work-items', router, async (baseUrl) => {
+      const response = await postApply(baseUrl);
+      expect(response.status).toBe(409);
+      const json = await response.json();
+      expect(json.data).toBeNull();
+      expect(json.code).toBe('stale');
+    });
+  });
+
+  it('returns 400 when work item is Done', async () => {
+    applyMock.mockRejectedValue(
+      new WorkItemAiProposalError(
+        'done',
+        'Cannot apply suggestions to a completed work item.'
+      )
+    );
+    await withMountedRouter('/api/v1/work-items', router, async (baseUrl) => {
+      const response = await postApply(baseUrl);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.data).toBeNull();
+      expect(json.code).toBe('done');
+    });
+  });
+
+  it('returns 400 when work item is archived', async () => {
+    applyMock.mockRejectedValue(
+      new WorkItemAiProposalError(
+        'archived',
+        'Cannot apply suggestions to an archived work item.'
+      )
+    );
+    await withMountedRouter('/api/v1/work-items', router, async (baseUrl) => {
+      const response = await postApply(baseUrl);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.data).toBeNull();
+      expect(json.code).toBe('archived');
+    });
+  });
+
+  it('returns 404 when work item is not found', async () => {
+    applyMock.mockRejectedValue(
+      new WorkItemAiProposalError('not_found', 'Work item not found.')
+    );
+    await withMountedRouter('/api/v1/work-items', router, async (baseUrl) => {
+      const response = await postApply(baseUrl);
+      expect(response.status).toBe(404);
+      const json = await response.json();
+      expect(json.data).toBeNull();
+      expect(json.code).toBe('not_found');
     });
   });
 });

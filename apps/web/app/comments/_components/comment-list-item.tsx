@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import type { JSONContent } from '@tiptap/react';
 import Link from 'next/link';
 import type { CommentReactionEmoji } from '@repo/types';
@@ -15,6 +15,7 @@ import {
 import { cn } from '@repo/ui/lib/utils';
 import {
   Archive,
+  Bot,
   ExternalLink,
   MoreHorizontal,
   Pencil,
@@ -33,6 +34,7 @@ import { CommentEditorFormShell } from '@/app/comments/_components/comment-edito
 import type { CommentMentionAgent } from '@/app/comments/_components/comment-mention-list';
 import { CommentReactionBar } from '@/app/comments/_components/comment-reaction-bar';
 import { CommentRelativeTime } from '@/app/comments/_components/comment-relative-time';
+import { extractAgentMentionsFromDoc } from '@/app/comments/_helpers/comment-agent-mentions';
 import type {
   CommentItem,
   CommentUser,
@@ -42,10 +44,16 @@ import type {
 const ISSUE_BADGE_CLASS =
   'border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400';
 
-/* eslint-disable no-unused-vars -- documents reaction toggle contract */
+/* eslint-disable no-unused-vars -- documents reaction toggle and suggestion contracts */
 type ReactionToggleHandler = (
   emoji: CommentReactionEmoji,
   action: 'add' | 'remove'
+) => void;
+
+export type AiSuggestionsRequestHandler = (
+  agentId: string,
+  agentLabel: string,
+  commentId: string
 ) => void;
 /* eslint-enable no-unused-vars */
 
@@ -72,6 +80,7 @@ type CommentListItemProps = {
   onPurge: () => void;
   onToggleReaction?: ReactionToggleHandler;
   isReactionSyncing?: boolean;
+  onRequestAiSuggestions?: AiSuggestionsRequestHandler;
 };
 
 function CommentWorkItemBadge({
@@ -144,6 +153,7 @@ function CommentActiveFooter({
   onStartEdit,
   onArchive,
   onToggleReaction,
+  onRequestAiSuggestions,
 }: Readonly<{
   comment: CommentItem;
   activeUserId?: string;
@@ -154,7 +164,13 @@ function CommentActiveFooter({
   onStartEdit: () => void;
   onArchive: () => void;
   onToggleReaction?: ReactionToggleHandler;
+  onRequestAiSuggestions?: AiSuggestionsRequestHandler;
 }>) {
+  const agentMentions = useMemo(
+    () => extractAgentMentionsFromDoc(comment.content),
+    [comment.content]
+  );
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -169,7 +185,29 @@ function CommentActiveFooter({
           />
         ) : null}
       </div>
-      <div className="text-muted-foreground flex flex-wrap items-center gap-0.5">
+      <div className="text-muted-foreground flex flex-wrap items-center gap-1">
+        {onRequestAiSuggestions &&
+          agentMentions.map((agent) => (
+            <Button
+              key={agent.agentId}
+              type="button"
+              variant="outline"
+              size="xs"
+              className="gap-1 border-emerald-500/30 text-xs text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"
+              data-testid="request-ai-suggestions-btn"
+              aria-label={`Ask @${agent.label} for suggestions`}
+              title={`Ask @${agent.label} for suggestions`}
+              onClick={() =>
+                onRequestAiSuggestions(agent.agentId, agent.label, comment.id)
+              }
+            >
+              <Bot
+                className="size-3 text-emerald-600 dark:text-emerald-400"
+                aria-hidden
+              />
+              Suggest with @{agent.label}
+            </Button>
+          ))}
         <Button
           type="button"
           variant="ghost"
@@ -253,6 +291,7 @@ export function CommentListItem({
   onPurge,
   onToggleReaction,
   isReactionSyncing = false,
+  onRequestAiSuggestions,
 }: Readonly<CommentListItemProps>) {
   const { isUserOnline } = useRealtime();
   const isOwner = comment.author_id === activeUserId;
@@ -335,6 +374,7 @@ export function CommentListItem({
             onStartEdit={onStartEdit}
             onArchive={onArchive}
             onToggleReaction={onToggleReaction}
+            onRequestAiSuggestions={onRequestAiSuggestions}
           />
         ) : null}
 

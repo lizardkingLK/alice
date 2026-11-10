@@ -467,13 +467,15 @@ function createWorkItemAiProposalsConfig(
   workItemRepository: WorkItemRepository,
   commentsRepository: CommentsRepository,
   chatAgentsRepository: ChatAgentsRepository,
-  integrationsService: IntegrationsService
+  integrationsService: IntegrationsService,
+  workItemService: WorkItemService
 ) {
   const proposalService = new WorkItemAiProposalService(
     workItemRepository,
     commentsRepository,
     chatAgentsRepository,
-    integrationsService
+    integrationsService,
+    workItemService
   );
   const router = createWorkItemAiProposalsRouter({ proposalService });
   return { proposalService, router };
@@ -538,7 +540,8 @@ export const workItemAiProposals = createWorkItemAiProposalsConfig(
   workItems.workItemRepository,
   comments.commentsRepository,
   chatAgents.chatAgentsRepository,
-  integrations.integrationsService
+  integrations.integrationsService,
+  workItems.workItemService
 );
 export const sprints = createSprintsConfig(integrations.integrationsService);
 export const jira = createJiraConfig();

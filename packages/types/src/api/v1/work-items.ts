@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { Json } from '../../generated/supabase/database.types.js';
 import type { work_itemsGetPayload } from '../../generated/prisma/models/work_items.js';
 import { todayDateString, toDateOnly } from '../../date-only.js';
 import { expectedUpdatedAtSchema } from '../../optimistic-lock.js';
@@ -563,6 +564,47 @@ export type WorkItemLifecycleActionBody = z.infer<
 >;
 export type LinkWorkItemGithubPrBody = z.infer<
   typeof linkWorkItemGithubPrBodySchema
+>;
+
+export const generateWorkItemAiProposalsBodySchema = z
+  .object({
+    agentId: z.string().trim().min(1, 'Agent ID is required'),
+    commentIds: z.array(z.uuid()).max(12).default([]),
+    context: z.string().trim().max(4_000).optional(),
+  })
+  .strict();
+
+export const workItemAiProposalSuggestionSchema = z.object({
+  id: z.uuid(),
+  title: z.string().trim().min(1).max(200),
+  description: z.custom<Json>(),
+  token: z.string().min(1),
+});
+
+export const workItemAiProposalResponseSchema = z.object({
+  suggestions: z.array(workItemAiProposalSuggestionSchema).min(2).max(3),
+});
+
+export const applyWorkItemAiProposalBodySchema = z
+  .object({
+    token: z.string().min(1, 'Proposal confirmation token is required'),
+    title: z.string().trim().min(1, 'Title is required').max(200),
+    description: z.custom<Json>(),
+    expectedUpdatedAt: expectedUpdatedAtSchema,
+  })
+  .strict();
+
+export type GenerateWorkItemAiProposalsBody = z.infer<
+  typeof generateWorkItemAiProposalsBodySchema
+>;
+export type WorkItemAiProposalSuggestion = z.infer<
+  typeof workItemAiProposalSuggestionSchema
+>;
+export type WorkItemAiProposalResponse = z.infer<
+  typeof workItemAiProposalResponseSchema
+>;
+export type ApplyWorkItemAiProposalBody = z.infer<
+  typeof applyWorkItemAiProposalBodySchema
 >;
 
 export type WorkItemUpdateBody = CreateWorkItemBody & {

@@ -611,6 +611,7 @@ type WorkItemDetailsMainColumnProps = {
   readonly onDownloadTemplateClick?: () => void;
   readonly isDownloadingTemplate?: boolean;
   readonly onlineMembersSlot?: ReactNode;
+  readonly onWorkItemPatched?: (updated: Partial<DbWorkItem>) => void;
 };
 /* eslint-enable no-unused-vars */
 
@@ -653,6 +654,7 @@ function WorkItemDetailsMainColumn({
   onDownloadTemplateClick,
   isDownloadingTemplate,
   onlineMembersSlot,
+  onWorkItemPatched,
 }: Readonly<WorkItemDetailsMainColumnProps>) {
   return (
     <div className="space-y-8 lg:col-span-3">
@@ -750,6 +752,7 @@ function WorkItemDetailsMainColumn({
             isDownloadingTemplate={isDownloadingTemplate}
             readOnly={isRecordReadOnly}
             onlineMembersSlot={onlineMembersSlot}
+            onWorkItemPatched={onWorkItemPatched}
           />
         </>
       ) : null}
@@ -1254,6 +1257,7 @@ export default function WorkItemDetails({
             onExcelUploadClick={workLogExcel.openUpload}
             onDownloadTemplateClick={workLogExcel.downloadTemplate}
             isDownloadingTemplate={workLogExcel.isDownloading}
+            onWorkItemPatched={handleWorkItemPatched}
             onlineMembersSlot={
               <OnlineMembersAvatarGroup
                 members={projectMembers.map((member) => ({

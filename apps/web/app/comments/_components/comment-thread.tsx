@@ -4,7 +4,10 @@ import type { JSONContent } from '@tiptap/react';
 import type { CommentReactionEmoji } from '@repo/types';
 import { X } from '@repo/ui/lib/icons';
 import { CommentEditorFormShell } from '@/app/comments/_components/comment-editor-form-shell';
-import { CommentListItem } from '@/app/comments/_components/comment-list-item';
+import {
+  CommentListItem,
+  type AiSuggestionsRequestHandler,
+} from '@/app/comments/_components/comment-list-item';
 import type { CommentMentionAgent } from '@/app/comments/_components/comment-mention-list';
 import type { CommentUserMentionTarget } from '@/app/comments/_components/comment-content-view';
 import type {
@@ -55,6 +58,7 @@ type CommentThreadProps = {
   onToggleReaction: ReactionToggleHandler;
   // eslint-disable-next-line no-unused-vars -- callback signature
   isReactionSyncing?: (commentId: string) => boolean;
+  onRequestAiSuggestions?: AiSuggestionsRequestHandler;
 };
 
 function bindCommentItemHandlers(options: {
@@ -127,6 +131,7 @@ export function CommentThread({
   onPurge,
   onToggleReaction,
   isReactionSyncing,
+  onRequestAiSuggestions,
 }: Readonly<CommentThreadProps>) {
   const isReplying = replyingParentId === parent.id;
 
@@ -161,6 +166,7 @@ export function CommentThread({
         workItems={workItems}
         isReactionSyncing={isReactionSyncing?.(parent.id)}
         {...parentHandlers}
+        onRequestAiSuggestions={onRequestAiSuggestions}
         onUserMentionClick={onUserMentionClick}
         replySlot={
           isReplying ? (
@@ -210,6 +216,7 @@ export function CommentThread({
                 replyParentId: parent.id,
                 ...sharedHandlers,
               })}
+              onRequestAiSuggestions={onRequestAiSuggestions}
               onUserMentionClick={onUserMentionClick}
             />
           ))}

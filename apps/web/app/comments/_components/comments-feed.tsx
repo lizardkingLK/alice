@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import type { JSONContent } from '@tiptap/react';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -8,7 +9,9 @@ import {
   isCommentDocEmpty,
   type CommentReactionEmoji,
   type Json,
+  type WorkItemAiProposalSuggestion,
 } from '@repo/types';
+import { toast } from '@repo/ui/components/ui/sonner';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardContent } from '@repo/ui/components/ui/card';
 import {
@@ -36,6 +39,7 @@ import {
   MessageCircle,
   Users,
   Tag,
+  Loader2,
 } from '@repo/ui/lib/icons';
 import {
   CommentItem,
@@ -84,6 +88,9 @@ import { toggleIdInSet } from '@/lib/work-items/toggle-id-in-set';
 import { usePendingMutationUnload } from '@/lib/work-items/use-pending-mutation-unload';
 import { rowFromRealtimePayload } from '@/lib/realtime/realtime-change-row';
 import { useScopedTableRealtime } from '@/lib/realtime/use-scoped-table-realtime';
+import { WorkItemAiProposalCard } from '@/app/work-items/_components/work-item-details/work-item-ai-proposal-card';
+import { generateWorkItemAiProposals } from '@/app/work-items/_services/work-item-ai-proposals.client';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 
 type CommentsFeedProps = {
   initialComments: CommentItem[];
@@ -97,6 +104,11 @@ type CommentsFeedProps = {
   onSortOrderChange?: (order: CommentsSortOrder) => void;
   /** Hide the in-feed sort control (parent renders it elsewhere). */
   hideSortControl?: boolean;
+  currentWorkItemTitle?: string;
+  currentWorkItemUpdatedAt?: string;
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  onWorkItemPatched?: (updated: Partial<DbWorkItem>) => void;
+  readOnly?: boolean;
 };
 
 type WorkItemDiscussionHeaderProps = {
@@ -253,7 +265,12 @@ export function CommentsFeed({
   sortOrder: controlledSortOrder,
   onSortOrderChange,
   hideSortControl = false,
+  currentWorkItemTitle,
+  currentWorkItemUpdatedAt,
+  onWorkItemPatched,
+  readOnly = false,
 }: Readonly<CommentsFeedProps>) {
+  const router = useRouter();
   const [comments, setComments] = useState<CommentItem[]>(initialComments);
   const [users, setUsers] = useState<CommentUser[]>([]);
   const [agents, setAgents] = useState<CommentMentionAgent[]>([]);
@@ -268,6 +285,17 @@ export function CommentsFeed({
   const showSortControl = !hideSortControl;
   const [showNewCommentModal, setShowNewCommentModal] = useState(false);
   const [newWorkItemId, setNewWorkItemId] = useState(workItemId || '');
+  const [proposalState, setProposalState] = useState<
+    | { status: 'idle' }
+    | { status: 'generating'; agentName: string; commentId: string }
+    | {
+        status: 'ready';
+        agentName: string;
+        suggestions: WorkItemAiProposalSuggestion[];
+        commentId: string;
+      }
+    | { status: 'error'; agentName: string; error: string; commentId: string }
+  >({ status: 'idle' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyingParentId, setReplyingParentId] = useState<string | null>(null);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -605,6 +633,43 @@ export function CommentsFeed({
     reactionQueue.enqueue(commentId, emoji, action);
   };
 
+  const handleRequestAiSuggestions = async (
+    agentId: string,
+    agentLabel: string,
+    commentId: string
+  ) => {
+    if (!workItemId || readOnly) return;
+    setProposalState({
+      status: 'generating',
+      agentName: agentLabel,
+      commentId,
+    });
+
+    try {
+      const response = await generateWorkItemAiProposals(workItemId, {
+        agentId,
+        commentIds: [commentId],
+      });
+      setProposalState({
+        status: 'ready',
+        agentName: agentLabel,
+        suggestions: response.suggestions,
+        commentId,
+      });
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Failed to generate suggestions from AI agent.';
+      setProposalState({
+        status: 'error',
+        agentName: agentLabel,
+        error: message,
+        commentId,
+      });
+    }
+  };
+
   const renderParentThreads = (showWorkItemBadge: boolean) =>
     parentComments.map((parent) => (
       <CommentThread
@@ -633,6 +698,7 @@ export function CommentsFeed({
         onPurge={setDeletingCommentId}
         onToggleReaction={handleToggleReaction}
         isReactionSyncing={(commentId) => reactionSyncingIds.has(commentId)}
+        onRequestAiSuggestions={handleRequestAiSuggestions}
       />
     ));
 
@@ -753,6 +819,56 @@ export function CommentsFeed({
             enableMShortcut={embedded}
             onSubmit={(doc) => handleCreateComment(doc)}
           />
+
+          {proposalState.status === 'generating' && (
+            <div
+              className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-950 dark:text-emerald-300"
+              data-testid="ai-proposal-loading"
+            >
+              <Loader2 className="size-4 animate-spin text-emerald-600 dark:text-emerald-400" />
+              <span>
+                Generating suggestions from @{proposalState.agentName}…
+              </span>
+            </div>
+          )}
+
+          {proposalState.status === 'ready' && (
+            <WorkItemAiProposalCard
+              agentName={proposalState.agentName}
+              suggestions={proposalState.suggestions}
+              workItemId={workItemId}
+              currentTitle={currentWorkItemTitle}
+              expectedUpdatedAt={currentWorkItemUpdatedAt ?? ''}
+              onApplySuccess={(updated) => {
+                onWorkItemPatched?.(updated);
+                toast.success('Work item updated from AI suggestions');
+                router.refresh();
+              }}
+              onReject={() => {
+                setProposalState({ status: 'idle' });
+              }}
+            />
+          )}
+
+          {proposalState.status === 'error' && (
+            <div
+              className="border-destructive/30 bg-destructive/5 text-destructive flex items-center justify-between gap-2 rounded-lg border p-3 text-xs"
+              data-testid="ai-proposal-generation-error"
+            >
+              <span>
+                Failed to get suggestions from @{proposalState.agentName}:{' '}
+                {proposalState.error}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="xs"
+                onClick={() => setProposalState({ status: 'idle' })}
+              >
+                Dismiss
+              </Button>
+            </div>
+          )}
 
           <div className="space-y-6 pb-2">{renderParentThreads(false)}</div>
         </div>

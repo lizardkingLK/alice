@@ -1,6 +1,13 @@
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { commentContentToPlainText, type Json } from '@repo/types';
-import type { WorkItemRepository } from './work-items.repository';
+import {
+  commentContentToPlainText,
+  parseWorkItemLabels,
+  type Json,
+  type SupabaseJson,
+} from '@repo/types';
+import type { DbWorkItem, WorkItemRepository } from './work-items.repository';
+import type { WorkItemService } from './work-items.service';
 import type { CommentsRepository } from '../comments/comments.repository';
 import type { ChatAgentsRepository } from '../chat-agents/chat-agents.repository';
 import {
@@ -16,6 +23,10 @@ import type {
 import { resolveChatProvider } from '../integrations/chat-providers/resolve-chat-provider';
 import { CommentAccessError } from '../comments/comments.errors';
 import { WorkItemAccessError } from './work-items.errors';
+import {
+  createWorkItemAiProposalToken,
+  verifyWorkItemAiProposalToken,
+} from './work-item-ai-proposal-token';
 
 export const WORK_ITEM_AI_PROPOSAL_TIMEOUT_MS = 15_000;
 export const WORK_ITEM_AI_PROPOSAL_MAX_CONTEXT_CHARS = 32_000;
@@ -164,16 +175,18 @@ function isValidTiptapDescription(value: unknown): value is Json {
   return textChars > 0;
 }
 
-const proposalSchema = z
+export { isValidTiptapDescription };
+
+const llmSuggestionSchema = z
   .object({
     title: z.string().trim().min(1).max(200),
     description: z.custom<Json>(isValidTiptapDescription),
   })
   .strict();
 
-export const workItemAiProposalResponseSchema = z
+const llmResponseSchema = z
   .object({
-    suggestions: z.array(proposalSchema).min(2).max(3),
+    suggestions: z.array(llmSuggestionSchema).min(2).max(3),
   })
   .strict()
   .refine(
@@ -183,17 +196,49 @@ export const workItemAiProposalResponseSchema = z
     'Suggestion titles must be distinct'
   );
 
+type LlmParsedResponse = z.infer<typeof llmResponseSchema>;
+
+export const workItemAiProposalSuggestionSchema = z
+  .object({
+    id: z.uuid(),
+    title: z.string().trim().min(1).max(200),
+    description: z.custom<Json>(isValidTiptapDescription),
+    token: z.string().min(1),
+  })
+  .strict();
+
+export const workItemAiProposalResponseSchema = z
+  .object({
+    suggestions: z.array(workItemAiProposalSuggestionSchema).min(2).max(3),
+  })
+  .strict()
+  .refine(
+    (value) =>
+      new Set(value.suggestions.map((suggestion) => suggestion.title)).size ===
+      value.suggestions.length,
+    'Suggestion titles must be distinct'
+  );
+
+export type WorkItemAiProposalSuggestion = z.infer<
+  typeof workItemAiProposalSuggestionSchema
+>;
+
 export type WorkItemAiProposalResponse = z.infer<
   typeof workItemAiProposalResponseSchema
 >;
 
 export type WorkItemAiProposalErrorCode =
+  | 'archived'
   | 'cancelled'
   | 'configuration'
+  | 'done'
+  | 'expired'
   | 'generation_failed'
   | 'invalid_context'
   | 'invalid_response'
+  | 'invalid_token'
   | 'not_found'
+  | 'stale'
   | 'timeout';
 
 export class WorkItemAiProposalError extends Error {
@@ -217,6 +262,15 @@ export type WorkItemAiProposalIntegrationResolver = {
 
 type AgentRuntimeResolver = typeof resolveChatAgentRuntime;
 type ProviderResolver = (providerSlug: string) => ChatModelProvider;
+
+export type ApplyWorkItemAiProposalInput = {
+  actorId: string;
+  workItemId: string;
+  token: string;
+  title: string;
+  description: Json;
+  expectedUpdatedAt: string;
+};
 
 export type WorkItemAiProposalServiceOptions = {
   readonly resolveAgentRuntime?: AgentRuntimeResolver;
@@ -265,7 +319,7 @@ function invalidResponseError(): WorkItemAiProposalError {
   );
 }
 
-function parseResponse(response: ChatLlmResponse): WorkItemAiProposalResponse {
+function parseResponse(response: ChatLlmResponse): LlmParsedResponse {
   let parsed: unknown;
   try {
     parsed = JSON.parse(responseText(response));
@@ -273,7 +327,7 @@ function parseResponse(response: ChatLlmResponse): WorkItemAiProposalResponse {
     if (error instanceof WorkItemAiProposalError) throw error;
     throw invalidResponseError();
   }
-  const validated = workItemAiProposalResponseSchema.safeParse(parsed);
+  const validated = llmResponseSchema.safeParse(parsed);
   if (!validated.success) throw invalidResponseError();
   return validated.data;
 }
@@ -299,6 +353,7 @@ export class WorkItemAiProposalService {
   private readonly resolveAgentRuntime: AgentRuntimeResolver;
   private readonly resolveProvider: ProviderResolver;
   private readonly timeoutMs: number;
+  private readonly workItemService?: Pick<WorkItemService, 'updateWorkItem'>;
 
   constructor(
     private readonly workItems: Pick<
@@ -317,8 +372,23 @@ export class WorkItemAiProposalService {
       | 'listActiveTools'
     >,
     private readonly integrations: WorkItemAiProposalIntegrationResolver,
-    options: WorkItemAiProposalServiceOptions = {}
+    workItemServiceOrOptions?:
+      | Pick<WorkItemService, 'updateWorkItem'>
+      | WorkItemAiProposalServiceOptions,
+    maybeOptions: WorkItemAiProposalServiceOptions = {}
   ) {
+    const hasWorkItemService =
+      workItemServiceOrOptions != null &&
+      typeof (
+        workItemServiceOrOptions as Pick<WorkItemService, 'updateWorkItem'>
+      ).updateWorkItem === 'function';
+    this.workItemService = hasWorkItemService
+      ? (workItemServiceOrOptions as Pick<WorkItemService, 'updateWorkItem'>)
+      : undefined;
+    const options = (
+      hasWorkItemService ? maybeOptions : (workItemServiceOrOptions ?? {})
+    ) as WorkItemAiProposalServiceOptions;
+
     this.resolveAgentRuntime =
       options.resolveAgentRuntime ?? resolveChatAgentRuntime;
     this.resolveProvider = options.resolveProvider ?? resolveChatProvider;
@@ -419,7 +489,27 @@ export class WorkItemAiProposalService {
         controller.signal
       );
       controller.signal.throwIfAborted();
-      return parseResponse(response);
+      const raw = parseResponse(response);
+      const baseUpdatedAt = workItem.updated_at ?? new Date().toISOString();
+      const suggestions: WorkItemAiProposalSuggestion[] = raw.suggestions.map(
+        (suggestion) => {
+          const id = randomUUID();
+          const token = createWorkItemAiProposalToken({
+            userId: input.actorId,
+            workItemId: input.workItemId,
+            title: suggestion.title,
+            description: suggestion.description,
+            baseUpdatedAt,
+          });
+          return {
+            id,
+            title: suggestion.title,
+            description: suggestion.description,
+            token,
+          };
+        }
+      );
+      return { suggestions };
     } catch (error) {
       if (timedOut) {
         throw new WorkItemAiProposalError(
@@ -449,6 +539,104 @@ export class WorkItemAiProposalService {
       clearTimeout(timeout);
       input.signal?.removeEventListener('abort', abortFromCaller);
     }
+  }
+
+  async apply(input: ApplyWorkItemAiProposalInput): Promise<DbWorkItem> {
+    if (!this.workItemService) {
+      throw new WorkItemAiProposalError(
+        'configuration',
+        'Work-item update service is not configured.'
+      );
+    }
+
+    let projectId: string;
+    try {
+      const membership = await this.workItems.requireProjectMember(
+        input.workItemId,
+        input.actorId
+      );
+      projectId = membership.projectId;
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        /work item not found/i.test(error.message)
+      ) {
+        throw new WorkItemAiProposalError('not_found', 'Work item not found.');
+      }
+      throw error;
+    }
+
+    const workItem = await this.workItems.getById(input.workItemId);
+    if (
+      !workItem ||
+      (workItem as unknown as { record_status?: string }).record_status ===
+        'deleted'
+    ) {
+      throw new WorkItemAiProposalError('not_found', 'Work item not found.');
+    }
+
+    if (
+      (workItem as unknown as { record_status?: string }).record_status ===
+      'archived'
+    ) {
+      throw new WorkItemAiProposalError(
+        'archived',
+        'Cannot apply suggestions to an archived work item.'
+      );
+    }
+
+    if (workItem.status === 'Done') {
+      throw new WorkItemAiProposalError(
+        'done',
+        'Cannot apply suggestions to a completed work item.'
+      );
+    }
+
+    if (!isValidTiptapDescription(input.description)) {
+      throw new WorkItemAiProposalError(
+        'invalid_context',
+        'Proposed description is not a valid work-item description.'
+      );
+    }
+
+    verifyWorkItemAiProposalToken(input.token, {
+      userId: input.actorId,
+      workItemId: input.workItemId,
+      title: input.title,
+      description: input.description,
+      baseUpdatedAt: workItem.updated_at,
+    });
+
+    if (input.expectedUpdatedAt !== workItem.updated_at) {
+      throw new WorkItemAiProposalError(
+        'stale',
+        'The work item has been modified since this suggestion was generated.'
+      );
+    }
+
+    const result = await this.workItemService.updateWorkItem(
+      input.actorId,
+      input.workItemId,
+      {
+        project_id: projectId,
+        title: input.title.trim(),
+        description: input.description as unknown as SupabaseJson,
+        type: workItem.type,
+        priority: workItem.priority,
+        assignee_id: workItem.assignee_id,
+        reporter_id: workItem.reporter_id,
+        due_date: workItem.due_date,
+        status: workItem.status,
+        board_column_id: workItem.board_column_id,
+        sprint_id: workItem.sprint_id,
+        story_points: workItem.story_points,
+        parent_id: workItem.parent_id,
+        labels: parseWorkItemLabels(workItem.labels),
+      },
+      input.expectedUpdatedAt
+    );
+
+    return result.workItem;
   }
 
   private async loadCommentContext(
