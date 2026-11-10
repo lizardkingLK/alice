@@ -10,6 +10,7 @@ import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import { formatZodError } from '@/lib/zod/format-zod-error';
 
 const workItemsBasePath = '/api/v1/work-items';
+const proposalRequestTimeoutMs = 30_000;
 
 export async function generateWorkItemAiProposals(
   workItemId: string,
@@ -29,6 +30,9 @@ export async function generateWorkItemAiProposals(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(parsed.data),
+    // The API's 15s generation timer starts after access/context reads. Keep
+    // the client envelope wide enough to receive the API's structured error.
+    timeoutMs: proposalRequestTimeoutMs,
   });
 
   return response.data;

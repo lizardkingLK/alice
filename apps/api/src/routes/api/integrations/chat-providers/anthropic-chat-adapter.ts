@@ -356,6 +356,39 @@ function assertNormalStopReason(
   }
 }
 
+function isAnthropicThinkingBlock(block: Record<string, unknown>): boolean {
+  return block.type === 'thinking' || block.type === 'redacted_thinking';
+}
+
+function omitAnthropicThinkingBlocks(blocks: unknown[]): {
+  visibleBlocks: unknown[];
+  thinkingBlockCount: number;
+} {
+  const visibleBlocks: unknown[] = [];
+  let thinkingBlockCount = 0;
+  for (const block of blocks) {
+    if (isRecord(block) && isAnthropicThinkingBlock(block)) {
+      thinkingBlockCount += 1;
+    } else {
+      visibleBlocks.push(block);
+    }
+  }
+  return { visibleBlocks, thinkingBlockCount };
+}
+
+function assertThinkingBlocksCanBeOmitted(
+  thinkingBlockCount: number,
+  toolUseCount: number
+): void {
+  // Alice's shared response shape cannot preserve Anthropic thinking blocks
+  // for a subsequent tool-result turn. Terminal text responses can safely omit
+  // them; tool-use responses must keep failing closed until round-tripping is
+  // supported.
+  if (thinkingBlockCount > 0 && toolUseCount > 0) {
+    throw invalidResponse('unsupported_content_block');
+  }
+}
+
 /** Validate and convert one Anthropic Messages response into Alice's shape. */
 export function anthropicMessageToChatLlmResponse(
   payload: unknown,
@@ -378,8 +411,11 @@ export function anthropicMessageToChatLlmResponse(
   const seenToolUseIds = new Set<string>();
   let textBlockCount = 0;
   let toolUseCount = 0;
+  const { visibleBlocks, thinkingBlockCount } = omitAnthropicThinkingBlocks(
+    payload.content
+  );
 
-  for (const rawBlock of payload.content) {
+  for (const rawBlock of visibleBlocks) {
     if (!isRecord(rawBlock)) {
       throw invalidResponse('invalid_response_shape');
     }
@@ -403,6 +439,8 @@ export function anthropicMessageToChatLlmResponse(
 
     throw invalidResponse('unsupported_content_block');
   }
+
+  assertThinkingBlocksCanBeOmitted(thinkingBlockCount, toolUseCount);
 
   assertNormalStopReason(payload.stop_reason, textBlockCount, toolUseCount);
 

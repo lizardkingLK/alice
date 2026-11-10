@@ -418,6 +418,63 @@ describe('anthropicMessageToChatLlmResponse', () => {
     });
   });
 
+  it.each(['thinking', 'redacted_thinking'])(
+    'omits terminal Anthropic %s blocks while preserving visible text',
+    (thinkingType) => {
+      expect(
+        anthropicMessageToChatLlmResponse(
+          messageResponse([
+            {
+              type: thinkingType,
+              thinking: 'private reasoning must not be exposed',
+              signature: 'opaque-signature',
+            },
+            { type: 'text', text: '{"suggestions":[]}' },
+          ]),
+          []
+        )
+      ).toEqual({
+        candidates: [
+          {
+            content: {
+              role: ChatTurnRoles.Model,
+              parts: [{ text: '{"suggestions":[]}' }],
+            },
+          },
+        ],
+      });
+    }
+  );
+
+  it('rejects thinking blocks on tool-use turns that cannot be round-tripped', () => {
+    expect(
+      capturedError(() =>
+        anthropicMessageToChatLlmResponse(
+          messageResponse(
+            [
+              {
+                type: 'thinking',
+                thinking: 'private reasoning',
+                signature: 'opaque-signature',
+              },
+              {
+                type: 'tool_use',
+                id: 'toolu_projects',
+                name: 'list_projects',
+                input: {},
+              },
+            ],
+            'tool_use'
+          ),
+          aliceChatTools
+        )
+      )
+    ).toMatchObject({
+      message: 'Anthropic returned an invalid response.',
+      category: 'unsupported_content_block',
+    });
+  });
+
   it('maps mixed text and multiple valid tool calls', () => {
     const result = anthropicMessageToChatLlmResponse(
       messageResponse(
