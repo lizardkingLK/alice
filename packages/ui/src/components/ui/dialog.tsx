@@ -83,7 +83,7 @@ function DialogContent({
         // Plain div (not Radix Overlay): works under modal={false}, blocks
         // clicks when visible, and can stay mounted with `hidden` while floating.
         <div
-          role="presentation"
+          aria-hidden="true"
           data-slot="dialog-overlay"
           className={cn(DIALOG_OVERLAY_SURFACE, overlayClassName)}
           onPointerDown={(event) => {

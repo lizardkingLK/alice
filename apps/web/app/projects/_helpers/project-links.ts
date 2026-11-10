@@ -1,5 +1,9 @@
 ﻿import type { DashboardBreadcrumbOverride } from '@/app/dashboard/_components/dashboard-breadcrumb';
 import type { ProjectDetailsTab, RawSearchParams } from '@/lib/search-params';
+import {
+  projectScopedHref,
+  type ProjectTreeArea,
+} from '@/app/projects/_helpers/project-tree-links';
 
 const PROJECT_UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -44,7 +48,7 @@ export function buildProjectShareUrl(
   return `${base}${projectShareHref(projectKey)}`;
 }
 
-/** Append raw page search params when redirecting between project path forms. */
+/** Append/merge raw page search params when redirecting between project path forms. */
 export function withProjectSearchParams(
   href: string,
   searchParams?: RawSearchParams
@@ -53,7 +57,11 @@ export function withProjectSearchParams(
     return href;
   }
 
-  const query = new URLSearchParams();
+  const questionIndex = href.indexOf('?');
+  const path = questionIndex >= 0 ? href.slice(0, questionIndex) : href;
+  const existingQuery = questionIndex >= 0 ? href.slice(questionIndex + 1) : '';
+  const query = new URLSearchParams(existingQuery);
+
   for (const [key, value] of Object.entries(searchParams)) {
     if (typeof value === 'string' && value.length > 0) {
       query.set(key, value);
@@ -62,10 +70,10 @@ export function withProjectSearchParams(
 
   const serialized = query.toString();
   if (!serialized) {
-    return href;
+    return path;
   }
 
-  return `${href}?${serialized}`;
+  return `${path}?${serialized}`;
 }
 
 /**
@@ -81,6 +89,14 @@ export function projectDetailHref(
     return `/projects/${segment}?tab=${tab}`;
   }
   return `/projects/${segment}`;
+}
+
+/** Sidebar links for board / backlog / my work (always nested paths). */
+export function projectTreeNavHref(
+  projectKeyOrId: string,
+  area: Extract<ProjectTreeArea, 'board' | 'backlog' | 'member'>
+): string {
+  return projectScopedHref({ projectKeyOrId, area });
 }
 
 export function buildProjectBreadcrumbOverrides(

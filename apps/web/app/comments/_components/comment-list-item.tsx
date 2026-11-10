@@ -37,6 +37,7 @@ import type {
   CommentUser,
   CommentWorkItemOption,
 } from '@/app/comments/_services/comments.mutations.shared';
+import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 
 const ISSUE_BADGE_CLASS =
   'border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400';
@@ -81,7 +82,12 @@ function CommentWorkItemBadge({
       asChild
       className={cn('gap-1.5 font-semibold', ISSUE_BADGE_CLASS)}
     >
-      <Link href={`/work-items/${workItem.id}`}>
+      <Link
+        href={workItemDetailHref(workItem.id, {
+          projectKey: workItem.project?.key,
+          workItemSlug: workItem.slug,
+        })}
+      >
         <Tag className="size-3 shrink-0" />
         {workItem.key}
         <ExternalLink className="size-3 opacity-60" />

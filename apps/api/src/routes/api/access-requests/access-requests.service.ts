@@ -326,7 +326,7 @@ async function notifyProjectMembershipsQuietly(params: {
         const email = buildProjectMemberAddedEmail({
           recipientEmail: params.user.email,
           recipientName: params.user.name,
-          projectId,
+          projectKey: project.key,
           projectName: project.name,
           frontendUrl: params.frontendUrl,
           notificationEventId: eventId,

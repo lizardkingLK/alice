@@ -67,6 +67,7 @@ export async function ChartsData({
   const accessibleProjects = activeProjects.map((project) => ({
     id: project.id,
     name: project.name,
+    key: project.key,
     workflowConfig: project.workflow_config,
   }));
   const assigneeMembers = unionProjectMembers(membersByProjectId).map(

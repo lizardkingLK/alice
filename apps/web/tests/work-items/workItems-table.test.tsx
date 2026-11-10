@@ -460,7 +460,7 @@ describe('WorkItemsTable', () => {
     // Arrange
     const projects = projectFactory.buildList(1);
     const projectMembers = userFactory.buildList(1);
-    const projectId = projects[0]!.id;
+    const projectKey = projects[0]!.key;
     const assigneeId = projectMembers[0]!.id;
     render(
       <WorkItemsTable
@@ -488,9 +488,9 @@ describe('WorkItemsTable', () => {
     // Act — Okay applies staged filters
     fireEvent.click(screen.getByRole('button', { name: /^Okay$/i }));
 
-    // Assert
+    // Assert — project lives in the path mask
     expect(mockPush).toHaveBeenCalledWith(
-      `/work-items?project=${projectId}&page=1`
+      `/work-items/projects/${projectKey}?page=1`
     );
 
     // Act — type (keeps previously applied project from optimistic state)
@@ -499,7 +499,7 @@ describe('WorkItemsTable', () => {
 
     // Assert
     expect(mockPush).toHaveBeenCalledWith(
-      `/work-items?project=${projectId}&type=Task&page=1`
+      `/work-items/projects/${projectKey}?type=Task&page=1`
     );
 
     // Act — assignee
@@ -508,7 +508,7 @@ describe('WorkItemsTable', () => {
 
     // Assert
     expect(mockPush).toHaveBeenCalledWith(
-      `/work-items?project=${projectId}&type=Task&assignee=${assigneeId}&page=1`
+      `/work-items/projects/${projectKey}?type=Task&assignee=${assigneeId}&page=1`
     );
   });
 
@@ -628,8 +628,8 @@ describe('WorkItemsTable', () => {
     // Act
     fireEvent.click(screen.getByRole('button', { name: /Clear filters/i }));
 
-    // Assert — drops filter params (keeps bare path)
-    expect(mockPush).toHaveBeenCalledWith('/work-items');
+    // Assert — drops filter params (resets to page 1 on the registry root)
+    expect(mockPush).toHaveBeenCalledWith('/work-items?page=1');
   });
 
   it('hides clear filters when URL has no filter params', async () => {
@@ -1020,7 +1020,7 @@ describe('WorkItemsTable', () => {
       });
       expect(sprintLink).toHaveAttribute(
         'href',
-        '/sprints/sprint-alpha/report?from=work-items'
+        '/projects/P01/sprints/sprint-1/summary-report'
       );
     });
 

@@ -82,6 +82,7 @@ const mockSprints: Sprint[] = [
   {
     id: 'sprint-1',
     name: 'Sprint Alpha',
+    slug: 'sprint-alpha',
     goal: 'Goal Alpha',
     status: 'active' as const,
     startDate: '2026-07-01',
@@ -99,6 +100,7 @@ const mockSprints: Sprint[] = [
   {
     id: 'sprint-2',
     name: 'Sprint Beta',
+    slug: 'sprint-beta',
     goal: '',
     status: 'planned' as const,
     startDate: '2026-07-15',
@@ -368,6 +370,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-completed',
         name: 'Completed Sprint',
+        slug: 'completed-sprint',
         goal: null,
         status: 'closed' as const,
         startDate: '2026-07-01',
@@ -381,6 +384,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-ongoing',
         name: 'Ongoing Sprint',
+        slug: 'ongoing-sprint',
         goal: null,
         status: 'active' as const,
         startDate: '2026-07-01',
@@ -394,6 +398,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-planned',
         name: 'Planned Sprint',
+        slug: 'planned-sprint',
         goal: null,
         status: 'planned' as const,
         startDate: '2026-07-01',
@@ -446,6 +451,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-archived',
         name: 'Archived Sprint',
+        slug: 'archived-sprint',
         goal: null,
         status: 'archived' as const,
         startDate: '2026-07-01',
@@ -459,6 +465,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-completed',
         name: 'Completed Sprint',
+        slug: 'completed-sprint',
         goal: null,
         status: 'closed' as const,
         startDate: '2026-07-01',
@@ -506,6 +513,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-archived',
         name: 'Archived Sprint',
+        slug: 'archived-sprint',
         goal: null,
         status: 'archived' as const,
         startDate: '2026-07-01',
@@ -542,6 +550,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-archived',
         name: 'Archived Sprint',
+        slug: 'archived-sprint',
         goal: null,
         status: 'archived' as const,
         startDate: '2026-07-01',
@@ -582,6 +591,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-archived',
         name: 'Archived Sprint',
+        slug: 'archived-sprint',
         goal: null,
         status: 'archived' as const,
         startDate: '2026-07-01',
@@ -627,7 +637,7 @@ describe('SprintList Component', () => {
     expect(sprintLink).toBeInTheDocument();
     expect(sprintLink).toHaveAttribute(
       'href',
-      '/sprints/sprint-1/report?from=sprints'
+      '/projects/PAL/sprints/sprint-alpha/summary-report'
     );
   });
 
@@ -693,6 +703,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-archived',
         name: 'Archived Sprint',
+        slug: 'archived-sprint',
         goal: 'Goal',
         status: 'archived' as const,
         startDate: '2026-07-01',
@@ -751,6 +762,7 @@ describe('SprintList Component', () => {
     const archivedSprint: Sprint = {
       id: 'sprint-archived',
       name: 'Archived Sprint',
+      slug: 'archived-sprint',
       goal: 'Goal',
       status: 'archived' as const,
       startDate: '2026-07-01',

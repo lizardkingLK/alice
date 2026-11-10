@@ -257,6 +257,33 @@ export async function getWorkItemFromSupabase(
   return withJiraIssueKeyDtoField(data as unknown as DbWorkItem);
 }
 
+/** Resolve a work item by project-scoped URL slug. */
+export async function getWorkItemByProjectSlugFromSupabase(
+  projectId: string,
+  slug: string
+): Promise<DbWorkItem | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('work_items')
+    .select(workItemDetailPostgrestSelect())
+    .eq('project_id', projectId)
+    .eq('slug', slug)
+    .maybeSingle();
+
+  throwIfError(
+    error,
+    'failed to get work-item by slug',
+    'Failed to get work-item'
+  );
+
+  if (!data) {
+    return null;
+  }
+
+  return withJiraIssueKeyDtoField(data as unknown as DbWorkItem);
+}
+
 /**
  * Load ancestors root-first (Epic → … → immediate parent) in one PostgREST
  * round-trip via nested `parent` embeds (capped at hierarchy depth).

@@ -3,7 +3,8 @@
 Status: **Plan** (product rules locked from brainstorm)
 
 Replaces the custom **board column** designer with a directed **workflow graph**
-(React Flow / XYFlow). Board columns become **states** of the active workflow.
+(React Flow / XYFlow; keep the default canvas attribution unless on React Flow
+Pro). Board columns become **states** of the active workflow.
 Transition rules live on **edges**. Node and edge options live in a **Settings**
 sidebar with info tooltips / click popovers.
 

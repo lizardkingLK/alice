@@ -227,6 +227,7 @@ export function CalendarFilterDialog({
               projectValue: draft.project,
               sprintValue: draft.sprint,
               allValue: QUERY_FILTER_ALL_VALUE,
+              projects,
               sprints,
             })
           );

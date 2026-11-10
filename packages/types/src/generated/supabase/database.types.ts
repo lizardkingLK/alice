@@ -1458,6 +1458,7 @@ export type Database = {
           id: string
           name: string
           project_id: string
+          slug: string
           start_date: string
           status: Database["public"]["Enums"]["SprintStatus"]
           summary_report: Json | null
@@ -1472,6 +1473,7 @@ export type Database = {
           id?: string
           name: string
           project_id: string
+          slug: string
           start_date: string
           status?: Database["public"]["Enums"]["SprintStatus"]
           summary_report?: Json | null
@@ -1486,6 +1488,7 @@ export type Database = {
           id?: string
           name?: string
           project_id?: string
+          slug?: string
           start_date?: string
           status?: Database["public"]["Enums"]["SprintStatus"]
           summary_report?: Json | null
@@ -2127,6 +2130,7 @@ export type Database = {
           status: Database["public"]["Enums"]["WorkItemStatus"]
           status_category: string
           story_points: number | null
+          slug: string
           title: string
           type: string
           updated_at: string
@@ -2155,6 +2159,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["WorkItemStatus"]
           status_category?: string
           story_points?: number | null
+          slug: string
           title: string
           type: string
           updated_at: string
@@ -2183,6 +2188,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["WorkItemStatus"]
           status_category?: string
           story_points?: number | null
+          slug?: string
           title?: string
           type?: string
           updated_at?: string

@@ -24,8 +24,11 @@ Create, track, and discuss tasks, stories, bugs, and epics across projects.
 
 1. In the sidebar under **Platform**, select **Work Items**.
 
-You'll see the global work-item list at `/work-items`. **My Work** (`/member`)
-shows the same table filtered to items assigned to you.
+You'll see the global work-item list at `/work-items`. When you filter by
+project (and sprint), the address bar uses shortcodes —
+`/work-items/projects/{KEY}` or `/work-items/projects/{KEY}/sprints/{slug}` —
+instead of UUID query params. **My Work** (`/member`) shows the same table
+filtered to items assigned to you.
 
 ---
 

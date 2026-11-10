@@ -10,6 +10,9 @@ export const ALL_PROJECTS_ID = 'all';
 export type BoardDefaultsPreference = {
   readonly projectId: string;
   readonly sprintId: string | null;
+  /** Optional shortcodes for path-masked nav hrefs (legacy prefs may omit). */
+  readonly projectKey?: string | null;
+  readonly sprintSlug?: string | null;
 };
 
 const STORAGE_PREFIX = 'alice:board-defaults:';
@@ -67,6 +70,8 @@ export function normalizeBoardDefaultsPreference(
   return {
     projectId: preference.projectId,
     sprintId: preference.sprintId,
+    ...(preference.projectKey ? { projectKey: preference.projectKey } : {}),
+    ...(preference.sprintSlug ? { sprintSlug: preference.sprintSlug } : {}),
   };
 }
 

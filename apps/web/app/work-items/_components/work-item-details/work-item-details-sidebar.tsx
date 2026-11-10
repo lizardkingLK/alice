@@ -1,6 +1,7 @@
 'use client';
 
 import { formatDate } from '@/app/_shared/utility';
+import { projectDetailHref } from '@/app/projects/_helpers/project-links';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import {
   WORK_ITEM_PATCH_FIELD_CONFIG,
@@ -1638,7 +1639,12 @@ function DevelopmentSection({
         variant="outline"
         size="sm"
         onClick={() => {
-          router.push(`/projects/${workItem.project_id}?tab=integrations`);
+          router.push(
+            projectDetailHref(
+              workItem.project?.key || workItem.project_id,
+              'integrations'
+            )
+          );
         }}
         className="h-8 cursor-pointer px-4 text-xs"
       >

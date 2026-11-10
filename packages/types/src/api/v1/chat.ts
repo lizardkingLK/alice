@@ -153,6 +153,14 @@ const createdEntitySchema = z.object({
   key: z.string().optional(),
   title: z.string().optional(),
   status: z.string().optional(),
+  /** Work-item type key when the action creates/updates a work item. */
+  type: z.string().optional(),
+  /** Display name for the work-item type. */
+  typeName: z.string().optional(),
+  /** Project KEY for path-masked chat action links. */
+  projectKey: z.string().optional(),
+  /** Entity slug (sprint / work item) for path-masked links. */
+  slug: z.string().optional(),
 });
 
 export const chatToolActionSchema = z.discriminatedUnion('type', [
@@ -179,6 +187,7 @@ export const chatToolActionSchema = z.discriminatedUnion('type', [
     entity: z.object({
       projectId: z.string(),
       projectName: z.string(),
+      projectKey: z.string().optional(),
       config: boardConfigSchema,
     }),
   }),
@@ -187,6 +196,7 @@ export const chatToolActionSchema = z.discriminatedUnion('type', [
     entity: z.object({
       projectId: z.string(),
       projectName: z.string(),
+      projectKey: z.string().optional(),
       summary: z.string(),
       confirmationToken: z.string(),
       proposedConfig: workflowConfigEnvelopeSchema,
@@ -198,6 +208,7 @@ export const chatToolActionSchema = z.discriminatedUnion('type', [
     entity: z.object({
       projectId: z.string(),
       projectName: z.string(),
+      projectKey: z.string().optional(),
       reason: z.string().optional(),
     }),
   }),

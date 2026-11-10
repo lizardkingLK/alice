@@ -17,7 +17,9 @@ import {
   walkForestDfs,
 } from '@/app/work-items/_helpers/work-item-hierarchy-forest';
 import {
+  applyWorkItemFilters,
   getWorkItemAncestorsFromSupabase,
+  getWorkItemByProjectSlugFromSupabase,
   getWorkItemFromSupabase,
   getWorkItemsFromSupabase,
   getWorkItemsHierarchyPageFromRpc,
@@ -44,7 +46,7 @@ export type {
   WorkItemListFilters,
 };
 
-export { applyWorkItemFilters } from '@/app/work-items/_services/work-items.reads.supabase.server';
+export { applyWorkItemFilters };
 export { HIERARCHY_FOREST_PAGE_SIZE };
 
 /**
@@ -343,6 +345,13 @@ export const getWorkItem = cache(
     }
 
     return getWorkItemFromSupabase(workItemId);
+  }
+);
+
+/** Resolve by `(project_id, slug)` — used for project-tree URL segments. */
+export const getWorkItemByProjectSlug = cache(
+  async (projectId: string, slug: string): Promise<DbWorkItem | null> => {
+    return getWorkItemByProjectSlugFromSupabase(projectId, slug);
   }
 );
 

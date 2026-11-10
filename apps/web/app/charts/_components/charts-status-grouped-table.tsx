@@ -32,6 +32,7 @@ import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import { resolveWorkItemStateColumnModel } from '@/app/work-items/_helpers/work-item-state-column';
 import { STATUS_META } from '@/app/work-items/_helpers/work-item-status';
+import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import { GroupedItemsPaginatedTable } from '@/components/grouped-items/grouped-items-paginated-table';
 import { GroupedItemsSection } from '@/components/grouped-items/grouped-items-section';
 import { useRealtime } from '@/components/realtime/realtime-provider';
@@ -90,6 +91,9 @@ function buildColumns(
   );
   const workflowByProjectId = new Map(
     projects.map((project) => [project.id, project.workflowConfig] as const)
+  );
+  const projectKeyById = new Map(
+    projects.map((project) => [project.id, project.key] as const)
   );
   const columns: ColumnDef<ChartDrilldownTableItem>[] = [];
 
@@ -221,7 +225,12 @@ function buildColumns(
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild className="cursor-pointer gap-2">
-                <Link href={`/work-items/${row.original.id}`}>
+                <Link
+                  href={workItemDetailHref(row.original.id, {
+                    projectKey: projectKeyById.get(row.original.projectId),
+                    workItemSlug: row.original.workItem?.slug,
+                  })}
+                >
                   <ExternalLink className="size-3.5" />
                   Open
                 </Link>

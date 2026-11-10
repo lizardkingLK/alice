@@ -4,6 +4,7 @@ import {
   seriesFromBurndownRollupRows,
   SprintStatusEnum,
   UserRoleEnum,
+  type BurndownPoint,
   type DeleteSprintAction,
   type SprintBurndownPayload,
   type SprintResponse,
@@ -20,14 +21,13 @@ import type {
   SprintRow,
 } from './sprints.repository';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { allocateSprintSlug } from '../../../lib/entity-slug';
 import { isPrismaUniqueConflict } from '../../../lib/prisma-errors';
 import type { SprintPaginatedList } from './sprints.prisma-query';
 import { sprintNameConflictMessage } from './sprints.errors';
 
-export type {
-  BurndownPoint,
-  SprintBurndownPayload as BurndownResponse,
-} from '@repo/types';
+export type { BurndownPoint };
+export type BurndownResponse = SprintBurndownPayload;
 
 async function requireManagerOrAdmin(actorId: string) {
   return await requireUserWithRole(
@@ -64,8 +64,10 @@ export class SprintsService {
     }
 
     try {
+      const slug = await allocateSprintSlug(input.projectId, input.name);
       const row = await this.sprints.create({
         name: input.name,
+        slug,
         goal,
         projectId: input.projectId,
         startDate: input.startDate,

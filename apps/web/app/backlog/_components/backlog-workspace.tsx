@@ -120,6 +120,7 @@ interface BacklogWorkspaceProps {
   userRole: string;
   currentUserId?: string | null;
   error?: string | null;
+  lockedProjectId?: string;
 }
 
 export function BacklogWorkspace({
@@ -131,6 +132,7 @@ export function BacklogWorkspace({
   userRole,
   currentUserId,
   error = null,
+  lockedProjectId,
 }: Readonly<BacklogWorkspaceProps>) {
   const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
   const { handleMutationError } = useOptimisticLock();
@@ -174,6 +176,7 @@ export function BacklogWorkspace({
     userId: currentUserId ?? null,
     projects,
     sprints: sprintList,
+    lockedProjectId,
   });
   const {
     projectFilter,

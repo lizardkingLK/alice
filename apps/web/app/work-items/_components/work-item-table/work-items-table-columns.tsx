@@ -60,11 +60,15 @@ const titleRenderer = ({
   row,
   fromProjectId,
   fromAssigneeId,
+  projectKeysById,
+  sprintSlugsById,
   isHierarchy,
   onToggleExpand,
 }: HierarchyRendererProps & {
   fromProjectId?: string | null;
   fromAssigneeId?: string | null;
+  projectKeysById: ReadonlyMap<string, string>;
+  sprintSlugsById: ReadonlyMap<string, string>;
   isHierarchy: boolean;
   // eslint-disable-next-line no-unused-vars -- expand toggle callback
   onToggleExpand?: (workItemId: string) => void;
@@ -73,6 +77,14 @@ const titleRenderer = ({
   const indentClass =
     TITLE_INDENT_CLASS[Math.min(depth, TITLE_INDENT_CLASS.length - 1)] ??
     'pl-12';
+  const projectKey =
+    workItem.project?.key ??
+    (workItem.project_id
+      ? projectKeysById.get(workItem.project_id)
+      : undefined);
+  const sprintSlug =
+    workItem.sprint?.slug ??
+    (workItem.sprint_id ? sprintSlugsById.get(workItem.sprint_id) : undefined);
 
   return (
     <RegistryTitleCell
@@ -80,6 +92,9 @@ const titleRenderer = ({
       href={workItemDetailHref(workItem.id, {
         fromProjectId,
         fromAssigneeId,
+        projectKey,
+        workItemSlug: workItem.slug,
+        sprintSlug,
       })}
       title={workItem.title}
       subtitle={`Created ${formatDate(workItem.created_at)}`}
@@ -287,10 +302,16 @@ function ProjectCell({
 function SprintCell({
   sprintId,
   sprintNamesById,
+  sprintSlugsById,
+  projectKeysById,
+  projectId,
   linkToReport,
 }: Readonly<{
   sprintId: string | null | undefined;
   sprintNamesById: ReadonlyMap<string, string>;
+  sprintSlugsById: ReadonlyMap<string, string>;
+  projectKeysById: ReadonlyMap<string, string>;
+  projectId?: string | null;
   /** Managers/admins can open sprint summary; members see a plain badge. */
   linkToReport: boolean;
 }>) {
@@ -298,9 +319,18 @@ function SprintCell({
   if (!sprintId || name === '—') {
     return <span className="text-muted-foreground">—</span>;
   }
+  const projectKey = projectId ? projectKeysById.get(projectId) : undefined;
+  const sprintSlug = sprintSlugsById.get(sprintId);
   return (
     <RelationBadge
-      href={linkToReport ? sprintReportHref(sprintId, 'work-items') : undefined}
+      href={
+        linkToReport
+          ? sprintReportHref(sprintId, 'work-items', {
+              projectKey,
+              sprintSlug,
+            })
+          : undefined
+      }
       label={name}
       icon={<Calendar data-icon="inline-start" />}
     />
@@ -390,6 +420,11 @@ export function buildWorkItemColumns(options: {
   const projectNamesById = nameByIdMap(projects);
   const projectKeysById = projectKeyByIdMap(projects);
   const sprintNamesById = nameByIdMap(sprints);
+  const sprintSlugsById = new Map(
+    sprints
+      .filter((sprint) => Boolean(sprint.slug))
+      .map((sprint) => [sprint.id, sprint.slug] as const)
+  );
 
   const columns: ColumnDef<DisplayRow>[] = [
     {
@@ -400,6 +435,8 @@ export function buildWorkItemColumns(options: {
           row,
           fromProjectId: lockedProjectId,
           fromAssigneeId: lockedAssigneeId,
+          projectKeysById,
+          sprintSlugsById,
           isHierarchy,
           onToggleExpand,
         }),
@@ -490,6 +527,9 @@ export function buildWorkItemColumns(options: {
         <SprintCell
           sprintId={row.original.workItem.sprint_id}
           sprintNamesById={sprintNamesById}
+          sprintSlugsById={sprintSlugsById}
+          projectKeysById={projectKeysById}
+          projectId={row.original.workItem.project_id}
           linkToReport={canLinkSprintReport}
         />
       ),

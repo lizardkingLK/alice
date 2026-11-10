@@ -93,7 +93,8 @@ export function useWorkItemFormDialogChromeState({
     }
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
-      event.returnValue = '';
+      // Chromium still requires returnValue for the dialog (deprecated but needed).
+      event.returnValue = ''; // NOSONAR
     };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);

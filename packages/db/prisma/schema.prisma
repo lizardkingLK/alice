@@ -360,6 +360,8 @@ model sprints {
   id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   project_id     String       @db.Uuid
   name           String
+  /// URL path segment (unique per project); derived from name.
+  slug           String
   goal           String?
   start_date     DateTime     @db.Date
   end_date       DateTime     @db.Date
@@ -379,6 +381,7 @@ model sprints {
   burndown_rollups        sprint_burndown_rollups[]
 
   @@unique([project_id, name])
+  @@unique([project_id, slug])
 }
 
 /// Backlog = rows where `sprint_id` IS NULL.
@@ -388,6 +391,8 @@ model work_items {
   sprint_id    String?          @db.Uuid
   parent_id    String?          @db.Uuid
   title        String
+  /// URL path segment (unique per project); derived from title.
+  slug         String
   /// Project catalog type key (see workflow_config.work_item_types defs).
   type         String
   priority     WorkItemPriority @default(medium)
@@ -433,6 +438,7 @@ model work_items {
   links_as_source      work_item_links[] @relation("WorkItemLinkSource")
   links_as_target      work_item_links[] @relation("WorkItemLinkTarget")
 
+  @@unique([project_id, slug])
   @@index([record_status])
   @@index([project_id, record_status])
   @@index([assignee_id])

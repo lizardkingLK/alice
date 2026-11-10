@@ -15,6 +15,8 @@ export type ChartsSampleMember = {
 export type ChartsProjectOption = {
   readonly id: string;
   readonly name: string;
+  /** Project KEY for path-masked work-item Open links. */
+  readonly key?: string | null;
   /** Project workflow envelope for State column labels in the drilldown table. */
   readonly workflowConfig?: unknown;
 };

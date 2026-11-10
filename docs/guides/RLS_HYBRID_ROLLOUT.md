@@ -44,12 +44,12 @@ hidden key without a separate Auth/Realtime redesign.
 
 ### P1 — Collaborative tables (Strategy B) — **done**
 
-| Table                                                                                                     | Status / policy sketch                                                                                 |
-| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `saved_views`, `saved_view_shares`                                                                        | **Done** — owner ALL; shared SELECT; shares owner ALL + recipient SELECT (`rls_hybrid_p1_saved_views`) |
-| `projects`, `project_members`, `teams`, `team_members`                                                    | **Done** — SELECT via `can_access_project` (`rls_hybrid_p1_project_membership`)                        |
-| `work_items`, `comments`, `attachments`, `sprints`, `work_item_worklogs`, `version_control_pull_requests` | **Done** — SELECT via project membership helper                                                        |
-| `activities`                                                                                              | **Done** — SELECT tightened to `can_access_project` (was: any auth if parent WI exists)                |
+| Table                                                                                                     | Status / policy sketch                                                                                                                                                                                 |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `saved_views`, `saved_view_shares`                                                                        | **Done** — owner ALL; shared SELECT; shares owner ALL + recipient SELECT (`rls_hybrid_p1_saved_views`); share EXISTS cycle broken via SECURITY DEFINER helpers (`rls_fix_saved_views_share_recursion`) |
+| `projects`, `project_members`, `teams`, `team_members`                                                    | **Done** — SELECT via `can_access_project` (`rls_hybrid_p1_project_membership`)                                                                                                                        |
+| `work_items`, `comments`, `attachments`, `sprints`, `work_item_worklogs`, `version_control_pull_requests` | **Done** — SELECT via project membership helper                                                                                                                                                        |
+| `activities`                                                                                              | **Done** — SELECT tightened to `can_access_project` (was: any auth if parent WI exists)                                                                                                                |
 
 **Helper:** `public.can_access_project(uuid)` — `SECURITY DEFINER`, mirrors
 `project-workspace-access` (email allowlist exclusive → project keys; else owner ∪
@@ -58,15 +58,15 @@ INSERT/UPDATE/DELETE policies); mutations use service role / Prisma.
 
 ### P2 — API-only revoke + policy hygiene — **done**
 
-| Table                                                                                     | Status                                                                                          |
-| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `work_item_links`                                                                         | **Done** — RLS + revoke (Prisma / charts-API only)                                              |
-| `work_item_chart_rollups`, `work_item_chart_hierarchy_rollups`, `sprint_burndown_rollups` | **Done** — RLS + revoke                                                                         |
-| `notifications`                                                                           | **Hardened** — SELECT/UPDATE/DELETE own rows; INSERT via service role only                      |
-| `chat_conversations`                                                                      | **Hardened** — same owner CRUD; `(select auth.uid())`                                           |
-| `charts`, `chart_shares`                                                                  | Reviewed — already owner/share policies with `(select auth.uid())`                              |
-| `integrations`, PM/VC connections, `chat_attachments`, allowlist/requests                 | Revoke + RLS — grants footer                                                                    |
-| `_prisma_migrations`                                                                      | **Done** — RLS + revoke (`rls_hybrid_prisma_migrations_lockdown`); Prisma/`service_role` bypass |
+| Table                                                                                     | Status                                                                                                                          |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `work_item_links`                                                                         | **Done** — RLS + revoke (Prisma / charts-API only)                                                                              |
+| `work_item_chart_rollups`, `work_item_chart_hierarchy_rollups`, `sprint_burndown_rollups` | **Done** — RLS + revoke                                                                                                         |
+| `notifications`                                                                           | **Hardened** — SELECT/UPDATE/DELETE own rows; INSERT via service role only                                                      |
+| `chat_conversations`                                                                      | **Hardened** — same owner CRUD; `(select auth.uid())`                                                                           |
+| `charts`, `chart_shares`                                                                  | Reviewed — owner/share policies; share EXISTS cycle broken via SECURITY DEFINER helpers (`rls_fix_saved_views_share_recursion`) |
+| `integrations`, PM/VC connections, `chat_attachments`, allowlist/requests                 | Revoke + RLS — grants footer                                                                                                    |
+| `_prisma_migrations`                                                                      | **Done** — RLS + revoke (`rls_hybrid_prisma_migrations_lockdown`); Prisma/`service_role` bypass                                 |
 
 ### Out of scope (intentionally deferred)
 

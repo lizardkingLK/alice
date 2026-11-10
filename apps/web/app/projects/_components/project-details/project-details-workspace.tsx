@@ -149,12 +149,14 @@ const MANAGER_ONLY_TABS = new Set<ProjectDetailsTabId>([
   'types',
 ]);
 
-const PROJECT_NAV_ITEMS: ReadonlyArray<{
+type ProjectNavItem = {
   readonly id: ProjectDetailsTabId;
   readonly label: string;
   readonly Icon: typeof Info;
   readonly managerOrAdminOnly?: boolean;
-}> = [
+};
+
+const PROJECT_NAV_ITEMS: ReadonlyArray<ProjectNavItem> = [
   {
     id: 'details',
     label: 'Details',
@@ -379,6 +381,7 @@ export function ProjectDetailsWorkspace({
             <ul className="flex flex-row gap-0.5 md:flex-col">
               {visibleNavItems.map(({ id, label, Icon }) => {
                 const isActive = activeTab === id;
+                const href = projectDetailHref(project.key, id);
                 const linkClassName = cn(
                   'flex items-center rounded-lg text-left text-sm whitespace-nowrap transition-colors',
                   sidebarOpen
@@ -392,7 +395,7 @@ export function ProjectDetailsWorkspace({
 
                 const link = (
                   <Link
-                    href={projectDetailHref(project.key, id)}
+                    href={href}
                     prefetch
                     className={linkClassName}
                     aria-current={isActive ? 'page' : undefined}

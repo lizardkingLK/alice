@@ -8,7 +8,11 @@ import {
   auditCreateWithoutStatus,
   auditUpdate,
 } from '@repo/types/audit';
-import { plainTextToCommentDoc, commentContentToPlainText } from '@repo/types';
+import {
+  commentContentToPlainText,
+  plainTextToCommentDoc,
+  slugifyTitle,
+} from '@repo/types';
 import { createClient } from '@supabase/supabase-js';
 import pg from 'pg';
 
@@ -517,6 +521,7 @@ async function seedSprints(
         .insert({
           project_id: projectId,
           ...sprint,
+          slug: slugifyTitle(sprint.name),
           ...auditCreateWithoutStatus(actorId),
         })
         .select('id')
@@ -583,6 +588,7 @@ async function ensureWorkItem(
     .insert({
       project_id: projectId,
       title,
+      slug: slugifyTitle(title),
       ...values,
       ...auditCreateWithoutStatus(auditActor),
     })

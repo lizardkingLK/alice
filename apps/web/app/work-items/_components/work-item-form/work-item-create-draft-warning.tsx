@@ -46,10 +46,7 @@ export function WorkItemCreateDraftWarning({
   }
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4"
-      role="presentation"
-    >
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4">
       <div
         role="alertdialog"
         aria-modal="true"

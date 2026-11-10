@@ -37,8 +37,10 @@ import { DataTable } from '@/components/data-table';
 import { RegistryTitleCell } from '@/components/registry-title-cell';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { formatDate } from '@/app/_shared/utility';
-import { sprintReportHref } from '@/app/sprints/_helpers/sprint-report-links';
-import type { SprintReportFrom } from '@/app/sprints/_helpers/sprint-report-links';
+import {
+  sprintReportHref,
+  type SprintReportFrom,
+} from '@/app/sprints/_helpers/sprint-report-links';
 
 type SprintListProps = {
   sprints: Sprint[];
@@ -160,7 +162,10 @@ function renderSprintNameCell({ row, table }: CellContext<Sprint, unknown>) {
   const reportFrom = meta.reportFrom ?? 'sprints';
   return (
     <RegistryTitleCell
-      href={sprintReportHref(row.original.id, reportFrom)}
+      href={sprintReportHref(row.original.id, reportFrom, {
+        projectKey: row.original.project?.key,
+        sprintSlug: row.original.slug,
+      })}
       title={row.original.name}
       subtitle={
         projectName ? (

@@ -32,6 +32,7 @@ import {
   getInitials,
 } from '@/app/_shared/utility';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
+import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import { ProfileCoverBanner } from '@/app/profile/_components/profile-cover-banner';
 import { SETTINGS_GENERAL_HREF } from '@/app/settings/_components/settings-page-meta';
 import type {
@@ -240,7 +241,10 @@ export function ProfileView({
                     workedOn.map((item) => (
                       <Link
                         key={item.id}
-                        href={`/work-items/${item.id}`}
+                        href={workItemDetailHref(item.id, {
+                          projectKey: item.projectKey,
+                          workItemSlug: item.slug,
+                        })}
                         className="hover:bg-muted/40 flex items-start gap-3 px-4 py-3 transition-colors"
                       >
                         <div className="bg-muted text-muted-foreground mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md">

@@ -12,6 +12,7 @@ import {
   projectDetailHref,
   withProjectSearchParams,
 } from '@/app/projects/_helpers/project-links';
+import { projectScopedHref } from '@/app/projects/_helpers/project-tree-links';
 import {
   PROJECT_DETAILS_SIDEBAR_COOKIE_NAME,
   parseProjectDetailsSidebarOpenCookie,
@@ -61,6 +62,23 @@ export default async function ProjectDetailsPage({
       withProjectSearchParams(
         projectDetailHref(canonicalKey),
         resolvedSearchParams
+      )
+    );
+  }
+
+  // Legacy `?tab=` bookmarks for Board/Backlog/My Work (those surfaces live
+  // outside the project shell). Work Items + Sprints stay as in-shell tabs.
+  const legacyTreeTab = resolvedSearchParams.tab;
+  if (legacyTreeTab === 'backlog' || legacyTreeTab === 'member') {
+    const rest: RawSearchParams = { ...resolvedSearchParams };
+    delete rest.tab;
+    redirect(
+      withProjectSearchParams(
+        projectScopedHref({
+          projectKeyOrId: canonicalKey,
+          area: legacyTreeTab,
+        }),
+        rest
       )
     );
   }

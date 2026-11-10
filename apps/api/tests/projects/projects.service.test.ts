@@ -1096,7 +1096,7 @@ describe('ProjectsService backend tests', () => {
           })
         );
         expect(sendProjectMemberEmailMock.mock.calls[0]?.[0].text).toContain(
-          'http://localhost:3000/projects/project-1'
+          'http://localhost:3000/projects/ALICE'
         );
         expect(addMemberMock.mock.invocationCallOrder[0]).toBeLessThan(
           sendProjectMemberEmailMock.mock.invocationCallOrder[0]!

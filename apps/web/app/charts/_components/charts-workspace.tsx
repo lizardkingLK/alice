@@ -102,6 +102,8 @@ type ChartsWorkspaceProps = {
   readonly shareProjects: ReadonlyArray<{
     readonly id: string;
     readonly name: string;
+    readonly key?: string | null;
+    readonly workflowConfig?: unknown;
   }>;
   readonly assigneeMembers: readonly ChartsSampleMember[];
   readonly projects: readonly Project[];

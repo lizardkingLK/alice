@@ -321,6 +321,12 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
     expect(
       screen.queryByRole('link', { name: /^board$/i })
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /^backlog$/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /^my work$/i })
+    ).not.toBeInTheDocument();
   });
 
   it('hides manager-only nav for members', () => {
@@ -444,6 +450,10 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
     expect(screen.getByRole('link', { name: /work items/i })).toHaveAttribute(
       'href',
       '/projects/MOB?tab=work-items'
+    );
+    expect(screen.getByRole('link', { name: /^sprints$/i })).toHaveAttribute(
+      'href',
+      '/projects/MOB?tab=sprints'
     );
     expect(screen.getByRole('link', { name: /members/i })).toHaveAttribute(
       'href',

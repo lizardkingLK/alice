@@ -47,7 +47,7 @@ export const WORK_ITEM_REPORTER_POSTGREST_SELECT = userRelationSelect(
  * Field list must stay aligned with `workItemListSelect` keys.
  */
 export const WORK_ITEM_LIST_POSTGREST_COLUMNS =
-  'id, project_id, sprint_id, parent_id, title, type, priority, labels, assignee_id, reporter_id, due_date, story_points, status, state, board_column_id, record_status, done_at, created_by, created_at, updated_by, updated_at, pm_external' as const;
+  'id, project_id, sprint_id, parent_id, title, slug, type, priority, labels, assignee_id, reporter_id, due_date, story_points, status, state, board_column_id, record_status, done_at, created_by, created_at, updated_by, updated_at, pm_external' as const;
 
 /** PostgREST select for list/board reads (optional TipTap description). */
 export function workItemListPostgrestSelect(
@@ -60,7 +60,8 @@ export function workItemListPostgrestSelect(
 }
 
 export const WORK_ITEM_PROJECT_POSTGREST_SELECT = projectRelationSelect();
-export const WORK_ITEM_SPRINT_POSTGREST_SELECT = 'sprint:sprints(id, name)';
+export const WORK_ITEM_SPRINT_POSTGREST_SELECT =
+  'sprint:sprints(id, name, slug)';
 
 /** PostgREST select for detail reads — aligned with `workItemDetailSelect` embeds. */
 export function workItemDetailPostgrestSelect(): string {
@@ -76,6 +77,7 @@ export const workItemProjectSelect = {
 export const workItemSprintSelect = {
   id: true,
   name: true,
+  slug: true,
 } as const;
 
 /** List/board columns — omit TipTap `description` (matches RSC compact list). */
@@ -85,6 +87,7 @@ export const workItemListSelect = {
   sprint_id: true,
   parent_id: true,
   title: true,
+  slug: true,
   type: true,
   priority: true,
   labels: true,
@@ -174,7 +177,7 @@ export type WorkItemReadRow = Omit<
 /** Minimal ancestor fields for the in-page hierarchy path. */
 export type WorkItemAncestorWireRow = Pick<
   WorkItemReadRow,
-  'id' | 'type' | 'title' | 'parent_id'
+  'id' | 'type' | 'title' | 'slug' | 'parent_id'
 >;
 
 export type WorkItemDueDateFilter =

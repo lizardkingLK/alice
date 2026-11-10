@@ -419,7 +419,7 @@ export class ProjectsService {
   }
 
   private async sendProjectMemberAddedEmail(
-    project: Pick<ProjectRow, 'id' | 'name'>,
+    project: Pick<ProjectRow, 'key' | 'name'>,
     user: Pick<UserRow, 'email' | 'name'>
   ): Promise<void> {
     if (!this.projectMemberEmailSender) {
@@ -429,7 +429,7 @@ export class ProjectsService {
     const email = buildProjectMemberAddedEmail({
       recipientEmail: user.email,
       recipientName: user.name,
-      projectId: project.id,
+      projectKey: project.key,
       projectName: project.name,
       frontendUrl: env.FRONTEND_URL,
       notificationEventId: randomUUID(),
