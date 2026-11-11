@@ -63,6 +63,10 @@ vi.mock(
   () => import('../mocks/dropdown-menu')
 );
 
+vi.mock('@repo/ui/components/ui/sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
+
 vi.mock('@/app/work-items/_components/work-item-registry/actions', () => ({
   loadWorkItemChildrenAction: vi.fn(),
 }));
@@ -805,12 +809,12 @@ describe('WorkItemsTable', () => {
       title: 'Archive me',
       updated_at: '2026-08-01T00:00:00Z',
     });
-    vi.mocked(archiveWorkItem).mockResolvedValue(
-      workItemFactory.build({
-        ...item,
-        record_status: 'archived',
-      })
-    );
+    vi.mocked(archiveWorkItem).mockResolvedValue({
+      accepted: true,
+      message:
+        'Work item archive started. You’ll be notified when it finishes.',
+      correlationId: 'corr-archive-1',
+    });
 
     await renderTable({
       initialWorkItems: [item],
@@ -926,7 +930,12 @@ describe('WorkItemsTable', () => {
       record_status: 'archived',
       parent_id: null,
     });
-    vi.mocked(purgeWorkItem).mockResolvedValue(undefined);
+    vi.mocked(purgeWorkItem).mockResolvedValue({
+      accepted: true,
+      message:
+        'Work item permanent delete started. You’ll be notified when it finishes.',
+      correlationId: 'corr-purge-1',
+    });
 
     await renderTable({
       initialWorkItems: [item],
@@ -959,7 +968,12 @@ describe('WorkItemsTable', () => {
       record_status: 'archived',
       parent_id: 'wi-parent',
     });
-    vi.mocked(purgeWorkItem).mockResolvedValue(undefined);
+    vi.mocked(purgeWorkItem).mockResolvedValue({
+      accepted: true,
+      message:
+        'Work item permanent delete started. You’ll be notified when it finishes.',
+      correlationId: 'corr-purge-2',
+    });
 
     await renderTable({
       initialWorkItems: [item],

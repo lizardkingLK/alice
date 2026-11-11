@@ -5,20 +5,23 @@
 
 import { getLocalStorageJson, setLocalStorageJson } from '@/lib/local-storage';
 
+/** Bump when the default Overview experience changes so stale cookies reset. */
 export const PRODUCTIVITY_DASHBOARD_PREFS_COOKIE =
-  'alice_overview_productivity_prefs_v1';
+  'alice_overview_productivity_prefs_v3';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
-const STORAGE_PREFIX = 'alice:overview-productivity-prefs:v1:';
+const STORAGE_PREFIX = 'alice:overview-productivity-prefs:v3:';
 export const PRODUCTIVITY_LAYOUT_STORAGE_KEY =
-  'alice.dashboard.productivity.layout.v1';
+  'alice.dashboard.productivity.layout.v2';
 
-export const OVERVIEW_MODES = ['charts', 'productivity'] as const;
+export const OVERVIEW_MODES = ['productivity', 'charts'] as const;
 export type OverviewMode = (typeof OVERVIEW_MODES)[number];
 
 export const PRODUCTIVITY_WIDGET_IDS = [
   'my-work-assigned',
   'my-work-pending-stories',
   'my-work-in-progress',
+  'my-work-wip',
+  'notifications',
   'projects',
   'alice',
   'docs',
@@ -36,12 +39,14 @@ export const DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES: ProductivityDashboardPr
   {
     mode: 'productivity',
     widgets: {
-      'my-work-assigned': true,
-      'my-work-pending-stories': true,
-      'my-work-in-progress': true,
-      projects: true,
+      'my-work-assigned': false,
+      'my-work-pending-stories': false,
+      'my-work-in-progress': false,
+      'my-work-wip': false,
+      notifications: false,
+      projects: false,
       alice: true,
-      docs: true,
+      docs: false,
       pomodoro: true,
     },
   };
@@ -51,10 +56,12 @@ export const PRODUCTIVITY_WIDGET_LABELS: Record<ProductivityWidgetId, string> =
     'my-work-assigned': 'Assigned to you',
     'my-work-pending-stories': 'Pending stories',
     'my-work-in-progress': 'In progress',
+    'my-work-wip': 'Work in progress',
+    notifications: 'Unread notifications',
     projects: 'Your projects',
     alice: 'Alice',
     docs: 'Docs',
-    pomodoro: 'Pomodoro',
+    pomodoro: 'Focus',
   };
 
 function storageKey(userId: string): string {

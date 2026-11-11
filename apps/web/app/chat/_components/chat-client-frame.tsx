@@ -48,7 +48,7 @@ import { ChatAssistantNameBlock } from '@/app/chat/_components/chat-assistant-na
 import { ChatAgentsPanelDialog } from '@/app/chat/_components/chat-agents-panel-dialog';
 import { useBoundChatAgent } from '@/app/chat/_helpers/use-bound-chat-agent';
 import type { DashboardBreadcrumbOverride } from '@/app/dashboard/_components/dashboard-breadcrumb';
-import type { AppRole } from '@/lib/rbac';
+import { isManagerOrAdmin, type AppRole } from '@/lib/rbac';
 import {
   ChatDockContextBar,
   type ChatDockPageContext,
@@ -184,7 +184,7 @@ type ChatFramePanelHeaderProps = {
   readonly onOpenDetail: (agentId: string) => void;
   readonly onNewChat: () => void;
   readonly onMarkSelectedAsDefault: () => Promise<void>;
-  readonly onEnsureModelsLoaded?: () => Promise<void>;
+  readonly onEnsureModelsLoaded?: () => Promise<unknown>;
   // eslint-disable-next-line no-unused-vars -- callback prop types
   readonly onSelectedIntegrationIdChange: (value: string) => void;
   readonly onClose?: () => void;
@@ -450,7 +450,7 @@ type ChatClientFrameProps = {
   ) => void;
   readonly onToggleHistory: () => void;
   readonly onMarkSelectedAsDefault: () => Promise<void>;
-  readonly onEnsureModelsLoaded?: () => Promise<void>;
+  readonly onEnsureModelsLoaded?: () => Promise<unknown>;
   // eslint-disable-next-line no-unused-vars -- callback prop types
   readonly onSelectedIntegrationIdChange: (value: string) => void;
   // eslint-disable-next-line no-unused-vars -- callback prop types
@@ -628,6 +628,7 @@ export function ChatClientFrame({
             currentUserImageUrl={currentUserImageUrl}
             assistantIdentity={assistantIdentity}
             messagesEndRef={messagesEndRef}
+            canConfigureChatModels={isManagerOrAdmin(currentUserRole)}
             onSendMessage={onSendMessage}
           />
 

@@ -105,7 +105,7 @@ export async function resolveWorkItemSlugParam(params: {
 
   if (isUuidSegment(rawWorkItemSlug)) {
     const workItem = await getWorkItem(rawWorkItemSlug);
-    if (!workItem || workItem.project_id !== projectId) {
+    if (workItem?.project_id !== projectId) {
       notFound();
     }
     redirectToCanonical(workItem.slug);

@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
+import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Input } from '@repo/ui/components/ui/input';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import {
@@ -24,6 +25,7 @@ import {
   Plus,
   RotateCcw,
   Search,
+  Trash2,
 } from '@repo/ui/lib/icons';
 import {
   Tooltip,
@@ -36,7 +38,19 @@ import { DashboardWidgetShell } from '@/app/dashboard/_components/dashboard-widg
 import { PRODUCTIVITY_WIDGET_CATALOG } from '@/app/dashboard/_components/productivity/productivity-catalog';
 import { projectDetailHref } from '@/app/projects/_helpers/project-links';
 import {
+  addFocusTodo,
+  clearCompletedFocusTodos,
+  FOCUS_TODOS_MAX,
+  readFocusTodos,
+  removeFocusTodo,
+  toggleFocusTodo,
+  writeFocusTodos,
+  type FocusTodo,
+} from '@/app/dashboard/_helpers/focus-todos';
+import {
   clampPomodoroMinutes,
+  formatFocusDurationLabel,
+  formatFocusTimer,
   hydratePomodoroState,
   pomodoroPrimaryActionLabel,
   POMODORO_DEFAULT_MINUTES,
@@ -50,6 +64,11 @@ import {
 } from '@/app/dashboard/_helpers/pomodoro-preference';
 import type { ProductivityWidgetId } from '@/app/dashboard/_helpers/productivity-dashboard-preferences';
 import type { ProductivityDashboardBootstrap } from '@/app/dashboard/_types/productivity-dashboard.types';
+import { HomeNotificationList } from '@/app/_components/home/home-notifications-panel';
+import {
+  AssignedCompletionPill,
+  HomeWipList,
+} from '@/app/_components/home/home-wip-panel';
 import { loadDocMarkdown } from '@/app/docs/_actions/docs-content.server';
 import { DocsArticle } from '@/app/docs/_components/docs-article';
 import {
@@ -75,6 +94,7 @@ function KpiWidget({
   const meta = widgetById[id];
   return (
     <DashboardWidgetShell
+      variant="glass"
       title={meta.title}
       description={meta.description}
       contentClassName="justify-end"
@@ -102,7 +122,11 @@ function ProjectsWidget({
 }>) {
   const meta = widgetById.projects;
   return (
-    <DashboardWidgetShell title={meta.title} description={meta.description}>
+    <DashboardWidgetShell
+      variant="glass"
+      title={meta.title}
+      description={meta.description}
+    >
       {projects.length === 0 ? (
         <p className="text-muted-foreground text-sm">
           You are not on any projects yet.
@@ -144,6 +168,7 @@ function AliceWidget() {
 
   return (
     <DashboardWidgetShell
+      variant="glass"
       title={meta.title}
       description={meta.description}
       contentClassName="px-0 pb-0"
@@ -284,7 +309,11 @@ function DocsWidget({
 
   return (
     <>
-      <DashboardWidgetShell title={meta.title} description={meta.description}>
+      <DashboardWidgetShell
+        variant="glass"
+        title={meta.title}
+        description={meta.description}
+      >
         <div className="flex min-h-0 flex-1 flex-col gap-3">
           <div className="relative mx-auto w-full max-w-sm">
             <Search
@@ -323,7 +352,7 @@ function DocsWidget({
           className={cn(
             'flex flex-col gap-0 overflow-hidden p-0',
             fullscreen
-              ? 'h-[100dvh] max-h-[100dvh] w-screen max-w-none rounded-none sm:max-w-none'
+              ? 'h-dvh max-h-dvh w-screen max-w-none rounded-none sm:max-w-none'
               : 'max-h-[min(90vh,40rem)] sm:max-w-3xl'
           )}
         >
@@ -384,12 +413,6 @@ function DocsWidget({
   );
 }
 
-function formatTimer(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-}
-
 function PomodoroWidget({
   userId,
 }: Readonly<{
@@ -402,12 +425,23 @@ function PomodoroWidget({
   const [remaining, setRemaining] = useState(POMODORO_DEFAULT_MINUTES * 60);
   const [phase, setPhase] = useState<PomodoroPhase>('idle');
   const [hydrated, setHydrated] = useState(false);
+  const [todos, setTodos] = useState<FocusTodo[]>([]);
+  const [draftTodo, setDraftTodo] = useState('');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const remainingRef = useRef(remaining);
   const durationRef = useRef(durationMinutes);
   remainingRef.current = remaining;
   durationRef.current = durationMinutes;
   const running = phase === 'running';
+  const completedCount = todos.filter((todo) => todo.done).length;
+
+  const persistTodos = useCallback(
+    (next: FocusTodo[]) => {
+      setTodos(next);
+      writeFocusTodos(userId, next);
+    },
+    [userId]
+  );
 
   const persistSession = useCallback(
     (next: {
@@ -431,6 +465,7 @@ function PomodoroWidget({
     setDurationMinutes(hydratedState.durationMinutes);
     setRemaining(hydratedState.remainingSeconds);
     setPhase(hydratedState.phase);
+    setTodos(readFocusTodos(userId));
     setHydrated(true);
     // Re-stamp so the next catch-up window starts from open time.
     writePomodoroStoredState(userId, {
@@ -495,116 +530,263 @@ function PomodoroWidget({
     }
   };
 
+  const submitTodo = () => {
+    const next = addFocusTodo(todos, draftTodo);
+    if (next.length === todos.length) {
+      return;
+    }
+    persistTodos(next);
+    setDraftTodo('');
+  };
+
   const durationSeconds = durationMinutes * 60;
   const progress = durationSeconds === 0 ? 0 : 1 - remaining / durationSeconds;
 
   return (
-    <DashboardWidgetShell title={meta.title} description={meta.description}>
-      <div className="flex flex-1 flex-col items-center justify-center gap-4">
-        <div
-          className="relative flex size-28 items-center justify-center rounded-full"
-          style={{
-            background: `conic-gradient(var(--primary) ${progress * 360}deg, var(--muted) 0deg)`,
-          }}
-          aria-hidden
-        >
-          <div className="bg-card flex size-[6.5rem] items-center justify-center rounded-full">
-            <p
-              className={cn(
-                'text-2xl font-semibold tracking-tight tabular-nums',
-                remaining === 0 && 'text-muted-foreground'
-              )}
+    <DashboardWidgetShell
+      variant="glass"
+      title={meta.title}
+      description={meta.description}
+    >
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <div className="flex shrink-0 flex-col items-center gap-3">
+          <div
+            className="relative flex size-28 items-center justify-center rounded-full"
+            style={{
+              background: `conic-gradient(var(--primary) ${progress * 360}deg, var(--muted) 0deg)`,
+            }}
+            aria-hidden
+          >
+            <div className="bg-card/80 flex size-26 items-center justify-center rounded-full backdrop-blur-sm">
+              <p
+                className={cn(
+                  'text-xl font-semibold tracking-tight tabular-nums sm:text-2xl',
+                  remaining === 0 && 'text-muted-foreground'
+                )}
+              >
+                {formatFocusTimer(remaining)}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              className="cursor-pointer"
+              aria-label="Decrease duration"
+              disabled={running || durationMinutes <= POMODORO_MIN_MINUTES}
+              onClick={() =>
+                applyDuration(durationMinutes - POMODORO_STEP_MINUTES)
+              }
             >
-              {formatTimer(remaining)}
-            </p>
+              <Minus className="size-4" />
+            </Button>
+            <span className="text-muted-foreground min-w-16 text-center text-xs tabular-nums">
+              {formatFocusDurationLabel(durationMinutes)}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              className="cursor-pointer"
+              aria-label="Increase duration"
+              disabled={running || durationMinutes >= POMODORO_MAX_MINUTES}
+              onClick={() =>
+                applyDuration(durationMinutes + POMODORO_STEP_MINUTES)
+              }
+            >
+              <Plus className="size-4" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              className="cursor-pointer"
+              onClick={() => {
+                if (running) {
+                  setPhase('paused');
+                  persistSession({
+                    phase: 'paused',
+                    remainingSeconds: remainingRef.current,
+                  });
+                  return;
+                }
+                const nextRemaining =
+                  remaining === 0 ? durationMinutes * 60 : remaining;
+                if (remaining === 0) {
+                  setRemaining(nextRemaining);
+                }
+                setPhase('running');
+                persistSession({
+                  phase: 'running',
+                  remainingSeconds: nextRemaining,
+                });
+              }}
+            >
+              {running ? (
+                <Pause className="size-4" />
+              ) : (
+                <Play className="size-4" />
+              )}
+              {pomodoroPrimaryActionLabel(phase)}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="cursor-pointer"
+              onClick={() => {
+                const nextRemaining = durationMinutes * 60;
+                setPhase('idle');
+                setRemaining(nextRemaining);
+                persistSession({
+                  phase: 'idle',
+                  remainingSeconds: nextRemaining,
+                });
+              }}
+            >
+              <RotateCcw className="size-4" />
+              Reset
+            </Button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            className="cursor-pointer"
-            aria-label="Decrease duration"
-            disabled={running || durationMinutes <= POMODORO_MIN_MINUTES}
-            onClick={() =>
-              applyDuration(durationMinutes - POMODORO_STEP_MINUTES)
-            }
-          >
-            <Minus className="size-4" />
-          </Button>
-          <span className="text-muted-foreground min-w-16 text-center text-xs tabular-nums">
-            {durationMinutes} min
-          </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            className="cursor-pointer"
-            aria-label="Increase duration"
-            disabled={running || durationMinutes >= POMODORO_MAX_MINUTES}
-            onClick={() =>
-              applyDuration(durationMinutes + POMODORO_STEP_MINUTES)
-            }
-          >
-            <Plus className="size-4" />
-          </Button>
-        </div>
+        <div className="border-border flex min-h-0 flex-1 flex-col gap-2 border-t pt-3">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">Todos</p>
+            {completedCount > 0 ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground h-7 cursor-pointer px-2 text-xs"
+                onClick={() => persistTodos(clearCompletedFocusTodos(todos))}
+              >
+                Clear done
+              </Button>
+            ) : null}
+          </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            size="sm"
-            className="cursor-pointer"
-            onClick={() => {
-              if (running) {
-                setPhase('paused');
-                persistSession({
-                  phase: 'paused',
-                  remainingSeconds: remainingRef.current,
-                });
-                return;
-              }
-              const nextRemaining =
-                remaining === 0 ? durationMinutes * 60 : remaining;
-              if (remaining === 0) {
-                setRemaining(nextRemaining);
-              }
-              setPhase('running');
-              persistSession({
-                phase: 'running',
-                remainingSeconds: nextRemaining,
-              });
+          <form
+            className="flex shrink-0 gap-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              submitTodo();
             }}
           >
-            {running ? (
-              <Pause className="size-4" />
-            ) : (
-              <Play className="size-4" />
-            )}
-            {pomodoroPrimaryActionLabel(phase)}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="cursor-pointer"
-            onClick={() => {
-              const nextRemaining = durationMinutes * 60;
-              setPhase('idle');
-              setRemaining(nextRemaining);
-              persistSession({
-                phase: 'idle',
-                remainingSeconds: nextRemaining,
-              });
-            }}
-          >
-            <RotateCcw className="size-4" />
-            Reset
-          </Button>
+            <Input
+              value={draftTodo}
+              onChange={(event) => setDraftTodo(event.target.value)}
+              placeholder="Add a focus task…"
+              aria-label="New focus todo"
+              className="h-8"
+              maxLength={200}
+              disabled={todos.length >= FOCUS_TODOS_MAX}
+            />
+            <Button
+              type="submit"
+              size="sm"
+              className="h-8 shrink-0 cursor-pointer"
+              disabled={!draftTodo.trim() || todos.length >= FOCUS_TODOS_MAX}
+            >
+              Add
+            </Button>
+          </form>
+
+          {todos.length === 0 ? (
+            <p className="text-muted-foreground text-xs">
+              Capture quick tasks for this focus block.
+            </p>
+          ) : (
+            <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto pr-0.5">
+              {todos.map((todo) => (
+                <li
+                  key={todo.id}
+                  className="hover:bg-muted/40 flex items-center gap-2 rounded-md px-1.5 py-1"
+                >
+                  <Checkbox
+                    checked={todo.done}
+                    onCheckedChange={() =>
+                      persistTodos(toggleFocusTodo(todos, todo.id))
+                    }
+                    aria-label={
+                      todo.done
+                        ? `Mark "${todo.text}" as not done`
+                        : `Mark "${todo.text}" as done`
+                    }
+                  />
+                  <TruncatedText
+                    className={cn(
+                      'min-w-0 flex-1 text-sm',
+                      todo.done && 'text-muted-foreground line-through'
+                    )}
+                  >
+                    {todo.text}
+                  </TruncatedText>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-muted-foreground hover:text-foreground size-7 shrink-0 cursor-pointer"
+                    aria-label={`Delete "${todo.text}"`}
+                    onClick={() =>
+                      persistTodos(removeFocusTodo(todos, todo.id))
+                    }
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
+    </DashboardWidgetShell>
+  );
+}
+
+function WipListWidget({
+  bootstrap,
+}: Readonly<{ bootstrap: ProductivityDashboardBootstrap }>) {
+  const meta = widgetById['my-work-wip'];
+
+  return (
+    <DashboardWidgetShell
+      title={meta.title}
+      description={meta.description}
+      headerActions={
+        <AssignedCompletionPill percent={bootstrap.completion.percent} />
+      }
+    >
+      {bootstrap.wipItems.length > 0 ? (
+        <HomeWipList items={bootstrap.wipItems} />
+      ) : (
+        <p className="text-muted-foreground text-sm">
+          No open assigned work items right now.
+        </p>
+      )}
+    </DashboardWidgetShell>
+  );
+}
+
+function NotificationsListWidget({
+  bootstrap,
+}: Readonly<{ bootstrap: ProductivityDashboardBootstrap }>) {
+  const meta = widgetById.notifications;
+
+  return (
+    <DashboardWidgetShell title={meta.title} description={meta.description}>
+      {bootstrap.unreadNotifications.length > 0 ? (
+        <HomeNotificationList notifications={bootstrap.unreadNotifications} />
+      ) : (
+        <p className="text-muted-foreground text-sm">
+          You&apos;re all caught up — no unread notifications.
+        </p>
+      )}
     </DashboardWidgetShell>
   );
 }
@@ -627,6 +809,10 @@ export function ProductivityWidget({
       return <KpiWidget id={id} value={bootstrap.myWork.pendingStories} />;
     case 'my-work-in-progress':
       return <KpiWidget id={id} value={bootstrap.myWork.inProgress} />;
+    case 'my-work-wip':
+      return <WipListWidget bootstrap={bootstrap} />;
+    case 'notifications':
+      return <NotificationsListWidget bootstrap={bootstrap} />;
     case 'projects':
       return <ProjectsWidget projects={bootstrap.projects} />;
     case 'alice':

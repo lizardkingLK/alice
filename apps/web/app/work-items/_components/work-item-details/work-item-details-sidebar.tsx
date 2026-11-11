@@ -1437,7 +1437,7 @@ function PRsRow({
                               e.stopPropagation();
                               onUnlink(pr.id);
                             }}
-                            className="text-muted-foreground hover:text-destructive shrink-0 cursor-pointer"
+                            className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
                             aria-label="Unlink PR"
                             title="Unlink PR"
                           >

@@ -1012,6 +1012,39 @@ describe('ProjectsService backend tests', () => {
     });
   });
 
+  describe('enqueueSoftDeleteProject', () => {
+    it('accepts archive and notifies when background archive succeeds', async () => {
+      mockActorRole('manager');
+      findByIdMock.mockResolvedValue(mockProject);
+      updateMock.mockResolvedValue({
+        ...mockProject,
+        status: 'archived',
+        deleted_at: '2026-08-11T00:00:00.000Z',
+      });
+      notificationsCreateMock.mockResolvedValue({});
+
+      const accepted = await service.enqueueSoftDeleteProject(
+        'user-manager',
+        'project-1',
+        mockProject.updated_at
+      );
+
+      expect(accepted.correlationId).toBeTruthy();
+      expect(accepted.message).toMatch(/archive started/i);
+
+      await vi.waitFor(() => {
+        expect(updateMock).toHaveBeenCalled();
+        expect(notificationsCreateMock).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            user_id: 'user-manager',
+            type: 'entity_archived',
+            related_item_id: 'project-1',
+          }),
+        });
+      });
+    });
+  });
+
   describe('restoreProject', () => {
     it('clears deleted_at and sets project to active', async () => {
       mockActorRole('manager');
@@ -1283,6 +1316,34 @@ describe('ProjectsService backend tests', () => {
       );
 
       expect(deleteMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('enqueueHardDeleteProject', () => {
+    it('accepts purge and notifies when background purge succeeds', async () => {
+      mockActorRole('admin');
+      findByIdMock.mockResolvedValue(mockProject);
+      deleteMock.mockResolvedValue(undefined);
+      notificationsCreateMock.mockResolvedValue({});
+
+      const accepted = await service.enqueueHardDeleteProject(
+        'user-admin',
+        'project-1'
+      );
+
+      expect(accepted.correlationId).toBeTruthy();
+      expect(accepted.message).toMatch(/permanent delete started/i);
+
+      await vi.waitFor(() => {
+        expect(deleteMock).toHaveBeenCalledWith('project-1');
+        expect(notificationsCreateMock).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            user_id: 'user-admin',
+            type: 'entity_purged',
+            related_item_id: null,
+          }),
+        });
+      });
     });
   });
 

@@ -24,7 +24,7 @@ export function HomeNavbar({
 }: Readonly<HomeNavbarProps>) {
   const isSignedIn = Boolean(email);
   const navLinks = isSignedIn
-    ? ALWAYS_NAV_LINKS
+    ? []
     : [...MARKETING_NAV_LINKS, ...ALWAYS_NAV_LINKS];
 
   return (
@@ -48,20 +48,24 @@ export function HomeNavbar({
           </span>
         </Link>
 
-        <nav
-          aria-label="Marketing"
-          className="hidden items-center gap-7 md:flex"
-        >
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        {navLinks.length > 0 ? (
+          <nav
+            aria-label="Marketing"
+            className="hidden items-center gap-7 md:flex"
+          >
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        ) : (
+          <div className="flex-1" aria-hidden />
+        )}
 
         <div className="flex items-center gap-3">
           <AuthControls email={email} profilePicture={profilePicture} />

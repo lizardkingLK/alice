@@ -22,15 +22,15 @@ describe('HomeNavbar', () => {
     expect(screen.getByRole('link', { name: 'Contact' })).toBeInTheDocument();
   });
 
-  it('keeps only About and Contact when signed in', () => {
+  it('hides marketing links when signed in (footer owns About/Contact)', () => {
     // Arrange / Act
     render(<HomeNavbar email="ada@example.com" />);
 
     // Assert
     expect(screen.queryByRole('link', { name: 'How it works' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Pricing' })).toBeNull();
-    expect(screen.getByRole('link', { name: 'About' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Contact' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Dashboard' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'About' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Contact' })).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Marketing' })).toBeNull();
   });
 });

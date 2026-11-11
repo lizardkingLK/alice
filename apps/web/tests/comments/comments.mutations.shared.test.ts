@@ -173,32 +173,45 @@ describe('createCommentsService', () => {
 
   it('soft-deletes (archives) a comment via DELETE', async () => {
     // Arrange
-    const apiFetch = vi
-      .fn()
-      .mockResolvedValue({ data: { success: true }, error: null });
+    const accepted = {
+      accepted: true as const,
+      message: 'Comment archive started. You’ll be notified when it finishes.',
+      correlationId: 'corr-1',
+    };
+    const apiFetch = vi.fn().mockResolvedValue(accepted);
     const service = createCommentsService(apiFetch);
     const expectedUpdatedAt = '2026-08-17T09:00:00.000Z';
 
     // Act
-    await service.archiveComment('comment-1', expectedUpdatedAt);
+    const result = await service.archiveComment('comment-1', expectedUpdatedAt);
 
     // Assert
     expect(apiFetch).toHaveBeenCalledWith('/api/comments/comment-1', {
       method: 'DELETE',
       body: JSON.stringify({ expectedUpdatedAt }),
+      skipDatabaseBusyRetry: true,
     });
+    expect(result).toEqual(accepted);
   });
 
   it('permanently deletes a comment via DELETE when permanent flag is true', async () => {
     // Arrange
-    const apiFetch = vi
-      .fn()
-      .mockResolvedValue({ data: { success: true }, error: null });
+    const accepted = {
+      accepted: true as const,
+      message:
+        'Comment permanent delete started. You’ll be notified when it finishes.',
+      correlationId: 'corr-2',
+    };
+    const apiFetch = vi.fn().mockResolvedValue(accepted);
     const service = createCommentsService(apiFetch);
     const expectedUpdatedAt = '2026-08-17T09:00:00.000Z';
 
     // Act
-    await service.archiveComment('comment-1', expectedUpdatedAt, true);
+    const result = await service.archiveComment(
+      'comment-1',
+      expectedUpdatedAt,
+      true
+    );
 
     // Assert
     expect(apiFetch).toHaveBeenCalledWith(
@@ -206,8 +219,10 @@ describe('createCommentsService', () => {
       {
         method: 'DELETE',
         body: undefined,
+        skipDatabaseBusyRetry: true,
       }
     );
+    expect(result).toEqual(accepted);
   });
 
   it('restores a comment via POST', async () => {

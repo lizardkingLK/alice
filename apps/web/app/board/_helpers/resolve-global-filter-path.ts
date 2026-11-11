@@ -167,7 +167,7 @@ export async function resolveGlobalFilterPath(params: {
   });
 
   const injected: RawSearchParams = {
-    ...(searchParams ?? {}),
+    ...searchParams,
     project: projectId,
   };
   delete injected.sprint;

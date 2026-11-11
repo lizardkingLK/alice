@@ -13,6 +13,7 @@ import { DashboardChartsSlider } from '@/app/dashboard/_components/dashboard-cha
 import { ProductivityCustomizeDialog } from '@/app/dashboard/_components/productivity/productivity-customize-dialog';
 import { ProductivityDashboard } from '@/app/dashboard/_components/productivity/productivity-dashboard';
 import {
+  DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES,
   readProductivityDashboardPreferencesLocal,
   writeProductivityDashboardPreferences,
   type ProductivityDashboardPreferences,
@@ -20,6 +21,7 @@ import {
 import type { ProductivityDashboardBootstrap } from '@/app/dashboard/_types/productivity-dashboard.types';
 import type { ChartWorkspaceRecord } from '@/app/charts/_components/charts.types';
 import type { PrefetchedChartSeriesEntry } from '@/app/charts/_helpers/charts-series-cache-key';
+import '@/app/dashboard/_components/dashboard-grid.css';
 
 type DashboardOverviewHomeProps = {
   readonly userId: string;
@@ -59,10 +61,16 @@ export function DashboardOverviewHome({
 
   useEffect(() => {
     const local = readProductivityDashboardPreferencesLocal(userId);
-    if (!local) {
+    if (local) {
+      setPreferences(local);
       return;
     }
-    setPreferences(local);
+    // Cleared localStorage / first visit: land on productivity, not a stale charts cookie.
+    writeProductivityDashboardPreferences(
+      userId,
+      DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES
+    );
+    setPreferences(DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES);
   }, [userId]);
 
   const chartsCustomizeHref = activeChartSlideId
@@ -75,8 +83,17 @@ export function DashboardOverviewHome({
     setTransitionKey((value) => value + 1);
   };
 
+  const isProductivity = preferences.mode === 'productivity';
+
   return (
-    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4">
+    <div
+      className={cn(
+        'flex w-full min-w-0 flex-col gap-4 p-6',
+        isProductivity
+          ? 'dashboard-productivity-surface dashboard-productivity-surface--shell'
+          : 'min-h-0 flex-1'
+      )}
+    >
       <div className="flex w-full shrink-0 items-center justify-end gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
@@ -98,11 +115,12 @@ export function DashboardOverviewHome({
       <div
         key={`${preferences.mode}-${transitionKey}`}
         className={cn(
-          'flex min-h-0 w-full min-w-0 flex-1 flex-col',
+          'flex w-full min-w-0 flex-col',
+          isProductivity ? 'flex-none' : 'min-h-0 flex-1',
           'animate-in fade-in-0 zoom-in-95 duration-200'
         )}
       >
-        {preferences.mode === 'productivity' ? (
+        {isProductivity ? (
           <ProductivityDashboard
             userId={userId}
             bootstrap={productivityBootstrap}

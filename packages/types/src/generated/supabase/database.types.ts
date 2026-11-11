@@ -2421,6 +2421,10 @@ export type Database = {
         | "project_created"
         | "project_create_failed"
         | "worklog_pending"
+        | "entity_archived"
+        | "entity_archive_failed"
+        | "entity_purged"
+        | "entity_purge_failed"
       ProjectManagementConnectionStatus: "active" | "revoked" | "expired"
       ProjectManagementVendor: "jira"
       ProjectStatus: "active" | "archived"
@@ -2603,6 +2607,10 @@ export const Constants = {
         "project_created",
         "project_create_failed",
         "worklog_pending",
+        "entity_archived",
+        "entity_archive_failed",
+        "entity_purged",
+        "entity_purge_failed",
       ],
       ProjectManagementConnectionStatus: ["active", "revoked", "expired"],
       ProjectManagementVendor: ["jira"],

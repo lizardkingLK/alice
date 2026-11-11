@@ -1,4 +1,6 @@
 import { getActorUser, requireUserWithRole } from '../../../lib/auth-helpers';
+import { enqueueDestructiveAction } from '../../../lib/enqueue-destructive-action';
+import { OptimisticLockError } from '../../../lib/optimistic-lock';
 import {
   ProjectStatusEnum,
   UserRoleEnum,
@@ -869,6 +871,37 @@ export class ProjectsService {
     );
   }
 
+  /**
+   * Validate sync, accept archive, finish in the background, inbox-notify.
+   * Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueSoftDeleteProject(
+    actorId: string,
+    projectId: string,
+    expectedUpdatedAt: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    await requireProjectManager(actorId);
+    const project = await this.getProjectById(projectId);
+    if (project.updated_at !== expectedUpdatedAt) {
+      throw new OptimisticLockError(
+        project,
+        'This project was updated by someone else.'
+      );
+    }
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'archive',
+      entityType: 'project',
+      entityLabel: `${project.name} (${project.key})`,
+      relatedItemId: projectId,
+      detailHref: `/projects/${projectId}`,
+      run: async () => {
+        await this.softDeleteProject(actorId, projectId, expectedUpdatedAt);
+      },
+    });
+  }
+
   async restoreProject(
     actorId: string,
     projectId: string,
@@ -891,6 +924,30 @@ export class ProjectsService {
     await requireAdmin(actorId);
 
     await this.projectsRepository.delete(projectId);
+  }
+
+  /**
+   * Validate sync, accept permanent delete, finish in the background,
+   * inbox-notify. Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueHardDeleteProject(
+    actorId: string,
+    projectId: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    await requireAdmin(actorId);
+    const project = await this.getProjectById(projectId);
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'purge',
+      entityType: 'project',
+      entityLabel: `${project.name} (${project.key})`,
+      relatedItemId: null,
+      detailHref: '/projects?tab=archived',
+      run: async () => {
+        await this.hardDeleteProject(actorId, projectId);
+      },
+    });
   }
 
   async linkImportedJiraParents(

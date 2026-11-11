@@ -47,7 +47,14 @@ import {
   type ProjectStatusTab,
 } from '@/app/projects/_helpers/project-status';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
-import { runRegistryLockedAction } from '@/lib/optimistic-lock/run-locked-mutation';
+import {
+  runAcceptedDestructiveAction,
+  runLockedAcceptedDestructiveAction,
+} from '@/lib/api/run-accepted-destructive-action';
+import {
+  runRegistryLockedAction,
+  type RunLockedMutationOptions,
+} from '@/lib/optimistic-lock/run-locked-mutation';
 import {
   Folder,
   Calendar,
@@ -242,6 +249,39 @@ const PROJECT_COLUMNS: ColumnDef<Project>[] = [
   },
 ];
 
+async function runSoftArchive(params: {
+  readonly project: Project;
+  readonly handleMutationError: RunLockedMutationOptions<unknown>['handleMutationError'];
+  readonly currentUserId?: string | null;
+  // eslint-disable-next-line no-unused-vars -- callback option bag
+  readonly onError: (message: string) => void;
+}): Promise<boolean> {
+  const { project, handleMutationError, currentUserId, onError } = params;
+  return runLockedAcceptedDestructiveAction({
+    mutate: () => clientSoftDeleteProject(project.id, project.updated_at),
+    handleMutationError,
+    entityType: 'project',
+    entityId: project.id,
+    expectedUpdatedAt: project.updated_at,
+    pendingFields: { status: ProjectStatusEnum.archived },
+    currentUserId,
+    onError,
+    failureFallback: 'Failed to soft delete project.',
+  });
+}
+
+async function runHardPurge(params: {
+  readonly projectId: string;
+  // eslint-disable-next-line no-unused-vars -- callback option bag
+  readonly onError: (message: string) => void;
+}): Promise<boolean> {
+  return runAcceptedDestructiveAction({
+    mutate: () => clientHardDeleteProject(params.projectId),
+    onError: params.onError,
+    failureFallback: 'Failed to hard delete project.',
+  });
+}
+
 function AddProjectOverlay({
   users,
   currentUserId,
@@ -392,36 +432,19 @@ export function ProjectRegistry({
     if (!projectToDelete) return;
 
     startTransition(async () => {
-      if (isSoftDelete) {
-        const ok = await runRegistryLockedAction({
-          mutate: () =>
-            clientSoftDeleteProject(
-              projectToDelete.id,
-              projectToDelete.updated_at
-            ),
-          handleMutationError,
-          entityType: 'project',
-          entityId: projectToDelete.id,
-          expectedUpdatedAt: projectToDelete.updated_at,
-          pendingFields: { status: ProjectStatusEnum.archived },
-          currentUserId,
-          failureFallback: `Failed to ${deleteMode} delete project.`,
-          onError: setError,
-        });
-        if (!ok) {
-          return;
-        }
-      } else {
-        try {
-          await clientHardDeleteProject(projectToDelete.id);
-        } catch (err) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : `Failed to ${deleteMode} delete project.`
-          );
-          return;
-        }
+      const ok = isSoftDelete
+        ? await runSoftArchive({
+            project: projectToDelete,
+            handleMutationError,
+            currentUserId,
+            onError: setError,
+          })
+        : await runHardPurge({
+            projectId: projectToDelete.id,
+            onError: setError,
+          });
+      if (!ok) {
+        return;
       }
 
       setProjectToDelete(null);

@@ -3,7 +3,6 @@ import {
   BadgeCheck,
   Briefcase,
   CalendarDays,
-  FileText,
   LogIn,
   Mail,
   Phone,
@@ -31,7 +30,7 @@ import {
   formatLabelFirstLetterCapitalized,
   getInitials,
 } from '@/app/_shared/utility';
-import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
+import { WorkItemListRow } from '@/app/work-items/_components/work-item-list-row';
 import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import { ProfileCoverBanner } from '@/app/profile/_components/profile-cover-banner';
 import { SETTINGS_GENERAL_HREF } from '@/app/settings/_components/settings-page-meta';
@@ -236,38 +235,23 @@ export function ProfileView({
               </div>
 
               <Card className="shadow-none">
-                <CardContent className="divide-border divide-y p-0">
+                <CardContent className="divide-border/60 divide-y px-2.5 py-1">
                   {workedOn.length > 0 ? (
                     workedOn.map((item) => (
-                      <Link
+                      <WorkItemListRow
                         key={item.id}
                         href={workItemDetailHref(item.id, {
                           projectKey: item.projectKey,
                           workItemSlug: item.slug,
                         })}
-                        className="hover:bg-muted/40 flex items-start gap-3 px-4 py-3 transition-colors"
-                      >
-                        <div className="bg-muted text-muted-foreground mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md">
-                          <FileText className="size-4" />
-                        </div>
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <TruncatedText className="text-sm font-medium">
-                            {item.title}
-                          </TruncatedText>
-                          <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
-                            {item.projectKey ? (
-                              <span className="font-medium">
-                                {item.projectKey}
-                              </span>
-                            ) : null}
-                            <WorkItemStatusBadge status={item.status} />
-                            <span>Updated {formatDate(item.updatedAt)}</span>
-                          </div>
-                        </div>
-                      </Link>
+                        title={item.title}
+                        status={item.status}
+                        projectKey={item.projectKey}
+                        meta={`Updated ${formatDate(item.updatedAt)}`}
+                      />
                     ))
                   ) : (
-                    <p className="text-muted-foreground px-4 py-6 text-sm">
+                    <p className="text-muted-foreground px-1.5 py-6 text-sm">
                       No work items assigned or reported yet.
                     </p>
                   )}

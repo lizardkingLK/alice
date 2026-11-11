@@ -4,8 +4,8 @@ import { TeamRegistry } from '@/app/manager/_components/team-registry';
 import {
   softDeleteTeam as clientSoftDeleteTeam,
   restoreTeam as clientRestoreTeam,
+  hardDeleteTeam as clientHardDeleteTeam,
 } from '@/app/manager/_services/teams.mutations.client';
-import { hardDeleteTeam } from '@/app/manager/_components/actions';
 import type { Team } from '@/app/manager/_services/teams.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import { assertDebouncedSearchRedirect } from '../helpers/assert-debounced-search';
@@ -27,12 +27,13 @@ vi.mock(
   () => import('../mocks/dropdown-menu')
 );
 
+vi.mock('@repo/ui/components/ui/sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
+
 vi.mock('@/app/manager/_services/teams.mutations.client', () => ({
   softDeleteTeam: vi.fn(),
   restoreTeam: vi.fn(),
-}));
-
-vi.mock('@/app/manager/_components/actions', () => ({
   hardDeleteTeam: vi.fn(),
 }));
 
@@ -203,7 +204,11 @@ describe('TeamRegistry Component', () => {
   });
 
   it('opens confirmation modal and triggers soft delete action', async () => {
-    vi.mocked(clientSoftDeleteTeam).mockResolvedValue(mockTeams[0]!);
+    vi.mocked(clientSoftDeleteTeam).mockResolvedValue({
+      accepted: true,
+      message: 'Team archive started. You’ll be notified when it finishes.',
+      correlationId: 'corr-soft-1',
+    });
 
     render(
       <TeamRegistry
@@ -241,7 +246,12 @@ describe('TeamRegistry Component', () => {
   });
 
   it('opens confirmation modal and triggers hard delete for admin role', async () => {
-    vi.mocked(hardDeleteTeam).mockResolvedValue({ success: true, error: null });
+    vi.mocked(clientHardDeleteTeam).mockResolvedValue({
+      accepted: true,
+      message:
+        'Team permanent delete started. You’ll be notified when it finishes.',
+      correlationId: 'corr-1',
+    });
 
     render(
       <TeamRegistry
@@ -274,7 +284,7 @@ describe('TeamRegistry Component', () => {
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-      expect(hardDeleteTeam).toHaveBeenCalledWith('team-2', null);
+      expect(clientHardDeleteTeam).toHaveBeenCalledWith('team-2');
       expect(mockRefresh).toHaveBeenCalled();
     });
   });

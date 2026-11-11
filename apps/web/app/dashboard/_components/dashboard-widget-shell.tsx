@@ -25,6 +25,8 @@ type DashboardWidgetShellProps = {
   contentClassName?: string;
   /** Optional controls rendered before the drag handle (e.g. remove). */
   headerActions?: ReactNode;
+  /** Frosted liquid-glass card for the productivity Overview. */
+  variant?: 'default' | 'glass';
 };
 
 export function DashboardWidgetShell({
@@ -34,11 +36,13 @@ export function DashboardWidgetShell({
   className,
   contentClassName,
   headerActions,
+  variant = 'default',
 }: Readonly<DashboardWidgetShellProps>) {
   return (
     <Card
       className={cn(
         'flex h-full min-h-0 flex-col overflow-hidden shadow-none',
+        variant === 'glass' && 'dashboard-widget-glass',
         className
       )}
     >

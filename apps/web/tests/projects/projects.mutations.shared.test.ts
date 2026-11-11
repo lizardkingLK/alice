@@ -144,11 +144,12 @@ describe('createProjectsService frontend tests', () => {
   });
 
   it('soft deletes project via PATCH', async () => {
-    const project = projectFactory.build({
-      status: 'archived',
-      deleted_at: '2026-08-11T00:00:00.000Z',
-    });
-    const apiFetch = vi.fn().mockResolvedValue({ project });
+    const accepted = {
+      accepted: true as const,
+      message: 'Project archive started. You’ll be notified when it finishes.',
+      correlationId: 'corr-soft-1',
+    };
+    const apiFetch = vi.fn().mockResolvedValue(accepted);
     const service = createProjectsService(apiFetch);
 
     const result = await service.softDeleteProject(
@@ -161,8 +162,9 @@ describe('createProjectsService frontend tests', () => {
       body: JSON.stringify({
         expectedUpdatedAt: '2026-07-09T10:00:00Z',
       }),
+      skipDatabaseBusyRetry: true,
     });
-    expect(result).toEqual(project);
+    expect(result).toEqual(accepted);
   });
 
   it('restores project via PATCH', async () => {
@@ -188,14 +190,22 @@ describe('createProjectsService frontend tests', () => {
   });
 
   it('hard deletes project via DELETE', async () => {
-    const apiFetch = vi.fn().mockResolvedValue(undefined);
+    const accepted = {
+      accepted: true as const,
+      message:
+        'Project permanent delete started. You’ll be notified when it finishes.',
+      correlationId: 'corr-hard-1',
+    };
+    const apiFetch = vi.fn().mockResolvedValue(accepted);
     const service = createProjectsService(apiFetch);
 
-    await service.hardDeleteProject('proj-1');
+    const result = await service.hardDeleteProject('proj-1');
 
     expect(apiFetch).toHaveBeenCalledWith('/api/projects/proj-1', {
       method: 'DELETE',
+      skipDatabaseBusyRetry: true,
     });
+    expect(result).toEqual(accepted);
   });
 
   it('adds project member via POST', async () => {

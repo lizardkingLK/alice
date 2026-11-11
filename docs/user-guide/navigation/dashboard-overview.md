@@ -25,33 +25,43 @@ Use the **Customize** control (sliders icon) to open a dialog where you can:
   Charts
 - Turn productivity widgets on or off
 
-Your mode and widget choices are saved in this browser.
+Your mode and widget choices are saved in this browser (local storage + cookie).
 
-When nothing is pinned yet, Overview uses **Productivity**. Chart workspaces
-mode is available after you pin at least one board.
+Overview defaults to **Productivity**. You can switch to **Chart workspaces**
+anytime; if nothing is pinned yet, that mode shows a short tip and **Open Charts**.
 
 ---
 
 ## Productivity dashboard
 
-A draggable, resizable home with live widgets:
+A draggable, resizable home with frosted glass cards on a soft gradient. By
+default you get two widgets side by side:
 
-| Widget          | What it shows                                                                                                                                                  |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Assigned to you | Open work items assigned to you                                                                                                                                |
-| Pending stories | Open stories assigned to you                                                                                                                                   |
-| In progress     | Items in In Progress                                                                                                                                           |
-| Your projects   | Projects you belong to                                                                                                                                         |
-| Alice           | Live chat that always starts a new thread (open full chat from the card)                                                                                       |
-| Docs            | Search the user guide; open a page in a dialog (fullscreen available)                                                                                          |
-| Pomodoro        | Focus timer (5–60 min, default 25). Duration, run/pause, and remaining time are saved in this browser; a running timer continues after you leave and come back |
+| Widget | What it shows                                                                                                                                                                                 |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Alice  | Live chat that always starts a new thread (open full chat from the card)                                                                                                                      |
+| Focus  | Timer (5 minutes–8 hours, default 25) plus a personal todo list. Duration, run/pause, remaining time, and todos stay in this browser; a running timer continues after you leave and come back |
+
+Turn on more widgets from **Customize**:
+
+| Widget               | What it shows                                                               |
+| -------------------- | --------------------------------------------------------------------------- |
+| Assigned to you      | Open work items assigned to you                                             |
+| Pending stories      | Open stories assigned to you                                                |
+| In progress          | Items in In Progress                                                        |
+| Work in progress     | Top five open assigned items, with a **% completed** pill for assigned Done |
+| Unread notifications | Latest unread alerts                                                        |
+| Your projects        | Projects you belong to                                                      |
+| Docs                 | Search the user guide; open a page in a dialog                              |
+
+**Work in progress** and **Unread notifications** start off; turn them on in
+**Customize** when you want the same lists on Overview that Home shows.
 
 **Chart workspaces** mode is always available. If nothing is pinned yet, that
 mode shows a short tip and **Open Charts** instead of the slider.
 
-If you have no assigned work, the KPI cards show zero and **Your projects** /
-**Alice** still help you get oriented. Hold the ellipsis on a card to drag;
-resize from the bottom-right. Layout is saved automatically.
+Hold the ellipsis on a card to drag; resize from the bottom-right. Layout is
+saved automatically.
 
 ---
 

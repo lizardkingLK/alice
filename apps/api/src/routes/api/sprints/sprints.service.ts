@@ -4,7 +4,6 @@ import {
   seriesFromBurndownRollupRows,
   SprintStatusEnum,
   UserRoleEnum,
-  type BurndownPoint,
   type DeleteSprintAction,
   type SprintBurndownPayload,
   type SprintResponse,
@@ -21,12 +20,14 @@ import type {
   SprintRow,
 } from './sprints.repository';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { enqueueDestructiveAction } from '../../../lib/enqueue-destructive-action';
+import { OptimisticLockError } from '../../../lib/optimistic-lock';
 import { allocateSprintSlug } from '../../../lib/entity-slug';
 import { isPrismaUniqueConflict } from '../../../lib/prisma-errors';
 import type { SprintPaginatedList } from './sprints.prisma-query';
 import { sprintNameConflictMessage } from './sprints.errors';
 
-export type { BurndownPoint };
+export type { BurndownPoint } from '@repo/types';
 export type BurndownResponse = SprintBurndownPayload;
 
 async function requireManagerOrAdmin(actorId: string) {
@@ -141,6 +142,49 @@ export class SprintsService {
     return mapSprintRowToResponse(row);
   }
 
+  /**
+   * Validate sync, accept archive, finish in the background, inbox-notify.
+   * Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueArchiveSprint(
+    userId: string,
+    sprintId: string,
+    expectedUpdatedAt: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    await requireManagerOrAdmin(userId);
+
+    const currentSprint = await this.sprints.findById(sprintId);
+    if (!currentSprint) {
+      throw new Error('Sprint not found');
+    }
+    if (currentSprint.status !== SprintStatusEnum.Closed) {
+      throw new Error('Only completed sprints can be archived.');
+    }
+    if (currentSprint.updated_at !== expectedUpdatedAt) {
+      throw new OptimisticLockError(
+        mapSprintRowToResponse(currentSprint),
+        'This sprint was updated by someone else.'
+      );
+    }
+
+    return enqueueDestructiveAction({
+      actorId: userId,
+      kind: 'archive',
+      entityType: 'sprint',
+      entityLabel: currentSprint.name,
+      relatedItemId: sprintId,
+      detailHref: `/sprints/${sprintId}`,
+      run: async () => {
+        await this.updateSprintStatus(
+          userId,
+          sprintId,
+          SprintStatusEnum.Archived,
+          expectedUpdatedAt
+        );
+      },
+    });
+  }
+
   async updateSprint(
     userId: string,
     sprintId: string,
@@ -247,6 +291,38 @@ export class SprintsService {
     }
 
     await this.sprints.deleteSprint(sprintId, options.workItemsAction);
+  }
+
+  /**
+   * Validate sync, accept permanent delete, finish in the background,
+   * inbox-notify. Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueHardDeleteSprint(
+    actorId: string,
+    sprintId: string,
+    options: DeleteSprintAction
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    await requireAdmin(actorId);
+
+    const currentSprint = await this.sprints.findById(sprintId);
+    if (!currentSprint) {
+      throw new Error('Sprint not found');
+    }
+    if (currentSprint.status !== SprintStatusEnum.Archived) {
+      throw new Error('Only archived sprints can be permanently deleted.');
+    }
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'purge',
+      entityType: 'sprint',
+      entityLabel: currentSprint.name,
+      relatedItemId: null,
+      detailHref: '/sprints?tab=archived',
+      run: async () => {
+        await this.hardDeleteSprint(actorId, sprintId, options);
+      },
+    });
   }
 
   private resolveScopedListFilters(

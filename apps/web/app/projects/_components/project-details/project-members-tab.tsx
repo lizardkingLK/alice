@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  type CellContext,
   type ColumnDef,
   getCoreRowModel,
   useReactTable,
@@ -91,6 +92,158 @@ type MemberRow = {
   readonly isSelf: boolean;
   readonly isOwner: boolean;
   readonly isCreator: boolean;
+};
+
+function ProjectMemberIdentityCell({
+  row,
+  isOnline,
+}: Readonly<{
+  row: MemberRow;
+  isOnline: boolean;
+}>) {
+  const { userName, userEmail, userRole, isSelf, isOwner, isCreator } = row;
+
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <UserAvatar
+        name={userName}
+        title={userName}
+        isOnline={isOnline}
+        className="size-8 border-0 after:border-0 data-[size=sm]:size-8"
+        fallbackClassName="bg-muted text-foreground text-xs font-bold"
+      />
+      <div className="min-w-0">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm font-semibold">
+          <TruncatedText className="text-foreground min-w-0">
+            {userName}
+          </TruncatedText>
+          <span className="bg-muted border-border text-muted-foreground py-0.2 shrink-0 rounded-full border px-1.5 text-[10px] font-semibold tracking-wider uppercase">
+            {userRole}
+          </span>
+          {isOwner ? <MemberStatusBadge>Owner</MemberStatusBadge> : null}
+          {isCreator && !isOwner ? (
+            <MemberStatusBadge>Creator</MemberStatusBadge>
+          ) : null}
+          {isSelf ? <MemberStatusBadge>You</MemberStatusBadge> : null}
+        </div>
+        {userEmail ? (
+          <TruncatedText className="text-muted-foreground text-xs">
+            {userEmail}
+          </TruncatedText>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ProjectMemberActionsHeader() {
+  return <span className="sr-only">Actions</span>;
+}
+
+type ProjectMembersTableMeta = {
+  // eslint-disable-next-line no-unused-vars -- meta callback
+  readonly isUserOnline: (userId: string) => boolean;
+  readonly deletingUserId: string | null;
+  readonly isAddPending: boolean;
+  // eslint-disable-next-line no-unused-vars -- meta callback
+  readonly onRemove: (toRemove: { userId: string; userName: string }) => void;
+};
+
+type MemberCellRenderer = (
+  // eslint-disable-next-line no-unused-vars -- renderer signature
+  context: CellContext<MemberRow, unknown>
+) => ReactNode;
+
+function getProjectMembersTableMeta(
+  table: CellContext<MemberRow, unknown>['table']
+) {
+  return table.options.meta as ProjectMembersTableMeta;
+}
+
+function ProjectMemberActionsCell({
+  row,
+  deletingUserId,
+  isAddPending,
+  onRemove,
+}: Readonly<{
+  row: MemberRow;
+  deletingUserId: string | null;
+  isAddPending: boolean;
+  // eslint-disable-next-line no-unused-vars -- callback option bag
+  onRemove: (toRemove: { userId: string; userName: string }) => void;
+}>) {
+  const { member, userName, isOwner, isCreator } = row;
+  const isProtectedMember = isOwner || isCreator;
+
+  return (
+    <div className="flex justify-end">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        disabled={Boolean(deletingUserId) || isAddPending || isProtectedMember}
+        onClick={() => {
+          if (isProtectedMember) {
+            return;
+          }
+          onRemove({
+            userId: member.user_id,
+            userName,
+          });
+        }}
+        className="text-muted-foreground hover:text-foreground hover:bg-muted h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors disabled:opacity-50"
+        title={protectedMemberRemoveTitle({
+          isOwner,
+          isCreator,
+          userName,
+        })}
+      >
+        {deletingUserId === member.user_id ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Trash2 className="h-4 w-4" />
+        )}
+      </Button>
+    </div>
+  );
+}
+
+// Module-scope cell renderers (Sonar S6478 / react/no-unstable-nested-components).
+const MEMBER_CELL_RENDERERS: Record<string, MemberCellRenderer> = {
+  member: ({ row, table }) => {
+    const meta = getProjectMembersTableMeta(table);
+    return (
+      <ProjectMemberIdentityCell
+        row={row.original}
+        isOnline={meta.isUserOnline(row.original.member.user_id)}
+      />
+    );
+  },
+  actions: ({ row, table }) => {
+    const meta = getProjectMembersTableMeta(table);
+    return (
+      <ProjectMemberActionsCell
+        row={row.original}
+        deletingUserId={meta.deletingUserId}
+        isAddPending={meta.isAddPending}
+        onRemove={meta.onRemove}
+      />
+    );
+  },
+};
+
+const MEMBER_BASE_COLUMNS: ColumnDef<MemberRow>[] = [
+  {
+    id: 'member',
+    header: 'Member',
+    cell: MEMBER_CELL_RENDERERS.member,
+  },
+];
+
+const MEMBER_ACTIONS_COLUMN: ColumnDef<MemberRow> = {
+  id: 'actions',
+  header: ProjectMemberActionsHeader,
+  cell: MEMBER_CELL_RENDERERS.actions,
 };
 
 export function ProjectMembersTab({
@@ -205,109 +358,23 @@ export function ProjectMembersTab({
   }, [memberToRemove, project.id, router]);
 
   const columns = useMemo<ColumnDef<MemberRow>[]>(() => {
-    const cols: ColumnDef<MemberRow>[] = [
-      {
-        id: 'member',
-        header: 'Member',
-        cell: ({ row }) => {
-          const {
-            member,
-            userName,
-            userEmail,
-            userRole,
-            isSelf,
-            isOwner,
-            isCreator,
-          } = row.original;
-          return (
-            <div className="flex min-w-0 items-center gap-3">
-              <UserAvatar
-                name={userName}
-                title={userName}
-                isOnline={isUserOnline(member.user_id)}
-                className="size-8 border-0 after:border-0 data-[size=sm]:size-8"
-                fallbackClassName="bg-muted text-foreground text-xs font-bold"
-              />
-              <div className="min-w-0">
-                <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm font-semibold">
-                  <TruncatedText className="text-foreground min-w-0">
-                    {userName}
-                  </TruncatedText>
-                  <span className="bg-muted border-border text-muted-foreground py-0.2 shrink-0 rounded-full border px-1.5 text-[10px] font-semibold tracking-wider uppercase">
-                    {userRole}
-                  </span>
-                  {isOwner ? (
-                    <MemberStatusBadge>Owner</MemberStatusBadge>
-                  ) : null}
-                  {isCreator && !isOwner ? (
-                    <MemberStatusBadge>Creator</MemberStatusBadge>
-                  ) : null}
-                  {isSelf ? <MemberStatusBadge>You</MemberStatusBadge> : null}
-                </div>
-                {userEmail ? (
-                  <TruncatedText className="text-muted-foreground text-xs">
-                    {userEmail}
-                  </TruncatedText>
-                ) : null}
-              </div>
-            </div>
-          );
-        },
-      },
-    ];
-
-    if (isManagerOrAdmin) {
-      cols.push({
-        id: 'actions',
-        header: () => <span className="sr-only">Actions</span>,
-        cell: ({ row }) => {
-          const { member, userName, isOwner, isCreator } = row.original;
-          const isProtectedMember = isOwner || isCreator;
-          return (
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                disabled={
-                  Boolean(deletingUserId) || isAddPending || isProtectedMember
-                }
-                onClick={() => {
-                  if (isProtectedMember) {
-                    return;
-                  }
-                  setMemberToRemove({
-                    userId: member.user_id,
-                    userName,
-                  });
-                }}
-                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors disabled:opacity-50"
-                title={protectedMemberRemoveTitle({
-                  isOwner,
-                  isCreator,
-                  userName,
-                })}
-              >
-                {deletingUserId === member.user_id ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          );
-        },
-      });
+    if (!isManagerOrAdmin) {
+      return MEMBER_BASE_COLUMNS;
     }
-
-    return cols;
-  }, [isManagerOrAdmin, deletingUserId, isAddPending, isUserOnline]);
+    return [...MEMBER_BASE_COLUMNS, MEMBER_ACTIONS_COLUMN];
+  }, [isManagerOrAdmin]);
 
   const table = useReactTable({
     data: rows,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.member.user_id,
+    meta: {
+      isUserOnline,
+      deletingUserId,
+      isAddPending,
+      onRemove: setMemberToRemove,
+    } satisfies ProjectMembersTableMeta,
   });
 
   return (

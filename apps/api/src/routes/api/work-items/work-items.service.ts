@@ -48,6 +48,8 @@ import {
   type WorkItemLinkListItem,
 } from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { enqueueDestructiveAction } from '../../../lib/enqueue-destructive-action';
+import { OptimisticLockError } from '../../../lib/optimistic-lock';
 import { env } from '../../../config/env';
 import { removeStorageObjects } from '../../../lib/file-helpers';
 import {
@@ -129,6 +131,14 @@ export const WorkItemDefaults = {
 
 function throwWorkflowConfigLoadError(error: unknown): void {
   if (error) throw error;
+}
+
+function workItemEntityLabel(workItem: DbWorkItem): string {
+  const key = workItem.jira_issue_key ?? workItem.slug;
+  if (key) {
+    return `${workItem.title} (${key})`;
+  }
+  return workItem.title;
 }
 
 export class WorkItemService {
@@ -1342,6 +1352,40 @@ export class WorkItemService {
     );
   }
 
+  /**
+   * Validate sync, accept archive, finish in the background, inbox-notify.
+   * Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueArchiveWorkItem(
+    actorId: string,
+    workItemId: string,
+    expectedUpdatedAt: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    await this.workItems.requireProjectMember(workItemId, actorId);
+    const current = await this.workItems.getById(workItemId);
+    if (current.record_status === 'archived') {
+      throw new WorkItemValidationError('Work item is already archived.');
+    }
+    if (current.updated_at !== expectedUpdatedAt) {
+      throw new OptimisticLockError(
+        current,
+        'This work item was updated by someone else.'
+      );
+    }
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'archive',
+      entityType: 'work_item',
+      entityLabel: workItemEntityLabel(current),
+      relatedItemId: workItemId,
+      detailHref: `/work-items/${workItemId}`,
+      run: async () => {
+        await this.archiveWorkItem(actorId, workItemId, expectedUpdatedAt);
+      },
+    });
+  }
+
   async restoreWorkItem(
     actorId: string,
     workItemId: string,
@@ -1397,6 +1441,37 @@ export class WorkItemService {
       deletedIds: ids,
       descendantCount: Math.max(0, ids.length - 1),
     };
+  }
+
+  /**
+   * Validate sync, accept permanent delete, finish in the background,
+   * inbox-notify. Interim until BullMQ owns destructive jobs.
+   */
+  async enqueuePurgeWorkItem(
+    actorId: string,
+    workItemId: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    await requireAdmin(actorId);
+    await this.workItems.requireProjectMember(workItemId, actorId);
+
+    const current = await this.workItems.getById(workItemId);
+    if (current.record_status !== 'archived') {
+      throw new WorkItemValidationError(
+        'Only archived work items can be permanently deleted.'
+      );
+    }
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'purge',
+      entityType: 'work_item',
+      entityLabel: workItemEntityLabel(current),
+      relatedItemId: null,
+      detailHref: '/work-items?tab=archived',
+      run: async () => {
+        await this.purgeWorkItem(actorId, workItemId);
+      },
+    });
   }
 
   async countDescendants(workItemId: string, actorId: string): Promise<number> {

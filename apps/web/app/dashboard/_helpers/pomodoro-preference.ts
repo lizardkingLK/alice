@@ -3,7 +3,8 @@ import { getLocalStorageJson, setLocalStorageJson } from '@/lib/local-storage';
 const STORAGE_PREFIX = 'alice:overview-pomodoro:v1:';
 
 export const POMODORO_MIN_MINUTES = 5;
-export const POMODORO_MAX_MINUTES = 60;
+/** Cap at an 8-hour focus block. */
+export const POMODORO_MAX_MINUTES = 480;
 export const POMODORO_DEFAULT_MINUTES = 25;
 export const POMODORO_STEP_MINUTES = 5;
 /** Persist remaining time while a session is running. */
@@ -40,6 +41,27 @@ export function pomodoroPrimaryActionLabel(phase: PomodoroPhase): string {
     return 'Resume';
   }
   return 'Start';
+}
+
+/** MM:SS under one hour; H:MM:SS for longer Focus sessions. */
+export function formatFocusTimer(totalSeconds: number): string {
+  const capped = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(capped / 3600);
+  const minutes = Math.floor((capped % 3600) / 60);
+  const seconds = capped % 60;
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+export function formatFocusDurationLabel(minutes: number): string {
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+    return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
+  }
+  return `${minutes} min`;
 }
 
 function storageKey(userId: string): string {

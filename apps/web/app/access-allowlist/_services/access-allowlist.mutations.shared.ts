@@ -1,6 +1,9 @@
 /* eslint-disable no-unused-vars */
 import { type RecordStatus, type Tables } from '@repo/types';
+import type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
+
+export type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 
 export type AccessAllowlistEntry = Tables<'access_allowlist'>;
 
@@ -42,7 +45,10 @@ export type AccessAllowlistListResult = {
 };
 
 export function createAccessAllowlistService(
-  apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>
+  apiFetch: <T>(
+    path: string,
+    init?: RequestInit & { skipDatabaseBusyRetry?: boolean }
+  ) => Promise<T>
 ) {
   const apiAccessAllowlist = '/api/access-allowlist';
 
@@ -90,14 +96,19 @@ export function createAccessAllowlistService(
     return data.entry;
   }
 
+  /** Fire-and-forget purge — API returns 202; inbox notifies when done. */
   async function deleteAccessAllowlistEntry(
     id: string,
     expectedUpdatedAt: string
-  ): Promise<void> {
-    await apiFetch<{ success: boolean }>(`${apiAccessAllowlist}/${id}`, {
-      method: 'DELETE',
-      body: JSON.stringify({ expectedUpdatedAt }),
-    });
+  ): Promise<DestructiveActionAccepted> {
+    return await apiFetch<DestructiveActionAccepted>(
+      `${apiAccessAllowlist}/${id}`,
+      {
+        method: 'DELETE',
+        body: JSON.stringify({ expectedUpdatedAt }),
+        skipDatabaseBusyRetry: true,
+      }
+    );
   }
 
   return {

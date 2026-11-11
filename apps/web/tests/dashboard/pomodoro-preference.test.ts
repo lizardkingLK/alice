@@ -17,8 +17,11 @@ vi.mock('@/lib/local-storage', () => ({
 }));
 
 import {
+  clampPomodoroMinutes,
+  formatFocusTimer,
   hydratePomodoroState,
   pomodoroPrimaryActionLabel,
+  POMODORO_MAX_MINUTES,
   readPomodoroStoredState,
   writePomodoroStoredState,
 } from '@/app/dashboard/_helpers/pomodoro-preference';
@@ -116,5 +119,17 @@ describe('pomodoro session persistence', () => {
     expect(pomodoroPrimaryActionLabel('running')).toBe('Pause');
     expect(pomodoroPrimaryActionLabel('paused')).toBe('Resume');
     expect(pomodoroPrimaryActionLabel('idle')).toBe('Start');
+  });
+
+  it('clamps duration up to eight hours', () => {
+    expect(POMODORO_MAX_MINUTES).toBe(480);
+    expect(clampPomodoroMinutes(480)).toBe(480);
+    expect(clampPomodoroMinutes(500)).toBe(480);
+    expect(clampPomodoroMinutes(3)).toBe(5);
+  });
+
+  it('formats long timers with hours', () => {
+    expect(formatFocusTimer(90)).toBe('01:30');
+    expect(formatFocusTimer(3661)).toBe('1:01:01');
   });
 });

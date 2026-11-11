@@ -90,4 +90,37 @@ describe('resolveNotificationHref', () => {
       )
     ).toBe('/member');
   });
+
+  it('routes entity archive/purge from markdown links in the message', () => {
+    expect(
+      resolveNotificationHref(
+        {
+          type: 'entity_archived',
+          related_item_id: 'proj-1',
+          message: 'Project **Acme** was archived. [Open](/projects/proj-1)',
+        },
+        null
+      )
+    ).toBe('/projects/proj-1');
+    expect(
+      resolveNotificationHref(
+        {
+          type: 'entity_purged',
+          related_item_id: null,
+          message:
+            'Project **Acme** was permanently deleted. [Open list](/projects?tab=archived)',
+        },
+        null
+      )
+    ).toBe('/projects?tab=archived');
+  });
+
+  it('does not invent hrefs for destructive types without a message link', () => {
+    expect(
+      resolveNotificationHref(
+        { type: 'entity_archive_failed', related_item_id: 'proj-1' },
+        null
+      )
+    ).toBeNull();
+  });
 });

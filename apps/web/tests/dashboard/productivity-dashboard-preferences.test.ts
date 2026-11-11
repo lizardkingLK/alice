@@ -12,6 +12,20 @@ describe('productivity-dashboard-preferences', () => {
     expect(normalizeProductivityDashboardPreferences(null)).toEqual(
       DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES
     );
+    expect(DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES.widgets.alice).toBe(true);
+    expect(DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES.widgets.pomodoro).toBe(
+      true
+    );
+    expect(DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES.widgets.docs).toBe(false);
+    expect(DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES.widgets.projects).toBe(
+      false
+    );
+    expect(
+      DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES.widgets['my-work-wip']
+    ).toBe(false);
+    expect(
+      DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES.widgets.notifications
+    ).toBe(false);
   });
 
   it('keeps known mode and widget flags', () => {
@@ -20,11 +34,13 @@ describe('productivity-dashboard-preferences', () => {
       widgets: {
         ...DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES.widgets,
         pomodoro: false,
+        docs: true,
       },
     });
     expect(next.mode).toBe('charts');
     expect(next.widgets.pomodoro).toBe(false);
     expect(next.widgets.docs).toBe(true);
+    expect(next.widgets.alice).toBe(true);
   });
 
   it('round-trips through cookie encoding', () => {

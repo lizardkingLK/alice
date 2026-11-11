@@ -4,8 +4,11 @@ import {
   type Json,
   type Tables,
 } from '@repo/types';
+import type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 import { ResponseDTO } from '@repo/types/connection';
+
+export type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 
 export type CommentUser = Pick<Tables<'users'>, 'id' | 'name' | 'email'> &
   Partial<Pick<Tables<'users'>, 'role' | 'profile_picture'>>;
@@ -101,7 +104,10 @@ export type CreateCommentInput = {
 
 /* eslint-disable no-unused-vars */
 export function createCommentsService(
-  apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>
+  apiFetch: <T>(
+    path: string,
+    init?: RequestInit & { skipDatabaseBusyRetry?: boolean }
+  ) => Promise<T>
 ) {
   const apiComments = '/api/comments';
 
@@ -143,18 +149,20 @@ export function createCommentsService(
       return res.data!;
     },
 
+    /** Fire-and-forget archive/purge — API returns 202; inbox notifies when done. */
     async archiveComment(
       id: string,
       expectedUpdatedAt: string,
       permanent?: boolean
-    ): Promise<void> {
+    ): Promise<DestructiveActionAccepted> {
       let url = `${apiComments}/${id}`;
       if (permanent) {
         url += `?permanent=true`;
       }
-      await apiFetch(url, {
+      return await apiFetch<DestructiveActionAccepted>(url, {
         method: 'DELETE',
         body: permanent ? undefined : JSON.stringify({ expectedUpdatedAt }),
+        skipDatabaseBusyRetry: true,
       });
     },
 

@@ -332,7 +332,14 @@ export function useNotificationsInbox(params: {
       sharedView = data;
     }
 
-    const href = resolveNotificationHref(notif, sharedView);
+    const href = resolveNotificationHref(
+      {
+        type: notif.type,
+        related_item_id: notif.related_item_id,
+        message: notif.message,
+      },
+      sharedView
+    );
     if (href) {
       router.push(href);
     }

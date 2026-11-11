@@ -4,6 +4,11 @@ import { filterActiveProjects } from '@/lib/projects/active-projects';
 import { getWorkItemsPaginated } from '@/app/work-items/_services/work-items.reads.server';
 import type { GetWorkItemsPaginatedResponse } from '@/app/work-items/_types/work-items.reads.types';
 import { getDocsIndex } from '@/app/docs/_lib/docs';
+import {
+  getAssignedCompletion,
+  listAssignedWipItems,
+  listUnreadNotifications,
+} from '@/app/dashboard/_services/my-work-snapshot.reads.server';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import type {
   MyWorkOverviewStats,
@@ -83,7 +88,14 @@ export async function getProductivityDashboardBootstrap(
   userId: string,
   options?: GetProductivityDashboardBootstrapOptions
 ): Promise<ProductivityDashboardBootstrap> {
-  const [myWork, projects, docsIndex] = await Promise.all([
+  const [
+    myWork,
+    projects,
+    docsIndex,
+    wipItems,
+    unreadNotifications,
+    completion,
+  ] = await Promise.all([
     getMyWorkOverviewStats(userId),
     options?.projects
       ? Promise.resolve(options.projects)
@@ -96,6 +108,21 @@ export async function getProductivityDashboardBootstrap(
       getDocsIndex(),
       [],
       'fetch docs for productivity dashboard'
+    ),
+    safeServerFetch(
+      listAssignedWipItems(userId),
+      [],
+      'fetch WIP for productivity dashboard'
+    ),
+    safeServerFetch(
+      listUnreadNotifications(userId),
+      [],
+      'fetch notifications for productivity dashboard'
+    ),
+    safeServerFetch(
+      getAssignedCompletion(userId),
+      { doneCount: 0, totalCount: 0, percent: 0 },
+      'fetch completion for productivity dashboard'
     ),
   ]);
 
@@ -110,5 +137,8 @@ export async function getProductivityDashboardBootstrap(
       key: project.key ?? null,
     })),
     docs,
+    wipItems,
+    unreadNotifications,
+    completion,
   };
 }

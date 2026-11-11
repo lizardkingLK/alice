@@ -125,10 +125,7 @@ function CommentOwnerActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          <DropdownMenuItem
-            onClick={onArchive}
-            className="gap-2 text-amber-600 focus:text-amber-600"
-          >
+          <DropdownMenuItem onClick={onArchive} className="gap-2">
             <Archive className="size-3.5" />
             Archive
           </DropdownMenuItem>
@@ -225,7 +222,7 @@ function CommentArchivedFooter({
             type="button"
             variant="ghost"
             size="sm"
-            className="text-destructive gap-1.5"
+            className="gap-1.5"
             onClick={onPurge}
           >
             <Trash2 className="size-3.5" />

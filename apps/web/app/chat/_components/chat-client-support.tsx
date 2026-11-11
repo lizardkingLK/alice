@@ -166,6 +166,23 @@ let attachmentCounter = 0;
 export const NO_CHAT_MODEL_ERROR =
   'No chat model is configured. Use Add Model to connect one in Settings.';
 
+/** API/backend variants of the missing-model configuration error. */
+export function isNoChatModelConfiguredError(message: string): boolean {
+  const normalized = message.trim().toLowerCase();
+  return (
+    normalized === 'no chat model configured' ||
+    normalized.includes('no chat model is configured') ||
+    normalized.includes('no chat model configured')
+  );
+}
+
+export function normalizeChatErrorMessage(message: string): string {
+  if (isNoChatModelConfiguredError(message)) {
+    return NO_CHAT_MODEL_ERROR;
+  }
+  return message;
+}
+
 const inferChatAttachmentFileType = detectChatAttachmentFileType;
 
 export function nextChatMessageId(): string {

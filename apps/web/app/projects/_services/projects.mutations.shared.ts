@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
+import type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 import type {
   Project,
   CreateProjectInput,
@@ -15,11 +16,10 @@ export type {
   ProjectMembersByProjectId,
 } from '@/app/projects/_types/projects.types';
 
-export type CreateProjectAccepted = {
-  readonly accepted: true;
-  readonly message: string;
-  readonly correlationId: string;
-};
+export type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
+
+/** Same 202 Accepted shape as destructive archive/purge. */
+export type CreateProjectAccepted = DestructiveActionAccepted;
 
 export function createProjectsService(
   apiFetch: <T>(
@@ -90,18 +90,19 @@ export function createProjectsService(
       return data.project;
     },
 
+    /** Fire-and-forget archive — API returns 202; inbox notifies when done. */
     async softDeleteProject(
       id: string,
       expectedUpdatedAt: string
-    ): Promise<Project> {
-      const data = await apiFetch<{ project: Project }>(
+    ): Promise<DestructiveActionAccepted> {
+      return await apiFetch<DestructiveActionAccepted>(
         `${apiProjects}/${id}/soft-delete`,
         {
           method: 'PATCH',
           body: JSON.stringify({ expectedUpdatedAt }),
+          skipDatabaseBusyRetry: true,
         }
       );
-      return data.project;
     },
 
     async restoreProject(
@@ -118,9 +119,11 @@ export function createProjectsService(
       return data.project;
     },
 
-    async hardDeleteProject(id: string): Promise<void> {
-      await apiFetch<void>(`${apiProjects}/${id}`, {
+    /** Fire-and-forget purge — API returns 202; inbox notifies when done. */
+    async hardDeleteProject(id: string): Promise<DestructiveActionAccepted> {
+      return await apiFetch<DestructiveActionAccepted>(`${apiProjects}/${id}`, {
         method: 'DELETE',
+        skipDatabaseBusyRetry: true,
       });
     },
 

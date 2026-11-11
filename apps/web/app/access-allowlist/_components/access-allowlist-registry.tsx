@@ -47,6 +47,7 @@ import {
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import { toast } from '@repo/ui/components/ui/sonner';
 import { formatDate } from '@/app/_shared/utility';
 import { DataTable } from '@/components/data-table';
 import { DismissibleError } from '@/components/dismissible-error';
@@ -204,7 +205,6 @@ function ActionsCell({
             Edit
           </DropdownMenuItem>
           <DropdownMenuItem
-            variant="destructive"
             disabled={!canDelete}
             title={canDelete ? undefined : OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE}
             onClick={() => {
@@ -360,7 +360,8 @@ export function AccessAllowlistRegistry({
     }
     setIsBusy(true);
     deleteAccessAllowlistEntry(deletingEntry.id, deletingEntry.updated_at)
-      .then(() => {
+      .then((accepted) => {
+        toast.success(accepted.message);
         setDeletingEntry(null);
         setError(null);
         router.refresh();

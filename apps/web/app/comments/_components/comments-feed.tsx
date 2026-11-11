@@ -37,6 +37,7 @@ import {
   Users,
   Tag,
 } from '@repo/ui/lib/icons';
+import { toast } from '@repo/ui/components/ui/sonner';
 import {
   CommentItem,
   CommentUser,
@@ -527,7 +528,16 @@ export function CommentsFeed({
       return;
     }
     try {
-      await apiCall(commentId, targetComment.updated_at);
+      const result = await apiCall(commentId, targetComment.updated_at);
+      if (
+        nextStatus === 'archived' &&
+        result &&
+        typeof result === 'object' &&
+        'message' in result &&
+        typeof result.message === 'string'
+      ) {
+        toast.success(result.message);
+      }
       updateCommentStatusLocal(commentId, nextStatus);
     } catch (err) {
       await handleCommentLockedError({
@@ -556,7 +566,12 @@ export function CommentsFeed({
     }
     setIsDeleting(true);
     try {
-      await archiveComment(deletingCommentId, targetComment.updated_at, true);
+      const accepted = await archiveComment(
+        deletingCommentId,
+        targetComment.updated_at,
+        true
+      );
+      toast.success(accepted.message);
       setComments((prev) => prev.filter((c) => c.id !== deletingCommentId));
     } catch (err) {
       console.error('error. failed to delete comment permanently', err);

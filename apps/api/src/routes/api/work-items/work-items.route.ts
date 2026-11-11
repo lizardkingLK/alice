@@ -613,11 +613,28 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
   workItemsRouter.patch(
     '/:id/archive',
     requireApiAuth,
-    createWorkItemLockActionHandler(
-      (actorId, workItemId, expectedUpdatedAt) =>
-        workItemService.archiveWorkItem(actorId, workItemId, expectedUpdatedAt),
-      'Failed to archive work item'
-    )
+    async (req: AuthenticatedRequest, res) => {
+      const parsed = workItemLifecycleActionBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        const accepted = await workItemService.enqueueArchiveWorkItem(
+          req.userId!,
+          req.params.id!,
+          parsed.data.expectedUpdatedAt
+        );
+        // 202 — archive finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
+      } catch (error) {
+        sendWorkItemMutationError(res, error, 'Failed to archive work item');
+      }
+    }
   );
 
   workItemsRouter.patch(
@@ -635,11 +652,16 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const result = await workItemService.purgeWorkItem(
+        const accepted = await workItemService.enqueuePurgeWorkItem(
           req.userId!,
           req.params.id!
         );
-        res.json({ success: true, ...result });
+        // 202 — purge finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
       } catch (error) {
         sendWorkItemMutationError(res, error, 'Failed to delete work item');
       }

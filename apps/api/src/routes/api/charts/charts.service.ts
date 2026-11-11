@@ -10,6 +10,7 @@ import {
   type ChartSeriesQuery,
   type ChartSeriesResponse,
 } from '@repo/types';
+import { enqueueDestructiveAction } from '../../../lib/enqueue-destructive-action';
 import type { NotificationsRepository } from '../notifications/notifications.repository';
 import { ChartsRepository, type ChartRow } from './charts.repository';
 import type {
@@ -223,6 +224,28 @@ export class ChartsService {
     return this.chartsRepository.setStatus(chartId, actorId, 'archived');
   }
 
+  /**
+   * Validate sync, accept archive, finish in the background, inbox-notify.
+   * Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueArchive(
+    actorId: string,
+    chartId: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    const chart = await this.requireOwned(actorId, chartId);
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'archive',
+      entityType: 'chart',
+      entityLabel: chart.title,
+      relatedItemId: chartId,
+      detailHref: `/charts/${chartId}`,
+      run: async () => {
+        await this.archive(actorId, chartId);
+      },
+    });
+  }
+
   async restore(actorId: string, chartId: string) {
     await this.requireOwned(actorId, chartId);
     return this.chartsRepository.setStatus(chartId, actorId, 'active');
@@ -231,6 +254,28 @@ export class ChartsService {
   async hardDelete(actorId: string, chartId: string) {
     await this.requireOwned(actorId, chartId);
     await this.chartsRepository.hardDelete(chartId);
+  }
+
+  /**
+   * Validate sync, accept permanent delete, finish in the background,
+   * inbox-notify. Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueHardDelete(
+    actorId: string,
+    chartId: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    const chart = await this.requireOwned(actorId, chartId);
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'purge',
+      entityType: 'chart',
+      entityLabel: chart.title,
+      relatedItemId: null,
+      detailHref: '/charts',
+      run: async () => {
+        await this.hardDelete(actorId, chartId);
+      },
+    });
   }
 
   /**

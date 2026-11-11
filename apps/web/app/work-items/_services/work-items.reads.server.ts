@@ -17,7 +17,6 @@ import {
   walkForestDfs,
 } from '@/app/work-items/_helpers/work-item-hierarchy-forest';
 import {
-  applyWorkItemFilters,
   getWorkItemAncestorsFromSupabase,
   getWorkItemByProjectSlugFromSupabase,
   getWorkItemFromSupabase,
@@ -46,7 +45,7 @@ export type {
   WorkItemListFilters,
 };
 
-export { applyWorkItemFilters };
+export { applyWorkItemFilters } from '@/app/work-items/_services/work-items.reads.supabase.server';
 export { HIERARCHY_FOREST_PAGE_SIZE };
 
 /**

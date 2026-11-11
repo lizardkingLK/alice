@@ -251,7 +251,6 @@ function renderActionsCell({ row, table }: CellContext<Sprint, unknown>) {
             <DropdownMenuItem
               onClick={() => meta.onArchiveSprint?.(sprint)}
               aria-label="Archive Sprint"
-              className="text-amber-600 focus:bg-amber-50 focus:text-amber-600 dark:text-amber-400 dark:focus:bg-amber-950/20 dark:focus:text-amber-400"
             >
               <Archive className="mr-2 h-4 w-4" />
               Archive
@@ -261,7 +260,6 @@ function renderActionsCell({ row, table }: CellContext<Sprint, unknown>) {
             <DropdownMenuItem
               onClick={() => meta.onRestoreSprint?.(sprint)}
               aria-label="Restore Sprint"
-              className="text-emerald-600 focus:bg-emerald-50 focus:text-emerald-600 dark:text-emerald-400 dark:focus:bg-emerald-950/20 dark:focus:text-emerald-400"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
               Restore
@@ -271,7 +269,6 @@ function renderActionsCell({ row, table }: CellContext<Sprint, unknown>) {
             <DropdownMenuItem
               onClick={() => meta.onDeleteSprint?.(sprint)}
               aria-label="Delete Sprint"
-              className="text-destructive focus:bg-destructive/10 focus:text-destructive"
             >
               <Trash2 className="mr-2 h-4 w-4" />
               Delete

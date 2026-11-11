@@ -13,6 +13,7 @@ import {
   type ContactRequestInput,
 } from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { enqueueDestructiveAction } from '../../../lib/enqueue-destructive-action';
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../../../lib/prisma';
 import { prismaAuditCreate } from '../../../lib/prisma-audit';
@@ -231,7 +232,7 @@ async function deactivateEmailAllowlistForDeny(
     params.email,
     transaction
   );
-  if (!existing || existing.status !== RecordStatusEnum.active) {
+  if (existing?.status !== RecordStatusEnum.active) {
     return;
   }
   await accessAllowlistRepository.update(
@@ -552,6 +553,34 @@ export class AccessRequestsService {
       requestId
     );
     await this.accessRequestsRepository.deleteById(requestId);
+  }
+
+  /**
+   * Validate sync, accept permanent delete, finish in the background,
+   * inbox-notify. Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueDeleteAccessRequest(
+    actorId: string,
+    requestId: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    await requireAdmin(actorId);
+
+    const existing = await this.accessRequestsRepository.findById(requestId);
+    if (!existing) {
+      throw new Error('Access request not found');
+    }
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'purge',
+      entityType: 'access_request',
+      entityLabel: existing.requester_email,
+      relatedItemId: null,
+      detailHref: '/users?tab=requests',
+      run: async () => {
+        await this.deleteAccessRequest(actorId, requestId);
+      },
+    });
   }
 
   async grantAccessRequest(

@@ -5,8 +5,10 @@ const {
   createMock,
   updateMock,
   archiveMock,
+  enqueueArchiveMock,
   restoreMock,
   hardDeleteMock,
+  enqueueHardDeleteMock,
   deleteShareMock,
   shareMock,
 } = vi.hoisted(() => ({
@@ -14,8 +16,10 @@ const {
   createMock: vi.fn(),
   updateMock: vi.fn(),
   archiveMock: vi.fn(),
+  enqueueArchiveMock: vi.fn(),
   restoreMock: vi.fn(),
   hardDeleteMock: vi.fn(),
+  enqueueHardDeleteMock: vi.fn(),
   deleteShareMock: vi.fn(),
   shareMock: vi.fn(),
 }));
@@ -31,8 +35,10 @@ vi.mock('../../src/routes/api/saved-views/saved-views.service', () => {
     create = createMock;
     update = updateMock;
     archive = archiveMock;
+    enqueueArchive = enqueueArchiveMock;
     restore = restoreMock;
     hardDelete = hardDeleteMock;
+    enqueueHardDelete = enqueueHardDeleteMock;
     deleteShare = deleteShareMock;
     share = shareMock;
   }
@@ -52,8 +58,10 @@ const savedViewsService = {
   create: createMock,
   update: updateMock,
   archive: archiveMock,
+  enqueueArchive: enqueueArchiveMock,
   restore: restoreMock,
   hardDelete: hardDeleteMock,
+  enqueueHardDelete: enqueueHardDeleteMock,
   deleteShare: deleteShareMock,
   share: shareMock,
 } as unknown as SavedViewsService;
@@ -167,7 +175,11 @@ describe('savedViews routes', () => {
   });
 
   it('archives an owned saved view', async () => {
-    archiveMock.mockResolvedValue({ ...savedViewWire, status: 'archived' });
+    enqueueArchiveMock.mockResolvedValue({
+      correlationId: 'corr-archive-1',
+      message:
+        'Saved view archive started. You’ll be notified when it finishes.',
+    });
 
     await withSavedViewsRouter(async (baseUrl) => {
       const { response, body } = await requestSavedViews(
@@ -176,9 +188,14 @@ describe('savedViews routes', () => {
         { method: 'POST' }
       );
 
-      expect(response.status).toBe(200);
-      expect(body.data.status).toBe('archived');
-      expect(archiveMock).toHaveBeenCalledWith(
+      expect(response.status).toBe(202);
+      expect(body).toEqual({
+        accepted: true,
+        message:
+          'Saved view archive started. You’ll be notified when it finishes.',
+        correlationId: 'corr-archive-1',
+      });
+      expect(enqueueArchiveMock).toHaveBeenCalledWith(
         MOCK_AUTH_USER_ID,
         savedViewWire.id
       );
@@ -215,7 +232,11 @@ describe('savedViews routes', () => {
   });
 
   it('hard-deletes an archived saved view', async () => {
-    hardDeleteMock.mockResolvedValue(undefined);
+    enqueueHardDeleteMock.mockResolvedValue({
+      correlationId: 'corr-purge-1',
+      message:
+        'Saved view permanent delete started. You’ll be notified when it finishes.',
+    });
 
     await withSavedViewsRouter(async (baseUrl) => {
       const { response, body } = await requestSavedViews(
@@ -224,9 +245,14 @@ describe('savedViews routes', () => {
         { method: 'DELETE' }
       );
 
-      expect(response.status).toBe(200);
-      expect(body).toEqual({ success: true });
-      expect(hardDeleteMock).toHaveBeenCalledWith(
+      expect(response.status).toBe(202);
+      expect(body).toEqual({
+        accepted: true,
+        message:
+          'Saved view permanent delete started. You’ll be notified when it finishes.',
+        correlationId: 'corr-purge-1',
+      });
+      expect(enqueueHardDeleteMock).toHaveBeenCalledWith(
         MOCK_AUTH_USER_ID,
         savedViewWire.id
       );

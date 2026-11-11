@@ -47,6 +47,7 @@ import {
   ChatEmptyGateView,
   ChatPageTrailBreadcrumb,
   NO_CHAT_MODEL_ERROR,
+  normalizeChatErrorMessage,
   applySuccessfulChatResponse,
   buildChatBreadcrumbTrail,
   nextChatMessageId,
@@ -378,6 +379,14 @@ function ChatClientInner({
       return;
     }
 
+    if (isCompact) {
+      const models = await ensureModelsLoaded();
+      if (models.length === 0) {
+        setError(NO_CHAT_MODEL_ERROR);
+        return;
+      }
+    }
+
     const attachmentsToSend: ChatAttachmentWire[] = pendingAttachments
       .filter((a) => !a.isUploading)
       .map((a) => ({
@@ -453,7 +462,7 @@ function ChatClientInner({
       console.error('Chat error:', err);
       const message =
         err instanceof Error
-          ? err.message
+          ? normalizeChatErrorMessage(err.message)
           : 'Something went wrong. Please try again. If this keeps happening, contact your administrator.';
       setError(message);
     } finally {

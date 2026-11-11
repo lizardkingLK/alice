@@ -409,7 +409,7 @@ export function WorkItemTypeCatalogEditor({
                   disabled={disabled || ordered.length <= 1}
                   aria-label="Remove"
                   title="Remove type"
-                  className="text-muted-foreground hover:text-destructive shrink-0"
+                  className="text-muted-foreground hover:text-foreground shrink-0"
                   onClick={() => removeType(def.key)}
                 >
                   <Trash2 className="size-4" aria-hidden />

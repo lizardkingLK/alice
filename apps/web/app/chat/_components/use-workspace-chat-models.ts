@@ -39,10 +39,14 @@ export function useWorkspaceChatModels(
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const loadedRef = useRef(initialChatModels !== undefined);
   const inFlightRef = useRef(false);
+  const chatModelsRef = useRef(chatModels);
+  chatModelsRef.current = chatModels;
 
-  const ensureModelsLoaded = useCallback(async () => {
-    if (loadedRef.current || inFlightRef.current) {
-      return;
+  const ensureModelsLoaded = useCallback(async (): Promise<
+    ChatModelOption[]
+  > => {
+    if (loadedRef.current) {
+      return chatModelsRef.current;
     }
 
     inFlightRef.current = true;
@@ -63,8 +67,10 @@ export function useWorkspaceChatModels(
         )
       );
       loadedRef.current = true;
+      return models;
     } catch (error) {
       console.error('Failed to list chat models:', error);
+      return chatModelsRef.current;
     } finally {
       inFlightRef.current = false;
       setIsLoadingModels(false);

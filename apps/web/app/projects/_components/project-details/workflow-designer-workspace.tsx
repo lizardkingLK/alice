@@ -1334,7 +1334,6 @@ export function WorkflowDesignerWorkspace({
               type="button"
               variant="outline"
               size="sm"
-              className="text-destructive hover:text-destructive"
               disabled={manageBusy || !canDeleteWorkflow}
               data-testid="workflow-designer-delete"
               onClick={() => {

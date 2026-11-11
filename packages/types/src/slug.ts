@@ -5,10 +5,10 @@ export const SLUG_MAX_LENGTH = 80;
 function trimHyphens(value: string): string {
   let start = 0;
   let end = value.length;
-  while (start < end && value.charCodeAt(start) === 45 /* - */) {
+  while (start < end && value.codePointAt(start) === 45 /* - */) {
     start += 1;
   }
-  while (end > start && value.charCodeAt(end - 1) === 45 /* - */) {
+  while (end > start && value.codePointAt(end - 1) === 45 /* - */) {
     end -= 1;
   }
   return start === 0 && end === value.length ? value : value.slice(start, end);
@@ -17,7 +17,7 @@ function trimHyphens(value: string): string {
 /** Strip trailing `-` without regex backtracking. */
 function trimTrailingHyphens(value: string): string {
   let end = value.length;
-  while (end > 0 && value.charCodeAt(end - 1) === 45 /* - */) {
+  while (end > 0 && value.codePointAt(end - 1) === 45 /* - */) {
     end -= 1;
   }
   return end === value.length ? value : value.slice(0, end);

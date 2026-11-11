@@ -33,6 +33,7 @@ import {
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import { toast } from '@repo/ui/components/ui/sonner';
 import { formatDate } from '@/app/_shared/utility';
 import { DataTable } from '@/components/data-table';
 import { DismissibleError } from '@/components/dismissible-error';
@@ -161,18 +162,12 @@ function ActionsCell({
             Edit
           </DropdownMenuItem>
           {pending ? (
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={() => onDeny(entry)}
-            >
+            <DropdownMenuItem onClick={() => onDeny(entry)}>
               <ShieldX />
               Deny
             </DropdownMenuItem>
           ) : null}
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() => onDelete(entry)}
-          >
+          <DropdownMenuItem onClick={() => onDelete(entry)}>
             <Trash2 />
             Delete
           </DropdownMenuItem>
@@ -346,7 +341,8 @@ export function AccessRequestsRegistry({
     setIsBusy(true);
     setError(null);
     deleteAccessRequestClient(deletingEntry.id)
-      .then(() => {
+      .then((accepted) => {
+        toast.success(accepted.message);
         setDeletingEntry(null);
         closeDialogsLocally();
         clearDeepLinkParams();
