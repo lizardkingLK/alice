@@ -43,6 +43,8 @@ const STRATEGY_A_TABLES = [
   'work_item_chart_rollups',
   'work_item_chart_hierarchy_rollups',
   'sprint_burndown_rollups',
+  'email_outbox',
+  'weekly_project_reports',
   '_prisma_migrations',
 ] as const;
 

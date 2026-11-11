@@ -67,6 +67,10 @@ export const ModelName = {
   comments: 'comments',
   attachments: 'attachments',
   notifications: 'notifications',
+  notification_email_preferences: 'notification_email_preferences',
+  email_outbox: 'email_outbox',
+  weekly_project_report_subscriptions: 'weekly_project_report_subscriptions',
+  weekly_project_reports: 'weekly_project_reports',
   access_allowlist: 'access_allowlist',
   access_requests: 'access_requests',
   project_management_connections: 'project_management_connections',
@@ -390,10 +394,82 @@ export const NotificationsScalarFieldEnum = {
   created_by: 'created_by',
   created_at: 'created_at',
   updated_by: 'updated_by',
-  updated_at: 'updated_at'
+  updated_at: 'updated_at',
+  dedupe_key: 'dedupe_key'
 } as const
 
 export type NotificationsScalarFieldEnum = (typeof NotificationsScalarFieldEnum)[keyof typeof NotificationsScalarFieldEnum]
+
+
+export const Notification_email_preferencesScalarFieldEnum = {
+  user_id: 'user_id',
+  email_enabled: 'email_enabled',
+  work_item_assignment_enabled: 'work_item_assignment_enabled',
+  work_item_reassignment_enabled: 'work_item_reassignment_enabled',
+  work_item_status_change_enabled: 'work_item_status_change_enabled',
+  weekly_reports_enabled: 'weekly_reports_enabled',
+  timezone: 'timezone',
+  weekly_report_weekday: 'weekly_report_weekday',
+  weekly_report_hour: 'weekly_report_hour',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Notification_email_preferencesScalarFieldEnum = (typeof Notification_email_preferencesScalarFieldEnum)[keyof typeof Notification_email_preferencesScalarFieldEnum]
+
+
+export const Email_outboxScalarFieldEnum = {
+  id: 'id',
+  notification_id: 'notification_id',
+  user_id: 'user_id',
+  recipient_email: 'recipient_email',
+  template: 'template',
+  payload: 'payload',
+  status: 'status',
+  idempotency_key: 'idempotency_key',
+  attempt_count: 'attempt_count',
+  max_attempts: 'max_attempts',
+  next_attempt_at: 'next_attempt_at',
+  locked_by: 'locked_by',
+  locked_at: 'locked_at',
+  locked_until: 'locked_until',
+  last_attempt_at: 'last_attempt_at',
+  sent_at: 'sent_at',
+  cancelled_at: 'cancelled_at',
+  failed_at: 'failed_at',
+  provider_message_id: 'provider_message_id',
+  last_error_code: 'last_error_code',
+  last_error_message: 'last_error_message',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Email_outboxScalarFieldEnum = (typeof Email_outboxScalarFieldEnum)[keyof typeof Email_outboxScalarFieldEnum]
+
+
+export const Weekly_project_report_subscriptionsScalarFieldEnum = {
+  user_id: 'user_id',
+  project_id: 'project_id',
+  enabled: 'enabled',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Weekly_project_report_subscriptionsScalarFieldEnum = (typeof Weekly_project_report_subscriptionsScalarFieldEnum)[keyof typeof Weekly_project_report_subscriptionsScalarFieldEnum]
+
+
+export const Weekly_project_reportsScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  user_id: 'user_id',
+  period_start: 'period_start',
+  period_end: 'period_end',
+  snapshot: 'snapshot',
+  notification_id: 'notification_id',
+  created_at: 'created_at'
+} as const
+
+export type Weekly_project_reportsScalarFieldEnum = (typeof Weekly_project_reportsScalarFieldEnum)[keyof typeof Weekly_project_reportsScalarFieldEnum]
 
 
 export const Access_allowlistScalarFieldEnum = {

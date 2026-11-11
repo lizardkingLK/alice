@@ -413,6 +413,10 @@ export const ModelName = {
   comments: 'comments',
   attachments: 'attachments',
   notifications: 'notifications',
+  notification_email_preferences: 'notification_email_preferences',
+  email_outbox: 'email_outbox',
+  weekly_project_report_subscriptions: 'weekly_project_report_subscriptions',
+  weekly_project_reports: 'weekly_project_reports',
   access_allowlist: 'access_allowlist',
   access_requests: 'access_requests',
   project_management_connections: 'project_management_connections',
@@ -447,7 +451,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "chat_conversations" | "chat_attachments" | "chat_tools" | "chat_skills" | "chat_agents" | "chat_agent_tools" | "chat_agent_skills" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "integrations" | "member_chat_model_preferences" | "project_integration_bindings"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "notification_email_preferences" | "email_outbox" | "weekly_project_report_subscriptions" | "weekly_project_reports" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "chat_conversations" | "chat_attachments" | "chat_tools" | "chat_skills" | "chat_agents" | "chat_agent_tools" | "chat_agent_skills" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "integrations" | "member_chat_model_preferences" | "project_integration_bindings"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1632,6 +1636,302 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.notificationsCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.NotificationsCountAggregateOutputType> | number
+        }
+      }
+    }
+    notification_email_preferences: {
+      payload: Prisma.$notification_email_preferencesPayload<ExtArgs>
+      fields: Prisma.notification_email_preferencesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.notification_email_preferencesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_preferencesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.notification_email_preferencesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_preferencesPayload>
+        }
+        findFirst: {
+          args: Prisma.notification_email_preferencesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_preferencesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.notification_email_preferencesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_preferencesPayload>
+        }
+        findMany: {
+          args: Prisma.notification_email_preferencesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_preferencesPayload>[]
+        }
+        create: {
+          args: Prisma.notification_email_preferencesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_preferencesPayload>
+        }
+        createMany: {
+          args: Prisma.notification_email_preferencesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.notification_email_preferencesCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_preferencesPayload>[]
+        }
+        delete: {
+          args: Prisma.notification_email_preferencesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_preferencesPayload>
+        }
+        update: {
+          args: Prisma.notification_email_preferencesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_preferencesPayload>
+        }
+        deleteMany: {
+          args: Prisma.notification_email_preferencesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.notification_email_preferencesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.notification_email_preferencesUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_preferencesPayload>[]
+        }
+        upsert: {
+          args: Prisma.notification_email_preferencesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_preferencesPayload>
+        }
+        aggregate: {
+          args: Prisma.Notification_email_preferencesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNotification_email_preferences>
+        }
+        groupBy: {
+          args: Prisma.notification_email_preferencesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Notification_email_preferencesGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.notification_email_preferencesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Notification_email_preferencesCountAggregateOutputType> | number
+        }
+      }
+    }
+    email_outbox: {
+      payload: Prisma.$email_outboxPayload<ExtArgs>
+      fields: Prisma.email_outboxFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.email_outboxFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_outboxPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.email_outboxFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_outboxPayload>
+        }
+        findFirst: {
+          args: Prisma.email_outboxFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_outboxPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.email_outboxFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_outboxPayload>
+        }
+        findMany: {
+          args: Prisma.email_outboxFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_outboxPayload>[]
+        }
+        create: {
+          args: Prisma.email_outboxCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_outboxPayload>
+        }
+        createMany: {
+          args: Prisma.email_outboxCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.email_outboxCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_outboxPayload>[]
+        }
+        delete: {
+          args: Prisma.email_outboxDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_outboxPayload>
+        }
+        update: {
+          args: Prisma.email_outboxUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_outboxPayload>
+        }
+        deleteMany: {
+          args: Prisma.email_outboxDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.email_outboxUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.email_outboxUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_outboxPayload>[]
+        }
+        upsert: {
+          args: Prisma.email_outboxUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_outboxPayload>
+        }
+        aggregate: {
+          args: Prisma.Email_outboxAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateEmail_outbox>
+        }
+        groupBy: {
+          args: Prisma.email_outboxGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Email_outboxGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.email_outboxCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Email_outboxCountAggregateOutputType> | number
+        }
+      }
+    }
+    weekly_project_report_subscriptions: {
+      payload: Prisma.$weekly_project_report_subscriptionsPayload<ExtArgs>
+      fields: Prisma.weekly_project_report_subscriptionsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.weekly_project_report_subscriptionsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_report_subscriptionsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.weekly_project_report_subscriptionsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_report_subscriptionsPayload>
+        }
+        findFirst: {
+          args: Prisma.weekly_project_report_subscriptionsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_report_subscriptionsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.weekly_project_report_subscriptionsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_report_subscriptionsPayload>
+        }
+        findMany: {
+          args: Prisma.weekly_project_report_subscriptionsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_report_subscriptionsPayload>[]
+        }
+        create: {
+          args: Prisma.weekly_project_report_subscriptionsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_report_subscriptionsPayload>
+        }
+        createMany: {
+          args: Prisma.weekly_project_report_subscriptionsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.weekly_project_report_subscriptionsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_report_subscriptionsPayload>[]
+        }
+        delete: {
+          args: Prisma.weekly_project_report_subscriptionsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_report_subscriptionsPayload>
+        }
+        update: {
+          args: Prisma.weekly_project_report_subscriptionsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_report_subscriptionsPayload>
+        }
+        deleteMany: {
+          args: Prisma.weekly_project_report_subscriptionsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.weekly_project_report_subscriptionsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.weekly_project_report_subscriptionsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_report_subscriptionsPayload>[]
+        }
+        upsert: {
+          args: Prisma.weekly_project_report_subscriptionsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_report_subscriptionsPayload>
+        }
+        aggregate: {
+          args: Prisma.Weekly_project_report_subscriptionsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWeekly_project_report_subscriptions>
+        }
+        groupBy: {
+          args: Prisma.weekly_project_report_subscriptionsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Weekly_project_report_subscriptionsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.weekly_project_report_subscriptionsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Weekly_project_report_subscriptionsCountAggregateOutputType> | number
+        }
+      }
+    }
+    weekly_project_reports: {
+      payload: Prisma.$weekly_project_reportsPayload<ExtArgs>
+      fields: Prisma.weekly_project_reportsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.weekly_project_reportsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_reportsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.weekly_project_reportsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_reportsPayload>
+        }
+        findFirst: {
+          args: Prisma.weekly_project_reportsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_reportsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.weekly_project_reportsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_reportsPayload>
+        }
+        findMany: {
+          args: Prisma.weekly_project_reportsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_reportsPayload>[]
+        }
+        create: {
+          args: Prisma.weekly_project_reportsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_reportsPayload>
+        }
+        createMany: {
+          args: Prisma.weekly_project_reportsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.weekly_project_reportsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_reportsPayload>[]
+        }
+        delete: {
+          args: Prisma.weekly_project_reportsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_reportsPayload>
+        }
+        update: {
+          args: Prisma.weekly_project_reportsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_reportsPayload>
+        }
+        deleteMany: {
+          args: Prisma.weekly_project_reportsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.weekly_project_reportsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.weekly_project_reportsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_reportsPayload>[]
+        }
+        upsert: {
+          args: Prisma.weekly_project_reportsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$weekly_project_reportsPayload>
+        }
+        aggregate: {
+          args: Prisma.Weekly_project_reportsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWeekly_project_reports>
+        }
+        groupBy: {
+          args: Prisma.weekly_project_reportsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Weekly_project_reportsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.weekly_project_reportsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Weekly_project_reportsCountAggregateOutputType> | number
         }
       }
     }
@@ -3366,10 +3666,82 @@ export const NotificationsScalarFieldEnum = {
   created_by: 'created_by',
   created_at: 'created_at',
   updated_by: 'updated_by',
-  updated_at: 'updated_at'
+  updated_at: 'updated_at',
+  dedupe_key: 'dedupe_key'
 } as const
 
 export type NotificationsScalarFieldEnum = (typeof NotificationsScalarFieldEnum)[keyof typeof NotificationsScalarFieldEnum]
+
+
+export const Notification_email_preferencesScalarFieldEnum = {
+  user_id: 'user_id',
+  email_enabled: 'email_enabled',
+  work_item_assignment_enabled: 'work_item_assignment_enabled',
+  work_item_reassignment_enabled: 'work_item_reassignment_enabled',
+  work_item_status_change_enabled: 'work_item_status_change_enabled',
+  weekly_reports_enabled: 'weekly_reports_enabled',
+  timezone: 'timezone',
+  weekly_report_weekday: 'weekly_report_weekday',
+  weekly_report_hour: 'weekly_report_hour',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Notification_email_preferencesScalarFieldEnum = (typeof Notification_email_preferencesScalarFieldEnum)[keyof typeof Notification_email_preferencesScalarFieldEnum]
+
+
+export const Email_outboxScalarFieldEnum = {
+  id: 'id',
+  notification_id: 'notification_id',
+  user_id: 'user_id',
+  recipient_email: 'recipient_email',
+  template: 'template',
+  payload: 'payload',
+  status: 'status',
+  idempotency_key: 'idempotency_key',
+  attempt_count: 'attempt_count',
+  max_attempts: 'max_attempts',
+  next_attempt_at: 'next_attempt_at',
+  locked_by: 'locked_by',
+  locked_at: 'locked_at',
+  locked_until: 'locked_until',
+  last_attempt_at: 'last_attempt_at',
+  sent_at: 'sent_at',
+  cancelled_at: 'cancelled_at',
+  failed_at: 'failed_at',
+  provider_message_id: 'provider_message_id',
+  last_error_code: 'last_error_code',
+  last_error_message: 'last_error_message',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Email_outboxScalarFieldEnum = (typeof Email_outboxScalarFieldEnum)[keyof typeof Email_outboxScalarFieldEnum]
+
+
+export const Weekly_project_report_subscriptionsScalarFieldEnum = {
+  user_id: 'user_id',
+  project_id: 'project_id',
+  enabled: 'enabled',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Weekly_project_report_subscriptionsScalarFieldEnum = (typeof Weekly_project_report_subscriptionsScalarFieldEnum)[keyof typeof Weekly_project_report_subscriptionsScalarFieldEnum]
+
+
+export const Weekly_project_reportsScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  user_id: 'user_id',
+  period_start: 'period_start',
+  period_end: 'period_end',
+  snapshot: 'snapshot',
+  notification_id: 'notification_id',
+  created_at: 'created_at'
+} as const
+
+export type Weekly_project_reportsScalarFieldEnum = (typeof Weekly_project_reportsScalarFieldEnum)[keyof typeof Weekly_project_reportsScalarFieldEnum]
 
 
 export const Access_allowlistScalarFieldEnum = {
@@ -3956,6 +4328,34 @@ export type ListEnumNotificationTypeFieldRefInput<$PrismaModel> = FieldRefInputT
 
 
 /**
+ * Reference to a field of type 'EmailTemplate'
+ */
+export type EnumEmailTemplateFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EmailTemplate'>
+    
+
+
+/**
+ * Reference to a field of type 'EmailTemplate[]'
+ */
+export type ListEnumEmailTemplateFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EmailTemplate[]'>
+    
+
+
+/**
+ * Reference to a field of type 'EmailOutboxStatus'
+ */
+export type EnumEmailOutboxStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EmailOutboxStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'EmailOutboxStatus[]'
+ */
+export type ListEnumEmailOutboxStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EmailOutboxStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'AccessAllowlistKind'
  */
 export type EnumAccessAllowlistKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AccessAllowlistKind'>
@@ -4303,6 +4703,10 @@ export type GlobalOmitConfig = {
   comments?: Prisma.commentsOmit
   attachments?: Prisma.attachmentsOmit
   notifications?: Prisma.notificationsOmit
+  notification_email_preferences?: Prisma.notification_email_preferencesOmit
+  email_outbox?: Prisma.email_outboxOmit
+  weekly_project_report_subscriptions?: Prisma.weekly_project_report_subscriptionsOmit
+  weekly_project_reports?: Prisma.weekly_project_reportsOmit
   access_allowlist?: Prisma.access_allowlistOmit
   access_requests?: Prisma.access_requestsOmit
   project_management_connections?: Prisma.project_management_connectionsOmit
