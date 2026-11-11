@@ -1,6 +1,7 @@
 import {
   NotificationBuilder,
   AssignNotification,
+  StatusChangeNotification,
   MentionNotification,
   DueDateNotification,
   WorklogPendingNotification,
@@ -13,6 +14,94 @@ import { NotificationsRepository } from './notifications.repository';
 export const READ_NOTIFICATION_RETENTION_DAYS = 30;
 const READ_NOTIFICATION_RETENTION_MS =
   READ_NOTIFICATION_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+
+type WorkItemNotificationRow = {
+  id: string;
+  project_id: string;
+  title: string;
+  assignee_id: string | null;
+  reporter_id: string | null;
+  created_by: string | null;
+  status: string;
+};
+
+type WorkItemNotificationDetails = {
+  type: typeof AssignNotification | typeof StatusChangeNotification;
+  message: string;
+};
+
+function addReassignmentNotifications(params: {
+  messages: Map<string, WorkItemNotificationDetails>;
+  actorId: string;
+  actorName: string;
+  before: WorkItemNotificationRow;
+  after: WorkItemNotificationRow;
+}) {
+  const { messages, actorId, actorName, before, after } = params;
+  if (before.assignee_id === after.assignee_id) return;
+
+  if (before.assignee_id && before.assignee_id !== actorId) {
+    messages.set(before.assignee_id, {
+      type: AssignNotification,
+      message: after.assignee_id
+        ? `${actorName} reassigned "${after.title}" to someone else`
+        : `${actorName} unassigned you from "${after.title}"`,
+    });
+  }
+  if (after.assignee_id && after.assignee_id !== actorId) {
+    messages.set(after.assignee_id, {
+      type: AssignNotification,
+      message: `${actorName} assigned a task to you: "${after.title}"`,
+    });
+  }
+}
+
+function addStatusChangeNotifications(params: {
+  messages: Map<string, WorkItemNotificationDetails>;
+  actorId: string;
+  actorName: string;
+  before: WorkItemNotificationRow;
+  after: WorkItemNotificationRow;
+}) {
+  const { messages, actorId, actorName, before, after } = params;
+  if (before.status === after.status) return;
+
+  for (const recipientId of [
+    after.assignee_id,
+    after.reporter_id ?? after.created_by,
+  ]) {
+    if (!recipientId || recipientId === actorId || messages.has(recipientId)) {
+      continue;
+    }
+    messages.set(recipientId, {
+      type: StatusChangeNotification,
+      message: `${actorName} changed "${after.title}" from ${before.status} to ${after.status}`,
+    });
+  }
+}
+
+function buildWorkItemNotificationMessages(params: {
+  actorId: string;
+  actorName: string;
+  before?: WorkItemNotificationRow | null;
+  after: WorkItemNotificationRow;
+}): Map<string, WorkItemNotificationDetails> {
+  const { actorId, actorName, before, after } = params;
+  const messages = new Map<string, WorkItemNotificationDetails>();
+  if (!before) {
+    if (after.assignee_id && after.assignee_id !== actorId) {
+      messages.set(after.assignee_id, {
+        type: AssignNotification,
+        message: `${actorName} assigned a task to you: "${after.title}"`,
+      });
+    }
+    return messages;
+  }
+
+  addReassignmentNotifications({ messages, actorId, actorName, before, after });
+  addStatusChangeNotifications({ messages, actorId, actorName, before, after });
+  return messages;
+}
 
 export class NotificationsService {
   constructor(
@@ -99,6 +188,53 @@ export class NotificationsService {
         `${actorName} assigned a task to you: "${params.taskTitle}"`,
       logLabel: 'Error creating assign notification:',
     });
+  }
+
+  /**
+   * Best-effort work-item notifications. The caller awaits this only after the
+   * work-item write and its required side effects have completed. Notification
+   * persistence failures are logged and never change the mutation result.
+   */
+  async createWorkItemMutationNotifications(params: {
+    actorId: string;
+    before?: WorkItemNotificationRow | null;
+    after: WorkItemNotificationRow;
+  }): Promise<void> {
+    try {
+      const { actorId, before, after } = params;
+      const actorName =
+        (await this.notificationsRepository.getUserName(actorId)) ||
+        'A teammate';
+      const messages = buildWorkItemNotificationMessages({
+        actorId,
+        actorName,
+        before,
+        after,
+      });
+
+      const authorizedIds =
+        await this.notificationsRepository.findAuthorizedProjectRecipientIds(
+          after.project_id,
+          [...messages.keys()]
+        );
+      const notifications = authorizedIds.flatMap((recipientId) => {
+        const details = messages.get(recipientId);
+        if (!details) return [];
+        return [
+          new NotificationBuilder(details.type)
+            .ToUser(recipientId)
+            .WithMessage(details.message)
+            .WithRelatedItem(after.id)
+            .WithCreatedBy(actorId)
+            .WithUpdatedBy(actorId)
+            .Build(),
+        ];
+      });
+
+      await this.notificationsRepository.insertMany(notifications);
+    } catch (err) {
+      console.error('Error creating work-item notifications:', err);
+    }
   }
 
   async createMentionNotification(params: {

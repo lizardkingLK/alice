@@ -57,6 +57,16 @@ const repository = {
 } as unknown as WorkItemRepository;
 
 const service = new WorkItemService(repository);
+const createWorkItemMutationNotificationsMock = vi.fn();
+const serviceWithNotifications = new WorkItemService(
+  repository,
+  undefined,
+  undefined,
+  {
+    createWorkItemMutationNotifications:
+      createWorkItemMutationNotificationsMock,
+  }
+);
 const ACTOR_ID = 'user-1';
 const WORK_ITEM_ID = 'work-item-1';
 const PROJECT_ID = 'project-1';
@@ -137,6 +147,7 @@ describe('WorkItemService.updateWorkItemStatus', () => {
       ...currentWorkItem,
       ...input,
     }));
+    createWorkItemMutationNotificationsMock.mockResolvedValue(undefined);
   });
 
   it('uses scoped access + Prisma current row without list-all membership', async () => {
@@ -212,5 +223,34 @@ describe('WorkItemService.updateWorkItemStatus', () => {
     ).rejects.toThrow('Board column does not exist in this project');
 
     expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it('notifies only after a successful status mutation', async () => {
+    await serviceWithNotifications.updateWorkItemStatus(
+      ACTOR_ID,
+      WORK_ITEM_ID,
+      {
+        status: WorkItemStatusEnum.Testing,
+        board_column_id: 'testing',
+        expectedUpdatedAt: LOCK,
+      }
+    );
+
+    expect(createWorkItemMutationNotificationsMock).toHaveBeenCalledWith({
+      actorId: ACTOR_ID,
+      before: currentWorkItem,
+      after: expect.objectContaining({ status: WorkItemStatusEnum.Testing }),
+    });
+
+    createWorkItemMutationNotificationsMock.mockClear();
+    updateMock.mockRejectedValueOnce(new Error('mutation failed'));
+    await expect(
+      serviceWithNotifications.updateWorkItemStatus(ACTOR_ID, WORK_ITEM_ID, {
+        status: WorkItemStatusEnum.Testing,
+        board_column_id: 'testing',
+        expectedUpdatedAt: LOCK,
+      })
+    ).rejects.toThrow('mutation failed');
+    expect(createWorkItemMutationNotificationsMock).not.toHaveBeenCalled();
   });
 });

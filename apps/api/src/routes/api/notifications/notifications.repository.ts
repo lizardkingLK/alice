@@ -11,6 +11,7 @@ import { prismaNotificationCreate } from '../../../lib/prisma-audit';
 import {
   NotificationType as NotificationTypeEnum,
   RecordStatus,
+  UserMembershipStatus,
 } from '@repo/types/prisma';
 
 export type DueWorkItemRow = {
@@ -126,6 +127,32 @@ export class NotificationsRepository {
       .maybeSingle();
 
     return actor?.name ?? null;
+  }
+
+  async findAuthorizedProjectRecipientIds(
+    projectId: string,
+    userIds: string[]
+  ): Promise<string[]> {
+    if (userIds.length === 0) return [];
+
+    const users = await prisma.users.findMany({
+      where: {
+        id: { in: userIds },
+        active: true,
+        membership_status: UserMembershipStatus.active,
+        OR: [
+          { owned_projects: { some: { id: projectId } } },
+          {
+            project_memberships: {
+              some: { project_id: projectId, status: RecordStatus.active },
+            },
+          },
+        ],
+      },
+      select: { id: true },
+    });
+
+    return users.map((user) => user.id);
   }
 
   async insert(notification: NotificationType): Promise<void> {

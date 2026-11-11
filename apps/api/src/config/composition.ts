@@ -238,11 +238,11 @@ function createWorkItemsConfig(
   const workItemService = new WorkItemService(
     workItemRepository,
     githubService,
-    activitiesService
+    activitiesService,
+    notificationsService
   );
   const router = createWorkItemsRouter({
     workItemService,
-    notificationsService,
   });
 
   return {

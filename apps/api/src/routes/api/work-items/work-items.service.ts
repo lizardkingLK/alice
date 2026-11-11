@@ -83,6 +83,7 @@ import {
 import { prisma } from '../../../lib/prisma';
 import { decryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
 import { Prisma } from '@repo/types/prisma';
+import type { NotificationsService } from '../notifications/notifications.service';
 
 async function requireAdmin(actorId: string) {
   return await requireUserWithRole(
@@ -135,7 +136,11 @@ export class WorkItemService {
   constructor(
     private readonly workItems: WorkItemRepository,
     private readonly githubService?: GithubService,
-    private readonly activities?: ActivitiesService
+    private readonly activities?: ActivitiesService,
+    private readonly notifications?: Pick<
+      NotificationsService,
+      'createWorkItemMutationNotifications'
+    >
   ) {}
 
   private async resolveGithubHeaders(
@@ -295,6 +300,11 @@ export class WorkItemService {
         },
       });
     }
+
+    await this.notifications?.createWorkItemMutationNotifications({
+      actorId: userId,
+      after: created,
+    });
 
     return created;
   }
@@ -485,6 +495,12 @@ export class WorkItemService {
     // Await the batch (Vercel freezes the isolate if the handler returns early).
     await Promise.all(sideEffects);
 
+    await this.notifications?.createWorkItemMutationNotifications({
+      actorId: userId,
+      before: current,
+      after: updated,
+    });
+
     return { workItem: updated, cascadedSprintDescendantIds };
   }
 
@@ -566,6 +582,12 @@ export class WorkItemService {
       nextInput: resolvedInput,
       workflow,
       resolutionMeta,
+    });
+
+    await this.notifications?.createWorkItemMutationNotifications({
+      actorId: userId,
+      before: current,
+      after: updated,
     });
 
     return { workItem: updated, cascadedSprintDescendantIds: [] };
