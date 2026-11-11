@@ -1,14 +1,18 @@
-export type ProjectMemberEmailMessage = {
-  readonly to: string;
-  readonly subject: string;
-  readonly text: string;
-  readonly html: string;
-  readonly idempotencyKey: string;
-};
+import {
+  EmailTransportError,
+  type EmailMessage,
+  type EmailTransport,
+} from '../../../lib/email/email-transport';
+import {
+  buildValidatedFrontendUrl,
+  escapeEmailHtml,
+  normalizeEmailAddress,
+  normalizeEmailDisplayText,
+} from '../../../lib/email/email-content';
+import { buildEmailIdempotencyKey } from '../../../lib/email/email-delivery-policy';
 
-export type ProjectMemberEmailSender = {
-  send(message: ProjectMemberEmailMessage): Promise<void>;
-};
+export type ProjectMemberEmailMessage = EmailMessage;
+export type ProjectMemberEmailSender = EmailTransport;
 
 type ProjectMemberEmailInput = {
   readonly recipientEmail: string;
@@ -19,61 +23,16 @@ type ProjectMemberEmailInput = {
   readonly notificationEventId: string;
 };
 
-type ResendProjectMemberEmailSenderConfig = {
+export type ResendEmailTransportConfig = {
   readonly apiKey?: string;
   readonly from?: string;
   readonly timeoutMs?: number;
   readonly fetchImplementation?: typeof fetch;
+  readonly missingConfiguration?: 'skip' | 'throw';
 };
 
 const RESEND_EMAILS_URL = 'https://api.resend.com/emails';
 const RESEND_TIMEOUT_MS = 5_000;
-const SAFE_IDEMPOTENCY_COMPONENT = /^[A-Za-z0-9_-]{1,200}$/;
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
-function normalizeDisplayText(value: string, fallback: string): string {
-  const normalized = value
-    .replace(/[\r\n\t]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return (normalized || fallback).slice(0, 160);
-}
-
-function normalizeRecipientEmail(value: string): string {
-  const normalized = value.trim();
-  const atIndex = normalized.indexOf('@');
-  const dotIndex = normalized.lastIndexOf('.');
-  const hasWhitespace = [...normalized].some((character) =>
-    [' ', '\t', '\r', '\n'].includes(character)
-  );
-  if (
-    !normalized ||
-    hasWhitespace ||
-    atIndex <= 0 ||
-    atIndex !== normalized.lastIndexOf('@') ||
-    dotIndex <= atIndex + 1 ||
-    dotIndex === normalized.length - 1
-  ) {
-    throw new Error('Recipient email is invalid.');
-  }
-  return normalized;
-}
-
-function buildProjectMemberIdempotencyKey(eventId: string): string {
-  if (!SAFE_IDEMPOTENCY_COMPONENT.test(eventId)) {
-    throw new Error('Project member notification event id is invalid.');
-  }
-  return `project-member-added:${eventId}`;
-}
-
 function validResendSetting(value: string | undefined): string | null {
   const normalized = value?.trim();
   if (!normalized || /[\r\n]/.test(normalized)) {
@@ -86,44 +45,22 @@ export function buildAliceProjectUrl(
   frontendUrl: string,
   projectId: string
 ): string {
-  let configuredUrl: URL;
-  try {
-    configuredUrl = new URL(frontendUrl);
-  } catch {
-    throw new Error('Alice frontend URL is invalid.');
-  }
-
-  if (!['http:', 'https:'].includes(configuredUrl.protocol)) {
-    throw new Error('Alice frontend URL must use HTTP or HTTPS.');
-  }
-  const localHttpHosts = new Set(['localhost', '127.0.0.1', '[::1]']);
-  if (
-    configuredUrl.protocol === 'http:' &&
-    !localHttpHosts.has(configuredUrl.hostname)
-  ) {
-    throw new Error(
-      'Alice frontend URL must use HTTPS outside local development.'
-    );
-  }
-  if (configuredUrl.username || configuredUrl.password) {
-    throw new Error('Alice frontend URL must not contain credentials.');
-  }
-
-  return new URL(
-    `/projects/${encodeURIComponent(projectId)}`,
-    configuredUrl.origin
-  ).toString();
+  return buildValidatedFrontendUrl(frontendUrl, ['projects', projectId]);
 }
 
 export function buildProjectMemberAddedEmail(
   input: ProjectMemberEmailInput
 ): ProjectMemberEmailMessage {
-  const to = normalizeRecipientEmail(input.recipientEmail);
-  const recipientName = normalizeDisplayText(input.recipientName, 'there');
-  const projectName = normalizeDisplayText(input.projectName, 'your project');
+  const to = normalizeEmailAddress(input.recipientEmail);
+  const recipientName = normalizeEmailDisplayText(input.recipientName, 'there');
+  const projectName = normalizeEmailDisplayText(
+    input.projectName,
+    'your project'
+  );
   const projectUrl = buildAliceProjectUrl(input.frontendUrl, input.projectId);
   const subject = `You've been added to ${projectName} in Alice`;
-  const idempotencyKey = buildProjectMemberIdempotencyKey(
+  const idempotencyKey = buildEmailIdempotencyKey(
+    'project-member-added',
     input.notificationEventId
   );
 
@@ -142,10 +79,10 @@ export function buildProjectMemberAddedEmail(
     <div style="max-width:600px;margin:0 auto;padding:32px 20px">
       <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:32px">
         <h1 style="margin:0 0 20px;font-size:24px">Project access added</h1>
-        <p>Hello ${escapeHtml(recipientName)},</p>
-        <p>You've been added to the <strong>${escapeHtml(projectName)}</strong> project in Alice.</p>
+        <p>Hello ${escapeEmailHtml(recipientName)},</p>
+        <p>You've been added to the <strong>${escapeEmailHtml(projectName)}</strong> project in Alice.</p>
         <p style="margin:28px 0">
-          <a href="${escapeHtml(projectUrl)}" style="display:inline-block;border-radius:8px;background:#111827;color:#ffffff;padding:12px 18px;text-decoration:none">Open project</a>
+          <a href="${escapeEmailHtml(projectUrl)}" style="display:inline-block;border-radius:8px;background:#111827;color:#ffffff;padding:12px 18px;text-decoration:none">Open project</a>
         </p>
         <p style="margin-bottom:0;color:#6b7280;font-size:14px">If you weren't expecting this, contact your Alice administrator.</p>
       </div>
@@ -156,9 +93,9 @@ export function buildProjectMemberAddedEmail(
   return { to, subject, text, html, idempotencyKey };
 }
 
-export function createResendProjectMemberEmailSender(
-  config: ResendProjectMemberEmailSenderConfig
-): ProjectMemberEmailSender {
+export function createResendEmailTransport(
+  config: ResendEmailTransportConfig
+): EmailTransport {
   const apiKey = validResendSetting(config.apiKey);
   const from = validResendSetting(config.from);
   const timeoutMs = config.timeoutMs ?? RESEND_TIMEOUT_MS;
@@ -167,6 +104,12 @@ export function createResendProjectMemberEmailSender(
   return {
     async send(message) {
       if (!apiKey || !from) {
+        if (config.missingConfiguration !== 'skip') {
+          throw new EmailTransportError(
+            'Resend email delivery is not configured.',
+            { kind: 'configuration' }
+          );
+        }
         console.warn(
           'warn. project member email delivery skipped; Resend is not configured'
         );
@@ -194,24 +137,35 @@ export function createResendProjectMemberEmailSender(
         });
 
         if (!response.ok) {
-          throw new Error(
-            `Resend email request failed with status ${response.status}.`
+          throw new EmailTransportError(
+            `Resend email request failed with status ${response.status}.`,
+            { kind: 'http', status: response.status }
           );
         }
       } catch (error) {
         if (controller.signal.aborted) {
-          throw new Error('Resend email request timed out.');
+          throw new EmailTransportError('Resend email request timed out.', {
+            kind: 'timeout',
+          });
         }
-        if (
-          error instanceof Error &&
-          error.message.startsWith('Resend email request failed with status ')
-        ) {
+        if (error instanceof EmailTransportError) {
           throw error;
         }
-        throw new Error('Resend email request failed.');
+        throw new EmailTransportError('Resend email request failed.', {
+          kind: 'network',
+        });
       } finally {
         clearTimeout(timeout);
       }
     },
   };
+}
+
+export function createResendProjectMemberEmailSender(
+  config: ResendEmailTransportConfig
+): ProjectMemberEmailSender {
+  return createResendEmailTransport({
+    ...config,
+    missingConfiguration: config.missingConfiguration ?? 'skip',
+  });
 }
