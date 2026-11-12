@@ -32,6 +32,7 @@ describe('PrismaEmailOutboxRepository', () => {
     notificationFindUnique.mockResolvedValue({
       user_id: 'user-1',
       type: NotificationType.assign,
+      related_item_id: 'work-item-1',
     });
     userFindFirst.mockResolvedValue({
       id: 'user-1',
@@ -88,10 +89,17 @@ describe('PrismaEmailOutboxRepository', () => {
       repository.createForNotification({
         notificationId,
         template: EmailTemplate.work_item_assignment,
-        payload: {},
+        payload: { workItemId: 'work-item-1' },
       })
-    ).resolves.toBeNull();
-    expect(outboxUpsert).not.toHaveBeenCalled();
+    ).resolves.toEqual({ id: 'outbox-1' });
+    expect(outboxUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          status: EmailOutboxStatus.cancelled,
+          last_error_code: 'email_preference_disabled',
+        }),
+      })
+    );
 
     await expect(
       repository.createForNotification({
@@ -121,6 +129,32 @@ describe('PrismaEmailOutboxRepository', () => {
         maxAttempts: 8,
       })
     ).resolves.toBe(false);
+  });
+
+  it('records revoked project authorization as a terminal cancellation', async () => {
+    userFindFirst
+      .mockResolvedValueOnce({
+        id: 'user-1',
+        email: 'member@example.com',
+        name: 'Taylor',
+        notification_email_preference: null,
+      })
+      .mockResolvedValueOnce(null);
+
+    await repository.createForNotification({
+      notificationId,
+      template: EmailTemplate.work_item_assignment,
+      payload: { workItemId: 'work-item-1' },
+    });
+
+    expect(outboxUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          status: EmailOutboxStatus.cancelled,
+          last_error_code: 'recipient_not_authorized',
+        }),
+      })
+    );
   });
 
   it('atomically claims due and expired rows with SKIP LOCKED', async () => {
@@ -155,6 +189,23 @@ describe('PrismaEmailOutboxRepository', () => {
       recipientEmail: 'member@example.com',
       attemptCount: 1,
     });
+  });
+
+  it('finds a bounded, ordered set outside the rollout grace window', async () => {
+    queryRaw.mockResolvedValue([]);
+    await repository.findMissingNotificationEmailEvents({
+      now: new Date('2026-11-12T01:00:00.000Z'),
+      limit: 500,
+    });
+    const sql = queryRaw.mock.calls[0]![0] as { strings: readonly string[] };
+    const statement = sql.strings.join('?');
+    expect(statement).toContain('LEFT JOIN email_outbox');
+    expect(statement).toContain('event.created_at >=');
+    expect(statement).toContain('event.created_at <=');
+    expect(statement).toContain(
+      'ORDER BY event.created_at ASC, event.notification_id ASC'
+    );
+    expect(statement).toContain('LIMIT');
   });
 
   it('renews and transitions only rows owned by the worker', async () => {

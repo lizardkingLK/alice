@@ -5,6 +5,7 @@ import {
   EmailTemplate,
   NotificationType,
   Prisma,
+  RecordStatus,
   UserMembershipStatus,
 } from '@repo/types/prisma';
 import type {
@@ -34,6 +35,24 @@ type ClaimedOutboxRow = {
   attempt_count: number;
   max_attempts: number;
 };
+
+export type MissingNotificationEmailEvent = {
+  notificationId: string;
+  version: number;
+  template: EmailTemplate;
+  payload: Prisma.JsonValue;
+};
+
+type MissingNotificationEmailEventRow = {
+  notification_id: string;
+  version: number;
+  template: EmailTemplate;
+  payload: Prisma.JsonValue;
+};
+
+export const NOTIFICATION_EMAIL_RECONCILIATION_ROLLOUT_CUTOFF_ISO =
+  '2026-11-12T00:00:00.000Z';
+export const NOTIFICATION_EMAIL_RECONCILIATION_GRACE_MS = 5 * 60 * 1000;
 
 const TEMPLATE_NOTIFICATION_TYPE: Record<EmailTemplate, NotificationType> = {
   [EmailTemplate.work_item_assignment]: NotificationType.assign,
@@ -87,20 +106,24 @@ export class PrismaEmailOutboxRepository implements EmailOutboxRepository {
   ): Promise<{ id: string } | null> {
     const notification = await this.client.notifications.findUnique({
       where: { id: input.notificationId },
-      select: { user_id: true, type: true },
+      select: { user_id: true, type: true, related_item_id: true },
     });
     if (!notification) {
-      throw new Error('Notification not found for email outbox.');
+      return null;
     }
     if (notification.type !== TEMPLATE_NOTIFICATION_TYPE[input.template]) {
       throw new Error('Email template does not match notification type.');
+    }
+    if (
+      input.template !== EmailTemplate.weekly_project_report &&
+      !notification.related_item_id
+    ) {
+      return null;
     }
 
     const recipient = await this.client.users.findFirst({
       where: {
         id: notification.user_id,
-        active: true,
-        membership_status: UserMembershipStatus.active,
       },
       select: {
         id: true,
@@ -117,11 +140,59 @@ export class PrismaEmailOutboxRepository implements EmailOutboxRepository {
         },
       },
     });
-    if (
-      !recipient ||
-      !preferenceAllows(input.template, recipient.notification_email_preference)
-    ) {
+    if (!recipient) {
       return null;
+    }
+
+    const snapshotMatchesNotification =
+      input.template === EmailTemplate.weekly_project_report ||
+      input.payload.workItemId === notification.related_item_id;
+    const authorized =
+      input.template === EmailTemplate.weekly_project_report ||
+      Boolean(
+        snapshotMatchesNotification &&
+        (await this.client.users.findFirst({
+          where: {
+            id: notification.user_id,
+            active: true,
+            membership_status: UserMembershipStatus.active,
+            OR: [
+              {
+                owned_projects: {
+                  some: {
+                    work_items: {
+                      some: { id: notification.related_item_id! },
+                    },
+                  },
+                },
+              },
+              {
+                project_memberships: {
+                  some: {
+                    status: RecordStatus.active,
+                    project: {
+                      work_items: {
+                        some: { id: notification.related_item_id! },
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+          select: { id: true },
+        }))
+      );
+    const preferenceAllowed = preferenceAllows(
+      input.template,
+      recipient.notification_email_preference
+    );
+    const allowed = authorized && preferenceAllowed;
+    let cancellationReason = 'email_preference_disabled';
+    if (!snapshotMatchesNotification) {
+      cancellationReason = 'invalid_notification_email_event_reference';
+    } else if (!authorized) {
+      cancellationReason = 'recipient_not_authorized';
     }
 
     return await this.client.email_outbox.upsert({
@@ -140,9 +211,89 @@ export class PrismaEmailOutboxRepository implements EmailOutboxRepository {
           input.template,
           input.notificationId
         ),
+        ...(allowed
+          ? {}
+          : {
+              status: EmailOutboxStatus.cancelled,
+              cancelled_at: new Date(),
+              last_error_code: cancellationReason,
+            }),
       },
       select: { id: true },
     });
+  }
+
+  async findMissingNotificationEmailEvents(input: {
+    readonly now: Date;
+    readonly limit: number;
+  }): Promise<readonly MissingNotificationEmailEvent[]> {
+    const limit = Math.max(1, Math.min(Math.trunc(input.limit), 100));
+    const graceCutoff = new Date(
+      input.now.getTime() - NOTIFICATION_EMAIL_RECONCILIATION_GRACE_MS
+    );
+    const rolloutCutoff = new Date(
+      NOTIFICATION_EMAIL_RECONCILIATION_ROLLOUT_CUTOFF_ISO
+    );
+    const rows = await this.client.$queryRaw<
+      MissingNotificationEmailEventRow[]
+    >(
+      Prisma.sql`
+        SELECT event.notification_id, event.version, event.template, event.payload
+        FROM notification_email_events AS event
+        LEFT JOIN email_outbox AS outbox
+          ON outbox.notification_id = event.notification_id
+        WHERE outbox.id IS NULL
+          AND event.created_at >= ${rolloutCutoff}
+          AND event.created_at <= ${graceCutoff}
+        ORDER BY event.created_at ASC, event.notification_id ASC
+        LIMIT ${limit}
+      `
+    );
+    return rows.map((row) => ({
+      notificationId: row.notification_id,
+      version: row.version,
+      template: row.template,
+      payload: row.payload,
+    }));
+  }
+
+  async createInvalidEventTerminal(
+    input: MissingNotificationEmailEvent
+  ): Promise<boolean> {
+    const notification = await this.client.notifications.findUnique({
+      where: { id: input.notificationId },
+      select: { user_id: true },
+    });
+    if (!notification) return false;
+    const recipient = await this.client.users.findFirst({
+      where: { id: notification.user_id },
+      select: { id: true, email: true, name: true },
+    });
+    if (!recipient) return false;
+
+    await this.client.email_outbox.upsert({
+      where: { notification_id: input.notificationId },
+      update: {},
+      create: {
+        notification_id: input.notificationId,
+        user_id: recipient.id,
+        recipient_email: recipient.email,
+        template: input.template,
+        payload: {
+          invalidSnapshot: input.payload,
+          recipientName: recipient.name,
+        },
+        idempotency_key: buildEmailIdempotencyKey(
+          input.template,
+          input.notificationId
+        ),
+        status: EmailOutboxStatus.dead,
+        failed_at: new Date(),
+        last_error_code: 'invalid_notification_email_event',
+      },
+      select: { id: true },
+    });
+    return true;
   }
 
   async claimBatch(input: {
