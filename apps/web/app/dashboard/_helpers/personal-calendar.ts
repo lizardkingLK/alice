@@ -5,10 +5,10 @@
 
 import { toLocalYYYYMMDD } from '@/app/_shared/utility';
 import { getLocalStorageJson, setLocalStorageJson } from '@/lib/local-storage';
-import type { FocusTodo } from '@/app/dashboard/_helpers/focus-todos';
 import {
   FOCUS_TODOS_MAX,
   focusTodosFingerprint,
+  type FocusTodo,
 } from '@/app/dashboard/_helpers/focus-todos';
 
 const STORAGE_PREFIX = 'alice:overview-personal-calendar:v1:';
@@ -284,11 +284,19 @@ export function syncFocusTodosFromTodayCalendar(
   );
   const eventIds = new Set(events.map((event) => event.id));
 
+  const eventsById = new Map(events.map((event) => [event.id, event] as const));
+
+  // Keep Focus-only rows; drop orphan `cal:` links and links to other days
+  // so yesterday's calendar history is not re-pulled into today's Focus list.
   let next = todos.filter((todo) => {
     if (!isCalendarLinkedFocusTodoId(todo.id)) {
       return true;
     }
-    return eventIds.has(calendarEventIdForFocusTodo(todo.id));
+    const eventId = calendarEventIdForFocusTodo(todo.id);
+    if (!eventIds.has(eventId)) {
+      return false;
+    }
+    return eventsById.get(eventId)?.date === todayDateString;
   });
 
   for (const event of todayEvents) {
@@ -322,7 +330,9 @@ export function syncFocusTodosFromTodayCalendar(
 }
 
 /**
- * Upsert today's calendar rows from Focus (title + done). Other dates stay put.
+ * Upsert calendar rows from Focus (title + done).
+ * Existing events keep their date — never roll history forward to "today".
+ * New Focus rows (no calendar twin yet) are created on `todayDateString`.
  */
 export function syncTodayCalendarFromFocusTodos(
   events: readonly PersonalCalendarEvent[],
@@ -343,7 +353,6 @@ export function syncTodayCalendarFromFocusTodos(
         ...existing,
         title,
         done: todo.done,
-        date: todayDateString,
       });
       continue;
     }

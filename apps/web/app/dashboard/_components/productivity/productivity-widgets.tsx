@@ -9,6 +9,7 @@ import {
   type Dispatch,
   type DragEvent,
   type MutableRefObject,
+  type ReactNode,
   type SetStateAction,
 } from 'react';
 import Link from 'next/link';
@@ -97,6 +98,7 @@ import {
   writeMyWorkCategoriesPane,
   type MyWorkCategoriesPane,
 } from '@/app/dashboard/_helpers/my-work-categories-pane';
+import { MusicWidget } from '@/app/dashboard/_components/productivity/music-widget';
 import { PersonalCalendarWidget } from '@/app/dashboard/_components/productivity/personal-calendar-widget';
 import {
   ensurePomodoroNotifyPermission,
@@ -1055,6 +1057,9 @@ function PomodoroWidget({
   const [pane, setPane] = useState<FocusWidgetPane>(() =>
     readFocusWidgetPane(userId)
   );
+  const [musicMaximized, setMusicMaximized] = useState(false);
+  /** Keep the Music embed mounted after first visit so playback survives pane switches. */
+  const [musicKeepAlive, setMusicKeepAlive] = useState(false);
   const [durationMinutes, setDurationMinutes] = useState(
     POMODORO_DEFAULT_MINUTES
   );
@@ -1127,7 +1132,14 @@ function PomodoroWidget({
 
   useEffect(() => {
     setPane(readFocusWidgetPane(userId));
+    setMusicKeepAlive(false);
   }, [userId]);
+
+  useEffect(() => {
+    if (pane === 'music') {
+      setMusicKeepAlive(true);
+    }
+  }, [pane]);
 
   useEffect(() => {
     const stored = readPomodoroStoredState(userId);
@@ -1148,6 +1160,7 @@ function PomodoroWidget({
 
   const persistPane = (next: FocusWidgetPane) => {
     setPane(next);
+    setMusicMaximized(false);
     writeFocusWidgetPane(userId, next);
   };
 
@@ -1155,9 +1168,16 @@ function PomodoroWidget({
     persistPane(shiftFocusWidgetPane(pane, direction));
   };
 
-  const paneTitle = pane === 'calendar' ? 'Calendar' : meta.title;
-  const paneDescription =
-    pane === 'calendar' ? 'Personal schedule on this device' : meta.description;
+  let paneTitle = meta.title;
+  let paneDescription = meta.description;
+  if (pane === 'calendar') {
+    paneTitle = 'Calendar';
+    paneDescription = 'Personal schedule on this device';
+  } else if (pane === 'music') {
+    paneTitle = 'Music';
+    // Playlist identity lives in the embed — skip redundant subtitle.
+    paneDescription = '';
+  }
 
   useEffect(() => {
     const onCalendarChanged = () => {
@@ -1336,60 +1356,88 @@ function PomodoroWidget({
     </div>
   );
 
+  const musicVisible = pane === 'music';
+  // Off-screen (not display:none) so embeds keep decoding audio while
+  // the user is on Focus / Calendar.
+  const musicShelfClassName = musicVisible
+    ? 'relative flex min-h-0 flex-1 flex-col'
+    : 'pointer-events-none fixed top-0 -left-[100vw] z-[-1] h-[520px] w-[380px] overflow-hidden opacity-0';
+
+  let foregroundPane: ReactNode = null;
+  if (pane === 'calendar') {
+    foregroundPane = <PersonalCalendarWidget userId={userId} embedded />;
+  } else if (pane === 'focus') {
+    foregroundPane = (
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <FocusTimerSection
+          remaining={remaining}
+          durationMinutes={durationMinutes}
+          phase={phase}
+          running={running}
+          sessionComplete={sessionComplete}
+          progress={progress}
+          remainingRef={remainingRef}
+          finishAnnouncedRef={finishAnnouncedRef}
+          persistSession={persistSession}
+          onApplyDuration={applyDuration}
+          onSetPhase={setPhase}
+          onSetRemaining={setRemaining}
+        />
+        <FocusTodosPanel
+          todos={todos}
+          visibleTodos={visibleTodos}
+          todoFilter={todoFilter}
+          draftTodo={draftTodo}
+          draggedTodoId={draggedTodoId}
+          dropIndicator={dropIndicator}
+          onTodoFilterChange={setTodoFilter}
+          onDraftChange={setDraftTodo}
+          onSubmitTodo={submitTodo}
+          onToggleTodo={(todoId) =>
+            persistTodos(toggleFocusTodo(todos, todoId))
+          }
+          onDeleteTodo={(todoId) =>
+            persistTodos(removeFocusTodo(todos, todoId), [todoId])
+          }
+          onDragStart={handleTodoDragStart}
+          onDragOver={handleTodoDragOver}
+          onDrop={handleTodoDrop}
+          onDragEnd={clearDragState}
+          onClearDropIndicator={(todoId) => {
+            if (dropIndicator?.id === todoId) {
+              setDropIndicator(null);
+            }
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <DashboardWidgetShell
       variant="glass"
       title={paneTitle}
       description={paneDescription}
       headerActions={paneSwitcher}
-      contentClassName="pb-1"
+      contentClassName={
+        pane === 'music' && musicMaximized ? 'px-0 pb-0' : 'pb-1'
+      }
     >
-      {pane === 'calendar' ? (
-        <PersonalCalendarWidget userId={userId} embedded />
-      ) : (
-        <div className="flex min-h-0 flex-1 flex-col gap-4">
-          <FocusTimerSection
-            remaining={remaining}
-            durationMinutes={durationMinutes}
-            phase={phase}
-            running={running}
-            sessionComplete={sessionComplete}
-            progress={progress}
-            remainingRef={remainingRef}
-            finishAnnouncedRef={finishAnnouncedRef}
-            persistSession={persistSession}
-            onApplyDuration={applyDuration}
-            onSetPhase={setPhase}
-            onSetRemaining={setRemaining}
-          />
-          <FocusTodosPanel
-            todos={todos}
-            visibleTodos={visibleTodos}
-            todoFilter={todoFilter}
-            draftTodo={draftTodo}
-            draggedTodoId={draggedTodoId}
-            dropIndicator={dropIndicator}
-            onTodoFilterChange={setTodoFilter}
-            onDraftChange={setDraftTodo}
-            onSubmitTodo={submitTodo}
-            onToggleTodo={(todoId) =>
-              persistTodos(toggleFocusTodo(todos, todoId))
-            }
-            onDeleteTodo={(todoId) =>
-              persistTodos(removeFocusTodo(todos, todoId), [todoId])
-            }
-            onDragStart={handleTodoDragStart}
-            onDragOver={handleTodoDragOver}
-            onDrop={handleTodoDrop}
-            onDragEnd={clearDragState}
-            onClearDropIndicator={(todoId) => {
-              if (dropIndicator?.id === todoId) {
-                setDropIndicator(null);
-              }
-            }}
+      {foregroundPane}
+      {musicKeepAlive || musicVisible ? (
+        <div
+          className={musicShelfClassName}
+          aria-hidden={!musicVisible}
+          inert={!musicVisible ? true : undefined}
+        >
+          <MusicWidget
+            userId={userId}
+            embedded
+            active={musicVisible}
+            onPlayerMaximizedChange={setMusicMaximized}
           />
         </div>
-      )}
+      ) : null}
     </DashboardWidgetShell>
   );
 }

@@ -240,7 +240,9 @@ Default `/dashboard` supports two modes (Customize dialog; prefs in
 localStorage + cookie):
 
 1. **Productivity** — draggable grid (`react-grid-layout`) with live My Work
-   KPIs, projects list, Alice chat widget, docs (fullscreen), and pomodoro.
+   KPIs, projects list, Alice chat widget, docs (fullscreen), and Focus
+   (timer/tasks + Calendar + Music panes; playlist URLs in localStorage;
+   Music Document Picture-in-Picture pop-out).
    Default when no boards are pinned.
 2. **Chart workspaces** — horizontal slider of boards with
    `show_on_dashboard`, ordered by `dashboard_sort_order`. Always available;

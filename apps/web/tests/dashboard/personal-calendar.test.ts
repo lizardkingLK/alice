@@ -139,6 +139,60 @@ describe('personal calendar', () => {
     ).toEqual(['keep-me']);
   });
 
+  it('does not move yesterday calendar events onto today when Focus still has them', () => {
+    const todos: FocusTodo[] = [
+      {
+        id: 'todo-sql',
+        text: 'SQL x 2',
+        done: false,
+        createdAt: 1,
+      },
+    ];
+    const yesterday = syncTodayCalendarFromFocusTodos([], todos, '2026-11-11');
+    expect(yesterday[0]?.date).toBe('2026-11-11');
+
+    const { events } = reconcileTodayFocusAndCalendar(
+      todos,
+      yesterday,
+      '2026-11-12'
+    );
+    expect(
+      listPersonalCalendarEventsForDate(events, '2026-11-11')
+    ).toHaveLength(1);
+    expect(
+      listPersonalCalendarEventsForDate(events, '2026-11-12')
+    ).toHaveLength(0);
+    expect(events[0]?.title).toBe('SQL x 2');
+  });
+
+  it('drops other-day cal links from Focus while keeping Focus-only todos', () => {
+    const yesterdayEvent = addPersonalCalendarEvent(
+      [],
+      'Old kata',
+      '2026-11-11'
+    )[0]!;
+    const todos: FocusTodo[] = [
+      {
+        id: focusTodoIdForCalendarEvent(yesterdayEvent.id),
+        text: 'Old kata',
+        done: false,
+        createdAt: 1,
+      },
+      {
+        id: 'focus-only',
+        text: 'Today focus',
+        done: false,
+        createdAt: 2,
+      },
+    ];
+    const next = syncFocusTodosFromTodayCalendar(
+      todos,
+      [yesterdayEvent],
+      '2026-11-12'
+    );
+    expect(next.map((todo) => todo.id)).toEqual(['focus-only']);
+  });
+
   it('does not resurrect a deleted calendar event after Focus twin is removed', () => {
     const focusTodo: FocusTodo = {
       id: 'todo-neetcode',

@@ -1,5 +1,5 @@
 /**
- * Which pane the Overview Focus widget shows (Focus timer/tasks vs Calendar).
+ * Which pane the Overview Focus widget shows (timer/tasks, Calendar, Music).
  * Browser localStorage only.
  */
 
@@ -7,7 +7,7 @@ import { getLocalStorageJson, setLocalStorageJson } from '@/lib/local-storage';
 
 const STORAGE_PREFIX = 'alice:overview-focus-pane:v1:';
 
-export const FOCUS_WIDGET_PANES = ['focus', 'calendar'] as const;
+export const FOCUS_WIDGET_PANES = ['focus', 'calendar', 'music'] as const;
 export type FocusWidgetPane = (typeof FOCUS_WIDGET_PANES)[number];
 
 export const DEFAULT_FOCUS_WIDGET_PANE: FocusWidgetPane = 'focus';

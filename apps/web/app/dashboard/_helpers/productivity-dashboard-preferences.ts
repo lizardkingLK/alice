@@ -7,11 +7,11 @@ import { getLocalStorageJson, setLocalStorageJson } from '@/lib/local-storage';
 
 /** Bump when the default Overview experience changes so stale cookies reset. */
 export const PRODUCTIVITY_DASHBOARD_PREFS_COOKIE =
-  'alice_overview_productivity_prefs_v6';
+  'alice_overview_productivity_prefs_v8';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
-const STORAGE_PREFIX = 'alice:overview-productivity-prefs:v6:';
+const STORAGE_PREFIX = 'alice:overview-productivity-prefs:v8:';
 export const PRODUCTIVITY_LAYOUT_STORAGE_KEY =
-  'alice.dashboard.productivity.layout.v5';
+  'alice.dashboard.productivity.layout.v8';
 
 export const OVERVIEW_MODES = ['productivity', 'charts'] as const;
 export type OverviewMode = (typeof OVERVIEW_MODES)[number];
@@ -44,7 +44,7 @@ export const DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES: ProductivityDashboardPr
       projects: false,
       alice: false,
       docs: false,
-      /** Focus embeds Calendar via header chevrons. */
+      /** Focus embeds Calendar + Music via header chevrons. */
       pomodoro: true,
     },
   };
