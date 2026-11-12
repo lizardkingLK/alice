@@ -13,7 +13,28 @@ import {
 } from './comments.schemas';
 import { CommentsService } from './comments.service';
 import { listCommentsQuerySchema } from '@repo/types';
-import { CommentAccessError } from './comments.errors';
+import { CommentAccessError, CommentReplyScopeError } from './comments.errors';
+
+function sendCommentError(
+  res: Parameters<typeof trySendOptimisticLockError>[0],
+  error: unknown,
+  fallback: string
+): void {
+  if (trySendOptimisticLockError(res, error)) {
+    return;
+  }
+  if (error instanceof CommentAccessError) {
+    res.status(403).json({ data: null, error: error.message });
+    return;
+  }
+  if (error instanceof CommentReplyScopeError) {
+    res.status(400).json({ data: null, error: error.message });
+    return;
+  }
+  const message = error instanceof Error ? error.message : fallback;
+  const status = /not found/i.test(message) ? 404 : 500;
+  res.status(status).json({ data: null, error: message });
+}
 
 function firstQueryValue(value: unknown): string | undefined {
   if (typeof value === 'string') {
@@ -31,6 +52,18 @@ function listCommentsQueryFromRequest(query: Record<string, unknown>) {
     limit: firstQueryValue(query.limit),
     workItemId: firstQueryValue(query.workItemId),
   });
+}
+
+function parseCommentId(
+  res: Parameters<typeof trySendOptimisticLockError>[0],
+  rawId: string | undefined
+): string | null {
+  const parsed = z.uuid().safeParse(rawId);
+  if (!parsed.success) {
+    res.status(400).json({ data: null, error: 'Invalid comment id' });
+    return null;
+  }
+  return parsed.data;
 }
 
 export type CommentsRouterDeps = {
@@ -74,16 +107,14 @@ export function createCommentsRouter(deps: CommentsRouterDeps) {
     '/:id',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
-      const parsedId = z.uuid().safeParse(req.params.id);
-      if (!parsedId.success) {
-        return res
-          .status(400)
-          .json({ data: null, error: 'Invalid comment id' });
+      const commentId = parseCommentId(res, req.params.id);
+      if (!commentId) {
+        return;
       }
 
       try {
         const comment = await commentsService.getCommentDetail(
-          parsedId.data,
+          commentId,
           req.userId!
         );
         if (!comment) {
@@ -120,9 +151,7 @@ export function createCommentsRouter(deps: CommentsRouterDeps) {
         );
         res.status(201).json({ data: created, error: null });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to create comment';
-        res.status(500).json({ data: null, error: message });
+        sendCommentError(res, error, 'Failed to create comment');
       }
     }
   );
@@ -131,6 +160,10 @@ export function createCommentsRouter(deps: CommentsRouterDeps) {
     '/:id',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
+      const commentId = parseCommentId(res, req.params.id);
+      if (!commentId) {
+        return;
+      }
       const validation = updateCommentSchema.safeParse(req.body);
       if (!validation.success) {
         const errorMsg = z.treeifyError(validation.error);
@@ -139,17 +172,14 @@ export function createCommentsRouter(deps: CommentsRouterDeps) {
 
       try {
         const updated = await commentsService.updateComment(
-          req.params.id!,
+          commentId,
           validation.data.content,
           validation.data.expectedUpdatedAt,
           req.userId!
         );
         res.json({ data: updated, error: null });
       } catch (error) {
-        if (trySendOptimisticLockError(res, error)) return;
-        const message =
-          error instanceof Error ? error.message : 'Failed to update comment';
-        res.status(500).json({ data: null, error: message });
+        sendCommentError(res, error, 'Failed to update comment');
       }
     }
   );
@@ -158,6 +188,10 @@ export function createCommentsRouter(deps: CommentsRouterDeps) {
     '/:id',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
+      const commentId = parseCommentId(res, req.params.id);
+      if (!commentId) {
+        return;
+      }
       const permanent = req.query.permanent === 'true';
 
       if (!permanent) {
@@ -181,10 +215,8 @@ export function createCommentsRouter(deps: CommentsRouterDeps) {
             correlationId: accepted.correlationId,
           });
         } catch (error) {
-          if (trySendOptimisticLockError(res, error)) return;
-          const message =
-            error instanceof Error ? error.message : 'Failed to delete comment';
-          return res.status(500).json({ data: null, error: message });
+          sendCommentError(res, error, 'Failed to delete comment');
+          return;
         }
       }
 
@@ -200,9 +232,7 @@ export function createCommentsRouter(deps: CommentsRouterDeps) {
           correlationId: accepted.correlationId,
         });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to delete comment';
-        res.status(500).json({ data: null, error: message });
+        sendCommentError(res, error, 'Failed to delete comment');
       }
     }
   );
@@ -211,6 +241,10 @@ export function createCommentsRouter(deps: CommentsRouterDeps) {
     '/:id/restore',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
+      const commentId = parseCommentId(res, req.params.id);
+      if (!commentId) {
+        return;
+      }
       const validation = commentLockActionSchema.safeParse(req.body);
       if (!validation.success) {
         return res
@@ -220,15 +254,13 @@ export function createCommentsRouter(deps: CommentsRouterDeps) {
 
       try {
         await commentsService.restoreComment(
-          req.params.id!,
-          validation.data.expectedUpdatedAt
+          commentId,
+          validation.data.expectedUpdatedAt,
+          req.userId!
         );
         res.json({ data: { success: true }, error: null });
       } catch (error) {
-        if (trySendOptimisticLockError(res, error)) return;
-        const message =
-          error instanceof Error ? error.message : 'Failed to restore comment';
-        res.status(500).json({ data: null, error: message });
+        sendCommentError(res, error, 'Failed to restore comment');
       }
     }
   );
@@ -237,11 +269,9 @@ export function createCommentsRouter(deps: CommentsRouterDeps) {
     '/:id/reactions',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
-      const parsedId = z.uuid().safeParse(req.params.id);
-      if (!parsedId.success) {
-        return res
-          .status(400)
-          .json({ data: null, error: 'Invalid comment id' });
+      const commentId = parseCommentId(res, req.params.id);
+      if (!commentId) {
+        return;
       }
 
       const validation = toggleCommentReactionBodySchema.safeParse(req.body);
@@ -253,7 +283,7 @@ export function createCommentsRouter(deps: CommentsRouterDeps) {
 
       try {
         const updated = await commentsService.toggleCommentReaction(
-          parsedId.data,
+          commentId,
           req.userId!,
           validation.data.emoji,
           validation.data.action

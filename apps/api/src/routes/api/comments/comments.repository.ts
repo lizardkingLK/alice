@@ -30,11 +30,20 @@ export type CommentRow = {
   content: Json;
   reactions: Json;
   edited: boolean;
-  status: 'active' | 'archived' | 'deleted';
+  status: RecordStatus;
   created_at: string;
   updated_at: string;
   created_by: string | null;
   updated_by: string | null;
+};
+
+export type CommentAccessContext = {
+  commentId: string;
+  workItemId: string;
+  authorId: string;
+  parentId: string | null;
+  projectId: string;
+  status: RecordStatus;
 };
 
 const COMMENT_AUTHOR_SELECT = userRelationSelect(
@@ -284,10 +293,12 @@ export class CommentsRepository {
   async requireProjectMember(
     commentId: string,
     actorId: string
-  ): Promise<{ projectId: string }> {
+  ): Promise<CommentAccessContext> {
     const { data: comment, error } = await this.db
       .from('comments')
-      .select('work_items(project_id)')
+      .select(
+        'id, work_item_id, author_id, parent_id, status, work_items(project_id)'
+      )
       .eq('id', commentId)
       .maybeSingle();
 
@@ -306,7 +317,14 @@ export class CommentsRepository {
     const projectId = (comment.work_items as unknown as { project_id: string })
       .project_id;
     await this.assertCanAccessProject(actorId, projectId);
-    return { projectId };
+    return {
+      commentId: comment.id,
+      workItemId: comment.work_item_id,
+      authorId: comment.author_id,
+      parentId: comment.parent_id,
+      projectId,
+      status: comment.status,
+    };
   }
 
   async requireWorkItemProjectMember(

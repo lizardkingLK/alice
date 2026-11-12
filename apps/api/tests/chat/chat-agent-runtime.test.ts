@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CHART_DESCRIPTION_TOOL_KEY,
   DYNAMIC_FIELDS_TOOL_KEY,
+  ChatAgentRuntimeAccessError,
   buildFallbackChatAgentRuntime,
   resolveChatAgentRuntime,
   resolveSpecializedSystemInstruction,
@@ -55,6 +56,7 @@ describe('chat-agent-runtime', () => {
     findActiveDefaultMock.mockResolvedValue({
       id: 'agent-1',
       instructions: 'v1:Custom Alice instructions',
+      status: 'active',
     });
     listEnablementForAgentsMock.mockResolvedValue(
       new Map([
@@ -98,6 +100,86 @@ describe('chat-agent-runtime', () => {
     expect(runtime.toolInstructions.get(CHART_DESCRIPTION_TOOL_KEY)).toBe(
       'Chart tool instruction'
     );
+  });
+
+  it('uses an explicitly selected active visible agent', async () => {
+    findVisibleByIdMock.mockResolvedValue({
+      id: 'agent-selected',
+      instructions: 'v1:Selected instructions',
+      status: 'active',
+    });
+    listEnablementForAgentsMock.mockResolvedValue(
+      new Map([
+        [
+          'agent-selected',
+          { enabledToolKeys: ['list_projects'], enabledSkillKeys: [] },
+        ],
+      ])
+    );
+    listActiveToolsMock.mockResolvedValue([]);
+
+    const runtime = await resolveChatAgentRuntime({
+      userId: 'user-1',
+      agentId: 'agent-selected',
+      chatAgents: {
+        findVisibleById: findVisibleByIdMock,
+        findActiveDefault: findActiveDefaultMock,
+        listEnablementForAgents: listEnablementForAgentsMock,
+        listActiveTools: listActiveToolsMock,
+      },
+    });
+
+    expect(runtime.agentId).toBe('agent-selected');
+    expect(runtime.instructions).toBe('Selected instructions');
+    expect(findVisibleByIdMock).toHaveBeenCalledWith(
+      'user-1',
+      'agent-selected'
+    );
+    expect(findActiveDefaultMock).not.toHaveBeenCalled();
+  });
+
+  it.each(['archived', 'inactive', 'deleted'])(
+    'rejects an explicitly selected %s agent without default substitution',
+    async (status) => {
+      findVisibleByIdMock.mockResolvedValue({
+        id: 'agent-disabled',
+        instructions: 'v1:Disabled instructions',
+        status,
+      });
+
+      await expect(
+        resolveChatAgentRuntime({
+          userId: 'user-1',
+          agentId: 'agent-disabled',
+          chatAgents: {
+            findVisibleById: findVisibleByIdMock,
+            findActiveDefault: findActiveDefaultMock,
+            listEnablementForAgents: listEnablementForAgentsMock,
+            listActiveTools: listActiveToolsMock,
+          },
+        })
+      ).rejects.toBeInstanceOf(ChatAgentRuntimeAccessError);
+      expect(findActiveDefaultMock).not.toHaveBeenCalled();
+      expect(listEnablementForAgentsMock).not.toHaveBeenCalled();
+    }
+  );
+
+  it('rejects an inaccessible selected agent without default substitution', async () => {
+    findVisibleByIdMock.mockResolvedValue(null);
+
+    await expect(
+      resolveChatAgentRuntime({
+        userId: 'user-1',
+        agentId: 'agent-private',
+        chatAgents: {
+          findVisibleById: findVisibleByIdMock,
+          findActiveDefault: findActiveDefaultMock,
+          listEnablementForAgents: listEnablementForAgentsMock,
+          listActiveTools: listActiveToolsMock,
+        },
+      })
+    ).rejects.toBeInstanceOf(ChatAgentRuntimeAccessError);
+    expect(findActiveDefaultMock).not.toHaveBeenCalled();
   });
 
   it('resolveSpecializedSystemInstruction prefers tool-level text', () => {

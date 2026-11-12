@@ -69,6 +69,8 @@ type WorkItemActivityTabsProps = {
   readOnly?: boolean;
   /** Unified online presence strip — sits left of the maximize control. */
   onlineMembersSlot?: ReactNode;
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  onWorkItemPatched?: (updated: Partial<DbWorkItem>) => void;
 };
 
 function WorkLogActions({
@@ -179,6 +181,7 @@ export function WorkItemActivityTabs({
   isDownloadingTemplate = false,
   readOnly = false,
   onlineMembersSlot,
+  onWorkItemPatched,
 }: Readonly<WorkItemActivityTabsProps>) {
   const captureScrollBeforeTabChange = usePreserveScrollOnTabChange(activeTab);
   const [commentsSortOrder, setCommentsSortOrder] =
@@ -307,6 +310,10 @@ export function WorkItemActivityTabs({
             workItemId={workItem.id}
             workItems={discussionWorkItems}
             currentUserId={currentUserId}
+            currentWorkItemTitle={workItem.title}
+            currentWorkItemUpdatedAt={workItem.updated_at}
+            onWorkItemPatched={onWorkItemPatched}
+            readOnly={readOnly}
           />
         </TabsContent>
 

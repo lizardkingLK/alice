@@ -155,6 +155,7 @@ export class ChatAgentsRepository {
   findActiveDefault(): Promise<ChatAgentDetailRow | null> {
     return prisma.chat_agents.findFirst({
       where: {
+        owner_id: null,
         is_default: true,
         status: RecordStatus.active,
       },

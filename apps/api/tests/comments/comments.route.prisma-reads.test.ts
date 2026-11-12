@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createCommentsRouter } from '../../src/routes/api/comments/comments.route';
 import type { CommentsService } from '../../src/routes/api/comments/comments.service';
 import { createCommentListRow } from '../factories/comment.factory';
-import { CommentAccessError } from '../../src/routes/api/comments/comments.errors';
+import {
+  CommentAccessError,
+  CommentReplyScopeError,
+} from '../../src/routes/api/comments/comments.errors';
 import { withMountedRouter } from '../helpers/route-test.harness';
 
 const {
@@ -206,6 +209,59 @@ describe('comments routes', () => {
       });
     });
 
+    it('returns 403 when comment creation is outside project access', async () => {
+      const comment = createCommentListRow();
+      createCommentMock.mockRejectedValue(new CommentAccessError());
+
+      await withApp(async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/api/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            work_item_id: comment.work_item_id,
+            content: {
+              type: 'doc',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [{ type: 'text', text: 'Hello' }],
+                },
+              ],
+            },
+          }),
+        });
+
+        expect(response.status).toBe(403);
+      });
+    });
+
+    it('returns 400 when a reply parent is outside the target work item', async () => {
+      const comment = createCommentListRow();
+      createCommentMock.mockRejectedValue(new CommentReplyScopeError());
+
+      await withApp(async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/api/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            work_item_id: comment.work_item_id,
+            parent_id: comment.id,
+            content: {
+              type: 'doc',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [{ type: 'text', text: 'Reply' }],
+                },
+              ],
+            },
+          }),
+        });
+
+        expect(response.status).toBe(400);
+      });
+    });
+
     it('handles PATCH /:id (update comment)', async () => {
       const comment = createCommentListRow();
       updateCommentMock.mockResolvedValue(comment);
@@ -324,7 +380,8 @@ describe('comments routes', () => {
         expect(body.error).toBeNull();
         expect(restoreCommentMock).toHaveBeenCalledWith(
           '44444444-4444-4444-8444-444444444444',
-          expect.any(String)
+          expect.any(String),
+          'user-1'
         );
       });
     });

@@ -10,6 +10,8 @@ const {
   saveChatHistoryMock,
   processChatAsyncMock,
   getConversationAgentIdMock,
+  generateChatResponseMock,
+  createConversationMock,
 } = vi.hoisted(() => ({
   listConversationsMock: vi.fn(),
   loadChatHistoryMock: vi.fn(),
@@ -20,6 +22,8 @@ const {
   saveChatHistoryMock: vi.fn(),
   processChatAsyncMock: vi.fn(),
   getConversationAgentIdMock: vi.fn(),
+  generateChatResponseMock: vi.fn(),
+  createConversationMock: vi.fn(),
 }));
 
 vi.mock('../../src/middlewares/auth', async () => {
@@ -38,12 +42,15 @@ vi.mock('../../src/routes/api/chat/chat.service', () => {
     saveChatHistory = saveChatHistoryMock;
     processChatAsync = processChatAsyncMock;
     getConversationAgentId = getConversationAgentIdMock;
+    generateChatResponse = generateChatResponseMock;
+    createConversation = createConversationMock;
   }
 
   return { ChatService, sanitizeLog: (value: string) => value };
 });
 
 import { createChatRouter } from '../../src/routes/api/chat/chat.route';
+import { ChatAgentRuntimeAccessError } from '../../src/routes/api/chat/chat-agent-runtime';
 import type { ChatService } from '../../src/routes/api/chat/chat.service';
 import { MOCK_AUTH_USER_ID } from '../helpers/mock-api-auth';
 import { withMountedRouter } from '../helpers/route-test.harness';
@@ -58,6 +65,8 @@ const chatService = {
   saveChatHistory: saveChatHistoryMock,
   processChatAsync: processChatAsyncMock,
   getConversationAgentId: getConversationAgentIdMock,
+  generateChatResponse: generateChatResponseMock,
+  createConversation: createConversationMock,
 } as unknown as ChatService;
 
 const chatRouter = createChatRouter({ chatService });
@@ -160,6 +169,36 @@ describe('chat routes', () => {
 
       expect(response.status).toBe(400);
       expect(body.error).toBe('No chat model configured');
+    });
+  });
+
+  it('returns 403 when a selected agent is inactive or inaccessible', async () => {
+    resolveChatModelForChatMock.mockResolvedValue({
+      integrationId,
+      provider: 'openai',
+      model: 'gpt-4o',
+      apiKey: 'test-key',
+      apiUrl: 'https://api.openai.com/v1/chat/completions',
+    });
+    generateChatResponseMock.mockRejectedValue(
+      new ChatAgentRuntimeAccessError()
+    );
+
+    await withMountedRouter('/api/v1/chat', chatRouter, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/v1/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: 'Hi' }],
+          integrationId,
+          agentId: '33333333-3333-4333-8333-333333333333',
+        }),
+      });
+      const body = await response.json();
+
+      expect(response.status).toBe(403);
+      expect(body.error).toMatch(/unavailable|access/i);
+      expect(createConversationMock).not.toHaveBeenCalled();
     });
   });
 

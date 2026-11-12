@@ -5,6 +5,7 @@ import {
   type CommentDetailRow,
   type CommentReactionEmoji,
   paginationMeta,
+  UserRoleEnum,
 } from '@repo/types';
 import { enqueueDestructiveAction } from '../../../lib/enqueue-destructive-action';
 import { OptimisticLockError } from '../../../lib/optimistic-lock';
@@ -17,6 +18,8 @@ import {
 
 import { RecordStatus } from '@repo/types/prisma';
 import { prisma } from '../../../lib/prisma';
+import { getActorUser } from '../../../lib/auth-helpers';
+import { CommentAccessError, CommentReplyScopeError } from './comments.errors';
 
 function commentEntityLabel(comment: CommentRow): string {
   const snippet = createCommentSnippet(comment.content);
@@ -31,6 +34,46 @@ export class CommentsService {
       'createMentionNotification'
     >
   ) {}
+
+  private async requireCanMutateComment(
+    commentId: string,
+    actorId: string
+  ): Promise<void> {
+    const context = await this.commentsRepository.requireProjectMember(
+      commentId,
+      actorId
+    );
+    if (context.authorId === actorId) {
+      return;
+    }
+
+    const actor = await getActorUser(actorId);
+    if (
+      actor.role !== UserRoleEnum.admin &&
+      actor.role !== UserRoleEnum.manager
+    ) {
+      throw new CommentAccessError(
+        'You can only modify your own comments in this project.'
+      );
+    }
+  }
+
+  private async requireValidReplyParent(
+    actorId: string,
+    workItemId: string,
+    parentId: string | null | undefined
+  ): Promise<void> {
+    if (!parentId) {
+      return;
+    }
+    const parent = await this.commentsRepository.requireProjectMember(
+      parentId,
+      actorId
+    );
+    if (parent.workItemId !== workItemId) {
+      throw new CommentReplyScopeError();
+    }
+  }
 
   private async getAllowedMentionUserIds(
     workItemId: string
@@ -137,6 +180,16 @@ export class CommentsService {
       parent_id?: string | null;
     }
   ): Promise<CommentRow> {
+    await this.commentsRepository.requireWorkItemProjectMember(
+      input.work_item_id,
+      actorId
+    );
+    await this.requireValidReplyParent(
+      actorId,
+      input.work_item_id,
+      input.parent_id
+    );
+
     const created = await this.commentsRepository.create({
       ...input,
       author_id: actorId,
@@ -149,18 +202,24 @@ export class CommentsService {
     id: string,
     content: Json,
     expectedUpdatedAt: string,
-    actorId?: string
+    actorId: string
   ): Promise<CommentRow> {
+    await this.requireCanMutateComment(id, actorId);
     const updated = await this.commentsRepository.update(
       id,
       content,
       expectedUpdatedAt
     );
 
-    return this.notifyMentionsAndReturn(actorId || updated.author_id, updated);
+    return this.notifyMentionsAndReturn(actorId, updated);
   }
 
-  async archiveComment(id: string, expectedUpdatedAt: string): Promise<void> {
+  async archiveComment(
+    id: string,
+    expectedUpdatedAt: string,
+    actorId: string
+  ): Promise<void> {
+    await this.requireCanMutateComment(id, actorId);
     await this.commentsRepository.archive(id, expectedUpdatedAt);
   }
 
@@ -194,16 +253,22 @@ export class CommentsService {
         ? `/work-items/${comment.work_item_id}`
         : null,
       run: async () => {
-        await this.archiveComment(id, expectedUpdatedAt);
+        await this.archiveComment(id, expectedUpdatedAt, actorId);
       },
     });
   }
 
-  async restoreComment(id: string, expectedUpdatedAt: string): Promise<void> {
+  async restoreComment(
+    id: string,
+    expectedUpdatedAt: string,
+    actorId: string
+  ): Promise<void> {
+    await this.requireCanMutateComment(id, actorId);
     await this.commentsRepository.restore(id, expectedUpdatedAt);
   }
 
-  async hardDeleteComment(id: string): Promise<void> {
+  async hardDeleteComment(id: string, actorId: string): Promise<void> {
+    await this.requireCanMutateComment(id, actorId);
     await this.commentsRepository.hardDelete(id);
   }
 
@@ -230,7 +295,7 @@ export class CommentsService {
         ? `/work-items/${comment.work_item_id}`
         : null,
       run: async () => {
-        await this.hardDeleteComment(id);
+        await this.hardDeleteComment(id, actorId);
       },
     });
   }

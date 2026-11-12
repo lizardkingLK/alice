@@ -22,6 +22,7 @@ import {
   teams,
   users,
   workItems,
+  workItemAiProposals,
   worklogs,
 } from './composition';
 
@@ -51,6 +52,7 @@ routesConfig.use('/api/saved-views', savedViews.router);
 routesConfig.use('/api/sprints', sprints.router);
 routesConfig.use('/api/teams', teams.router);
 routesConfig.use('/api/users', users.router);
+routesConfig.use('/api/work-items', workItemAiProposals.router);
 routesConfig.use('/api/work-items', workItems.router);
 routesConfig.use('/api/worklogs', worklogs.router);
 
@@ -71,6 +73,7 @@ routesConfig.use('/api/v1/saved-views', savedViews.router);
 routesConfig.use('/api/v1/sprints', sprints.router);
 routesConfig.use('/api/v1/teams', teams.router);
 routesConfig.use('/api/v1/users', users.router);
+routesConfig.use('/api/v1/work-items', workItemAiProposals.router);
 routesConfig.use('/api/v1/work-items', workItems.router);
 routesConfig.use('/api/v1/worklogs', worklogs.router);
 

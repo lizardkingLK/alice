@@ -1,4 +1,5 @@
 import { decryptSecret } from '../../../lib/secrets/token-crypto';
+import type { ChatAgentDetailRow } from '@repo/types';
 import type { AliceChatTools } from './chat.route.types';
 import {
   aliceChatTools,
@@ -18,6 +19,13 @@ export type ResolvedChatAgentRuntime = {
   readonly enabledToolNames: ReadonlySet<string> | null;
   readonly toolInstructions: ReadonlyMap<string, string>;
 };
+
+export class ChatAgentRuntimeAccessError extends Error {
+  constructor() {
+    super('The selected chat agent is unavailable or you do not have access.');
+    this.name = 'ChatAgentRuntimeAccessError';
+  }
+}
 
 const FALLBACK_TOOL_INSTRUCTIONS = new Map<string, string>([
   [CHART_DESCRIPTION_TOOL_KEY, chartDescriptionSystemPrompt],
@@ -58,9 +66,15 @@ export async function resolveChatAgentRuntime(params: {
     return buildFallbackChatAgentRuntime();
   }
 
-  const agent =
-    (agentId ? await chatAgents.findVisibleById(userId, agentId) : null) ??
-    (await chatAgents.findActiveDefault());
+  let agent: ChatAgentDetailRow | null;
+  if (agentId) {
+    agent = await chatAgents.findVisibleById(userId, agentId);
+    if (agent?.status !== 'active') {
+      throw new ChatAgentRuntimeAccessError();
+    }
+  } else {
+    agent = await chatAgents.findActiveDefault();
+  }
 
   if (!agent) {
     return buildFallbackChatAgentRuntime();

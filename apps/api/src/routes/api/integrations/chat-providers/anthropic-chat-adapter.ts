@@ -356,6 +356,7 @@ function assertNormalStopReason(
   throw invalidResponse('invalid_stop_reason');
 }
 
+
 function assertAnthropicAssistantMessage(payload: unknown): {
   readonly content: readonly unknown[];
   readonly stop_reason: unknown;
@@ -391,13 +392,35 @@ function appendTextBlock(
   }
 }
 
+function isAnthropicThinkingBlock(block: Record<string, unknown>): boolean {
+  return block.type === 'thinking' || block.type === 'redacted_thinking';
+}
+
+function assertThinkingBlocksCanBeOmitted(
+  thinkingBlockCount: number,
+  toolUseCount: number
+): void {
+  // Alice's shared response shape cannot preserve Anthropic thinking blocks
+  // for a subsequent tool-result turn. Terminal text responses can safely omit
+  // them; tool-use responses must keep failing closed until round-tripping is
+  // supported.
+  if (thinkingBlockCount > 0 && toolUseCount > 0) {
+    throw invalidResponse('unsupported_content_block');
+  }
+}
+
 function parseAnthropicContentBlocks(
   content: readonly unknown[],
   tools: AliceChatTools
-): { parts: ChatContentPart[]; toolUseCount: number } {
+): {
+  parts: ChatContentPart[];
+  toolUseCount: number;
+  thinkingBlockCount: number;
+} {
   const parts: ChatContentPart[] = [];
   const seenToolUseIds = new Set<string>();
   let toolUseCount = 0;
+  let thinkingBlockCount = 0;
 
   for (const rawBlock of content) {
     if (!isRecord(rawBlock)) {
@@ -415,15 +438,17 @@ function parseAnthropicContentBlocks(
       continue;
     }
 
-    // Extended-thinking / redacted blocks can appear on some models; ignore.
-    if (rawBlock.type === 'thinking' || rawBlock.type === 'redacted_thinking') {
+    // Extended-thinking / redacted blocks can appear on some models; omit for
+    // terminal text turns. Tool-use turns fail closed (see assert below).
+    if (isAnthropicThinkingBlock(rawBlock)) {
+      thinkingBlockCount += 1;
       continue;
     }
 
     throw invalidResponse('unsupported_content_block');
   }
 
-  return { parts, toolUseCount };
+  return { parts, toolUseCount, thinkingBlockCount };
 }
 
 function ensureNonEmptyEndTurnParts(
@@ -453,11 +478,10 @@ export function anthropicMessageToChatLlmResponse(
   tools: AliceChatTools
 ): ChatLlmResponse {
   const message = assertAnthropicAssistantMessage(payload);
-  const { parts, toolUseCount } = parseAnthropicContentBlocks(
-    message.content,
-    tools
-  );
+  const { parts, toolUseCount, thinkingBlockCount } =
+    parseAnthropicContentBlocks(message.content, tools);
 
+  assertThinkingBlocksCanBeOmitted(thinkingBlockCount, toolUseCount);
   assertNormalStopReason(message.stop_reason, toolUseCount);
 
   return {
