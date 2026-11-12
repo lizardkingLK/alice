@@ -67,6 +67,9 @@ export async function DashboardOverviewData({
         wipItems: [],
         unreadNotifications: [],
         completion: { doneCount: 0, totalCount: 0, percent: 0 },
+        chatModels: [],
+        chatAgents: [],
+        preferredChatAgentId: null,
       },
       'fetch productivity dashboard bootstrap'
     ),

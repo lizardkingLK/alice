@@ -95,6 +95,7 @@ export async function DashboardShell({
           <ChatLauncherProvider
             currentUserName={dbUser?.name}
             currentUserImageUrl={dbUser?.profile_picture}
+            currentUserId={dbUser?.id}
             currentUserRole={dbUser?.role}
           >
             <DashboardRuntimeProviders

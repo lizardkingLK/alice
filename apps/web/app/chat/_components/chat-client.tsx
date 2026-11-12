@@ -43,8 +43,10 @@ import {
   useChatConversationsRealtime,
   useChatProcessingPoll,
 } from './use-chat-client-session';
+import { EMPTY_PREFERRED_CHAT_AGENTS } from '@/app/chat/_helpers/chat-assistant-identity';
 import {
   ChatEmptyGateView,
+  ChatModelsLoadingView,
   ChatPageTrailBreadcrumb,
   NO_CHAT_MODEL_ERROR,
   normalizeChatErrorMessage,
@@ -61,6 +63,7 @@ export function ChatClient(props: Readonly<ChatClientProps>) {
   const compact = isCompactChatChrome(props.variant ?? 'page');
   const chatModelSelection = useWorkspaceChatModels({
     initialChatModels: props.initialChatModels,
+    userId: props.currentUserId,
     lazy: compact && props.initialChatModels === undefined,
   });
 
@@ -102,6 +105,8 @@ function ChatClientInner({
   initialConversationId,
   initialMessages,
   initialAgentId,
+  initialAssistantIdentity = null,
+  initialChatAgents = EMPTY_PREFERRED_CHAT_AGENTS,
   initialHistoryOpen = true,
   currentUserId,
   currentUserRole,
@@ -161,6 +166,7 @@ function ChatClientInner({
     setSelectedIntegrationId,
     isMarkingDefault,
     isLoadingModels,
+    modelsReady,
     ensureModelsLoaded,
     markSelectedAsDefault,
   } = chatModelSelection;
@@ -172,6 +178,12 @@ function ChatClientInner({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hydratedRef = useRef<string | null>(null);
+
+  // Compact layouts lazy-load models for the menu — still resolve once so the
+  // no-models empty gate works in docked / drawer / widget chrome.
+  useEffect(() => {
+    void ensureModelsLoaded();
+  }, [ensureModelsLoaded]);
 
   useChatClientBootstrap({
     hasServerBootstrap,
@@ -520,12 +532,29 @@ function ChatClientInner({
   const emptyGate = resolveChatEmptyGate({
     isPage,
     isLoadingConversations,
+    modelsReady,
+    isLoadingModels,
     chatModelCount: chatModels.length,
     conversationCount: conversations.length,
     hasStartedEmptyConversation,
     activeConversationId,
     messageCount: messages.length,
   });
+
+  // Avoid chat-chrome flash before the no-models gate (dock/widget without SSR).
+  // Warm localStorage sets modelsReady so remounts skip this spinner.
+  if (!modelsReady) {
+    return (
+      <ChatModelsLoadingView
+        isPage={isPage}
+        chatBreadcrumbTrail={chatBreadcrumbTrail}
+        isLoadingConversations={isLoadingConversations}
+        isLoadingHistory={isLoadingHistory}
+        activeConversationId={activeConversationId}
+        onClose={onClose}
+      />
+    );
+  }
 
   if (emptyGate) {
     return (
@@ -539,6 +568,7 @@ function ChatClientInner({
         onCreateConversation={() => {
           setHasStartedEmptyConversation(true);
         }}
+        onClose={onClose}
       />
     );
   }
@@ -574,6 +604,9 @@ function ChatClientInner({
       inputValue={inputValue}
       fileInputRef={fileInputRef}
       boundAgentId={boundAgentId}
+      initialAssistantIdentity={initialAssistantIdentity}
+      initialChatAgents={initialChatAgents}
+      onBoundAgentIdChange={setBoundAgentId}
       conversationToDelete={conversationToDelete}
       conversationToRename={conversationToRename}
       isDeleting={isDeleting}

@@ -31,8 +31,15 @@ threads. When a conversation is open, the header breadcrumb shows
 **Dashboard → Chat →** that chat’s title.
 
 Only active integrations appear in the model menu. If no models are connected,
-Alice asks you to **add an AI model** first; contact a manager or admin. If
-models exist but you have no conversations yet, use **Create conversation**.
+Alice shows **Add an AI model first** in every layout (full page, header dock,
+drawer, and Overview widget); contact a manager or admin. The full `/chat` page
+and Overview widget learn model availability on the server. The header dock
+loads models when you open Alice (a brief spinner, then the gate or chat) and
+remembers the last result in this browser so reopen is instant. When models are
+connected, left/right chevrons next to the agent name cycle available
+personalities (Overview Alice and the header dock); the choice is remembered as
+your preferred agent. If models exist but you have no conversations yet on the
+full chat page, use **Create conversation**.
 
 ---
 
@@ -53,8 +60,9 @@ On any dashboard page (except `/chat`):
    the dock conversation for that session — reopen to continue.
 5. Dock chats are **temporary**: they are saved while you talk on that page, but
    they do **not** appear in the history list on the full `/chat` page.
-6. Alice uses the workspace **default model** until you open the model menu and
-   pick another (models load when you open that menu).
+6. Alice uses the workspace **default model**. Models load when the dock opens
+   (spinner on first open in this browser; later opens use a local cache and
+   refresh in the background). You can still switch models from the menu.
 
 ---
 

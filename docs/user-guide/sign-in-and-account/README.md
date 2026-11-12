@@ -49,9 +49,10 @@ projects (name plus description) on a soft grey productivity surface. The main
 column greets you by time of day (small mono text) and — when you have them —
 lists up to five open assigned work items (liquid-glass card, **% completed**
 pill) and up to five unread notifications (green unread dots, red count badge,
-humanized times). Empty lists stay hidden. Role-based **Quick links** always
-sit in the right column (for example admins see create project and manage
-users). Scroll for a full-height footer (**Product Development Automated**)
+humanized times). Empty lists stay hidden and the center column collapses so
+profile and Quick links sit side by side without a blank middle. Role-based
+**Quick links** always sit in the right column (for example admins see create
+project and manage users). Scroll for a full-height footer (**Product Development Automated**)
 with About, Contact, and workspace links — those About/Contact links are hidden
 from the signed-in top nav. Open **Dashboard** (or the footer Overview link) to
 get back into the workspace.

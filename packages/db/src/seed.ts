@@ -959,35 +959,37 @@ async function main(): Promise<void> {
   const teamId = await seedTeam(userIds, adminId);
   await seedTeamMembers(teamId, userIds, adminId);
 
-  for (const project of SEED_PROJECTS) {
-    console.log(`info. seeding project ${project.key} (${project.name})...`);
-    const projectId = await seedProject(project, userIds, adminId);
-    await seedProjectMembers(projectId, userIds, adminId);
+  await Promise.all(
+    SEED_PROJECTS.map(async (project) => {
+      console.log(`info. seeding project ${project.key} (${project.name})...`);
+      const projectId = await seedProject(project, userIds, adminId);
+      await seedProjectMembers(projectId, userIds, adminId);
 
-    console.log(`info. seeding sprints for ${project.key}...`);
-    const sprintIds = await seedSprints(projectId, adminId);
+      console.log(`info. seeding sprints for ${project.key}...`);
+      const sprintIds = await seedSprints(projectId, adminId);
 
-    console.log(`info. seeding work items for ${project.key}...`);
-    const workItems = await seedWorkItems(projectId, sprintIds, userIds);
+      console.log(`info. seeding work items for ${project.key}...`);
+      const workItems = await seedWorkItems(projectId, sprintIds, userIds);
 
-    console.log(
-      `info. seeding comments, attachments, notifications for ${project.key}...`
-    );
-    const commentId = await seedComments(
-      workItems.storyId,
-      requireUserId(userIds, 'manager@alice.dev')
-    );
-    await seedCommentReply(
-      workItems.storyId,
-      requireUserId(userIds, 'member@alice.dev'),
-      commentId
-    );
-    await seedAttachment(
-      workItems.storyId,
-      requireUserId(userIds, 'member@alice.dev')
-    );
-    await seedNotifications(userIds, workItems.storyId, adminId, project.key);
-  }
+      console.log(
+        `info. seeding comments, attachments, notifications for ${project.key}...`
+      );
+      const commentId = await seedComments(
+        workItems.storyId,
+        requireUserId(userIds, 'manager@alice.dev')
+      );
+      await seedCommentReply(
+        workItems.storyId,
+        requireUserId(userIds, 'member@alice.dev'),
+        commentId
+      );
+      await seedAttachment(
+        workItems.storyId,
+        requireUserId(userIds, 'member@alice.dev')
+      );
+      await seedNotifications(userIds, workItems.storyId, adminId, project.key);
+    })
+  );
 
   console.log('info. seeding chat tools, skills, and default Alice agent...');
   await seedChatAgents(supabase, adminId);

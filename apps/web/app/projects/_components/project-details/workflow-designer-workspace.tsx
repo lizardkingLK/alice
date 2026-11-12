@@ -246,6 +246,8 @@ function WorkflowDesignerCanvas({
               category: state.category,
               lockRecord: state.lockRecord,
               terminal: state.terminal,
+              acceptFromAnyState: state.acceptFromAnyState,
+              allowToAnyState: state.allowToAnyState,
             }
           : node.data,
       };

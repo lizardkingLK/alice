@@ -13,12 +13,14 @@ type DockedChatPanelProps = {
   readonly onDismissPageContext?: () => void;
   readonly currentUserName?: string | null;
   readonly currentUserImageUrl?: string | null;
+  readonly currentUserId?: string | null;
   readonly currentUserRole?: AppRole | null;
 };
 
 /**
- * App-shell Alice sidebar: opens instantly with empty session state.
- * Conversations are temporary (not listed on `/chat`); models load on demand.
+ * App-shell Alice sidebar: opens with empty session state. Models load on the
+ * client (spinner until ready; localStorage warm cache skips the wait on remount).
+ * Conversations are temporary (not listed on `/chat`).
  */
 export function DockedChatPanel({
   onClose,
@@ -27,6 +29,7 @@ export function DockedChatPanel({
   onDismissPageContext,
   currentUserName,
   currentUserImageUrl,
+  currentUserId,
   currentUserRole,
 }: Readonly<DockedChatPanelProps>) {
   return (
@@ -44,6 +47,7 @@ export function DockedChatPanel({
         onDismissPageContext={onDismissPageContext}
         currentUserName={currentUserName}
         currentUserImageUrl={currentUserImageUrl}
+        currentUserId={currentUserId}
         currentUserRole={currentUserRole}
         initialConversations={[]}
         initialMessages={[]}

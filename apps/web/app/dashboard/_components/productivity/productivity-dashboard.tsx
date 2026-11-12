@@ -92,7 +92,7 @@ export function ProductivityDashboard({
     <div
       ref={containerRef}
       className={cn(
-        'dashboard-grid w-full min-w-0 flex-none transition-opacity duration-150',
+        'dashboard-grid min-h-0 w-full min-w-0 flex-1 transition-opacity duration-150',
         isSidebarSettling && 'pointer-events-none opacity-80'
       )}
     >

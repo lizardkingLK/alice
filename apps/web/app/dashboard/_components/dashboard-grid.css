@@ -72,6 +72,13 @@
   z-index: 1;
 }
 
+/* Chart glyphs sit under Overview chrome when no boards are pinned. */
+.dashboard-productivity-surface > .dashboard-charts-empty-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
 /* Slow orbit so green/grey washes roam the pane. */
 @keyframes productivity-gradient-drift {
   0% {
@@ -102,19 +109,70 @@
 
 /*
  * Full main-pane fill when Productivity mode is on.
- * Padding lives on the Overview home (shell uses p-0) — overflow clips the
- * oversized glow layer so motion cannot spawn page scrollbars.
+ * Padding lives on the Overview home (shell uses p-0). Vertical scroll stays
+ * on this shell so zoomed-in widgets remain reachable; glow uses inset 0 so
+ * the oversized drift layer does not inflate scrollHeight.
  */
 .dashboard-productivity-surface--shell {
   border-radius: 0;
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
-  min-height: 100%;
+  /* Fill the dashboard pane; clamp keeps padding comfortable across zoom. */
+  min-height: 0;
   height: auto;
-  flex: 1 0 auto;
+  flex: 1 1 auto;
   align-self: stretch;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.dashboard-productivity-surface--shell::before {
+  inset: 0;
+}
+
+/* Focus timer complete: separate expanding halo outside the glass disc. */
+@keyframes focus-timer-done-halo {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+.focus-timer-done {
+  position: relative;
+}
+
+.focus-timer-done::before,
+.focus-timer-done::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: -2px;
+  border-radius: 9999px;
+  border: 2px solid color-mix(in oklch, var(--primary) 55%, transparent);
+  opacity: 0;
+}
+
+.focus-timer-done::before {
+  animation: focus-timer-done-halo 2.2s ease-out infinite;
+}
+
+.focus-timer-done::after {
+  animation: focus-timer-done-halo 2.2s ease-out 1.1s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .focus-timer-done::before,
+  .focus-timer-done::after {
+    animation: none;
+    inset: -6px;
+    opacity: 0.35;
+  }
 }
 
 /* Liquid-glass cards — translucent + backdrop blur (not a WebGL shader). */

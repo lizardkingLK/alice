@@ -1,10 +1,12 @@
 /**
  * Per-user Focus widget todos (browser localStorage only).
+ * Today's rows sync with the personal Calendar widget.
  */
 
 import { getLocalStorageJson, setLocalStorageJson } from '@/lib/local-storage';
 
 const STORAGE_PREFIX = 'alice:overview-focus-todos:v1:';
+export const FOCUS_TODOS_CHANGED_EVENT = 'alice-focus-todos-changed';
 export const FOCUS_TODOS_MAX = 50;
 
 export type FocusTodo = {
@@ -102,7 +104,21 @@ export function writeFocusTodos(
       createdAt: todo.createdAt,
     }))
   );
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(FOCUS_TODOS_CHANGED_EVENT));
+  }
 }
+
+/** Stable compare for skip-write guards during Focus ↔ Calendar sync. */
+export function focusTodosFingerprint(todos: readonly FocusTodo[]): string {
+  return todos
+    .map((todo) => `${todo.id}\0${todo.done ? 1 : 0}\0${todo.text}`)
+    .join('\n');
+}
+
+export type FocusTodoFilter = 'all' | 'active' | 'done';
+
+export type FocusTodoDropEdge = 'before' | 'after';
 
 export function addFocusTodo(
   todos: readonly FocusTodo[],
@@ -113,13 +129,13 @@ export function addFocusTodo(
     return [...todos];
   }
   return [
+    ...todos,
     {
       id: newTodoId(),
       text: trimmed,
       done: false,
       createdAt: Date.now(),
     },
-    ...todos,
   ];
 }
 
@@ -143,4 +159,62 @@ export function clearCompletedFocusTodos(
   todos: readonly FocusTodo[]
 ): FocusTodo[] {
   return todos.filter((todo) => !todo.done);
+}
+
+export function filterFocusTodos(
+  todos: readonly FocusTodo[],
+  filter: FocusTodoFilter
+): FocusTodo[] {
+  if (filter === 'active') {
+    return todos.filter((todo) => !todo.done);
+  }
+  if (filter === 'done') {
+    return todos.filter((todo) => todo.done);
+  }
+  return [...todos];
+}
+
+/** Empty-state copy for the Focus task list (avoids nested ternaries in UI). */
+export function focusFilterEmptyMessage(
+  totalCount: number,
+  filter: FocusTodoFilter
+): string {
+  if (totalCount === 0) {
+    return 'Capture quick tasks for this focus block.';
+  }
+  if (filter === 'done') {
+    return 'No completed tasks.';
+  }
+  if (filter === 'active') {
+    return 'No active tasks.';
+  }
+  return 'No tasks.';
+}
+
+/** Reorder by drag target; no-op when ids are missing or identical. */
+export function reorderFocusTodos(
+  todos: readonly FocusTodo[],
+  draggedId: string,
+  targetId: string,
+  edge: FocusTodoDropEdge
+): FocusTodo[] {
+  if (draggedId === targetId) {
+    return [...todos];
+  }
+  const next = [...todos];
+  const from = next.findIndex((todo) => todo.id === draggedId);
+  let to = next.findIndex((todo) => todo.id === targetId);
+  if (from < 0 || to < 0) {
+    return next;
+  }
+  const [item] = next.splice(from, 1);
+  if (!item) {
+    return [...todos];
+  }
+  if (from < to) {
+    to -= 1;
+  }
+  const insertAt = edge === 'after' ? to + 1 : to;
+  next.splice(insertAt, 0, item);
+  return next;
 }

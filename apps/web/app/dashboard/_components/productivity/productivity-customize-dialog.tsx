@@ -98,7 +98,7 @@ export function ProductivityCustomizeDialog({
               />
               <ModeCard
                 title="Productivity"
-                description="Alice, Focus timer and todos, plus optional My Work and Docs"
+                description="Focus and Categories panes, plus optional Alice, My Work lists, and Docs"
                 selected={draft.mode === 'productivity'}
                 onSelect={() => setMode('productivity')}
               />

@@ -16,8 +16,8 @@ state-node|State node|A board column (or draft state). Color follows category. S
 handles|Connection handles|Dots on each side of a state. Hover or select a state to reveal them, then drag to another state to create a transition.
 forward-edge|Forward transition|Left-to-right link uses the primary green stroke. Select it to set who can move, forms, and child checks.
 reverse-edge|Reverse transition|Right-to-left link uses a dark stroke. Cycles need both directions as separate transitions.
-from-any|Allow transitions from any state|State flag: every other state can move here without drawing each edge. Explicit edges keep their own rules.
-to-any|Allow transitions to any state|State flag: this state can move to every other state without drawing each edge. Not available on terminal states.
+from-any|From any chip|State flag (and canvas chip): every other state can move here without drawing each edge. Chip uses the forward-edge (primary) color.
+to-any|To any chip|State flag (and canvas chip): this state can move to every other state without drawing each edge. Chip uses the reverse-edge (dark) color. Not available on terminal states.
 settings|Settings panel|Right-hand panel for the selected state or transition. Double-click a node or edge to open it.
 add-state-fab|Add state button|Floating plus on the canvas (bottom right) adds a new state and opens Settings. Same as Ctrl/Cmd+Alt+N.
 `;

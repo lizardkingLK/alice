@@ -1,7 +1,19 @@
 'use client';
 
-import { type Dispatch, type RefObject, type SetStateAction } from 'react';
+import {
+  type Dispatch,
+  type ReactNode,
+  type RefObject,
+  type SetStateAction,
+} from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Button } from '@repo/ui/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@repo/ui/components/ui/tooltip';
+import { Loader2, X } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import {
   ChatConversationKinds,
@@ -86,6 +98,8 @@ export type ChatEmptyGate = 'no-models' | 'no-conversations' | null;
 export function resolveChatEmptyGate(params: {
   readonly isPage: boolean;
   readonly isLoadingConversations: boolean;
+  readonly modelsReady: boolean;
+  readonly isLoadingModels: boolean;
   readonly chatModelCount: number;
   readonly conversationCount: number;
   readonly hasStartedEmptyConversation: boolean;
@@ -95,19 +109,26 @@ export function resolveChatEmptyGate(params: {
   const {
     isPage,
     isLoadingConversations,
+    modelsReady,
+    isLoadingModels,
     chatModelCount,
     conversationCount,
     hasStartedEmptyConversation,
     activeConversationId,
     messageCount,
   } = params;
-  if (!isPage || isLoadingConversations) {
+  if (isLoadingConversations || !modelsReady) {
     return null;
   }
+  // Ready (SSR, cache, or fetch) with zero models → gate even during revalidate.
   if (chatModelCount === 0) {
     return 'no-models';
   }
+  if (isLoadingModels) {
+    return null;
+  }
   if (
+    isPage &&
     conversationCount === 0 &&
     !hasStartedEmptyConversation &&
     !activeConversationId &&
@@ -118,6 +139,101 @@ export function resolveChatEmptyGate(params: {
   return null;
 }
 
+function ChatCompactCloseButton({
+  onClose,
+}: Readonly<{ onClose: () => void }>) {
+  return (
+    <div className="flex shrink-0 justify-end px-2 pt-2">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="cursor-pointer"
+            aria-label="Close chat"
+            onClick={onClose}
+          >
+            <X className="size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Close</TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}
+
+type ChatChromeHeaderProps = {
+  readonly isPage: boolean;
+  readonly chatBreadcrumbTrail: readonly DashboardBreadcrumbOverride[] | null;
+  readonly isLoadingConversations: boolean;
+  readonly isLoadingHistory: boolean;
+  readonly activeConversationId: string | undefined;
+  readonly onClose?: () => void;
+};
+
+/** Page trail or compact close — shared by loading / empty gate shells. */
+function ChatChromeHeader({
+  isPage,
+  chatBreadcrumbTrail,
+  isLoadingConversations,
+  isLoadingHistory,
+  activeConversationId,
+  onClose,
+}: Readonly<ChatChromeHeaderProps>): ReactNode {
+  if (isPage) {
+    return (
+      <ChatPageTrailBreadcrumb
+        trail={chatBreadcrumbTrail}
+        isLoadingConversations={isLoadingConversations}
+        isLoadingHistory={isLoadingHistory}
+        activeConversationId={activeConversationId}
+      />
+    );
+  }
+  if (onClose) {
+    return <ChatCompactCloseButton onClose={onClose} />;
+  }
+  return null;
+}
+
+function chatShellClassName(isPage: boolean): string {
+  return cn(
+    'bg-background flex min-h-0 w-full flex-col overflow-hidden',
+    isPage ? 'h-full min-h-0 flex-1' : 'h-full'
+  );
+}
+
+/** Spinner while models resolve (dock/widget without SSR seed). */
+export function ChatModelsLoadingView({
+  isPage,
+  chatBreadcrumbTrail,
+  isLoadingConversations,
+  isLoadingHistory,
+  activeConversationId,
+  onClose,
+}: Readonly<ChatChromeHeaderProps>) {
+  return (
+    <div
+      className={chatShellClassName(isPage)}
+      data-testid="chat-models-loading"
+    >
+      <ChatChromeHeader
+        isPage={isPage}
+        chatBreadcrumbTrail={chatBreadcrumbTrail}
+        isLoadingConversations={isLoadingConversations}
+        isLoadingHistory={isLoadingHistory}
+        activeConversationId={activeConversationId}
+        onClose={onClose}
+      />
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2">
+        <Loader2 className="text-primary size-8 animate-spin" />
+        <span className="text-muted-foreground text-sm">Loading models…</span>
+      </div>
+    </div>
+  );
+}
+
 export function ChatEmptyGateView({
   isPage,
   emptyGate,
@@ -126,30 +242,23 @@ export function ChatEmptyGateView({
   isLoadingHistory,
   activeConversationId,
   onCreateConversation,
-}: Readonly<{
-  isPage: boolean;
-  emptyGate: Exclude<ChatEmptyGate, null>;
-  chatBreadcrumbTrail: readonly DashboardBreadcrumbOverride[] | null;
-  isLoadingConversations: boolean;
-  isLoadingHistory: boolean;
-  activeConversationId: string | undefined;
-  onCreateConversation?: () => void;
-}>) {
+  onClose,
+}: Readonly<
+  ChatChromeHeaderProps & {
+    emptyGate: Exclude<ChatEmptyGate, null>;
+    onCreateConversation?: () => void;
+  }
+>) {
   return (
-    <div
-      className={cn(
-        'bg-background flex min-h-0 w-full overflow-hidden',
-        isPage ? 'h-full min-h-0 flex-1' : 'h-full'
-      )}
-    >
-      {isPage ? (
-        <ChatPageTrailBreadcrumb
-          trail={chatBreadcrumbTrail}
-          isLoadingConversations={isLoadingConversations}
-          isLoadingHistory={isLoadingHistory}
-          activeConversationId={activeConversationId}
-        />
-      ) : null}
+    <div className={chatShellClassName(isPage)}>
+      <ChatChromeHeader
+        isPage={isPage}
+        chatBreadcrumbTrail={chatBreadcrumbTrail}
+        isLoadingConversations={isLoadingConversations}
+        isLoadingHistory={isLoadingHistory}
+        activeConversationId={activeConversationId}
+        onClose={onClose}
+      />
       <ChatConversationEmptyPanel
         kind={emptyGate}
         onCreateConversation={

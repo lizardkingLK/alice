@@ -9,7 +9,10 @@ import {
 } from '@repo/ui/components/ui/tooltip';
 import { SlidersHorizontal } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { DashboardChartsSlider } from '@/app/dashboard/_components/dashboard-charts-slider';
+import {
+  ChartsOverviewEmptyBackdrop,
+  DashboardChartsSlider,
+} from '@/app/dashboard/_components/dashboard-charts-slider';
 import { ProductivityCustomizeDialog } from '@/app/dashboard/_components/productivity/productivity-customize-dialog';
 import { ProductivityDashboard } from '@/app/dashboard/_components/productivity/productivity-dashboard';
 import {
@@ -84,17 +87,16 @@ export function DashboardOverviewHome({
   };
 
   const isProductivity = preferences.mode === 'productivity';
+  const showChartsEmptyBackdrop = !isProductivity && !hasChartSlides;
 
   return (
     <div
       className={cn(
-        'flex w-full min-w-0 flex-col gap-4 p-6',
-        isProductivity
-          ? 'dashboard-productivity-surface dashboard-productivity-surface--shell'
-          : 'min-h-0 flex-1'
+        'dashboard-productivity-surface dashboard-productivity-surface--shell flex min-h-0 w-full min-w-0 flex-1 flex-col gap-[clamp(0.75rem,2vw,1rem)] p-[clamp(1rem,2.5vw,1.5rem)]'
       )}
     >
-      <div className="flex w-full shrink-0 items-center justify-end gap-2">
+      {showChartsEmptyBackdrop ? <ChartsOverviewEmptyBackdrop /> : null}
+      <div className="relative z-10 flex w-full shrink-0 items-center justify-end gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -115,8 +117,8 @@ export function DashboardOverviewHome({
       <div
         key={`${preferences.mode}-${transitionKey}`}
         className={cn(
-          'flex w-full min-w-0 flex-col',
-          isProductivity ? 'flex-none' : 'min-h-0 flex-1',
+          'relative z-10 flex w-full min-w-0 flex-col',
+          'min-h-0 flex-1',
           'animate-in fade-in-0 zoom-in-95 duration-200'
         )}
       >

@@ -10,19 +10,9 @@ export type ProductivityWidgetDefinition = {
 export const PRODUCTIVITY_WIDGET_CATALOG: readonly ProductivityWidgetDefinition[] =
   [
     {
-      id: 'my-work-assigned',
-      title: 'Assigned to you',
-      description: 'Open work items',
-    },
-    {
-      id: 'my-work-pending-stories',
-      title: 'Pending stories',
-      description: 'Stories still open',
-    },
-    {
-      id: 'my-work-in-progress',
-      title: 'In progress',
-      description: 'Actively moving',
+      id: 'my-work-categories',
+      title: 'Categories',
+      description: 'Assigned, in progress, and pending stories',
     },
     {
       id: 'my-work-wip',
@@ -52,19 +42,17 @@ export const PRODUCTIVITY_WIDGET_CATALOG: readonly ProductivityWidgetDefinition[
     {
       id: 'pomodoro',
       title: 'Focus',
-      description: 'Timer and personal todos',
+      description: 'Timer, tasks, and personal calendar',
     },
   ];
 
-/** Default Overview: Alice + Focus side by side. */
+/** Default Overview: Focus (Calendar is a pane inside Focus). */
 export const PRODUCTIVITY_DEFAULT_LAYOUT: LayoutItem[] = [
-  { i: 'alice', x: 0, y: 0, w: 6, h: 12, minW: 4, minH: 8 },
-  { i: 'pomodoro', x: 6, y: 0, w: 6, h: 12, minW: 4, minH: 8 },
-  { i: 'my-work-assigned', x: 0, y: 12, w: 3, h: 3, minW: 2, minH: 2 },
-  { i: 'my-work-pending-stories', x: 3, y: 12, w: 3, h: 3, minW: 2, minH: 2 },
-  { i: 'my-work-in-progress', x: 6, y: 12, w: 2, h: 3, minW: 2, minH: 2 },
-  { i: 'my-work-wip', x: 0, y: 15, w: 6, h: 8, minW: 4, minH: 5 },
-  { i: 'notifications', x: 6, y: 15, w: 6, h: 8, minW: 4, minH: 5 },
-  { i: 'projects', x: 0, y: 23, w: 4, h: 9, minW: 4, minH: 5 },
-  { i: 'docs', x: 8, y: 12, w: 4, h: 6, minW: 4, minH: 5 },
+  { i: 'pomodoro', x: 0, y: 0, w: 6, h: 14, minW: 4, minH: 8 },
+  { i: 'alice', x: 6, y: 0, w: 6, h: 10, minW: 4, minH: 8 },
+  { i: 'my-work-categories', x: 6, y: 10, w: 3, h: 4, minW: 2, minH: 3 },
+  { i: 'my-work-wip', x: 0, y: 14, w: 6, h: 8, minW: 4, minH: 5 },
+  { i: 'notifications', x: 6, y: 14, w: 6, h: 8, minW: 4, minH: 5 },
+  { i: 'projects', x: 0, y: 22, w: 4, h: 9, minW: 4, minH: 5 },
+  { i: 'docs', x: 8, y: 10, w: 4, h: 6, minW: 4, minH: 5 },
 ];

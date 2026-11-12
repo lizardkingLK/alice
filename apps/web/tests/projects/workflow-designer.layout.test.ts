@@ -37,6 +37,10 @@ describe('workflow-designer.layout', () => {
     expect(edges).toHaveLength(workflow.graph.edges.length);
     expect(nodes[0]?.position).toEqual(defaultStatePosition(0));
     expect(nodes[1]?.position).toEqual(defaultStatePosition(1));
+    expect(nodes[0]?.data).toMatchObject({
+      acceptFromAnyState: workflow.graph.states[0]?.acceptFromAnyState,
+      allowToAnyState: workflow.graph.states[0]?.allowToAnyState,
+    });
     expect(edges[0]?.source).toBe(workflow.graph.edges[0]?.from);
     expect(edges[0]?.target).toBe(workflow.graph.edges[0]?.to);
     expect(edges[0]?.type).toBe('workflowTransition');

@@ -51,6 +51,17 @@ export function HomeSignedInLaunchpad({
     completion,
   } = bootstrap;
 
+  const hasFeed = wipItems.length > 0 || unreadNotifications.length > 0;
+  const hasAlerts = resetSuccess || accountClosed;
+  const showCenterColumn = hasFeed || hasAlerts;
+  const greeting = (
+    <HomeTimeGreeting
+      as="h2"
+      showName={false}
+      className="text-muted-foreground font-mono text-sm font-normal tracking-wide sm:text-base"
+    />
+  );
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <HomeCoverBanner coverUrl={coverUrl} />
@@ -61,7 +72,14 @@ export function HomeSignedInLaunchpad({
       */}
       <div className="dashboard-productivity-surface flex-1">
         <div className="mx-auto flex w-full max-w-6xl flex-col px-4 pb-10 sm:px-6">
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[17.5rem_minmax(0,1fr)_15.5rem] lg:gap-8 xl:gap-10">
+          <div
+            className={cn(
+              'grid grid-cols-1 gap-8 lg:gap-8 xl:gap-10',
+              showCenterColumn
+                ? 'lg:grid-cols-[17.5rem_minmax(0,1fr)_15.5rem]'
+                : 'lg:grid-cols-[17.5rem_minmax(0,1fr)]'
+            )}
+          >
             <aside className="relative z-10 -mt-14 space-y-5 sm:-mt-16">
               <div className="space-y-3">
                 <Avatar className="border-background size-24 border-4 shadow-md sm:size-28">
@@ -89,6 +107,7 @@ export function HomeSignedInLaunchpad({
                   >
                     {formatLabelFirstLetterCapitalized(role)}
                   </Badge>
+                  {!hasFeed ? greeting : null}
                 </div>
 
                 <Button asChild variant="outline" className="w-full">
@@ -135,28 +154,26 @@ export function HomeSignedInLaunchpad({
               </div>
             </aside>
 
-            <section className="flex min-w-0 flex-col gap-6 pt-4 lg:pt-6">
-              {resetSuccess ? (
-                <output className="block text-sm text-emerald-600">
-                  Password updated. Sign in with your new password.
-                </output>
-              ) : null}
-              {accountClosed ? (
-                <output className="text-muted-foreground block max-w-md text-sm">
-                  Your account has been deactivated. Contact an administrator if
-                  you need access restored.
-                </output>
-              ) : null}
+            {showCenterColumn ? (
+              <section className="flex min-w-0 flex-col gap-6 pt-4 lg:pt-6">
+                {resetSuccess ? (
+                  <output className="block text-sm text-emerald-600">
+                    Password updated. Sign in with your new password.
+                  </output>
+                ) : null}
+                {accountClosed ? (
+                  <output className="text-muted-foreground block max-w-md text-sm">
+                    Your account has been deactivated. Contact an administrator
+                    if you need access restored.
+                  </output>
+                ) : null}
 
-              <HomeTimeGreeting
-                as="h2"
-                showName={false}
-                className="text-muted-foreground font-mono text-sm font-normal tracking-wide sm:text-base"
-              />
+                {hasFeed ? greeting : null}
 
-              <HomeWipPanel items={wipItems} completion={completion} />
-              <HomeNotificationsPanel notifications={unreadNotifications} />
-            </section>
+                <HomeWipPanel items={wipItems} completion={completion} />
+                <HomeNotificationsPanel notifications={unreadNotifications} />
+              </section>
+            ) : null}
 
             <aside className="min-w-0 pt-4 lg:pt-6">
               <HomeQuickLinksPanel role={role} layout="rail" />

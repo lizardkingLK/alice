@@ -18,7 +18,10 @@ import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
 import { WORK_ITEM_STATUS_BADGE_STYLES } from '@/app/work-items/_helpers/work-item-status';
-import { WORKFLOW_HANDLE } from '@/app/projects/_helpers/workflow-designer.edges';
+import {
+  WORKFLOW_EDGE_STROKE,
+  WORKFLOW_HANDLE,
+} from '@/app/projects/_helpers/workflow-designer.edges';
 import type { WorkflowStateNodeData } from '@/app/projects/_helpers/workflow-designer.layout';
 
 /**
@@ -155,6 +158,62 @@ function MarchingAntsOutline() {
   );
 }
 
+/** Chip fill matches canvas edge strokes (forward = primary, reverse = foreground). */
+function WildcardChip({
+  label,
+  title,
+  direction,
+}: Readonly<{
+  label: string;
+  title: string;
+  direction: 'forward' | 'reverse';
+}>) {
+  const isForward = direction === 'forward';
+  return (
+    <span
+      title={title}
+      className="inline-flex h-5 max-w-full items-center rounded-md px-1.5 text-[10px] font-semibold tracking-wide"
+      style={{
+        backgroundColor: WORKFLOW_EDGE_STROKE[direction],
+        color: isForward ? 'var(--primary-foreground)' : 'var(--background)',
+      }}
+    >
+      <TruncatedText className="min-w-0">{label}</TruncatedText>
+    </span>
+  );
+}
+
+function WildcardChips({
+  acceptFromAnyState,
+  allowToAnyState,
+}: Readonly<{
+  acceptFromAnyState: boolean;
+  allowToAnyState: boolean;
+}>) {
+  if (!acceptFromAnyState && !allowToAnyState) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-1">
+      {acceptFromAnyState ? (
+        <WildcardChip
+          label="From any"
+          title="Allow transitions from any state"
+          direction="forward"
+        />
+      ) : null}
+      {allowToAnyState ? (
+        <WildcardChip
+          label="To any"
+          title="Allow transitions to any state"
+          direction="reverse"
+        />
+      ) : null}
+    </div>
+  );
+}
+
 function WorkflowStateFlowNodeComponent({
   id,
   data,
@@ -188,6 +247,9 @@ function WorkflowStateFlowNodeComponent({
   const connectedHandles = useStore(selectConnectedHandles, sameHandleSet);
   const revealAllHandles = selected || connectionInProgress;
 
+  const showWildcards =
+    Boolean(data.acceptFromAnyState) || Boolean(data.allowToAnyState);
+
   return (
     <div
       className={cn(
@@ -216,12 +278,23 @@ function WorkflowStateFlowNodeComponent({
           />
         );
       })}
-      <TruncatedText className="text-foreground text-sm font-medium">
-        {data.label}
-      </TruncatedText>
-      <p className="text-foreground/70 mt-0.5 text-xs">
-        {nodeCaption(id, data.category)}
-      </p>
+      <div className="flex flex-col items-center text-center">
+        <TruncatedText className="text-foreground text-sm font-medium">
+          {data.label}
+        </TruncatedText>
+        <p className="text-foreground/70 mt-0.5 text-xs">
+          {nodeCaption(id, data.category)}
+        </p>
+      </div>
+      {showWildcards ? (
+        <>
+          <div className="border-foreground/15 my-2 w-full border-t" />
+          <WildcardChips
+            acceptFromAnyState={Boolean(data.acceptFromAnyState)}
+            allowToAnyState={Boolean(data.allowToAnyState)}
+          />
+        </>
+      ) : null}
     </div>
   );
 }
