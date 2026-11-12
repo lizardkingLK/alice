@@ -6,8 +6,13 @@ import { dbPackageRoot } from '../src/package-root.js';
 const root = dbPackageRoot();
 const migrationsRoot = join(root, 'prisma/migrations');
 const migrationName = 'notification_email_events';
+const weeklyTemplateMigrationName = 'notification_email_events_weekly_template';
 const migration = readFileSync(
   join(migrationsRoot, migrationName, 'migration.sql'),
+  'utf8'
+);
+const weeklyTemplateMigration = readFileSync(
+  join(migrationsRoot, weeklyTemplateMigrationName, 'migration.sql'),
   'utf8'
 );
 const grantsSql = readFileSync(
@@ -26,6 +31,35 @@ describe('GI-656 notification email event migration', () => {
 
     expect(migrationNames.indexOf(migrationName)).toBeGreaterThan(
       migrationNames.indexOf('add_email_outbox_and_weekly_reports')
+    );
+    expect(migrationNames.indexOf(weeklyTemplateMigrationName)).toBeGreaterThan(
+      migrationNames.indexOf(migrationName)
+    );
+  });
+
+  it('replaces the template constraint with exactly four supported templates', () => {
+    expect(weeklyTemplateMigration).toContain(
+      'DROP CONSTRAINT notification_email_events_template_check'
+    );
+    expect(weeklyTemplateMigration).toContain(
+      'ADD CONSTRAINT notification_email_events_template_check'
+    );
+    const templates = [
+      'work_item_assignment',
+      'work_item_reassignment',
+      'work_item_status_change',
+      'weekly_project_report',
+    ];
+    for (const template of templates) {
+      expect(weeklyTemplateMigration).toContain(
+        `'${template}'::public."EmailTemplate"`
+      );
+    }
+    expect(
+      weeklyTemplateMigration.match(/::public\."EmailTemplate"/g)
+    ).toHaveLength(templates.length);
+    expect(weeklyTemplateMigration).not.toMatch(
+      /ENABLE ROW LEVEL SECURITY|GRANT |REVOKE |CREATE TRIGGER|DROP TRIGGER|PUBLICATION/i
     );
   });
 
