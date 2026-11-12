@@ -81,7 +81,7 @@ export function shiftPreferredChatAssistant(
     return null;
   }
   const index = agents.findIndex((agent) => agent.agentId === currentAgentId);
-  const safeIndex = index < 0 ? 0 : index;
+  const safeIndex = Math.max(index, 0);
   const next = (safeIndex + direction + agents.length) % agents.length;
   return agents[next] ?? null;
 }

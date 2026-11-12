@@ -75,7 +75,7 @@ export function shiftMyWorkCategoriesPane(
   direction: -1 | 1
 ): MyWorkCategoriesPane {
   const index = MY_WORK_CATEGORIES_PANES.indexOf(current);
-  const safeIndex = index < 0 ? 0 : index;
+  const safeIndex = Math.max(index, 0);
   const next =
     (safeIndex + direction + MY_WORK_CATEGORIES_PANES.length) %
     MY_WORK_CATEGORIES_PANES.length;

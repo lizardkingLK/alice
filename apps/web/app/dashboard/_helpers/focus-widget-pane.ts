@@ -48,7 +48,7 @@ export function shiftFocusWidgetPane(
   direction: -1 | 1
 ): FocusWidgetPane {
   const index = FOCUS_WIDGET_PANES.indexOf(current);
-  const safeIndex = index < 0 ? 0 : index;
+  const safeIndex = Math.max(index, 0);
   const next =
     (safeIndex + direction + FOCUS_WIDGET_PANES.length) %
     FOCUS_WIDGET_PANES.length;

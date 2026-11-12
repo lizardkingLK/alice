@@ -29,7 +29,7 @@ export function chatModelsFingerprint(
   return models
     .map((model) => model.id)
     .slice()
-    .sort()
+    .sort((left, right) => left.localeCompare(right))
     .join(',');
 }
 
