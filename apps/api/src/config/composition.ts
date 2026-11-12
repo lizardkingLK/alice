@@ -39,6 +39,7 @@ import { CommentsService } from '../routes/api/comments/comments.service';
 import { createCommentsRouter } from '../routes/api/comments/comments.route';
 import { createNotificationsRouter } from '../routes/api/notifications/notifications.route';
 import { NotificationsRepository } from '../routes/api/notifications/notifications.repository';
+import { PrismaEmailOutboxRepository } from '../routes/api/notifications/email-outbox.repository';
 import { HealthRepository } from '../routes/api/health/health.repository';
 import {
   HealthService,
@@ -214,8 +215,10 @@ function createNotificationsConfig(
   accessRequestsService: AccessRequestsService
 ) {
   const notificationsRepository = new NotificationsRepository(supabase);
+  const emailOutboxRepository = new PrismaEmailOutboxRepository();
   const notificationsService = new NotificationsService(
-    notificationsRepository
+    notificationsRepository,
+    emailOutboxRepository
   );
   const router = createNotificationsRouter({
     notificationsService,
@@ -224,6 +227,7 @@ function createNotificationsConfig(
 
   return {
     notificationsRepository,
+    emailOutboxRepository,
     notificationsService,
     router,
   };

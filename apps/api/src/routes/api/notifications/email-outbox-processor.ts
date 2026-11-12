@@ -9,9 +9,12 @@ import {
 
 export type ClaimedEmailOutboxItem = {
   readonly id: string;
+  readonly notificationId: string | null;
   readonly userId: string | null;
+  readonly recipientEmail: string;
   readonly template: string;
   readonly payload: unknown;
+  readonly idempotencyKey: string;
   readonly attemptCount: number;
   readonly maxAttempts: number;
 };

@@ -161,14 +161,21 @@ export class NotificationsRepository {
     });
   }
 
-  async insertMany(notifications: NotificationType[]): Promise<void> {
+  async insertMany(
+    notifications: NotificationType[]
+  ): Promise<Array<{ id: string; user_id: string }>> {
     if (notifications.length === 0) {
-      return;
+      return [];
     }
 
-    await prisma.notifications.createMany({
-      data: notifications.map(prismaNotificationCreate),
-    });
+    return await prisma.$transaction(
+      notifications.map((notification) =>
+        prisma.notifications.create({
+          data: prismaNotificationCreate(notification),
+          select: { id: true, user_id: true },
+        })
+      )
+    );
   }
 
   async findDueWorkItems(

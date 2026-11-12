@@ -10,6 +10,8 @@ import {
   type NotificationType,
 } from '@repo/types';
 import { NotificationsRepository } from './notifications.repository';
+import { EmailTemplate, type Prisma } from '@repo/types/prisma';
+import type { PrismaEmailOutboxRepository } from './email-outbox.repository';
 
 export const READ_NOTIFICATION_RETENTION_DAYS = 30;
 const READ_NOTIFICATION_RETENTION_MS =
@@ -28,16 +30,20 @@ type WorkItemNotificationRow = {
 type WorkItemNotificationDetails = {
   type: typeof AssignNotification | typeof StatusChangeNotification;
   message: string;
+  emailTemplate: EmailTemplate;
+  emailPayload: Prisma.JsonObject;
 };
 
 function addReassignmentNotifications(params: {
   messages: Map<string, WorkItemNotificationDetails>;
   actorId: string;
   actorName: string;
+  newAssigneeName: string | null;
   before: WorkItemNotificationRow;
   after: WorkItemNotificationRow;
 }) {
-  const { messages, actorId, actorName, before, after } = params;
+  const { messages, actorId, actorName, newAssigneeName, before, after } =
+    params;
   if (before.assignee_id === after.assignee_id) return;
 
   if (before.assignee_id && before.assignee_id !== actorId) {
@@ -46,12 +52,25 @@ function addReassignmentNotifications(params: {
       message: after.assignee_id
         ? `${actorName} reassigned "${after.title}" to someone else`
         : `${actorName} unassigned you from "${after.title}"`,
+      emailTemplate: EmailTemplate.work_item_reassignment,
+      emailPayload: {
+        actorName,
+        workItemId: after.id,
+        workItemTitle: after.title,
+        ...(newAssigneeName ? { newAssigneeName } : {}),
+      },
     });
   }
   if (after.assignee_id && after.assignee_id !== actorId) {
     messages.set(after.assignee_id, {
       type: AssignNotification,
       message: `${actorName} assigned a task to you: "${after.title}"`,
+      emailTemplate: EmailTemplate.work_item_assignment,
+      emailPayload: {
+        actorName,
+        workItemId: after.id,
+        workItemTitle: after.title,
+      },
     });
   }
 }
@@ -76,6 +95,14 @@ function addStatusChangeNotifications(params: {
     messages.set(recipientId, {
       type: StatusChangeNotification,
       message: `${actorName} changed "${after.title}" from ${before.status} to ${after.status}`,
+      emailTemplate: EmailTemplate.work_item_status_change,
+      emailPayload: {
+        actorName,
+        workItemId: after.id,
+        workItemTitle: after.title,
+        previousStatus: before.status,
+        nextStatus: after.status,
+      },
     });
   }
 }
@@ -83,29 +110,47 @@ function addStatusChangeNotifications(params: {
 function buildWorkItemNotificationMessages(params: {
   actorId: string;
   actorName: string;
+  newAssigneeName: string | null;
   before?: WorkItemNotificationRow | null;
   after: WorkItemNotificationRow;
 }): Map<string, WorkItemNotificationDetails> {
-  const { actorId, actorName, before, after } = params;
+  const { actorId, actorName, newAssigneeName, before, after } = params;
   const messages = new Map<string, WorkItemNotificationDetails>();
   if (!before) {
     if (after.assignee_id && after.assignee_id !== actorId) {
       messages.set(after.assignee_id, {
         type: AssignNotification,
         message: `${actorName} assigned a task to you: "${after.title}"`,
+        emailTemplate: EmailTemplate.work_item_assignment,
+        emailPayload: {
+          actorName,
+          workItemId: after.id,
+          workItemTitle: after.title,
+        },
       });
     }
     return messages;
   }
 
-  addReassignmentNotifications({ messages, actorId, actorName, before, after });
+  addReassignmentNotifications({
+    messages,
+    actorId,
+    actorName,
+    newAssigneeName,
+    before,
+    after,
+  });
   addStatusChangeNotifications({ messages, actorId, actorName, before, after });
   return messages;
 }
 
 export class NotificationsService {
   constructor(
-    private readonly notificationsRepository: NotificationsRepository
+    private readonly notificationsRepository: NotificationsRepository,
+    private readonly emailOutboxRepository?: Pick<
+      PrismaEmailOutboxRepository,
+      'createForNotification'
+    >
   ) {}
 
   async sendInAppNotification(params: {
@@ -200,14 +245,24 @@ export class NotificationsService {
     before?: WorkItemNotificationRow | null;
     after: WorkItemNotificationRow;
   }): Promise<void> {
+    let persistedEmails: Array<{
+      notificationId: string;
+      template: EmailTemplate;
+      payload: Prisma.JsonObject;
+    }> = [];
     try {
       const { actorId, before, after } = params;
-      const actorName =
-        (await this.notificationsRepository.getUserName(actorId)) ||
-        'A teammate';
+      const [actorNameResult, newAssigneeName] = await Promise.all([
+        this.notificationsRepository.getUserName(actorId),
+        before?.assignee_id !== after.assignee_id && after.assignee_id
+          ? this.notificationsRepository.getUserName(after.assignee_id)
+          : Promise.resolve(null),
+      ]);
+      const actorName = actorNameResult || 'A teammate';
       const messages = buildWorkItemNotificationMessages({
         actorId,
         actorName,
+        newAssigneeName,
         before,
         after,
       });
@@ -217,23 +272,57 @@ export class NotificationsService {
           after.project_id,
           [...messages.keys()]
         );
-      const notifications = authorizedIds.flatMap((recipientId) => {
+      const notificationEmails = authorizedIds.flatMap((recipientId) => {
         const details = messages.get(recipientId);
         if (!details) return [];
         return [
-          new NotificationBuilder(details.type)
-            .ToUser(recipientId)
-            .WithMessage(details.message)
-            .WithRelatedItem(after.id)
-            .WithCreatedBy(actorId)
-            .WithUpdatedBy(actorId)
-            .Build(),
+          {
+            notification: new NotificationBuilder(details.type)
+              .ToUser(recipientId)
+              .WithMessage(details.message)
+              .WithRelatedItem(after.id)
+              .WithCreatedBy(actorId)
+              .WithUpdatedBy(actorId)
+              .Build(),
+            template: details.emailTemplate,
+            payload: details.emailPayload,
+          },
         ];
       });
 
-      await this.notificationsRepository.insertMany(notifications);
+      const persisted = await this.notificationsRepository.insertMany(
+        notificationEmails.map((entry) => entry.notification)
+      );
+      persistedEmails = persisted.flatMap((notification, index) => {
+        const email = notificationEmails[index];
+        return email
+          ? [
+              {
+                notificationId: notification.id,
+                template: email.template,
+                payload: email.payload,
+              },
+            ]
+          : [];
+      });
     } catch (err) {
       console.error('Error creating work-item notifications:', err);
+      return;
+    }
+
+    if (!this.emailOutboxRepository) return;
+    const results = await Promise.allSettled(
+      persistedEmails.map((email) =>
+        this.emailOutboxRepository!.createForNotification(email)
+      )
+    );
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        console.error(
+          'Error creating email outbox for persisted notification:',
+          result.reason
+        );
+      }
     }
   }
 

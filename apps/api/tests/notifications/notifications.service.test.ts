@@ -32,7 +32,13 @@ describe('NotificationsService.createWorkItemMutationNotifications', () => {
     findAuthorizedProjectRecipientIds.mockImplementation(
       async (_projectId: string, userIds: string[]) => userIds
     );
-    insertMany.mockResolvedValue(undefined);
+    insertMany.mockImplementation(
+      async (notifications: Array<{ user_id: string }>) =>
+        notifications.map((notification, index) => ({
+          id: `notification-${index}`,
+          user_id: notification.user_id,
+        }))
+    );
   });
 
   it('notifies the authorized assignee after creation', async () => {
@@ -144,6 +150,39 @@ describe('NotificationsService.createWorkItemMutationNotifications', () => {
     ).resolves.toBeUndefined();
     expect(consoleError).toHaveBeenCalledWith(
       'Error creating work-item notifications:',
+      expect.any(Error)
+    );
+    consoleError.mockRestore();
+  });
+
+  it('keeps persisted in-app notifications when outbox creation fails', async () => {
+    const createForNotification = vi
+      .fn()
+      .mockRejectedValue(new Error('outbox unavailable'));
+    const serviceWithOutbox = new NotificationsService(
+      notificationsRepository,
+      { createForNotification }
+    );
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+
+    await expect(
+      serviceWithOutbox.createWorkItemMutationNotifications({
+        actorId,
+        after: baseAfter,
+      })
+    ).resolves.toBeUndefined();
+
+    expect(insertMany).toHaveBeenCalledOnce();
+    expect(createForNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        notificationId: 'notification-0',
+        template: 'work_item_assignment',
+      })
+    );
+    expect(consoleError).toHaveBeenCalledWith(
+      'Error creating email outbox for persisted notification:',
       expect.any(Error)
     );
     consoleError.mockRestore();

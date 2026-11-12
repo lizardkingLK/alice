@@ -9,9 +9,12 @@ import {
 const NOW = new Date('2026-11-11T10:00:00.000Z');
 const item: ClaimedEmailOutboxItem = {
   id: 'outbox-1',
+  notificationId: 'notification-1',
   userId: 'user-1',
+  recipientEmail: 'member@example.com',
   template: 'work_item_assignment',
   payload: {},
+  idempotencyKey: 'work_item_assignment:notification-1',
   attemptCount: 0,
   maxAttempts: 3,
 };
