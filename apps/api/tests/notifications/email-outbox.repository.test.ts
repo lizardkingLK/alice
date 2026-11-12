@@ -131,6 +131,33 @@ describe('PrismaEmailOutboxRepository', () => {
     ).resolves.toBe(false);
   });
 
+  it('rechecks current project eligibility before delivery', async () => {
+    userFindFirst.mockResolvedValueOnce(null);
+
+    await expect(
+      repository.shouldDeliver({
+        id: 'outbox-1',
+        notificationId,
+        userId: 'user-1',
+        recipientEmail: 'member@example.com',
+        template: EmailTemplate.work_item_assignment,
+        payload: {},
+        idempotencyKey: `work_item_assignment:${notificationId}`,
+        attemptCount: 0,
+        maxAttempts: 8,
+      })
+    ).resolves.toBe(false);
+
+    expect(userFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          active: true,
+          OR: expect.any(Array),
+        }),
+      })
+    );
+  });
+
   it('records revoked project authorization as a terminal cancellation', async () => {
     userFindFirst
       .mockResolvedValueOnce({

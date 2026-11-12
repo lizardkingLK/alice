@@ -34,8 +34,10 @@ const serverSchema = z.object({
   GITHUB_CLIENT_ID: z.string().min(1).optional(),
   GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
   GITHUB_REDIRECT_URI: z.string().min(1).optional(),
-  /** Optional; when set, notification cron routes require `Authorization: Bearer <CRON_SECRET>`. */
+  /** All cron routes require `Authorization: Bearer <CRON_SECRET>`. */
   CRON_SECRET: z.string().min(1),
+  EMAIL_RECONCILIATION_ENABLED: z.enum(['true', 'false']).default('false'),
+  EMAIL_OUTBOX_PROCESSING_ENABLED: z.enum(['true', 'false']).default('false'),
   /** Pooled Postgres URL for Prisma Client (Supavisor session mode, port 5432). */
   DATABASE_URL: z.string().min(1),
 });
@@ -69,6 +71,8 @@ const mock: EnvSchemaType = {
   GITHUB_CLIENT_SECRET: 'mock-github-client-secret',
   GITHUB_REDIRECT_URI: 'http://localhost:5000/api/github/oauth/callback',
   CRON_SECRET: 'mock-cron-secret',
+  EMAIL_RECONCILIATION_ENABLED: 'false',
+  EMAIL_OUTBOX_PROCESSING_ENABLED: 'false',
   DATABASE_URL: 'postgresql://localhost:5432/postgres',
 };
 
@@ -100,6 +104,8 @@ const processEnv = {
   GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
   GITHUB_REDIRECT_URI: process.env.GITHUB_REDIRECT_URI,
   CRON_SECRET: process.env.CRON_SECRET,
+  EMAIL_RECONCILIATION_ENABLED: process.env.EMAIL_RECONCILIATION_ENABLED,
+  EMAIL_OUTBOX_PROCESSING_ENABLED: process.env.EMAIL_OUTBOX_PROCESSING_ENABLED,
   DATABASE_URL: process.env.DATABASE_URL,
 };
 

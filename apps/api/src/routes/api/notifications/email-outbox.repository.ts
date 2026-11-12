@@ -369,11 +369,58 @@ export class PrismaEmailOutboxRepository implements EmailOutboxRepository {
     ) {
       return false;
     }
+    const notification = item.notificationId
+      ? await this.client.notifications.findUnique({
+          where: { id: item.notificationId },
+          select: { user_id: true, type: true, related_item_id: true },
+        })
+      : null;
+    const template = item.template as EmailTemplate;
+    if (
+      !notification ||
+      notification.user_id !== item.userId ||
+      notification.type !== TEMPLATE_NOTIFICATION_TYPE[template]
+    ) {
+      return false;
+    }
+    const workItemEligibility =
+      template === EmailTemplate.weekly_project_report
+        ? {}
+        : {
+            OR: [
+              {
+                owned_projects: {
+                  some: {
+                    work_items: { some: { id: notification.related_item_id! } },
+                  },
+                },
+              },
+              {
+                project_memberships: {
+                  some: {
+                    status: RecordStatus.active,
+                    project: {
+                      work_items: {
+                        some: { id: notification.related_item_id! },
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          };
+    if (
+      template !== EmailTemplate.weekly_project_report &&
+      !notification.related_item_id
+    ) {
+      return false;
+    }
     const recipient = await this.client.users.findFirst({
       where: {
         id: item.userId,
         active: true,
         membership_status: UserMembershipStatus.active,
+        ...workItemEligibility,
       },
       select: {
         email: true,
@@ -391,10 +438,7 @@ export class PrismaEmailOutboxRepository implements EmailOutboxRepository {
     return Boolean(
       recipient &&
       recipient.email === item.recipientEmail &&
-      preferenceAllows(
-        item.template as EmailTemplate,
-        recipient.notification_email_preference
-      )
+      preferenceAllows(template, recipient.notification_email_preference)
     );
   }
 
