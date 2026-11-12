@@ -158,6 +158,88 @@ describe('PrismaEmailOutboxRepository', () => {
     );
   });
 
+  it('rechecks weekly subscription, manager access, and preferences', async () => {
+    notificationFindUnique.mockResolvedValueOnce({
+      user_id: 'user-1',
+      type: NotificationType.weekly_project_report,
+      related_item_id: 'project-1',
+    });
+    userFindFirst.mockResolvedValueOnce({
+      email: 'member@example.com',
+      notification_email_preference: {
+        email_enabled: true,
+        work_item_assignment_enabled: true,
+        work_item_reassignment_enabled: true,
+        work_item_status_change_enabled: true,
+        weekly_reports_enabled: true,
+      },
+    });
+
+    await expect(
+      repository.shouldDeliver({
+        id: 'outbox-1',
+        notificationId,
+        userId: 'user-1',
+        recipientEmail: 'member@example.com',
+        template: EmailTemplate.weekly_project_report,
+        payload: { projectId: 'project-1' },
+        idempotencyKey: `weekly-project-report:${notificationId}`,
+        attemptCount: 0,
+        maxAttempts: 8,
+      })
+    ).resolves.toBe(true);
+
+    expect(userFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          weekly_report_subscriptions: {
+            some: { project_id: 'project-1', enabled: true },
+          },
+          OR: expect.any(Array),
+        }),
+      })
+    );
+  });
+
+  it('cancels delivery when the weekly report project is archived or deleted', async () => {
+    notificationFindUnique.mockResolvedValueOnce({
+      user_id: 'user-1',
+      type: NotificationType.weekly_project_report,
+      related_item_id: 'project-1',
+    });
+    userFindFirst.mockResolvedValueOnce(null);
+
+    await expect(
+      repository.shouldDeliver({
+        id: 'outbox-1',
+        notificationId,
+        userId: 'user-1',
+        recipientEmail: 'member@example.com',
+        template: EmailTemplate.weekly_project_report,
+        payload: { projectId: 'project-1' },
+        idempotencyKey: `weekly-project-report:${notificationId}`,
+        attemptCount: 0,
+        maxAttempts: 8,
+      })
+    ).resolves.toBe(false);
+    expect(userFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            expect.objectContaining({
+              owned_projects: {
+                some: expect.objectContaining({
+                  status: 'active',
+                  deleted_at: null,
+                }),
+              },
+            }),
+          ]),
+        }),
+      })
+    );
+  });
+
   it('records revoked project authorization as a terminal cancellation', async () => {
     userFindFirst
       .mockResolvedValueOnce({

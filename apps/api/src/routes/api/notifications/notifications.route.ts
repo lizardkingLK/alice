@@ -10,6 +10,7 @@ import type { NotificationsService } from './notifications.service';
 import type { AccessRequestsService } from '../access-requests/access-requests.service';
 import type { NotificationEmailReconciler } from './notification-email-reconciler';
 import type { EmailOutboxProcessor } from './email-outbox-processor';
+import type { WeeklyProjectReportGenerator } from './weekly-project-report-generator';
 
 const sendSchema = z.object({
   subscriberId: z.string().min(1),
@@ -55,6 +56,8 @@ export type NotificationsRouterDeps = {
   emailOutboxProcessor?: Pick<EmailOutboxProcessor, 'processBatch'>;
   emailReconciliationEnabled?: boolean;
   emailOutboxProcessingEnabled?: boolean;
+  weeklyProjectReportGenerator?: Pick<WeeklyProjectReportGenerator, 'generate'>;
+  weeklyReportGenerationEnabled?: boolean;
 };
 
 export function createNotificationsRouter(deps: NotificationsRouterDeps) {
@@ -144,6 +147,24 @@ export function createNotificationsRouter(deps: NotificationsRouterDeps) {
       };
     });
   });
+
+  notificationsRouter.post(
+    '/cron/generate-weekly-reports',
+    async (req, res) => {
+      await runAuthorizedCron(req, res, async () => {
+        if (
+          !deps.weeklyReportGenerationEnabled ||
+          !deps.weeklyProjectReportGenerator
+        ) {
+          return { enabled: false };
+        }
+        return {
+          enabled: true,
+          ...(await deps.weeklyProjectReportGenerator.generate()),
+        };
+      });
+    }
+  );
 
   return notificationsRouter;
 }

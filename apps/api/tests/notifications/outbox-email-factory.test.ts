@@ -34,6 +34,35 @@ describe('StoredEventOutboxEmailFactory', () => {
     expect(email.text).toContain('/work-items/work-item-1');
   });
 
+  it('renders a weekly report from its stored aggregate snapshot', () => {
+    const email = new StoredEventOutboxEmailFactory(
+      'https://alice.example'
+    ).build({
+      ...item,
+      template: EmailTemplate.weekly_project_report,
+      payload: {
+        recipientName: 'Taylor',
+        projectId: 'project-1',
+        projectName: 'Apollo',
+        weekLabel: '2026-11-09 to 2026-11-15',
+        completedThisWeekCount: 3,
+        createdCount: 5,
+        overdueCount: 1,
+        pendingCount: 7,
+        progressPercent: 30,
+        statusSummary: { Done: 3, ToDo: 7 },
+        periodStart: '2026-11-09',
+        periodEnd: '2026-11-15',
+        totalCount: 10,
+        completedCount: 3,
+      },
+    });
+
+    expect(email.text).toContain('3 completed, 5 created, and 1 overdue');
+    expect(email.text).toContain('7 pending; overall progress is 30%');
+    expect(email.text).toContain('Done: 3, ToDo: 7');
+  });
+
   it('rejects incomplete or extra snapshot fields instead of reconstructing them', () => {
     const factory = new StoredEventOutboxEmailFactory('https://alice.example');
     expect(() => factory.build({ ...item, payload: {} })).toThrow();

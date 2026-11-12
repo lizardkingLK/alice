@@ -5,8 +5,10 @@ import {
   EmailTemplate,
   NotificationType,
   Prisma,
+  ProjectStatus,
   RecordStatus,
   UserMembershipStatus,
+  UserRole,
 } from '@repo/types/prisma';
 import type {
   ClaimedEmailOutboxItem,
@@ -144,45 +146,83 @@ export class PrismaEmailOutboxRepository implements EmailOutboxRepository {
       return null;
     }
 
-    const snapshotMatchesNotification =
-      input.template === EmailTemplate.weekly_project_report ||
-      input.payload.workItemId === notification.related_item_id;
-    const authorized =
-      input.template === EmailTemplate.weekly_project_report ||
-      Boolean(
-        snapshotMatchesNotification &&
-        (await this.client.users.findFirst({
-          where: {
-            id: notification.user_id,
-            active: true,
-            membership_status: UserMembershipStatus.active,
-            OR: [
-              {
-                owned_projects: {
-                  some: {
-                    work_items: {
-                      some: { id: notification.related_item_id! },
+    const weekly = input.template === EmailTemplate.weekly_project_report;
+    const snapshotMatchesNotification = weekly
+      ? input.payload.projectId === notification.related_item_id
+      : input.payload.workItemId === notification.related_item_id;
+    const authorized = Boolean(
+      snapshotMatchesNotification &&
+      notification.related_item_id &&
+      (await this.client.users.findFirst({
+        where: weekly
+          ? {
+              id: notification.user_id,
+              active: true,
+              status: RecordStatus.active,
+              membership_status: UserMembershipStatus.active,
+              weekly_report_subscriptions: {
+                some: {
+                  project_id: notification.related_item_id,
+                  enabled: true,
+                },
+              },
+              OR: [
+                {
+                  owned_projects: {
+                    some: {
+                      id: notification.related_item_id,
+                      status: ProjectStatus.active,
+                      deleted_at: null,
                     },
                   },
                 },
-              },
-              {
-                project_memberships: {
-                  some: {
-                    status: RecordStatus.active,
-                    project: {
-                      work_items: {
-                        some: { id: notification.related_item_id! },
+                {
+                  role: UserRole.manager,
+                  project_memberships: {
+                    some: {
+                      status: RecordStatus.active,
+                      project: {
+                        id: notification.related_item_id,
+                        status: ProjectStatus.active,
+                        deleted_at: null,
                       },
                     },
                   },
                 },
-              },
-            ],
-          },
-          select: { id: true },
-        }))
-      );
+              ],
+            }
+          : {
+              id: notification.user_id,
+              active: true,
+              status: RecordStatus.active,
+              membership_status: UserMembershipStatus.active,
+              OR: [
+                {
+                  owned_projects: {
+                    some: {
+                      work_items: {
+                        some: { id: notification.related_item_id },
+                      },
+                    },
+                  },
+                },
+                {
+                  project_memberships: {
+                    some: {
+                      status: RecordStatus.active,
+                      project: {
+                        work_items: {
+                          some: { id: notification.related_item_id },
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+        select: { id: true },
+      }))
+    );
     const preferenceAllowed = preferenceAllows(
       input.template,
       recipient.notification_email_preference
@@ -385,7 +425,38 @@ export class PrismaEmailOutboxRepository implements EmailOutboxRepository {
     }
     const workItemEligibility =
       template === EmailTemplate.weekly_project_report
-        ? {}
+        ? {
+            weekly_report_subscriptions: {
+              some: {
+                project_id: notification.related_item_id!,
+                enabled: true,
+              },
+            },
+            OR: [
+              {
+                owned_projects: {
+                  some: {
+                    id: notification.related_item_id!,
+                    status: ProjectStatus.active,
+                    deleted_at: null,
+                  },
+                },
+              },
+              {
+                role: UserRole.manager,
+                project_memberships: {
+                  some: {
+                    status: RecordStatus.active,
+                    project: {
+                      id: notification.related_item_id!,
+                      status: ProjectStatus.active,
+                      deleted_at: null,
+                    },
+                  },
+                },
+              },
+            ],
+          }
         : {
             OR: [
               {
@@ -409,9 +480,16 @@ export class PrismaEmailOutboxRepository implements EmailOutboxRepository {
               },
             ],
           };
+    if (!notification.related_item_id) {
+      return false;
+    }
     if (
-      template !== EmailTemplate.weekly_project_report &&
-      !notification.related_item_id
+      template === EmailTemplate.weekly_project_report &&
+      (!item.payload ||
+        typeof item.payload !== 'object' ||
+        Array.isArray(item.payload) ||
+        !('projectId' in item.payload) ||
+        item.payload.projectId !== notification.related_item_id)
     ) {
       return false;
     }
@@ -419,6 +497,7 @@ export class PrismaEmailOutboxRepository implements EmailOutboxRepository {
       where: {
         id: item.userId,
         active: true,
+        status: RecordStatus.active,
         membership_status: UserMembershipStatus.active,
         ...workItemEligibility,
       },

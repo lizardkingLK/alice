@@ -38,6 +38,29 @@ const notificationEmailEventSchema = z.discriminatedUnion('template', [
         .strict(),
     })
     .strict(),
+  z
+    .object({
+      version: z.literal(1),
+      template: z.literal(EmailTemplate.weekly_project_report),
+      payload: z
+        .object({
+          projectId: z.string().min(1),
+          projectName: z.string(),
+          weekLabel: z.string(),
+          periodStart: z.string(),
+          periodEnd: z.string(),
+          totalCount: z.number().int().nonnegative(),
+          completedCount: z.number().int().nonnegative(),
+          completedThisWeekCount: z.number().int().nonnegative(),
+          pendingCount: z.number().int().nonnegative(),
+          createdCount: z.number().int().nonnegative(),
+          overdueCount: z.number().int().nonnegative(),
+          progressPercent: z.number().int().min(0).max(100),
+          statusSummary: z.record(z.string(), z.number().int().nonnegative()),
+        })
+        .strict(),
+    })
+    .strict(),
 ]);
 
 export type NotificationEmailEvent = z.infer<

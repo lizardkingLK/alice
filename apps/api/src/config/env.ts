@@ -38,6 +38,7 @@ const serverSchema = z.object({
   CRON_SECRET: z.string().min(1),
   EMAIL_RECONCILIATION_ENABLED: z.enum(['true', 'false']).default('false'),
   EMAIL_OUTBOX_PROCESSING_ENABLED: z.enum(['true', 'false']).default('false'),
+  WEEKLY_REPORT_GENERATION_ENABLED: z.enum(['true', 'false']).default('false'),
   /** Pooled Postgres URL for Prisma Client (Supavisor session mode, port 5432). */
   DATABASE_URL: z.string().min(1),
 });
@@ -73,6 +74,7 @@ const mock: EnvSchemaType = {
   CRON_SECRET: 'mock-cron-secret',
   EMAIL_RECONCILIATION_ENABLED: 'false',
   EMAIL_OUTBOX_PROCESSING_ENABLED: 'false',
+  WEEKLY_REPORT_GENERATION_ENABLED: 'false',
   DATABASE_URL: 'postgresql://localhost:5432/postgres',
 };
 
@@ -106,6 +108,8 @@ const processEnv = {
   CRON_SECRET: process.env.CRON_SECRET,
   EMAIL_RECONCILIATION_ENABLED: process.env.EMAIL_RECONCILIATION_ENABLED,
   EMAIL_OUTBOX_PROCESSING_ENABLED: process.env.EMAIL_OUTBOX_PROCESSING_ENABLED,
+  WEEKLY_REPORT_GENERATION_ENABLED:
+    process.env.WEEKLY_REPORT_GENERATION_ENABLED,
   DATABASE_URL: process.env.DATABASE_URL,
 };
 

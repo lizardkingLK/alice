@@ -9,6 +9,7 @@ import {
   buildWorkItemAssignmentEmail,
   buildWorkItemReassignmentEmail,
   buildWorkItemStatusChangeEmail,
+  buildWeeklyProjectReportEmail,
 } from './work-item-email-templates';
 
 const basePayload = z.object({
@@ -53,6 +54,32 @@ export class StoredEventOutboxEmailFactory implements OutboxEmailFactory {
             .strict()
             .parse(item.payload),
         });
+      case EmailTemplate.weekly_project_report: {
+        const payload = z
+          .object({
+            recipientName: z.string(),
+            projectId: z.string().min(1),
+            projectName: z.string(),
+            weekLabel: z.string(),
+            completedThisWeekCount: z.number().int().nonnegative(),
+            createdCount: z.number().int().nonnegative(),
+            overdueCount: z.number().int().nonnegative(),
+            pendingCount: z.number().int().nonnegative(),
+            progressPercent: z.number().int().min(0).max(100),
+            statusSummary: z.record(z.string(), z.number().int().nonnegative()),
+            periodStart: z.string(),
+            periodEnd: z.string(),
+            totalCount: z.number().int().nonnegative(),
+            completedCount: z.number().int().nonnegative(),
+          })
+          .strict()
+          .parse(item.payload);
+        return buildWeeklyProjectReportEmail({
+          ...common,
+          ...payload,
+          completedCount: payload.completedThisWeekCount,
+        });
+      }
       default:
         throw new Error(
           `Unsupported notification email template: ${item.template}`

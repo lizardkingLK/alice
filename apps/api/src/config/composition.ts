@@ -43,6 +43,10 @@ import { PrismaEmailOutboxRepository } from '../routes/api/notifications/email-o
 import { NotificationEmailReconciler } from '../routes/api/notifications/notification-email-reconciler';
 import { EmailOutboxProcessor } from '../routes/api/notifications/email-outbox-processor';
 import { StoredEventOutboxEmailFactory } from '../routes/api/notifications/outbox-email-factory';
+import {
+  PrismaWeeklyProjectReportStore,
+  WeeklyProjectReportGenerator,
+} from '../routes/api/notifications/weekly-project-report-generator';
 import { HealthRepository } from '../routes/api/health/health.repository';
 import {
   HealthService,
@@ -237,6 +241,10 @@ function createNotificationsConfig(
     new StoredEventOutboxEmailFactory(env.FRONTEND_URL),
     { workerId: `api-${process.pid}` }
   );
+  const weeklyProjectReportGenerator = new WeeklyProjectReportGenerator(
+    new PrismaWeeklyProjectReportStore(),
+    emailOutboxRepository
+  );
   const router = createNotificationsRouter({
     notificationsService,
     accessRequestsService,
@@ -245,6 +253,9 @@ function createNotificationsConfig(
     emailReconciliationEnabled: env.EMAIL_RECONCILIATION_ENABLED === 'true',
     emailOutboxProcessingEnabled:
       env.EMAIL_OUTBOX_PROCESSING_ENABLED === 'true',
+    weeklyProjectReportGenerator,
+    weeklyReportGenerationEnabled:
+      env.WEEKLY_REPORT_GENERATION_ENABLED === 'true',
   });
 
   return {
@@ -253,6 +264,7 @@ function createNotificationsConfig(
     notificationsService,
     emailReconciler,
     emailOutboxProcessor,
+    weeklyProjectReportGenerator,
     router,
   };
 }

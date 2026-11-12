@@ -12,6 +12,7 @@ const pruneReadNotifications = vi.fn();
 const runDailyReminders = vi.fn();
 const reconcile = vi.fn();
 const processBatch = vi.fn();
+const generate = vi.fn();
 const notificationsService = {
   pruneReadNotifications,
   runDailyReminders,
@@ -24,6 +25,8 @@ const notificationsRouter = createNotificationsRouter({
   emailOutboxProcessor: { processBatch },
   emailReconciliationEnabled: true,
   emailOutboxProcessingEnabled: true,
+  weeklyProjectReportGenerator: { generate },
+  weeklyReportGenerationEnabled: true,
 });
 
 describe('notification email cron routes', () => {
@@ -32,6 +35,7 @@ describe('notification email cron routes', () => {
   it.each([
     ['/cron/reconcile-email', reconcile],
     ['/cron/process-email-outbox', processBatch],
+    ['/cron/generate-weekly-reports', generate],
   ])('rejects unauthorized requests to %s', async (path, operation) => {
     await withMountedRouter(
       '/api/notifications',
@@ -49,6 +53,7 @@ describe('notification email cron routes', () => {
   it('runs each enabled job only with the cron secret', async () => {
     reconcile.mockResolvedValue({ checked: 0 });
     processBatch.mockResolvedValue({ claimed: 0 });
+    generate.mockResolvedValue({ created: 0 });
     await withMountedRouter(
       '/api/notifications',
       notificationsRouter,
@@ -56,6 +61,7 @@ describe('notification email cron routes', () => {
         for (const path of [
           '/cron/reconcile-email',
           '/cron/process-email-outbox',
+          '/cron/generate-weekly-reports',
         ]) {
           const response = await fetch(`${baseUrl}/api/notifications${path}`, {
             method: 'POST',
@@ -71,6 +77,7 @@ describe('notification email cron routes', () => {
     );
     expect(reconcile).toHaveBeenCalledOnce();
     expect(processBatch).toHaveBeenCalledOnce();
+    expect(generate).toHaveBeenCalledOnce();
   });
 
   it('keeps both jobs inactive when their gates are disabled', async () => {
@@ -82,17 +89,20 @@ describe('notification email cron routes', () => {
       '/api/notifications',
       disabledRouter,
       async (baseUrl) => {
-        const response = await fetch(
-          `${baseUrl}/api/notifications/cron/process-email-outbox`,
-          {
+        for (const path of [
+          '/cron/reconcile-email',
+          '/cron/process-email-outbox',
+          '/cron/generate-weekly-reports',
+        ]) {
+          const response = await fetch(`${baseUrl}/api/notifications${path}`, {
             method: 'POST',
             headers: { Authorization: 'Bearer mock-cron-secret' },
-          }
-        );
-        expect(await response.json()).toEqual({
-          success: true,
-          enabled: false,
-        });
+          });
+          expect(await response.json()).toEqual({
+            success: true,
+            enabled: false,
+          });
+        }
       }
     );
   });

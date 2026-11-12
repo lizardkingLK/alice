@@ -141,6 +141,9 @@ export function buildWeeklyProjectReportEmail(input: {
   readonly completedCount: number;
   readonly createdCount: number;
   readonly overdueCount: number;
+  readonly pendingCount?: number;
+  readonly progressPercent?: number;
+  readonly statusSummary?: Readonly<Record<string, number>>;
   readonly frontendUrl: string;
   readonly notificationId: string;
 }): EmailMessage {
@@ -159,6 +162,18 @@ export function buildWeeklyProjectReportEmail(input: {
     `${weekLabel} in ${projectName}:`,
     `${Math.max(0, input.completedCount)} completed, ${Math.max(0, input.createdCount)} created, and ${Math.max(0, input.overdueCount)} overdue.`,
   ];
+  if (input.pendingCount !== undefined && input.progressPercent !== undefined) {
+    paragraphs.push(
+      `${Math.max(0, input.pendingCount)} pending; overall progress is ${Math.min(100, Math.max(0, input.progressPercent))}%.`
+    );
+  }
+  if (input.statusSummary) {
+    const summary = Object.entries(input.statusSummary)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([status, count]) => `${status}: ${Math.max(0, count)}`)
+      .join(', ');
+    if (summary) paragraphs.push(`Current status summary: ${summary}.`);
+  }
   const content = {
     heading: 'Weekly project report',
     subject: `${projectName} weekly report`,

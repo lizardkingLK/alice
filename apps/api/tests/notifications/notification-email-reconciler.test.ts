@@ -52,6 +52,39 @@ describe('NotificationEmailReconciler', () => {
     });
   });
 
+  it('recovers a missing weekly outbox job from its immutable event', async () => {
+    const weekly = {
+      notificationId: '33333333-3333-4333-8333-333333333333',
+      version: 1,
+      template: EmailTemplate.weekly_project_report,
+      payload: {
+        projectId: 'project-1',
+        projectName: 'Apollo',
+        weekLabel: '2026-11-09 to 2026-11-15',
+        periodStart: '2026-11-09',
+        periodEnd: '2026-11-15',
+        totalCount: 10,
+        completedCount: 4,
+        completedThisWeekCount: 2,
+        pendingCount: 6,
+        createdCount: 3,
+        overdueCount: 1,
+        progressPercent: 40,
+        statusSummary: { Done: 4, ToDo: 6 },
+      },
+    };
+    findMissingNotificationEmailEvents.mockResolvedValue([weekly]);
+
+    await expect(
+      new NotificationEmailReconciler(repository as never).reconcile()
+    ).resolves.toMatchObject({ recovered: 1 });
+    expect(createForNotification).toHaveBeenCalledWith({
+      notificationId: weekly.notificationId,
+      template: weekly.template,
+      payload: weekly.payload,
+    });
+  });
+
   it('records invalid snapshots terminally', async () => {
     const invalid = { ...validEvent, payload: {} };
     findMissingNotificationEmailEvents.mockResolvedValue([invalid]);

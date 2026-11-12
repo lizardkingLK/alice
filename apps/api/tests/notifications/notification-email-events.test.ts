@@ -33,6 +33,25 @@ describe('parseNotificationEmailEvent', () => {
         nextStatus: 'InProgress',
       },
     },
+    {
+      version: 1,
+      template: 'weekly_project_report',
+      payload: {
+        projectId: 'project-1',
+        projectName: 'Apollo',
+        weekLabel: '2026-11-09 to 2026-11-15',
+        periodStart: '2026-11-09',
+        periodEnd: '2026-11-15',
+        totalCount: 10,
+        completedCount: 4,
+        completedThisWeekCount: 2,
+        pendingCount: 6,
+        createdCount: 3,
+        overdueCount: 1,
+        progressPercent: 40,
+        statusSummary: { Done: 4, ToDo: 6 },
+      },
+    },
   ])('accepts a supported version/template event', (event) => {
     expect(parseNotificationEmailEvent(event)).toEqual(event);
   });
