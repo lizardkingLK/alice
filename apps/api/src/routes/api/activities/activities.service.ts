@@ -10,6 +10,7 @@ import {
   ActivitiesRepository,
   type InsertActivityInput,
 } from './activities.repository';
+import type { Prisma } from '@repo/types/prisma';
 
 export type FieldChangeDiff = {
   field: string;
@@ -70,14 +71,18 @@ export class ActivitiesService {
   async recordCreated(params: {
     workItemId: string;
     actorId: string;
+    client?: Prisma.TransactionClient;
   }): Promise<void> {
-    await this.safeInsert([
-      {
-        workItemId: params.workItemId,
-        actorId: params.actorId,
-        action: 'created',
-      },
-    ]);
+    await this.safeInsert(
+      [
+        {
+          workItemId: params.workItemId,
+          actorId: params.actorId,
+          action: 'created',
+        },
+      ],
+      params.client
+    );
   }
 
   async recordFieldChanges(params: {
@@ -124,6 +129,7 @@ export class ActivitiesService {
     workflowTransition?: WorkflowTransitionMeta | null;
     escalationResolved?: EscalationResolvedMeta | null;
     fieldChanges: FieldChangeDiff[];
+    client?: Prisma.TransactionClient;
   }): Promise<void> {
     const rows: InsertActivityInput[] = [];
 
@@ -155,7 +161,7 @@ export class ActivitiesService {
       )
     );
 
-    await this.safeInsert(rows);
+    await this.safeInsert(rows, params.client);
   }
 
   async recordAttachmentAdded(params: {
@@ -188,9 +194,16 @@ export class ActivitiesService {
     ]);
   }
 
-  private async safeInsert(rows: InsertActivityInput[]): Promise<void> {
+  private async safeInsert(
+    rows: InsertActivityInput[],
+    client?: Prisma.TransactionClient
+  ): Promise<void> {
     try {
-      await this.activities.insertMany(rows);
+      if (client) {
+        await this.activities.insertMany(rows, client);
+      } else {
+        await this.activities.insertMany(rows);
+      }
     } catch (err) {
       console.error('error. failed to write work-item activity', err);
     }

@@ -19,6 +19,18 @@ vi.mock('../../src/lib/file-helpers', () => ({
   removeStorageObjects: vi.fn(),
 }));
 
+const { transactionMock, txClient } = vi.hoisted(() => {
+  const txClient = { marker: 'transaction-client' };
+  return {
+    txClient,
+    transactionMock: vi.fn(async (callback) => callback(txClient)),
+  };
+});
+
+vi.mock('../../src/lib/prisma', () => ({
+  prisma: { $transaction: transactionMock },
+}));
+
 const {
   assertCanAccessProjectMock,
   getByIdMock,
@@ -48,6 +60,12 @@ const repository = {
 } as unknown as WorkItemRepository;
 
 const service = new WorkItemService(repository);
+const createNotificationsMock = vi.fn();
+const createOutboxMock = vi.fn();
+const atomicService = new WorkItemService(repository, undefined, undefined, {
+  createWorkItemMutationNotifications: createNotificationsMock,
+  createWorkItemEmailOutbox: createOutboxMock,
+});
 const ACTOR_ID = 'user-1';
 const WORK_ITEM_ID = 'work-item-1';
 const PROJECT_ID = 'project-1';
@@ -259,5 +277,38 @@ describe('WorkItemService status-transition validation', () => {
     ).rejects.toBeInstanceOf(StatusTransitionForbiddenError);
 
     expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it('commits the full-update status path with notifications in one transaction', async () => {
+    getProjectWorkflowConfigMock.mockResolvedValue(
+      workflowConfig({ statusRole: 'member' })
+    );
+    createNotificationsMock.mockResolvedValue([
+      {
+        notificationId: 'notification-1',
+        template: 'work_item_status_change',
+        payload: {},
+      },
+    ]);
+    createOutboxMock.mockResolvedValue(undefined);
+
+    await atomicService.updateWorkItem(
+      ACTOR_ID,
+      WORK_ITEM_ID,
+      updateInput(),
+      LOCK
+    );
+
+    expect(transactionMock).toHaveBeenCalledOnce();
+    expect(updateMock).toHaveBeenCalledWith(expect.any(Object), txClient);
+    expect(createNotificationsMock).toHaveBeenCalledWith(
+      expect.objectContaining({ client: txClient })
+    );
+    expect(createOutboxMock).toHaveBeenCalledWith([
+      expect.objectContaining({ notificationId: 'notification-1' }),
+    ]);
+    expect(createOutboxMock.mock.invocationCallOrder[0]).toBeGreaterThan(
+      createNotificationsMock.mock.invocationCallOrder[0]!
+    );
   });
 });

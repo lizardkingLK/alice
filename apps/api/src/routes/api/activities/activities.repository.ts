@@ -13,12 +13,15 @@ export type InsertActivityInput = {
 };
 
 export class ActivitiesRepository {
-  async insertMany(rows: InsertActivityInput[]): Promise<void> {
+  async insertMany(
+    rows: InsertActivityInput[],
+    client: Prisma.TransactionClient | typeof prisma = prisma
+  ): Promise<void> {
     if (rows.length === 0) {
       return;
     }
 
-    await prisma.activities.createMany({
+    await client.activities.createMany({
       data: rows.map((row) => ({
         work_item_id: row.workItemId,
         actor_id: row.actorId,

@@ -309,9 +309,12 @@ export class WorkItemRepository {
    * Post-mutation / optimistic-lock row via Prisma (no PostgREST hop).
    * Select matches assignee/reporter embeds used by supabase `getById`.
    */
-  async getMutationRowById(workItemId: string): Promise<DbWorkItem | null> {
+  async getMutationRowById(
+    workItemId: string,
+    client: Prisma.TransactionClient | typeof prisma = prisma
+  ): Promise<DbWorkItem | null> {
     try {
-      const row = await prisma.work_items.findUnique({
+      const row = await client.work_items.findUnique({
         where: { id: workItemId },
         select: workItemListSelectWithDescription,
       });
@@ -423,8 +426,11 @@ export class WorkItemRepository {
   }
 
   /** Clear parent_id for every direct child of `parentId`. */
-  async detachDirectChildren(parentId: string): Promise<number> {
-    const result = await prisma.work_items.updateMany({
+  async detachDirectChildren(
+    parentId: string,
+    client: Prisma.TransactionClient | typeof prisma = prisma
+  ): Promise<number> {
+    const result = await client.work_items.updateMany({
       where: { parent_id: parentId },
       data: { parent_id: null },
     });
@@ -435,7 +441,8 @@ export class WorkItemRepository {
   async updateSprintForDescendants(
     rootId: string,
     sprintId: string | null,
-    updatedBy: string
+    updatedBy: string,
+    client: Prisma.TransactionClient | typeof prisma = prisma
   ): Promise<string[]> {
     const ids = await this.collectDescendantIds(rootId);
     const descendantIds = ids.filter((id) => id !== rootId);
@@ -443,7 +450,7 @@ export class WorkItemRepository {
       return [];
     }
 
-    await prisma.work_items.updateMany({
+    await client.work_items.updateMany({
       where: {
         id: { in: descendantIds },
         record_status: RecordStatusEnum.active,
@@ -518,7 +525,10 @@ export class WorkItemRepository {
     return mismatched;
   }
 
-  async create(input: CreateWorkItemRecord): Promise<DbWorkItem> {
+  async create(
+    input: CreateWorkItemRecord,
+    client: Prisma.TransactionClient | typeof prisma = prisma
+  ): Promise<DbWorkItem> {
     const status = input.status ?? WorkItemStatusEnum.New;
     const synced = syncWorkItemStateForStatusChange({
       nextStatus: status,
@@ -526,7 +536,7 @@ export class WorkItemRepository {
       workflowId: input.workflowId,
     });
 
-    const created = await prisma.work_items.create({
+    const created = await client.work_items.create({
       data: {
         title: input.title,
         project_id: input.project_id,
@@ -552,14 +562,17 @@ export class WorkItemRepository {
       },
     });
 
-    const row = await this.getMutationRowById(created.id);
+    const row = await this.getMutationRowById(created.id, client);
     if (!row) {
       throw new Error('Failed to create work-item');
     }
     return row;
   }
 
-  async update(input: UpdateWorkItemRecord): Promise<DbWorkItem> {
+  async update(
+    input: UpdateWorkItemRecord,
+    client: Prisma.TransactionClient | typeof prisma = prisma
+  ): Promise<DbWorkItem> {
     const current = input.current ?? (await this.getById(input.id));
 
     const previousState = current
@@ -594,7 +607,7 @@ export class WorkItemRepository {
           : (input.description as Prisma.InputJsonValue);
     }
 
-    const { count } = await prisma.work_items.updateMany({
+    const { count } = await client.work_items.updateMany({
       where: {
         id: input.id,
         updated_at: prismaLockTimestampRange(input.expectedUpdatedAt),
@@ -629,8 +642,8 @@ export class WorkItemRepository {
 
     return resolveOptimisticPrismaUpdate({
       count,
-      fetchUpdated: () => this.getMutationRowById(input.id),
-      fetchCurrent: () => this.getMutationRowById(input.id),
+      fetchUpdated: () => this.getMutationRowById(input.id, client),
+      fetchCurrent: () => this.getMutationRowById(input.id, client),
       notFoundMessage: 'Work item not found',
     });
   }

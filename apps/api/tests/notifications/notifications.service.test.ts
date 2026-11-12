@@ -139,20 +139,12 @@ describe('NotificationsService.createWorkItemMutationNotifications', () => {
     ]);
   });
 
-  it('uses a best-effort failure policy', async () => {
+  it('propagates notification persistence failures to the mutation transaction', async () => {
     insertMany.mockRejectedValue(new Error('database unavailable'));
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
 
     await expect(
       service.createWorkItemMutationNotifications({ actorId, after: baseAfter })
-    ).resolves.toBeUndefined();
-    expect(consoleError).toHaveBeenCalledWith(
-      'Error creating work-item notifications:',
-      expect.any(Error)
-    );
-    consoleError.mockRestore();
+    ).rejects.toThrow('database unavailable');
   });
 
   it('keeps persisted in-app notifications when outbox creation fails', async () => {
@@ -167,11 +159,13 @@ describe('NotificationsService.createWorkItemMutationNotifications', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => {});
 
-    await expect(
-      serviceWithOutbox.createWorkItemMutationNotifications({
+    const persisted =
+      await serviceWithOutbox.createWorkItemMutationNotifications({
         actorId,
         after: baseAfter,
-      })
+      });
+    await expect(
+      serviceWithOutbox.createWorkItemEmailOutbox(persisted)
     ).resolves.toBeUndefined();
 
     expect(insertMany).toHaveBeenCalledOnce();

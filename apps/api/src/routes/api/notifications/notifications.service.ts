@@ -34,6 +34,12 @@ type WorkItemNotificationDetails = {
   emailPayload: Prisma.JsonObject;
 };
 
+export type PersistedWorkItemNotificationEmail = {
+  notificationId: string;
+  template: EmailTemplate;
+  payload: Prisma.JsonObject;
+};
+
 function addReassignmentNotifications(params: {
   messages: Map<string, WorkItemNotificationDetails>;
   actorId: string;
@@ -235,81 +241,84 @@ export class NotificationsService {
     });
   }
 
-  /**
-   * Best-effort work-item notifications. The caller awaits this only after the
-   * work-item write and its required side effects have completed. Notification
-   * persistence failures are logged and never change the mutation result.
-   */
   async createWorkItemMutationNotifications(params: {
     actorId: string;
     before?: WorkItemNotificationRow | null;
     after: WorkItemNotificationRow;
-  }): Promise<void> {
-    let persistedEmails: Array<{
-      notificationId: string;
-      template: EmailTemplate;
-      payload: Prisma.JsonObject;
-    }> = [];
-    try {
-      const { actorId, before, after } = params;
-      const [actorNameResult, newAssigneeName] = await Promise.all([
-        this.notificationsRepository.getUserName(actorId),
-        before?.assignee_id !== after.assignee_id && after.assignee_id
-          ? this.notificationsRepository.getUserName(after.assignee_id)
-          : Promise.resolve(null),
-      ]);
-      const actorName = actorNameResult || 'A teammate';
-      const messages = buildWorkItemNotificationMessages({
-        actorId,
-        actorName,
-        newAssigneeName,
-        before,
-        after,
-      });
+    client?: Prisma.TransactionClient;
+  }): Promise<PersistedWorkItemNotificationEmail[]> {
+    const { actorId, before, after } = params;
+    const getUserName = (userId: string) =>
+      params.client
+        ? this.notificationsRepository.getUserName(userId, params.client)
+        : this.notificationsRepository.getUserName(userId);
+    const [actorNameResult, newAssigneeName] = await Promise.all([
+      getUserName(actorId),
+      before?.assignee_id !== after.assignee_id && after.assignee_id
+        ? getUserName(after.assignee_id)
+        : Promise.resolve(null),
+    ]);
+    const actorName = actorNameResult || 'A teammate';
+    const messages = buildWorkItemNotificationMessages({
+      actorId,
+      actorName,
+      newAssigneeName,
+      before,
+      after,
+    });
 
-      const authorizedIds =
-        await this.notificationsRepository.findAuthorizedProjectRecipientIds(
+    const authorizedIds = params.client
+      ? await this.notificationsRepository.findAuthorizedProjectRecipientIds(
+          after.project_id,
+          [...messages.keys()],
+          params.client
+        )
+      : await this.notificationsRepository.findAuthorizedProjectRecipientIds(
           after.project_id,
           [...messages.keys()]
         );
-      const notificationEmails = authorizedIds.flatMap((recipientId) => {
-        const details = messages.get(recipientId);
-        if (!details) return [];
-        return [
-          {
-            notification: new NotificationBuilder(details.type)
-              .ToUser(recipientId)
-              .WithMessage(details.message)
-              .WithRelatedItem(after.id)
-              .WithCreatedBy(actorId)
-              .WithUpdatedBy(actorId)
-              .Build(),
-            template: details.emailTemplate,
-            payload: details.emailPayload,
-          },
-        ];
-      });
+    const notificationEmails = authorizedIds.flatMap((recipientId) => {
+      const details = messages.get(recipientId);
+      if (!details) return [];
+      return [
+        {
+          notification: new NotificationBuilder(details.type)
+            .ToUser(recipientId)
+            .WithMessage(details.message)
+            .WithRelatedItem(after.id)
+            .WithCreatedBy(actorId)
+            .WithUpdatedBy(actorId)
+            .Build(),
+          template: details.emailTemplate,
+          payload: details.emailPayload,
+        },
+      ];
+    });
 
-      const persisted = await this.notificationsRepository.insertMany(
-        notificationEmails.map((entry) => entry.notification)
-      );
-      persistedEmails = persisted.flatMap((notification, index) => {
-        const email = notificationEmails[index];
-        return email
-          ? [
-              {
-                notificationId: notification.id,
-                template: email.template,
-                payload: email.payload,
-              },
-            ]
-          : [];
-      });
-    } catch (err) {
-      console.error('Error creating work-item notifications:', err);
-      return;
-    }
+    const notifications = notificationEmails.map((entry) => entry.notification);
+    const persisted = params.client
+      ? await this.notificationsRepository.insertMany(
+          notifications,
+          params.client
+        )
+      : await this.notificationsRepository.insertMany(notifications);
+    return persisted.flatMap((notification, index) => {
+      const email = notificationEmails[index];
+      return email
+        ? [
+            {
+              notificationId: notification.id,
+              template: email.template,
+              payload: email.payload,
+            },
+          ]
+        : [];
+    });
+  }
 
+  async createWorkItemEmailOutbox(
+    persistedEmails: readonly PersistedWorkItemNotificationEmail[]
+  ): Promise<void> {
     if (!this.emailOutboxRepository) return;
     const results = await Promise.allSettled(
       persistedEmails.map((email) =>

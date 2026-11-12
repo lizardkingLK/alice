@@ -19,6 +19,13 @@ vi.mock('../../src/lib/file-helpers', () => ({
 
 vi.mock('../../src/lib/prisma', () => ({
   prisma: {
+    $transaction: vi.fn(async (callback) =>
+      callback({
+        sprints: { findUnique: vi.fn() },
+        users: { findUnique: vi.fn() },
+        work_item_worklogs: { create: vi.fn() },
+      })
+    ),
     sprints: { findUnique: vi.fn() },
     users: { findUnique: vi.fn() },
     work_item_worklogs: { create: vi.fn() },
@@ -58,6 +65,7 @@ const repository = {
 
 const service = new WorkItemService(repository);
 const createWorkItemMutationNotificationsMock = vi.fn();
+const createWorkItemEmailOutboxMock = vi.fn();
 const serviceWithNotifications = new WorkItemService(
   repository,
   undefined,
@@ -65,6 +73,7 @@ const serviceWithNotifications = new WorkItemService(
   {
     createWorkItemMutationNotifications:
       createWorkItemMutationNotificationsMock,
+    createWorkItemEmailOutbox: createWorkItemEmailOutboxMock,
   }
 );
 const ACTOR_ID = 'user-1';
@@ -147,7 +156,8 @@ describe('WorkItemService.updateWorkItemStatus', () => {
       ...currentWorkItem,
       ...input,
     }));
-    createWorkItemMutationNotificationsMock.mockResolvedValue(undefined);
+    createWorkItemMutationNotificationsMock.mockResolvedValue([]);
+    createWorkItemEmailOutboxMock.mockResolvedValue(undefined);
   });
 
   it('uses scoped access + Prisma current row without list-all membership', async () => {
@@ -236,11 +246,14 @@ describe('WorkItemService.updateWorkItemStatus', () => {
       }
     );
 
-    expect(createWorkItemMutationNotificationsMock).toHaveBeenCalledWith({
-      actorId: ACTOR_ID,
-      before: currentWorkItem,
-      after: expect.objectContaining({ status: WorkItemStatusEnum.Testing }),
-    });
+    expect(createWorkItemMutationNotificationsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorId: ACTOR_ID,
+        before: currentWorkItem,
+        after: expect.objectContaining({ status: WorkItemStatusEnum.Testing }),
+        client: expect.any(Object),
+      })
+    );
 
     createWorkItemMutationNotificationsMock.mockClear();
     updateMock.mockRejectedValueOnce(new Error('mutation failed'));
@@ -252,5 +265,22 @@ describe('WorkItemService.updateWorkItemStatus', () => {
       })
     ).rejects.toThrow('mutation failed');
     expect(createWorkItemMutationNotificationsMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects the transaction on notification failure and does not create outbox rows', async () => {
+    createWorkItemMutationNotificationsMock.mockRejectedValueOnce(
+      new Error('notification insert failed')
+    );
+
+    await expect(
+      serviceWithNotifications.updateWorkItemStatus(ACTOR_ID, WORK_ITEM_ID, {
+        status: WorkItemStatusEnum.Testing,
+        board_column_id: 'testing',
+        expectedUpdatedAt: LOCK,
+      })
+    ).rejects.toThrow('notification insert failed');
+
+    expect(updateMock).toHaveBeenCalled();
+    expect(createWorkItemEmailOutboxMock).not.toHaveBeenCalled();
   });
 });

@@ -10,6 +10,7 @@ import { prisma } from '../../../lib/prisma';
 import { prismaNotificationCreate } from '../../../lib/prisma-audit';
 import {
   NotificationType as NotificationTypeEnum,
+  type Prisma,
   RecordStatus,
   UserMembershipStatus,
 } from '@repo/types/prisma';
@@ -119,7 +120,17 @@ export class NotificationsRepository {
     });
   }
 
-  async getUserName(userId: string): Promise<string | null> {
+  async getUserName(
+    userId: string,
+    client?: Prisma.TransactionClient
+  ): Promise<string | null> {
+    if (client) {
+      const actor = await client.users.findUnique({
+        where: { id: userId },
+        select: { name: true },
+      });
+      return actor?.name ?? null;
+    }
     const { data: actor } = await this.db
       .from('users')
       .select('name')
@@ -131,11 +142,12 @@ export class NotificationsRepository {
 
   async findAuthorizedProjectRecipientIds(
     projectId: string,
-    userIds: string[]
+    userIds: string[],
+    client: Prisma.TransactionClient | typeof prisma = prisma
   ): Promise<string[]> {
     if (userIds.length === 0) return [];
 
-    const users = await prisma.users.findMany({
+    const users = await client.users.findMany({
       where: {
         id: { in: userIds },
         active: true,
@@ -162,20 +174,22 @@ export class NotificationsRepository {
   }
 
   async insertMany(
-    notifications: NotificationType[]
+    notifications: NotificationType[],
+    client?: Prisma.TransactionClient
   ): Promise<Array<{ id: string; user_id: string }>> {
     if (notifications.length === 0) {
       return [];
     }
 
-    return await prisma.$transaction(
-      notifications.map((notification) =>
-        prisma.notifications.create({
-          data: prismaNotificationCreate(notification),
-          select: { id: true, user_id: true },
-        })
-      )
+    const inserts = notifications.map((notification) =>
+      (client ?? prisma).notifications.create({
+        data: prismaNotificationCreate(notification),
+        select: { id: true, user_id: true },
+      })
     );
+    return client
+      ? await Promise.all(inserts)
+      : await prisma.$transaction(inserts);
   }
 
   async findDueWorkItems(
