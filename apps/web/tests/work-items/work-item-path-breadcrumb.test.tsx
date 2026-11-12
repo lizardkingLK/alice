@@ -60,6 +60,7 @@ describe('WorkItemPathBreadcrumb', () => {
       id: '11111111-1111-1111-1111-111111111111',
       type: 'Story',
       title: 'Parent story',
+      slug: 'parent-story',
       parent_id: null,
     };
     const workItem = workItemFactory.build({
@@ -69,7 +70,7 @@ describe('WorkItemPathBreadcrumb', () => {
       parent_id: parent.id,
       sprint_id: 'sprint-1',
       project,
-      sprint: { id: 'sprint-1', name: 'Sprint 1' },
+      sprint: { id: 'sprint-1', name: 'Sprint 1', slug: 'sprint-1' },
     });
 
     // Act
@@ -78,7 +79,10 @@ describe('WorkItemPathBreadcrumb', () => {
     // Assert
     expect(screen.getByText('Sprint 1')).toBeInTheDocument();
     const parentLink = screen.getByRole('link', { name: /Parent story/i });
-    expect(parentLink).toHaveAttribute('href', `/work-items/${parent.id}`);
+    expect(parentLink).toHaveAttribute(
+      'href',
+      '/projects/PAL/work-items/parent-story'
+    );
     expect(screen.getByText('Task')).toBeInTheDocument();
     expect(screen.getByText('Child task')).toBeInTheDocument();
   });
@@ -89,18 +93,21 @@ describe('WorkItemPathBreadcrumb', () => {
       id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       type: 'Epic',
       title: 'Root epic',
+      slug: 'root-epic',
       parent_id: null,
     };
     const story: WorkItemAncestor = {
       id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
       type: 'Story',
       title: 'Mid story',
+      slug: 'mid-story',
       parent_id: epic.id,
     };
     const task: WorkItemAncestor = {
       id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
       type: 'Task',
       title: 'Parent task',
+      slug: 'parent-task',
       parent_id: story.id,
     };
     const issue = workItemFactory.build({
@@ -124,15 +131,15 @@ describe('WorkItemPathBreadcrumb', () => {
     // Assert
     expect(screen.getByRole('link', { name: /Root epic/i })).toHaveAttribute(
       'href',
-      `/work-items/${epic.id}`
+      '/projects/PAL/work-items/root-epic'
     );
     expect(screen.getByRole('link', { name: /Mid story/i })).toHaveAttribute(
       'href',
-      `/work-items/${story.id}`
+      '/projects/PAL/work-items/mid-story'
     );
     expect(screen.getByRole('link', { name: /Parent task/i })).toHaveAttribute(
       'href',
-      `/work-items/${task.id}`
+      '/projects/PAL/work-items/parent-task'
     );
     expect(screen.getByText('Issue')).toBeInTheDocument();
     expect(screen.getByText('Leaf issue')).toBeInTheDocument();

@@ -1,4 +1,4 @@
-import { normalizeSprintGoal } from '@repo/types';
+import { normalizeSprintGoal, slugifyTitle } from '@repo/types';
 import type { Prisma } from '@repo/types/prisma';
 import {
   prismaAuditCreateWithoutStatus,
@@ -12,6 +12,7 @@ export type CreateSprintRecord = {
   endDate: string;
   createdBy: string;
   projectId: string;
+  slug?: string;
 };
 
 type SprintCreateClient = Pick<Prisma.TransactionClient, 'sprints'>;
@@ -24,6 +25,7 @@ export async function insertSprint(
   return await client.sprints.create({
     data: {
       name: input.name,
+      slug: input.slug ?? slugifyTitle(input.name),
       goal: normalizeSprintGoal(input.goal),
       start_date: prismaOptionalDate(input.startDate)!,
       end_date: prismaOptionalDate(input.endDate)!,

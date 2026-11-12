@@ -100,6 +100,10 @@ vi.mock(
   () => import('../mocks/dropdown-menu')
 );
 
+vi.mock('@repo/ui/components/ui/sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
+
 vi.mock('@repo/ui/components/ui/select', () =>
   import('../mocks/select').then((module) =>
     module.createSelectMock('status-select')
@@ -363,7 +367,11 @@ describe('CommentsFeed Component', () => {
   });
 
   it('calls archiveComment when a comment is archived', async () => {
-    vi.mocked(archiveComment).mockResolvedValue(undefined);
+    vi.mocked(archiveComment).mockResolvedValue({
+      accepted: true,
+      message: 'Comment archive started. You’ll be notified when it finishes.',
+      correlationId: 'corr-1',
+    });
 
     renderFeed({ currentUserId: aliceAdmin.id });
 
@@ -384,7 +392,11 @@ describe('CommentsFeed Component', () => {
   });
 
   it('calls archiveComment (permanent) when an archived reply is purged', async () => {
-    vi.mocked(archiveComment).mockResolvedValue(undefined);
+    vi.mocked(archiveComment).mockResolvedValue({
+      accepted: true,
+      message: 'Comment archive started. You’ll be notified when it finishes.',
+      correlationId: 'corr-1',
+    });
 
     const archivedReply: CommentItem = {
       ...mockComments[2]!,
@@ -445,7 +457,11 @@ describe('CommentsFeed Component', () => {
       id: 'comment-archived-1',
       status: 'archived',
     };
-    vi.mocked(archiveComment).mockResolvedValue(undefined);
+    vi.mocked(archiveComment).mockResolvedValue({
+      accepted: true,
+      message: 'Comment archive started. You’ll be notified when it finishes.',
+      correlationId: 'corr-1',
+    });
 
     renderFeed({
       currentUserId: aliceAdmin.id,

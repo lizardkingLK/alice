@@ -93,6 +93,7 @@ import {
   syncChartWorkspaceToApi,
 } from '@/app/charts/_services/charts.mutations.client';
 import { useDashboardEntityBreadcrumb } from '@/app/dashboard/_components/dashboard-breadcrumb-runtime';
+import { toast } from '@repo/ui/components/ui/sonner';
 
 type ChartsWorkspaceProps = {
   readonly workspaceId: string;
@@ -102,6 +103,8 @@ type ChartsWorkspaceProps = {
   readonly shareProjects: ReadonlyArray<{
     readonly id: string;
     readonly name: string;
+    readonly key?: string | null;
+    readonly workflowConfig?: unknown;
   }>;
   readonly assigneeMembers: readonly ChartsSampleMember[];
   readonly projects: readonly Project[];
@@ -433,13 +436,9 @@ export function ChartsWorkspace({
   const handleArchiveWorkspace = useCallback(async () => {
     setActionError(null);
     try {
-      const row = await archiveChartWorkspace(workspaceId);
-      setWorkspace(
-        chartWorkspaceFromApiRow(
-          row,
-          chartOwnershipForViewer(row, currentUserId)
-        )
-      );
+      const accepted = await archiveChartWorkspace(workspaceId);
+      toast.success(accepted.message);
+      router.replace('/charts');
     } catch (err) {
       reportWorkspaceActionError(
         err,
@@ -447,7 +446,7 @@ export function ChartsWorkspace({
         setActionError
       );
     }
-  }, [currentUserId, workspaceId]);
+  }, [router, workspaceId]);
 
   const handleRestoreWorkspace = useCallback(async () => {
     setActionError(null);
@@ -483,7 +482,8 @@ export function ChartsWorkspace({
       if (kind === 'share') {
         await leaveSharedChartWorkspace(workspaceId);
       } else {
-        await deleteChartWorkspace(workspaceId);
+        const accepted = await deleteChartWorkspace(workspaceId);
+        toast.success(accepted.message);
       }
     } catch (err) {
       const fallback =

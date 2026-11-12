@@ -23,8 +23,12 @@ type DashboardWidgetShellProps = {
   children: ReactNode;
   className?: string;
   contentClassName?: string;
+  /** Optional leading chrome (e.g. agent avatar) before the title stack. */
+  titleStart?: ReactNode;
   /** Optional controls rendered before the drag handle (e.g. remove). */
   headerActions?: ReactNode;
+  /** Frosted liquid-glass card for the productivity Overview. */
+  variant?: 'default' | 'glass';
 };
 
 export function DashboardWidgetShell({
@@ -33,23 +37,29 @@ export function DashboardWidgetShell({
   children,
   className,
   contentClassName,
+  titleStart,
   headerActions,
+  variant = 'default',
 }: Readonly<DashboardWidgetShellProps>) {
   return (
     <Card
       className={cn(
         'flex h-full min-h-0 flex-col overflow-hidden shadow-none',
+        variant === 'glass' && 'dashboard-widget-glass',
         className
       )}
     >
       <CardHeader className="flex shrink-0 flex-row items-start justify-between gap-3 space-y-0 pb-3">
-        <div className="min-w-0 space-y-1">
-          <CardTitle className="truncate text-base">{title}</CardTitle>
-          {description ? (
-            <CardDescription className="line-clamp-1">
-              {description}
-            </CardDescription>
-          ) : null}
+        <div className="flex min-w-0 items-start gap-2.5">
+          {titleStart}
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="truncate text-base">{title}</CardTitle>
+            {description ? (
+              <CardDescription className="line-clamp-1">
+                {description}
+              </CardDescription>
+            ) : null}
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
           {headerActions}

@@ -3,7 +3,40 @@ import { buildSavedViewHref } from '@repo/types';
 export type NotificationNavInput = {
   readonly type: string;
   readonly related_item_id: string | null;
+  /** Optional body — used for entity archive/purge markdown links. */
+  readonly message?: string;
 };
+
+const DESTRUCTIVE_NOTIFICATION_TYPES = new Set([
+  'entity_archived',
+  'entity_archive_failed',
+  'entity_purged',
+  'entity_purge_failed',
+]);
+
+/** First in-app markdown link in notification copy, if any. */
+export function extractFirstInternalMarkdownHref(
+  message: string | undefined
+): string | null {
+  if (!message) {
+    return null;
+  }
+  // Linear scan: find "](/...)" then walk back to the matching "[".
+  const pathStart = message.indexOf('](/');
+  if (pathStart === -1) {
+    return null;
+  }
+  const openBracket = message.lastIndexOf('[', pathStart);
+  if (openBracket === -1) {
+    return null;
+  }
+  const pathEnd = message.indexOf(')', pathStart + 3);
+  if (pathEnd === -1) {
+    return null;
+  }
+  const href = message.slice(pathStart + 2, pathEnd);
+  return href.startsWith('/') ? href : null;
+}
 
 export type SavedViewNavSnapshot = {
   readonly pathname: string;
@@ -30,6 +63,14 @@ export function resolveNotificationHref(
     return '/member';
   }
 
+  if (DESTRUCTIVE_NOTIFICATION_TYPES.has(notif.type)) {
+    return extractFirstInternalMarkdownHref(notif.message);
+  }
+
+  if (notif.type === 'project_create_failed') {
+    return null;
+  }
+
   if (!notif.related_item_id) {
     return null;
   }
@@ -51,10 +92,6 @@ export function resolveNotificationHref(
 
   if (notif.type === 'project_created') {
     return `/projects/${notif.related_item_id}`;
-  }
-
-  if (notif.type === 'project_create_failed') {
-    return null;
   }
 
   return `/work-items/${notif.related_item_id}`;

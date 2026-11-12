@@ -300,6 +300,7 @@ export function BacklogFilterDialog({
               projectValue: draft[BacklogFilterFieldId.Project],
               sprintValue: draft[BacklogFilterFieldId.Sprint],
               allValue: QUERY_FILTER_ALL_VALUE,
+              projects,
               sprints,
             })
           );

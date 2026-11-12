@@ -39,6 +39,7 @@ import { WorkItemFormClassicFields } from '@/app/work-items/_components/work-ite
 import { WorkItemFormModernFields } from '@/app/work-items/_components/work-item-form/work-item-form-modern';
 import { WorkItemTypeChangeDetachDialog } from '@/app/work-items/_components/work-item-form/work-item-type-change-detach-dialog';
 import type { WorkItemCreateFormMode } from '@/app/work-items/_helpers/work-item-create-form-preference';
+import type { WorkItemFormDialogLayout } from '@/app/work-items/_components/work-item-form/work-item-form-dialog-layout';
 import { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import { useProjectMembers } from '@/app/work-items/_hooks/use-project-members';
 import { useProjectSprints } from '@/app/work-items/_hooks/use-project-sprints';
@@ -108,6 +109,11 @@ export interface WorkItemFormProps {
    * Defaults to classic when omitted.
    */
   createFormMode?: WorkItemCreateFormMode;
+  /**
+   * Dialog chrome layout from {@link WorkItemFormDialog}. Expanded (`fullscreen`)
+   * and floating use a vertical label+control list; center uses compact pills.
+   */
+  dialogLayout?: WorkItemFormDialogLayout;
   /**
    * When set, skips API create/update and uses this handler instead
    * (charts mock board / local-only demos). Still calls `onSuccess`.
@@ -244,6 +250,7 @@ export function WorkItemForm({
   defaultDueDate,
   lockDueDate = false,
   createFormMode = 'classic',
+  dialogLayout = 'center',
   localMutate,
   preferProvidedMembers = false,
   preferProvidedSprints = false,
@@ -673,6 +680,7 @@ export function WorkItemForm({
         {useModernLayout ? (
           <WorkItemFormModernFields
             {...fieldProps}
+            dialogLayout={dialogLayout}
             titleDefault={itemToEdit?.title ?? ''}
             dueDateDefault={dueDateDefault}
             lockDueDate={!isEditMode && lockDueDate}
@@ -705,9 +713,8 @@ export function WorkItemForm({
 
       <DialogFooter
         className={cn(
-          'shrink-0',
-          stickyActions &&
-            'bg-muted/50 mx-0 mt-auto mb-0 rounded-none border-t px-6 py-4'
+          'mt-auto shrink-0 border-0 bg-transparent',
+          stickyActions && 'mx-0 mb-0 rounded-none px-6 py-4'
         )}
       >
         {onClose ? (

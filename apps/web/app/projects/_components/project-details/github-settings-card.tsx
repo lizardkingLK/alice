@@ -126,7 +126,6 @@ function GithubSummaryView({
               size="sm"
               onClick={() => onDisconnect(activeConnection.id)}
               disabled={disconnectingId === activeConnection.id}
-              className="text-destructive hover:text-destructive"
             >
               {disconnectingId === activeConnection.id ? (
                 <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />

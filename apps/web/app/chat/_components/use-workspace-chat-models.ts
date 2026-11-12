@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChatModelOption } from '@repo/types';
+import {
+  readCachedChatModels,
+  writeCachedChatModels,
+} from '@/app/chat/_helpers/chat-models-storage';
 import { listChatModelsForChatClient } from '@/app/chat/_services/chat-models.reads.client';
 import {
   pickDefaultChatIntegrationId,
@@ -14,9 +18,12 @@ import { errorMessage } from '@/lib/errors/error-message';
 
 export type UseWorkspaceChatModelsOptions = {
   readonly initialChatModels?: ChatModelOption[];
+  /** Scopes the localStorage warm cache (optional). */
+  readonly userId?: string | null;
   /**
-   * When true and no SSR models, skip the mount fetch. Call
-   * `ensureModelsLoaded` when the model dropdown opens (dock/widget).
+   * When true and no SSR/seed models, skip the hook mount fetch. Callers
+   * (dock/widget) still invoke `ensureModelsLoaded` so the empty gate / spinner
+   * can resolve.
    */
   readonly lazy?: boolean;
 };
@@ -27,22 +34,43 @@ export function useWorkspaceChatModels(
   const normalized: UseWorkspaceChatModelsOptions = Array.isArray(options)
     ? { initialChatModels: options }
     : (options ?? {});
-  const { initialChatModels, lazy = false } = normalized;
+  const { initialChatModels, lazy = false, userId = null } = normalized;
+  const cachedModels =
+    initialChatModels === undefined ? readCachedChatModels(userId) : null;
+  const seedModels = initialChatModels ?? cachedModels ?? [];
 
   const [chatModels, setChatModels] = useState<ChatModelOption[]>(
-    () => initialChatModels ?? []
+    () => seedModels
   );
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<
     string | undefined
-  >(() => pickDefaultChatIntegrationId(initialChatModels ?? []));
+  >(() => pickDefaultChatIntegrationId(seedModels));
   const [isMarkingDefault, setIsMarkingDefault] = useState(false);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
+  /**
+   * True once SSR models arrived, a warm cache hydrated, or a client fetch
+   * finished — so the empty gate can render without waiting on the network.
+   */
+  const [modelsReady, setModelsReady] = useState(
+    () => initialChatModels !== undefined || cachedModels !== null
+  );
+  /** SSR / live network load only — warm cache does not set this. */
   const loadedRef = useRef(initialChatModels !== undefined);
   const inFlightRef = useRef(false);
+  const chatModelsRef = useRef(chatModels);
+  const userIdRef = useRef(userId);
+  chatModelsRef.current = chatModels;
+  userIdRef.current = userId;
 
-  const ensureModelsLoaded = useCallback(async () => {
-    if (loadedRef.current || inFlightRef.current) {
-      return;
+  const persistModels = useCallback((models: readonly ChatModelOption[]) => {
+    writeCachedChatModels(userIdRef.current, models);
+  }, []);
+
+  const ensureModelsLoaded = useCallback(async (): Promise<
+    ChatModelOption[]
+  > => {
+    if (loadedRef.current) {
+      return chatModelsRef.current;
     }
 
     inFlightRef.current = true;
@@ -55,6 +83,7 @@ export function useWorkspaceChatModels(
         })),
       ]);
       setChatModels(models);
+      persistModels(models);
       setSelectedIntegrationId((current) =>
         resolveSelectedChatIntegrationId(
           models,
@@ -63,17 +92,22 @@ export function useWorkspaceChatModels(
         )
       );
       loadedRef.current = true;
+      return models;
     } catch (error) {
       console.error('Failed to list chat models:', error);
+      return chatModelsRef.current;
     } finally {
       inFlightRef.current = false;
       setIsLoadingModels(false);
+      setModelsReady(true);
     }
-  }, []);
+  }, [persistModels]);
 
   useEffect(() => {
     if (initialChatModels !== undefined) {
       setChatModels(initialChatModels);
+      persistModels(initialChatModels);
+      setModelsReady(true);
       let cancelled = false;
       getMemberChatModelPreference()
         .then((preference) => {
@@ -107,7 +141,7 @@ export function useWorkspaceChatModels(
     }
 
     ensureModelsLoaded().catch(() => undefined);
-  }, [ensureModelsLoaded, initialChatModels, lazy]);
+  }, [ensureModelsLoaded, initialChatModels, lazy, persistModels]);
 
   const markSelectedAsDefault = useCallback(async () => {
     if (!selectedIntegrationId || isMarkingDefault) {
@@ -119,9 +153,11 @@ export function useWorkspaceChatModels(
       await patchWorkspaceIntegration(selectedIntegrationId, {
         is_default: true,
       });
-      setChatModels((models) =>
-        withDefaultChatIntegration(models, selectedIntegrationId)
-      );
+      setChatModels((models) => {
+        const next = withDefaultChatIntegration(models, selectedIntegrationId);
+        persistModels(next);
+        return next;
+      });
     } catch (error) {
       console.error('Failed to mark chat model as default:', error);
       throw new Error(
@@ -130,7 +166,7 @@ export function useWorkspaceChatModels(
     } finally {
       setIsMarkingDefault(false);
     }
-  }, [isMarkingDefault, selectedIntegrationId]);
+  }, [isMarkingDefault, persistModels, selectedIntegrationId]);
 
   return {
     chatModels,
@@ -138,6 +174,7 @@ export function useWorkspaceChatModels(
     setSelectedIntegrationId,
     isMarkingDefault,
     isLoadingModels,
+    modelsReady,
     ensureModelsLoaded,
     markSelectedAsDefault,
   };

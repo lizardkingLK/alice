@@ -54,6 +54,7 @@ import {
   restoreSavedView,
   type SavedView,
 } from '@/app/views/_services/saved-views.mutations.client';
+import { toast } from '@repo/ui/components/ui/sonner';
 import { emitSavedViewsChanged } from '@/app/views/_hooks/use-saved-views-nav';
 import { ShareViewDialog } from '@/app/views/_components/share-view-dialog';
 import { ViewsColumnsDialog } from '@/app/views/_components/views-columns-dialog';
@@ -365,7 +366,8 @@ export function ViewsWorkspace({
       setError(null);
       try {
         if (action === 'archive') {
-          await archiveSavedView(view.id);
+          const accepted = await archiveSavedView(view.id);
+          toast.success(accepted.message);
         } else {
           await restoreSavedView(view.id);
         }
@@ -400,7 +402,8 @@ export function ViewsWorkspace({
       if (viewToDelete.kind === 'share') {
         await deleteSharedView(viewToDelete.view.id);
       } else {
-        await deleteSavedView(viewToDelete.view.id);
+        const accepted = await deleteSavedView(viewToDelete.view.id);
+        toast.success(accepted.message);
       }
       emitSavedViewsChanged();
       setViewToDelete(null);

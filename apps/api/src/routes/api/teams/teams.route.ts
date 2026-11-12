@@ -159,18 +159,37 @@ export function createTeamsRouter(deps: TeamsRouterDeps) {
     }
   );
 
-  registerLockedStatusPatch({
-    router: teamsRouter,
-    path: '/:id/soft-delete',
-    auth: requireApiAuth,
-    missingIdMessage: 'Team identifier is required',
-    parseBody: (req) => teamLockActionSchema.safeParse(req.body),
-    treeifyError: (error) => z.treeifyError(error as z.ZodError),
-    action: (actorId, teamId, expectedUpdatedAt) =>
-      teamsService.softDeleteTeam(actorId, teamId, expectedUpdatedAt),
-    toResponseBody: (team) => ({ team }),
-    failureMessage: 'Failed to archive team',
-  });
+  teamsRouter.patch(
+    '/:id/soft-delete',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const teamIdParam = req.params.id;
+      if (!teamIdParam) {
+        return res.status(400).json({ error: 'Team identifier is required' });
+      }
+
+      const parsed = teamLockActionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        const accepted = await teamsService.enqueueSoftDeleteTeam(
+          req.userId!,
+          teamIdParam,
+          parsed.data.expectedUpdatedAt
+        );
+        // 202 — archive finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
+      } catch (error) {
+        sendRouteMutationError(res, error, 'Failed to archive team');
+      }
+    }
+  );
 
   registerLockedStatusPatch({
     router: teamsRouter,
@@ -229,14 +248,18 @@ export function createTeamsRouter(deps: TeamsRouterDeps) {
       }
 
       try {
-        await teamsService.hardDeleteTeam(req.userId!, teamIdParam);
-        res.json({ success: true });
+        const accepted = await teamsService.enqueueHardDeleteTeam(
+          req.userId!,
+          teamIdParam
+        );
+        // 202 — purge finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
       } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'Failed to permanently purge team';
-        res.status(500).json({ error: message });
+        sendRouteMutationError(res, error, 'Failed to permanently purge team');
       }
     }
   );

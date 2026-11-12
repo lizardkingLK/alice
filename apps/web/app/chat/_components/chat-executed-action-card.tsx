@@ -11,6 +11,12 @@ import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
 import type { ActionItem } from '@/app/chat/_components/chat-client.types';
 import { ChatProposeWorkflowPatchCard } from '@/app/chat/_components/chat-propose-workflow-patch-card';
+import { projectDetailHref } from '@/app/projects/_helpers/project-links';
+import {
+  globalWorkItemsHref,
+  projectScopedHref,
+} from '@/app/projects/_helpers/project-tree-links';
+import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 
 type ActionCardTone = 'emerald' | 'blue' | 'indigo';
 
@@ -126,6 +132,26 @@ function workItemDeletedActionLabel(
   );
 }
 
+function createdEntityWorkItemHref(entity: {
+  readonly id: string;
+  readonly projectKey?: string;
+  readonly slug?: string;
+}): string {
+  return workItemDetailHref(entity.id, {
+    projectKey: entity.projectKey,
+    workItemSlug: entity.slug,
+  });
+}
+
+function createdEntityWorkItemsListHref(entity: {
+  readonly projectKey?: string;
+}): string {
+  if (entity.projectKey) {
+    return globalWorkItemsHref({ projectKey: entity.projectKey });
+  }
+  return '/work-items';
+}
+
 /** Renders a single chat “executed action” card, or null for unknown types. */
 export function ChatExecutedActionCard({
   action,
@@ -136,7 +162,11 @@ export function ChatExecutedActionCard({
         <ActionCardFrame
           tone="emerald"
           icon={FolderKanban}
-          href="/projects"
+          href={
+            action.entity.key
+              ? projectDetailHref(action.entity.key)
+              : '/projects'
+          }
           linkLabel="View"
         >
           {projectActionLabel(action.entity)}
@@ -147,7 +177,15 @@ export function ChatExecutedActionCard({
         <ActionCardFrame
           tone="blue"
           icon={Calendar}
-          href="/sprints"
+          href={
+            action.entity.projectKey
+              ? projectScopedHref({
+                  projectKeyOrId: action.entity.projectKey,
+                  area: 'sprints',
+                  sprintSlug: action.entity.slug,
+                })
+              : '/sprints'
+          }
           linkLabel="View"
         >
           {sprintActionLabel(action.entity)}
@@ -158,7 +196,7 @@ export function ChatExecutedActionCard({
         <ActionCardFrame
           tone="indigo"
           icon={ClipboardPenIcon}
-          href={`/work-items/${action.entity.id}`}
+          href={createdEntityWorkItemHref(action.entity)}
           linkLabel="View Details"
         >
           {workItemActionLabel(action.entity)}
@@ -169,7 +207,7 @@ export function ChatExecutedActionCard({
         <ActionCardFrame
           tone="blue"
           icon={ClipboardPenIcon}
-          href={`/work-items/${action.entity.id}`}
+          href={createdEntityWorkItemHref(action.entity)}
           linkLabel="View Details"
         >
           {workItemUpdatedActionLabel(action.entity)}
@@ -180,7 +218,7 @@ export function ChatExecutedActionCard({
         <ActionCardFrame
           tone="emerald"
           icon={ClipboardPenIcon}
-          href="/work-items"
+          href={createdEntityWorkItemsListHref(action.entity)}
           linkLabel="View Work Items"
         >
           {workItemDeletedActionLabel(action.entity)}
@@ -191,7 +229,7 @@ export function ChatExecutedActionCard({
         <ActionCardFrame
           tone="emerald"
           icon={ClipboardPenIcon}
-          href="/work-items"
+          href={createdEntityWorkItemsListHref(action.entity)}
           linkLabel="View Work Items"
         >
           Work Items Imported:{' '}
@@ -202,7 +240,10 @@ export function ChatExecutedActionCard({
       );
     case 'configure_board': {
       // Historical board drafts — Board designer retired; Workflow is the config surface.
-      const href = `/projects/${action.entity.projectId}?tab=workflow`;
+      const href = projectDetailHref(
+        action.entity.projectKey || action.entity.projectId,
+        'workflow'
+      );
       return (
         <ActionCardFrame
           tone="indigo"

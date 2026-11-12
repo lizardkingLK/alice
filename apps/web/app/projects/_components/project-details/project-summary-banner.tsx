@@ -108,13 +108,11 @@ function BannerActionButton({
   icon,
   onClick,
   disabled,
-  destructive,
 }: Readonly<{
   label: string;
   icon: ReactNode;
   onClick: () => void;
   disabled?: boolean;
-  destructive?: boolean;
 }>) {
   return (
     <Button
@@ -122,10 +120,7 @@ function BannerActionButton({
       size="sm"
       variant="secondary"
       disabled={disabled}
-      className={cn(
-        bannerActionButtonClassName,
-        destructive && 'text-destructive hover:text-destructive'
-      )}
+      className={bannerActionButtonClassName}
       onClick={onClick}
     >
       {icon}
@@ -181,7 +176,6 @@ function ProjectBannerActions({
           label="Purge"
           icon={<Trash2 data-icon="inline-start" />}
           disabled={isPending}
-          destructive
           onClick={onPurge}
         />
       ) : null}
@@ -588,7 +582,8 @@ export function ProjectSummaryBanner({
     setActionError(null);
     startTransition(async () => {
       try {
-        await hardDeleteProject(project.id);
+        const accepted = await hardDeleteProject(project.id);
+        toast.success(accepted.message);
         setConfirmMode(null);
         router.push('/projects?tab=archived');
         router.refresh();

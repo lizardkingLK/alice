@@ -10,6 +10,7 @@ export type ProfileTeam = {
 export type ProfileWorkedOn = {
   id: string;
   title: string;
+  slug: string | null;
   status: Tables<'work_items'>['status'];
   projectKey: string | null;
   updatedAt: string;
@@ -63,7 +64,7 @@ export async function getProfileWorkedOn(
 
   const { data, error } = await supabase
     .from('work_items')
-    .select(`id, title, status, updated_at, ${projectRelationSelect()}`)
+    .select(`id, title, slug, status, updated_at, ${projectRelationSelect()}`)
     .eq('record_status', 'active')
     .or(`assignee_id.eq.${userId},reporter_id.eq.${userId}`)
     .order('updated_at', { ascending: false })
@@ -76,7 +77,7 @@ export async function getProfileWorkedOn(
 
   type ProfileWorkedOnRow = Pick<
     Tables<'work_items'>,
-    'id' | 'title' | 'status' | 'updated_at'
+    'id' | 'title' | 'slug' | 'status' | 'updated_at'
   > & {
     project: Pick<Tables<'projects'>, 'key' | 'name'> | null;
   };
@@ -84,6 +85,7 @@ export async function getProfileWorkedOn(
   return ((data ?? []) as unknown as ProfileWorkedOnRow[]).map((row) => ({
     id: row.id,
     title: row.title,
+    slug: row.slug ?? null,
     status: row.status,
     projectKey: row.project?.key ?? null,
     updatedAt: row.updated_at,

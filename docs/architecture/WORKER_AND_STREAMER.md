@@ -145,9 +145,39 @@ Parents orchestrate on the orchestration queue; children run on specialist queue
 
 ---
 
+## Interim: in-process destructive jobs (today)
+
+Until BullMQ + `apps/worker` ship, **soft archive** and **hard purge** (and
+project create) use the same HTTP shape the worker path will keep:
+
+1. API validates auth + optimistic lock (when applicable) **synchronously**.
+2. Responds **202** `{ accepted, message, correlationId }`.
+3. Runs the mutation **in-process** via `void` background work
+   (`apps/api/src/lib/enqueue-destructive-action.ts`).
+4. Writes an inbox notification on success/failure
+   (`entity_archived` / `entity_archive_failed` / `entity_purged` /
+   `entity_purge_failed`, plus existing `project_created` /
+   `project_create_failed`).
+
+Web clients use `skipDatabaseBusyRetry: true` on these acknowledges and toast
+the accepted message; completion arrives through the inbox.
+
+### Migration checklist → BullMQ
+
+When picking up worker jobs for these kinds:
+
+- [ ] Move `enqueueDestructiveAction` / project-create background runners to
+      `FlowProducer.add` (or single-job enqueue) with stable job names
+      (e.g. `entity.archive`, `entity.purge`, `project.create`)
+- [ ] Persist `job_runs` keyed by today’s `correlationId` (or replace it)
+- [ ] Keep HTTP **202** + `{ accepted, message, correlationId }` contract
+- [ ] Keep inbox notification types and markdown link copy stable
+- [ ] Remove in-process `void` runners from `apps/api` once the worker owns them
+- [ ] Confirm Vercel `api` is producer-only (no long DB/storage work after 202)
+
 ## Sequencing
 
-1. **Queue + `apps/worker` first** when long jobs / AI tools are the pain (api → 202 → worker).
+1. **Queue + `apps/worker` first** when long jobs / AI tools are the pain (api → 202 → worker). Prefer migrating the interim destructive/create jobs above as early kinds.
 2. **`apps/streamer` second** when the browser needs live progress / presence beyond current Supabase Realtime and client patterns.
 3. Wire worker → streamer via **events**, not by importing streamer code into the worker process.
 
@@ -183,14 +213,14 @@ job kinds. Product phases live in
 [GITHUB_INTEGRATION.md](../features/projects/GITHUB_INTEGRATION.md)
 (Phased delivery). Draft names (finalize in `@repo/jobs`):
 
-| Kind (draft) | Phase | Role |
-| ------------ | ----- | ---- |
-| `github.webhook.ingest` | 2 | After API HMAC verify — normalize payload, idempotency key, fan-out |
-| `github.sync.pull_request` | 2 | Upsert PR (+ link work item when resolvable) |
-| `github.sync.push` | 2 | Commits / branch tip updates |
-| `github.sync.branch` | 2 | Branch create/delete |
-| `workflow.run` | 4 | Orchestrator parent flow (FlowProducer) |
-| `agent.tool.cursor` (and peers) | 4 | Long agent tool execution; never on `apps/api` |
+| Kind (draft)                    | Phase | Role                                                                |
+| ------------------------------- | ----- | ------------------------------------------------------------------- |
+| `github.webhook.ingest`         | 2     | After API HMAC verify — normalize payload, idempotency key, fan-out |
+| `github.sync.pull_request`      | 2     | Upsert PR (+ link work item when resolvable)                        |
+| `github.sync.push`              | 2     | Commits / branch tip updates                                        |
+| `github.sync.branch`            | 2     | Branch create/delete                                                |
+| `workflow.run`                  | 4     | Orchestrator parent flow (FlowProducer)                             |
+| `agent.tool.cursor` (and peers) | 4     | Long agent tool execution; never on `apps/api`                      |
 
 Webhook HTTP handlers on `apps/api` **verify + enqueue only**. Agent tool loops
 and sync apply logic run on `apps/worker`.

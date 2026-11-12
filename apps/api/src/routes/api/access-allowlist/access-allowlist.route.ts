@@ -174,13 +174,19 @@ export function createAccessAllowlistRouter(deps: AccessAllowlistRouterDeps) {
             .json({ error: z.treeifyError(bodyParsed.error) });
         }
 
-        await accessAllowlistService.deleteAccessAllowlist(
-          actorId,
-          id,
-          bodyParsed.data.expectedUpdatedAt
-        );
+        const accepted =
+          await accessAllowlistService.enqueueDeleteAccessAllowlist(
+            actorId,
+            id,
+            bodyParsed.data.expectedUpdatedAt
+          );
 
-        res.json({ success: true });
+        // 202 — purge finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
       } catch (error) {
         if (trySendOptimisticLockError(res, error)) return;
         routeError(res, error, 'Failed to delete access allowlist entry');

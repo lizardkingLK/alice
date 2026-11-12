@@ -326,7 +326,6 @@ function parseToolUse(
 
 function assertNormalStopReason(
   stopReason: unknown,
-  textBlockCount: number,
   toolUseCount: number
 ): void {
   if (stopReason === 'tool_use') {
@@ -347,33 +346,54 @@ function assertNormalStopReason(
     throw new ChatProviderError('Anthropic declined this request.');
   }
 
+  // Official tool calls use stop_reason "tool_use". Empty end_turn is a documented
+  // Anthropic edge case (especially after tool results / thinking-only turns).
+  if (stopReason === 'end_turn' || stopReason === 'stop_sequence') {
+    if (toolUseCount > 0) throw invalidResponse('invalid_stop_reason');
+    return;
+  }
+
+  throw invalidResponse('invalid_stop_reason');
+}
+
+
+function assertAnthropicAssistantMessage(payload: unknown): {
+  readonly content: readonly unknown[];
+  readonly stop_reason: unknown;
+} {
   if (
-    (stopReason !== 'end_turn' && stopReason !== 'stop_sequence') ||
-    textBlockCount === 0 ||
-    toolUseCount > 0
+    !isRecord(payload) ||
+    payload.type !== 'message' ||
+    payload.role !== 'assistant' ||
+    typeof payload.id !== 'string' ||
+    payload.id.length === 0 ||
+    typeof payload.model !== 'string' ||
+    payload.model.length === 0 ||
+    !Array.isArray(payload.content)
   ) {
-    throw invalidResponse('invalid_stop_reason');
+    throw invalidResponse('invalid_response_shape');
+  }
+
+  return {
+    content: payload.content,
+    stop_reason: payload.stop_reason,
+  };
+}
+
+function appendTextBlock(
+  block: Record<string, unknown>,
+  parts: ChatContentPart[]
+): void {
+  if (typeof block.text !== 'string') {
+    throw invalidResponse('invalid_response_shape');
+  }
+  if (block.text.length > 0) {
+    parts.push({ text: block.text });
   }
 }
 
 function isAnthropicThinkingBlock(block: Record<string, unknown>): boolean {
   return block.type === 'thinking' || block.type === 'redacted_thinking';
-}
-
-function omitAnthropicThinkingBlocks(blocks: unknown[]): {
-  visibleBlocks: unknown[];
-  thinkingBlockCount: number;
-} {
-  const visibleBlocks: unknown[] = [];
-  let thinkingBlockCount = 0;
-  for (const block of blocks) {
-    if (isRecord(block) && isAnthropicThinkingBlock(block)) {
-      thinkingBlockCount += 1;
-    } else {
-      visibleBlocks.push(block);
-    }
-  }
-  return { visibleBlocks, thinkingBlockCount };
 }
 
 function assertThinkingBlocksCanBeOmitted(
@@ -389,45 +409,26 @@ function assertThinkingBlocksCanBeOmitted(
   }
 }
 
-/** Validate and convert one Anthropic Messages response into Alice's shape. */
-export function anthropicMessageToChatLlmResponse(
-  payload: unknown,
+function parseAnthropicContentBlocks(
+  content: readonly unknown[],
   tools: AliceChatTools
-): ChatLlmResponse {
-  if (
-    !isRecord(payload) ||
-    payload.type !== 'message' ||
-    payload.role !== 'assistant' ||
-    typeof payload.id !== 'string' ||
-    payload.id.length === 0 ||
-    typeof payload.model !== 'string' ||
-    payload.model.length === 0 ||
-    !Array.isArray(payload.content)
-  ) {
-    throw invalidResponse('invalid_response_shape');
-  }
-
+): {
+  parts: ChatContentPart[];
+  toolUseCount: number;
+  thinkingBlockCount: number;
+} {
   const parts: ChatContentPart[] = [];
   const seenToolUseIds = new Set<string>();
-  let textBlockCount = 0;
   let toolUseCount = 0;
-  const { visibleBlocks, thinkingBlockCount } = omitAnthropicThinkingBlocks(
-    payload.content
-  );
+  let thinkingBlockCount = 0;
 
-  for (const rawBlock of visibleBlocks) {
+  for (const rawBlock of content) {
     if (!isRecord(rawBlock)) {
       throw invalidResponse('invalid_response_shape');
     }
 
     if (rawBlock.type === 'text') {
-      if (typeof rawBlock.text !== 'string') {
-        throw invalidResponse('invalid_response_shape');
-      }
-      if (rawBlock.text.length > 0) {
-        textBlockCount += 1;
-        parts.push({ text: rawBlock.text });
-      }
+      appendTextBlock(rawBlock, parts);
       continue;
     }
 
@@ -437,19 +438,62 @@ export function anthropicMessageToChatLlmResponse(
       continue;
     }
 
+    // Extended-thinking / redacted blocks can appear on some models; omit for
+    // terminal text turns. Tool-use turns fail closed (see assert below).
+    if (isAnthropicThinkingBlock(rawBlock)) {
+      thinkingBlockCount += 1;
+      continue;
+    }
+
     throw invalidResponse('unsupported_content_block');
   }
 
-  assertThinkingBlocksCanBeOmitted(thinkingBlockCount, toolUseCount);
+  return { parts, toolUseCount, thinkingBlockCount };
+}
 
-  assertNormalStopReason(payload.stop_reason, textBlockCount, toolUseCount);
+function ensureNonEmptyEndTurnParts(
+  parts: ChatContentPart[],
+  toolUseCount: number,
+  stopReason: unknown
+): ChatContentPart[] {
+  // Empty end_turn (optionally after ignored thinking blocks) is valid per
+  // Anthropic; surface a short retry hint instead of failing the chat turn.
+  if (
+    parts.length === 0 &&
+    toolUseCount === 0 &&
+    (stopReason === 'end_turn' || stopReason === 'stop_sequence')
+  ) {
+    return [
+      {
+        text: 'I could not complete that reply. Please try again.',
+      },
+    ];
+  }
+  return parts;
+}
+
+/** Validate and convert one Anthropic Messages response into Alice's shape. */
+export function anthropicMessageToChatLlmResponse(
+  payload: unknown,
+  tools: AliceChatTools
+): ChatLlmResponse {
+  const message = assertAnthropicAssistantMessage(payload);
+  const { parts, toolUseCount, thinkingBlockCount } =
+    parseAnthropicContentBlocks(message.content, tools);
+
+  assertThinkingBlocksCanBeOmitted(thinkingBlockCount, toolUseCount);
+  assertNormalStopReason(message.stop_reason, toolUseCount);
 
   return {
     candidates: [
       {
         content: {
           role: ChatTurnRoles.Model,
-          parts,
+          parts: ensureNonEmptyEndTurnParts(
+            parts,
+            toolUseCount,
+            message.stop_reason
+          ),
         },
       },
     ],

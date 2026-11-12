@@ -68,9 +68,15 @@ type BacklogSprintCardProps = {
 };
 /* eslint-enable no-unused-vars */
 
-function openSprintSummaryReport(sprintId: string) {
+function openSprintSummaryReport(
+  sprintId: string,
+  tree?: {
+    readonly projectKey?: string | null;
+    readonly sprintSlug?: string | null;
+  }
+) {
   window.open(
-    sprintReportHref(sprintId, 'backlog'),
+    sprintReportHref(sprintId, 'backlog', tree),
     '_blank',
     'noopener,noreferrer'
   );
@@ -145,7 +151,10 @@ function SprintCardActions({
               aria-label="Summary report"
               onClick={(event) => {
                 event.stopPropagation();
-                openSprintSummaryReport(sprint.id);
+                openSprintSummaryReport(sprint.id, {
+                  projectKey: sprint.project?.key,
+                  sprintSlug: sprint.slug,
+                });
               }}
             >
               <BarChart3 className="size-4" />

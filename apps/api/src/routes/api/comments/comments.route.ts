@@ -203,12 +203,17 @@ export function createCommentsRouter(deps: CommentsRouterDeps) {
         }
 
         try {
-          await commentsService.archiveComment(
-            commentId,
-            validation.data.expectedUpdatedAt,
-            req.userId!
+          const accepted = await commentsService.enqueueArchiveComment(
+            req.userId!,
+            req.params.id!,
+            validation.data.expectedUpdatedAt
           );
-          return res.json({ data: { success: true }, error: null });
+          // 202 — archive finishes in the background; inbox notifies on result.
+          return res.status(202).json({
+            accepted: true,
+            message: accepted.message,
+            correlationId: accepted.correlationId,
+          });
         } catch (error) {
           sendCommentError(res, error, 'Failed to delete comment');
           return;
@@ -216,8 +221,16 @@ export function createCommentsRouter(deps: CommentsRouterDeps) {
       }
 
       try {
-        await commentsService.hardDeleteComment(commentId, req.userId!);
-        res.json({ data: { success: true }, error: null });
+        const accepted = await commentsService.enqueueHardDeleteComment(
+          req.userId!,
+          req.params.id!
+        );
+        // 202 — purge finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
       } catch (error) {
         sendCommentError(res, error, 'Failed to delete comment');
       }

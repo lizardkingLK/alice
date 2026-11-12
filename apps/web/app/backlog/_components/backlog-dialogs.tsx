@@ -157,6 +157,7 @@ type CreateIssueDialogProps = {
   readonly projectMembers: DbUser[];
   readonly defaultSprintId?: string | null;
   readonly lockProject?: boolean;
+  readonly createIntentKey?: number;
   readonly onOpenChange: (open: boolean) => void;
   readonly onClose: () => void;
   readonly onCreated: (workItem: DbWorkItem) => void;
@@ -169,6 +170,7 @@ export function BacklogCreateIssueDialog({
   projectMembers,
   defaultSprintId = null,
   lockProject = false,
+  createIntentKey,
   onOpenChange,
   onClose,
   onCreated,
@@ -183,13 +185,14 @@ export function BacklogCreateIssueDialog({
           ? 'Add a new work item locked to this sprint.'
           : 'Add a new work item and assign it to a team member.'
       }
-      contentClassName="bg-card border-border/80 backdrop-blur-md sm:max-w-2xl"
+      contentClassName="bg-card border-border/80 sm:max-w-2xl"
       titleClassName="text-lg font-bold"
       descriptionClassName="text-muted-foreground text-xs"
       projects={projects}
       projectMembers={projectMembers}
       defaultSprintId={defaultSprintId}
       lockProject={lockProject}
+      createIntentKey={createIntentKey}
       onClose={onClose}
       onSuccess={onCreated}
     />

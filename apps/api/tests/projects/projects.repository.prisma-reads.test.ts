@@ -355,6 +355,7 @@ describe('ProjectsRepository Prisma reads', () => {
     expect(sprintCreateMock).toHaveBeenCalledWith({
       data: {
         name: 'Sprint 1',
+        slug: 'sprint-1',
         goal: null,
         start_date: new Date('2099-09-01'),
         end_date: new Date('2099-09-14'),

@@ -31,18 +31,37 @@ describe('buildWorkspaceNavHref', () => {
     expect(href).toBe('/member');
   });
 
-  it('attaches project and sprint query params', () => {
-    // Arrange
+  it('uses path masks when shortcodes are stored', () => {
+    const preference = {
+      projectId: 'proj-1',
+      sprintId: 'sprint-1',
+      projectKey: 'SCRUM',
+      sprintSlug: 'sprint-1',
+    };
+
+    expect(buildWorkspaceNavHref('/board', preference)).toBe(
+      '/board/projects/SCRUM/sprints/sprint-1'
+    );
+    expect(buildWorkspaceNavHref('/work-items', preference)).toBe(
+      '/work-items/projects/SCRUM/sprints/sprint-1'
+    );
+    expect(buildWorkspaceNavHref('/backlog', preference)).toBe(
+      '/backlog/projects/SCRUM'
+    );
+  });
+
+  it('falls back to UUID query when shortcodes are missing', () => {
     const preference = {
       projectId: 'proj-1',
       sprintId: 'sprint-1',
     };
 
-    // Act
-    const href = buildWorkspaceNavHref('/board', preference);
-
-    // Assert
-    expect(href).toBe('/board?project=proj-1&sprint=sprint-1');
+    expect(buildWorkspaceNavHref('/board', preference)).toBe(
+      '/board?project=proj-1&sprint=sprint-1'
+    );
+    expect(buildWorkspaceNavHref('/work-items', preference)).toBe(
+      '/work-items?project=proj-1&sprint=sprint-1'
+    );
   });
 
   it('attaches project=all without sprint', () => {

@@ -58,6 +58,7 @@ export function NotificationInbox({
     userId,
     initialNotifications,
     initialLoadFailed,
+    realtimeChannelScope: 'header',
   });
   const listHandlers = createNotificationsInboxListHandlers(inbox, {
     onBeforeNavigate: () => setIsOpen(false),

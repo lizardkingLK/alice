@@ -34,6 +34,7 @@ import {
 } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { listAccessibleProjectIds } from '../../../lib/project-access';
+import { allocateWorkItemSlug } from '../../../lib/entity-slug';
 import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditCreateWithoutStatus,
@@ -525,10 +526,12 @@ export class WorkItemRepository {
       previousState: null,
       workflowId: input.workflowId,
     });
+    const slug = await allocateWorkItemSlug(input.project_id, input.title);
 
     const created = await prisma.work_items.create({
       data: {
         title: input.title,
+        slug,
         project_id: input.project_id,
         type: input.type,
         priority: input.priority ?? DEFAULT_WORK_ITEM_PRIORITY,
@@ -885,6 +888,7 @@ export class WorkItemRepository {
       source: {
         id: string;
         title: string;
+        slug: string;
         type: string;
         status: string;
         state: unknown;
@@ -893,6 +897,7 @@ export class WorkItemRepository {
       target: {
         id: string;
         title: string;
+        slug: string;
         type: string;
         status: string;
         state: unknown;
@@ -908,6 +913,7 @@ export class WorkItemRepository {
       related: {
         id: related.id,
         title: related.title,
+        slug: related.slug,
         type: related.type,
         status: related.status,
         state: related.state,
@@ -927,6 +933,7 @@ export class WorkItemRepository {
           select: {
             id: true,
             title: true,
+            slug: true,
             type: true,
             status: true,
             state: true,
@@ -937,6 +944,7 @@ export class WorkItemRepository {
           select: {
             id: true,
             title: true,
+            slug: true,
             type: true,
             status: true,
             state: true,
@@ -955,6 +963,7 @@ export class WorkItemRepository {
       select: {
         id: true,
         title: true,
+        slug: true,
         type: true,
         status: true,
         state: true,
@@ -965,6 +974,7 @@ export class WorkItemRepository {
       select: {
         id: true,
         title: true,
+        slug: true,
         type: true,
         status: true,
         state: true,

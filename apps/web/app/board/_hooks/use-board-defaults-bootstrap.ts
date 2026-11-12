@@ -8,6 +8,10 @@ import {
 } from '@/app/board/_helpers/board-defaults-storage';
 import { preferenceMatchesBoardFilters } from '@/app/board/_helpers/workspace-defaults-shared';
 import { useWorkspaceDefaultsSession } from '@/app/board/_hooks/use-workspace-defaults-session';
+import {
+  projectKeyForId,
+  sprintSlugForId,
+} from '@/app/board/_helpers/global-filter-href';
 import { buildWorkspaceFilterRedirectPath } from '@/app/board/_services/board.defaults.shared';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
@@ -44,9 +48,13 @@ export function useBoardDefaultsBootstrap({
   const navigateToPreference = useCallback(
     (preference: BoardDefaultsPreference | null) => {
       const tab = parseBoardPageTab(searchParams.get('tab'));
+      const projectId = preference?.projectId ?? ALL_PROJECTS_ID;
+      const sprintId = preference?.sprintId ?? undefined;
       const path = buildWorkspaceFilterRedirectPath(basePath, {
-        projectId: preference?.projectId ?? ALL_PROJECTS_ID,
-        sprintId: preference?.sprintId ?? undefined,
+        projectId,
+        sprintId,
+        projectKey: projectKeyForId(projects, projectId),
+        sprintSlug: sprintSlugForId(sprints, sprintId),
         tab: tab === 'board' ? undefined : tab,
       });
       if (path) {
@@ -55,7 +63,7 @@ export function useBoardDefaultsBootstrap({
       }
       router.replace(pathname);
     },
-    [basePath, pathname, router, searchParams]
+    [basePath, pathname, projects, router, searchParams, sprints]
   );
 
   const { savedPreference, saveDefaults, consumeBootstrap } =

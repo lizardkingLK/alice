@@ -17,11 +17,12 @@ vi.mock('@/app/_components/home/home-time-greeting', () => ({
 }));
 
 describe('HomeSignedInHero', () => {
-  it('centers the greeting and links to the dashboard', () => {
+  it('centers the greeting, role subtitle, avatar, and dashboard link', () => {
     // Arrange / Act
     const { container } = render(
       <HomeSignedInHero
         displayName="Ada"
+        role="admin"
         resetSuccess={false}
         accountClosed={false}
       />
@@ -31,10 +32,15 @@ describe('HomeSignedInHero', () => {
     expect(
       screen.getByRole('heading', { name: 'Good Morning, Ada' })
     ).toBeInTheDocument();
+    expect(screen.getByText('Administrator')).toBeInTheDocument();
+    expect(screen.getByText('AD')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute(
       'href',
       '/dashboard'
     );
     expect(container.querySelector('section')).toHaveClass('items-center');
+    expect(container.querySelector('section')).toHaveClass(
+      'home-signed-in-surface'
+    );
   });
 });

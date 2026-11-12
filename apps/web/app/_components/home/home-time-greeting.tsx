@@ -5,8 +5,11 @@ import { getTimeOfDayGreeting } from '@/app/_components/home/get-time-of-day-gre
 import { cn } from '@repo/ui/lib/utils';
 
 type HomeTimeGreetingProps = {
-  readonly displayName: string;
+  readonly displayName?: string;
   readonly className?: string;
+  readonly as?: 'h1' | 'h2';
+  /** When false, render only the time-of-day phrase (no name). */
+  readonly showName?: boolean;
 };
 
 /**
@@ -16,6 +19,8 @@ type HomeTimeGreetingProps = {
 export function HomeTimeGreeting({
   displayName,
   className,
+  as: Tag = 'h1',
+  showName = true,
 }: Readonly<HomeTimeGreetingProps>) {
   const [greeting, setGreeting] = useState<string | null>(null);
 
@@ -23,20 +28,27 @@ export function HomeTimeGreeting({
     setGreeting(getTimeOfDayGreeting());
   }, []);
 
-  const prefix = greeting === null ? 'Hello' : greeting;
+  const prefix = greeting ?? 'Hello';
+  const withName = showName && Boolean(displayName?.trim());
 
   return (
-    <h1 className={className}>
-      {prefix}
-      {', '}
-      <span
-        className={cn(
-          'font-semibold',
-          'text-[color-mix(in_oklch,var(--primary)_72%,white)]'
-        )}
-      >
-        {displayName}
-      </span>
-    </h1>
+    <Tag className={className}>
+      {withName ? (
+        <>
+          {prefix}
+          {', '}
+          <span
+            className={cn(
+              'font-semibold',
+              'text-[color-mix(in_oklch,var(--primary)_72%,white)]'
+            )}
+          >
+            {displayName}
+          </span>
+        </>
+      ) : (
+        <>{prefix}</>
+      )}
+    </Tag>
   );
 }

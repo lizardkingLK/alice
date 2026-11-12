@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { ProjectSummaryMetrics } from '@/app/projects/_components/project-details/project-summary-metrics';
 
 describe('ProjectSummaryMetrics', () => {
-  it('links metric cards to project tabs and hides Sprints for members', () => {
+  it('opens Board, Backlog, and My Work in a new tab and links shell tabs in-place', () => {
     const { rerender } = render(
       <ProjectSummaryMetrics
         projectKey="ABC"
@@ -16,6 +16,19 @@ describe('ProjectSummaryMetrics', () => {
         isManagerOrAdmin
       />
     );
+
+    const board = screen.getByRole('link', { name: /board/i });
+    expect(board).toHaveAttribute('href', '/projects/ABC/board');
+    expect(board).toHaveAttribute('target', '_blank');
+    expect(board).toHaveAttribute('rel', 'noopener noreferrer');
+
+    const backlog = screen.getByRole('link', { name: /backlog/i });
+    expect(backlog).toHaveAttribute('href', '/projects/ABC/backlog');
+    expect(backlog).toHaveAttribute('target', '_blank');
+
+    const myWork = screen.getByRole('link', { name: /my work/i });
+    expect(myWork).toHaveAttribute('href', '/projects/ABC/member');
+    expect(myWork).toHaveAttribute('target', '_blank');
 
     expect(screen.getByRole('link', { name: /members/i })).toHaveAttribute(
       'href',
@@ -59,5 +72,8 @@ describe('ProjectSummaryMetrics', () => {
       screen.queryByRole('link', { name: /sprints/i })
     ).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /members/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /board/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /backlog/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /my work/i })).toBeInTheDocument();
   });
 });

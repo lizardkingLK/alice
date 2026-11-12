@@ -12,7 +12,7 @@ function buildMessage() {
   return buildProjectMemberAddedEmail({
     recipientEmail: 'member@example.com',
     recipientName: 'Taylor',
-    projectId: '33333333-3333-4333-8333-333333333333',
+    projectKey: 'APOLLO',
     projectName: 'Apollo',
     frontendUrl: 'https://alice.example',
     notificationEventId,
@@ -25,11 +25,11 @@ afterEach(() => {
 });
 
 describe('project member email template', () => {
-  it('builds a professional message from the configured Alice origin', () => {
+  it('builds a professional message with a KEY-based project URL', () => {
     const message = buildProjectMemberAddedEmail({
       recipientEmail: 'member@example.com',
       recipientName: 'Taylor',
-      projectId: '33333333-3333-4333-8333-333333333333',
+      projectKey: 'apollo',
       projectName: 'Apollo',
       frontendUrl:
         'https://alice.example/configured/path?token=secret#fragment',
@@ -42,18 +42,18 @@ describe('project member email template', () => {
         subject: "You've been added to Apollo in Alice",
       })
     );
-    expect(message.text).toContain(
-      'https://alice.example/projects/33333333-3333-4333-8333-333333333333'
-    );
+    expect(message.text).toContain('https://alice.example/projects/APOLLO');
+    expect(message.html).toContain('https://alice.example/projects/APOLLO');
     expect(message.html).toContain('Open project');
     expect(message.text).not.toContain('token=secret');
+    expect(message.text).not.toMatch(/\/projects\/[0-9a-f]{8}-[0-9a-f]{4}-/i);
   });
 
   it('escapes untrusted display values and strips header newlines', () => {
     const message = buildProjectMemberAddedEmail({
       recipientEmail: 'member@example.com',
       recipientName: '<Taylor>',
-      projectId: 'project-1',
+      projectKey: 'APOLLO',
       projectName: 'Apollo\r\nBcc: attacker@example.com <script>',
       frontendUrl: 'https://alice.example',
       notificationEventId,
@@ -69,20 +69,23 @@ describe('project member email template', () => {
   });
 
   it('rejects unsafe frontend URLs and recipient header injection', () => {
+    expect(() => buildAliceProjectUrl('javascript:alert(1)', 'APOLLO')).toThrow(
+      'Alice frontend URL must use HTTP or HTTPS.'
+    );
     expect(() =>
-      buildAliceProjectUrl('javascript:alert(1)', 'project-1')
-    ).toThrow('Alice frontend URL must use HTTP or HTTPS.');
-    expect(() =>
-      buildAliceProjectUrl('https://user:password@alice.example', 'project-1')
+      buildAliceProjectUrl('https://user:password@alice.example', 'APOLLO')
     ).toThrow('Alice frontend URL must not contain credentials.');
     expect(() =>
-      buildAliceProjectUrl('http://alice.example', 'project-1')
+      buildAliceProjectUrl('http://alice.example', 'APOLLO')
     ).toThrow('Alice frontend URL must use HTTPS outside local development.');
+    expect(() => buildAliceProjectUrl('https://alice.example', '  ')).toThrow(
+      'Project key is required.'
+    );
     expect(() =>
       buildProjectMemberAddedEmail({
         recipientEmail: 'member@example.com\r\nBcc: attacker@example.com',
         recipientName: 'Taylor',
-        projectId: 'project-1',
+        projectKey: 'APOLLO',
         projectName: 'Apollo',
         frontendUrl: 'https://alice.example',
         notificationEventId,

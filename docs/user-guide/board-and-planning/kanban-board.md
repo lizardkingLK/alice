@@ -11,6 +11,10 @@ See work by status and drag cards to update progress.
 1. In the sidebar under **Platform**, select **Board**.
 2. Ensure the **Board** tab is selected (default at `/board`).
 
+When you filter by project, the address bar uses `/board/projects/{KEY}` (and
+`/sprints/{slug}` when a sprint is selected). From a project workspace, open
+**Board** in the project sidebar for `/projects/{KEY}/board`.
+
 ---
 
 ## Layout

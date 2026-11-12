@@ -120,6 +120,7 @@ interface BacklogWorkspaceProps {
   userRole: string;
   currentUserId?: string | null;
   error?: string | null;
+  lockedProjectId?: string;
 }
 
 export function BacklogWorkspace({
@@ -131,6 +132,7 @@ export function BacklogWorkspace({
   userRole,
   currentUserId,
   error = null,
+  lockedProjectId,
 }: Readonly<BacklogWorkspaceProps>) {
   const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
   const { handleMutationError } = useOptimisticLock();
@@ -174,6 +176,7 @@ export function BacklogWorkspace({
     userId: currentUserId ?? null,
     projects,
     sprints: sprintList,
+    lockedProjectId,
   });
   const {
     projectFilter,
@@ -212,6 +215,7 @@ export function BacklogWorkspace({
     null
   );
   const [isCreateIssueOpen, setIsCreateIssueOpen] = useState(false);
+  const [createIntentKey, setCreateIntentKey] = useState(0);
   const [createIssueSprintId, setCreateIssueSprintId] = useState<string | null>(
     null
   );
@@ -694,6 +698,10 @@ export function BacklogWorkspace({
   };
 
   const openCreateIssue = (sprintId: string | null = null) => {
+    if (isCreateIssueOpen) {
+      setCreateIntentKey((key) => key + 1);
+      return;
+    }
     setCreateIssueSprintId(sprintId);
     setIsCreateIssueOpen(true);
   };
@@ -1214,6 +1222,7 @@ export function BacklogWorkspace({
           projectMembers={projectMembers}
           defaultSprintId={createIssueSprintId}
           lockProject={lockCreateIssueProject}
+          createIntentKey={createIntentKey}
           onOpenChange={(open) => {
             if (open) {
               setIsCreateIssueOpen(true);

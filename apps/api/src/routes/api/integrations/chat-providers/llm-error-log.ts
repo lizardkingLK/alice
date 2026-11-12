@@ -12,10 +12,15 @@ export function logLlmProviderError(
     attempt: number;
     messagesCount: number;
     responseBodyBytes: number;
+    /** Safe enum/slug only — never raw provider payload. */
+    rejectionCategory?: string;
   }
 ): void {
   const safeProvider = sanitizeLog(provider);
   const safeTimestamp = sanitizeLog(errorDetails.timestamp);
+  const safeCategory = errorDetails.rejectionCategory
+    ? sanitizeLog(errorDetails.rejectionCategory)
+    : null;
   const logMessage: string = [
     `[${safeTimestamp}]`,
     safeProvider,
@@ -27,7 +32,9 @@ export function logLlmProviderError(
     'Provider response body omitted; bytes:',
     `${errorDetails.responseBodyBytes}.`,
     'Messages in history:',
-    `${errorDetails.messagesCount}\n`,
+    `${errorDetails.messagesCount}`,
+    ...(safeCategory ? ['. Rejection category:', safeCategory] : []),
+    '\n',
   ].join(' ');
 
   console.error(

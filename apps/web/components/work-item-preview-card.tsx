@@ -11,13 +11,18 @@ import {
 import { cn } from '@repo/ui/lib/utils';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
-import type { Tables } from '@repo/types';
+import type { ProjectWorkItemTypeDef, Tables } from '@repo/types';
 import { UserAvatar } from '@/components/user-avatar';
 
 export type WorkItemPreviewCardProps = {
   readonly title: string;
   readonly type: Tables<'work_items'>['type'];
   readonly projectId?: string | null;
+  /** Prefer live workflow catalog def when the parent already resolved it. */
+  readonly typeDef?: Pick<
+    ProjectWorkItemTypeDef,
+    'key' | 'name' | 'icon' | 'color'
+  > | null;
   readonly priority?: Tables<'work_items'>['priority'] | null;
   readonly descriptionPlain?: string | null;
   readonly assigneeName?: string | null;
@@ -32,6 +37,7 @@ export function WorkItemPreviewCardBody({
   title,
   type,
   projectId = null,
+  typeDef = null,
   priority,
   descriptionPlain,
   assigneeName,
@@ -87,6 +93,7 @@ export function WorkItemPreviewCardBody({
         <WorkItemTypeBadge
           type={type}
           projectId={projectId}
+          typeDef={typeDef}
           className="max-w-full truncate"
         />
         {priority ? <PriorityBadge priority={priority} /> : null}

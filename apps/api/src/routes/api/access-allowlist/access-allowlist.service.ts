@@ -1,4 +1,6 @@
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { enqueueDestructiveAction } from '../../../lib/enqueue-destructive-action';
+import { OptimisticLockError } from '../../../lib/optimistic-lock';
 import {
   UserRoleEnum,
   RecordStatusEnum,
@@ -243,6 +245,39 @@ export class AccessAllowlistService {
     return await this.accessAllowlistRepository.hardDelete({
       id,
       expectedUpdatedAt,
+    });
+  }
+
+  /**
+   * Validate sync, accept permanent delete, finish in the background,
+   * inbox-notify. Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueDeleteAccessAllowlist(
+    actorId: string,
+    id: string,
+    expectedUpdatedAt: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    const { actor, entry } = await this.requireAdminAllowlistEntry(actorId, id);
+    rejectOwnDomainLockout(entry, actor.email, { deleting: true });
+    if (entry.updated_at !== expectedUpdatedAt) {
+      throw new OptimisticLockError(
+        entry,
+        'This allowlist entry was updated by someone else.'
+      );
+    }
+
+    const entityLabel = entry.label?.trim() || entry.value;
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'purge',
+      entityType: 'access_allowlist',
+      entityLabel,
+      relatedItemId: null,
+      detailHref: '/users?tab=allowlist',
+      run: async () => {
+        await this.deleteAccessAllowlist(actorId, id, expectedUpdatedAt);
+      },
     });
   }
 }

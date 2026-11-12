@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ProjectWorkItemTypeDef, WorkItemType } from '@repo/types';
 import { resolveTypeFromWitCatalog } from '@/app/work-items/_helpers/wit-catalog-storage';
 import { useSoftInvalidateUserId } from '@/components/soft-invalidate/soft-invalidate-provider';
@@ -18,6 +18,9 @@ type UseResolvedWorkItemTypeDefParams = {
 /**
  * Resolves a work-item type catalog def for badges/labels.
  * Prefer explicit `typeDef`; otherwise look up the client catalog cache.
+ *
+ * localStorage is client-only — defer catalog reads until after mount so the
+ * first client render matches SSR (avoids WorkItemTypeBadge hydration mismatches).
  */
 export function useResolvedWorkItemTypeDef({
   projectId,
@@ -28,14 +31,19 @@ export function useResolvedWorkItemTypeDef({
   'key' | 'name' | 'icon' | 'color'
 > | null {
   const userId = useSoftInvalidateUserId();
+  const [catalogReady, setCatalogReady] = useState(false);
+
+  useEffect(() => {
+    setCatalogReady(true);
+  }, []);
 
   return useMemo(() => {
     if (typeDef) {
       return typeDef;
     }
-    if (!userId || !projectId || !type) {
+    if (!catalogReady || !userId || !projectId || !type) {
       return null;
     }
     return resolveTypeFromWitCatalog(userId, projectId, type);
-  }, [projectId, type, typeDef, userId]);
+  }, [catalogReady, projectId, type, typeDef, userId]);
 }

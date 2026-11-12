@@ -110,8 +110,9 @@ export function parseWorkItemFocusId(value?: string | null): string | null {
 }
 
 /**
- * Extra list filters for hierarchy mode (roots only).
- * Spread into `getWorkItemsPaginated` / `getWorkItems` filter objects.
+ * Extra list filters for hierarchy mode (roots-only hint).
+ * Prefer {@link loadWorkItemsListPage} for registry tables — hierarchy there
+ * uses the seeded forest page, not roots-only pagination alone.
  */
 export function workItemHierarchyListFilter(
   listView: WorkItemListView

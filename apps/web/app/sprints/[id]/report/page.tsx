@@ -2,13 +2,14 @@ import type { Metadata } from 'next';
 import { getSprint } from '@/app/sprints/_services/sprints.reads.server';
 import { getWorkItems } from '@/app/work-items/_services/work-items.reads.server';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { SprintReportView } from './sprint-report-view';
 import { SprintReportPlaceholder } from './sprint-report-placeholder';
 import { SprintStatusEnum } from '@repo/types';
 import {
   buildSprintReportBreadcrumbOverrides,
   parseSprintReportFrom,
+  sprintReportHref,
 } from '@/app/sprints/_helpers/sprint-report-links';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 
@@ -44,6 +45,16 @@ export default async function SprintReportPage({
 
   if (!sprint) {
     notFound();
+  }
+
+  const projectKey = sprint.project?.key?.trim();
+  if (projectKey && sprint.slug) {
+    redirect(
+      sprintReportHref(sprint.id, from, {
+        projectKey,
+        sprintSlug: sprint.slug,
+      })
+    );
   }
 
   const showLiveReport = isLiveReportStatus(sprint.status);

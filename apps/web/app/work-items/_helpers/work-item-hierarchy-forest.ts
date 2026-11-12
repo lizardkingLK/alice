@@ -19,6 +19,7 @@ function toAncestor(item: DbWorkItem): WorkItemAncestor {
     id: item.id,
     type: item.type,
     title: item.title,
+    slug: item.slug,
     parent_id: item.parent_id,
   };
 }

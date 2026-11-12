@@ -3,7 +3,8 @@
 Status: **Plan** (product rules locked from brainstorm)
 
 Replaces the custom **board column** designer with a directed **workflow graph**
-(React Flow / XYFlow). Board columns become **states** of the active workflow.
+(React Flow / XYFlow; keep the default canvas attribution unless on React Flow
+Pro). Board columns become **states** of the active workflow.
 Transition rules live on **edges**. Node and edge options live in a **Settings**
 sidebar with info tooltips / click popovers.
 
@@ -140,14 +141,14 @@ click popovers on every control.
 
 ### State node
 
-| Control                              | Label (locked) | Effect                                                                                                                                           |
-| ------------------------------------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Name / description                   | —              | Display                                                                                                                                          |
-| Category                             | —              | `draft` \| `todo` \| `in_progress` \| `done`                                                                                                     |
-| **Lock record in this state**        | Locked copy    | While here, record is read-only except state transitions (reopen pattern).                                                                       |
-| **Terminal state**                   | Locked copy    | No outbound edges. Checking it **blocks** until outbound edges are removed (confirm / “Remove all outbound and lock”). Never silent auto-delete. |
-| **Allow transitions from any state** | —              | Any other state may move here without an explicit edge. Explicit edges keep their rules.                                                         |
-| **Allow transitions to any state**   | —              | This state may move to any other state without an explicit edge. Cleared / disabled when terminal.                                               |
+| Control                              | Label (locked) | Effect                                                                                                                                                     |
+| ------------------------------------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Name / description                   | —              | Display                                                                                                                                                    |
+| Category                             | —              | `draft` \| `todo` \| `in_progress` \| `done`                                                                                                               |
+| **Lock record in this state**        | Locked copy    | While here, record is read-only except state transitions (reopen pattern).                                                                                 |
+| **Terminal state**                   | Locked copy    | No outbound edges. Checking it **blocks** until outbound edges are removed (confirm / “Remove all outbound and lock”). Never silent auto-delete.           |
+| **Allow transitions from any state** | —              | Any other state may move here without an explicit edge. Explicit edges keep their rules. Canvas chip **From any** uses forward-edge (primary) stroke.      |
+| **Allow transitions to any state**   | —              | This state may move to any other state without an explicit edge. Cleared / disabled when terminal. Canvas chip **To any** uses reverse-edge (dark) stroke. |
 
 Legacy: some older configs may still set `requiresEscalation` on the **state**
 (force every exit). Prefer the **edge** control below.

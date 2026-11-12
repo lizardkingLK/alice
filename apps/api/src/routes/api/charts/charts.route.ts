@@ -188,8 +188,16 @@ export function createChartsRouter(deps: ChartsRouterDeps) {
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const chart = await chartsService.archive(req.userId!, req.params.id!);
-        res.json({ data: chart });
+        const accepted = await chartsService.enqueueArchive(
+          req.userId!,
+          req.params.id!
+        );
+        // 202 — archive finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
       } catch (error) {
         sendError(res, error, 'Failed to archive chart');
       }
@@ -214,8 +222,16 @@ export function createChartsRouter(deps: ChartsRouterDeps) {
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        await chartsService.hardDelete(req.userId!, req.params.id!);
-        res.json({ success: true });
+        const accepted = await chartsService.enqueueHardDelete(
+          req.userId!,
+          req.params.id!
+        );
+        // 202 — purge finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
       } catch (error) {
         sendError(res, error, 'Failed to delete chart');
       }
