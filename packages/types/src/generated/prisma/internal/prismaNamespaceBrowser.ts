@@ -67,6 +67,7 @@ export const ModelName = {
   comments: 'comments',
   attachments: 'attachments',
   notifications: 'notifications',
+  notification_email_events: 'notification_email_events',
   notification_email_preferences: 'notification_email_preferences',
   email_outbox: 'email_outbox',
   weekly_project_report_subscriptions: 'weekly_project_report_subscriptions',
@@ -399,6 +400,17 @@ export const NotificationsScalarFieldEnum = {
 } as const
 
 export type NotificationsScalarFieldEnum = (typeof NotificationsScalarFieldEnum)[keyof typeof NotificationsScalarFieldEnum]
+
+
+export const Notification_email_eventsScalarFieldEnum = {
+  notification_id: 'notification_id',
+  version: 'version',
+  template: 'template',
+  payload: 'payload',
+  created_at: 'created_at'
+} as const
+
+export type Notification_email_eventsScalarFieldEnum = (typeof Notification_email_eventsScalarFieldEnum)[keyof typeof Notification_email_eventsScalarFieldEnum]
 
 
 export const Notification_email_preferencesScalarFieldEnum = {

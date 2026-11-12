@@ -47,13 +47,28 @@ describe('NotificationsService.createWorkItemMutationNotifications', () => {
       after: baseAfter,
     });
 
-    expect(insertMany).toHaveBeenCalledWith([
-      expect.objectContaining({
-        user_id: 'assignee',
-        type: 'assign',
-        related_item_id: 'work-item',
-      }),
-    ]);
+    expect(insertMany).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          user_id: 'assignee',
+          type: 'assign',
+          related_item_id: 'work-item',
+        }),
+      ],
+      {
+        emailEvents: [
+          {
+            version: 1,
+            template: 'work_item_assignment',
+            payload: {
+              actorName: 'Alex',
+              workItemId: 'work-item',
+              workItemTitle: 'Fix notifications',
+            },
+          },
+        ],
+      }
+    );
   });
 
   it('creates typed status notifications once per assignee/reporter', async () => {
@@ -109,6 +124,22 @@ describe('NotificationsService.createWorkItemMutationNotifications', () => {
       type: 'assign',
       message: expect.stringContaining('reassigned'),
     });
+    const emailEvents = insertMany.mock.calls[0]![1].emailEvents;
+    expect(
+      emailEvents.find(
+        (event: { template: string }) =>
+          event.template === 'work_item_reassignment'
+      )
+    ).toEqual({
+      version: 1,
+      template: 'work_item_reassignment',
+      payload: {
+        actorName: 'Alex',
+        workItemId: 'work-item',
+        workItemTitle: 'Fix notifications',
+        newAssigneeName: 'Alex',
+      },
+    });
   });
 
   it('skips unchanged values and the actor', async () => {
@@ -122,7 +153,7 @@ describe('NotificationsService.createWorkItemMutationNotifications', () => {
       'project',
       []
     );
-    expect(insertMany).toHaveBeenCalledWith([]);
+    expect(insertMany).toHaveBeenCalledWith([], { emailEvents: [] });
   });
 
   it('persists only recipients authorized for the project', async () => {
@@ -134,9 +165,24 @@ describe('NotificationsService.createWorkItemMutationNotifications', () => {
       after: baseAfter,
     });
 
-    expect(insertMany).toHaveBeenCalledWith([
-      expect.objectContaining({ user_id: 'reporter' }),
-    ]);
+    expect(insertMany).toHaveBeenCalledWith(
+      [expect.objectContaining({ user_id: 'reporter' })],
+      {
+        emailEvents: [
+          {
+            version: 1,
+            template: 'work_item_status_change',
+            payload: {
+              actorName: 'Alex',
+              workItemId: 'work-item',
+              workItemTitle: 'Fix notifications',
+              previousStatus: 'ToDo',
+              nextStatus: 'InProgress',
+            },
+          },
+        ],
+      }
+    );
   });
 
   it('propagates notification persistence failures to the mutation transaction', async () => {

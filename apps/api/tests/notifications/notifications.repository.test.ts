@@ -7,12 +7,15 @@ import type { Database } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { RecordStatus } from '@repo/types/prisma';
 import { NotificationsRepository } from '../../src/routes/api/notifications/notifications.repository';
+import type { NotificationEmailEvent } from '../../src/routes/api/notifications/notification-email-events';
 
-const { createMock, deleteManyMock, transactionMock } = vi.hoisted(() => ({
-  createMock: vi.fn(),
-  deleteManyMock: vi.fn(),
-  transactionMock: vi.fn(),
-}));
+const { createMock, deleteManyMock, eventCreateMock, transactionMock } =
+  vi.hoisted(() => ({
+    createMock: vi.fn(),
+    deleteManyMock: vi.fn(),
+    eventCreateMock: vi.fn(),
+    transactionMock: vi.fn(),
+  }));
 
 vi.mock('../../src/lib/prisma', () => ({
   prisma: {
@@ -21,6 +24,7 @@ vi.mock('../../src/lib/prisma', () => ({
       create: createMock,
       deleteMany: deleteManyMock,
     },
+    notification_email_events: { create: eventCreateMock },
   },
 }));
 
@@ -62,8 +66,13 @@ describe('NotificationsRepository.insertMany', () => {
     createMock
       .mockResolvedValueOnce({ id: 'notification-1', user_id: 'user-1' })
       .mockResolvedValueOnce({ id: 'notification-2', user_id: 'user-2' });
-    transactionMock.mockImplementation(async (operations: Promise<unknown>[]) =>
-      Promise.all(operations)
+    eventCreateMock.mockResolvedValue({ notification_id: 'notification-1' });
+    transactionMock.mockImplementation(
+      async (callback: (client: unknown) => Promise<unknown>) =>
+        await callback({
+          notifications: { create: createMock },
+          notification_email_events: { create: eventCreateMock },
+        })
     );
   });
 
@@ -87,11 +96,121 @@ describe('NotificationsRepository.insertMany', () => {
       },
     ];
 
-    await expect(repository.insertMany(notifications)).resolves.toEqual([
+    const emailEvents = [
+      {
+        version: 1,
+        template: 'work_item_assignment',
+        payload: {
+          actorName: 'Alex',
+          workItemId: 'work-item-1',
+          workItemTitle: 'Fix notifications',
+        },
+      },
+      undefined,
+    ] satisfies readonly (NotificationEmailEvent | undefined)[];
+
+    await expect(
+      repository.insertMany(notifications, { emailEvents })
+    ).resolves.toEqual([
       { id: 'notification-1', user_id: 'user-1' },
       { id: 'notification-2', user_id: 'user-2' },
     ]);
     expect(transactionMock).toHaveBeenCalledOnce();
     expect(createMock).toHaveBeenCalledTimes(2);
+    expect(eventCreateMock).toHaveBeenCalledOnce();
+    expect(eventCreateMock).toHaveBeenCalledWith({
+      data: {
+        notification_id: 'notification-1',
+        version: 1,
+        template: 'work_item_assignment',
+        payload: emailEvents[0]?.payload,
+      },
+    });
+  });
+
+  it('rejects the batch when notification persistence rolls back', async () => {
+    const persistenceError = new Error('email event persistence failed');
+    createMock.mockReset();
+    createMock
+      .mockResolvedValueOnce({ id: 'notification-1', user_id: 'user-1' })
+      .mockResolvedValueOnce({ id: 'notification-2', user_id: 'user-2' });
+    eventCreateMock.mockRejectedValueOnce(persistenceError);
+
+    await expect(
+      repository.insertMany(
+        [
+          {
+            user_id: 'user-1',
+            type: 'assign',
+            message: 'Assigned',
+            read_status: false,
+            updated_at: new Date().toISOString(),
+            status: 'active',
+          },
+          {
+            user_id: 'user-2',
+            type: 'assign',
+            message: 'Assigned',
+            read_status: false,
+            updated_at: new Date().toISOString(),
+            status: 'active',
+          },
+        ],
+        {
+          emailEvents: [
+            {
+              version: 1,
+              template: 'work_item_assignment',
+              payload: {
+                actorName: 'Alex',
+                workItemId: 'work-item-1',
+                workItemTitle: 'First',
+              },
+            },
+            {
+              version: 1,
+              template: 'work_item_assignment',
+              payload: {
+                actorName: 'Alex',
+                workItemId: 'work-item-2',
+                workItemTitle: 'Second',
+              },
+            },
+          ],
+        }
+      )
+    ).rejects.toBe(persistenceError);
+    expect(transactionMock).toHaveBeenCalledOnce();
+  });
+
+  it('rejects unsupported event payloads before starting a transaction', async () => {
+    await expect(
+      repository.insertMany(
+        [
+          {
+            user_id: 'user-1',
+            type: 'assign',
+            message: 'Assigned',
+            read_status: false,
+            updated_at: new Date().toISOString(),
+            status: 'active',
+          },
+        ],
+        {
+          emailEvents: [
+            {
+              version: 1,
+              template: 'work_item_assignment',
+              payload: {
+                actorName: 'Alex',
+                workItemId: '',
+                workItemTitle: 'Invalid',
+              },
+            },
+          ],
+        }
+      )
+    ).rejects.toThrow();
+    expect(transactionMock).not.toHaveBeenCalled();
   });
 });

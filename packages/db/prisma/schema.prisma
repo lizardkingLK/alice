@@ -655,10 +655,21 @@ model notifications {
   user            users  @relation(fields: [user_id], references: [id], onDelete: Cascade)
   created_by_user users? @relation("NotificationCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users? @relation("NotificationUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  email_event     notification_email_events?
   email_outbox    email_outbox?
   weekly_report   weekly_project_reports?
 
   @@index([user_id, status, created_at(sort: Desc)])
+}
+
+model notification_email_events {
+  notification_id String        @id @db.Uuid
+  version         Int
+  template        EmailTemplate
+  payload         Json
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+
+  notification notifications @relation(fields: [notification_id], references: [id], onDelete: Cascade)
 }
 
 model notification_email_preferences {

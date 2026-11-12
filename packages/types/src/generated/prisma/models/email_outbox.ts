@@ -838,10 +838,6 @@ export type email_outboxUncheckedUpdateOneWithoutNotificationNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.email_outboxUpdateToOneWithWhereWithoutNotificationInput, Prisma.email_outboxUpdateWithoutNotificationInput>, Prisma.email_outboxUncheckedUpdateWithoutNotificationInput>
 }
 
-export type EnumEmailTemplateFieldUpdateOperationsInput = {
-  set?: $Enums.EmailTemplate
-}
-
 export type EnumEmailOutboxStatusFieldUpdateOperationsInput = {
   set?: $Enums.EmailOutboxStatus
 }

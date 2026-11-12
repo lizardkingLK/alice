@@ -123,6 +123,11 @@ export type attachments = Prisma.attachmentsModel
  */
 export type notifications = Prisma.notificationsModel
 /**
+ * Model notification_email_events
+ *
+ */
+export type notification_email_events = Prisma.notification_email_eventsModel
+/**
  * Model notification_email_preferences
  * 
  */

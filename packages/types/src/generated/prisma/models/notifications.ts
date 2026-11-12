@@ -241,6 +241,7 @@ export type notificationsWhereInput = {
   user?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   created_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   updated_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
+  email_event?: Prisma.XOR<Prisma.Notification_email_eventsNullableScalarRelationFilter, Prisma.notification_email_eventsWhereInput> | null
   email_outbox?: Prisma.XOR<Prisma.Email_outboxNullableScalarRelationFilter, Prisma.email_outboxWhereInput> | null
   weekly_report?: Prisma.XOR<Prisma.Weekly_project_reportsNullableScalarRelationFilter, Prisma.weekly_project_reportsWhereInput> | null
 }
@@ -261,6 +262,7 @@ export type notificationsOrderByWithRelationInput = {
   user?: Prisma.usersOrderByWithRelationInput
   created_by_user?: Prisma.usersOrderByWithRelationInput
   updated_by_user?: Prisma.usersOrderByWithRelationInput
+  email_event?: Prisma.notification_email_eventsOrderByWithRelationInput
   email_outbox?: Prisma.email_outboxOrderByWithRelationInput
   weekly_report?: Prisma.weekly_project_reportsOrderByWithRelationInput
 }
@@ -284,6 +286,7 @@ export type notificationsWhereUniqueInput = Prisma.AtLeast<{
   user?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   created_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   updated_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
+  email_event?: Prisma.XOR<Prisma.Notification_email_eventsNullableScalarRelationFilter, Prisma.notification_email_eventsWhereInput> | null
   email_outbox?: Prisma.XOR<Prisma.Email_outboxNullableScalarRelationFilter, Prisma.email_outboxWhereInput> | null
   weekly_report?: Prisma.XOR<Prisma.Weekly_project_reportsNullableScalarRelationFilter, Prisma.weekly_project_reportsWhereInput> | null
 }, "id" | "dedupe_key">
@@ -337,6 +340,7 @@ export type notificationsCreateInput = {
   user: Prisma.usersCreateNestedOneWithoutNotificationsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_notificationsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_notificationsInput
+  email_event?: Prisma.notification_email_eventsCreateNestedOneWithoutNotificationInput
   email_outbox?: Prisma.email_outboxCreateNestedOneWithoutNotificationInput
   weekly_report?: Prisma.weekly_project_reportsCreateNestedOneWithoutNotificationInput
 }
@@ -354,6 +358,7 @@ export type notificationsUncheckedCreateInput = {
   updated_by?: string | null
   updated_at?: Date | string
   dedupe_key?: string | null
+  email_event?: Prisma.notification_email_eventsUncheckedCreateNestedOneWithoutNotificationInput
   email_outbox?: Prisma.email_outboxUncheckedCreateNestedOneWithoutNotificationInput
   weekly_report?: Prisma.weekly_project_reportsUncheckedCreateNestedOneWithoutNotificationInput
 }
@@ -371,6 +376,7 @@ export type notificationsUpdateInput = {
   user?: Prisma.usersUpdateOneRequiredWithoutNotificationsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_notificationsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_notificationsNestedInput
+  email_event?: Prisma.notification_email_eventsUpdateOneWithoutNotificationNestedInput
   email_outbox?: Prisma.email_outboxUpdateOneWithoutNotificationNestedInput
   weekly_report?: Prisma.weekly_project_reportsUpdateOneWithoutNotificationNestedInput
 }
@@ -388,6 +394,7 @@ export type notificationsUncheckedUpdateInput = {
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email_event?: Prisma.notification_email_eventsUncheckedUpdateOneWithoutNotificationNestedInput
   email_outbox?: Prisma.email_outboxUncheckedUpdateOneWithoutNotificationNestedInput
   weekly_report?: Prisma.weekly_project_reportsUncheckedUpdateOneWithoutNotificationNestedInput
 }
@@ -489,14 +496,14 @@ export type notificationsMinOrderByAggregateInput = {
   dedupe_key?: Prisma.SortOrder
 }
 
-export type NotificationsNullableScalarRelationFilter = {
-  is?: Prisma.notificationsWhereInput | null
-  isNot?: Prisma.notificationsWhereInput | null
-}
-
 export type NotificationsScalarRelationFilter = {
   is?: Prisma.notificationsWhereInput
   isNot?: Prisma.notificationsWhereInput
+}
+
+export type NotificationsNullableScalarRelationFilter = {
+  is?: Prisma.notificationsWhereInput | null
+  isNot?: Prisma.notificationsWhereInput | null
 }
 
 export type notificationsCreateNestedManyWithoutUserInput = {
@@ -629,6 +636,20 @@ export type EnumNotificationTypeFieldUpdateOperationsInput = {
   set?: $Enums.NotificationType
 }
 
+export type notificationsCreateNestedOneWithoutEmail_eventInput = {
+  create?: Prisma.XOR<Prisma.notificationsCreateWithoutEmail_eventInput, Prisma.notificationsUncheckedCreateWithoutEmail_eventInput>
+  connectOrCreate?: Prisma.notificationsCreateOrConnectWithoutEmail_eventInput
+  connect?: Prisma.notificationsWhereUniqueInput
+}
+
+export type notificationsUpdateOneRequiredWithoutEmail_eventNestedInput = {
+  create?: Prisma.XOR<Prisma.notificationsCreateWithoutEmail_eventInput, Prisma.notificationsUncheckedCreateWithoutEmail_eventInput>
+  connectOrCreate?: Prisma.notificationsCreateOrConnectWithoutEmail_eventInput
+  upsert?: Prisma.notificationsUpsertWithoutEmail_eventInput
+  connect?: Prisma.notificationsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.notificationsUpdateToOneWithWhereWithoutEmail_eventInput, Prisma.notificationsUpdateWithoutEmail_eventInput>, Prisma.notificationsUncheckedUpdateWithoutEmail_eventInput>
+}
+
 export type notificationsCreateNestedOneWithoutEmail_outboxInput = {
   create?: Prisma.XOR<Prisma.notificationsCreateWithoutEmail_outboxInput, Prisma.notificationsUncheckedCreateWithoutEmail_outboxInput>
   connectOrCreate?: Prisma.notificationsCreateOrConnectWithoutEmail_outboxInput
@@ -671,6 +692,7 @@ export type notificationsCreateWithoutUserInput = {
   dedupe_key?: string | null
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_notificationsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_notificationsInput
+  email_event?: Prisma.notification_email_eventsCreateNestedOneWithoutNotificationInput
   email_outbox?: Prisma.email_outboxCreateNestedOneWithoutNotificationInput
   weekly_report?: Prisma.weekly_project_reportsCreateNestedOneWithoutNotificationInput
 }
@@ -687,6 +709,7 @@ export type notificationsUncheckedCreateWithoutUserInput = {
   updated_by?: string | null
   updated_at?: Date | string
   dedupe_key?: string | null
+  email_event?: Prisma.notification_email_eventsUncheckedCreateNestedOneWithoutNotificationInput
   email_outbox?: Prisma.email_outboxUncheckedCreateNestedOneWithoutNotificationInput
   weekly_report?: Prisma.weekly_project_reportsUncheckedCreateNestedOneWithoutNotificationInput
 }
@@ -713,6 +736,7 @@ export type notificationsCreateWithoutCreated_by_userInput = {
   dedupe_key?: string | null
   user: Prisma.usersCreateNestedOneWithoutNotificationsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_notificationsInput
+  email_event?: Prisma.notification_email_eventsCreateNestedOneWithoutNotificationInput
   email_outbox?: Prisma.email_outboxCreateNestedOneWithoutNotificationInput
   weekly_report?: Prisma.weekly_project_reportsCreateNestedOneWithoutNotificationInput
 }
@@ -729,6 +753,7 @@ export type notificationsUncheckedCreateWithoutCreated_by_userInput = {
   updated_by?: string | null
   updated_at?: Date | string
   dedupe_key?: string | null
+  email_event?: Prisma.notification_email_eventsUncheckedCreateNestedOneWithoutNotificationInput
   email_outbox?: Prisma.email_outboxUncheckedCreateNestedOneWithoutNotificationInput
   weekly_report?: Prisma.weekly_project_reportsUncheckedCreateNestedOneWithoutNotificationInput
 }
@@ -755,6 +780,7 @@ export type notificationsCreateWithoutUpdated_by_userInput = {
   dedupe_key?: string | null
   user: Prisma.usersCreateNestedOneWithoutNotificationsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_notificationsInput
+  email_event?: Prisma.notification_email_eventsCreateNestedOneWithoutNotificationInput
   email_outbox?: Prisma.email_outboxCreateNestedOneWithoutNotificationInput
   weekly_report?: Prisma.weekly_project_reportsCreateNestedOneWithoutNotificationInput
 }
@@ -771,6 +797,7 @@ export type notificationsUncheckedCreateWithoutUpdated_by_userInput = {
   created_at?: Date | string
   updated_at?: Date | string
   dedupe_key?: string | null
+  email_event?: Prisma.notification_email_eventsUncheckedCreateNestedOneWithoutNotificationInput
   email_outbox?: Prisma.email_outboxUncheckedCreateNestedOneWithoutNotificationInput
   weekly_report?: Prisma.weekly_project_reportsUncheckedCreateNestedOneWithoutNotificationInput
 }
@@ -851,6 +878,90 @@ export type notificationsUpdateManyWithWhereWithoutUpdated_by_userInput = {
   data: Prisma.XOR<Prisma.notificationsUpdateManyMutationInput, Prisma.notificationsUncheckedUpdateManyWithoutUpdated_by_userInput>
 }
 
+export type notificationsCreateWithoutEmail_eventInput = {
+  id?: string
+  type: $Enums.NotificationType
+  message: string
+  related_item_id?: string | null
+  read_status?: boolean
+  status?: $Enums.RecordStatus
+  created_at?: Date | string
+  updated_at?: Date | string
+  dedupe_key?: string | null
+  user: Prisma.usersCreateNestedOneWithoutNotificationsInput
+  created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_notificationsInput
+  updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_notificationsInput
+  email_outbox?: Prisma.email_outboxCreateNestedOneWithoutNotificationInput
+  weekly_report?: Prisma.weekly_project_reportsCreateNestedOneWithoutNotificationInput
+}
+
+export type notificationsUncheckedCreateWithoutEmail_eventInput = {
+  id?: string
+  user_id: string
+  type: $Enums.NotificationType
+  message: string
+  related_item_id?: string | null
+  read_status?: boolean
+  status?: $Enums.RecordStatus
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  dedupe_key?: string | null
+  email_outbox?: Prisma.email_outboxUncheckedCreateNestedOneWithoutNotificationInput
+  weekly_report?: Prisma.weekly_project_reportsUncheckedCreateNestedOneWithoutNotificationInput
+}
+
+export type notificationsCreateOrConnectWithoutEmail_eventInput = {
+  where: Prisma.notificationsWhereUniqueInput
+  create: Prisma.XOR<Prisma.notificationsCreateWithoutEmail_eventInput, Prisma.notificationsUncheckedCreateWithoutEmail_eventInput>
+}
+
+export type notificationsUpsertWithoutEmail_eventInput = {
+  update: Prisma.XOR<Prisma.notificationsUpdateWithoutEmail_eventInput, Prisma.notificationsUncheckedUpdateWithoutEmail_eventInput>
+  create: Prisma.XOR<Prisma.notificationsCreateWithoutEmail_eventInput, Prisma.notificationsUncheckedCreateWithoutEmail_eventInput>
+  where?: Prisma.notificationsWhereInput
+}
+
+export type notificationsUpdateToOneWithWhereWithoutEmail_eventInput = {
+  where?: Prisma.notificationsWhereInput
+  data: Prisma.XOR<Prisma.notificationsUpdateWithoutEmail_eventInput, Prisma.notificationsUncheckedUpdateWithoutEmail_eventInput>
+}
+
+export type notificationsUpdateWithoutEmail_eventInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumNotificationTypeFieldUpdateOperationsInput | $Enums.NotificationType
+  message?: Prisma.StringFieldUpdateOperationsInput | string
+  related_item_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  read_status?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  user?: Prisma.usersUpdateOneRequiredWithoutNotificationsNestedInput
+  created_by_user?: Prisma.usersUpdateOneWithoutCreated_notificationsNestedInput
+  updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_notificationsNestedInput
+  email_outbox?: Prisma.email_outboxUpdateOneWithoutNotificationNestedInput
+  weekly_report?: Prisma.weekly_project_reportsUpdateOneWithoutNotificationNestedInput
+}
+
+export type notificationsUncheckedUpdateWithoutEmail_eventInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumNotificationTypeFieldUpdateOperationsInput | $Enums.NotificationType
+  message?: Prisma.StringFieldUpdateOperationsInput | string
+  related_item_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  read_status?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email_outbox?: Prisma.email_outboxUncheckedUpdateOneWithoutNotificationNestedInput
+  weekly_report?: Prisma.weekly_project_reportsUncheckedUpdateOneWithoutNotificationNestedInput
+}
+
 export type notificationsCreateWithoutEmail_outboxInput = {
   id?: string
   type: $Enums.NotificationType
@@ -864,6 +975,7 @@ export type notificationsCreateWithoutEmail_outboxInput = {
   user: Prisma.usersCreateNestedOneWithoutNotificationsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_notificationsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_notificationsInput
+  email_event?: Prisma.notification_email_eventsCreateNestedOneWithoutNotificationInput
   weekly_report?: Prisma.weekly_project_reportsCreateNestedOneWithoutNotificationInput
 }
 
@@ -880,6 +992,7 @@ export type notificationsUncheckedCreateWithoutEmail_outboxInput = {
   updated_by?: string | null
   updated_at?: Date | string
   dedupe_key?: string | null
+  email_event?: Prisma.notification_email_eventsUncheckedCreateNestedOneWithoutNotificationInput
   weekly_report?: Prisma.weekly_project_reportsUncheckedCreateNestedOneWithoutNotificationInput
 }
 
@@ -912,6 +1025,7 @@ export type notificationsUpdateWithoutEmail_outboxInput = {
   user?: Prisma.usersUpdateOneRequiredWithoutNotificationsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_notificationsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_notificationsNestedInput
+  email_event?: Prisma.notification_email_eventsUpdateOneWithoutNotificationNestedInput
   weekly_report?: Prisma.weekly_project_reportsUpdateOneWithoutNotificationNestedInput
 }
 
@@ -928,6 +1042,7 @@ export type notificationsUncheckedUpdateWithoutEmail_outboxInput = {
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email_event?: Prisma.notification_email_eventsUncheckedUpdateOneWithoutNotificationNestedInput
   weekly_report?: Prisma.weekly_project_reportsUncheckedUpdateOneWithoutNotificationNestedInput
 }
 
@@ -944,6 +1059,7 @@ export type notificationsCreateWithoutWeekly_reportInput = {
   user: Prisma.usersCreateNestedOneWithoutNotificationsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_notificationsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_notificationsInput
+  email_event?: Prisma.notification_email_eventsCreateNestedOneWithoutNotificationInput
   email_outbox?: Prisma.email_outboxCreateNestedOneWithoutNotificationInput
 }
 
@@ -960,6 +1076,7 @@ export type notificationsUncheckedCreateWithoutWeekly_reportInput = {
   updated_by?: string | null
   updated_at?: Date | string
   dedupe_key?: string | null
+  email_event?: Prisma.notification_email_eventsUncheckedCreateNestedOneWithoutNotificationInput
   email_outbox?: Prisma.email_outboxUncheckedCreateNestedOneWithoutNotificationInput
 }
 
@@ -992,6 +1109,7 @@ export type notificationsUpdateWithoutWeekly_reportInput = {
   user?: Prisma.usersUpdateOneRequiredWithoutNotificationsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_notificationsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_notificationsNestedInput
+  email_event?: Prisma.notification_email_eventsUpdateOneWithoutNotificationNestedInput
   email_outbox?: Prisma.email_outboxUpdateOneWithoutNotificationNestedInput
 }
 
@@ -1008,6 +1126,7 @@ export type notificationsUncheckedUpdateWithoutWeekly_reportInput = {
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email_event?: Prisma.notification_email_eventsUncheckedUpdateOneWithoutNotificationNestedInput
   email_outbox?: Prisma.email_outboxUncheckedUpdateOneWithoutNotificationNestedInput
 }
 
@@ -1065,6 +1184,7 @@ export type notificationsUpdateWithoutUserInput = {
   dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_notificationsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_notificationsNestedInput
+  email_event?: Prisma.notification_email_eventsUpdateOneWithoutNotificationNestedInput
   email_outbox?: Prisma.email_outboxUpdateOneWithoutNotificationNestedInput
   weekly_report?: Prisma.weekly_project_reportsUpdateOneWithoutNotificationNestedInput
 }
@@ -1081,6 +1201,7 @@ export type notificationsUncheckedUpdateWithoutUserInput = {
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email_event?: Prisma.notification_email_eventsUncheckedUpdateOneWithoutNotificationNestedInput
   email_outbox?: Prisma.email_outboxUncheckedUpdateOneWithoutNotificationNestedInput
   weekly_report?: Prisma.weekly_project_reportsUncheckedUpdateOneWithoutNotificationNestedInput
 }
@@ -1111,6 +1232,7 @@ export type notificationsUpdateWithoutCreated_by_userInput = {
   dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   user?: Prisma.usersUpdateOneRequiredWithoutNotificationsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_notificationsNestedInput
+  email_event?: Prisma.notification_email_eventsUpdateOneWithoutNotificationNestedInput
   email_outbox?: Prisma.email_outboxUpdateOneWithoutNotificationNestedInput
   weekly_report?: Prisma.weekly_project_reportsUpdateOneWithoutNotificationNestedInput
 }
@@ -1127,6 +1249,7 @@ export type notificationsUncheckedUpdateWithoutCreated_by_userInput = {
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email_event?: Prisma.notification_email_eventsUncheckedUpdateOneWithoutNotificationNestedInput
   email_outbox?: Prisma.email_outboxUncheckedUpdateOneWithoutNotificationNestedInput
   weekly_report?: Prisma.weekly_project_reportsUncheckedUpdateOneWithoutNotificationNestedInput
 }
@@ -1157,6 +1280,7 @@ export type notificationsUpdateWithoutUpdated_by_userInput = {
   dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   user?: Prisma.usersUpdateOneRequiredWithoutNotificationsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_notificationsNestedInput
+  email_event?: Prisma.notification_email_eventsUpdateOneWithoutNotificationNestedInput
   email_outbox?: Prisma.email_outboxUpdateOneWithoutNotificationNestedInput
   weekly_report?: Prisma.weekly_project_reportsUpdateOneWithoutNotificationNestedInput
 }
@@ -1173,6 +1297,7 @@ export type notificationsUncheckedUpdateWithoutUpdated_by_userInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email_event?: Prisma.notification_email_eventsUncheckedUpdateOneWithoutNotificationNestedInput
   email_outbox?: Prisma.email_outboxUncheckedUpdateOneWithoutNotificationNestedInput
   weekly_report?: Prisma.weekly_project_reportsUncheckedUpdateOneWithoutNotificationNestedInput
 }
@@ -1209,6 +1334,7 @@ export type notificationsSelect<ExtArgs extends runtime.Types.Extensions.Interna
   user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   created_by_user?: boolean | Prisma.notifications$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.notifications$updated_by_userArgs<ExtArgs>
+  email_event?: boolean | Prisma.notifications$email_eventArgs<ExtArgs>
   email_outbox?: boolean | Prisma.notifications$email_outboxArgs<ExtArgs>
   weekly_report?: boolean | Prisma.notifications$weekly_reportArgs<ExtArgs>
 }, ExtArgs["result"]["notifications"]>
@@ -1269,6 +1395,7 @@ export type notificationsInclude<ExtArgs extends runtime.Types.Extensions.Intern
   user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   created_by_user?: boolean | Prisma.notifications$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.notifications$updated_by_userArgs<ExtArgs>
+  email_event?: boolean | Prisma.notifications$email_eventArgs<ExtArgs>
   email_outbox?: boolean | Prisma.notifications$email_outboxArgs<ExtArgs>
   weekly_report?: boolean | Prisma.notifications$weekly_reportArgs<ExtArgs>
 }
@@ -1289,6 +1416,7 @@ export type $notificationsPayload<ExtArgs extends runtime.Types.Extensions.Inter
     user: Prisma.$usersPayload<ExtArgs>
     created_by_user: Prisma.$usersPayload<ExtArgs> | null
     updated_by_user: Prisma.$usersPayload<ExtArgs> | null
+    email_event: Prisma.$notification_email_eventsPayload<ExtArgs> | null
     email_outbox: Prisma.$email_outboxPayload<ExtArgs> | null
     weekly_report: Prisma.$weekly_project_reportsPayload<ExtArgs> | null
   }
@@ -1702,6 +1830,7 @@ export interface Prisma__notificationsClient<T, Null = never, ExtArgs extends ru
   user<T extends Prisma.usersDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.usersDefaultArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   created_by_user<T extends Prisma.notifications$created_by_userArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.notifications$created_by_userArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   updated_by_user<T extends Prisma.notifications$updated_by_userArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.notifications$updated_by_userArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  email_event<T extends Prisma.notifications$email_eventArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.notifications$email_eventArgs<ExtArgs>>): Prisma.Prisma__notification_email_eventsClient<runtime.Types.Result.GetResult<Prisma.$notification_email_eventsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   email_outbox<T extends Prisma.notifications$email_outboxArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.notifications$email_outboxArgs<ExtArgs>>): Prisma.Prisma__email_outboxClient<runtime.Types.Result.GetResult<Prisma.$email_outboxPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   weekly_report<T extends Prisma.notifications$weekly_reportArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.notifications$weekly_reportArgs<ExtArgs>>): Prisma.Prisma__weekly_project_reportsClient<runtime.Types.Result.GetResult<Prisma.$weekly_project_reportsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
@@ -2181,6 +2310,25 @@ export type notifications$updated_by_userArgs<ExtArgs extends runtime.Types.Exte
    */
   include?: Prisma.usersInclude<ExtArgs> | null
   where?: Prisma.usersWhereInput
+}
+
+/**
+ * notifications.email_event
+ */
+export type notifications$email_eventArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the notification_email_events
+   */
+  select?: Prisma.notification_email_eventsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the notification_email_events
+   */
+  omit?: Prisma.notification_email_eventsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.notification_email_eventsInclude<ExtArgs> | null
+  where?: Prisma.notification_email_eventsWhereInput
 }
 
 /**

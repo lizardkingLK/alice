@@ -14,6 +14,11 @@ import {
   RecordStatus,
   UserMembershipStatus,
 } from '@repo/types/prisma';
+import {
+  notificationEmailEventCreateData,
+  parseNotificationEmailEvent,
+  type NotificationEmailEvent,
+} from './notification-email-events';
 
 export type DueWorkItemRow = {
   id: string;
@@ -175,21 +180,38 @@ export class NotificationsRepository {
 
   async insertMany(
     notifications: NotificationType[],
-    client?: Prisma.TransactionClient
+    options?: {
+      client?: Prisma.TransactionClient;
+      emailEvents?: readonly (NotificationEmailEvent | undefined)[];
+    }
   ): Promise<Array<{ id: string; user_id: string }>> {
     if (notifications.length === 0) {
       return [];
     }
 
-    const inserts = notifications.map((notification) =>
-      (client ?? prisma).notifications.create({
-        data: prismaNotificationCreate(notification),
-        select: { id: true, user_id: true },
-      })
+    const emailEvents = options?.emailEvents?.map((event) =>
+      event === undefined ? undefined : parseNotificationEmailEvent(event)
     );
-    return client
-      ? await Promise.all(inserts)
-      : await prisma.$transaction(inserts);
+    const insertWithClient = async (client: Prisma.TransactionClient) =>
+      await Promise.all(
+        notifications.map(async (notification, index) => {
+          const persisted = await client.notifications.create({
+            data: prismaNotificationCreate(notification),
+            select: { id: true, user_id: true },
+          });
+          const emailEvent = emailEvents?.[index];
+          if (emailEvent) {
+            await client.notification_email_events.create({
+              data: notificationEmailEventCreateData(persisted.id, emailEvent),
+            });
+          }
+          return persisted;
+        })
+      );
+
+    return options?.client
+      ? await insertWithClient(options.client)
+      : await prisma.$transaction((client) => insertWithClient(client));
   }
 
   async findDueWorkItems(

@@ -413,6 +413,7 @@ export const ModelName = {
   comments: 'comments',
   attachments: 'attachments',
   notifications: 'notifications',
+  notification_email_events: 'notification_email_events',
   notification_email_preferences: 'notification_email_preferences',
   email_outbox: 'email_outbox',
   weekly_project_report_subscriptions: 'weekly_project_report_subscriptions',
@@ -451,7 +452,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "notification_email_preferences" | "email_outbox" | "weekly_project_report_subscriptions" | "weekly_project_reports" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "chat_conversations" | "chat_attachments" | "chat_tools" | "chat_skills" | "chat_agents" | "chat_agent_tools" | "chat_agent_skills" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "integrations" | "member_chat_model_preferences" | "project_integration_bindings"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "notification_email_events" | "notification_email_preferences" | "email_outbox" | "weekly_project_report_subscriptions" | "weekly_project_reports" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "chat_conversations" | "chat_attachments" | "chat_tools" | "chat_skills" | "chat_agents" | "chat_agent_tools" | "chat_agent_skills" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "integrations" | "member_chat_model_preferences" | "project_integration_bindings"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1636,6 +1637,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.notificationsCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.NotificationsCountAggregateOutputType> | number
+        }
+      }
+    }
+    notification_email_events: {
+      payload: Prisma.$notification_email_eventsPayload<ExtArgs>
+      fields: Prisma.notification_email_eventsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.notification_email_eventsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_eventsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.notification_email_eventsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_eventsPayload>
+        }
+        findFirst: {
+          args: Prisma.notification_email_eventsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_eventsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.notification_email_eventsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_eventsPayload>
+        }
+        findMany: {
+          args: Prisma.notification_email_eventsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_eventsPayload>[]
+        }
+        create: {
+          args: Prisma.notification_email_eventsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_eventsPayload>
+        }
+        createMany: {
+          args: Prisma.notification_email_eventsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.notification_email_eventsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_eventsPayload>[]
+        }
+        delete: {
+          args: Prisma.notification_email_eventsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_eventsPayload>
+        }
+        update: {
+          args: Prisma.notification_email_eventsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_eventsPayload>
+        }
+        deleteMany: {
+          args: Prisma.notification_email_eventsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.notification_email_eventsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.notification_email_eventsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_eventsPayload>[]
+        }
+        upsert: {
+          args: Prisma.notification_email_eventsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notification_email_eventsPayload>
+        }
+        aggregate: {
+          args: Prisma.Notification_email_eventsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNotification_email_events>
+        }
+        groupBy: {
+          args: Prisma.notification_email_eventsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Notification_email_eventsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.notification_email_eventsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Notification_email_eventsCountAggregateOutputType> | number
         }
       }
     }
@@ -3673,6 +3748,17 @@ export const NotificationsScalarFieldEnum = {
 export type NotificationsScalarFieldEnum = (typeof NotificationsScalarFieldEnum)[keyof typeof NotificationsScalarFieldEnum]
 
 
+export const Notification_email_eventsScalarFieldEnum = {
+  notification_id: 'notification_id',
+  version: 'version',
+  template: 'template',
+  payload: 'payload',
+  created_at: 'created_at'
+} as const
+
+export type Notification_email_eventsScalarFieldEnum = (typeof Notification_email_eventsScalarFieldEnum)[keyof typeof Notification_email_eventsScalarFieldEnum]
+
+
 export const Notification_email_preferencesScalarFieldEnum = {
   user_id: 'user_id',
   email_enabled: 'email_enabled',
@@ -4703,6 +4789,7 @@ export type GlobalOmitConfig = {
   comments?: Prisma.commentsOmit
   attachments?: Prisma.attachmentsOmit
   notifications?: Prisma.notificationsOmit
+  notification_email_events?: Prisma.notification_email_eventsOmit
   notification_email_preferences?: Prisma.notification_email_preferencesOmit
   email_outbox?: Prisma.email_outboxOmit
   weekly_project_report_subscriptions?: Prisma.weekly_project_report_subscriptionsOmit

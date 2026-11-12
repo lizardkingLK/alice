@@ -12,6 +12,10 @@ import {
 import { NotificationsRepository } from './notifications.repository';
 import { EmailTemplate, type Prisma } from '@repo/types/prisma';
 import type { PrismaEmailOutboxRepository } from './email-outbox.repository';
+import {
+  parseNotificationEmailEvent,
+  type NotificationEmailEvent,
+} from './notification-email-events';
 
 export const READ_NOTIFICATION_RETENTION_DAYS = 30;
 const READ_NOTIFICATION_RETENTION_MS =
@@ -39,6 +43,16 @@ export type PersistedWorkItemNotificationEmail = {
   template: EmailTemplate;
   payload: Prisma.JsonObject;
 };
+
+function buildNotificationEmailEvent(
+  details: Pick<WorkItemNotificationDetails, 'emailTemplate' | 'emailPayload'>
+): NotificationEmailEvent {
+  return parseNotificationEmailEvent({
+    version: 1,
+    template: details.emailTemplate,
+    payload: details.emailPayload,
+  });
+}
 
 function addReassignmentNotifications(params: {
   messages: Map<string, WorkItemNotificationDetails>;
@@ -296,12 +310,19 @@ export class NotificationsService {
     });
 
     const notifications = notificationEmails.map((entry) => entry.notification);
-    const persisted = params.client
-      ? await this.notificationsRepository.insertMany(
-          notifications,
-          params.client
-        )
-      : await this.notificationsRepository.insertMany(notifications);
+    const emailEvents = notificationEmails.map((entry) =>
+      buildNotificationEmailEvent({
+        emailTemplate: entry.template,
+        emailPayload: entry.payload,
+      })
+    );
+    const persisted = await this.notificationsRepository.insertMany(
+      notifications,
+      {
+        ...(params.client ? { client: params.client } : {}),
+        emailEvents,
+      }
+    );
     return persisted.flatMap((notification, index) => {
       const email = notificationEmails[index];
       return email
