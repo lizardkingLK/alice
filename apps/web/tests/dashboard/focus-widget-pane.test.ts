@@ -32,12 +32,16 @@ describe('focus widget pane', () => {
     expect(readFocusWidgetPane('user-1')).toBe(DEFAULT_FOCUS_WIDGET_PANE);
     writeFocusWidgetPane('user-1', 'calendar');
     expect(readFocusWidgetPane('user-1')).toBe('calendar');
+    writeFocusWidgetPane('user-1', 'music');
+    expect(readFocusWidgetPane('user-1')).toBe('music');
   });
 
   it('cycles panes with chevron directions', () => {
     expect(shiftFocusWidgetPane('focus', 1)).toBe('calendar');
-    expect(shiftFocusWidgetPane('calendar', 1)).toBe('focus');
-    expect(shiftFocusWidgetPane('focus', -1)).toBe('calendar');
+    expect(shiftFocusWidgetPane('calendar', 1)).toBe('music');
+    expect(shiftFocusWidgetPane('music', 1)).toBe('focus');
+    expect(shiftFocusWidgetPane('focus', -1)).toBe('music');
+    expect(shiftFocusWidgetPane('music', -1)).toBe('calendar');
     expect(shiftFocusWidgetPane('calendar', -1)).toBe('focus');
   });
 });
