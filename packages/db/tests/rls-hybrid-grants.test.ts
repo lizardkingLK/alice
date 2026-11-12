@@ -44,6 +44,7 @@ const STRATEGY_A_TABLES = [
   'work_item_chart_hierarchy_rollups',
   'sprint_burndown_rollups',
   'email_outbox',
+  'notification_email_events',
   'weekly_project_reports',
   '_prisma_migrations',
 ] as const;
@@ -51,6 +52,12 @@ const STRATEGY_A_TABLES = [
 describe('hybrid RLS grants regression', () => {
   it('re-revokes Strategy A tables after blanket anon/authenticated grants', () => {
     for (const table of STRATEGY_A_TABLES) {
+      if (table === 'notification_email_events') {
+        expect(grantsSql).toMatch(
+          /REVOKE ALL ON TABLE public\.notification_email_events FROM PUBLIC, anon, authenticated, service_role, postgres/i
+        );
+        continue;
+      }
       expect(grantsSql).toMatch(
         new RegExp(
           `REVOKE ALL ON TABLE public\\.${table} FROM anon, authenticated`,
