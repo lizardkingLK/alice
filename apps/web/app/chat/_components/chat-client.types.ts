@@ -7,6 +7,10 @@ import type {
 } from '@repo/types';
 import type { AppRole } from '@/lib/rbac';
 import type { ChatDockPageContext } from '@/app/chat/_components/chat-dock-context-bar';
+import type {
+  ChatAssistantIdentity,
+  PreferredChatAssistantBootstrap,
+} from '@/app/chat/_helpers/chat-assistant-identity';
 
 export type ActionItem = ChatToolActionWire;
 export type ChatMessage = ChatMessageWire;
@@ -37,8 +41,12 @@ export type ChatClientProps = {
   readonly initialConversationId?: string;
   readonly initialMessages?: ChatMessage[];
   readonly initialChatModels?: ChatModelOption[];
-  /** Bound agent from `/chat?agentId=` (page variant). */
+  /** Bound agent from `/chat?agentId=` (page variant) or Overview SSR seed. */
   readonly initialAgentId?: string;
+  /** SSR preferred-agent identity (avoids client DefaultAlice flash). */
+  readonly initialAssistantIdentity?: ChatAssistantIdentity | null;
+  /** SSR / parent roster for personality chevrons (Overview /chat). */
+  readonly initialChatAgents?: readonly PreferredChatAssistantBootstrap[];
   /** SSR cookie preference for the conversation history sidebar. */
   readonly initialHistoryOpen?: boolean;
   readonly currentUserId?: string | null;

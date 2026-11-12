@@ -532,7 +532,7 @@ export function JiraImportDialog({
                             size="icon"
                             disabled={hierarchy.length <= 1}
                             onClick={() => handleRemoveHierarchyItem(idx)}
-                            className="text-destructive hover:text-destructive h-6 w-6"
+                            className="h-6 w-6"
                             title="Remove Level"
                           >
                             <Trash2 className="h-3 w-3" />

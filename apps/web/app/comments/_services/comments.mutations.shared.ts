@@ -4,8 +4,11 @@ import {
   type Json,
   type Tables,
 } from '@repo/types';
+import type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 import { ResponseDTO } from '@repo/types/connection';
+
+export type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 
 export type CommentUser = Pick<Tables<'users'>, 'id' | 'name' | 'email'> &
   Partial<Pick<Tables<'users'>, 'role' | 'profile_picture'>>;
@@ -15,6 +18,7 @@ export type CommentWorkItem = Pick<
   'id' | 'title' | 'type'
 > & {
   key?: string;
+  slug?: string | null;
   project?: Pick<Tables<'projects'>, 'id' | 'name' | 'key'> | null;
 };
 
@@ -23,6 +27,7 @@ export type CommentWorkItemOptionRow = Pick<
   Tables<'work_items'>,
   'id' | 'title' | 'type' | 'project_id' | 'pm_external' | 'priority'
 > & {
+  slug?: string | null;
   description?: Json | null;
   jira_issue_key?: string | null;
   project?: Pick<Tables<'projects'>, 'name' | 'key'> | null;
@@ -35,6 +40,8 @@ export type CommentWorkItemOption = Pick<
   'id' | 'title' | 'type' | 'project_id'
 > & {
   key: string;
+  slug?: string | null;
+  project_key?: string | null;
   project_name?: string;
   priority?: Tables<'work_items'>['priority'];
   description_plain?: string;
@@ -57,6 +64,8 @@ export function mapCommentWorkItemOption(
     key:
       issueKey ||
       `${row.project?.key || 'ITEM'}-${row.id.slice(0, 4).toUpperCase()}`,
+    slug: row.slug ?? null,
+    project_key: row.project?.key ?? null,
     project_name: row.project?.name || 'Project',
     priority: row.priority,
     description_plain: plain.length > 0 ? plain.slice(0, 160) : undefined,
@@ -95,7 +104,10 @@ export type CreateCommentInput = {
 
 /* eslint-disable no-unused-vars */
 export function createCommentsService(
-  apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>
+  apiFetch: <T>(
+    path: string,
+    init?: RequestInit & { skipDatabaseBusyRetry?: boolean }
+  ) => Promise<T>
 ) {
   const apiComments = '/api/comments';
 
@@ -137,18 +149,20 @@ export function createCommentsService(
       return res.data!;
     },
 
+    /** Fire-and-forget archive/purge — API returns 202; inbox notifies when done. */
     async archiveComment(
       id: string,
       expectedUpdatedAt: string,
       permanent?: boolean
-    ): Promise<void> {
+    ): Promise<DestructiveActionAccepted> {
       let url = `${apiComments}/${id}`;
       if (permanent) {
         url += `?permanent=true`;
       }
-      await apiFetch(url, {
+      return await apiFetch<DestructiveActionAccepted>(url, {
         method: 'DELETE',
         body: permanent ? undefined : JSON.stringify({ expectedUpdatedAt }),
+        skipDatabaseBusyRetry: true,
       });
     },
 

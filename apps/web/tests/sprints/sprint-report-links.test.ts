@@ -68,6 +68,7 @@ describe('sprint report links', () => {
         {
           id: 'sprint-1',
           name: 'Sprint 4',
+          slug: 'sprint-4',
           project: { id: projectId, name: 'Alice Platform', key: 'AP' },
         },
         'project'
@@ -85,7 +86,7 @@ describe('sprint report links', () => {
       },
       {
         label: 'Sprint 4',
-        url: '/sprints/sprint-1/report?from=project',
+        url: '/projects/AP/sprints/sprint-4/summary-report',
       },
     ]);
   });

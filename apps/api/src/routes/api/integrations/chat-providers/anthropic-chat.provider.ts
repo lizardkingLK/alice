@@ -85,13 +85,14 @@ export class AnthropicChatProvider implements ChatModelProvider {
       );
     } catch (error: unknown) {
       if (error instanceof AnthropicResponseError) {
-        // HTTP was OK; alice-chatbot-errors.log otherwise only records non-OK fetches.
+        // HTTP was OK; body is omitted on purpose — log rejection category only.
         logLlmProviderError(this.provider, {
           timestamp: new Date().toISOString(),
           status: 200,
           attempt: 1,
           messagesCount: input.contents.length,
           responseBodyBytes: 0,
+          rejectionCategory: error.category,
         });
         console.error(
           `Anthropic response rejected after HTTP 200: ${error.category}`

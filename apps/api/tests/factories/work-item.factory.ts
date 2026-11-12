@@ -10,6 +10,7 @@ export function createWorkItemListRow(
     sprint_id: null,
     parent_id: null,
     title: 'Ship Prisma reads',
+    slug: 'ship-prisma-reads',
     type: 'Task',
     priority: 'medium',
     labels: ['api'],

@@ -6,6 +6,7 @@ import { safeServerFetch } from '@/lib/safe-server-fetch';
 import { getDbUser } from '@/lib/auth';
 import { ChatClient } from './_components/chat-client';
 import { getChatPageBootstrap } from './_services/chat.reads.server';
+import { resolveOverviewChatAgentsBootstrap } from './_services/chat-agents.reads.server';
 import { listChatModelsForChat } from './_services/chat-models.reads.server';
 import { ChatPageSkeleton } from './_components/chat-page-skeleton';
 import {
@@ -43,15 +44,21 @@ async function ChatPageData({
   preferredAgentId: string | null;
   initialHistoryOpen: boolean;
 }>) {
-  const [bootstrapResult, chatModels, dbUser] = await Promise.all([
-    safeServerFetch(
-      getChatPageBootstrap(conversationId),
-      { ok: true as const, data: { conversations: [], messages: [] } },
-      'fetch chat page bootstrap'
-    ),
-    safeServerFetch(listChatModelsForChat(), [], 'fetch chat models'),
-    getDbUser(),
-  ]);
+  const [bootstrapResult, chatModels, agentsBootstrap, dbUser] =
+    await Promise.all([
+      safeServerFetch(
+        getChatPageBootstrap(conversationId),
+        { ok: true as const, data: { conversations: [], messages: [] } },
+        'fetch chat page bootstrap'
+      ),
+      safeServerFetch(listChatModelsForChat(), [], 'fetch chat models'),
+      safeServerFetch(
+        resolveOverviewChatAgentsBootstrap(),
+        { agents: [], preferredAgentId: null },
+        'fetch chat agents for chat page'
+      ),
+      getDbUser(),
+    ]);
 
   if (!bootstrapResult.ok) {
     notFound();
@@ -61,8 +68,25 @@ async function ChatPageData({
   const activeConversation = bootstrap.conversations.find(
     (row) => row.id === bootstrap.activeConversationId
   );
+  const agentIds = new Set(
+    agentsBootstrap.agents.map((agent) => agent.agentId)
+  );
+  const conversationAgentId = activeConversation?.agent_id ?? undefined;
+  const validPreferredAgentId =
+    preferredAgentId && agentIds.has(preferredAgentId)
+      ? preferredAgentId
+      : (agentsBootstrap.preferredAgentId ?? undefined);
+  const validQueryAgentId =
+    agentId && agentIds.has(agentId) ? agentId : undefined;
+  // Conversation bind may reference an older agent; client swallows 404.
   const resolvedAgentId =
-    agentId ?? activeConversation?.agent_id ?? preferredAgentId ?? undefined;
+    validQueryAgentId ??
+    conversationAgentId ??
+    validPreferredAgentId ??
+    undefined;
+  const initialAssistantIdentity =
+    agentsBootstrap.agents.find((agent) => agent.agentId === resolvedAgentId)
+      ?.identity ?? null;
 
   return (
     <ChatClient
@@ -72,6 +96,8 @@ async function ChatPageData({
       initialMessages={bootstrap.messages}
       initialChatModels={chatModels}
       initialAgentId={resolvedAgentId}
+      initialAssistantIdentity={initialAssistantIdentity}
+      initialChatAgents={agentsBootstrap.agents}
       initialHistoryOpen={initialHistoryOpen}
       currentUserName={dbUser?.name}
       currentUserEmail={dbUser?.email}

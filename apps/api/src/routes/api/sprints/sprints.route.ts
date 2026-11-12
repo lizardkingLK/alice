@@ -118,6 +118,20 @@ export function createSprintsRouter(deps: SprintsRouterDeps): Router {
       }
 
       try {
+        if (parsed.data.status === 'archived') {
+          const accepted = await sprintsService.enqueueArchiveSprint(
+            req.userId!,
+            req.params.id!,
+            parsed.data.expectedUpdatedAt
+          );
+          // 202 — archive finishes in the background; inbox notifies on result.
+          return res.status(202).json({
+            accepted: true,
+            message: accepted.message,
+            correlationId: accepted.correlationId,
+          });
+        }
+
         const sprint = await sprintsService.updateSprintStatus(
           req.userId!,
           req.params.id!,
@@ -336,12 +350,17 @@ export function createSprintsRouter(deps: SprintsRouterDeps): Router {
       }
 
       try {
-        await sprintsService.hardDeleteSprint(
+        const accepted = await sprintsService.enqueueHardDeleteSprint(
           req.userId!,
           parsedId.data,
           parsed.data
         );
-        res.json({ success: true });
+        // 202 — purge finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Failed to delete sprint';

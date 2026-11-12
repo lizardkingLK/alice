@@ -56,6 +56,7 @@ describe('BoardGroupedColumnsView', () => {
         <BoardGroupedColumnsView
           boardColumns={columns}
           columnItemsMap={map}
+          projects={[]}
           activeDropCol={null}
           draggedTaskId={null}
           pendingStatusIds={new Set()}
@@ -96,6 +97,7 @@ describe('BoardGroupedColumnsView', () => {
         <BoardGroupedColumnsView
           boardColumns={columns}
           columnItemsMap={map}
+          projects={[]}
           activeDropCol={null}
           draggedTaskId={null}
           pendingStatusIds={new Set([item.id])}
@@ -146,6 +148,7 @@ describe('BoardGroupedColumnsView', () => {
         <BoardGroupedColumnsView
           boardColumns={columns}
           columnItemsMap={map}
+          projects={[]}
           activeDropCol={null}
           draggedTaskId={null}
           pendingStatusIds={new Set()}

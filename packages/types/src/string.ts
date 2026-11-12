@@ -5,3 +5,5 @@ export function toNameCase(value: string): string {
   }
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
+
+export { SLUG_MAX_LENGTH, allocateUniqueSlug, slugifyTitle } from './slug.js';

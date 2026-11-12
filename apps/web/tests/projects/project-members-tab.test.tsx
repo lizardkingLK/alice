@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { ProjectMembersTab } from '@/app/projects/_components/project-details/project-members-tab';
-import type {
-  Project,
-  ProjectMemberWithUser,
+import {
+  removeProjectMember,
+  type Project,
+  type ProjectMemberWithUser,
 } from '@/app/projects/_services/projects.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import { UserRole } from '@repo/types';
@@ -107,6 +108,42 @@ describe('ProjectMembersTab protected members', () => {
       )
     ).toBeDisabled();
     expect(screen.getByTitle('Remove Member')).not.toBeDisabled();
+  });
+
+  it('asks for confirmation before removing a member', () => {
+    vi.mocked(removeProjectMember).mockResolvedValue(undefined);
+
+    render(
+      <ProjectMembersTab
+        project={baseProject}
+        members={[
+          member('user-manager', 'Manager Owner', 'manager'),
+          member('user-member', 'Member', 'member'),
+        ]}
+        allUsers={allUsers}
+        currentUserId="user-manager"
+        currentUserRole="manager"
+      />
+    );
+
+    fireEvent.click(screen.getByTitle('Remove Member'));
+    expect(removeProjectMember).not.toHaveBeenCalled();
+
+    const confirmDialog = screen.getByRole('alertdialog');
+    expect(
+      within(confirmDialog).getByRole('heading', { name: /remove member/i })
+    ).toBeInTheDocument();
+    expect(
+      within(confirmDialog).getByText(/lose access to this project workspace/i)
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(confirmDialog).getByRole('button', { name: /^remove member$/i })
+    );
+    expect(removeProjectMember).toHaveBeenCalledWith(
+      'project-1',
+      'user-member'
+    );
   });
 
   it('shows presence only for online project members', () => {

@@ -42,8 +42,17 @@ the first sign-in completes.
 
 ## After you sign in
 
-Visiting **Home** (`/`) while signed in shows a centered greeting with your
-name and a **Dashboard** button — not the public product marketing page. Use
-**About** and **Contact** in the top nav when you need those pages; open
-**Dashboard** (or the footer Overview link, when available) to get back into
-the workspace.
+Visiting **Home** (`/`) while signed in opens a profile-style launchpad that
+fills the first viewport under the top nav: solid product-green cover (or your
+cover photo), avatar, name, handle, role, a **Dashboard** button, and your
+projects (name plus description) on a soft grey productivity surface. The main
+column greets you by time of day (small mono text) and — when you have them —
+lists up to five open assigned work items (liquid-glass card, **% completed**
+pill) and up to five unread notifications (green unread dots, red count badge,
+humanized times). Empty lists stay hidden and the center column collapses so
+profile and Quick links sit side by side without a blank middle. Role-based
+**Quick links** always sit in the right column (for example admins see create
+project and manage users). Scroll for a full-height footer (**Product Development Automated**)
+with About, Contact, and workspace links — those About/Contact links are hidden
+from the signed-in top nav. Open **Dashboard** (or the footer Overview link) to
+get back into the workspace.

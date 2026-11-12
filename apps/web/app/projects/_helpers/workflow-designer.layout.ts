@@ -26,6 +26,8 @@ export type WorkflowStateNodeData = {
   readonly category: WorkflowStateCategory;
   readonly lockRecord: boolean;
   readonly terminal: boolean;
+  readonly acceptFromAnyState: boolean;
+  readonly allowToAnyState: boolean;
 };
 
 /** Settings / canvas patch keys for a workflow state node. */
@@ -193,6 +195,8 @@ export function workflowStateToFlowNode(
       category: state.category,
       lockRecord: state.lockRecord,
       terminal: state.terminal,
+      acceptFromAnyState: state.acceptFromAnyState,
+      allowToAnyState: state.allowToAnyState,
     },
   };
 }

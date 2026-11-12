@@ -13,7 +13,8 @@ export type ProjectMemberEmailSender = {
 type ProjectMemberEmailInput = {
   readonly recipientEmail: string;
   readonly recipientName: string;
-  readonly projectId: string;
+  /** Shareable project KEY for `/projects/{KEY}` links (not UUID). */
+  readonly projectKey: string;
   readonly projectName: string;
   readonly frontendUrl: string;
   readonly notificationEventId: string;
@@ -82,9 +83,18 @@ function validResendSetting(value: string | undefined): string | null {
   return normalized;
 }
 
+/** Canonical in-app project path segment: uppercase KEY when it looks like one. */
+function projectPathSegment(projectKey: string): string {
+  const trimmed = projectKey.trim();
+  if (/^[A-Z0-9]{2,10}$/i.test(trimmed)) {
+    return trimmed.toUpperCase();
+  }
+  return trimmed;
+}
+
 export function buildAliceProjectUrl(
   frontendUrl: string,
-  projectId: string
+  projectKey: string
 ): string {
   let configuredUrl: URL;
   try {
@@ -109,8 +119,13 @@ export function buildAliceProjectUrl(
     throw new Error('Alice frontend URL must not contain credentials.');
   }
 
+  const segment = projectPathSegment(projectKey);
+  if (!segment) {
+    throw new Error('Project key is required.');
+  }
+
   return new URL(
-    `/projects/${encodeURIComponent(projectId)}`,
+    `/projects/${encodeURIComponent(segment)}`,
     configuredUrl.origin
   ).toString();
 }
@@ -121,7 +136,7 @@ export function buildProjectMemberAddedEmail(
   const to = normalizeRecipientEmail(input.recipientEmail);
   const recipientName = normalizeDisplayText(input.recipientName, 'there');
   const projectName = normalizeDisplayText(input.projectName, 'your project');
-  const projectUrl = buildAliceProjectUrl(input.frontendUrl, input.projectId);
+  const projectUrl = buildAliceProjectUrl(input.frontendUrl, input.projectKey);
   const subject = `You've been added to ${projectName} in Alice`;
   const idempotencyKey = buildProjectMemberIdempotencyKey(
     input.notificationEventId

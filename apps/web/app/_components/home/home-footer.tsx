@@ -80,8 +80,10 @@ export function HomeFooter({
   return (
     <footer
       className={cn(
-        'border-border/60 bg-muted/20 flex flex-col border-t px-6 pt-12 pb-8',
-        variant === 'snap' ? 'h-dvh shrink-0 snap-start' : 'min-h-0'
+        'border-border/60 bg-muted/20 flex flex-col border-t px-6 pt-12',
+        variant === 'snap'
+          ? 'h-dvh shrink-0 snap-start pb-16 sm:pb-20'
+          : 'min-h-0 pb-10'
       )}
     >
       <div
@@ -101,7 +103,7 @@ export function HomeFooter({
           <div className="max-w-xs">
             <p className="text-base font-semibold tracking-tight">Alice</p>
             <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-              A focused workspace for boards, backlogs, and delivery.
+              Product Development Automated
             </p>
           </div>
 
@@ -130,7 +132,7 @@ export function HomeFooter({
 
         <div className="text-muted-foreground mt-6 flex flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Alice</p>
-          <p>Built for planning, delivery, and team visibility.</p>
+          <p>Product Development Automated</p>
         </div>
       </div>
     </footer>

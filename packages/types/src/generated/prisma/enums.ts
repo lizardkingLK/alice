@@ -121,7 +121,11 @@ export const NotificationType = {
   access_request: 'access_request',
   project_created: 'project_created',
   project_create_failed: 'project_create_failed',
-  worklog_pending: 'worklog_pending'
+  worklog_pending: 'worklog_pending',
+  entity_archived: 'entity_archived',
+  entity_archive_failed: 'entity_archive_failed',
+  entity_purged: 'entity_purged',
+  entity_purge_failed: 'entity_purge_failed',
 } as const
 
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType]

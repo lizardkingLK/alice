@@ -90,16 +90,17 @@ shortcuts shown.
 
 Select a state, then open **Settings**:
 
-| Setting                              | What it does                                                                                                                                    |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Name** / description               | Labels on the board and in pickers (updates the canvas node live)                                                                               |
-| **Category**                         | Groups states for filters and reports (`todo`, `in progress`, `done`, …); updates the node live                                                 |
-| **Lock record in this state**        | While an item is here, most fields are read-only; changing state (for example reopen) can still be allowed                                      |
-| **Terminal state**                   | No outbound transitions. If edges already leave this state, remove them before you can turn this on                                             |
-| **Allow transitions from any state** | Every other state can move here without drawing each edge. Explicit transitions keep their own rules (who can move, children, forms)            |
-| **Allow transitions to any state**   | This state can move to every other state without drawing each edge. Explicit transitions keep their own rules. Not available on terminal states |
+| Setting                              | What it does                                                                                                                                                                                                          |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Name** / description               | Labels on the board and in pickers (updates the canvas node live)                                                                                                                                                     |
+| **Category**                         | Groups states for filters and reports (`todo`, `in progress`, `done`, …); updates the node live                                                                                                                       |
+| **Lock record in this state**        | While an item is here, most fields are read-only; changing state (for example reopen) can still be allowed                                                                                                            |
+| **Terminal state**                   | No outbound transitions. If edges already leave this state, remove them before you can turn this on                                                                                                                   |
+| **Allow transitions from any state** | Every other state can move here without drawing each edge. Explicit transitions keep their own rules (who can move, children, forms). The node shows a **From any** chip (same primary/green color as forward edges). |
+| **Allow transitions to any state**   | This state can move to every other state without drawing each edge. Explicit transitions keep their own rules. Not available on terminal states. The node shows a **To any** chip (same dark color as reverse edges). |
 
-Use the info icons for short explanations of each option.
+Use the info icons for short explanations of each option. Chips appear only when
+the flag is on and grow the node height as needed.
 
 ---
 

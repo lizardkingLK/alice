@@ -11,8 +11,10 @@ const {
   createCommentMock,
   updateCommentMock,
   archiveCommentMock,
+  enqueueArchiveCommentMock,
   restoreCommentMock,
   hardDeleteCommentMock,
+  enqueueHardDeleteCommentMock,
   toggleCommentReactionMock,
 } = vi.hoisted(() => ({
   listCommentsPaginatedMock: vi.fn(),
@@ -20,8 +22,10 @@ const {
   createCommentMock: vi.fn(),
   updateCommentMock: vi.fn(),
   archiveCommentMock: vi.fn(),
+  enqueueArchiveCommentMock: vi.fn(),
   restoreCommentMock: vi.fn(),
   hardDeleteCommentMock: vi.fn(),
+  enqueueHardDeleteCommentMock: vi.fn(),
   toggleCommentReactionMock: vi.fn(),
 }));
 
@@ -42,8 +46,10 @@ const commentsService = {
   createComment: createCommentMock,
   updateComment: updateCommentMock,
   archiveComment: archiveCommentMock,
+  enqueueArchiveComment: enqueueArchiveCommentMock,
   restoreComment: restoreCommentMock,
   hardDeleteComment: hardDeleteCommentMock,
+  enqueueHardDeleteComment: enqueueHardDeleteCommentMock,
   toggleCommentReaction: toggleCommentReactionMock,
 } as unknown as CommentsService;
 
@@ -236,30 +242,46 @@ describe('comments routes', () => {
     });
 
     it('handles DELETE /:id (archive comment)', async () => {
+      enqueueArchiveCommentMock.mockResolvedValue({
+        correlationId: 'corr-comment-1',
+        message:
+          'Comment archive started. You’ll be notified when it finishes.',
+      });
+
       await withApp(async (baseUrl) => {
+        const expectedUpdatedAt = new Date().toISOString();
         const response = await fetch(
           `${baseUrl}/api/comments/44444444-4444-4444-8444-444444444444`,
           {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              expectedUpdatedAt: new Date().toISOString(),
-            }),
+            body: JSON.stringify({ expectedUpdatedAt }),
           }
         );
         const body = await response.json();
 
-        expect(response.status).toBe(200);
-        expect(body.data.success).toBe(true);
-        expect(body.error).toBeNull();
-        expect(archiveCommentMock).toHaveBeenCalledWith(
+        expect(response.status).toBe(202);
+        expect(body).toEqual({
+          accepted: true,
+          message:
+            'Comment archive started. You’ll be notified when it finishes.',
+          correlationId: 'corr-comment-1',
+        });
+        expect(enqueueArchiveCommentMock).toHaveBeenCalledWith(
+          'user-1',
           '44444444-4444-4444-8444-444444444444',
-          expect.any(String)
+          expectedUpdatedAt
         );
       });
     });
 
     it('handles DELETE /:id?permanent=true (hard delete)', async () => {
+      enqueueHardDeleteCommentMock.mockResolvedValue({
+        correlationId: 'corr-comment-2',
+        message:
+          'Comment permanent delete started. You’ll be notified when it finishes.',
+      });
+
       await withApp(async (baseUrl) => {
         const response = await fetch(
           `${baseUrl}/api/comments/44444444-4444-4444-8444-444444444444?permanent=true`,
@@ -269,10 +291,15 @@ describe('comments routes', () => {
         );
         const body = await response.json();
 
-        expect(response.status).toBe(200);
-        expect(body.data.success).toBe(true);
-        expect(body.error).toBeNull();
-        expect(hardDeleteCommentMock).toHaveBeenCalledWith(
+        expect(response.status).toBe(202);
+        expect(body).toEqual({
+          accepted: true,
+          message:
+            'Comment permanent delete started. You’ll be notified when it finishes.',
+          correlationId: 'corr-comment-2',
+        });
+        expect(enqueueHardDeleteCommentMock).toHaveBeenCalledWith(
+          'user-1',
           '44444444-4444-4444-8444-444444444444'
         );
       });

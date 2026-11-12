@@ -90,10 +90,11 @@ Main **Alice** toolbar has a fixed `h-14` height.
 
 ### Data loading (PERFORMANCE.md)
 
-| Surface        | Initial conversations                          | Initial message history                        | Interactions after mount                      |
-| -------------- | ---------------------------------------------- | ---------------------------------------------- | --------------------------------------------- |
-| `/chat` page   | RSC direct Supabase (`chat.service.server.ts`) | RSC `apiFetch` → API (Storage is service-role) | Client `apiFetch` for send / switch / delete  |
-| App-shell dock | None (opens instantly; empty session)          | None on open                                   | Client `apiFetch` on send; models on dropdown |
+| Surface         | Initial conversations                          | Initial message history                        | Models                                                          | Interactions after mount                     |
+| --------------- | ---------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------- |
+| `/chat` page    | RSC direct Supabase (`chat.service.server.ts`) | RSC `apiFetch` → API (Storage is service-role) | RSC seed                                                        | Client `apiFetch` for send / switch / delete |
+| App-shell dock  | None (opens instantly; empty session)          | None on open                                   | Client on open + `localStorage` warm cache; spinner until ready | Client `apiFetch` on send                    |
+| Overview widget | From productivity bootstrap                    | None                                           | SSR models + active agents; chevrons cycle preferred agent      | Client `apiFetch` on send                    |
 
 `/chat` uses `Suspense` + `safeServerFetch(getChatPageBootstrap())` so the
 shell streams first; the client receives bootstrap props and **does not**
@@ -107,6 +108,16 @@ reachable. The header favorite star stays disabled until the URL
 `conversationId` matches the active thread (avoids starring the wrong chat
 while create/select is still hydrating).
 
+`DashboardShell` does **not** prefetch chat models (avoids an every-page SSR
+hit). The dock mounts `ChatClient` without `initialChatModels`;
+`useWorkspaceChatModels` shows a spinner until `modelsReady`, hydrates from
+`alice:chat-models-cache:v1:<userId>` when present, then revalidates via
+`GET /api/v1/integrations/chat-models`. Overview SSR-seeds models **and** the
+active agent list for the Alice widget: header avatar/name come from the
+preferred/default agent, chevrons cycle personalities (writes the preferred
+agent cookie), and both avatar + chevrons stay hidden when the model pool is
+empty so the no-models gate stays clean.
+
 ### Dock vs `/chat` conversation kinds
 
 `chat_conversations.kind` (`ChatConversationKinds` in `@repo/types`):
@@ -119,12 +130,13 @@ while create/select is still hydrating).
 Apply migration `add_chat_conversation_kind` before deploying API/web that
 filter on `kind`.
 
-The dock opens with **no** conversation list, latest-thread hydrate, or model
-preload. Sends omit `integrationId` until the model menu is opened (API uses the
-workspace default). Closing the dock keeps the panel mounted (hidden) so the
-temporary thread continues for the page session. A **Context** bar sits above
-the composer (Jira Rovo-style): page Alice was opened on (nav icon + label),
-plus workflow designer via the existing `viewContext` bridge when registered.
+The dock opens with **no** conversation list or latest-thread hydrate. Models
+load on open (spinner, or instant from localStorage cache) so the no-models
+empty gate never flashes behind chat chrome. Closing the dock keeps the panel
+mounted (hidden) so the temporary thread continues for the page session. A
+**Context** bar sits above the composer (Jira Rovo-style): page Alice was opened
+on (nav icon + label), plus workflow designer via the existing `viewContext`
+bridge when registered.
 
 ---
 

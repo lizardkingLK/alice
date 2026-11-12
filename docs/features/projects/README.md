@@ -2,18 +2,19 @@
 
 Project administration registry: list, create, edit, soft delete, restore, and hard delete.
 
-| Document                                                                         | Description                                                                   | Status |
-| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------ |
-| [PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md](./PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md) | Sidebar navigation, banner isolation, JSON Schema dynamic fields, and AI bot  | Living |
-| [JIRA_INTEGRATION.md](./JIRA_INTEGRATION.md)                                     | Manager OAuth (3LO) → persisted Jira link → import                            | Living |
+| Document                                                                         | Description                                                                                                                   | Status |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------ |
+| [PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md](./PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md) | Sidebar navigation, banner isolation, JSON Schema dynamic fields, and AI bot                                                  | Living |
+| [JIRA_INTEGRATION.md](./JIRA_INTEGRATION.md)                                     | Manager OAuth (3LO) → persisted Jira link → import                                                                            | Living |
 | [GITHUB_INTEGRATION.md](./GITHUB_INTEGRATION.md)                                 | OAuth App shipped (connect + repo bind + manual PR links); GitHub App → sync → orchestrator → agents **planned** (Phases 0–5) | Living |
-| —                                                                                | See [ARD](../../product/ARD.md) (PROJ-1) and [TRD](../../architecture/TRD.md) | Living |
+| —                                                                                | See [ARD](../../product/ARD.md) (PROJ-1) and [TRD](../../architecture/TRD.md)                                                 | Living |
 
 Quick links:
 
 - Implementation: `apps/web/app/projects/`
-- Detail overview (`/projects/[id]`): summary-report layout (primary banner + metric cards) with Members / Teams / Work Items tabs
+- Detail overview (`/projects/{KEY}`): summary-report layout (primary banner + metric cards) with sidebar for Members / Teams / Work Items / Sprints / settings (in-shell `?tab=`); Board / Backlog / My Work launch from Details cards into a new tab (`/projects/{KEY}/{board|backlog|member}`) so the project shell stays intact; nested `/work-items` and `/sprints` list URLs redirect back to the shell tabs (detail/summary slug routes stay nested)
 - Shareable key URL: `/projects/{KEY}` is the canonical workspace path (Jira-style) after the normal auth/allowlist gate; UUID paths redirect to the key. Details banner exposes a copyable share link
+- Project-tree URLs: `/projects/{KEY}/{board|backlog|member|work-items|sprints}`; work-item and sprint segments use per-project slugs (`…/work-items/{slug}`, `…/sprints/{slug}/summary-report`). Global `/board|/backlog|/work-items|/member` keep cross-project use and mask filters as `/board|/work-items/projects/{KEY}` (+ optional `/sprints/{slug}`), `/backlog|/member/projects/{KEY}`
 - Team create/edit: **Designated Team Manager** is scoped to managers/admins on the selected project's membership roster (not the global user list)
 - API: `apps/api/src/routes/api/projects/`
 - Schema: projects-related models in `packages/db/prisma/schema.prisma`

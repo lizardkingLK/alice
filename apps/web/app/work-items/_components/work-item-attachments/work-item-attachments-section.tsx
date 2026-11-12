@@ -199,7 +199,7 @@ function AttachmentRemoveButton({
     <Button
       variant={variant}
       size="sm"
-      className="text-destructive hover:text-destructive cursor-pointer"
+      className="cursor-pointer"
       onClick={onClick}
       disabled={disabled ?? pending}
     >

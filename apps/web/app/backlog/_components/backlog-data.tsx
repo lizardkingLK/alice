@@ -1,7 +1,13 @@
 import { BacklogWorkspace } from '@/app/backlog/_components/backlog-workspace';
 import { getBacklogWorkspace } from '@/app/backlog/_services/backlog.reads.server';
 
-export async function BacklogData() {
+type BacklogDataProps = {
+  readonly lockedProjectId?: string;
+};
+
+export async function BacklogData(
+  { lockedProjectId }: Readonly<BacklogDataProps> = {} as BacklogDataProps
+) {
   const {
     projects,
     projectMembers,
@@ -13,9 +19,13 @@ export async function BacklogData() {
     error,
   } = await getBacklogWorkspace();
 
+  const scopedProjects = lockedProjectId
+    ? projects.filter((project) => project.id === lockedProjectId)
+    : projects;
+
   return (
     <BacklogWorkspace
-      projects={projects}
+      projects={scopedProjects.length > 0 ? scopedProjects : projects}
       projectMembers={projectMembers}
       teamCapacities={teamCapacities}
       initialWorkItems={initialWorkItems}
@@ -23,6 +33,7 @@ export async function BacklogData() {
       userRole={userRole}
       currentUserId={currentUserId}
       error={error}
+      lockedProjectId={lockedProjectId}
     />
   );
 }

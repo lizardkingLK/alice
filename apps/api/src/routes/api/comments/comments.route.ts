@@ -169,11 +169,17 @@ export function createCommentsRouter(deps: CommentsRouterDeps) {
         }
 
         try {
-          await commentsService.archiveComment(
+          const accepted = await commentsService.enqueueArchiveComment(
+            req.userId!,
             req.params.id!,
             validation.data.expectedUpdatedAt
           );
-          return res.json({ data: { success: true }, error: null });
+          // 202 — archive finishes in the background; inbox notifies on result.
+          return res.status(202).json({
+            accepted: true,
+            message: accepted.message,
+            correlationId: accepted.correlationId,
+          });
         } catch (error) {
           if (trySendOptimisticLockError(res, error)) return;
           const message =
@@ -183,8 +189,16 @@ export function createCommentsRouter(deps: CommentsRouterDeps) {
       }
 
       try {
-        await commentsService.hardDeleteComment(req.params.id!);
-        res.json({ data: { success: true }, error: null });
+        const accepted = await commentsService.enqueueHardDeleteComment(
+          req.userId!,
+          req.params.id!
+        );
+        // 202 — purge finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Failed to delete comment';

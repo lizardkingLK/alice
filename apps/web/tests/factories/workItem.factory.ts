@@ -12,6 +12,7 @@ export const workItemFactory = {
     return {
       id: 'wi-1',
       title: 'Implement dashboard filters',
+      slug: 'implement-dashboard-filters',
       type: 'Task',
       status: 'ToDo',
       state: null,

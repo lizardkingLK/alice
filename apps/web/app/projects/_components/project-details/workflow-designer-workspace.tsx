@@ -246,6 +246,8 @@ function WorkflowDesignerCanvas({
               category: state.category,
               lockRecord: state.lockRecord,
               terminal: state.terminal,
+              acceptFromAnyState: state.acceptFromAnyState,
+              allowToAnyState: state.allowToAnyState,
             }
           : node.data,
       };
@@ -1334,7 +1336,6 @@ export function WorkflowDesignerWorkspace({
               type="button"
               variant="outline"
               size="sm"
-              className="text-destructive hover:text-destructive"
               disabled={manageBusy || !canDeleteWorkflow}
               data-testid="workflow-designer-delete"
               onClick={() => {

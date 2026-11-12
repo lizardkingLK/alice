@@ -3,6 +3,9 @@ import type {
   AccessRequestKind,
   AccessRequestStatus,
 } from '@repo/types';
+import type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
+
+export type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 
 export type AccessRequestEntry = {
   id: string;
@@ -38,8 +41,12 @@ export type AccessRequestListResult = {
 };
 
 export function createAccessRequestsService(
-  // eslint-disable-next-line no-unused-vars -- structural callback type
-  apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>
+  apiFetch: <T>(
+    // eslint-disable-next-line no-unused-vars
+    path: string,
+    // eslint-disable-next-line no-unused-vars
+    init?: RequestInit & { skipDatabaseBusyRetry?: boolean }
+  ) => Promise<T>
 ) {
   const apiAccessRequests = '/api/access-requests';
 
@@ -69,10 +76,17 @@ export function createAccessRequestsService(
     return data.projects ?? [];
   }
 
-  async function deleteAccessRequest(requestId: string): Promise<void> {
-    await apiFetch<{ success: boolean }>(`${apiAccessRequests}/${requestId}`, {
-      method: 'DELETE',
-    });
+  /** Fire-and-forget purge — API returns 202; inbox notifies when done. */
+  async function deleteAccessRequest(
+    requestId: string
+  ): Promise<DestructiveActionAccepted> {
+    return await apiFetch<DestructiveActionAccepted>(
+      `${apiAccessRequests}/${requestId}`,
+      {
+        method: 'DELETE',
+        skipDatabaseBusyRetry: true,
+      }
+    );
   }
 
   return {

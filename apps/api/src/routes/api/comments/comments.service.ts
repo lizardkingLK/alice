@@ -6,6 +6,8 @@ import {
   type CommentReactionEmoji,
   paginationMeta,
 } from '@repo/types';
+import { enqueueDestructiveAction } from '../../../lib/enqueue-destructive-action';
+import { OptimisticLockError } from '../../../lib/optimistic-lock';
 import { CommentsRepository, type CommentRow } from './comments.repository';
 import type { NotificationsService } from '../notifications/notifications.service';
 import {
@@ -15,6 +17,11 @@ import {
 
 import { RecordStatus } from '@repo/types/prisma';
 import { prisma } from '../../../lib/prisma';
+
+function commentEntityLabel(comment: CommentRow): string {
+  const snippet = createCommentSnippet(comment.content);
+  return snippet.length > 0 ? snippet : 'comment';
+}
 
 export class CommentsService {
   constructor(
@@ -98,15 +105,17 @@ export class CommentsService {
     const snippet = createCommentSnippet(comment.content);
 
     try {
-      for (const userId of validMentionedUserIds) {
-        await this.notificationsService.createMentionNotification({
-          mentionedUserId: userId,
-          actorId,
-          taskTitle: 'work item',
-          taskId: comment.work_item_id,
-          commentContentSnippet: snippet,
-        });
-      }
+      await Promise.all(
+        validMentionedUserIds.map((userId) =>
+          this.notificationsService.createMentionNotification({
+            mentionedUserId: userId,
+            actorId,
+            taskTitle: 'work item',
+            taskId: comment.work_item_id,
+            commentContentSnippet: snippet,
+          })
+        )
+      );
     } catch (error) {
       console.error('Failed to send mention notification:', error);
     }
@@ -155,12 +164,75 @@ export class CommentsService {
     await this.commentsRepository.archive(id, expectedUpdatedAt);
   }
 
+  /**
+   * Validate sync, accept archive, finish in the background, inbox-notify.
+   * Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueArchiveComment(
+    actorId: string,
+    id: string,
+    expectedUpdatedAt: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    const comment = await this.commentsRepository.getById(id);
+    if (!comment) {
+      throw new Error('Comment not found');
+    }
+    if (comment.updated_at !== expectedUpdatedAt) {
+      throw new OptimisticLockError(
+        comment,
+        'This comment was updated by someone else.'
+      );
+    }
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'archive',
+      entityType: 'comment',
+      entityLabel: commentEntityLabel(comment),
+      relatedItemId: id,
+      detailHref: comment.work_item_id
+        ? `/work-items/${comment.work_item_id}`
+        : null,
+      run: async () => {
+        await this.archiveComment(id, expectedUpdatedAt);
+      },
+    });
+  }
+
   async restoreComment(id: string, expectedUpdatedAt: string): Promise<void> {
     await this.commentsRepository.restore(id, expectedUpdatedAt);
   }
 
   async hardDeleteComment(id: string): Promise<void> {
     await this.commentsRepository.hardDelete(id);
+  }
+
+  /**
+   * Validate sync, accept permanent delete, finish in the background,
+   * inbox-notify. Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueHardDeleteComment(
+    actorId: string,
+    id: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    const comment = await this.commentsRepository.getById(id);
+    if (!comment) {
+      throw new Error('Comment not found');
+    }
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'purge',
+      entityType: 'comment',
+      entityLabel: commentEntityLabel(comment),
+      relatedItemId: null,
+      detailHref: comment.work_item_id
+        ? `/work-items/${comment.work_item_id}`
+        : null,
+      run: async () => {
+        await this.hardDeleteComment(id);
+      },
+    });
   }
 
   async toggleCommentReaction(

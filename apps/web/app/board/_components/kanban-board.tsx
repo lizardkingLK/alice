@@ -1,6 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState, type DragEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type DragEvent,
+} from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@repo/ui/lib/utils';
 import {
@@ -66,14 +72,21 @@ import {
   type WorkItemPriority,
 } from '@/app/work-items/_helpers/work-item-priority-ui';
 import { BOARD_STATUS_COLUMN_ACCENTS } from '@/app/work-items/_helpers/work-item-status';
+import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { AppliedFilterBadges } from '@/components/applied-filter-badges';
 import { buildAppliedFilterBadgeItems } from '@/components/applied-filter-badges.model';
 import { SearchInput } from '@/components/search-input';
 import { AssigneeAvatarFilter } from '@/components/assignee-avatar-filter';
 import { UserAvatar } from '@/components/user-avatar';
+import { resolveWorkItemTypeDefFromProjects } from '@/app/work-items/_helpers/resolve-work-item-type-def-from-projects';
 import { WorkItemPreviewCardBody } from '@/components/work-item-preview-card';
 import { useRealtime } from '@/components/realtime/realtime-provider';
+import {
+  buildGlobalFilterHref,
+  projectKeyForId,
+  sprintSlugForId,
+} from '@/app/board/_helpers/global-filter-href';
 import {
   QUERY_FILTER_ALL_VALUE,
   useQueryFilter,
@@ -335,6 +348,7 @@ function BoardWorkItemPreviewDialog({
   open,
   onOpenChange,
   selectedTask,
+  projects,
   boardColumns,
   pendingStatusIds,
   isUserOnline,
@@ -344,6 +358,7 @@ function BoardWorkItemPreviewDialog({
   // eslint-disable-next-line no-unused-vars -- callback
   readonly onOpenChange: (open: boolean) => void;
   readonly selectedTask: DbWorkItem | null;
+  readonly projects: readonly Project[];
   readonly boardColumns: readonly BoardColumn[];
   readonly pendingStatusIds: ReadonlySet<string>;
   // eslint-disable-next-line no-unused-vars -- callback
@@ -414,6 +429,11 @@ function BoardWorkItemPreviewDialog({
                   <WorkItemTypeBadge
                     type={selectedTask.type}
                     projectId={selectedTask.project_id}
+                    typeDef={resolveWorkItemTypeDefFromProjects(
+                      projects,
+                      selectedTask.project_id,
+                      selectedTask.type
+                    )}
                   />
                 </div>
 
@@ -466,7 +486,13 @@ function BoardWorkItemPreviewDialog({
             <DialogFooter className="gap-2 border-t pt-4 sm:justify-between">
               <Button asChild variant="outline">
                 <a
-                  href={`/work-items/${selectedTask.id}`}
+                  href={workItemDetailHref(selectedTask.id, {
+                    projectKey: projects.find(
+                      (project) => project.id === selectedTask.project_id
+                    )?.key,
+                    workItemSlug: selectedTask.slug,
+                    sprintSlug: selectedTask.sprint?.slug,
+                  })}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -490,6 +516,7 @@ function BoardWorkItemPreviewDialog({
 type BoardClassicColumnsProps = {
   readonly boardColumns: readonly BoardColumn[];
   readonly columnItemsMap: ReadonlyMap<string, DbWorkItem[]>;
+  readonly projects: readonly Project[];
   readonly activeDropCol: string | null;
   readonly draggedTaskId: string | null;
   readonly pendingStatusIds: ReadonlySet<string>;
@@ -513,6 +540,7 @@ type BoardClassicColumnsProps = {
 function BoardClassicColumns({
   boardColumns,
   columnItemsMap,
+  projects,
   activeDropCol,
   draggedTaskId,
   pendingStatusIds,
@@ -599,6 +627,11 @@ function BoardClassicColumns({
                           title={item.title}
                           type={item.type}
                           projectId={item.project_id}
+                          typeDef={resolveWorkItemTypeDefFromProjects(
+                            projects,
+                            item.project_id,
+                            item.type
+                          )}
                           priority={item.priority}
                           descriptionPlain={description || null}
                           assigneeName={assigneeName(item)}
@@ -646,6 +679,7 @@ export function KanbanBoard({
     useBoardSyncPrefs(userId);
   const [workItems, setWorkItems] = useState<DbWorkItem[]>(initialWorkItems);
   const [createStatus, setCreateStatus] = useState<BoardStatus | null>(null);
+  const [createIntentKey, setCreateIntentKey] = useState(0);
   const [search, setSearch] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
@@ -664,15 +698,71 @@ export function KanbanBoard({
   });
   const { saveDefaults } = boardDefaults;
 
-  const projectQuery = useQueryFilter('project', projectFilter);
-  const sprintQuery = useQueryFilter('sprint', sprintFilter);
+  const projectQueryBase = useQueryFilter('project', projectFilter);
+  const sprintQueryBase = useQueryFilter('sprint', sprintFilter);
   const labelsQuery = useQueryFilter(
     'labels',
     searchParams.get('labels')?.trim() || ''
   );
   const { setValue: setProjectFilterValue, allValue: projectAllValue } =
-    projectQuery;
-  const { setValue: setSprintFilterValue } = sprintQuery;
+    projectQueryBase;
+  const { setValue: setSprintFilterValue } = sprintQueryBase;
+
+  const pushBoardEntityFilters = useCallback(
+    (nextProjectId: string, nextSprintId: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('page');
+      if (!nextProjectId || nextProjectId === projectAllValue) {
+        params.delete('project');
+        params.delete('sprint');
+      } else {
+        params.set('project', nextProjectId);
+        if (!nextSprintId || nextSprintId === QUERY_FILTER_ALL_VALUE) {
+          params.delete('sprint');
+        } else {
+          params.set('sprint', nextSprintId);
+        }
+      }
+      router.push(
+        buildGlobalFilterHref({
+          area: 'board',
+          projectKey: projectKeyForId(projects, nextProjectId),
+          sprintSlug: sprintSlugForId(sprints, nextSprintId),
+          searchParams: params,
+        })
+      );
+    },
+    [projectAllValue, projects, router, searchParams, sprints]
+  );
+
+  const projectQuery = useMemo<FilterQuery>(
+    () => ({
+      value: projectQueryBase.value,
+      allValue: projectQueryBase.allValue,
+      setValue: projectQueryBase.setValue,
+      setFilter: (value) => {
+        const nextProject = value || projectAllValue;
+        projectQueryBase.setValue(nextProject);
+        sprintQueryBase.setValue(QUERY_FILTER_ALL_VALUE);
+        pushBoardEntityFilters(nextProject, QUERY_FILTER_ALL_VALUE);
+      },
+    }),
+    [projectAllValue, projectQueryBase, pushBoardEntityFilters, sprintQueryBase]
+  );
+
+  const sprintQuery = useMemo<FilterQuery>(
+    () => ({
+      value: sprintQueryBase.value,
+      allValue: sprintQueryBase.allValue,
+      setValue: sprintQueryBase.setValue,
+      setFilter: (value) => {
+        const nextSprint = value || QUERY_FILTER_ALL_VALUE;
+        sprintQueryBase.setValue(nextSprint);
+        pushBoardEntityFilters(projectQueryBase.value, nextSprint);
+      },
+    }),
+    [projectQueryBase.value, pushBoardEntityFilters, sprintQueryBase]
+  );
   const { setValue: setLabelsFilterValue } = labelsQuery;
   const realtimeProjectId = resolveScopedProjectId(
     projectQuery.value,
@@ -698,6 +788,18 @@ export function KanbanBoard({
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<DbWorkItem | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+
+  const openBoardCreate = (column: BoardColumn) => {
+    if (createStatus !== null) {
+      setCreateIntentKey((key) => key + 1);
+      return;
+    }
+    setCreateStatus(column.status);
+  };
+  const openBoardDetail = (item: DbWorkItem) => {
+    setSelectedTask(item);
+    setIsDetailOpen(true);
+  };
 
   const { pendingStatusIds, dimPendingCards, applyStatusChange } =
     useBoardStatusMoves({
@@ -771,6 +873,10 @@ export function KanbanBoard({
       projectFilterActive,
       sprintFilterActive,
       hasLabelsFilter,
+      projectFilterValue: projectQuery.value,
+      sprintFilterValue: sprintQuery.value,
+      projects,
+      sprints,
       setSearch,
       setPriorityFilter,
       setAssigneeFilter,
@@ -944,14 +1050,12 @@ export function KanbanBoard({
         <BoardGroupedColumnsView
           boardColumns={boardColumns}
           columnItemsMap={columnItemsMap}
+          projects={projects}
           activeDropCol={activeDropCol}
           draggedTaskId={draggedTaskId}
           pendingStatusIds={dimPendingCards ? pendingStatusIds : new Set()}
-          onSelectItem={(item) => {
-            setSelectedTask(item);
-            setIsDetailOpen(true);
-          }}
-          onCreateInColumn={(column) => setCreateStatus(column.status)}
+          onSelectItem={openBoardDetail}
+          onCreateInColumn={openBoardCreate}
           onItemDragStart={handleDragStart}
           onItemDragEnd={handleDragEnd}
           onColumnDragOver={handleDragOver}
@@ -962,15 +1066,13 @@ export function KanbanBoard({
         <BoardClassicColumns
           boardColumns={boardColumns}
           columnItemsMap={columnItemsMap}
+          projects={projects}
           activeDropCol={activeDropCol}
           draggedTaskId={draggedTaskId}
           pendingStatusIds={pendingStatusIds}
           dimPendingCards={dimPendingCards}
-          onSelectItem={(item) => {
-            setSelectedTask(item);
-            setIsDetailOpen(true);
-          }}
-          onCreateInColumn={(column) => setCreateStatus(column.status)}
+          onSelectItem={openBoardDetail}
+          onCreateInColumn={openBoardCreate}
           onItemDragStart={handleDragStart}
           onItemDragEnd={handleDragEnd}
           onColumnDragOver={handleDragOver}
@@ -984,6 +1086,7 @@ export function KanbanBoard({
         open={isDetailOpen}
         onOpenChange={setIsDetailOpen}
         selectedTask={selectedTask}
+        projects={projects}
         boardColumns={boardColumns}
         pendingStatusIds={pendingStatusIds}
         isUserOnline={isUserOnline}
@@ -1012,6 +1115,7 @@ export function KanbanBoard({
           sprintQuery.value,
           sprintQuery.allValue
         )}
+        createIntentKey={createIntentKey}
         onClose={() => setCreateStatus(null)}
         onSuccess={(created) => {
           setWorkItems((current) => [created, ...current]);

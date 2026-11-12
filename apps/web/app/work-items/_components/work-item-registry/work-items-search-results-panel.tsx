@@ -104,18 +104,36 @@ function SearchResultsHeader({
   );
 }
 
+type ResultLinkItem = {
+  readonly id: string;
+  readonly project_id?: string;
+  readonly slug?: string | null;
+  readonly project?: { readonly key?: string | null } | null;
+  readonly sprint?: { readonly slug?: string | null } | null;
+};
+
 function ResultLink({
-  itemId,
+  item,
+  projectKeysById,
   children,
   wrap,
 }: Readonly<{
-  itemId: string;
+  item: ResultLinkItem;
+  projectKeysById?: ReadonlyMap<string, string>;
   children: ReactNode;
   wrap?: boolean;
 }>) {
   return (
     <Link
-      href={workItemDetailHref(itemId)}
+      href={workItemDetailHref(item.id, {
+        projectKey:
+          item.project?.key ??
+          (item.project_id
+            ? (projectKeysById?.get(item.project_id) ?? null)
+            : null),
+        workItemSlug: item.slug,
+        sprintSlug: item.sprint?.slug,
+      })}
       className={cn(
         'hover:bg-muted/50 flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 transition-colors',
         wrap && 'flex-wrap'
@@ -166,7 +184,7 @@ function PanelTreeNode({
         ) : (
           <span className="inline-flex size-6 shrink-0" aria-hidden />
         )}
-        <ResultLink itemId={item.id}>
+        <ResultLink item={item}>
           <WorkItemTypeBadge
             type={item.type}
             projectId={item.project_id}
@@ -237,7 +255,7 @@ function LegacyFlatMatches({
           <ul className="space-y-1.5">
             {titleMatches.map((item) => (
               <li key={`title-${item.id}`}>
-                <ResultLink itemId={item.id}>
+                <ResultLink item={item}>
                   {item.jira_issue_key ? (
                     <span className="text-muted-foreground shrink-0 font-mono text-xs">
                       {item.jira_issue_key}
@@ -259,7 +277,7 @@ function LegacyFlatMatches({
           <ul className="space-y-1.5">
             {labelMatches.map((item) => (
               <li key={`label-${item.id}`}>
-                <ResultLink itemId={item.id} wrap>
+                <ResultLink item={item} wrap>
                   <span className="text-sm font-medium">{item.title}</span>
                   <span className="flex flex-wrap gap-1">
                     {item.matchedLabels.map((label) => (

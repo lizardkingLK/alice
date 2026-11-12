@@ -77,6 +77,8 @@ type CommentContentWorkItem = {
   title: string;
   type?: Tables<'work_items'>['type'];
   project_id?: string | null;
+  slug?: string | null;
+  project_key?: string | null;
   priority?: Tables<'work_items'>['priority'] | null;
   description_plain?: string | null;
   assignee_name?: string | null;
@@ -227,9 +229,14 @@ function renderWorkItemMention(
   workItems?: CommentContentViewProps['workItems']
 ): ReactNode {
   const { id, label, title } = workItemDisplay(node, workItems);
-  const href = id ? workItemDetailHref(id) : '/work-items';
-  const display = title ? `#${label} · ${title}` : `#${label || 'item'}`;
   const matched = id ? workItems?.find((item) => item.id === id) : undefined;
+  const href = id
+    ? workItemDetailHref(id, {
+        projectKey: matched?.project_key,
+        workItemSlug: matched?.slug,
+      })
+    : '/work-items';
+  const display = title ? `#${label} · ${title}` : `#${label || 'item'}`;
 
   const badge = (
     <Badge

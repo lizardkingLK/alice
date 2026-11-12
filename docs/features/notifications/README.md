@@ -6,7 +6,7 @@ Per-user in-app inbox in the dashboard header bell and the full
 | Field        | Value                                                                   |
 | ------------ | ----------------------------------------------------------------------- |
 | Status       | **Living**                                                              |
-| Last updated | 2026-11-08                                                              |
+| Last updated | 2026-11-11                                                              |
 | Scope        | Header inbox, `/notifications` page, `notifications` table, daily crons |
 
 ## Behavior
@@ -70,9 +70,27 @@ when that env var is set (same as daily-reminders cron).
 Inbox list filter: `user_id` + `status = active`, newest `created_at`, limit 50
 (header) / 100 (page). Index: `notifications_user_id_status_created_at_idx`.
 
+## Async archive / purge
+
+Destructive soft-archive and hard-purge mutations return **202** and finish in
+the API process (interim until BullMQ — see
+[WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md)). Completion
+uses:
+
+| Type                    | When                             |
+| ----------------------- | -------------------------------- |
+| `entity_archived`       | Soft archive succeeded           |
+| `entity_archive_failed` | Soft archive failed after accept |
+| `entity_purged`         | Hard purge succeeded             |
+| `entity_purge_failed`   | Hard purge failed after accept   |
+
+Messages may include markdown `[Open](/path)` / `[Open list](/path)` links;
+`resolveNotificationHref` reads the first in-app link for row navigation.
+
 ## Related
 
 - User guide: [Dashboard inbox](../../user-guide/notifications/dashboard-inbox.md)
 - Due dates only: `GET /api/notifications/check-due-dates`
 - Daily reminders: `GET /api/notifications/daily-reminders`
 - Access-request alerts: [ACCESS_REQUESTS.md](../access/ACCESS_REQUESTS.md)
+- Busy-retry + 202 exceptions: [DATABASE_BUSY_RETRY.md](../../guides/DATABASE_BUSY_RETRY.md)

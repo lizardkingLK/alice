@@ -4,9 +4,10 @@ import { HomeHowItWorks } from '@/app/_components/home/home-how-it-works';
 import { HomeHero } from '@/app/_components/home/home-hero';
 import { HomeNavbar } from '@/app/_components/home/home-navbar';
 import { HomePricing } from '@/app/_components/home/home-pricing';
-import { HomeSignedInHero } from '@/app/_components/home/home-signed-in-hero';
+import { HomeSignedInLaunchpad } from '@/app/_components/home/home-signed-in-launchpad';
+import { getHomeLaunchpadBootstrap } from '@/app/_components/home/home-launchpad.reads.server';
 import { getMarketingSession } from '@/app/_components/home/get-marketing-session';
-import { resolveHomeDisplayName } from '@/app/_components/home/resolve-home-display-name';
+import { safeServerFetch } from '@/lib/safe-server-fetch';
 import './globals.css';
 
 type HomeProps = {
@@ -21,26 +22,53 @@ export default async function Home({ searchParams }: Readonly<HomeProps>) {
   const resetSuccess = reset === 'success';
   const accountClosed = account === 'closed';
 
-  if (isSignedIn) {
-    const displayName = resolveHomeDisplayName({
-      name: dbUser?.name,
-      email: user?.email,
-    });
+  if (isSignedIn && user?.email) {
+    const emptyBootstrap = {
+      name: dbUser?.name?.trim() || user.email.split('@')[0] || 'there',
+      handle: `@${user.email.split('@')[0] || 'user'}`,
+      email: user.email,
+      role: dbUser?.role ?? 'member',
+      avatarUrl: dbUser?.profile_picture ?? null,
+      coverUrl: dbUser?.cover_picture ?? null,
+      projects: [] as const,
+      wipItems: [] as const,
+      unreadNotifications: [] as const,
+      completion: { doneCount: 0, totalCount: 0, percent: 0 },
+    };
+
+    const bootstrap = dbUser
+      ? await safeServerFetch(
+          getHomeLaunchpadBootstrap({
+            userId: dbUser.id,
+            email: user.email,
+            name: dbUser.name,
+            role: dbUser.role,
+            avatarUrl: dbUser.profile_picture,
+            coverUrl: dbUser.cover_picture,
+          }),
+          emptyBootstrap,
+          'fetch home launchpad bootstrap'
+        )
+      : emptyBootstrap;
 
     return (
       <main className="h-dvh snap-y snap-proximity overflow-x-hidden overflow-y-auto">
-        <div className="flex h-dvh shrink-0 snap-start flex-col">
+        <div className="bg-background flex h-dvh shrink-0 snap-start flex-col overflow-hidden">
           <HomeNavbar
-            email={user?.email}
+            email={user.email}
             profilePicture={dbUser?.profile_picture}
           />
-          <HomeSignedInHero
-            displayName={displayName}
+          <HomeSignedInLaunchpad
+            bootstrap={bootstrap}
             resetSuccess={resetSuccess}
             accountClosed={accountClosed}
           />
         </div>
-        <HomeFooter showAppLinks={showAppLinks} hideMarketingAnchors />
+        <HomeFooter
+          showAppLinks={showAppLinks}
+          hideMarketingAnchors
+          variant="snap"
+        />
       </main>
     );
   }

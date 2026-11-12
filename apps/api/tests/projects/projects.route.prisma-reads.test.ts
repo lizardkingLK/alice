@@ -31,6 +31,8 @@ const {
   getProjectDetailMock,
   listProjectMembersPrismaMock,
   enqueueCreateProjectMock,
+  enqueueSoftDeleteProjectMock,
+  enqueueHardDeleteProjectMock,
   addMemberMock,
   getProjectIntegrationsSummaryMock,
 } = vi.hoisted(() => ({
@@ -38,6 +40,8 @@ const {
   getProjectDetailMock: vi.fn(),
   listProjectMembersPrismaMock: vi.fn(),
   enqueueCreateProjectMock: vi.fn(),
+  enqueueSoftDeleteProjectMock: vi.fn(),
+  enqueueHardDeleteProjectMock: vi.fn(),
   addMemberMock: vi.fn(),
   getProjectIntegrationsSummaryMock: vi.fn(),
 }));
@@ -58,6 +62,8 @@ const projectsService = {
   getProjectDetail: getProjectDetailMock,
   listProjectMembersPrisma: listProjectMembersPrismaMock,
   enqueueCreateProject: enqueueCreateProjectMock,
+  enqueueSoftDeleteProject: enqueueSoftDeleteProjectMock,
+  enqueueHardDeleteProject: enqueueHardDeleteProjectMock,
   addMember: addMemberMock,
   getProjectIntegrationsSummary: getProjectIntegrationsSummaryMock,
 } as unknown as ProjectsService;
@@ -460,6 +466,63 @@ describe('projects unused Prisma GET routes', () => {
       expect(actorId).toBe('11111111-1111-4111-8111-111111111111');
       expect(input).not.toHaveProperty('sprint');
       expect(input).not.toHaveProperty('team');
+    });
+  });
+
+  it('accepts soft delete with HTTP 202', async () => {
+    enqueueSoftDeleteProjectMock.mockResolvedValue({
+      correlationId: 'corr-soft',
+      message: 'Project archive started.',
+    });
+
+    await withApp(async (baseUrl) => {
+      const response = await fetch(
+        `${baseUrl}/api/projects/33333333-3333-4333-8333-333333333333/soft-delete`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            expectedUpdatedAt: '2026-08-25T12:00:00.000Z',
+          }),
+        }
+      );
+
+      expect(response.status).toBe(202);
+      await expect(response.json()).resolves.toEqual({
+        accepted: true,
+        message: 'Project archive started.',
+        correlationId: 'corr-soft',
+      });
+      expect(enqueueSoftDeleteProjectMock).toHaveBeenCalledWith(
+        '11111111-1111-4111-8111-111111111111',
+        '33333333-3333-4333-8333-333333333333',
+        '2026-08-25T12:00:00.000Z'
+      );
+    });
+  });
+
+  it('accepts hard delete with HTTP 202', async () => {
+    enqueueHardDeleteProjectMock.mockResolvedValue({
+      correlationId: 'corr-hard',
+      message: 'Project permanent delete started.',
+    });
+
+    await withApp(async (baseUrl) => {
+      const response = await fetch(
+        `${baseUrl}/api/projects/33333333-3333-4333-8333-333333333333`,
+        { method: 'DELETE' }
+      );
+
+      expect(response.status).toBe(202);
+      await expect(response.json()).resolves.toEqual({
+        accepted: true,
+        message: 'Project permanent delete started.',
+        correlationId: 'corr-hard',
+      });
+      expect(enqueueHardDeleteProjectMock).toHaveBeenCalledWith(
+        '11111111-1111-4111-8111-111111111111',
+        '33333333-3333-4333-8333-333333333333'
+      );
     });
   });
 

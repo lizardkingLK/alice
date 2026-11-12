@@ -136,8 +136,16 @@ export function createAccessRequestsRouter(deps: AccessRequestsRouterDeps) {
           return res.status(400).json({ error: 'Invalid id' });
         }
 
-        await accessRequestsService.deleteAccessRequest(actorId, id);
-        res.json({ success: true });
+        const accepted = await accessRequestsService.enqueueDeleteAccessRequest(
+          actorId,
+          id
+        );
+        // 202 — purge finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
       } catch (error) {
         routeError(res, error, 'Failed to delete access request');
       }

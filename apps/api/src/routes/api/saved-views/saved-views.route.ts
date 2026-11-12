@@ -55,16 +55,13 @@ export function createSavedViewsRouter(deps: SavedViewsRouterDeps) {
   const { savedViewsService } = deps;
   const savedViewsRouter: Router = Router();
 
-  function postOwnedViewStatusAction(
-    action: 'archive' | 'restore',
-    failureMessage: string
-  ) {
+  function postOwnedViewRestoreAction(failureMessage: string) {
     return async (req: AuthenticatedRequest, res: Response) => {
       try {
-        const view =
-          action === 'archive'
-            ? await savedViewsService.archive(req.userId!, req.params.id!)
-            : await savedViewsService.restore(req.userId!, req.params.id!);
+        const view = await savedViewsService.restore(
+          req.userId!,
+          req.params.id!
+        );
         res.json({ data: view });
       } catch (error) {
         sendError(res, error, failureMessage);
@@ -147,13 +144,28 @@ export function createSavedViewsRouter(deps: SavedViewsRouterDeps) {
   savedViewsRouter.post(
     '/:id/archive',
     requireApiAuth,
-    postOwnedViewStatusAction('archive', 'Failed to archive saved view')
+    async (req: AuthenticatedRequest, res: Response) => {
+      try {
+        const accepted = await savedViewsService.enqueueArchive(
+          req.userId!,
+          req.params.id!
+        );
+        // 202 — archive finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
+      } catch (error) {
+        sendError(res, error, 'Failed to archive saved view');
+      }
+    }
   );
 
   savedViewsRouter.post(
     '/:id/restore',
     requireApiAuth,
-    postOwnedViewStatusAction('restore', 'Failed to restore saved view')
+    postOwnedViewRestoreAction('Failed to restore saved view')
   );
 
   savedViewsRouter.delete(
@@ -174,8 +186,16 @@ export function createSavedViewsRouter(deps: SavedViewsRouterDeps) {
     requireApiAuth,
     async (req: AuthenticatedRequest, res: Response) => {
       try {
-        await savedViewsService.hardDelete(req.userId!, req.params.id!);
-        res.json({ success: true });
+        const accepted = await savedViewsService.enqueueHardDelete(
+          req.userId!,
+          req.params.id!
+        );
+        // 202 — purge finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
       } catch (error) {
         sendError(res, error, 'Failed to delete saved view');
       }

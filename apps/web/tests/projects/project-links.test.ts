@@ -39,6 +39,12 @@ describe('project key share helpers', () => {
     expect(projectDetailHref('ABC', 'members')).toBe(
       '/projects/ABC?tab=members'
     );
+    expect(projectDetailHref('ABC', 'work-items')).toBe(
+      '/projects/ABC?tab=work-items'
+    );
+    expect(projectDetailHref('ABC', 'sprints')).toBe(
+      '/projects/ABC?tab=sprints'
+    );
     expect(projectDetailHref('ABC', 'details')).toBe('/projects/ABC');
   });
 
@@ -63,5 +69,19 @@ describe('project key share helpers', () => {
       '/projects/ABC?tab=members'
     );
     expect(withProjectSearchParams('/projects/ABC', {})).toBe('/projects/ABC');
+  });
+
+  it('merges into an href that already has a query string', () => {
+    expect(
+      withProjectSearchParams('/projects/ABC?tab=work-items', {
+        tab: 'work-items',
+        search: 'bug',
+      })
+    ).toBe('/projects/ABC?tab=work-items&search=bug');
+    expect(
+      withProjectSearchParams('/projects/ABC?tab=sprints', {
+        tab: 'sprints',
+      })
+    ).toBe('/projects/ABC?tab=sprints');
   });
 });

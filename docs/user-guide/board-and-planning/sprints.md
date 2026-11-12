@@ -10,7 +10,8 @@ Create sprints, track goals, and open burndown reports.
 
 1. Sign in as a **manager** or **admin**.
 2. Open a project from **Projects** in the sidebar.
-3. In the project sidebar, select **Sprints** (`/projects/[id]?tab=sprints`).
+3. In the project sidebar, select **Sprints**
+   (`/projects/{KEY}/sprints`).
 
 Members do not see the Sprints project tab. The standalone `/sprints` page
 remains available for bookmarks but is no longer linked from the main sidebar.
@@ -36,7 +37,9 @@ Select a sprint to open its report or related work.
 
 ## Sprint reports
 
-Open `/sprints/[id]/report` for burndown and progress metrics.
+Open `/projects/{KEY}/sprints/{slug}/summary-report` for burndown and progress
+metrics. Older `/sprints/[id]/report` bookmarks redirect into that tree when
+the project key and sprint slug are available.
 
 - **Active**, **completed**, and **archived** sprints show the live report
   (stats, charts, deliverables).
