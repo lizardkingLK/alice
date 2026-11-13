@@ -77,10 +77,16 @@ import {
   isNestedDonutWidgetType,
   type ChartsHierarchyDigStep,
 } from '@/app/charts/_helpers/charts-nested-donut-widget';
+import {
+  CHARTS_CONTRIBUTION_DEFAULT_TITLE,
+  isSprintContributionWidgetType,
+} from '@/app/charts/_helpers/charts-sprint-contribution-widget';
 import { ChartsNestedDonutPreview } from '@/app/charts/_components/charts-nested-donut-preview';
+import { ChartsSprintContributionTable } from '@/app/charts/_components/charts-sprint-contribution-table';
 import { useChartWidgetAnalytics } from '@/app/charts/_hooks/use-chart-widget-analytics';
 import { useChartWidgetHierarchyAnalytics } from '@/app/charts/_hooks/use-chart-widget-hierarchy-analytics';
 import { useChartWidgetBurndown } from '@/app/charts/_hooks/use-chart-widget-burndown';
+import { useChartWidgetSprintContribution } from '@/app/charts/_hooks/use-chart-widget-sprint-contribution';
 import { BurndownLineChart } from '@/components/burndown-line-chart';
 import { BurndownScopeLabels } from '@/components/burndown-scope-labels';
 import { SIDEBAR_LAYOUT_SETTLE_MS } from '@/hooks/use-sidebar-layout-settling';
@@ -264,16 +270,50 @@ function ChartsWidgetCardBurndownBody({
   );
 }
 
+function ChartsWidgetCardContributionBody({
+  contribution,
+}: Readonly<{
+  contribution: ReturnType<typeof useChartWidgetSprintContribution>;
+}>) {
+  if (contribution.loading) {
+    return (
+      <div className="text-muted-foreground flex flex-1 items-center justify-center text-sm">
+        Loading contribution…
+      </div>
+    );
+  }
+
+  if (!contribution.payload) {
+    return (
+      <div className="text-muted-foreground flex flex-1 items-center justify-center px-3 text-center text-sm">
+        {contribution.emptyHint}
+      </div>
+    );
+  }
+
+  if (contribution.emptyHint) {
+    return (
+      <div className="text-muted-foreground flex flex-1 items-center justify-center px-3 text-center text-sm">
+        {contribution.emptyHint}
+      </div>
+    );
+  }
+
+  return <ChartsSprintContributionTable payload={contribution.payload} />;
+}
+
 function ChartsWidgetCardChartBody({
   isChart,
   isNested,
   isBurndown,
+  isContribution,
   Icon,
   description,
   seriesLabelField,
   analytics,
   hierarchy,
   burndown,
+  contribution,
   pieVariant,
   showValueAs,
   sortSlicesBy,
@@ -289,12 +329,14 @@ function ChartsWidgetCardChartBody({
   isChart: boolean;
   isNested: boolean;
   isBurndown: boolean;
+  isContribution: boolean;
   Icon?: ChartWidgetDefinition['icon'];
   description?: string;
   seriesLabelField: ChartSeriesLabelField | null;
   analytics: ReturnType<typeof useChartWidgetAnalytics>;
   hierarchy: ReturnType<typeof useChartWidgetHierarchyAnalytics>;
   burndown: ReturnType<typeof useChartWidgetBurndown>;
+  contribution: ReturnType<typeof useChartWidgetSprintContribution>;
   pieVariant?: ChartPieVariant;
   showValueAs: 'value' | 'percent';
   sortSlicesBy: 'value_desc' | 'value_asc' | 'label_asc' | 'label_desc';
@@ -313,6 +355,10 @@ function ChartsWidgetCardChartBody({
 }>) {
   if (isBurndown) {
     return <ChartsWidgetCardBurndownBody burndown={burndown} />;
+  }
+
+  if (isContribution) {
+    return <ChartsWidgetCardContributionBody contribution={contribution} />;
   }
 
   if (isNested) {
@@ -381,6 +427,7 @@ function ChartsWidgetCardFilterControl({
   isChart,
   isNested,
   isBurndown,
+  isContribution,
   title,
   filters,
   scopeLocked,
@@ -395,6 +442,7 @@ function ChartsWidgetCardFilterControl({
   isChart: boolean;
   isNested: boolean;
   isBurndown: boolean;
+  isContribution: boolean;
   title: string;
   filters?: ChartsWidgetFilterDraft;
   scopeLocked?: boolean;
@@ -412,7 +460,7 @@ function ChartsWidgetCardFilterControl({
     filters && 'text-primary hover:text-primary'
   );
 
-  if (isBurndown) {
+  if (isBurndown || isContribution) {
     return (
       <ChartsAdvancedFiltersPopover
         open={burndownFiltersOpen}
@@ -469,13 +517,14 @@ function resolveWidgetSettingsHandler(params: {
   readonly isChart: boolean;
   readonly isNested: boolean;
   readonly isBurndown: boolean;
+  readonly isContribution: boolean;
   readonly openChartSettings: () => void;
   readonly openBurndownFilters: () => void;
 }): (() => void) | undefined {
   if (params.isChart || params.isNested) {
     return params.openChartSettings;
   }
-  if (params.isBurndown) {
+  if (params.isBurndown || params.isContribution) {
     return params.openBurndownFilters;
   }
   return undefined;
@@ -484,6 +533,7 @@ function resolveWidgetSettingsHandler(params: {
 function resolveWidgetDisplayTitle(params: {
   readonly title: string;
   readonly isBurndown: boolean;
+  readonly isContribution: boolean;
   readonly isNested: boolean;
 }): string {
   const trimmed = params.title.trim();
@@ -492,6 +542,9 @@ function resolveWidgetDisplayTitle(params: {
   }
   if (params.isBurndown) {
     return CHARTS_BURNDOWN_DEFAULT_TITLE;
+  }
+  if (params.isContribution) {
+    return CHARTS_CONTRIBUTION_DEFAULT_TITLE;
   }
   if (params.isNested) {
     return CHARTS_NESTED_DONUT_DEFAULT_TITLE;
@@ -503,6 +556,7 @@ function resolveFullscreenDescription(params: {
   readonly description: string | null | undefined;
   readonly catalogDescription?: string;
   readonly isBurndown: boolean;
+  readonly isContribution: boolean;
 }): string | null | undefined {
   if (params.description) {
     return params.description;
@@ -510,7 +564,113 @@ function resolveFullscreenDescription(params: {
   if (params.isBurndown) {
     return 'Sprint remaining work versus the ideal line';
   }
+  if (params.isContribution) {
+    return 'Member logged hours versus estimate and ideal pace';
+  }
   return params.catalogDescription;
+}
+
+function resolveWidgetTypeFlags(typeId: ChartWidgetTypeId) {
+  const isChart = typeId === 'chart';
+  const isNested = isNestedDonutWidgetType(typeId);
+  const isBurndown = isBurndownWidgetType(typeId);
+  const isContribution = isSprintContributionWidgetType(typeId);
+  return {
+    isChart,
+    isNested,
+    isBurndown,
+    isContribution,
+    usesConfigDialog: isChart || isNested,
+    usesSprintScopeChrome: isBurndown || isContribution,
+  };
+}
+
+function resolveScopeLabel(
+  options: readonly { readonly id: string; readonly name: string }[],
+  id: string | null | undefined
+): string | null {
+  if (!id) {
+    return null;
+  }
+  return options.find((option) => option.id === id)?.name ?? null;
+}
+
+function useChartsWidgetCardSeries(params: {
+  readonly isChart: boolean;
+  readonly isNested: boolean;
+  readonly isBurndown: boolean;
+  readonly isContribution: boolean;
+  readonly filters?: ChartsWidgetFilterDraft;
+  readonly labelField: ChartsLabelFieldId;
+  readonly measure: ChartWidgetMeasure;
+  readonly digPath: readonly ChartsHierarchyDigStep[];
+}) {
+  const projectId = resolveChartAnalyticsProjectId(params.filters ?? null);
+  const sprintId = resolveChartAnalyticsSprintId(params.filters ?? null);
+  const dimensionFilters = useMemo(
+    () => resolveChartAnalyticsDimensionFilters(params.filters ?? null),
+    [params.filters]
+  );
+  const seriesLabelField = isChartSeriesLabelField(params.labelField)
+    ? params.labelField
+    : null;
+  const analytics = useChartWidgetAnalytics({
+    projectId: params.isChart ? projectId : undefined,
+    labelField: params.isChart ? seriesLabelField : null,
+    ...(sprintId ? { sprintId } : {}),
+    dimensionFilters,
+  });
+  const digRootId = params.digPath.at(-1)?.id;
+  const hierarchy = useChartWidgetHierarchyAnalytics({
+    projectId: params.isNested ? projectId : undefined,
+    measure: params.measure,
+    ...(digRootId ? { rootWorkItemId: digRootId } : {}),
+    ...(sprintId ? { sprintId } : {}),
+    dimensionFilters,
+  });
+  const burndown = useChartWidgetBurndown(
+    params.isBurndown ? sprintId : undefined
+  );
+  const contributionAssigneeId = dimensionFilters.assigneeId;
+  const contribution = useChartWidgetSprintContribution({
+    projectId: params.isContribution ? (projectId ?? undefined) : undefined,
+    sprintId: params.isContribution ? sprintId : undefined,
+    ...(contributionAssigneeId !== undefined
+      ? { assigneeId: contributionAssigneeId }
+      : {}),
+  });
+
+  return {
+    projectId,
+    sprintId,
+    dimensionFilters,
+    seriesLabelField,
+    analytics,
+    hierarchy,
+    burndown,
+    contribution,
+  };
+}
+
+function applyWidgetRename(params: {
+  readonly draftTitle: string;
+  readonly draftDescription: string;
+  readonly currentTitle: string;
+  readonly currentDescription: string | null | undefined;
+  readonly onRename: ChartsWidgetCardProps['onRename'];
+}): boolean {
+  const nextTitle = params.draftTitle.trim();
+  if (!nextTitle) {
+    return false;
+  }
+  const nextDescription = params.draftDescription.trim() || null;
+  const titleChanged = nextTitle !== params.currentTitle;
+  const descriptionChanged =
+    nextDescription !== (params.currentDescription?.trim() || null);
+  if (titleChanged || descriptionChanged) {
+    params.onRename({ title: nextTitle, description: nextDescription });
+  }
+  return true;
 }
 
 export function ChartsWidgetCard({
@@ -547,10 +707,14 @@ export function ChartsWidgetCard({
   overviewChrome = false,
   className,
 }: Readonly<ChartsWidgetCardProps>) {
-  const isChart = typeId === 'chart';
-  const isNested = isNestedDonutWidgetType(typeId);
-  const usesConfigDialog = isChart || isNested;
-  const isBurndown = isBurndownWidgetType(typeId);
+  const {
+    isChart,
+    isNested,
+    isBurndown,
+    isContribution,
+    usesConfigDialog,
+    usesSprintScopeChrome,
+  } = resolveWidgetTypeFlags(typeId);
   const [digPath, setDigPath] = useState<readonly ChartsHierarchyDigStep[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
@@ -592,47 +756,38 @@ export function ChartsWidgetCard({
   });
 
   useEffect(() => {
-    if (isBurndown && initialConfigOpen) {
+    if (usesSprintScopeChrome && initialConfigOpen) {
       setBurndownFiltersOpen(true);
     }
-  }, [isBurndown, initialConfigOpen]);
+  }, [usesSprintScopeChrome, initialConfigOpen]);
 
-  const projectId = resolveChartAnalyticsProjectId(filters ?? null);
-  const sprintId = resolveChartAnalyticsSprintId(filters ?? null);
-  const dimensionFilters = useMemo(
-    () => resolveChartAnalyticsDimensionFilters(filters ?? null),
-    [filters]
-  );
-  const seriesLabelField = isChartSeriesLabelField(labelField)
-    ? labelField
-    : null;
-  const analytics = useChartWidgetAnalytics({
-    projectId: isChart ? projectId : undefined,
-    labelField: isChart ? seriesLabelField : null,
-    ...(sprintId ? { sprintId } : {}),
+  const {
+    projectId,
+    sprintId,
     dimensionFilters,
-  });
-  const digRootId = digPath.at(-1)?.id;
-  const hierarchy = useChartWidgetHierarchyAnalytics({
-    projectId: isNested ? projectId : undefined,
+    seriesLabelField,
+    analytics,
+    hierarchy,
+    burndown,
+    contribution,
+  } = useChartsWidgetCardSeries({
+    isChart,
+    isNested,
+    isBurndown,
+    isContribution,
+    filters,
+    labelField,
     measure,
-    ...(digRootId ? { rootWorkItemId: digRootId } : {}),
-    ...(sprintId ? { sprintId } : {}),
-    dimensionFilters,
+    digPath,
   });
-  const burndown = useChartWidgetBurndown(isBurndown ? sprintId : undefined);
 
   useEffect(() => {
     setDigPath([]);
   }, [projectId, sprintId, dimensionFilters, measure]);
 
-  const scopeProjectName =
-    accessibleProjects.find((project) => project.id === projectId)?.name ??
-    null;
+  const scopeProjectName = resolveScopeLabel(accessibleProjects, projectId);
   const scopeSprintName =
-    burndown.sprintName ??
-    accessibleSprints.find((sprint) => sprint.id === sprintId)?.name ??
-    null;
+    burndown.sprintName ?? resolveScopeLabel(accessibleSprints, sprintId);
 
   const openRename = () => {
     setRenameDraft(title);
@@ -642,16 +797,16 @@ export function ChartsWidgetCard({
   };
 
   const commitRename = () => {
-    const nextTitle = renameDraft.trim();
-    if (!nextTitle) {
+    if (
+      !applyWidgetRename({
+        draftTitle: renameDraft,
+        draftDescription: descriptionDraft,
+        currentTitle: title,
+        currentDescription: description,
+        onRename,
+      })
+    ) {
       return;
-    }
-    const nextDescription = descriptionDraft.trim() || null;
-    const titleChanged = nextTitle !== title;
-    const descriptionChanged =
-      nextDescription !== (description?.trim() || null);
-    if (titleChanged || descriptionChanged) {
-      onRename({ title: nextTitle, description: nextDescription });
     }
     setRenameOpen(false);
   };
@@ -659,6 +814,7 @@ export function ChartsWidgetCard({
   const displayTitle = resolveWidgetDisplayTitle({
     title,
     isBurndown,
+    isContribution,
     isNested,
   });
 
@@ -666,6 +822,7 @@ export function ChartsWidgetCard({
     isChart,
     isNested,
     isBurndown,
+    isContribution,
     openChartSettings: () => {
       openConfig({ withSettings: true });
     },
@@ -679,12 +836,14 @@ export function ChartsWidgetCard({
       isChart={isChart}
       isNested={isNested}
       isBurndown={isBurndown}
+      isContribution={isContribution}
       Icon={Icon}
       description={catalogDescription}
       seriesLabelField={seriesLabelField}
       analytics={analytics}
       hierarchy={hierarchy}
       burndown={burndown}
+      contribution={contribution}
       pieVariant={pieVariant}
       showValueAs={showValueAs}
       sortSlicesBy={sortSlicesBy}
@@ -749,10 +908,10 @@ export function ChartsWidgetCard({
             </Tooltip>
           </div>
 
-          {usesConfigDialog || isBurndown ? (
+          {usesConfigDialog || usesSprintScopeChrome ? (
             <BurndownScopeLabels
               projectName={scopeProjectName}
-              sprintName={scopeSprintName}
+              sprintName={contribution.payload?.sprintName ?? scopeSprintName}
               className="mr-1 hidden sm:flex"
             />
           ) : null}
@@ -762,6 +921,7 @@ export function ChartsWidgetCard({
               isChart={isChart}
               isNested={isNested}
               isBurndown={isBurndown}
+              isContribution={isContribution}
               title={displayTitle}
               filters={filters}
               scopeLocked={scopeLocked}
@@ -937,6 +1097,7 @@ export function ChartsWidgetCard({
               description,
               catalogDescription,
               isBurndown,
+              isContribution,
             }),
             title: displayTitle,
             typeId,

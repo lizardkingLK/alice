@@ -69,7 +69,8 @@ grants **`chart_shares`**; recipients open from Views / inbox, then **Fork**
 if they want an owned editable copy.
 
 **Availability:** Live catalog adds: **Chart**, **Nested donut**, **Data over
-time** / **Burndown**. Other Browse cards remain **Coming soon**.
+time** / **Burndown**, **Sprint contribution**. Other Browse cards remain
+**Coming soon**.
 
 ### Chart widget (`typeId: chart`)
 
@@ -133,7 +134,8 @@ Table **`charts`**:
   - Optional board-level **`scope: { projectId, sprintId } | null`** —
     set at workspace create when **Lock to project and sprint** is checked.
     Scoped boards hide workspace Filter and widget project/sprint controls;
-    new Chart / burndown widgets inherit `filters` from that scope. Owners may
+    new Chart / burndown / contribution widgets inherit `filters` from that
+    scope. Owners may
     **Mark as non-scoped** (`scope: null`) but cannot change the locked pair.
     Mixed boards keep Filter as the **active** insert selection; burndown
     prompts only when Filter lacks a concrete project/sprint. Legacy
@@ -217,6 +219,18 @@ reuses board filter drafts for project/sprint. Shared UI:
 Checklist:
 [Charts Burndown widget](./CHARTS_AGGREGATION.md#charts-burndown-widget-next-implementation).
 
+### Sprint contribution widget (living)
+
+Catalog **Sprint contribution** (`typeId: sprint-contribution`, Delivery,
+quick-add). Table groups **Active** / **Unassigned** / **Done** with Estimate /
+Logged / Ideal Progress cells. Ideal uses `computeBurndownIdealSpent` (1 SP ≈
+1 hour). Behind when `pendingHours > 0` for assigned members.
+`GET /api/v1/charts/analytics/sprint-contribution` (project + sprint ACL;
+optional `assigneeId`). Prefers `sprint_contribution_rollups` when `as_of`
+matches; otherwise live items + worklogs and best-effort
+`rebuild_sprint_analytics_rollups` (also refreshes burndown). Shared helpers in
+`packages/types/src/sprint-contribution.ts`.
+
 Tier 2/3 (Neon read model, apps rename): [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md).
 
 ## Save option, descriptions, Alice suggest
@@ -260,7 +274,7 @@ dashboard**. No Shared registry tab — Views share remains the ACL path.
 
 | Allowed                        | Hidden / disabled                                  |
 | ------------------------------ | -------------------------------------------------- |
-| Drag / resize (owned slides)   | Filters on Chart + Burndown widgets                |
+| Drag / resize (owned slides)   | Filters on Chart + Burndown + contribution widgets |
 | Fullscreen + Export            | Widget settings, Save option, duplicate, delete    |
 | Drilldown + open `/work-items` | Shared slides: layout locked (sync already no-ops) |
 

@@ -154,6 +154,16 @@ export const CHART_WIDGET_CATALOG: readonly ChartWidgetDefinition[] = [
     category: 'delivery',
     available: true,
   },
+  {
+    id: 'sprint-contribution',
+    title: 'Sprint contribution',
+    description:
+      'Member logged vs ideal pace for a sprint (estimate + worklogs)',
+    icon: Table2,
+    category: 'delivery',
+    quickAdd: true,
+    available: true,
+  },
 ] as const;
 
 export const CHART_QUICK_ADD_WIDGETS = CHART_WIDGET_CATALOG.filter(

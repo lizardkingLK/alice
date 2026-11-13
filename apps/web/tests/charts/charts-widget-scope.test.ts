@@ -15,16 +15,18 @@ import {
 } from '@/app/charts/_helpers/charts-widget-scope';
 
 describe('charts-widget-scope', () => {
-  it('requires scope for chart and burndown types only', () => {
+  it('requires scope for chart, burndown, and contribution types', () => {
     expect(widgetTypeRequiresScope('chart')).toBe(true);
     expect(widgetTypeRequiresScope('burndown')).toBe(true);
     expect(widgetTypeRequiresScope('data-over-time')).toBe(true);
+    expect(widgetTypeRequiresScope('sprint-contribution')).toBe(true);
     expect(widgetTypeRequiresScope('numbers')).toBe(false);
   });
 
-  it('requires sprint on create for burndown only', () => {
+  it('requires sprint on create for burndown and contribution', () => {
     expect(requiresSprintOnCreate('burndown')).toBe(true);
     expect(requiresSprintOnCreate('data-over-time')).toBe(true);
+    expect(requiresSprintOnCreate('sprint-contribution')).toBe(true);
     expect(requiresSprintOnCreate('chart')).toBe(false);
   });
 
@@ -128,6 +130,14 @@ describe('charts-widget-scope', () => {
     expect(
       resolveChartWidgetInsertAction({
         typeId: 'burndown',
+        workspaceScope: null,
+        activeBoardFilter: { projectId: 'proj-1', sprintId: null },
+      }).type
+    ).toBe('prompt-burndown');
+
+    expect(
+      resolveChartWidgetInsertAction({
+        typeId: 'sprint-contribution',
         workspaceScope: null,
         activeBoardFilter: { projectId: 'proj-1', sprintId: null },
       }).type

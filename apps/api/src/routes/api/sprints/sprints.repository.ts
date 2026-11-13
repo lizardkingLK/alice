@@ -470,17 +470,20 @@ export class SprintBurndownRepository {
     }
   }
 
-  /** Trigger SQL rebuild for a sprint (also used after live fallback). */
+  /**
+   * Trigger SQL rebuild for burndown + contribution (also used after live
+   * fallback). Uses the shared analytics wrapper so both rollups stay warm.
+   */
   async rebuildBurndownRollup(sprintId: string): Promise<void> {
     try {
       await prisma.$executeRawUnsafe(
-        'SELECT public.rebuild_sprint_burndown_rollups($1::uuid)',
+        'SELECT public.rebuild_sprint_analytics_rollups($1::uuid)',
         sprintId
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.warn(
-        `warn. rebuild_sprint_burndown_rollups failed for ${sprintId}: ${message}`
+        `warn. rebuild_sprint_analytics_rollups failed for ${sprintId}: ${message}`
       );
     }
   }

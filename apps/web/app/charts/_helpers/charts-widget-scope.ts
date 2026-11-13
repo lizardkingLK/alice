@@ -7,6 +7,7 @@ import type {
 import type { ChartsWidgetFilterDraft } from '@/app/charts/_components/charts-sample.data';
 import { isBurndownWidgetType } from '@/app/charts/_helpers/charts-burndown-widget';
 import { isNestedDonutWidgetType } from '@/app/charts/_helpers/charts-nested-donut-widget';
+import { isSprintContributionWidgetType } from '@/app/charts/_helpers/charts-sprint-contribution-widget';
 import { CHARTS_DEFAULT_QUICK_SELECTIONS } from '@/app/charts/_helpers/charts-widget-defaults';
 import { QUERY_FILTER_ALL_VALUE } from '@/hooks/use-query-filter';
 
@@ -27,13 +28,14 @@ export function widgetTypeRequiresScope(typeId: ChartWidgetTypeId): boolean {
   return (
     typeId === 'chart' ||
     isNestedDonutWidgetType(typeId) ||
-    isBurndownWidgetType(typeId)
+    isBurndownWidgetType(typeId) ||
+    isSprintContributionWidgetType(typeId)
   );
 }
 
-/** Burndown must pick a concrete sprint; chart may use All sprints. */
+/** Burndown / contribution must pick a concrete sprint; chart may use All sprints. */
 export function requiresSprintOnCreate(typeId: ChartWidgetTypeId): boolean {
-  return isBurndownWidgetType(typeId);
+  return isBurndownWidgetType(typeId) || isSprintContributionWidgetType(typeId);
 }
 
 export function boardFilterFromPreference(
