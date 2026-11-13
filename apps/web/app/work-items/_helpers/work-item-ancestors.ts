@@ -12,12 +12,13 @@ export const MAX_WORK_ITEM_ANCESTOR_DEPTH = 3;
  * the same FK and returns child arrays instead of parents.
  */
 export const WORK_ITEM_ANCESTOR_EMBED_SELECT =
-  'id, type, title, parent_id, parent:parent_id(id, type, title, parent_id, parent:parent_id(id, type, title, parent_id))';
+  'id, type, title, slug, parent_id, parent:parent_id(id, type, title, slug, parent_id, parent:parent_id(id, type, title, slug, parent_id))';
 
 export type WorkItemAncestorEmbedRow = {
   readonly id: string;
   readonly type: WorkItemAncestor['type'];
   readonly title: string;
+  readonly slug: string;
   readonly parent_id: string | null;
   readonly parent?: WorkItemAncestorEmbedRow | null;
 };
@@ -64,6 +65,7 @@ export function flattenWorkItemAncestorEmbed(
       id: current.id,
       type: current.type,
       title: current.title,
+      slug: current.slug,
       parent_id: current.parent_id,
     });
     current = asParentEmbed(current.parent);

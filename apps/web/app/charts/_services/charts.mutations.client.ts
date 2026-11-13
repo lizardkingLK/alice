@@ -1,4 +1,5 @@
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
+import type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 import { isSessionExpiredError } from '@/lib/errors/session-expired';
 import type {
   ChartWorkspaceRecord,
@@ -14,6 +15,8 @@ export {
   chartWorkspaceFromApiRow,
   listChartsFromApi,
 } from '@/app/charts/_services/charts.workspaces.client';
+
+export type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 
 function boardJsonFromWorkspace(workspace: ChartWorkspaceRecord) {
   return {
@@ -119,14 +122,14 @@ export async function updateChartWorkspaceMetaOnApi(params: {
   );
 }
 
+/** Fire-and-forget archive — API returns 202; inbox notifies when done. */
 export async function archiveChartWorkspace(
   chartId: string
-): Promise<ChartApiRow> {
-  const result = await apiFetch<{ data: ChartApiRow }>(
+): Promise<DestructiveActionAccepted> {
+  return await apiFetch<DestructiveActionAccepted>(
     `/api/charts/${chartId}/archive`,
-    { method: 'POST' }
+    { method: 'POST', skipDatabaseBusyRetry: true }
   );
-  return result.data;
 }
 
 export async function restoreChartWorkspace(
@@ -139,10 +142,13 @@ export async function restoreChartWorkspace(
   return result.data;
 }
 
-/** Permanently delete an owned chart (active or archived). */
-export async function deleteChartWorkspace(chartId: string): Promise<void> {
-  await apiFetch<ChartMutationSuccess>(`/api/charts/${chartId}`, {
+/** Fire-and-forget purge — API returns 202; inbox notifies when done. */
+export async function deleteChartWorkspace(
+  chartId: string
+): Promise<DestructiveActionAccepted> {
+  return await apiFetch<DestructiveActionAccepted>(`/api/charts/${chartId}`, {
     method: 'DELETE',
+    skipDatabaseBusyRetry: true,
   });
 }
 

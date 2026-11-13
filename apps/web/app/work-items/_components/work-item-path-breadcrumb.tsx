@@ -11,6 +11,7 @@ import {
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { projectDetailHref } from '@/app/projects/_helpers/project-links';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
+import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import type {
   DbWorkItem,
   WorkItemAncestor,
@@ -115,7 +116,13 @@ export function WorkItemPathBreadcrumb({
           <BreadcrumbSeparator key={`sep-${ancestor.id}`} />,
           <BreadcrumbItem key={ancestor.id} className="min-w-0">
             <BreadcrumbLink asChild className="hover:text-primary min-w-0">
-              <Link href={`/work-items/${ancestor.id}`} className="min-w-0">
+              <Link
+                href={workItemDetailHref(ancestor.id, {
+                  projectKey: projectHrefKey,
+                  workItemSlug: ancestor.slug,
+                })}
+                className="min-w-0"
+              >
                 <PathTypeChip
                   type={ancestor.type}
                   title={ancestor.title}

@@ -98,7 +98,7 @@ function JiraConnectionsPanel({
                   size="sm"
                   onClick={() => onDisconnect(connection.id)}
                   disabled={isDisconnecting}
-                  className="text-destructive hover:text-destructive shrink-0"
+                  className="shrink-0"
                 >
                   {isDisconnecting ? (
                     <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />

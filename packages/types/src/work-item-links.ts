@@ -15,6 +15,7 @@ export type CreateWorkItemLinkBody = z.infer<
 export type WorkItemLinkRelatedItem = {
   readonly id: string;
   readonly title: string;
+  readonly slug?: string | null;
   readonly type: string;
   readonly status: string;
   readonly state: unknown;

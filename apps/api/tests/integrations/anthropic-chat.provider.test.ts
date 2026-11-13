@@ -397,5 +397,18 @@ describe('AnthropicChatProvider', () => {
       message: 'Anthropic returned an invalid response.',
       category: 'invalid_json',
     });
+
+    expect(logLlmProviderErrorMock).toHaveBeenCalledWith(
+      'anthropic',
+      expect.objectContaining({
+        status: 200,
+        responseBodyBytes: 0,
+        rejectionCategory: 'invalid_json',
+        messagesCount: 3,
+      })
+    );
+    expect(JSON.stringify(logLlmProviderErrorMock.mock.calls)).not.toContain(
+      'sk-ant-response-secret'
+    );
   });
 });

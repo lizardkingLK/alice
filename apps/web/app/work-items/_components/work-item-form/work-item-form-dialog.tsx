@@ -8,6 +8,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
+import { Layers } from '@repo/ui/lib/icons';
+import { WorkItemCreateDraftWarning } from '@/app/work-items/_components/work-item-form/work-item-create-draft-warning';
+import { WorkItemFormDialogChrome } from '@/app/work-items/_components/work-item-form/work-item-form-dialog-chrome';
+import { workItemFormDialogLayoutClassName } from '@/app/work-items/_components/work-item-form/work-item-form-dialog-layout';
+import { useWorkItemFormDialogChromeState } from '@/app/work-items/_components/work-item-form/use-work-item-form-dialog-chrome-state';
 import {
   WorkItemForm,
   type WorkItemFormProps,
@@ -33,6 +38,12 @@ type WorkItemFormDialogProps = WorkItemFormProps & {
   contentClassName?: string;
   titleClassName?: string;
   descriptionClassName?: string;
+  /**
+   * Bump when the user clicks Create again while this dialog may already be
+   * open (floating / minimized). Triggers the draft-in-progress warning for
+   * modern create.
+   */
+  createIntentKey?: number;
 };
 
 type FormDialogBootstrap = {
@@ -194,6 +205,76 @@ function useFormDialogBootstrap(params: {
   };
 }
 
+function resolveFormKey(args: {
+  readonly resolvedItemToEdit: DbWorkItem | null;
+  readonly detailEpoch: number;
+  readonly projects: WorkItemFormProps['projects'];
+  readonly lockProject: boolean;
+  readonly createEpoch: number;
+}): string {
+  const {
+    resolvedItemToEdit,
+    detailEpoch,
+    projects,
+    lockProject,
+    createEpoch,
+  } = args;
+  if (resolvedItemToEdit) {
+    return `${resolvedItemToEdit.id}:${detailEpoch}:${resolvedItemToEdit.updated_at}`;
+  }
+  const projectKey =
+    resolveBootstrapProjectId(null, projects, lockProject) ?? 'any';
+  return `create:${projectKey}:${createEpoch}`;
+}
+
+function focusModernTitleInput() {
+  const titleInput = document.getElementById(
+    'title'
+  ) as HTMLInputElement | null;
+  if (!titleInput) {
+    return;
+  }
+  titleInput.focus();
+  const end = titleInput.value.length;
+  titleInput.setSelectionRange(end, end);
+}
+
+function resolveSoftInvalidateProjectId(args: {
+  readonly open: boolean;
+  readonly resolvedItemToEdit: DbWorkItem | null;
+  readonly projects: WorkItemFormProps['projects'];
+  readonly lockProject: boolean;
+}): string | null {
+  if (!args.open) {
+    return null;
+  }
+  return (
+    args.resolvedItemToEdit?.project_id ??
+    resolveBootstrapProjectId(null, args.projects, args.lockProject) ??
+    null
+  );
+}
+
+function useSessionCreateFormMode(
+  open: boolean,
+  createFormModeProp: WorkItemFormProps['createFormMode'],
+  preferredMode: ReturnType<typeof useWorkItemCreateFormMode>
+) {
+  const [sessionMode, setSessionMode] = useState(
+    () => createFormModeProp ?? preferredMode
+  );
+  const wasOpenRef = useRef(open);
+
+  useEffect(() => {
+    if (open && !wasOpenRef.current) {
+      setSessionMode(createFormModeProp ?? preferredMode);
+    }
+    wasOpenRef.current = open;
+  }, [open, createFormModeProp, preferredMode]);
+
+  return createFormModeProp ?? sessionMode;
+}
+
 export function WorkItemFormDialog({
   open,
   onOpenChange,
@@ -210,13 +291,15 @@ export function WorkItemFormDialog({
   preferProvidedMembers: preferProvidedMembersProp,
   projects,
   lockProject = false,
+  createIntentKey,
   ...formProps
 }: Readonly<WorkItemFormDialogProps>) {
   const preferredMode = useWorkItemCreateFormMode();
-  const [sessionMode, setSessionMode] = useState(
-    () => createFormModeProp ?? preferredMode
+  const createFormMode = useSessionCreateFormMode(
+    open,
+    createFormModeProp,
+    preferredMode
   );
-  const wasOpenRef = useRef(open);
   const stableItemToEdit = useStableItemToEdit(open, itemToEdit);
   const {
     itemToEdit: resolvedItemToEdit,
@@ -233,83 +316,140 @@ export function WorkItemFormDialog({
     fallbackMembers: projectMembersProp,
   });
 
-  useEffect(() => {
-    if (open && !wasOpenRef.current) {
-      setSessionMode(createFormModeProp ?? preferredMode);
-    }
-    wasOpenRef.current = open;
-  }, [open, createFormModeProp, preferredMode]);
-
-  const createFormMode = createFormModeProp ?? sessionMode;
   const useModernLayout = createFormMode === 'modern';
-  const formKey = resolvedItemToEdit
-    ? `${resolvedItemToEdit.id}:${detailEpoch}:${resolvedItemToEdit.updated_at}`
-    : `create:${resolveBootstrapProjectId(null, projects, lockProject) ?? 'any'}`;
+  const isModernCreate = useModernLayout && resolvedItemToEdit == null;
+  const allowFloatMinimize = isModernCreate;
+  const chrome = useWorkItemFormDialogChromeState({
+    open,
+    allowFloatMinimize,
+    isModernCreate,
+    createIntentKey,
+  });
+
+  const formKey = resolveFormKey({
+    resolvedItemToEdit,
+    detailEpoch,
+    projects,
+    lockProject,
+    createEpoch: chrome.createEpoch,
+  });
   const projectSprints = usedBootstrap
     ? bootstrappedSprints
     : (projectSprintsProp ?? []);
   const projectMembers = usedBootstrap
     ? bootstrappedMembers
     : projectMembersProp;
-  const softInvalidateProjectId = open
-    ? (resolvedItemToEdit?.project_id ??
-      resolveBootstrapProjectId(null, projects, lockProject) ??
-      null)
-    : null;
   useSoftInvalidateHoldAutoRefresh(open);
-  useSoftInvalidateProject(softInvalidateProjectId);
+  useSoftInvalidateProject(
+    resolveSoftInvalidateProjectId({
+      open,
+      resolvedItemToEdit,
+      projects,
+      lockProject,
+    })
+  );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className={cn(
-          contentClassName,
-          useModernLayout ? 'sm:max-w-4xl' : 'sm:max-w-xl',
-          'flex max-h-[85vh] flex-col overflow-hidden sm:max-h-[90vh]'
-        )}
-        onPointerDownOutside={(event) => event.preventDefault()}
-        onInteractOutside={(event) => event.preventDefault()}
-        onOpenAutoFocus={(event) => {
-          if (!useModernLayout || !detailReady) {
-            return;
-          }
-          event.preventDefault();
-          const titleInput = document.getElementById(
-            'title'
-          ) as HTMLInputElement | null;
-          if (!titleInput) {
-            return;
-          }
-          titleInput.focus();
-          const end = titleInput.value.length;
-          titleInput.setSelectionRange(end, end);
-        }}
+    <>
+      <Dialog
+        open={open}
+        onOpenChange={onOpenChange}
+        modal={chrome.dialogModal}
       >
-        <DialogHeader className={useModernLayout ? 'sr-only' : undefined}>
-          <DialogTitle className={titleClassName}>{title}</DialogTitle>
-          <DialogDescription className={descriptionClassName}>
-            {description}
-          </DialogDescription>
-        </DialogHeader>
-        {detailReady ? (
-          <WorkItemForm
-            key={formKey}
-            {...formProps}
-            projects={projects}
-            lockProject={lockProject}
-            itemToEdit={resolvedItemToEdit}
-            createFormMode={createFormMode}
-            projectMembers={projectMembers}
-            projectSprints={projectSprints}
-            preferProvidedSprints={
-              usedBootstrap ? true : preferProvidedSprintsProp
+        <DialogContent
+          showCloseButton={false}
+          // Keep overlay mounted for modern create; toggle with `hidden` (not
+          // opacity) so float↔default keeps a real bg-black/40 dimmer that also
+          // blocks clicks — without a washed-out leftover layer.
+          showOverlay={allowFloatMinimize || !chrome.isNonModal}
+          overlayClassName={
+            allowFloatMinimize && chrome.isNonModal ? 'hidden' : undefined
+          }
+          dismissOnOutsideClick={false}
+          className={cn(
+            contentClassName,
+            'flex flex-col overflow-hidden',
+            // Layout switches should not replay the open zoom (circle morph).
+            'data-open:zoom-in-100 data-closed:zoom-out-100 duration-0',
+            workItemFormDialogLayoutClassName(chrome.layout, useModernLayout),
+            chrome.isMinimized && 'overflow-visible'
+          )}
+          onPointerDownOutside={(event) => event.preventDefault()}
+          onInteractOutside={(event) => event.preventDefault()}
+          onOpenAutoFocus={(event) => {
+            if (!useModernLayout || !detailReady || chrome.isMinimized) {
+              return;
             }
-            preferProvidedMembers={
-              usedBootstrap ? true : preferProvidedMembersProp
-            }
-          />
-        ) : null}
-      </DialogContent>
-    </Dialog>
+            event.preventDefault();
+            focusModernTitleInput();
+          }}
+        >
+          <DialogHeader
+            className={cn(
+              useModernLayout || chrome.isMinimized ? 'sr-only' : undefined,
+              !useModernLayout && !chrome.isMinimized && 'pr-28'
+            )}
+          >
+            <DialogTitle className={titleClassName}>{title}</DialogTitle>
+            <DialogDescription className={descriptionClassName}>
+              {description}
+            </DialogDescription>
+          </DialogHeader>
+
+          {chrome.isMinimized ? (
+            <button
+              type="button"
+              className="bg-popover text-popover-foreground hover:bg-muted flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium shadow-md"
+              aria-label="Restore create dialog"
+              onClick={() =>
+                chrome.handleLayoutChange(chrome.layoutBeforeMinimize)
+              }
+            >
+              <Layers className="size-4 shrink-0" />
+              Create
+            </button>
+          ) : null}
+
+          <div
+            className={cn(
+              'flex min-h-0 flex-1 flex-col',
+              chrome.isMinimized && 'hidden'
+            )}
+          >
+            <WorkItemFormDialogChrome
+              layout={chrome.layout}
+              modalLayout={chrome.modalLayout}
+              allowFloatMinimize={allowFloatMinimize}
+              onLayoutChange={chrome.handleLayoutChange}
+            />
+            {detailReady ? (
+              <WorkItemForm
+                key={formKey}
+                {...formProps}
+                projects={projects}
+                lockProject={lockProject}
+                itemToEdit={resolvedItemToEdit}
+                createFormMode={createFormMode}
+                dialogLayout={chrome.layout}
+                projectMembers={projectMembers}
+                projectSprints={projectSprints}
+                preferProvidedSprints={
+                  usedBootstrap ? true : preferProvidedSprintsProp
+                }
+                preferProvidedMembers={
+                  usedBootstrap ? true : preferProvidedMembersProp
+                }
+              />
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <WorkItemCreateDraftWarning
+        open={chrome.draftWarningOpen}
+        onKeepEditing={chrome.handleKeepEditing}
+        onDiscardDraft={chrome.handleDiscardDraft}
+      />
+    </>
   );
 }

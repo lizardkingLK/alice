@@ -11,6 +11,7 @@ import {
   CommentEditor,
   type CommentEditorHandle,
 } from '@/app/comments/_components/comment-editor';
+import type { CommentMentionAgent } from '@/app/comments/_components/comment-mention-list';
 import type {
   CommentUser,
   CommentWorkItemOption,
@@ -34,6 +35,7 @@ type CommentComposerProps = {
   currentUserName?: string | null;
   currentUserImageUrl?: string | null;
   users: CommentUser[];
+  agents: CommentMentionAgent[];
   workItems: Pick<CommentWorkItemOption, 'id' | 'key' | 'title'>[];
   isSubmitting?: boolean;
   enableMShortcut?: boolean;
@@ -50,6 +52,7 @@ export const CommentComposer = forwardRef<
     currentUserName,
     currentUserImageUrl,
     users,
+    agents,
     workItems,
     isSubmitting = false,
     enableMShortcut = false,
@@ -111,6 +114,7 @@ export const CommentComposer = forwardRef<
         <CommentEditor
           ref={editorRef}
           users={users}
+          agents={agents}
           workItems={workItems}
           placeholder="Add a comment..."
           onSubmit={submitSafely}

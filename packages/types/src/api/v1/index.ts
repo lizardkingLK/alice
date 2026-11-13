@@ -211,6 +211,14 @@ export {
   type WorkItemUpdateBody,
   githubWorkItemPrUrlSchema,
   linkWorkItemGithubPrBodySchema,
+  applyWorkItemAiProposalBodySchema,
+  generateWorkItemAiProposalsBodySchema,
+  workItemAiProposalResponseSchema,
+  workItemAiProposalSuggestionSchema,
+  type ApplyWorkItemAiProposalBody,
+  type GenerateWorkItemAiProposalsBody,
+  type WorkItemAiProposalResponse,
+  type WorkItemAiProposalSuggestion,
 } from './work-items.js';
 export {
   projectOwnerSelect,

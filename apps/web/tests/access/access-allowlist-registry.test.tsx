@@ -27,6 +27,10 @@ vi.mock(
   () => import('../mocks/dropdown-menu')
 );
 
+vi.mock('@repo/ui/components/ui/sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
+
 vi.mock(
   '@/app/access-allowlist/_services/access-allowlist.mutations.client',
   () => ({
@@ -205,7 +209,12 @@ describe('AccessAllowlistRegistry', () => {
 
   it('deletes an entry after confirmation', async () => {
     // Arrange
-    vi.mocked(deleteAccessAllowlistEntry).mockResolvedValue(undefined);
+    vi.mocked(deleteAccessAllowlistEntry).mockResolvedValue({
+      accepted: true,
+      message:
+        'Allowlist entry permanent delete started. You’ll be notified when it finishes.',
+      correlationId: 'corr-1',
+    });
     render(
       <AccessAllowlistRegistry
         entries={entries}

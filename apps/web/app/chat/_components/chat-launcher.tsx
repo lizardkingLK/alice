@@ -59,6 +59,7 @@ type ChatLauncherProviderProps = {
   readonly children: ReactNode;
   readonly currentUserName?: string | null;
   readonly currentUserImageUrl?: string | null;
+  readonly currentUserId?: string | null;
   readonly currentUserRole?: AppRole | null;
 };
 
@@ -66,6 +67,7 @@ export function ChatLauncherProvider({
   children,
   currentUserName,
   currentUserImageUrl,
+  currentUserId,
   currentUserRole,
 }: Readonly<ChatLauncherProviderProps>) {
   const pathname = usePathname();
@@ -144,6 +146,7 @@ export function ChatLauncherProvider({
               onDismissPageContext={dismissPageContext}
               currentUserName={currentUserName}
               currentUserImageUrl={currentUserImageUrl}
+              currentUserId={currentUserId}
               currentUserRole={currentUserRole}
             />
           </div>

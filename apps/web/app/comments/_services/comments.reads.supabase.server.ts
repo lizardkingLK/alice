@@ -10,11 +10,11 @@ import {
   throwIfError,
   zeroCountsById,
 } from '@/lib/db/query';
-import { mapCommentWorkItemOption } from './comments.mutations.shared';
-import type {
-  CommentItem,
-  CommentWorkItemOption,
-  CommentWorkItemOptionRow,
+import {
+  mapCommentWorkItemOption,
+  type CommentItem,
+  type CommentWorkItemOption,
+  type CommentWorkItemOptionRow,
 } from './comments.mutations.shared';
 
 const COMMENT_AUTHOR_SELECT = userRelationSelect(
@@ -26,7 +26,7 @@ const COMMENT_AUTHOR_SELECT = userRelationSelect(
 const COMMENT_LIST_SELECT = `
   *,
   ${COMMENT_AUTHOR_SELECT},
-  work_item:work_items(id, title, type, ${projectRelationSelect()})
+  work_item:work_items(id, title, type, slug, ${projectRelationSelect()})
 `;
 
 /**
@@ -58,7 +58,7 @@ export async function listCommentsFromSupabase(
 }
 
 const COMMENT_WORK_ITEM_OPTION_SELECT = `
-  id, title, type, project_id, pm_external, priority, description,
+  id, title, slug, type, project_id, pm_external, priority, description,
   ${projectRelationSelect()},
   ${WORK_ITEM_ASSIGNEE_POSTGREST_SELECT}
 `;

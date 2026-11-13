@@ -8,7 +8,11 @@ import {
   auditCreateWithoutStatus,
   auditUpdate,
 } from '@repo/types/audit';
-import { plainTextToCommentDoc, commentContentToPlainText } from '@repo/types';
+import {
+  commentContentToPlainText,
+  plainTextToCommentDoc,
+  slugifyTitle,
+} from '@repo/types';
 import { createClient } from '@supabase/supabase-js';
 import pg from 'pg';
 
@@ -288,31 +292,50 @@ async function seedUsers(): Promise<UserIds> {
     }
   }
 
-  const adminActorId =
-    ids['admin@alice.dev'] ??
-    authIds.find(({ user }) => user.role === 'admin')?.authId;
+  const adminEntry = authIds.find(({ user }) => user.role === 'admin');
+  if (!adminEntry) {
+    throw new Error('Seed requires an admin user.');
+  }
 
-  const missing = authIds.filter(({ user }) => !ids[user.email]);
+  async function insertPublicUser(
+    user: SeedUser,
+    authId: string,
+    actorId: string
+  ): Promise<void> {
+    const { error } = await supabase.from('users').insert({
+      id: authId,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      active: true,
+      membership_status: 'active',
+      ...auditCreate(actorId),
+    });
+
+    if (error) {
+      throw new Error(`Failed to seed user "${user.email}": ${error.message}`);
+    }
+
+    ids[user.email] = authId;
+  }
+
+  // After a wipe, insert admin first so other users can FK `created_by` to them.
+  if (!ids[adminEntry.user.email]) {
+    await insertPublicUser(
+      adminEntry.user,
+      adminEntry.authId,
+      adminEntry.authId
+    );
+  }
+
+  const adminActorId = requireUserId(ids, adminEntry.user.email);
+  const remaining = authIds.filter(
+    ({ user }) => user.role !== 'admin' && !ids[user.email]
+  );
   await Promise.all(
-    missing.map(async ({ user, authId }) => {
-      const { error } = await supabase.from('users').insert({
-        id: authId,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        active: true,
-        membership_status: 'active',
-        ...auditCreate(adminActorId ?? authId),
-      });
-
-      if (error) {
-        throw new Error(
-          `Failed to seed user "${user.email}": ${error.message}`
-        );
-      }
-
-      ids[user.email] = authId;
-    })
+    remaining.map(({ user, authId }) =>
+      insertPublicUser(user, authId, adminActorId)
+    )
   );
 
   return ids;
@@ -407,13 +430,32 @@ async function seedTeamMembers(
   );
 }
 
-async function seedProject(userIds: UserIds, actorId: string): Promise<string> {
+type SeedProjectDef = {
+  readonly name: string;
+  readonly key: string;
+  readonly description: string;
+};
+
+/** Local-dev sample project — keep the set small and stable. */
+const SEED_PROJECTS: readonly SeedProjectDef[] = [
+  {
+    name: 'This',
+    key: 'THIS',
+    description: 'Alice - Product Development',
+  },
+];
+
+async function seedProject(
+  project: SeedProjectDef,
+  userIds: UserIds,
+  actorId: string
+): Promise<string> {
   const ownerId = requireUserId(userIds, 'admin@alice.dev');
 
   const { data: existing } = await supabase
     .from('projects')
     .select('id')
-    .eq('key', 'ALICE')
+    .eq('key', project.key)
     .maybeSingle();
 
   if (existing) {
@@ -423,9 +465,9 @@ async function seedProject(userIds: UserIds, actorId: string): Promise<string> {
   const { data, error } = await supabase
     .from('projects')
     .insert({
-      name: 'Alice Platform',
-      key: 'ALICE',
-      description: '1BT JIRA clone — sample project for local development',
+      name: project.name,
+      key: project.key,
+      description: project.description,
       owner_id: ownerId,
       start_date: '2026-06-01',
       end_date: '2026-12-31',
@@ -436,7 +478,9 @@ async function seedProject(userIds: UserIds, actorId: string): Promise<string> {
     .single();
 
   if (error) {
-    throw new Error(`Failed to seed project: ${error.message}`);
+    throw new Error(
+      `Failed to seed project "${project.key}": ${error.message}`
+    );
   }
 
   return data.id;
@@ -517,6 +561,7 @@ async function seedSprints(
         .insert({
           project_id: projectId,
           ...sprint,
+          slug: slugifyTitle(sprint.name),
           ...auditCreateWithoutStatus(actorId),
         })
         .select('id')
@@ -583,6 +628,7 @@ async function ensureWorkItem(
     .insert({
       project_id: projectId,
       title,
+      slug: slugifyTitle(title),
       ...values,
       ...auditCreateWithoutStatus(auditActor),
     })
@@ -784,20 +830,21 @@ type NotificationSeed = {
 async function seedNotifications(
   userIds: UserIds,
   relatedItemId: string,
-  actorId: string
+  actorId: string,
+  projectLabel: string
 ): Promise<void> {
   const notifications: NotificationSeed[] = [
     {
       user_id: requireUserId(userIds, 'member@alice.dev'),
       type: 'assign',
-      message: 'You were assigned to "Admin user registry screen".',
+      message: `[${projectLabel}] You were assigned to "Admin user registry screen".`,
       related_item_id: relatedItemId,
       read_status: false,
     },
     {
       user_id: requireUserId(userIds, 'manager@alice.dev'),
       type: 'sprint',
-      message: 'Sprint 1 — Auth & Users is now active.',
+      message: `[${projectLabel}] Sprint 1 — Auth & Users is now active.`,
       related_item_id: relatedItemId,
       read_status: true,
     },
@@ -912,31 +959,37 @@ async function main(): Promise<void> {
   const teamId = await seedTeam(userIds, adminId);
   await seedTeamMembers(teamId, userIds, adminId);
 
-  console.log('info. seeding project...');
-  const projectId = await seedProject(userIds, adminId);
-  await seedProjectMembers(projectId, userIds, adminId);
+  await Promise.all(
+    SEED_PROJECTS.map(async (project) => {
+      console.log(`info. seeding project ${project.key} (${project.name})...`);
+      const projectId = await seedProject(project, userIds, adminId);
+      await seedProjectMembers(projectId, userIds, adminId);
 
-  console.log('info. seeding sprints...');
-  const sprintIds = await seedSprints(projectId, adminId);
+      console.log(`info. seeding sprints for ${project.key}...`);
+      const sprintIds = await seedSprints(projectId, adminId);
 
-  console.log('info. seeding work items...');
-  const workItems = await seedWorkItems(projectId, sprintIds, userIds);
+      console.log(`info. seeding work items for ${project.key}...`);
+      const workItems = await seedWorkItems(projectId, sprintIds, userIds);
 
-  console.log('info. seeding comments, attachments, notifications...');
-  const commentId = await seedComments(
-    workItems.storyId,
-    requireUserId(userIds, 'manager@alice.dev')
+      console.log(
+        `info. seeding comments, attachments, notifications for ${project.key}...`
+      );
+      const commentId = await seedComments(
+        workItems.storyId,
+        requireUserId(userIds, 'manager@alice.dev')
+      );
+      await seedCommentReply(
+        workItems.storyId,
+        requireUserId(userIds, 'member@alice.dev'),
+        commentId
+      );
+      await seedAttachment(
+        workItems.storyId,
+        requireUserId(userIds, 'member@alice.dev')
+      );
+      await seedNotifications(userIds, workItems.storyId, adminId, project.key);
+    })
   );
-  await seedCommentReply(
-    workItems.storyId,
-    requireUserId(userIds, 'member@alice.dev'),
-    commentId
-  );
-  await seedAttachment(
-    workItems.storyId,
-    requireUserId(userIds, 'member@alice.dev')
-  );
-  await seedNotifications(userIds, workItems.storyId, adminId);
 
   console.log('info. seeding chat tools, skills, and default Alice agent...');
   await seedChatAgents(supabase, adminId);

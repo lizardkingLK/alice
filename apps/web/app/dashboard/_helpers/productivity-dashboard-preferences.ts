@@ -5,20 +5,21 @@
 
 import { getLocalStorageJson, setLocalStorageJson } from '@/lib/local-storage';
 
+/** Bump when the default Overview experience changes so stale cookies reset. */
 export const PRODUCTIVITY_DASHBOARD_PREFS_COOKIE =
-  'alice_overview_productivity_prefs_v1';
+  'alice_overview_productivity_prefs_v8';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
-const STORAGE_PREFIX = 'alice:overview-productivity-prefs:v1:';
+const STORAGE_PREFIX = 'alice:overview-productivity-prefs:v8:';
 export const PRODUCTIVITY_LAYOUT_STORAGE_KEY =
-  'alice.dashboard.productivity.layout.v1';
+  'alice.dashboard.productivity.layout.v8';
 
-export const OVERVIEW_MODES = ['charts', 'productivity'] as const;
+export const OVERVIEW_MODES = ['productivity', 'charts'] as const;
 export type OverviewMode = (typeof OVERVIEW_MODES)[number];
 
 export const PRODUCTIVITY_WIDGET_IDS = [
-  'my-work-assigned',
-  'my-work-pending-stories',
-  'my-work-in-progress',
+  'my-work-categories',
+  'my-work-wip',
+  'notifications',
   'projects',
   'alice',
   'docs',
@@ -36,25 +37,27 @@ export const DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES: ProductivityDashboardPr
   {
     mode: 'productivity',
     widgets: {
-      'my-work-assigned': true,
-      'my-work-pending-stories': true,
-      'my-work-in-progress': true,
-      projects: true,
-      alice: true,
-      docs: true,
+      /** Assigned / In progress / Pending via header chevrons. */
+      'my-work-categories': false,
+      'my-work-wip': false,
+      notifications: false,
+      projects: false,
+      alice: false,
+      docs: false,
+      /** Focus embeds Calendar + Music via header chevrons. */
       pomodoro: true,
     },
   };
 
 export const PRODUCTIVITY_WIDGET_LABELS: Record<ProductivityWidgetId, string> =
   {
-    'my-work-assigned': 'Assigned to you',
-    'my-work-pending-stories': 'Pending stories',
-    'my-work-in-progress': 'In progress',
+    'my-work-categories': 'Categories',
+    'my-work-wip': 'Work in progress',
+    notifications: 'Unread notifications',
     projects: 'Your projects',
     alice: 'Alice',
     docs: 'Docs',
-    pomodoro: 'Pomodoro',
+    pomodoro: 'Focus',
   };
 
 function storageKey(userId: string): string {
@@ -81,6 +84,14 @@ function asBooleanRecord(
     if (typeof source[key] === 'boolean') {
       next[key] = source[key];
     }
+  }
+  // Migrate legacy three-KPI toggles into Categories when present.
+  if (
+    source['my-work-assigned'] === true ||
+    source['my-work-pending-stories'] === true ||
+    source['my-work-in-progress'] === true
+  ) {
+    next['my-work-categories'] = true;
   }
   return next;
 }

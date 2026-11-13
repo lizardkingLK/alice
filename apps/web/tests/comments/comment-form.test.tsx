@@ -14,8 +14,16 @@ import { commentFactory } from '../factories/comment.factory';
 import { formatDateToISOString } from '@/app/_shared/utility';
 import { plainTextToCommentDoc } from '@repo/types';
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+}));
+
 vi.mock('@/components/realtime/realtime-provider', () => ({
   useRealtime: () => ({ isUserOnline: () => false }),
+}));
+
+vi.mock('@/app/chat/_services/chat-agents.reads.client', () => ({
+  listChatAgentsClient: vi.fn().mockResolvedValue([]),
 }));
 
 const { mockOrder, mockGetUser } = vi.hoisted(() => ({

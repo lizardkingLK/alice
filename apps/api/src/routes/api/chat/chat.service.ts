@@ -471,6 +471,7 @@ function isFlatItemHierarchyValid(
 interface ExistingWorkItemMatch {
   id: string;
   title: string;
+  slug?: string | null;
   jira_issue_key: string | null;
   type: string;
   status: string;
@@ -624,6 +625,7 @@ async function rollbackBatchImport(params: {
 interface ExistingWorkItemRecord {
   id: string;
   title: string;
+  slug?: string | null;
   jira_issue_key: string | null;
   type: string;
   status: string;
@@ -772,6 +774,8 @@ async function executeSingleNodeImport(
       id: existing.id,
       key: workItemKey,
       title: node.title || existing.title,
+      slug: existing.slug ?? undefined,
+      projectKey: ctx.projectKey,
     };
     ctx.updatedItems.push(summary);
     ctx.toolActionsPerformed.push({
@@ -818,6 +822,8 @@ async function executeSingleNodeImport(
       id: created.id,
       key: workItemKey,
       title: created.title,
+      slug: created.slug ?? undefined,
+      projectKey: ctx.projectKey,
     };
     ctx.createdItems.push(summary);
     ctx.toolActionsPerformed.push({
@@ -1399,7 +1405,14 @@ export class ChatService {
       startDate,
       endDate,
     });
-    const result = { id: sprint.id, name: sprint.name, status: sprint.status };
+    const project = await this.deps.projectsRepository.findById(projectId);
+    const result = {
+      id: sprint.id,
+      name: sprint.name,
+      status: sprint.status,
+      slug: sprint.slug ?? undefined,
+      projectKey: project?.key ?? undefined,
+    };
     toolActionsPerformed.push({ type: 'create_sprint', entity: result });
     return result;
   }
@@ -1501,6 +1514,8 @@ export class ChatService {
       title: workItem.title,
       type: typeValue,
       typeName: typeDef?.name ?? typeValue,
+      slug: workItem.slug ?? undefined,
+      projectKey: project.key ?? undefined,
     };
     toolActionsPerformed.push({ type: 'create_work_item', entity: result });
     return result;
@@ -1760,6 +1775,7 @@ export class ChatService {
       select: {
         id: true,
         title: true,
+        slug: true,
         pm_external: true,
         type: true,
         status: true,

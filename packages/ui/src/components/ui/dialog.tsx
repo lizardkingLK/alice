@@ -32,6 +32,10 @@ function DialogClose({
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
 }
 
+/** Solid dim only — no backdrop-filter / isolate (Chromium hairline when layers promote). */
+const DIALOG_OVERLAY_SURFACE =
+  'pointer-events-auto fixed inset-0 z-50 bg-black/40 [backdrop-filter:none] [-webkit-backdrop-filter:none]';
+
 function DialogOverlay({
   className,
   ...props
@@ -40,7 +44,8 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        'data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 fixed inset-0 isolate z-50 bg-black/40 duration-200 supports-backdrop-filter:backdrop-blur-xs',
+        DIALOG_OVERLAY_SURFACE,
+        'data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 duration-200',
         className
       )}
       {...props}
@@ -53,23 +58,49 @@ function DialogContent({
   children,
   showCloseButton = true,
   dismissOnOutsideClick = true,
+  showOverlay = true,
+  overlayClassName,
   onPointerDownOutside,
   onInteractOutside,
+  onFocusOutside,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
   /** When false, overlay / outside clicks do not close (Escape and explicit actions still do). */
   dismissOnOutsideClick?: boolean;
+  /** When false, skip the dimming overlay (non-modal floating dialogs). */
+  showOverlay?: boolean;
+  /**
+   * Extra classes for the overlay (e.g. `hidden` while floating). Prefer
+   * `hidden` over `opacity-0` — opacity fights Radix fade animation and can
+   * leave a washed-out “cleared” backdrop.
+   */
+  overlayClassName?: string;
 }) {
   return (
     <DialogPortal>
-      <DialogOverlay />
+      {showOverlay ? (
+        // Plain div (not Radix Overlay): works under modal={false}, blocks
+        // clicks when visible, and can stay mounted with `hidden` while floating.
+        <div
+          aria-hidden="true"
+          data-slot="dialog-overlay"
+          className={cn(DIALOG_OVERLAY_SURFACE, overlayClassName)}
+          onPointerDown={(event) => {
+            if (!dismissOnOutsideClick) {
+              event.preventDefault();
+            }
+          }}
+        />
+      ) : null}
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          'bg-popover text-popover-foreground data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 ring-foreground/10 fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl p-4 text-sm ring-1 duration-200 outline-none sm:max-w-lg',
+          'bg-popover text-popover-foreground data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 ring-foreground/10 fixed top-1/2 left-1/2 z-[51] grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl p-4 text-sm ring-1 duration-200 outline-none sm:max-w-lg',
           className
         )}
+        {...props}
+        {...shortcutGateContentProps()}
         onPointerDownOutside={(event) => {
           if (!dismissOnOutsideClick) {
             event.preventDefault();
@@ -82,8 +113,12 @@ function DialogContent({
           }
           onInteractOutside?.(event);
         }}
-        {...props}
-        {...shortcutGateContentProps()}
+        onFocusOutside={(event) => {
+          if (!dismissOnOutsideClick) {
+            event.preventDefault();
+          }
+          onFocusOutside?.(event);
+        }}
       >
         {children}
         {showCloseButton && (

@@ -76,4 +76,36 @@ describe('serializeCommentDoc', () => {
       mentionType: 'workItem',
     });
   });
+
+  it('keeps an agent discriminator and typed id on mention nodes', () => {
+    const serialized = serializeCommentDoc({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            {
+              type: 'mention',
+              attrs: {
+                id: 'agent:11111111-1111-4111-8111-111111111111',
+                label: 'Alice Planner',
+                mentionType: 'agent',
+                mentionSuggestionChar: '@',
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(serialized.content?.[0]?.content?.[0]).toEqual({
+      type: 'mention',
+      attrs: {
+        id: 'agent:11111111-1111-4111-8111-111111111111',
+        label: 'Alice Planner',
+        mentionType: 'agent',
+        mentionSuggestionChar: '@',
+      },
+    });
+  });
 });

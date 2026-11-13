@@ -23,6 +23,7 @@ import {
   type WorkItemWorkLog,
 } from '@repo/types';
 import { typeDefsFromWorkflowConfig } from '@/app/work-items/_helpers/resolve-work-item-type-def-from-projects';
+import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import type { JSONContent } from '@tiptap/react';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
@@ -317,6 +318,7 @@ type WorkItemChildRef = Pick<
 /* eslint-disable no-unused-vars -- callback prop signatures */
 type WorkItemSubtasksSectionProps = {
   readonly items: readonly DbWorkItem[];
+  readonly projectKey?: string | null;
   readonly childCommentCounts: Readonly<Record<string, number>>;
   readonly childDonePercent: number;
   readonly canCreateSubtask: boolean;
@@ -333,6 +335,7 @@ type WorkItemSubtasksSectionProps = {
 
 function WorkItemSubtasksSection({
   items,
+  projectKey,
   childCommentCounts,
   childDonePercent,
   canCreateSubtask,
@@ -411,7 +414,11 @@ function WorkItemSubtasksSection({
                   </TableCell>
                   <TableCell className="max-w-0 p-0 whitespace-normal">
                     <Link
-                      href={`/work-items/${child.id}`}
+                      href={workItemDetailHref(child.id, {
+                        projectKey,
+                        workItemSlug: child.slug,
+                        sprintSlug: child.sprint?.slug,
+                      })}
                       className="hover:text-primary block min-w-0 px-2 py-2.5"
                     >
                       <TruncatedText className="text-sm">
@@ -474,6 +481,7 @@ type LinkedIssueUnlinkTarget = {
 /* eslint-disable no-unused-vars -- callback prop signatures */
 type WorkItemLinkedIssuesSectionProps = {
   readonly links: readonly WorkItemLinkListItem[];
+  readonly projectKey?: string | null;
   readonly readOnly: boolean;
   readonly onLinkIssue: () => void;
   readonly onUnlink: (target: LinkedIssueUnlinkTarget) => void;
@@ -482,6 +490,7 @@ type WorkItemLinkedIssuesSectionProps = {
 
 function WorkItemLinkedIssuesSection({
   links,
+  projectKey,
   readOnly,
   onLinkIssue,
   onUnlink,
@@ -534,7 +543,10 @@ function WorkItemLinkedIssuesSection({
                   </TableCell>
                   <TableCell className="max-w-0 p-0 whitespace-normal">
                     <Link
-                      href={`/work-items/${link.related.id}`}
+                      href={workItemDetailHref(link.related.id, {
+                        projectKey,
+                        workItemSlug: link.related.slug,
+                      })}
                       className="hover:text-primary block min-w-0 px-2 py-2.5"
                     >
                       <TruncatedText className="text-sm">
@@ -611,6 +623,7 @@ type WorkItemDetailsMainColumnProps = {
   readonly onDownloadTemplateClick?: () => void;
   readonly isDownloadingTemplate?: boolean;
   readonly onlineMembersSlot?: ReactNode;
+  readonly onWorkItemPatched?: (updated: Partial<DbWorkItem>) => void;
 };
 /* eslint-enable no-unused-vars */
 
@@ -653,6 +666,7 @@ function WorkItemDetailsMainColumn({
   onDownloadTemplateClick,
   isDownloadingTemplate,
   onlineMembersSlot,
+  onWorkItemPatched,
 }: Readonly<WorkItemDetailsMainColumnProps>) {
   return (
     <div className="space-y-8 lg:col-span-3">
@@ -704,6 +718,7 @@ function WorkItemDetailsMainColumn({
           <Separator />
           <WorkItemSubtasksSection
             items={sortedChildWorkItems}
+            projectKey={workItem.project?.key}
             childCommentCounts={childCommentCounts}
             childDonePercent={childDonePercent}
             canCreateSubtask={canCreateSubtask}
@@ -724,6 +739,7 @@ function WorkItemDetailsMainColumn({
           <Separator />
           <WorkItemLinkedIssuesSection
             links={linkedIssues}
+            projectKey={workItem.project?.key}
             readOnly={isRecordReadOnly}
             onLinkIssue={onLinkIssue}
             onUnlink={onUnlinkIssue}
@@ -750,6 +766,7 @@ function WorkItemDetailsMainColumn({
             isDownloadingTemplate={isDownloadingTemplate}
             readOnly={isRecordReadOnly}
             onlineMembersSlot={onlineMembersSlot}
+            onWorkItemPatched={onWorkItemPatched}
           />
         </>
       ) : null}
@@ -1254,6 +1271,7 @@ export default function WorkItemDetails({
             onExcelUploadClick={workLogExcel.openUpload}
             onDownloadTemplateClick={workLogExcel.downloadTemplate}
             isDownloadingTemplate={workLogExcel.isDownloading}
+            onWorkItemPatched={handleWorkItemPatched}
             onlineMembersSlot={
               <OnlineMembersAvatarGroup
                 members={projectMembers.map((member) => ({

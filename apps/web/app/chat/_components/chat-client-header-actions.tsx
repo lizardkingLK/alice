@@ -51,7 +51,7 @@ type ChatClientHeaderActionsProps = {
   // eslint-disable-next-line no-unused-vars
   readonly onSelectedIntegrationIdChange: (value: string) => void;
   readonly onMarkSelectedAsDefault: () => Promise<void>;
-  readonly onEnsureModelsLoaded?: () => Promise<void>;
+  readonly onEnsureModelsLoaded?: () => Promise<unknown>;
   readonly onNewChat: () => void;
   readonly onOpenAgentsGallery?: () => void;
   readonly onClose?: () => void;
@@ -260,7 +260,7 @@ function CompactChatActionsMenu({
   isLoadingModels: boolean;
   // eslint-disable-next-line no-unused-vars
   onSelectedIntegrationIdChange: (value: string) => void;
-  onEnsureModelsLoaded?: () => Promise<void>;
+  onEnsureModelsLoaded?: () => Promise<unknown>;
   onNewChat: () => void;
   onClose?: () => void;
 }>) {

@@ -388,7 +388,7 @@ function StateSettingsForm({
             type="button"
             variant="outline"
             size="sm"
-            className="text-destructive hover:text-destructive w-full"
+            className="w-full"
             disabled={!canDelete}
             data-testid="workflow-settings-delete-state"
             onClick={() => {
@@ -668,7 +668,7 @@ function EdgeSettingsForm({
             type="button"
             variant="outline"
             size="sm"
-            className="text-destructive hover:text-destructive w-full"
+            className="w-full"
             data-testid="workflow-settings-delete-edge"
             onClick={() => {
               onDeleteEdge(edge.id);

@@ -41,6 +41,7 @@ export function useProjectSprints({
     selectedId: sprintId,
     preferProvided: preferProvidedSprints,
     clearWhenMissing: true,
+    cacheScope: 'sprints',
     onSelectionChange: onSprintChange,
     fetchOptions,
     noProjectOptions: EMPTY_SPRINTS,

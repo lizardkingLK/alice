@@ -803,20 +803,37 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
     }
   );
 
-  registerLockedStatusPatch({
-    router: projectsRouter,
-    path: '/:id/soft-delete',
-    auth: requireApiAuth,
-    missingIdMessage: 'Project ID is required',
-    parseBody: (req) => projectLockActionSchema.safeParse(req.body),
-    treeifyError: (error) => z.treeifyError(error as z.ZodError),
-    action: (actorId, projectId, expectedUpdatedAt) =>
-      projectsService.softDeleteProject(actorId, projectId, expectedUpdatedAt),
-    toResponseBody: (project) => ({
-      project: withoutIntegrationSecrets(project),
-    }),
-    failureMessage: 'Failed to soft delete project',
-  });
+  projectsRouter.patch(
+    '/:id/soft-delete',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ error: 'Project ID is required' });
+      }
+
+      const parsed = projectLockActionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        const accepted = await projectsService.enqueueSoftDeleteProject(
+          req.userId!,
+          id,
+          parsed.data.expectedUpdatedAt
+        );
+        // 202 — archive finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
+      } catch (error) {
+        sendRouteMutationError(res, error, 'Failed to soft delete project');
+      }
+    }
+  );
 
   registerLockedStatusPatch({
     router: projectsRouter,
@@ -843,14 +860,18 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
       }
 
       try {
-        await projectsService.hardDeleteProject(req.userId!, id);
-        res.json({ success: true });
-      } catch (error) {
-        const { status, error: message } = jsonErrorFromCaught(
-          error,
-          'Failed to hard delete project'
+        const accepted = await projectsService.enqueueHardDeleteProject(
+          req.userId!,
+          id
         );
-        return res.status(status).json({ error: message });
+        // 202 — purge finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
+      } catch (error) {
+        sendRouteMutationError(res, error, 'Failed to hard delete project');
       }
     }
   );

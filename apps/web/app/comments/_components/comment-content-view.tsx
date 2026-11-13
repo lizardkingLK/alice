@@ -16,6 +16,7 @@ import {
   HoverCardTrigger,
 } from '@repo/ui/components/ui/hover-card';
 import { cn } from '@repo/ui/lib/utils';
+import { Bot } from '@repo/ui/lib/icons';
 import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import { UserMentionCard } from '@/components/user-mention-card';
 import { WorkItemPreviewCard } from '@/components/work-item-preview-card';
@@ -24,6 +25,8 @@ import { foldMarks, mapInlineMark } from '@/lib/editor/tiptap-marks';
 
 const MENTION_BADGE_CLASS =
   'border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400';
+const AGENT_MENTION_BADGE_CLASS =
+  'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
 const ISSUE_BADGE_CLASS =
   'border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400';
 
@@ -77,6 +80,8 @@ type CommentContentWorkItem = {
   title: string;
   type?: Tables<'work_items'>['type'];
   project_id?: string | null;
+  slug?: string | null;
+  project_key?: string | null;
   priority?: Tables<'work_items'>['priority'] | null;
   description_plain?: string | null;
   assignee_name?: string | null;
@@ -221,15 +226,37 @@ function renderUserMention(
   );
 }
 
+function renderAgentMention(node: CommentTiptapNode, key: string): ReactNode {
+  const label = getAttrString(node.attrs, 'label') || 'AI agent';
+  return (
+    <Badge
+      key={key}
+      variant="outline"
+      data-mention-type="agent"
+      className={cn(
+        'mx-0.5 inline-flex gap-1 font-semibold',
+        AGENT_MENTION_BADGE_CLASS
+      )}
+    >
+      <Bot className="size-3" aria-hidden />@{label}
+    </Badge>
+  );
+}
+
 function renderWorkItemMention(
   node: CommentTiptapNode,
   key: string,
   workItems?: CommentContentViewProps['workItems']
 ): ReactNode {
   const { id, label, title } = workItemDisplay(node, workItems);
-  const href = id ? workItemDetailHref(id) : '/work-items';
-  const display = title ? `#${label} · ${title}` : `#${label || 'item'}`;
   const matched = id ? workItems?.find((item) => item.id === id) : undefined;
+  const href = id
+    ? workItemDetailHref(id, {
+        projectKey: matched?.project_key,
+        workItemSlug: matched?.slug,
+      })
+    : '/work-items';
+  const display = title ? `#${label} · ${title}` : `#${label || 'item'}`;
 
   const badge = (
     <Badge
@@ -296,8 +323,12 @@ function renderInlineNode(
   }
 
   if (node.type === 'mention') {
-    if (getAttrString(node.attrs, 'mentionType') === 'workItem') {
+    const mentionType = getAttrString(node.attrs, 'mentionType');
+    if (mentionType === 'workItem') {
       return renderWorkItemMention(node, key, workItems);
+    }
+    if (mentionType === 'agent') {
+      return renderAgentMention(node, key);
     }
     return renderUserMention(node, key, onUserMentionClick, users);
   }

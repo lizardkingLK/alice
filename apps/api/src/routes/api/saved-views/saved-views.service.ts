@@ -7,6 +7,7 @@ import {
   type ShareSavedViewBody,
   type UpdateSavedViewBody,
 } from '@repo/types';
+import { enqueueDestructiveAction } from '../../../lib/enqueue-destructive-action';
 import type { ChartsRepository } from '../charts/charts.repository';
 import type { NotificationsRepository } from '../notifications/notifications.repository';
 import { parseChartWorkspaceIdFromPathname } from './saved-views.chart-path';
@@ -70,6 +71,28 @@ export class SavedViewsService {
     return this.savedViewsRepository.setStatus(viewId, actorId, 'archived');
   }
 
+  /**
+   * Validate sync, accept archive, finish in the background, inbox-notify.
+   * Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueArchive(
+    actorId: string,
+    viewId: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    const view = await this.requireOwnedView(actorId, viewId);
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'archive',
+      entityType: 'saved_view',
+      entityLabel: view.title,
+      relatedItemId: viewId,
+      detailHref: '/views',
+      run: async () => {
+        await this.archive(actorId, viewId);
+      },
+    });
+  }
+
   async restore(actorId: string, viewId: string): Promise<SavedViewRow> {
     await this.requireOwnedView(actorId, viewId);
     return this.savedViewsRepository.setStatus(viewId, actorId, 'active');
@@ -81,6 +104,31 @@ export class SavedViewsService {
       throw new Error('Only archived views can be permanently deleted');
     }
     await this.savedViewsRepository.hardDelete(viewId);
+  }
+
+  /**
+   * Validate sync, accept permanent delete, finish in the background,
+   * inbox-notify. Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueHardDelete(
+    actorId: string,
+    viewId: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    const view = await this.requireOwnedView(actorId, viewId);
+    if (view.status !== 'archived') {
+      throw new Error('Only archived views can be permanently deleted');
+    }
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'purge',
+      entityType: 'saved_view',
+      entityLabel: view.title,
+      relatedItemId: null,
+      detailHref: '/views?tab=archived',
+      run: async () => {
+        await this.hardDelete(actorId, viewId);
+      },
+    });
   }
 
   /** Recipient removes a shared view from their Shared-with-me list. */

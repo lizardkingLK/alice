@@ -56,12 +56,18 @@ Examples you may see:
 | **access_request**             | Users → Requests (admins)                              |
 | **project_created**            | New project details (e.g. “Project **Acme** is ready”) |
 | **project_create_failed**      | Message only (no link)                                 |
+| **entity_archived**            | Link in the message (archived item or list)            |
+| **entity_archive_failed**      | Message only (retry from the registry if needed)       |
+| **entity_purged**              | List link in the message (item is gone)                |
+| **entity_purge_failed**        | Message only                                           |
 
 **Worklog pace alerts** appear when your logged hours on active sprint work are
 behind the ideal amount for the end of today. The message tells you roughly how
 many hours to log to catch up.
 
 Project-ready alerts bold the project name and link it to the project page.
+Archive and permanent-delete jobs are **async**: you get a toast when the
+request is accepted, then an inbox alert when the job finishes (or fails).
 Other types usually open from the whole row using the related item.
 
 Unread count shows on the bell badge. Counts of **1–9** show the number; **10

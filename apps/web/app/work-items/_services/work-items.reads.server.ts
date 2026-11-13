@@ -18,6 +18,7 @@ import {
 } from '@/app/work-items/_helpers/work-item-hierarchy-forest';
 import {
   getWorkItemAncestorsFromSupabase,
+  getWorkItemByProjectSlugFromSupabase,
   getWorkItemFromSupabase,
   getWorkItemsFromSupabase,
   getWorkItemsHierarchyPageFromRpc,
@@ -343,6 +344,13 @@ export const getWorkItem = cache(
     }
 
     return getWorkItemFromSupabase(workItemId);
+  }
+);
+
+/** Resolve by `(project_id, slug)` — used for project-tree URL segments. */
+export const getWorkItemByProjectSlug = cache(
+  async (projectId: string, slug: string): Promise<DbWorkItem | null> => {
+    return getWorkItemByProjectSlugFromSupabase(projectId, slug);
   }
 );
 

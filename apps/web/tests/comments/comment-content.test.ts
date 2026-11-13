@@ -45,6 +45,49 @@ describe('comment-content helpers', () => {
     ]);
   });
 
+  it('preserves agent mentions without treating agent ids as users', () => {
+    const doc = toCommentTiptapContent({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            {
+              type: 'mention',
+              attrs: {
+                id: 'agent:11111111-1111-4111-8111-111111111111',
+                label: 'Alice Planner',
+                mentionType: 'agent',
+                mentionSuggestionChar: '@',
+              },
+            },
+            { type: 'text', text: ' and ' },
+            {
+              type: 'mention',
+              attrs: {
+                id: 'user-b',
+                label: 'Bob',
+                mentionType: 'user',
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(doc.content?.[0]?.content?.[0]).toMatchObject({
+      type: 'mention',
+      attrs: {
+        id: 'agent:11111111-1111-4111-8111-111111111111',
+        mentionType: 'agent',
+      },
+    });
+    expect(commentContentToPlainText(doc)).toBe('@Alice Planner and @Bob');
+    expect(extractMentionedUserIdsFromContent(doc, 'user-a')).toEqual([
+      'user-b',
+    ]);
+  });
+
   it('builds snippets without markup noise', () => {
     const doc = plainTextToCommentDoc('Hello @[Alice](u1) there');
     expect(createCommentSnippet(doc, 20)).toBe('Hello @Alice there');

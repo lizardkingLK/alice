@@ -20,6 +20,7 @@ type ChatClientMainProps = {
   readonly currentUserImageUrl?: string | null;
   readonly assistantIdentity?: ChatAssistantIdentity | null;
   readonly messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  readonly canConfigureChatModels?: boolean;
   // eslint-disable-next-line no-unused-vars
   readonly onSendMessage: (text: string) => void;
 };
@@ -37,6 +38,7 @@ export default function ChatClientMain({
   currentUserImageUrl,
   assistantIdentity = null,
   messagesEndRef,
+  canConfigureChatModels = false,
   onSendMessage,
 }: Readonly<ChatClientMainProps>) {
   if (isLoadingHistory) {
@@ -68,6 +70,7 @@ export default function ChatClientMain({
         currentUserImageUrl={currentUserImageUrl}
         assistantIdentity={assistantIdentity}
         messagesEndRef={messagesEndRef}
+        canConfigureChatModels={canConfigureChatModels}
       />
     </ScrollArea>
   );

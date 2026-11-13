@@ -12,6 +12,8 @@ import {
   FolderKanban,
   AlertTriangle,
   Timer,
+  Archive,
+  Trash2,
 } from '@repo/ui/lib/icons';
 
 export const NOTIFICATION_ICON_MAP: Record<
@@ -30,6 +32,10 @@ export const NOTIFICATION_ICON_MAP: Record<
   project_created: FolderKanban,
   project_create_failed: AlertTriangle,
   worklog_pending: Timer,
+  entity_archived: Archive,
+  entity_archive_failed: AlertTriangle,
+  entity_purged: Trash2,
+  entity_purge_failed: AlertTriangle,
   default: Bell,
 };
 
@@ -56,6 +62,14 @@ export const NOTIFICATION_ICON_COLOR_MAP: Record<string, string> = {
     'text-rose-500 bg-rose-500/10 border-rose-500/20 dark:bg-rose-500/20',
   worklog_pending:
     'text-cyan-500 bg-cyan-500/10 border-cyan-500/20 dark:bg-cyan-500/20',
+  entity_archived:
+    'text-amber-500 bg-amber-500/10 border-amber-500/20 dark:bg-amber-500/20',
+  entity_archive_failed:
+    'text-rose-500 bg-rose-500/10 border-rose-500/20 dark:bg-rose-500/20',
+  entity_purged:
+    'text-slate-500 bg-slate-500/10 border-slate-500/20 dark:bg-slate-500/20',
+  entity_purge_failed:
+    'text-rose-500 bg-rose-500/10 border-rose-500/20 dark:bg-rose-500/20',
   default: 'text-muted-foreground bg-muted border-border',
 };
 

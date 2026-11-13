@@ -355,7 +355,12 @@ describe('ProjectRegistry Component', () => {
   });
 
   it('performs hard-delete action on confirmation', async () => {
-    vi.mocked(hardDeleteProject).mockResolvedValue(undefined);
+    vi.mocked(hardDeleteProject).mockResolvedValue({
+      accepted: true,
+      message:
+        'Project permanent delete started. You’ll be notified when it finishes.',
+      correlationId: 'corr-1',
+    });
 
     render(
       <ProjectRegistry

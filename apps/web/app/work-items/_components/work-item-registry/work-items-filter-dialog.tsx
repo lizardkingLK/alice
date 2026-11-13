@@ -403,6 +403,7 @@ export function WorkItemsFilterDialog(
     hasActiveFilters,
     onApplyFilters,
     onSaveWorkspaceDefaults,
+    projects,
     sprints,
     visibleFieldIds,
   } = props;
@@ -527,6 +528,7 @@ export function WorkItemsFilterDialog(
           projectValue: draft.project,
           sprintValue: draft.sprint,
           allValue: QUERY_FILTER_ALL_VALUE,
+          projects,
           sprints,
         })
       );

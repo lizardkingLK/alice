@@ -4,7 +4,12 @@ import type { JSONContent } from '@tiptap/react';
 import type { CommentReactionEmoji } from '@repo/types';
 import { X } from '@repo/ui/lib/icons';
 import { CommentEditorFormShell } from '@/app/comments/_components/comment-editor-form-shell';
-import { CommentListItem } from '@/app/comments/_components/comment-list-item';
+import {
+  CommentListItem,
+  type AiSuggestionsRequestHandler,
+} from '@/app/comments/_components/comment-list-item';
+import { canUserHideComment } from '@/app/comments/_helpers/comment-visibility-storage';
+import type { CommentMentionAgent } from '@/app/comments/_components/comment-mention-list';
 import type { CommentUserMentionTarget } from '@/app/comments/_components/comment-content-view';
 import type {
   CommentItem,
@@ -29,6 +34,7 @@ type CommentThreadProps = {
   replyingParentId: string | null;
   isSubmitting: boolean;
   users: CommentUser[];
+  agents: CommentMentionAgent[];
   workItems: CommentWorkItemOption[];
   currentUserName?: string | null;
   currentUserImageUrl?: string | null;
@@ -53,6 +59,12 @@ type CommentThreadProps = {
   onToggleReaction: ReactionToggleHandler;
   // eslint-disable-next-line no-unused-vars -- callback signature
   isReactionSyncing?: (commentId: string) => boolean;
+  onRequestAiSuggestions?: AiSuggestionsRequestHandler;
+  hiddenCommentIds?: Set<string>;
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  onHideComment?: (commentId: string) => void;
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  onUnhideComment?: (commentId: string) => void;
 };
 
 function bindCommentItemHandlers(options: {
@@ -109,6 +121,7 @@ export function CommentThread({
   replyingParentId,
   isSubmitting,
   users,
+  agents,
   workItems,
   currentUserName,
   currentUserImageUrl,
@@ -124,8 +137,14 @@ export function CommentThread({
   onPurge,
   onToggleReaction,
   isReactionSyncing,
+  onRequestAiSuggestions,
+  hiddenCommentIds,
+  onHideComment,
+  onUnhideComment,
 }: Readonly<CommentThreadProps>) {
   const isReplying = replyingParentId === parent.id;
+  const isParentHidden = Boolean(hiddenCommentIds?.has(parent.id));
+  const canHideParent = canUserHideComment(parent, activeUserId, null);
 
   const sharedHandlers = {
     onStartEdit,
@@ -154,15 +173,25 @@ export function CommentThread({
         isEditing={editingCommentId === parent.id}
         isReplying={isReplying}
         users={users}
+        agents={agents}
         workItems={workItems}
         isReactionSyncing={isReactionSyncing?.(parent.id)}
+        isHidden={isParentHidden}
+        canHide={canHideParent}
+        isParent
+        onHide={onHideComment ? () => onHideComment(parent.id) : undefined}
+        onUnhide={
+          onUnhideComment ? () => onUnhideComment(parent.id) : undefined
+        }
         {...parentHandlers}
+        onRequestAiSuggestions={onRequestAiSuggestions}
         onUserMentionClick={onUserMentionClick}
         replySlot={
           isReplying ? (
             <CommentEditorFormShell
               className="mt-2"
               users={users}
+              agents={agents}
               workItems={workItems}
               placeholder="Write a reply..."
               avatarName={currentUserName}
@@ -189,24 +218,43 @@ export function CommentThread({
 
       {replies.length > 0 ? (
         <div className="border-border ml-10 space-y-4 border-l pl-4">
-          {replies.map((reply) => (
-            <CommentListItem
-              key={reply.id}
-              comment={reply}
-              activeUserId={activeUserId}
-              isEditing={editingCommentId === reply.id}
-              isReplying={false}
-              users={users}
-              workItems={workItems}
-              isReactionSyncing={isReactionSyncing?.(reply.id)}
-              {...bindCommentItemHandlers({
-                commentId: reply.id,
-                replyParentId: parent.id,
-                ...sharedHandlers,
-              })}
-              onUserMentionClick={onUserMentionClick}
-            />
-          ))}
+          {replies.map((reply) => {
+            const isReplyHidden = Boolean(hiddenCommentIds?.has(reply.id));
+            const canHideReply = canUserHideComment(
+              reply,
+              activeUserId,
+              parent
+            );
+            return (
+              <CommentListItem
+                key={reply.id}
+                comment={reply}
+                activeUserId={activeUserId}
+                isEditing={editingCommentId === reply.id}
+                isReplying={false}
+                users={users}
+                agents={agents}
+                workItems={workItems}
+                isReactionSyncing={isReactionSyncing?.(reply.id)}
+                isHidden={isReplyHidden}
+                canHide={canHideReply}
+                isParent={false}
+                onHide={
+                  onHideComment ? () => onHideComment(reply.id) : undefined
+                }
+                onUnhide={
+                  onUnhideComment ? () => onUnhideComment(reply.id) : undefined
+                }
+                {...bindCommentItemHandlers({
+                  commentId: reply.id,
+                  replyParentId: parent.id,
+                  ...sharedHandlers,
+                })}
+                onRequestAiSuggestions={onRequestAiSuggestions}
+                onUserMentionClick={onUserMentionClick}
+              />
+            );
+          })}
         </div>
       ) : null}
     </div>

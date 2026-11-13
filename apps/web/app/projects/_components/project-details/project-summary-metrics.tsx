@@ -7,7 +7,11 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import {
+  CircleDot,
   ClipboardPenLine,
+  ExternalLink,
+  Kanban,
+  ListTodo,
   Network,
   Plug,
   SlidersHorizontal,
@@ -15,7 +19,10 @@ import {
   Users,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { projectDetailHref } from '@/app/projects/_helpers/project-links';
+import {
+  projectDetailHref,
+  projectTreeNavHref,
+} from '@/app/projects/_helpers/project-links';
 import type { ProjectDetailsTab } from '@/lib/search-params';
 
 type MetricTone = 'primary' | 'blue' | 'amber' | 'violet' | 'emerald' | 'slate';
@@ -23,6 +30,14 @@ type MetricTone = 'primary' | 'blue' | 'amber' | 'violet' | 'emerald' | 'slate';
 type SummaryMetricCardProps = {
   readonly label: string;
   readonly value: number;
+  readonly caption: string;
+  readonly icon: ReactNode;
+  readonly tone: MetricTone;
+  readonly href: string;
+};
+
+type WorkspaceLaunchCardProps = {
+  readonly label: string;
   readonly caption: string;
   readonly icon: ReactNode;
   readonly tone: MetricTone;
@@ -78,6 +93,51 @@ function SummaryMetricCard({
   );
 }
 
+function WorkspaceLaunchCard({
+  label,
+  caption,
+  icon,
+  tone,
+  href,
+}: WorkspaceLaunchCardProps) {
+  return (
+    <Link
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group focus-visible:ring-ring rounded-xl focus-visible:ring-2 focus-visible:outline-none"
+    >
+      <Card className="border-border/60 bg-card/50 group-hover:border-border group-hover:bg-card h-full backdrop-blur-sm transition-colors">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="space-y-1">
+            <span className="text-muted-foreground text-xs font-medium">
+              {label}
+            </span>
+            <CardTitle className="flex items-center gap-1.5 text-lg font-semibold tracking-tight">
+              Open
+              <ExternalLink
+                className="text-muted-foreground size-3.5 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
+                aria-hidden
+              />
+            </CardTitle>
+          </div>
+          <div
+            className={cn(
+              'flex h-10 w-10 items-center justify-center rounded-lg',
+              TONE_ICON_CLASS[tone]
+            )}
+          >
+            {icon}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground text-xs">{caption}</p>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
 type MetricDefinition = {
   readonly tab: ProjectDetailsTab;
   readonly label: string;
@@ -86,6 +146,14 @@ type MetricDefinition = {
   readonly tone: MetricTone;
   readonly icon: ReactNode;
   readonly managerOrAdminOnly?: boolean;
+};
+
+type WorkspaceLaunchDefinition = {
+  readonly id: 'board' | 'backlog' | 'member';
+  readonly label: string;
+  readonly caption: string;
+  readonly tone: MetricTone;
+  readonly icon: ReactNode;
 };
 
 type ProjectSummaryMetricsProps = {
@@ -109,6 +177,30 @@ export function ProjectSummaryMetrics({
   fieldCount,
   isManagerOrAdmin,
 }: ProjectSummaryMetricsProps) {
+  const workspaceLaunches: readonly WorkspaceLaunchDefinition[] = [
+    {
+      id: 'board',
+      label: 'Board',
+      caption: 'Kanban board for this project',
+      tone: 'blue',
+      icon: <Kanban className="h-5 w-5" />,
+    },
+    {
+      id: 'backlog',
+      label: 'Backlog',
+      caption: 'Sprint backlog for this project',
+      tone: 'amber',
+      icon: <ListTodo className="h-5 w-5" />,
+    },
+    {
+      id: 'member',
+      label: 'My Work',
+      caption: 'Your work in this project',
+      tone: 'primary',
+      icon: <CircleDot className="h-5 w-5" />,
+    },
+  ];
+
   const metrics: readonly MetricDefinition[] = [
     {
       tab: 'members',
@@ -169,18 +261,32 @@ export function ProjectSummaryMetrics({
   );
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {visibleMetrics.map((metric) => (
-        <SummaryMetricCard
-          key={metric.tab}
-          label={metric.label}
-          value={metric.value}
-          caption={metric.caption}
-          tone={metric.tone}
-          icon={metric.icon}
-          href={projectDetailHref(projectKey, metric.tab)}
-        />
-      ))}
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {workspaceLaunches.map((launch) => (
+          <WorkspaceLaunchCard
+            key={launch.id}
+            label={launch.label}
+            caption={launch.caption}
+            tone={launch.tone}
+            icon={launch.icon}
+            href={projectTreeNavHref(projectKey, launch.id)}
+          />
+        ))}
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {visibleMetrics.map((metric) => (
+          <SummaryMetricCard
+            key={metric.tab}
+            label={metric.label}
+            value={metric.value}
+            caption={metric.caption}
+            tone={metric.tone}
+            icon={metric.icon}
+            href={projectDetailHref(projectKey, metric.tab)}
+          />
+        ))}
+      </div>
     </div>
   );
 }

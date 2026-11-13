@@ -147,6 +147,16 @@ describe('ChatAgentsService', () => {
     expect(agents[0]).not.toHaveProperty('instructions');
   });
 
+  it('delegates active mention-catalog visibility to the requesting actor', async () => {
+    listVisibleMock.mockResolvedValue([]);
+
+    await service.listAgents('member-1', { status: 'active' });
+
+    expect(listVisibleMock).toHaveBeenCalledWith('member-1', {
+      status: 'active',
+    });
+  });
+
   it('decrypts instructions on getAgent', async () => {
     // Arrange
     findVisibleByIdMock.mockResolvedValue(aliceRow);

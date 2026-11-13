@@ -19,6 +19,8 @@ const {
   updateSprintStatusMock,
   updateSprintMock,
   hardDeleteSprintMock,
+  enqueueHardDeleteSprintMock,
+  enqueueArchiveSprintMock,
 } = vi.hoisted(() => ({
   listSprintsPaginatedMock: vi.fn(),
   getSprintDetailMock: vi.fn(),
@@ -26,6 +28,8 @@ const {
   updateSprintStatusMock: vi.fn(),
   updateSprintMock: vi.fn(),
   hardDeleteSprintMock: vi.fn(),
+  enqueueHardDeleteSprintMock: vi.fn(),
+  enqueueArchiveSprintMock: vi.fn(),
 }));
 
 vi.mock('../../src/middlewares/auth', () => ({
@@ -46,6 +50,8 @@ const sprintsService = {
   updateSprintStatus: updateSprintStatusMock,
   updateSprint: updateSprintMock,
   hardDeleteSprint: hardDeleteSprintMock,
+  enqueueHardDeleteSprint: enqueueHardDeleteSprintMock,
+  enqueueArchiveSprint: enqueueArchiveSprintMock,
 } as unknown as SprintsService;
 
 const sprintBurndownService = {} as unknown as SprintBurndownService;
@@ -349,7 +355,11 @@ describe('sprints versioned POST and PATCH mutation routes', () => {
 
   describe('DELETE /api/sprints/:id', () => {
     it('deletes sprint with move_out option successfully', async () => {
-      hardDeleteSprintMock.mockResolvedValue(undefined);
+      enqueueHardDeleteSprintMock.mockResolvedValue({
+        correlationId: 'corr-sprint-1',
+        message:
+          'Sprint permanent delete started. You’ll be notified when it finishes.',
+      });
 
       const sprintId = '11111111-1111-4111-8111-111111111111';
 
@@ -363,16 +373,29 @@ describe('sprints versioned POST and PATCH mutation routes', () => {
         });
         const json = await response.json();
 
-        expect(response.status).toBe(200);
-        expect(json).toEqual({ success: true });
-        expect(hardDeleteSprintMock).toHaveBeenCalledWith('user-1', sprintId, {
-          workItemsAction: DeleteSprintWorkItemsActionEnum.MoveOut,
+        expect(response.status).toBe(202);
+        expect(json).toEqual({
+          accepted: true,
+          message:
+            'Sprint permanent delete started. You’ll be notified when it finishes.',
+          correlationId: 'corr-sprint-1',
         });
+        expect(enqueueHardDeleteSprintMock).toHaveBeenCalledWith(
+          'user-1',
+          sprintId,
+          {
+            workItemsAction: DeleteSprintWorkItemsActionEnum.MoveOut,
+          }
+        );
       });
     });
 
     it('deletes sprint with delete_content option successfully', async () => {
-      hardDeleteSprintMock.mockResolvedValue(undefined);
+      enqueueHardDeleteSprintMock.mockResolvedValue({
+        correlationId: 'corr-sprint-2',
+        message:
+          'Sprint permanent delete started. You’ll be notified when it finishes.',
+      });
 
       const sprintId = '22222222-2222-4222-8222-222222222222';
 
@@ -386,11 +409,20 @@ describe('sprints versioned POST and PATCH mutation routes', () => {
         });
         const json = await response.json();
 
-        expect(response.status).toBe(200);
-        expect(json).toEqual({ success: true });
-        expect(hardDeleteSprintMock).toHaveBeenCalledWith('user-1', sprintId, {
-          workItemsAction: DeleteSprintWorkItemsActionEnum.DeleteContent,
+        expect(response.status).toBe(202);
+        expect(json).toEqual({
+          accepted: true,
+          message:
+            'Sprint permanent delete started. You’ll be notified when it finishes.',
+          correlationId: 'corr-sprint-2',
         });
+        expect(enqueueHardDeleteSprintMock).toHaveBeenCalledWith(
+          'user-1',
+          sprintId,
+          {
+            workItemsAction: DeleteSprintWorkItemsActionEnum.DeleteContent,
+          }
+        );
       });
     });
 

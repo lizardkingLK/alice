@@ -397,7 +397,11 @@ export function WorkItemFieldPatchDialog({
       sprint:
         response.data?.sprint ??
         (selectedSprint
-          ? { id: selectedSprint.id, name: selectedSprint.name }
+          ? {
+              id: selectedSprint.id,
+              name: selectedSprint.name,
+              slug: selectedSprint.slug ?? selectedSprint.name,
+            }
           : null),
       updated_at: response.data?.updated_at,
     });

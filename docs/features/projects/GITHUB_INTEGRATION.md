@@ -44,25 +44,25 @@ flowchart TB
   worker -->|progress| streamer
 ```
 
-| Layer | Owns | Does not own |
-| ----- | ---- | ------------ |
-| **GitHub App** | Install identity, permissions, webhooks, installation tokens, repo list | Agent prompts, workflow graphs, Cursor credentials |
-| **SC sync** | Upsert PRs / commits / branches / comment refs; link to work items | “Resolve this issue” product decisions |
-| **Workflow orchestrator** | Triggers, conditions, approvals, multi-step runs | Raw GitHub HMAC / token minting |
-| **Agent integrations** | Cursor (and peers) as tools on the worker | GitHub App private keys |
+| Layer                     | Owns                                                                    | Does not own                                       |
+| ------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------- |
+| **GitHub App**            | Install identity, permissions, webhooks, installation tokens, repo list | Agent prompts, workflow graphs, Cursor credentials |
+| **SC sync**               | Upsert PRs / commits / branches / comment refs; link to work items      | “Resolve this issue” product decisions             |
+| **Workflow orchestrator** | Triggers, conditions, approvals, multi-step runs                        | Raw GitHub HMAC / token minting                    |
+| **Agent integrations**    | Cursor (and peers) as tools on the worker                               | GitHub App private keys                            |
 
 ---
 
 ## Phased delivery (planned)
 
-| Phase | Deliverable | Depends on |
-| ----- | ----------- | ---------- |
-| **0** | App registration checklist + env shape in docs (this section) | — |
-| **1** | Install UX + `installation_id` on `version_control_connections`; project bind via `vc_*` | 0 |
-| **2** | Signed webhooks → enqueue → worker sync for **PRs, commits, branches** | 1 + worker skeleton |
-| **3** | Normalized SC domain events + job kinds aligned with [WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md) | 2 |
-| **4** | Workflow orchestrator MVP; agent tools (e.g. Cursor) with human-in-the-loop | 3 |
-| **5** | Migrate off user OAuth; optional write-back (checks/comments); Issues policy TBD | 4 |
+| Phase | Deliverable                                                                                                              | Depends on          |
+| ----- | ------------------------------------------------------------------------------------------------------------------------ | ------------------- |
+| **0** | App registration checklist + env shape in docs (this section)                                                            | —                   |
+| **1** | Install UX + `installation_id` on `version_control_connections`; project bind via `vc_*`                                 | 0                   |
+| **2** | Signed webhooks → enqueue → worker sync for **PRs, commits, branches**                                                   | 1 + worker skeleton |
+| **3** | Normalized SC domain events + job kinds aligned with [WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md) | 2                   |
+| **4** | Workflow orchestrator MVP; agent tools (e.g. Cursor) with human-in-the-loop                                              | 3                   |
+| **5** | Migrate off user OAuth; optional write-back (checks/comments); Issues policy TBD                                         | 4                   |
 
 ### Phase 0 — Foundations
 

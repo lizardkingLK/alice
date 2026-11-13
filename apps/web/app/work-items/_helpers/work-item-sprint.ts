@@ -2,6 +2,7 @@
 export type WorkItemSprintOption = {
   readonly id: string;
   readonly name: string;
+  readonly slug?: string;
   readonly status?: string;
 };
 

@@ -20,6 +20,7 @@ import {
 } from '@repo/types/api/v1';
 import type { ResolvedChatModelConfig } from '../integrations/chat-providers/chat-provider.types';
 import type { StoredChatMessage } from './chat.route.types';
+import { ChatAgentRuntimeAccessError } from './chat-agent-runtime';
 
 const chatUpload: Multer = multer({
   storage: multer.memoryStorage(),
@@ -40,8 +41,12 @@ function sendChatError(
   logLabel: string
 ) {
   const message = error instanceof Error ? error.message : fallback;
-  const statusCode =
-    error instanceof ChatProviderError ? error.statusCode : 500;
+  let statusCode = 500;
+  if (error instanceof ChatProviderError) {
+    statusCode = error.statusCode;
+  } else if (error instanceof ChatAgentRuntimeAccessError) {
+    statusCode = 403;
+  }
   console.error(`${logLabel}:`, sanitizeLog(message));
   res.status(statusCode).json({ error: message });
 }

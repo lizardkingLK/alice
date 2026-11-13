@@ -5,6 +5,195 @@
   min-width: 0;
 }
 
+/* Productivity Overview: soft grey field + very light green wash behind glass. */
+.dashboard-productivity-surface {
+  --productivity-glow-a: color-mix(in oklch, var(--primary) 5%, transparent);
+  --productivity-glow-b: color-mix(in oklch, var(--primary) 3.5%, transparent);
+  --productivity-glow-c: color-mix(in oklch, var(--primary) 3%, transparent);
+  position: relative;
+  isolation: isolate;
+  border-radius: calc(var(--radius) + 0.25rem);
+  background:
+    radial-gradient(
+      110% 70% at 0% 0%,
+      color-mix(in oklch, var(--muted) 70%, var(--background)),
+      transparent 58%
+    ),
+    radial-gradient(
+      90% 60% at 100% 12%,
+      color-mix(in oklch, var(--muted) 55%, transparent),
+      transparent 52%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--muted) 45%, var(--background)),
+      color-mix(in oklch, var(--background) 92%, var(--muted)) 42%,
+      color-mix(in oklch, var(--muted) 38%, var(--background))
+    );
+}
+
+.dashboard-productivity-surface::before {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  /* Oversized so travel stays inside the clipped shell. */
+  inset: -18%;
+  z-index: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      36% 32% at 20% 25%,
+      var(--productivity-glow-a),
+      transparent 72%
+    ),
+    radial-gradient(
+      40% 36% at 78% 20%,
+      var(--productivity-glow-b),
+      transparent 74%
+    ),
+    radial-gradient(
+      34% 30% at 55% 78%,
+      var(--productivity-glow-c),
+      transparent 72%
+    ),
+    linear-gradient(
+      155deg,
+      color-mix(in oklch, var(--background) 35%, transparent),
+      transparent 50%,
+      color-mix(in oklch, var(--foreground) 2.5%, transparent)
+    );
+  background-size: 100% 100%;
+  will-change: transform;
+  animation: productivity-gradient-drift 36s ease-in-out infinite;
+}
+
+.dashboard-productivity-surface > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Chart glyphs sit under Overview chrome when no boards are pinned. */
+.dashboard-productivity-surface > .dashboard-charts-empty-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* Slow orbit so green/grey washes roam the pane. */
+@keyframes productivity-gradient-drift {
+  0% {
+    transform: translate3d(-6%, -4%, 0);
+  }
+  25% {
+    transform: translate3d(7%, -5%, 0);
+  }
+  50% {
+    transform: translate3d(5%, 7%, 0);
+  }
+  75% {
+    transform: translate3d(-7%, 5%, 0);
+  }
+  100% {
+    transform: translate3d(-6%, -4%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-productivity-surface::before {
+    animation: none;
+    will-change: auto;
+    inset: 0;
+    transform: none;
+  }
+}
+
+/*
+ * Full main-pane fill when Productivity mode is on.
+ * Padding lives on the Overview home (shell uses p-0). Vertical scroll stays
+ * on this shell so zoomed-in widgets remain reachable; glow uses inset 0 so
+ * the oversized drift layer does not inflate scrollHeight.
+ */
+.dashboard-productivity-surface--shell {
+  border-radius: 0;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  /* Fill the dashboard pane; clamp keeps padding comfortable across zoom. */
+  min-height: 0;
+  height: auto;
+  flex: 1 1 auto;
+  align-self: stretch;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.dashboard-productivity-surface--shell::before {
+  inset: 0;
+}
+
+/* Focus timer complete: separate expanding halo outside the glass disc. */
+@keyframes focus-timer-done-halo {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+.focus-timer-done {
+  position: relative;
+}
+
+.focus-timer-done::before,
+.focus-timer-done::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: -2px;
+  border-radius: 9999px;
+  border: 2px solid color-mix(in oklch, var(--primary) 55%, transparent);
+  opacity: 0;
+}
+
+.focus-timer-done::before {
+  animation: focus-timer-done-halo 2.2s ease-out infinite;
+}
+
+.focus-timer-done::after {
+  animation: focus-timer-done-halo 2.2s ease-out 1.1s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .focus-timer-done::before,
+  .focus-timer-done::after {
+    animation: none;
+    inset: -6px;
+    opacity: 0.35;
+  }
+}
+
+/* Liquid-glass cards — translucent + backdrop blur (not a WebGL shader). */
+.dashboard-widget-glass {
+  border-color: color-mix(in oklch, var(--border) 55%, white 20%);
+  background: color-mix(in oklch, var(--card) 55%, transparent);
+  backdrop-filter: blur(18px) saturate(1.35);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, white 35%, transparent),
+    0 8px 28px color-mix(in oklch, var(--foreground) 6%, transparent);
+}
+
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  .dashboard-widget-glass {
+    background: color-mix(in oklch, var(--card) 92%, transparent);
+  }
+}
+
 /* RGL items set an explicit pixel box. Absolute-fill the widget so charts
    measure a non-zero width/height instead of collapsing in nested flex. */
 .dashboard-grid .react-grid-item {
@@ -50,8 +239,8 @@
 /* Chart labels / widget copy select while the pointer drags across them. */
 .dashboard-grid .react-grid-item.react-draggable-dragging *,
 .dashboard-grid .react-grid-item.resizing * {
-  user-select: none !important;
-  -webkit-user-select: none !important;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .dashboard-grid .react-grid-item.react-draggable-dragging > *,

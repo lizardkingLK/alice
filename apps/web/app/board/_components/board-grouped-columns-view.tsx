@@ -9,8 +9,10 @@ import type { BoardColumn } from '@repo/types/api/v1';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
+import { resolveWorkItemTypeDefFromProjects } from '@/app/work-items/_helpers/resolve-work-item-type-def-from-projects';
 import { STATUS_META } from '@/app/work-items/_helpers/work-item-status';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import { GroupedItemsPaginatedTable } from '@/components/grouped-items/grouped-items-paginated-table';
 import { GroupedItemsSection } from '@/components/grouped-items/grouped-items-section';
 import { useRealtime } from '@/components/realtime/realtime-provider';
@@ -19,6 +21,7 @@ import { UserAvatar } from '@/components/user-avatar';
 type BoardGroupedColumnsViewProps = {
   readonly boardColumns: readonly BoardColumn[];
   readonly columnItemsMap: ReadonlyMap<string, DbWorkItem[]>;
+  readonly projects: readonly Project[];
   readonly activeDropCol: string | null;
   readonly draggedTaskId: string | null;
   readonly pendingStatusIds: ReadonlySet<string>;
@@ -38,6 +41,7 @@ type BoardGroupedColumnsViewProps = {
 };
 
 function buildColumns(
+  projects: readonly Project[],
   // eslint-disable-next-line no-unused-vars
   onSelect: (item: DbWorkItem) => void,
   // eslint-disable-next-line no-unused-vars
@@ -110,6 +114,11 @@ function buildColumns(
         <WorkItemTypeBadge
           type={row.original.type}
           projectId={row.original.project_id}
+          typeDef={resolveWorkItemTypeDefFromProjects(
+            projects,
+            row.original.project_id,
+            row.original.type
+          )}
         />
       ),
     },
@@ -124,6 +133,7 @@ function buildColumns(
 export function BoardGroupedColumnsView({
   boardColumns,
   columnItemsMap,
+  projects,
   activeDropCol,
   draggedTaskId,
   pendingStatusIds,
@@ -138,8 +148,8 @@ export function BoardGroupedColumnsView({
 }: Readonly<BoardGroupedColumnsViewProps>) {
   const { isUserOnline } = useRealtime();
   const columns = useMemo(
-    () => buildColumns(onSelectItem, isUserOnline),
-    [onSelectItem, isUserOnline]
+    () => buildColumns(projects, onSelectItem, isUserOnline),
+    [isUserOnline, onSelectItem, projects]
   );
 
   const getRowProps = (row: Row<DbWorkItem>) => {

@@ -34,6 +34,13 @@ hover an icon to see its name; scroll if the list is long. Alice remembers your
 preference (cookie) and applies it on load for every dashboard page — Docs,
 Settings, and Profile no longer force the sidebar closed.
 
+Inside a project, Board / Backlog / My Work / Work items / Sprints live under
+`/projects/{KEY}/…`. Cross-project Board, Backlog, Work Items, and My Work stay
+at `/board`, `/backlog`, `/work-items`, and `/member`; when a project filter is
+applied the address bar uses `/board/projects/{KEY}` (and `/sprints/{slug}` on
+Board and Work Items when a sprint is selected). Legacy `?project=` /
+`?sprint=` UUID query links redirect to these path forms.
+
 ---
 
 ## Header tools

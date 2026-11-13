@@ -40,6 +40,7 @@ export type Work_itemsMinAggregateOutputType = {
   sprint_id: string | null
   parent_id: string | null
   title: string | null
+  slug: string | null
   type: string | null
   priority: $Enums.WorkItemPriority | null
   assignee_id: string | null
@@ -65,6 +66,7 @@ export type Work_itemsMaxAggregateOutputType = {
   sprint_id: string | null
   parent_id: string | null
   title: string | null
+  slug: string | null
   type: string | null
   priority: $Enums.WorkItemPriority | null
   assignee_id: string | null
@@ -90,6 +92,7 @@ export type Work_itemsCountAggregateOutputType = {
   sprint_id: number
   parent_id: number
   title: number
+  slug: number
   type: number
   priority: number
   description: number
@@ -129,6 +132,7 @@ export type Work_itemsMinAggregateInputType = {
   sprint_id?: true
   parent_id?: true
   title?: true
+  slug?: true
   type?: true
   priority?: true
   assignee_id?: true
@@ -154,6 +158,7 @@ export type Work_itemsMaxAggregateInputType = {
   sprint_id?: true
   parent_id?: true
   title?: true
+  slug?: true
   type?: true
   priority?: true
   assignee_id?: true
@@ -179,6 +184,7 @@ export type Work_itemsCountAggregateInputType = {
   sprint_id?: true
   parent_id?: true
   title?: true
+  slug?: true
   type?: true
   priority?: true
   description?: true
@@ -295,6 +301,7 @@ export type Work_itemsGroupByOutputType = {
   sprint_id: string | null
   parent_id: string | null
   title: string
+  slug: string
   type: string
   priority: $Enums.WorkItemPriority
   description: runtime.JsonValue | null
@@ -347,6 +354,7 @@ export type work_itemsWhereInput = {
   sprint_id?: Prisma.UuidNullableFilter<"work_items"> | string | null
   parent_id?: Prisma.UuidNullableFilter<"work_items"> | string | null
   title?: Prisma.StringFilter<"work_items"> | string
+  slug?: Prisma.StringFilter<"work_items"> | string
   type?: Prisma.StringFilter<"work_items"> | string
   priority?: Prisma.EnumWorkItemPriorityFilter<"work_items"> | $Enums.WorkItemPriority
   description?: Prisma.JsonNullableFilter<"work_items">
@@ -392,6 +400,7 @@ export type work_itemsOrderByWithRelationInput = {
   sprint_id?: Prisma.SortOrderInput | Prisma.SortOrder
   parent_id?: Prisma.SortOrderInput | Prisma.SortOrder
   title?: Prisma.SortOrder
+  slug?: Prisma.SortOrder
   type?: Prisma.SortOrder
   priority?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -433,6 +442,7 @@ export type work_itemsOrderByWithRelationInput = {
 
 export type work_itemsWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  project_id_slug?: Prisma.work_itemsProject_idSlugCompoundUniqueInput
   AND?: Prisma.work_itemsWhereInput | Prisma.work_itemsWhereInput[]
   OR?: Prisma.work_itemsWhereInput[]
   NOT?: Prisma.work_itemsWhereInput | Prisma.work_itemsWhereInput[]
@@ -440,6 +450,7 @@ export type work_itemsWhereUniqueInput = Prisma.AtLeast<{
   sprint_id?: Prisma.UuidNullableFilter<"work_items"> | string | null
   parent_id?: Prisma.UuidNullableFilter<"work_items"> | string | null
   title?: Prisma.StringFilter<"work_items"> | string
+  slug?: Prisma.StringFilter<"work_items"> | string
   type?: Prisma.StringFilter<"work_items"> | string
   priority?: Prisma.EnumWorkItemPriorityFilter<"work_items"> | $Enums.WorkItemPriority
   description?: Prisma.JsonNullableFilter<"work_items">
@@ -477,7 +488,7 @@ export type work_itemsWhereUniqueInput = Prisma.AtLeast<{
   chart_hierarchy_rollup?: Prisma.XOR<Prisma.Work_item_chart_hierarchy_rollupsNullableScalarRelationFilter, Prisma.work_item_chart_hierarchy_rollupsWhereInput> | null
   links_as_source?: Prisma.Work_item_linksListRelationFilter
   links_as_target?: Prisma.Work_item_linksListRelationFilter
-}, "id">
+}, "id" | "project_id_slug">
 
 export type work_itemsOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -485,6 +496,7 @@ export type work_itemsOrderByWithAggregationInput = {
   sprint_id?: Prisma.SortOrderInput | Prisma.SortOrder
   parent_id?: Prisma.SortOrderInput | Prisma.SortOrder
   title?: Prisma.SortOrder
+  slug?: Prisma.SortOrder
   type?: Prisma.SortOrder
   priority?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -522,6 +534,7 @@ export type work_itemsScalarWhereWithAggregatesInput = {
   sprint_id?: Prisma.UuidNullableWithAggregatesFilter<"work_items"> | string | null
   parent_id?: Prisma.UuidNullableWithAggregatesFilter<"work_items"> | string | null
   title?: Prisma.StringWithAggregatesFilter<"work_items"> | string
+  slug?: Prisma.StringWithAggregatesFilter<"work_items"> | string
   type?: Prisma.StringWithAggregatesFilter<"work_items"> | string
   priority?: Prisma.EnumWorkItemPriorityWithAggregatesFilter<"work_items"> | $Enums.WorkItemPriority
   description?: Prisma.JsonNullableWithAggregatesFilter<"work_items">
@@ -548,6 +561,7 @@ export type work_itemsScalarWhereWithAggregatesInput = {
 export type work_itemsCreateInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -589,6 +603,7 @@ export type work_itemsUncheckedCreateInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -624,6 +639,7 @@ export type work_itemsUncheckedCreateInput = {
 export type work_itemsUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -665,6 +681,7 @@ export type work_itemsUncheckedUpdateInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -703,6 +720,7 @@ export type work_itemsCreateManyInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -729,6 +747,7 @@ export type work_itemsCreateManyInput = {
 export type work_itemsUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -754,6 +773,7 @@ export type work_itemsUncheckedUpdateManyInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -792,12 +812,18 @@ export type Work_itemsNullableScalarRelationFilter = {
   isNot?: Prisma.work_itemsWhereInput | null
 }
 
+export type work_itemsProject_idSlugCompoundUniqueInput = {
+  project_id: string
+  slug: string
+}
+
 export type work_itemsCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
   sprint_id?: Prisma.SortOrder
   parent_id?: Prisma.SortOrder
   title?: Prisma.SortOrder
+  slug?: Prisma.SortOrder
   type?: Prisma.SortOrder
   priority?: Prisma.SortOrder
   description?: Prisma.SortOrder
@@ -831,6 +857,7 @@ export type work_itemsMaxOrderByAggregateInput = {
   sprint_id?: Prisma.SortOrder
   parent_id?: Prisma.SortOrder
   title?: Prisma.SortOrder
+  slug?: Prisma.SortOrder
   type?: Prisma.SortOrder
   priority?: Prisma.SortOrder
   assignee_id?: Prisma.SortOrder
@@ -856,6 +883,7 @@ export type work_itemsMinOrderByAggregateInput = {
   sprint_id?: Prisma.SortOrder
   parent_id?: Prisma.SortOrder
   title?: Prisma.SortOrder
+  slug?: Prisma.SortOrder
   type?: Prisma.SortOrder
   priority?: Prisma.SortOrder
   assignee_id?: Prisma.SortOrder
@@ -1317,6 +1345,7 @@ export type work_itemsUpdateOneRequiredWithoutVersion_control_pull_requestsNeste
 export type work_itemsCreateWithoutAssigneeInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1357,6 +1386,7 @@ export type work_itemsUncheckedCreateWithoutAssigneeInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1401,6 +1431,7 @@ export type work_itemsCreateManyAssigneeInputEnvelope = {
 export type work_itemsCreateWithoutReporterInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1441,6 +1472,7 @@ export type work_itemsUncheckedCreateWithoutReporterInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1485,6 +1517,7 @@ export type work_itemsCreateManyReporterInputEnvelope = {
 export type work_itemsCreateWithoutCreated_by_userInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1525,6 +1558,7 @@ export type work_itemsUncheckedCreateWithoutCreated_by_userInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1569,6 +1603,7 @@ export type work_itemsCreateManyCreated_by_userInputEnvelope = {
 export type work_itemsCreateWithoutUpdated_by_userInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1609,6 +1644,7 @@ export type work_itemsUncheckedCreateWithoutUpdated_by_userInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1675,6 +1711,7 @@ export type work_itemsScalarWhereInput = {
   sprint_id?: Prisma.UuidNullableFilter<"work_items"> | string | null
   parent_id?: Prisma.UuidNullableFilter<"work_items"> | string | null
   title?: Prisma.StringFilter<"work_items"> | string
+  slug?: Prisma.StringFilter<"work_items"> | string
   type?: Prisma.StringFilter<"work_items"> | string
   priority?: Prisma.EnumWorkItemPriorityFilter<"work_items"> | $Enums.WorkItemPriority
   description?: Prisma.JsonNullableFilter<"work_items">
@@ -1749,6 +1786,7 @@ export type work_itemsUpdateManyWithWhereWithoutUpdated_by_userInput = {
 export type work_itemsCreateWithoutProjectInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1788,6 +1826,7 @@ export type work_itemsUncheckedCreateWithoutProjectInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1849,6 +1888,7 @@ export type work_itemsUpdateManyWithWhereWithoutProjectInput = {
 export type work_itemsCreateWithoutSprintInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1888,6 +1928,7 @@ export type work_itemsUncheckedCreateWithoutSprintInput = {
   project_id: string
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1949,6 +1990,7 @@ export type work_itemsUpdateManyWithWhereWithoutSprintInput = {
 export type work_itemsCreateWithoutChildrenInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1989,6 +2031,7 @@ export type work_itemsUncheckedCreateWithoutChildrenInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2028,6 +2071,7 @@ export type work_itemsCreateOrConnectWithoutChildrenInput = {
 export type work_itemsCreateWithoutParentInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2067,6 +2111,7 @@ export type work_itemsUncheckedCreateWithoutParentInput = {
   project_id: string
   sprint_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2123,6 +2168,7 @@ export type work_itemsUpdateToOneWithWhereWithoutChildrenInput = {
 export type work_itemsUpdateWithoutChildrenInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2163,6 +2209,7 @@ export type work_itemsUncheckedUpdateWithoutChildrenInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2213,6 +2260,7 @@ export type work_itemsUpdateManyWithWhereWithoutParentInput = {
 export type work_itemsCreateWithoutLinks_as_sourceInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2253,6 +2301,7 @@ export type work_itemsUncheckedCreateWithoutLinks_as_sourceInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2292,6 +2341,7 @@ export type work_itemsCreateOrConnectWithoutLinks_as_sourceInput = {
 export type work_itemsCreateWithoutLinks_as_targetInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2332,6 +2382,7 @@ export type work_itemsUncheckedCreateWithoutLinks_as_targetInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2382,6 +2433,7 @@ export type work_itemsUpdateToOneWithWhereWithoutLinks_as_sourceInput = {
 export type work_itemsUpdateWithoutLinks_as_sourceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2422,6 +2474,7 @@ export type work_itemsUncheckedUpdateWithoutLinks_as_sourceInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2467,6 +2520,7 @@ export type work_itemsUpdateToOneWithWhereWithoutLinks_as_targetInput = {
 export type work_itemsUpdateWithoutLinks_as_targetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2507,6 +2561,7 @@ export type work_itemsUncheckedUpdateWithoutLinks_as_targetInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2541,6 +2596,7 @@ export type work_itemsUncheckedUpdateWithoutLinks_as_targetInput = {
 export type work_itemsCreateWithoutActivitiesInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2581,6 +2637,7 @@ export type work_itemsUncheckedCreateWithoutActivitiesInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2631,6 +2688,7 @@ export type work_itemsUpdateToOneWithWhereWithoutActivitiesInput = {
 export type work_itemsUpdateWithoutActivitiesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2671,6 +2729,7 @@ export type work_itemsUncheckedUpdateWithoutActivitiesInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2705,6 +2764,7 @@ export type work_itemsUncheckedUpdateWithoutActivitiesInput = {
 export type work_itemsCreateWithoutChart_hierarchy_rollupInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2745,6 +2805,7 @@ export type work_itemsUncheckedCreateWithoutChart_hierarchy_rollupInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2795,6 +2856,7 @@ export type work_itemsUpdateToOneWithWhereWithoutChart_hierarchy_rollupInput = {
 export type work_itemsUpdateWithoutChart_hierarchy_rollupInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2835,6 +2897,7 @@ export type work_itemsUncheckedUpdateWithoutChart_hierarchy_rollupInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2869,6 +2932,7 @@ export type work_itemsUncheckedUpdateWithoutChart_hierarchy_rollupInput = {
 export type work_itemsCreateWithoutWorklogsInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2909,6 +2973,7 @@ export type work_itemsUncheckedCreateWithoutWorklogsInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2959,6 +3024,7 @@ export type work_itemsUpdateToOneWithWhereWithoutWorklogsInput = {
 export type work_itemsUpdateWithoutWorklogsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -2999,6 +3065,7 @@ export type work_itemsUncheckedUpdateWithoutWorklogsInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3033,6 +3100,7 @@ export type work_itemsUncheckedUpdateWithoutWorklogsInput = {
 export type work_itemsCreateWithoutCommentsInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3073,6 +3141,7 @@ export type work_itemsUncheckedCreateWithoutCommentsInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3123,6 +3192,7 @@ export type work_itemsUpdateToOneWithWhereWithoutCommentsInput = {
 export type work_itemsUpdateWithoutCommentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3163,6 +3233,7 @@ export type work_itemsUncheckedUpdateWithoutCommentsInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3197,6 +3268,7 @@ export type work_itemsUncheckedUpdateWithoutCommentsInput = {
 export type work_itemsCreateWithoutAttachmentsInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3237,6 +3309,7 @@ export type work_itemsUncheckedCreateWithoutAttachmentsInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3287,6 +3360,7 @@ export type work_itemsUpdateToOneWithWhereWithoutAttachmentsInput = {
 export type work_itemsUpdateWithoutAttachmentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3327,6 +3401,7 @@ export type work_itemsUncheckedUpdateWithoutAttachmentsInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3361,6 +3436,7 @@ export type work_itemsUncheckedUpdateWithoutAttachmentsInput = {
 export type work_itemsCreateWithoutVersion_control_pull_requestsInput = {
   id?: string
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3401,6 +3477,7 @@ export type work_itemsUncheckedCreateWithoutVersion_control_pull_requestsInput =
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3451,6 +3528,7 @@ export type work_itemsUpdateToOneWithWhereWithoutVersion_control_pull_requestsIn
 export type work_itemsUpdateWithoutVersion_control_pull_requestsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3491,6 +3569,7 @@ export type work_itemsUncheckedUpdateWithoutVersion_control_pull_requestsInput =
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3528,6 +3607,7 @@ export type work_itemsCreateManyAssigneeInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3556,6 +3636,7 @@ export type work_itemsCreateManyReporterInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3584,6 +3665,7 @@ export type work_itemsCreateManyCreated_by_userInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3612,6 +3694,7 @@ export type work_itemsCreateManyUpdated_by_userInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3637,6 +3720,7 @@ export type work_itemsCreateManyUpdated_by_userInput = {
 export type work_itemsUpdateWithoutAssigneeInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3677,6 +3761,7 @@ export type work_itemsUncheckedUpdateWithoutAssigneeInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3714,6 +3799,7 @@ export type work_itemsUncheckedUpdateManyWithoutAssigneeInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3739,6 +3825,7 @@ export type work_itemsUncheckedUpdateManyWithoutAssigneeInput = {
 export type work_itemsUpdateWithoutReporterInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3779,6 +3866,7 @@ export type work_itemsUncheckedUpdateWithoutReporterInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3816,6 +3904,7 @@ export type work_itemsUncheckedUpdateManyWithoutReporterInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3841,6 +3930,7 @@ export type work_itemsUncheckedUpdateManyWithoutReporterInput = {
 export type work_itemsUpdateWithoutCreated_by_userInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3881,6 +3971,7 @@ export type work_itemsUncheckedUpdateWithoutCreated_by_userInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3918,6 +4009,7 @@ export type work_itemsUncheckedUpdateManyWithoutCreated_by_userInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3943,6 +4035,7 @@ export type work_itemsUncheckedUpdateManyWithoutCreated_by_userInput = {
 export type work_itemsUpdateWithoutUpdated_by_userInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -3983,6 +4076,7 @@ export type work_itemsUncheckedUpdateWithoutUpdated_by_userInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -4020,6 +4114,7 @@ export type work_itemsUncheckedUpdateManyWithoutUpdated_by_userInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -4047,6 +4142,7 @@ export type work_itemsCreateManyProjectInput = {
   sprint_id?: string | null
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -4073,6 +4169,7 @@ export type work_itemsCreateManyProjectInput = {
 export type work_itemsUpdateWithoutProjectInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -4112,6 +4209,7 @@ export type work_itemsUncheckedUpdateWithoutProjectInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -4149,6 +4247,7 @@ export type work_itemsUncheckedUpdateManyWithoutProjectInput = {
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -4177,6 +4276,7 @@ export type work_itemsCreateManySprintInput = {
   project_id: string
   parent_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -4203,6 +4303,7 @@ export type work_itemsCreateManySprintInput = {
 export type work_itemsUpdateWithoutSprintInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -4242,6 +4343,7 @@ export type work_itemsUncheckedUpdateWithoutSprintInput = {
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -4279,6 +4381,7 @@ export type work_itemsUncheckedUpdateManyWithoutSprintInput = {
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -4307,6 +4410,7 @@ export type work_itemsCreateManyParentInput = {
   project_id: string
   sprint_id?: string | null
   title: string
+  slug: string
   type: string
   priority?: $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -4333,6 +4437,7 @@ export type work_itemsCreateManyParentInput = {
 export type work_itemsUpdateWithoutParentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -4372,6 +4477,7 @@ export type work_itemsUncheckedUpdateWithoutParentInput = {
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -4409,6 +4515,7 @@ export type work_itemsUncheckedUpdateManyWithoutParentInput = {
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
   sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
   description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -4532,6 +4639,7 @@ export type work_itemsSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   sprint_id?: boolean
   parent_id?: boolean
   title?: boolean
+  slug?: boolean
   type?: boolean
   priority?: boolean
   description?: boolean
@@ -4578,6 +4686,7 @@ export type work_itemsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   sprint_id?: boolean
   parent_id?: boolean
   title?: boolean
+  slug?: boolean
   type?: boolean
   priority?: boolean
   description?: boolean
@@ -4614,6 +4723,7 @@ export type work_itemsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   sprint_id?: boolean
   parent_id?: boolean
   title?: boolean
+  slug?: boolean
   type?: boolean
   priority?: boolean
   description?: boolean
@@ -4650,6 +4760,7 @@ export type work_itemsSelectScalar = {
   sprint_id?: boolean
   parent_id?: boolean
   title?: boolean
+  slug?: boolean
   type?: boolean
   priority?: boolean
   description?: boolean
@@ -4673,7 +4784,7 @@ export type work_itemsSelectScalar = {
   pm_external?: boolean
 }
 
-export type work_itemsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "project_id" | "sprint_id" | "parent_id" | "title" | "type" | "priority" | "description" | "labels" | "assignee_id" | "reporter_id" | "due_date" | "story_points" | "status" | "state" | "board_column_id" | "status_category" | "state_id" | "state_workflow_id" | "record_status" | "done_at" | "created_by" | "created_at" | "updated_by" | "updated_at" | "pm_external", ExtArgs["result"]["work_items"]>
+export type work_itemsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "project_id" | "sprint_id" | "parent_id" | "title" | "slug" | "type" | "priority" | "description" | "labels" | "assignee_id" | "reporter_id" | "due_date" | "story_points" | "status" | "state" | "board_column_id" | "status_category" | "state_id" | "state_workflow_id" | "record_status" | "done_at" | "created_by" | "created_at" | "updated_by" | "updated_at" | "pm_external", ExtArgs["result"]["work_items"]>
 export type work_itemsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.projectsDefaultArgs<ExtArgs>
   sprint?: boolean | Prisma.work_items$sprintArgs<ExtArgs>
@@ -4738,6 +4849,10 @@ export type $work_itemsPayload<ExtArgs extends runtime.Types.Extensions.Internal
     sprint_id: string | null
     parent_id: string | null
     title: string
+    /**
+     * URL path segment (unique per project); derived from title.
+     */
+    slug: string
     /**
      * Project catalog type key (see workflow_config.work_item_types defs).
      */
@@ -5217,6 +5332,7 @@ export interface work_itemsFieldRefs {
   readonly sprint_id: Prisma.FieldRef<"work_items", 'String'>
   readonly parent_id: Prisma.FieldRef<"work_items", 'String'>
   readonly title: Prisma.FieldRef<"work_items", 'String'>
+  readonly slug: Prisma.FieldRef<"work_items", 'String'>
   readonly type: Prisma.FieldRef<"work_items", 'String'>
   readonly priority: Prisma.FieldRef<"work_items", 'WorkItemPriority'>
   readonly description: Prisma.FieldRef<"work_items", 'Json'>

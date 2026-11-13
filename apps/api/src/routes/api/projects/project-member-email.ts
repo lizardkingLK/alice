@@ -17,7 +17,8 @@ export type ProjectMemberEmailSender = EmailTransport;
 type ProjectMemberEmailInput = {
   readonly recipientEmail: string;
   readonly recipientName: string;
-  readonly projectId: string;
+  /** Shareable project KEY for `/projects/{KEY}` links (not UUID). */
+  readonly projectKey: string;
   readonly projectName: string;
   readonly frontendUrl: string;
   readonly notificationEventId: string;
@@ -41,11 +42,24 @@ function validResendSetting(value: string | undefined): string | null {
   return normalized;
 }
 
+/** Canonical in-app project path segment: uppercase KEY when it looks like one. */
+function projectPathSegment(projectKey: string): string {
+  const trimmed = projectKey.trim();
+  if (/^[A-Z0-9]{2,10}$/i.test(trimmed)) {
+    return trimmed.toUpperCase();
+  }
+  return trimmed;
+}
+
 export function buildAliceProjectUrl(
   frontendUrl: string,
-  projectId: string
+  projectKey: string
 ): string {
-  return buildValidatedFrontendUrl(frontendUrl, ['projects', projectId]);
+  const segment = projectPathSegment(projectKey);
+  if (!segment) {
+    throw new Error('Project key is required.');
+  }
+  return buildValidatedFrontendUrl(frontendUrl, ['projects', segment]);
 }
 
 export function buildProjectMemberAddedEmail(
@@ -57,7 +71,7 @@ export function buildProjectMemberAddedEmail(
     input.projectName,
     'your project'
   );
-  const projectUrl = buildAliceProjectUrl(input.frontendUrl, input.projectId);
+  const projectUrl = buildAliceProjectUrl(input.frontendUrl, input.projectKey);
   const subject = `You've been added to ${projectName} in Alice`;
   const idempotencyKey = buildEmailIdempotencyKey(
     'project-member-added',

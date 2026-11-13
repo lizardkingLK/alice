@@ -418,6 +418,63 @@ describe('anthropicMessageToChatLlmResponse', () => {
     });
   });
 
+  it.each(['thinking', 'redacted_thinking'])(
+    'omits terminal Anthropic %s blocks while preserving visible text',
+    (thinkingType) => {
+      expect(
+        anthropicMessageToChatLlmResponse(
+          messageResponse([
+            {
+              type: thinkingType,
+              thinking: 'private reasoning must not be exposed',
+              signature: 'opaque-signature',
+            },
+            { type: 'text', text: '{"suggestions":[]}' },
+          ]),
+          []
+        )
+      ).toEqual({
+        candidates: [
+          {
+            content: {
+              role: ChatTurnRoles.Model,
+              parts: [{ text: '{"suggestions":[]}' }],
+            },
+          },
+        ],
+      });
+    }
+  );
+
+  it('rejects thinking blocks on tool-use turns that cannot be round-tripped', () => {
+    expect(
+      capturedError(() =>
+        anthropicMessageToChatLlmResponse(
+          messageResponse(
+            [
+              {
+                type: 'thinking',
+                thinking: 'private reasoning',
+                signature: 'opaque-signature',
+              },
+              {
+                type: 'tool_use',
+                id: 'toolu_projects',
+                name: 'list_projects',
+                input: {},
+              },
+            ],
+            'tool_use'
+          ),
+          aliceChatTools
+        )
+      )
+    ).toMatchObject({
+      message: 'Anthropic returned an invalid response.',
+      category: 'unsupported_content_block',
+    });
+  });
+
   it('maps mixed text and multiple valid tool calls', () => {
     const result = anthropicMessageToChatLlmResponse(
       messageResponse(
@@ -536,7 +593,6 @@ describe('anthropicMessageToChatLlmResponse', () => {
       'unexpected block',
       'unsupported_content_block',
     ],
-    [messageResponse([], 'end_turn'), 'empty content', 'invalid_stop_reason'],
     [
       messageResponse([{ type: 'text', text: 'Done' }], 'tool_use'),
       'bad stop',
@@ -559,6 +615,65 @@ describe('anthropicMessageToChatLlmResponse', () => {
       message: 'Anthropic returned an invalid response.',
       category,
     });
+  });
+
+  it('accepts empty end_turn with a retry hint instead of rejecting', () => {
+    expect(
+      anthropicMessageToChatLlmResponse(messageResponse([], 'end_turn'), tools)
+    ).toEqual({
+      candidates: [
+        {
+          content: {
+            role: ChatTurnRoles.Model,
+            parts: [
+              {
+                text: 'I could not complete that reply. Please try again.',
+              },
+            ],
+          },
+        },
+      ],
+    });
+  });
+
+  it('ignores thinking blocks and keeps following text', () => {
+    expect(
+      anthropicMessageToChatLlmResponse(
+        messageResponse([
+          {
+            type: 'thinking',
+            thinking: 'plan the answer',
+            signature: 'sig',
+          },
+          { type: 'text', text: 'Here are the sprints.' },
+        ]),
+        tools
+      )
+    ).toEqual({
+      candidates: [
+        {
+          content: {
+            role: ChatTurnRoles.Model,
+            parts: [{ text: 'Here are the sprints.' }],
+          },
+        },
+      ],
+    });
+  });
+
+  it('ignores thinking-only turns as empty end_turn', () => {
+    expect(
+      anthropicMessageToChatLlmResponse(
+        messageResponse([
+          {
+            type: 'thinking',
+            thinking: '',
+            signature: 'sig',
+          },
+        ]),
+        tools
+      ).candidates?.[0]?.content?.parts
+    ).toEqual([{ text: 'I could not complete that reply. Please try again.' }]);
   });
 
   it('categorizes invalid JSON without including response content', async () => {

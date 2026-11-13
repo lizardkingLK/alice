@@ -24,8 +24,11 @@ Create, track, and discuss tasks, stories, bugs, and epics across projects.
 
 1. In the sidebar under **Platform**, select **Work Items**.
 
-You'll see the global work-item list at `/work-items`. **My Work** (`/member`)
-shows the same table filtered to items assigned to you.
+You'll see the global work-item list at `/work-items`. When you filter by
+project (and sprint), the address bar uses shortcodes —
+`/work-items/projects/{KEY}` or `/work-items/projects/{KEY}/sprints/{slug}` —
+instead of UUID query params. **My Work** (`/member`) shows the same table
+filtered to items assigned to you.
 
 ---
 
@@ -57,10 +60,12 @@ Right side (views and actions):
 | **Active** / **Archived** | Same icon segment style as Flat/Hierarchy (managers/admins on `/work-items`; members use **My Work**) |
 | **Add Work-Item**         | Open the create form                                                                                  |
 
-In hierarchy mode, the registry pages a **forest** of up to **100** rows
-(parents and children count together). If a large parent is split across pages,
-the next page shows that parent again with the remaining children so you can
-still expand locally.
+In hierarchy mode (Work Items, My Work, and a project’s **Work items** tab),
+the registry pages a **forest** of up to **100** rows (parents and children
+count together). Children for that page are loaded with the parents, so
+expanding a row is instant. If a large parent is split across pages, the next
+page shows that parent again with the remaining children so you can still
+expand locally.
 
 ### Hierarchy + search
 

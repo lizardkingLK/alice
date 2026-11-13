@@ -115,8 +115,8 @@ Seeds import the same helpers so dev data matches production conventions:
 import { auditCreate, auditCreateWithoutStatus } from '@repo/types/audit';
 
 await supabase.from('projects').insert({
-  name: 'Alice Platform',
-  key: 'ALICE',
+  name: 'This',
+  key: 'THIS',
   owner_id: adminId,
   status: 'active',
   ...auditCreateWithoutStatus(adminId),
