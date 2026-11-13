@@ -13,7 +13,6 @@ import {
   WorkItemValidationError,
 } from './work-items.errors';
 import { type WorkItemService } from './work-items.service';
-import type { NotificationsService } from '../notifications/notifications.service';
 import {
   createWorkItemBodySchema,
   isBlockedPastDueDateChange,
@@ -40,7 +39,6 @@ type PatchUpdateWorkItemPayload = z.infer<typeof patchWorkItemBodySchema>;
 
 export type WorkItemsRouterDeps = {
   workItemService: WorkItemService;
-  notificationsService: Pick<NotificationsService, 'createAssignNotification'>;
 };
 
 function buildWorkItemPayload(
@@ -110,24 +108,6 @@ function buildWorkItemPayload(
     ),
     expectedUpdatedAt: parsedData.expectedUpdatedAt,
   };
-}
-
-function shouldNotifyNewAssignee(
-  workItem: DbWorkItem | null | undefined,
-  actorId?: string
-) {
-  return Boolean(workItem?.assignee_id && workItem.assignee_id !== actorId);
-}
-
-export function shouldNotifyAssigneeChange(
-  existingWorkItem: DbWorkItem,
-  workItem: DbWorkItem | null,
-  actorId?: string
-) {
-  if (!workItem || !shouldNotifyNewAssignee(workItem, actorId)) {
-    return false;
-  }
-  return workItem.assignee_id !== existingWorkItem.assignee_id;
 }
 
 function sendWorkItemMutationError(
@@ -242,31 +222,7 @@ function createWorkItemLockActionHandler(
 }
 
 export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
-  const { workItemService, notificationsService } = deps;
-
-  function createAssignNotification(workItem: DbWorkItem, actorId: string) {
-    return notificationsService.createAssignNotification({
-      assigneeId: workItem.assignee_id!,
-      actorId,
-      taskTitle: workItem.title,
-      taskId: workItem.id,
-    });
-  }
-
-  /**
-   * Await the Prisma insert so Vercel does not freeze the isolate before
-   * commit. Realtime postgres_changes reads WAL only after commit.
-   */
-  async function notifyAssigneeAfterCommit(
-    workItem: DbWorkItem | null | undefined,
-    actorId: string | undefined,
-    shouldNotify: boolean
-  ): Promise<void> {
-    if (!workItem || !actorId || !shouldNotify) {
-      return;
-    }
-    await createAssignNotification(workItem, actorId);
-  }
+  const { workItemService } = deps;
 
   const workItemsRouter: Router = Router();
 
@@ -477,12 +433,6 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
           parsed.data
         );
 
-        await notifyAssigneeAfterCommit(
-          workItem,
-          req.userId,
-          shouldNotifyNewAssignee(workItem, req.userId)
-        );
-
         res.status(201).json({ data: workItem, error: null });
       } catch (error) {
         sendWorkItemMutationError(res, error, 'Failed to create work-item');
@@ -572,12 +522,6 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
               cascadeSprint: Object.hasOwn(parsed.data, 'sprint_id'),
             }
           );
-
-        await notifyAssigneeAfterCommit(
-          workItem,
-          req.userId,
-          shouldNotifyAssigneeChange(existingWorkItem, workItem, req.userId)
-        );
 
         res.status(200).json({
           data: workItem,

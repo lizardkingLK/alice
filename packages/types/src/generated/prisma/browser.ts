@@ -101,6 +101,31 @@ export type attachments = Prisma.attachmentsModel
  */
 export type notifications = Prisma.notificationsModel
 /**
+ * Model notification_email_events
+ *
+ */
+export type notification_email_events = Prisma.notification_email_eventsModel
+/**
+ * Model notification_email_preferences
+ * 
+ */
+export type notification_email_preferences = Prisma.notification_email_preferencesModel
+/**
+ * Model email_outbox
+ * 
+ */
+export type email_outbox = Prisma.email_outboxModel
+/**
+ * Model weekly_project_report_subscriptions
+ * 
+ */
+export type weekly_project_report_subscriptions = Prisma.weekly_project_report_subscriptionsModel
+/**
+ * Model weekly_project_reports
+ * 
+ */
+export type weekly_project_reports = Prisma.weekly_project_reportsModel
+/**
  * Model access_allowlist
  * Admission allowlist: approved email domains or exact emails (see docs/features/access).
  */

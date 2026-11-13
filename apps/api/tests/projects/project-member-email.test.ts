@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   buildAliceProjectUrl,
   buildProjectMemberAddedEmail,
+  createResendEmailTransport,
   createResendProjectMemberEmailSender,
 } from '../../src/routes/api/projects/project-member-email';
 
@@ -220,5 +221,16 @@ describe('Resend project member email sender', () => {
     expect(consoleWarn).toHaveBeenCalledWith(
       'warn. project member email delivery skipped; Resend is not configured'
     );
+  });
+
+  it('reports missing credentials to durable-delivery callers', async () => {
+    const transport = createResendEmailTransport({
+      missingConfiguration: 'throw',
+    });
+
+    await expect(transport.send(buildMessage())).rejects.toMatchObject({
+      message: 'Resend email delivery is not configured.',
+      details: { kind: 'configuration' },
+    });
   });
 });

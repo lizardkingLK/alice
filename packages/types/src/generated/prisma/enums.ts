@@ -122,13 +122,36 @@ export const NotificationType = {
   project_created: 'project_created',
   project_create_failed: 'project_create_failed',
   worklog_pending: 'worklog_pending',
+  weekly_project_report: 'weekly_project_report',
   entity_archived: 'entity_archived',
   entity_archive_failed: 'entity_archive_failed',
   entity_purged: 'entity_purged',
-  entity_purge_failed: 'entity_purge_failed',
+  entity_purge_failed: 'entity_purge_failed'
 } as const
 
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType]
+
+
+export const EmailOutboxStatus = {
+  pending: 'pending',
+  processing: 'processing',
+  retry: 'retry',
+  sent: 'sent',
+  cancelled: 'cancelled',
+  dead: 'dead'
+} as const
+
+export type EmailOutboxStatus = (typeof EmailOutboxStatus)[keyof typeof EmailOutboxStatus]
+
+
+export const EmailTemplate = {
+  work_item_assignment: 'work_item_assignment',
+  work_item_reassignment: 'work_item_reassignment',
+  work_item_status_change: 'work_item_status_change',
+  weekly_project_report: 'weekly_project_report'
+} as const
+
+export type EmailTemplate = (typeof EmailTemplate)[keyof typeof EmailTemplate]
 
 
 export const ActivityAction = {

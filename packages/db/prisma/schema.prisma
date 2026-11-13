@@ -94,10 +94,27 @@ enum NotificationType {
   project_created
   project_create_failed
   worklog_pending
+  weekly_project_report
   entity_archived
   entity_archive_failed
   entity_purged
   entity_purge_failed
+}
+
+enum EmailOutboxStatus {
+  pending
+  processing
+  retry
+  sent
+  cancelled
+  dead
+}
+
+enum EmailTemplate {
+  work_item_assignment
+  work_item_reassignment
+  work_item_status_change
+  weekly_project_report
 }
 
 /// Append-only work-item activity feed actions (see docs/features/work-items/ACTIVITY.md).
@@ -251,6 +268,10 @@ model users {
   updated_project_integration_bindings project_integration_bindings[] @relation("ProjectIntegrationBindingUpdatedBy")
   chat_model_preference   member_chat_model_preferences?
   updated_member_chat_model_preferences member_chat_model_preferences[] @relation("MemberChatModelPreferenceUpdatedBy")
+  notification_email_preference notification_email_preferences?
+  email_outbox                   email_outbox[]
+  weekly_report_subscriptions    weekly_project_report_subscriptions[]
+  weekly_project_reports         weekly_project_reports[]
 }
 
 model projects {
@@ -296,6 +317,8 @@ model projects {
   saved_views             saved_views[]
   integration_bindings    project_integration_bindings[]
   project_integrations    integrations[] @relation("ProjectIntegrations")
+  weekly_report_subscriptions weekly_project_report_subscriptions[]
+  weekly_project_reports      weekly_project_reports[]
 }
 
 model project_members {
@@ -637,12 +660,107 @@ model notifications {
   created_at      DateTime         @default(now()) @db.Timestamptz(6)
   updated_by      String?          @db.Uuid
   updated_at      DateTime         @updatedAt @db.Timestamptz(6)
+  dedupe_key      String?          @unique
 
   user            users  @relation(fields: [user_id], references: [id], onDelete: Cascade)
   created_by_user users? @relation("NotificationCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users? @relation("NotificationUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  email_event     notification_email_events?
+  email_outbox    email_outbox?
+  weekly_report   weekly_project_reports?
 
   @@index([user_id, status, created_at(sort: Desc)])
+}
+
+model notification_email_events {
+  notification_id String        @id @db.Uuid
+  version         Int
+  template        EmailTemplate
+  payload         Json
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+
+  notification notifications @relation(fields: [notification_id], references: [id], onDelete: Cascade)
+}
+
+model notification_email_preferences {
+  user_id                         String   @id @db.Uuid
+  email_enabled                   Boolean  @default(true)
+  work_item_assignment_enabled    Boolean  @default(true)
+  work_item_reassignment_enabled  Boolean  @default(true)
+  work_item_status_change_enabled Boolean  @default(true)
+  weekly_reports_enabled          Boolean  @default(false)
+  timezone                        String   @default("UTC")
+  weekly_report_weekday           Int      @default(1)
+  weekly_report_hour              Int      @default(8)
+  created_at                      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at                      DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model email_outbox {
+  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  notification_id     String?           @unique @db.Uuid
+  user_id             String?           @db.Uuid
+  recipient_email     String
+  template            EmailTemplate
+  payload             Json
+  status              EmailOutboxStatus @default(pending)
+  idempotency_key     String            @unique
+  attempt_count       Int               @default(0)
+  max_attempts        Int               @default(8)
+  next_attempt_at     DateTime          @default(now()) @db.Timestamptz(6)
+  locked_by           String?
+  locked_at           DateTime?         @db.Timestamptz(6)
+  locked_until        DateTime?         @db.Timestamptz(6)
+  last_attempt_at     DateTime?         @db.Timestamptz(6)
+  sent_at             DateTime?         @db.Timestamptz(6)
+  cancelled_at        DateTime?         @db.Timestamptz(6)
+  failed_at           DateTime?         @db.Timestamptz(6)
+  provider_message_id String?
+  last_error_code     String?
+  last_error_message  String?
+  created_at          DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
+
+  notification notifications? @relation(fields: [notification_id], references: [id], onDelete: SetNull)
+  user         users?         @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([status, next_attempt_at, created_at])
+  @@index([status, locked_until])
+  @@index([user_id, created_at(sort: Desc)])
+}
+
+model weekly_project_report_subscriptions {
+  user_id    String   @db.Uuid
+  project_id String   @db.Uuid
+  enabled    Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  user    users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  project projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, project_id])
+  @@index([project_id, enabled])
+}
+
+model weekly_project_reports {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id      String   @db.Uuid
+  user_id         String   @db.Uuid
+  period_start    DateTime @db.Date
+  period_end      DateTime @db.Date
+  snapshot        Json
+  notification_id String   @unique @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  project      projects      @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  user         users         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  notification notifications @relation(fields: [notification_id], references: [id], onDelete: Cascade)
+
+  @@unique([project_id, user_id, period_start])
+  @@index([period_start, project_id])
 }
 
 /// Admission allowlist: approved email domains or exact emails (see docs/features/access).

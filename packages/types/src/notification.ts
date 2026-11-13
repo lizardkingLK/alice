@@ -34,6 +34,13 @@ export class AssignNotification extends NotificationType {
   }
 }
 
+export class StatusChangeNotification extends NotificationType {
+  constructor() {
+    super();
+    this.type = 'status_change';
+  }
+}
+
 export class MentionNotification extends NotificationType {
   constructor() {
     super();
