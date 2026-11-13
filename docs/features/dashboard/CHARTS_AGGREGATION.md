@@ -477,6 +477,25 @@ be filled in the service from dates + estimated total if not stored.
 
 ---
 
+## Sprint contribution rollup (living)
+
+**Goal:** Cheap manager reads for **Sprint contribution** under busy worklog
+traffic without a second trigger chain.
+
+| Concern         | Choice                                                                                                                                                             |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Table           | `sprint_contribution_rollups` — one row per `(sprint_id, assignee_key)`                                                                                            |
+| Grain           | Snapshot for rebuild `as_of` (today UTC clamped into sprint), not daily                                                                                            |
+| Stored          | `estimated_points`, `logged_hours`, `item_count`, `group_id`, `as_of`                                                                                              |
+| Derived at read | Ideal / pending / behind via `groupsFromSprintContributionRollupRows`                                                                                              |
+| Write path      | `rebuild_sprint_analytics_rollups` = burndown rebuild then contribution; existing burndown triggers call the wrapper; also watch `assignee_id` / `status_category` |
+| Read path       | Prefer rollup when `as_of` matches; else live items + worklogs + best-effort analytics rebuild                                                                     |
+
+Migration: `packages/db/prisma/migrations/add_sprint_contribution_rollups/`.
+API: `GET /api/v1/charts/analytics/sprint-contribution`.
+
+---
+
 ## Open questions (resolved / remaining)
 
 Nested donut locks (shipped):

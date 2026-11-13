@@ -61,6 +61,7 @@ export const ModelName = {
   work_item_links: 'work_item_links',
   activities: 'activities',
   sprint_burndown_rollups: 'sprint_burndown_rollups',
+  sprint_contribution_rollups: 'sprint_contribution_rollups',
   work_item_chart_rollups: 'work_item_chart_rollups',
   work_item_chart_hierarchy_rollups: 'work_item_chart_hierarchy_rollups',
   work_item_worklogs: 'work_item_worklogs',
@@ -288,6 +289,21 @@ export const Sprint_burndown_rollupsScalarFieldEnum = {
 } as const
 
 export type Sprint_burndown_rollupsScalarFieldEnum = (typeof Sprint_burndown_rollupsScalarFieldEnum)[keyof typeof Sprint_burndown_rollupsScalarFieldEnum]
+
+
+export const Sprint_contribution_rollupsScalarFieldEnum = {
+  sprint_id: 'sprint_id',
+  assignee_key: 'assignee_key',
+  assignee_id: 'assignee_id',
+  project_id: 'project_id',
+  as_of: 'as_of',
+  group_id: 'group_id',
+  estimated_points: 'estimated_points',
+  logged_hours: 'logged_hours',
+  item_count: 'item_count'
+} as const
+
+export type Sprint_contribution_rollupsScalarFieldEnum = (typeof Sprint_contribution_rollupsScalarFieldEnum)[keyof typeof Sprint_contribution_rollupsScalarFieldEnum]
 
 
 export const Work_item_chart_rollupsScalarFieldEnum = {

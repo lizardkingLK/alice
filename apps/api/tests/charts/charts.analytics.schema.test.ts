@@ -3,9 +3,11 @@ import {
   chartDrilldownQuerySchema,
   chartRollupGroupColumn,
   chartSeriesQuerySchema,
+  chartSprintContributionQuerySchema,
 } from '@repo/types';
 
 const PROJECT_ID = '33333333-3333-4333-8333-333333333333';
+const SPRINT_ID = '55555555-5555-4555-8555-555555555555';
 
 describe('chart analytics query schemas', () => {
   it('defaults labelField to status and allows omitted projectId (all projects)', () => {
@@ -81,5 +83,31 @@ describe('chart analytics query schemas', () => {
     });
     expect(parsed.sliceKey).toBeUndefined();
     expect(parsed.labelField).toBe('status');
+  });
+
+  it('parses sprint contribution query and maps unassigned assignee', () => {
+    expect(
+      chartSprintContributionQuerySchema.parse({
+        projectId: PROJECT_ID,
+        sprintId: SPRINT_ID,
+      })
+    ).toEqual({
+      projectId: PROJECT_ID,
+      sprintId: SPRINT_ID,
+    });
+
+    expect(
+      chartSprintContributionQuerySchema.parse({
+        projectId: PROJECT_ID,
+        sprintId: SPRINT_ID,
+        assigneeId: 'unassigned',
+        asOf: '2026-01-15',
+      })
+    ).toEqual({
+      projectId: PROJECT_ID,
+      sprintId: SPRINT_ID,
+      assigneeId: '',
+      asOf: '2026-01-15',
+    });
   });
 });

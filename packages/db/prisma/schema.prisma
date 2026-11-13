@@ -196,6 +196,7 @@ model users {
   reporting_lines     team_members[]    @relation("ReportingLine")
   assigned_work_items work_items[]      @relation("WorkItemAssignee")
   chart_rollup_assignments work_item_chart_rollups[] @relation("WorkItemChartRollupAssignee")
+  contribution_rollup_assignments sprint_contribution_rollups[] @relation("SprintContributionRollupAssignee")
   chart_hierarchy_rollup_assignments work_item_chart_hierarchy_rollups[] @relation("WorkItemChartHierarchyRollupAssignee")
   reported_work_items work_items[]      @relation("WorkItemReporter")
   comments            comments[]        @relation("CommentAuthor")
@@ -292,7 +293,8 @@ model projects {
   work_item_links      work_item_links[]
   chart_rollups           work_item_chart_rollups[]
   chart_hierarchy_rollups work_item_chart_hierarchy_rollups[]
-  burndown_rollups        sprint_burndown_rollups[]
+  burndown_rollups            sprint_burndown_rollups[]
+  contribution_rollups        sprint_contribution_rollups[]
   saved_views             saved_views[]
   integration_bindings    project_integration_bindings[]
   project_integrations    integrations[] @relation("ProjectIntegrations")
@@ -383,6 +385,7 @@ model sprints {
   chart_rollups           work_item_chart_rollups[]
   chart_hierarchy_rollups work_item_chart_hierarchy_rollups[]
   burndown_rollups        sprint_burndown_rollups[]
+  contribution_rollups    sprint_contribution_rollups[]
 
   @@unique([project_id, name])
   @@unique([project_id, slug])
@@ -508,6 +511,28 @@ model sprint_burndown_rollups {
   project projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
 
   @@id([sprint_id, bucket_date])
+  @@index([project_id, sprint_id])
+}
+
+/// Precomputed sprint contribution rows (trigger-maintained) for Charts.
+/// Ideal / pending / behind are derived at read time from estimate + dates + as_of.
+model sprint_contribution_rollups {
+  sprint_id         String   @db.Uuid
+  /// coalesce(assignee_id::text, '') — avoids NULL PK quirks for Unassigned.
+  assignee_key      String
+  assignee_id       String?  @db.Uuid
+  project_id        String   @db.Uuid
+  as_of             DateTime @db.Date
+  group_id          String
+  estimated_points  Float    @default(0)
+  logged_hours      Float    @default(0)
+  item_count        Int      @default(0)
+
+  sprint   sprints  @relation(fields: [sprint_id], references: [id], onDelete: Cascade)
+  project  projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  assignee users?   @relation("SprintContributionRollupAssignee", fields: [assignee_id], references: [id], onDelete: SetNull)
+
+  @@id([sprint_id, assignee_key])
   @@index([project_id, sprint_id])
 }
 

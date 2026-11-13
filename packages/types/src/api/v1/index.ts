@@ -540,6 +540,7 @@ export {
   chartHierarchySeriesQuerySchema,
   chartRollupGroupColumn,
   chartSeriesQuerySchema,
+  chartSprintContributionQuerySchema,
   isWorkflowStateCategory,
   type ChartDrilldownItemRow,
   type ChartDrilldownQuery,
@@ -557,6 +558,10 @@ export {
   type ChartSeriesQuery,
   type ChartSeriesResponse,
   type ChartSeriesSlice,
+  type ChartSprintContributionGroupWire,
+  type ChartSprintContributionQuery,
+  type ChartSprintContributionResponse,
+  type ChartSprintContributionRowWire,
 } from './charts-analytics.js';
 export {
   accessAllowlistListSelect,

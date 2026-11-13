@@ -646,14 +646,6 @@ export type work_item_chart_rollupsUncheckedUpdateManyWithoutSprintNestedInput =
   deleteMany?: Prisma.work_item_chart_rollupsScalarWhereInput | Prisma.work_item_chart_rollupsScalarWhereInput[]
 }
 
-export type IntFieldUpdateOperationsInput = {
-  set?: number
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type work_item_chart_rollupsCreateWithoutAssigneeInput = {
   grain_key: string
   bucket_date: Date | string
