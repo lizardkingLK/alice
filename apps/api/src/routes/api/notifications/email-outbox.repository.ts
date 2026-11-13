@@ -417,9 +417,8 @@ export class PrismaEmailOutboxRepository implements EmailOutboxRepository {
       : null;
     const template = item.template as EmailTemplate;
     if (
-      !notification ||
-      notification.user_id !== item.userId ||
-      notification.type !== TEMPLATE_NOTIFICATION_TYPE[template]
+      notification?.user_id !== item.userId ||
+      notification?.type !== TEMPLATE_NOTIFICATION_TYPE[template]
     ) {
       return false;
     }
@@ -515,8 +514,7 @@ export class PrismaEmailOutboxRepository implements EmailOutboxRepository {
       },
     });
     return Boolean(
-      recipient &&
-      recipient.email === item.recipientEmail &&
+      recipient?.email === item.recipientEmail &&
       preferenceAllows(template, recipient.notification_email_preference)
     );
   }
