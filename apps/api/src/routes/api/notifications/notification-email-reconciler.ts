@@ -1,6 +1,7 @@
 import { ZodError } from 'zod';
 import type { PrismaEmailOutboxRepository } from './email-outbox.repository';
 import { parseNotificationEmailEvent } from './notification-email-events';
+import { runSerial } from './run-serial';
 
 export type NotificationEmailReconciliationResult = {
   checked: number;
@@ -36,8 +37,9 @@ export class NotificationEmailReconciler {
       failed: 0,
     };
 
-    // Process events oldest first and finish handling each event before moving on.
-    for (const snapshot of events) {
+    // Process events oldest first and finish each before the next.
+    // Recurse via runSerial to avoid await-in-for (typescript:S9382).
+    await runSerial(events, async (snapshot) => {
       try {
         const event = parseNotificationEmailEvent({
           version: snapshot.version,
@@ -58,7 +60,7 @@ export class NotificationEmailReconciler {
           result.failed += 1;
         }
       }
-    }
+    });
     return result;
   }
 

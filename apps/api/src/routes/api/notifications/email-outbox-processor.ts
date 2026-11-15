@@ -6,6 +6,7 @@ import {
   calculateEmailBackoffMs,
   classifyEmailFailure,
 } from '../../../lib/email/email-delivery-policy';
+import { runSerial } from './run-serial';
 
 export type ClaimedEmailOutboxItem = {
   readonly id: string;
@@ -125,14 +126,15 @@ export class EmailOutboxProcessor {
 
     // Keep claimed deliveries serial: repository order is the delivery order, and
     // processItem renews each lease immediately before sending that item.
-    for (const item of items) {
+    // Recurse via runSerial to avoid await-in-for (typescript:S9382).
+    await runSerial(items, async (item) => {
       if (processedIds.has(item.id)) {
         result.duplicateClaims += 1;
-        continue;
+        return;
       }
       processedIds.add(item.id);
       await this.processItem(item, result);
-    }
+    });
 
     return result;
   }

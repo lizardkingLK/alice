@@ -11,6 +11,7 @@ import {
 import { prisma } from '../../../lib/prisma';
 import { z } from 'zod';
 import type { PrismaEmailOutboxRepository } from './email-outbox.repository';
+import { runSerial } from './run-serial';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -383,49 +384,26 @@ export class WeeklyProjectReportGenerator {
 
     // Keep candidates serial: a persisted canonical snapshot must be reused by
     // later recipients, and each outbox row is created only after its commit.
-    for (const candidate of due) {
+    // Recurse via runSerial to avoid await-in-for (typescript:S9382).
+    await runSerial(due, async (candidate) => {
       try {
-        let snapshot = snapshots.get(candidate.projectId);
-        if (!snapshot) {
-          snapshot =
-            (await this.store.findSnapshot({
-              projectId: candidate.projectId,
-              periodStart,
-            })) ??
-            (await this.store.buildSnapshot({
-              projectId: candidate.projectId,
-              projectName: candidate.projectName,
-              periodStart,
-              periodEnd,
-              now,
-            }));
-          snapshots.set(candidate.projectId, snapshot);
-        }
-        const result = await this.store.persist({
+        const outcome = await this.processCandidate({
           candidate,
-          snapshot,
+          snapshots,
           periodStart,
           periodEnd,
+          now,
         });
-        snapshots.set(candidate.projectId, result.snapshot);
-        if (result.status === 'created') {
+        if (outcome === 'created') created += 1;
+        else if (outcome === 'duplicate') duplicates += 1;
+        else if (outcome === 'outbox_failed') {
           created += 1;
-          try {
-            await this.outboxRepository.createForNotification({
-              notificationId: result.notificationId!,
-              template: EmailTemplate.weekly_project_report,
-              payload: result.eventPayload!,
-            });
-          } catch {
-            outboxFailed += 1;
-          }
-        } else {
-          duplicates += 1;
+          outboxFailed += 1;
         }
       } catch {
         failed += 1;
       }
-    }
+    });
     return {
       candidates: due.length,
       projects: snapshots.size,
@@ -434,5 +412,51 @@ export class WeeklyProjectReportGenerator {
       failed,
       outboxFailed,
     };
+  }
+
+  private async processCandidate(params: {
+    readonly candidate: WeeklyReportCandidate;
+    readonly snapshots: Map<string, WeeklyProjectSnapshot>;
+    readonly periodStart: Date;
+    readonly periodEnd: Date;
+    readonly now: Date;
+  }): Promise<'created' | 'duplicate' | 'outbox_failed'> {
+    const { candidate, snapshots, periodStart, periodEnd, now } = params;
+    let snapshot = snapshots.get(candidate.projectId);
+    if (!snapshot) {
+      snapshot =
+        (await this.store.findSnapshot({
+          projectId: candidate.projectId,
+          periodStart,
+        })) ??
+        (await this.store.buildSnapshot({
+          projectId: candidate.projectId,
+          projectName: candidate.projectName,
+          periodStart,
+          periodEnd,
+          now,
+        }));
+      snapshots.set(candidate.projectId, snapshot);
+    }
+    const result = await this.store.persist({
+      candidate,
+      snapshot,
+      periodStart,
+      periodEnd,
+    });
+    snapshots.set(candidate.projectId, result.snapshot);
+    if (result.status !== 'created') {
+      return 'duplicate';
+    }
+    try {
+      await this.outboxRepository.createForNotification({
+        notificationId: result.notificationId!,
+        template: EmailTemplate.weekly_project_report,
+        payload: result.eventPayload!,
+      });
+      return 'created';
+    } catch {
+      return 'outbox_failed';
+    }
   }
 }
