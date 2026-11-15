@@ -381,6 +381,8 @@ export class WeeklyProjectReportGenerator {
     let failed = 0;
     let outboxFailed = 0;
 
+    // Keep candidates serial: a persisted canonical snapshot must be reused by
+    // later recipients, and each outbox row is created only after its commit.
     for (const candidate of due) {
       try {
         let snapshot = snapshots.get(candidate.projectId);

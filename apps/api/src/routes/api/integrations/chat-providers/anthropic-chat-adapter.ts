@@ -356,7 +356,6 @@ function assertNormalStopReason(
   throw invalidResponse('invalid_stop_reason');
 }
 
-
 function assertAnthropicAssistantMessage(payload: unknown): {
   readonly content: readonly unknown[];
   readonly stop_reason: unknown;

@@ -123,6 +123,8 @@ export class EmailOutboxProcessor {
     };
     const processedIds = new Set<string>();
 
+    // Keep claimed deliveries serial: repository order is the delivery order, and
+    // processItem renews each lease immediately before sending that item.
     for (const item of items) {
       if (processedIds.has(item.id)) {
         result.duplicateClaims += 1;

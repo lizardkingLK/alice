@@ -36,6 +36,7 @@ export class NotificationEmailReconciler {
       failed: 0,
     };
 
+    // Process events oldest first and finish handling each event before moving on.
     for (const snapshot of events) {
       try {
         const event = parseNotificationEmailEvent({
