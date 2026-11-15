@@ -41,6 +41,14 @@ import { CommentsService } from '../routes/api/comments/comments.service';
 import { createCommentsRouter } from '../routes/api/comments/comments.route';
 import { createNotificationsRouter } from '../routes/api/notifications/notifications.route';
 import { NotificationsRepository } from '../routes/api/notifications/notifications.repository';
+import { PrismaEmailOutboxRepository } from '../routes/api/notifications/email-outbox.repository';
+import { NotificationEmailReconciler } from '../routes/api/notifications/notification-email-reconciler';
+import { EmailOutboxProcessor } from '../routes/api/notifications/email-outbox-processor';
+import { StoredEventOutboxEmailFactory } from '../routes/api/notifications/outbox-email-factory';
+import {
+  PrismaWeeklyProjectReportStore,
+  WeeklyProjectReportGenerator,
+} from '../routes/api/notifications/weekly-project-report-generator';
 import { HealthRepository } from '../routes/api/health/health.repository';
 import {
   HealthService,
@@ -55,6 +63,7 @@ import { ProjectsRepository } from '../routes/api/projects/projects.repository';
 import { ProjectsService } from '../routes/api/projects/projects.service';
 import {
   createResendProjectMemberEmailSender,
+  createResendEmailTransport,
   type ProjectMemberEmailSender,
 } from '../routes/api/projects/project-member-email';
 import { createProjectsRouter } from '../routes/api/projects/projects.route';
@@ -216,17 +225,48 @@ function createNotificationsConfig(
   accessRequestsService: AccessRequestsService
 ) {
   const notificationsRepository = new NotificationsRepository(supabase);
+  const emailOutboxRepository = new PrismaEmailOutboxRepository();
   const notificationsService = new NotificationsService(
-    notificationsRepository
+    notificationsRepository,
+    emailOutboxRepository
+  );
+  const emailReconciler = new NotificationEmailReconciler(
+    emailOutboxRepository
+  );
+  const emailOutboxProcessor = new EmailOutboxProcessor(
+    emailOutboxRepository,
+    createResendEmailTransport({
+      apiKey: env.RESEND_API_KEY,
+      from: env.TRANSACTIONAL_EMAIL_FROM,
+      missingConfiguration: 'throw',
+    }),
+    new StoredEventOutboxEmailFactory(env.FRONTEND_URL),
+    { workerId: `api-${process.pid}` }
+  );
+  const weeklyProjectReportGenerator = new WeeklyProjectReportGenerator(
+    new PrismaWeeklyProjectReportStore(),
+    emailOutboxRepository
   );
   const router = createNotificationsRouter({
     notificationsService,
     accessRequestsService,
+    emailReconciler,
+    emailOutboxProcessor,
+    emailReconciliationEnabled: env.EMAIL_RECONCILIATION_ENABLED === 'true',
+    emailOutboxProcessingEnabled:
+      env.EMAIL_OUTBOX_PROCESSING_ENABLED === 'true',
+    weeklyProjectReportGenerator,
+    weeklyReportGenerationEnabled:
+      env.WEEKLY_REPORT_GENERATION_ENABLED === 'true',
   });
 
   return {
     notificationsRepository,
+    emailOutboxRepository,
     notificationsService,
+    emailReconciler,
+    emailOutboxProcessor,
+    weeklyProjectReportGenerator,
     router,
   };
 }
@@ -240,11 +280,11 @@ function createWorkItemsConfig(
   const workItemService = new WorkItemService(
     workItemRepository,
     githubService,
-    activitiesService
+    activitiesService,
+    notificationsService
   );
   const router = createWorkItemsRouter({
     workItemService,
-    notificationsService,
   });
 
   return {

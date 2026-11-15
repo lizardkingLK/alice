@@ -8,6 +8,9 @@ import {
 import { env } from '../../../config/env';
 import type { NotificationsService } from './notifications.service';
 import type { AccessRequestsService } from '../access-requests/access-requests.service';
+import type { NotificationEmailReconciler } from './notification-email-reconciler';
+import type { EmailOutboxProcessor } from './email-outbox-processor';
+import type { WeeklyProjectReportGenerator } from './weekly-project-report-generator';
 
 const sendSchema = z.object({
   subscriberId: z.string().min(1),
@@ -24,13 +27,8 @@ function routeError(res: Response, error: unknown): void {
 function assertCronAuthorized(req: {
   headers: { authorization?: string };
 }): boolean {
-  const secret = env.CRON_SECRET;
-  if (!secret) {
-    // Local/dev without CRON_SECRET: allow (matches optional env). Prod should set it.
-    return true;
-  }
   const header = req.headers.authorization;
-  return header === `Bearer ${secret}`;
+  return header === `Bearer ${env.CRON_SECRET}`;
 }
 
 async function runAuthorizedCron<T extends object>(
@@ -54,6 +52,12 @@ async function runAuthorizedCron<T extends object>(
 export type NotificationsRouterDeps = {
   notificationsService: NotificationsService;
   accessRequestsService: AccessRequestsService;
+  emailReconciler?: Pick<NotificationEmailReconciler, 'reconcile'>;
+  emailOutboxProcessor?: Pick<EmailOutboxProcessor, 'processBatch'>;
+  emailReconciliationEnabled?: boolean;
+  emailOutboxProcessingEnabled?: boolean;
+  weeklyProjectReportGenerator?: Pick<WeeklyProjectReportGenerator, 'generate'>;
+  weeklyReportGenerationEnabled?: boolean;
 };
 
 export function createNotificationsRouter(deps: NotificationsRouterDeps) {
@@ -122,6 +126,45 @@ export function createNotificationsRouter(deps: NotificationsRouterDeps) {
       notificationsService.pruneReadNotifications()
     );
   });
+
+  notificationsRouter.post('/cron/reconcile-email', async (req, res) => {
+    await runAuthorizedCron(req, res, async () => {
+      if (!deps.emailReconciliationEnabled || !deps.emailReconciler) {
+        return { enabled: false };
+      }
+      return { enabled: true, ...(await deps.emailReconciler.reconcile()) };
+    });
+  });
+
+  notificationsRouter.post('/cron/process-email-outbox', async (req, res) => {
+    await runAuthorizedCron(req, res, async () => {
+      if (!deps.emailOutboxProcessingEnabled || !deps.emailOutboxProcessor) {
+        return { enabled: false };
+      }
+      return {
+        enabled: true,
+        ...(await deps.emailOutboxProcessor.processBatch()),
+      };
+    });
+  });
+
+  notificationsRouter.post(
+    '/cron/generate-weekly-reports',
+    async (req, res) => {
+      await runAuthorizedCron(req, res, async () => {
+        if (
+          !deps.weeklyReportGenerationEnabled ||
+          !deps.weeklyProjectReportGenerator
+        ) {
+          return { enabled: false };
+        }
+        return {
+          enabled: true,
+          ...(await deps.weeklyProjectReportGenerator.generate()),
+        };
+      });
+    }
+  );
 
   return notificationsRouter;
 }

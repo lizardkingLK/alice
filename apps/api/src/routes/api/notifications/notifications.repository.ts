@@ -10,8 +10,15 @@ import { prisma } from '../../../lib/prisma';
 import { prismaNotificationCreate } from '../../../lib/prisma-audit';
 import {
   NotificationType as NotificationTypeEnum,
+  type Prisma,
   RecordStatus,
+  UserMembershipStatus,
 } from '@repo/types/prisma';
+import {
+  notificationEmailEventCreateData,
+  parseNotificationEmailEvent,
+  type NotificationEmailEvent,
+} from './notification-email-events';
 
 export type DueWorkItemRow = {
   id: string;
@@ -118,7 +125,17 @@ export class NotificationsRepository {
     });
   }
 
-  async getUserName(userId: string): Promise<string | null> {
+  async getUserName(
+    userId: string,
+    client?: Prisma.TransactionClient
+  ): Promise<string | null> {
+    if (client) {
+      const actor = await client.users.findUnique({
+        where: { id: userId },
+        select: { name: true },
+      });
+      return actor?.name ?? null;
+    }
     const { data: actor } = await this.db
       .from('users')
       .select('name')
@@ -128,20 +145,73 @@ export class NotificationsRepository {
     return actor?.name ?? null;
   }
 
+  async findAuthorizedProjectRecipientIds(
+    projectId: string,
+    userIds: string[],
+    client: Prisma.TransactionClient | typeof prisma = prisma
+  ): Promise<string[]> {
+    if (userIds.length === 0) return [];
+
+    const users = await client.users.findMany({
+      where: {
+        id: { in: userIds },
+        active: true,
+        membership_status: UserMembershipStatus.active,
+        OR: [
+          { owned_projects: { some: { id: projectId } } },
+          {
+            project_memberships: {
+              some: { project_id: projectId, status: RecordStatus.active },
+            },
+          },
+        ],
+      },
+      select: { id: true },
+    });
+
+    return users.map((user) => user.id);
+  }
+
   async insert(notification: NotificationType): Promise<void> {
     await prisma.notifications.create({
       data: prismaNotificationCreate(notification),
     });
   }
 
-  async insertMany(notifications: NotificationType[]): Promise<void> {
+  async insertMany(
+    notifications: NotificationType[],
+    options?: {
+      client?: Prisma.TransactionClient;
+      emailEvents?: readonly (NotificationEmailEvent | undefined)[];
+    }
+  ): Promise<Array<{ id: string; user_id: string }>> {
     if (notifications.length === 0) {
-      return;
+      return [];
     }
 
-    await prisma.notifications.createMany({
-      data: notifications.map(prismaNotificationCreate),
-    });
+    const emailEvents = options?.emailEvents?.map((event) =>
+      event === undefined ? undefined : parseNotificationEmailEvent(event)
+    );
+    const insertWithClient = async (client: Prisma.TransactionClient) =>
+      await Promise.all(
+        notifications.map(async (notification, index) => {
+          const persisted = await client.notifications.create({
+            data: prismaNotificationCreate(notification),
+            select: { id: true, user_id: true },
+          });
+          const emailEvent = emailEvents?.[index];
+          if (emailEvent) {
+            await client.notification_email_events.create({
+              data: notificationEmailEventCreateData(persisted.id, emailEvent),
+            });
+          }
+          return persisted;
+        })
+      );
+
+    return options?.client
+      ? await insertWithClient(options.client)
+      : await prisma.$transaction((client) => insertWithClient(client));
   }
 
   async findDueWorkItems(
