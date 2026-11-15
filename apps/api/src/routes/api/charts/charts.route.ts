@@ -5,6 +5,7 @@ import {
   chartHierarchyDrilldownQuerySchema,
   chartHierarchySeriesQuerySchema,
   chartSeriesQuerySchema,
+  chartSprintContributionQuerySchema,
 } from '@repo/types';
 import {
   requireApiAuth,
@@ -26,7 +27,7 @@ function sendError(res: Response, error: unknown, fallback: string) {
   let status = 500;
   if (message === 'Forbidden') {
     status = 403;
-  } else if (message === 'Chart not found') {
+  } else if (message === 'Chart not found' || message === 'Sprint not found') {
     status = 404;
   } else if (
     message === 'Only active charts can be shared' ||
@@ -123,6 +124,13 @@ export function createChartsRouter(deps: ChartsRouterDeps) {
     chartHierarchyDrilldownQuerySchema,
     (userId, query) => chartsService.getHierarchyDrilldown(userId, query),
     'Failed to load hierarchy chart drilldown'
+  );
+  registerChartAnalyticsGet(
+    chartsRouter,
+    '/analytics/sprint-contribution',
+    chartSprintContributionQuerySchema,
+    (userId, query) => chartsService.getSprintContribution(userId, query),
+    'Failed to load sprint contribution'
   );
 
   chartsRouter.get(

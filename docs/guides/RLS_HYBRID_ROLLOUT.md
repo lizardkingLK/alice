@@ -58,15 +58,15 @@ INSERT/UPDATE/DELETE policies); mutations use service role / Prisma.
 
 ### P2 — API-only revoke + policy hygiene — **done**
 
-| Table                                                                                     | Status                                                                                                                          |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `work_item_links`                                                                         | **Done** — RLS + revoke (Prisma / charts-API only)                                                                              |
-| `work_item_chart_rollups`, `work_item_chart_hierarchy_rollups`, `sprint_burndown_rollups` | **Done** — RLS + revoke                                                                                                         |
-| `notifications`                                                                           | **Hardened** — SELECT/UPDATE/DELETE own rows; INSERT via service role only                                                      |
-| `chat_conversations`                                                                      | **Hardened** — same owner CRUD; `(select auth.uid())`                                                                           |
-| `charts`, `chart_shares`                                                                  | Reviewed — owner/share policies; share EXISTS cycle broken via SECURITY DEFINER helpers (`rls_fix_saved_views_share_recursion`) |
-| `integrations`, PM/VC connections, `chat_attachments`, allowlist/requests                 | Revoke + RLS — grants footer                                                                                                    |
-| `_prisma_migrations`                                                                      | **Done** — RLS + revoke (`rls_hybrid_prisma_migrations_lockdown`); Prisma/`service_role` bypass                                 |
+| Table                                                                                                                    | Status                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `work_item_links`                                                                                                        | **Done** — RLS + revoke (Prisma / charts-API only)                                                                              |
+| `work_item_chart_rollups`, `work_item_chart_hierarchy_rollups`, `sprint_burndown_rollups`, `sprint_contribution_rollups` | **Done** — RLS + revoke                                                                                                         |
+| `notifications`                                                                                                          | **Hardened** — SELECT/UPDATE/DELETE own rows; INSERT via service role only                                                      |
+| `chat_conversations`                                                                                                     | **Hardened** — same owner CRUD; `(select auth.uid())`                                                                           |
+| `charts`, `chart_shares`                                                                                                 | Reviewed — owner/share policies; share EXISTS cycle broken via SECURITY DEFINER helpers (`rls_fix_saved_views_share_recursion`) |
+| `integrations`, PM/VC connections, `chat_attachments`, allowlist/requests                                                | Revoke + RLS — grants footer                                                                                                    |
+| `_prisma_migrations`                                                                                                     | **Done** — RLS + revoke (`rls_hybrid_prisma_migrations_lockdown`); Prisma/`service_role` bypass                                 |
 
 ### Out of scope (intentionally deferred)
 

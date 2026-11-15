@@ -257,6 +257,7 @@ export type usersWhereInput = {
   reporting_lines?: Prisma.Team_membersListRelationFilter
   assigned_work_items?: Prisma.Work_itemsListRelationFilter
   chart_rollup_assignments?: Prisma.Work_item_chart_rollupsListRelationFilter
+  contribution_rollup_assignments?: Prisma.Sprint_contribution_rollupsListRelationFilter
   chart_hierarchy_rollup_assignments?: Prisma.Work_item_chart_hierarchy_rollupsListRelationFilter
   reported_work_items?: Prisma.Work_itemsListRelationFilter
   comments?: Prisma.CommentsListRelationFilter
@@ -342,6 +343,7 @@ export type usersOrderByWithRelationInput = {
   reporting_lines?: Prisma.team_membersOrderByRelationAggregateInput
   assigned_work_items?: Prisma.work_itemsOrderByRelationAggregateInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsOrderByRelationAggregateInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsOrderByRelationAggregateInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsOrderByRelationAggregateInput
   reported_work_items?: Prisma.work_itemsOrderByRelationAggregateInput
   comments?: Prisma.commentsOrderByRelationAggregateInput
@@ -430,6 +432,7 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   reporting_lines?: Prisma.Team_membersListRelationFilter
   assigned_work_items?: Prisma.Work_itemsListRelationFilter
   chart_rollup_assignments?: Prisma.Work_item_chart_rollupsListRelationFilter
+  contribution_rollup_assignments?: Prisma.Sprint_contribution_rollupsListRelationFilter
   chart_hierarchy_rollup_assignments?: Prisma.Work_item_chart_hierarchy_rollupsListRelationFilter
   reported_work_items?: Prisma.Work_itemsListRelationFilter
   comments?: Prisma.CommentsListRelationFilter
@@ -551,6 +554,7 @@ export type usersCreateInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -634,6 +638,7 @@ export type usersUncheckedCreateInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -717,6 +722,7 @@ export type usersUpdateInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -800,6 +806,7 @@ export type usersUncheckedUpdateInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -1444,6 +1451,22 @@ export type usersUpdateOneWithoutActivitiesNestedInput = {
   delete?: Prisma.usersWhereInput | boolean
   connect?: Prisma.usersWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutActivitiesInput, Prisma.usersUpdateWithoutActivitiesInput>, Prisma.usersUncheckedUpdateWithoutActivitiesInput>
+}
+
+export type usersCreateNestedOneWithoutContribution_rollup_assignmentsInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutContribution_rollup_assignmentsInput, Prisma.usersUncheckedCreateWithoutContribution_rollup_assignmentsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutContribution_rollup_assignmentsInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersUpdateOneWithoutContribution_rollup_assignmentsNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutContribution_rollup_assignmentsInput, Prisma.usersUncheckedCreateWithoutContribution_rollup_assignmentsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutContribution_rollup_assignmentsInput
+  upsert?: Prisma.usersUpsertWithoutContribution_rollup_assignmentsInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutContribution_rollup_assignmentsInput, Prisma.usersUpdateWithoutContribution_rollup_assignmentsInput>, Prisma.usersUncheckedUpdateWithoutContribution_rollup_assignmentsInput>
 }
 
 export type usersCreateNestedOneWithoutChart_rollup_assignmentsInput = {
@@ -2140,6 +2163,7 @@ export type usersCreateWithoutCreated_usersInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -2222,6 +2246,7 @@ export type usersUncheckedCreateWithoutCreated_usersInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -2309,6 +2334,7 @@ export type usersCreateWithoutCreatorInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -2391,6 +2417,7 @@ export type usersUncheckedCreateWithoutCreatorInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -2483,6 +2510,7 @@ export type usersCreateWithoutUpdated_usersInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -2565,6 +2593,7 @@ export type usersUncheckedCreateWithoutUpdated_usersInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -2652,6 +2681,7 @@ export type usersCreateWithoutUpdaterInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -2734,6 +2764,7 @@ export type usersUncheckedCreateWithoutUpdaterInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -2837,6 +2868,7 @@ export type usersUpdateWithoutCreated_usersInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -2919,6 +2951,7 @@ export type usersUncheckedUpdateWithoutCreated_usersInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -3047,6 +3080,7 @@ export type usersUpdateWithoutUpdated_usersInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -3129,6 +3163,7 @@ export type usersUncheckedUpdateWithoutUpdated_usersInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -3227,6 +3262,7 @@ export type usersCreateWithoutOwned_projectsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -3309,6 +3345,7 @@ export type usersUncheckedCreateWithoutOwned_projectsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -3397,6 +3434,7 @@ export type usersCreateWithoutCreated_projectsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -3479,6 +3517,7 @@ export type usersUncheckedCreateWithoutCreated_projectsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -3566,6 +3605,7 @@ export type usersCreateWithoutUpdated_projectsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -3648,6 +3688,7 @@ export type usersUncheckedCreateWithoutUpdated_projectsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -3745,6 +3786,7 @@ export type usersUpdateWithoutOwned_projectsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -3827,6 +3869,7 @@ export type usersUncheckedUpdateWithoutOwned_projectsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -3921,6 +3964,7 @@ export type usersUpdateWithoutCreated_projectsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -4003,6 +4047,7 @@ export type usersUncheckedUpdateWithoutCreated_projectsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -4096,6 +4141,7 @@ export type usersUpdateWithoutUpdated_projectsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -4178,6 +4224,7 @@ export type usersUncheckedUpdateWithoutUpdated_projectsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -4259,6 +4306,7 @@ export type usersCreateWithoutProject_membershipsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -4341,6 +4389,7 @@ export type usersUncheckedCreateWithoutProject_membershipsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -4429,6 +4478,7 @@ export type usersCreateWithoutCreated_project_membersInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -4511,6 +4561,7 @@ export type usersUncheckedCreateWithoutCreated_project_membersInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -4598,6 +4649,7 @@ export type usersCreateWithoutUpdated_project_membersInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -4680,6 +4732,7 @@ export type usersUncheckedCreateWithoutUpdated_project_membersInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -4777,6 +4830,7 @@ export type usersUpdateWithoutProject_membershipsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -4859,6 +4913,7 @@ export type usersUncheckedUpdateWithoutProject_membershipsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -4953,6 +5008,7 @@ export type usersUpdateWithoutCreated_project_membersInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -5035,6 +5091,7 @@ export type usersUncheckedUpdateWithoutCreated_project_membersInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -5128,6 +5185,7 @@ export type usersUpdateWithoutUpdated_project_membersInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -5210,6 +5268,7 @@ export type usersUncheckedUpdateWithoutUpdated_project_membersInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -5291,6 +5350,7 @@ export type usersCreateWithoutManaged_teamsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -5373,6 +5433,7 @@ export type usersUncheckedCreateWithoutManaged_teamsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -5461,6 +5522,7 @@ export type usersCreateWithoutCreated_teamsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -5543,6 +5605,7 @@ export type usersUncheckedCreateWithoutCreated_teamsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -5630,6 +5693,7 @@ export type usersCreateWithoutUpdated_teamsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -5712,6 +5776,7 @@ export type usersUncheckedCreateWithoutUpdated_teamsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -5809,6 +5874,7 @@ export type usersUpdateWithoutManaged_teamsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -5891,6 +5957,7 @@ export type usersUncheckedUpdateWithoutManaged_teamsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -5985,6 +6052,7 @@ export type usersUpdateWithoutCreated_teamsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -6067,6 +6135,7 @@ export type usersUncheckedUpdateWithoutCreated_teamsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -6160,6 +6229,7 @@ export type usersUpdateWithoutUpdated_teamsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -6242,6 +6312,7 @@ export type usersUncheckedUpdateWithoutUpdated_teamsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -6323,6 +6394,7 @@ export type usersCreateWithoutTeam_membershipsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -6405,6 +6477,7 @@ export type usersUncheckedCreateWithoutTeam_membershipsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -6492,6 +6565,7 @@ export type usersCreateWithoutReporting_linesInput = {
   team_memberships?: Prisma.team_membersCreateNestedManyWithoutUserInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -6574,6 +6648,7 @@ export type usersUncheckedCreateWithoutReporting_linesInput = {
   team_memberships?: Prisma.team_membersUncheckedCreateNestedManyWithoutUserInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -6662,6 +6737,7 @@ export type usersCreateWithoutCreated_team_membersInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -6744,6 +6820,7 @@ export type usersUncheckedCreateWithoutCreated_team_membersInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -6831,6 +6908,7 @@ export type usersCreateWithoutUpdated_team_membersInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -6913,6 +6991,7 @@ export type usersUncheckedCreateWithoutUpdated_team_membersInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -7010,6 +7089,7 @@ export type usersUpdateWithoutTeam_membershipsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -7092,6 +7172,7 @@ export type usersUncheckedUpdateWithoutTeam_membershipsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -7185,6 +7266,7 @@ export type usersUpdateWithoutReporting_linesInput = {
   team_memberships?: Prisma.team_membersUpdateManyWithoutUserNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -7267,6 +7349,7 @@ export type usersUncheckedUpdateWithoutReporting_linesInput = {
   team_memberships?: Prisma.team_membersUncheckedUpdateManyWithoutUserNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -7361,6 +7444,7 @@ export type usersUpdateWithoutCreated_team_membersInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -7443,6 +7527,7 @@ export type usersUncheckedUpdateWithoutCreated_team_membersInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -7536,6 +7621,7 @@ export type usersUpdateWithoutUpdated_team_membersInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -7618,6 +7704,7 @@ export type usersUncheckedUpdateWithoutUpdated_team_membersInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -7700,6 +7787,7 @@ export type usersCreateWithoutCreated_sprintsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -7782,6 +7870,7 @@ export type usersUncheckedCreateWithoutCreated_sprintsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -7869,6 +7958,7 @@ export type usersCreateWithoutUpdated_sprintsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -7951,6 +8041,7 @@ export type usersUncheckedCreateWithoutUpdated_sprintsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -8049,6 +8140,7 @@ export type usersUpdateWithoutCreated_sprintsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -8131,6 +8223,7 @@ export type usersUncheckedUpdateWithoutCreated_sprintsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -8224,6 +8317,7 @@ export type usersUpdateWithoutUpdated_sprintsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -8306,6 +8400,7 @@ export type usersUncheckedUpdateWithoutUpdated_sprintsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -8387,6 +8482,7 @@ export type usersCreateWithoutAssigned_work_itemsInput = {
   team_memberships?: Prisma.team_membersCreateNestedManyWithoutUserInput
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -8469,6 +8565,7 @@ export type usersUncheckedCreateWithoutAssigned_work_itemsInput = {
   team_memberships?: Prisma.team_membersUncheckedCreateNestedManyWithoutUserInput
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -8557,6 +8654,7 @@ export type usersCreateWithoutReported_work_itemsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
   attachments?: Prisma.attachmentsCreateNestedManyWithoutUploaderInput
@@ -8639,6 +8737,7 @@ export type usersUncheckedCreateWithoutReported_work_itemsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUploaderInput
@@ -8726,6 +8825,7 @@ export type usersCreateWithoutCreated_work_itemsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -8808,6 +8908,7 @@ export type usersUncheckedCreateWithoutCreated_work_itemsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -8895,6 +8996,7 @@ export type usersCreateWithoutUpdated_work_itemsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -8977,6 +9079,7 @@ export type usersUncheckedCreateWithoutUpdated_work_itemsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -9074,6 +9177,7 @@ export type usersUpdateWithoutAssigned_work_itemsInput = {
   team_memberships?: Prisma.team_membersUpdateManyWithoutUserNestedInput
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -9156,6 +9260,7 @@ export type usersUncheckedUpdateWithoutAssigned_work_itemsInput = {
   team_memberships?: Prisma.team_membersUncheckedUpdateManyWithoutUserNestedInput
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -9250,6 +9355,7 @@ export type usersUpdateWithoutReported_work_itemsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
   attachments?: Prisma.attachmentsUpdateManyWithoutUploaderNestedInput
@@ -9332,6 +9438,7 @@ export type usersUncheckedUpdateWithoutReported_work_itemsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUploaderNestedInput
@@ -9425,6 +9532,7 @@ export type usersUpdateWithoutCreated_work_itemsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -9507,6 +9615,7 @@ export type usersUncheckedUpdateWithoutCreated_work_itemsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -9600,6 +9709,7 @@ export type usersUpdateWithoutUpdated_work_itemsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -9682,6 +9792,7 @@ export type usersUncheckedUpdateWithoutUpdated_work_itemsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -9764,6 +9875,7 @@ export type usersCreateWithoutCreated_work_item_linksInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -9846,6 +9958,7 @@ export type usersUncheckedCreateWithoutCreated_work_item_linksInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -9944,6 +10057,7 @@ export type usersUpdateWithoutCreated_work_item_linksInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -10026,6 +10140,7 @@ export type usersUncheckedUpdateWithoutCreated_work_item_linksInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -10108,6 +10223,7 @@ export type usersCreateWithoutActivitiesInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -10190,6 +10306,7 @@ export type usersUncheckedCreateWithoutActivitiesInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -10288,6 +10405,7 @@ export type usersUpdateWithoutActivitiesInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -10370,11 +10488,360 @@ export type usersUncheckedUpdateWithoutActivitiesInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUploaderNestedInput
   work_item_worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutUserNestedInput
+  created_projects?: Prisma.projectsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  project_management_connections?: Prisma.project_management_connectionsUncheckedUpdateManyWithoutUserNestedInput
+  version_control_connections?: Prisma.version_control_connectionsUncheckedUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chat_model_preference?: Prisma.member_chat_model_preferencesUncheckedUpdateOneWithoutUserNestedInput
+  updated_member_chat_model_preferences?: Prisma.member_chat_model_preferencesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  notification_email_preference?: Prisma.notification_email_preferencesUncheckedUpdateOneWithoutUserNestedInput
+  email_outbox?: Prisma.email_outboxUncheckedUpdateManyWithoutUserNestedInput
+  weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutUserNestedInput
+  weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type usersCreateWithoutContribution_rollup_assignmentsInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
+  created_users?: Prisma.usersCreateNestedManyWithoutCreatorInput
+  updater?: Prisma.usersCreateNestedOneWithoutUpdated_usersInput
+  updated_users?: Prisma.usersCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutUserInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutActorInput
+  created_projects?: Prisma.projectsCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutCreated_by_userInput
+  created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsCreateNestedManyWithoutUpdated_by_userInput
+  owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
+  project_management_connections?: Prisma.project_management_connectionsCreateNestedManyWithoutUserInput
+  version_control_connections?: Prisma.version_control_connectionsCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
+  created_project_integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutCreated_by_userInput
+  updated_project_integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutUpdated_by_userInput
+  chat_model_preference?: Prisma.member_chat_model_preferencesCreateNestedOneWithoutUserInput
+  updated_member_chat_model_preferences?: Prisma.member_chat_model_preferencesCreateNestedManyWithoutUpdated_by_userInput
+  notification_email_preference?: Prisma.notification_email_preferencesCreateNestedOneWithoutUserInput
+  email_outbox?: Prisma.email_outboxCreateNestedManyWithoutUserInput
+  weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutUserInput
+  weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutUserInput
+}
+
+export type usersUncheckedCreateWithoutContribution_rollup_assignmentsInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  created_users?: Prisma.usersUncheckedCreateNestedManyWithoutCreatorInput
+  updated_users?: Prisma.usersUncheckedCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersUncheckedCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersUncheckedCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutUserInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutActorInput
+  created_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutCreated_by_userInput
+  created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutOwnerInput
+  created_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chat_agents?: Prisma.chat_agentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  project_management_connections?: Prisma.project_management_connectionsUncheckedCreateNestedManyWithoutUserInput
+  version_control_connections?: Prisma.version_control_connectionsUncheckedCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_project_integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_project_integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chat_model_preference?: Prisma.member_chat_model_preferencesUncheckedCreateNestedOneWithoutUserInput
+  updated_member_chat_model_preferences?: Prisma.member_chat_model_preferencesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  notification_email_preference?: Prisma.notification_email_preferencesUncheckedCreateNestedOneWithoutUserInput
+  email_outbox?: Prisma.email_outboxUncheckedCreateNestedManyWithoutUserInput
+  weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutUserInput
+  weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type usersCreateOrConnectWithoutContribution_rollup_assignmentsInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutContribution_rollup_assignmentsInput, Prisma.usersUncheckedCreateWithoutContribution_rollup_assignmentsInput>
+}
+
+export type usersUpsertWithoutContribution_rollup_assignmentsInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutContribution_rollup_assignmentsInput, Prisma.usersUncheckedUpdateWithoutContribution_rollup_assignmentsInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutContribution_rollup_assignmentsInput, Prisma.usersUncheckedCreateWithoutContribution_rollup_assignmentsInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutContribution_rollup_assignmentsInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutContribution_rollup_assignmentsInput, Prisma.usersUncheckedUpdateWithoutContribution_rollup_assignmentsInput>
+}
+
+export type usersUpdateWithoutContribution_rollup_assignmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
+  created_users?: Prisma.usersUpdateManyWithoutCreatorNestedInput
+  updater?: Prisma.usersUpdateOneWithoutUpdated_usersNestedInput
+  updated_users?: Prisma.usersUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUpdateManyWithoutUserNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutActorNestedInput
+  created_projects?: Prisma.projectsUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_item_links?: Prisma.work_item_linksUpdateManyWithoutCreated_by_userNestedInput
+  created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_chat_agents?: Prisma.chat_agentsUpdateManyWithoutOwnerNestedInput
+  created_chat_agents?: Prisma.chat_agentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_chat_agents?: Prisma.chat_agentsUpdateManyWithoutUpdated_by_userNestedInput
+  owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  project_management_connections?: Prisma.project_management_connectionsUpdateManyWithoutUserNestedInput
+  version_control_connections?: Prisma.version_control_connectionsUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutUpdated_by_userNestedInput
+  chat_model_preference?: Prisma.member_chat_model_preferencesUpdateOneWithoutUserNestedInput
+  updated_member_chat_model_preferences?: Prisma.member_chat_model_preferencesUpdateManyWithoutUpdated_by_userNestedInput
+  notification_email_preference?: Prisma.notification_email_preferencesUpdateOneWithoutUserNestedInput
+  email_outbox?: Prisma.email_outboxUpdateManyWithoutUserNestedInput
+  weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutUserNestedInput
+  weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutUserNestedInput
+}
+
+export type usersUncheckedUpdateWithoutContribution_rollup_assignmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  created_users?: Prisma.usersUncheckedUpdateManyWithoutCreatorNestedInput
+  updated_users?: Prisma.usersUncheckedUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUncheckedUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUncheckedUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUncheckedUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUncheckedUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
+  chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutUserNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutActorNestedInput
   created_projects?: Prisma.projectsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_projects?: Prisma.projectsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
@@ -10451,6 +10918,7 @@ export type usersCreateWithoutChart_rollup_assignmentsInput = {
   team_memberships?: Prisma.team_membersCreateNestedManyWithoutUserInput
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -10533,6 +11001,7 @@ export type usersUncheckedCreateWithoutChart_rollup_assignmentsInput = {
   team_memberships?: Prisma.team_membersUncheckedCreateNestedManyWithoutUserInput
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -10631,6 +11100,7 @@ export type usersUpdateWithoutChart_rollup_assignmentsInput = {
   team_memberships?: Prisma.team_membersUpdateManyWithoutUserNestedInput
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -10713,6 +11183,7 @@ export type usersUncheckedUpdateWithoutChart_rollup_assignmentsInput = {
   team_memberships?: Prisma.team_membersUncheckedUpdateManyWithoutUserNestedInput
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -10796,6 +11267,7 @@ export type usersCreateWithoutChart_hierarchy_rollup_assignmentsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
   attachments?: Prisma.attachmentsCreateNestedManyWithoutUploaderInput
@@ -10878,6 +11350,7 @@ export type usersUncheckedCreateWithoutChart_hierarchy_rollup_assignmentsInput =
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUploaderInput
@@ -10976,6 +11449,7 @@ export type usersUpdateWithoutChart_hierarchy_rollup_assignmentsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
   attachments?: Prisma.attachmentsUpdateManyWithoutUploaderNestedInput
@@ -11058,6 +11532,7 @@ export type usersUncheckedUpdateWithoutChart_hierarchy_rollup_assignmentsInput =
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUploaderNestedInput
@@ -11140,6 +11615,7 @@ export type usersCreateWithoutWork_item_worklogsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -11222,6 +11698,7 @@ export type usersUncheckedCreateWithoutWork_item_worklogsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -11320,6 +11797,7 @@ export type usersUpdateWithoutWork_item_worklogsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -11402,6 +11880,7 @@ export type usersUncheckedUpdateWithoutWork_item_worklogsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -11484,6 +11963,7 @@ export type usersCreateWithoutCommentsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   attachments?: Prisma.attachmentsCreateNestedManyWithoutUploaderInput
@@ -11566,6 +12046,7 @@ export type usersUncheckedCreateWithoutCommentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUploaderInput
@@ -11653,6 +12134,7 @@ export type usersCreateWithoutCreated_commentsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -11735,6 +12217,7 @@ export type usersUncheckedCreateWithoutCreated_commentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -11822,6 +12305,7 @@ export type usersCreateWithoutUpdated_commentsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -11904,6 +12388,7 @@ export type usersUncheckedCreateWithoutUpdated_commentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -12002,6 +12487,7 @@ export type usersUpdateWithoutCommentsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   attachments?: Prisma.attachmentsUpdateManyWithoutUploaderNestedInput
@@ -12084,6 +12570,7 @@ export type usersUncheckedUpdateWithoutCommentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUploaderNestedInput
@@ -12177,6 +12664,7 @@ export type usersUpdateWithoutCreated_commentsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -12259,6 +12747,7 @@ export type usersUncheckedUpdateWithoutCreated_commentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -12352,6 +12841,7 @@ export type usersUpdateWithoutUpdated_commentsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -12434,6 +12924,7 @@ export type usersUncheckedUpdateWithoutUpdated_commentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -12516,6 +13007,7 @@ export type usersCreateWithoutAttachmentsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -12598,6 +13090,7 @@ export type usersUncheckedCreateWithoutAttachmentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -12685,6 +13178,7 @@ export type usersCreateWithoutCreated_attachmentsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -12767,6 +13261,7 @@ export type usersUncheckedCreateWithoutCreated_attachmentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -12854,6 +13349,7 @@ export type usersCreateWithoutUpdated_attachmentsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -12936,6 +13432,7 @@ export type usersUncheckedCreateWithoutUpdated_attachmentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -13034,6 +13531,7 @@ export type usersUpdateWithoutAttachmentsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -13116,6 +13614,7 @@ export type usersUncheckedUpdateWithoutAttachmentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -13209,6 +13708,7 @@ export type usersUpdateWithoutCreated_attachmentsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -13291,6 +13791,7 @@ export type usersUncheckedUpdateWithoutCreated_attachmentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -13384,6 +13885,7 @@ export type usersUpdateWithoutUpdated_attachmentsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -13466,6 +13968,7 @@ export type usersUncheckedUpdateWithoutUpdated_attachmentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -13548,6 +14051,7 @@ export type usersCreateWithoutNotificationsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -13630,6 +14134,7 @@ export type usersUncheckedCreateWithoutNotificationsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -13717,6 +14222,7 @@ export type usersCreateWithoutCreated_notificationsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -13799,6 +14305,7 @@ export type usersUncheckedCreateWithoutCreated_notificationsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -13886,6 +14393,7 @@ export type usersCreateWithoutUpdated_notificationsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -13968,6 +14476,7 @@ export type usersUncheckedCreateWithoutUpdated_notificationsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -14066,6 +14575,7 @@ export type usersUpdateWithoutNotificationsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -14148,6 +14658,7 @@ export type usersUncheckedUpdateWithoutNotificationsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -14241,6 +14752,7 @@ export type usersUpdateWithoutCreated_notificationsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -14323,6 +14835,7 @@ export type usersUncheckedUpdateWithoutCreated_notificationsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -14416,6 +14929,7 @@ export type usersUpdateWithoutUpdated_notificationsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -14498,6 +15012,7 @@ export type usersUncheckedUpdateWithoutUpdated_notificationsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -14580,6 +15095,7 @@ export type usersCreateWithoutNotification_email_preferenceInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -14662,6 +15178,7 @@ export type usersUncheckedCreateWithoutNotification_email_preferenceInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -14760,6 +15277,7 @@ export type usersUpdateWithoutNotification_email_preferenceInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -14842,6 +15360,7 @@ export type usersUncheckedUpdateWithoutNotification_email_preferenceInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -14924,6 +15443,7 @@ export type usersCreateWithoutEmail_outboxInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -15006,6 +15526,7 @@ export type usersUncheckedCreateWithoutEmail_outboxInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -15104,6 +15625,7 @@ export type usersUpdateWithoutEmail_outboxInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -15186,6 +15708,7 @@ export type usersUncheckedUpdateWithoutEmail_outboxInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -15268,6 +15791,7 @@ export type usersCreateWithoutWeekly_report_subscriptionsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -15350,6 +15874,7 @@ export type usersUncheckedCreateWithoutWeekly_report_subscriptionsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -15448,6 +15973,7 @@ export type usersUpdateWithoutWeekly_report_subscriptionsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -15530,6 +16056,7 @@ export type usersUncheckedUpdateWithoutWeekly_report_subscriptionsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -15612,6 +16139,7 @@ export type usersCreateWithoutWeekly_project_reportsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -15694,6 +16222,7 @@ export type usersUncheckedCreateWithoutWeekly_project_reportsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -15792,6 +16321,7 @@ export type usersUpdateWithoutWeekly_project_reportsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -15874,6 +16404,7 @@ export type usersUncheckedUpdateWithoutWeekly_project_reportsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -15956,6 +16487,7 @@ export type usersCreateWithoutCreated_access_allowlistInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -16038,6 +16570,7 @@ export type usersUncheckedCreateWithoutCreated_access_allowlistInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -16125,6 +16658,7 @@ export type usersCreateWithoutUpdated_access_allowlistInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -16207,6 +16741,7 @@ export type usersUncheckedCreateWithoutUpdated_access_allowlistInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -16305,6 +16840,7 @@ export type usersUpdateWithoutCreated_access_allowlistInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -16387,6 +16923,7 @@ export type usersUncheckedUpdateWithoutCreated_access_allowlistInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -16480,6 +17017,7 @@ export type usersUpdateWithoutUpdated_access_allowlistInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -16562,6 +17100,7 @@ export type usersUncheckedUpdateWithoutUpdated_access_allowlistInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -16644,6 +17183,7 @@ export type usersCreateWithoutResolved_access_requestsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -16726,6 +17266,7 @@ export type usersUncheckedCreateWithoutResolved_access_requestsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -16824,6 +17365,7 @@ export type usersUpdateWithoutResolved_access_requestsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -16906,6 +17448,7 @@ export type usersUncheckedUpdateWithoutResolved_access_requestsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -16988,6 +17531,7 @@ export type usersCreateWithoutProject_management_connectionsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -17070,6 +17614,7 @@ export type usersUncheckedCreateWithoutProject_management_connectionsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -17168,6 +17713,7 @@ export type usersUpdateWithoutProject_management_connectionsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -17250,6 +17796,7 @@ export type usersUncheckedUpdateWithoutProject_management_connectionsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -17332,6 +17879,7 @@ export type usersCreateWithoutVersion_control_connectionsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -17414,6 +17962,7 @@ export type usersUncheckedCreateWithoutVersion_control_connectionsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -17512,6 +18061,7 @@ export type usersUpdateWithoutVersion_control_connectionsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -17594,6 +18144,7 @@ export type usersUncheckedUpdateWithoutVersion_control_connectionsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -17676,6 +18227,7 @@ export type usersCreateWithoutChat_conversationsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -17758,6 +18310,7 @@ export type usersUncheckedCreateWithoutChat_conversationsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -17856,6 +18409,7 @@ export type usersUpdateWithoutChat_conversationsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -17938,6 +18492,7 @@ export type usersUncheckedUpdateWithoutChat_conversationsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -18020,6 +18575,7 @@ export type usersCreateWithoutChat_attachmentsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -18102,6 +18658,7 @@ export type usersUncheckedCreateWithoutChat_attachmentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -18200,6 +18757,7 @@ export type usersUpdateWithoutChat_attachmentsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -18282,6 +18840,7 @@ export type usersUncheckedUpdateWithoutChat_attachmentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -18364,6 +18923,7 @@ export type usersCreateWithoutOwned_chat_agentsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -18446,6 +19006,7 @@ export type usersUncheckedCreateWithoutOwned_chat_agentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -18533,6 +19094,7 @@ export type usersCreateWithoutCreated_chat_agentsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -18615,6 +19177,7 @@ export type usersUncheckedCreateWithoutCreated_chat_agentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -18702,6 +19265,7 @@ export type usersCreateWithoutUpdated_chat_agentsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -18784,6 +19348,7 @@ export type usersUncheckedCreateWithoutUpdated_chat_agentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -18882,6 +19447,7 @@ export type usersUpdateWithoutOwned_chat_agentsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -18964,6 +19530,7 @@ export type usersUncheckedUpdateWithoutOwned_chat_agentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -19057,6 +19624,7 @@ export type usersUpdateWithoutCreated_chat_agentsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -19139,6 +19707,7 @@ export type usersUncheckedUpdateWithoutCreated_chat_agentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -19232,6 +19801,7 @@ export type usersUpdateWithoutUpdated_chat_agentsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -19314,6 +19884,7 @@ export type usersUncheckedUpdateWithoutUpdated_chat_agentsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -19396,6 +19967,7 @@ export type usersCreateWithoutOwned_saved_viewsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -19478,6 +20050,7 @@ export type usersUncheckedCreateWithoutOwned_saved_viewsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -19565,6 +20138,7 @@ export type usersCreateWithoutCreated_saved_viewsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -19647,6 +20221,7 @@ export type usersUncheckedCreateWithoutCreated_saved_viewsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -19734,6 +20309,7 @@ export type usersCreateWithoutUpdated_saved_viewsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -19816,6 +20392,7 @@ export type usersUncheckedCreateWithoutUpdated_saved_viewsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -19914,6 +20491,7 @@ export type usersUpdateWithoutOwned_saved_viewsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -19996,6 +20574,7 @@ export type usersUncheckedUpdateWithoutOwned_saved_viewsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -20089,6 +20668,7 @@ export type usersUpdateWithoutCreated_saved_viewsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -20171,6 +20751,7 @@ export type usersUncheckedUpdateWithoutCreated_saved_viewsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -20264,6 +20845,7 @@ export type usersUpdateWithoutUpdated_saved_viewsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -20346,6 +20928,7 @@ export type usersUncheckedUpdateWithoutUpdated_saved_viewsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -20428,6 +21011,7 @@ export type usersCreateWithoutSaved_view_sharesInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -20510,6 +21094,7 @@ export type usersUncheckedCreateWithoutSaved_view_sharesInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -20597,6 +21182,7 @@ export type usersCreateWithoutCreated_saved_view_sharesInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -20679,6 +21265,7 @@ export type usersUncheckedCreateWithoutCreated_saved_view_sharesInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -20766,6 +21353,7 @@ export type usersCreateWithoutUpdated_saved_view_sharesInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -20848,6 +21436,7 @@ export type usersUncheckedCreateWithoutUpdated_saved_view_sharesInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -20946,6 +21535,7 @@ export type usersUpdateWithoutSaved_view_sharesInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -21028,6 +21618,7 @@ export type usersUncheckedUpdateWithoutSaved_view_sharesInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -21121,6 +21712,7 @@ export type usersUpdateWithoutCreated_saved_view_sharesInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -21203,6 +21795,7 @@ export type usersUncheckedUpdateWithoutCreated_saved_view_sharesInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -21296,6 +21889,7 @@ export type usersUpdateWithoutUpdated_saved_view_sharesInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -21378,6 +21972,7 @@ export type usersUncheckedUpdateWithoutUpdated_saved_view_sharesInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -21460,6 +22055,7 @@ export type usersCreateWithoutOwned_chartsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -21542,6 +22138,7 @@ export type usersUncheckedCreateWithoutOwned_chartsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -21629,6 +22226,7 @@ export type usersCreateWithoutCreated_chartsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -21711,6 +22309,7 @@ export type usersUncheckedCreateWithoutCreated_chartsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -21798,6 +22397,7 @@ export type usersCreateWithoutUpdated_chartsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -21880,6 +22480,7 @@ export type usersUncheckedCreateWithoutUpdated_chartsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -21978,6 +22579,7 @@ export type usersUpdateWithoutOwned_chartsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -22060,6 +22662,7 @@ export type usersUncheckedUpdateWithoutOwned_chartsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -22153,6 +22756,7 @@ export type usersUpdateWithoutCreated_chartsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -22235,6 +22839,7 @@ export type usersUncheckedUpdateWithoutCreated_chartsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -22328,6 +22933,7 @@ export type usersUpdateWithoutUpdated_chartsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -22410,6 +23016,7 @@ export type usersUncheckedUpdateWithoutUpdated_chartsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -22492,6 +23099,7 @@ export type usersCreateWithoutChart_sharesInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -22574,6 +23182,7 @@ export type usersUncheckedCreateWithoutChart_sharesInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -22661,6 +23270,7 @@ export type usersCreateWithoutCreated_chart_sharesInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -22743,6 +23353,7 @@ export type usersUncheckedCreateWithoutCreated_chart_sharesInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -22830,6 +23441,7 @@ export type usersCreateWithoutUpdated_chart_sharesInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -22912,6 +23524,7 @@ export type usersUncheckedCreateWithoutUpdated_chart_sharesInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -23010,6 +23623,7 @@ export type usersUpdateWithoutChart_sharesInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -23092,6 +23706,7 @@ export type usersUncheckedUpdateWithoutChart_sharesInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -23185,6 +23800,7 @@ export type usersUpdateWithoutCreated_chart_sharesInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -23267,6 +23883,7 @@ export type usersUncheckedUpdateWithoutCreated_chart_sharesInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -23360,6 +23977,7 @@ export type usersUpdateWithoutUpdated_chart_sharesInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -23442,6 +24060,7 @@ export type usersUncheckedUpdateWithoutUpdated_chart_sharesInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -23524,6 +24143,7 @@ export type usersCreateWithoutCreated_integrationsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -23606,6 +24226,7 @@ export type usersUncheckedCreateWithoutCreated_integrationsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -23693,6 +24314,7 @@ export type usersCreateWithoutUpdated_integrationsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -23775,6 +24397,7 @@ export type usersUncheckedCreateWithoutUpdated_integrationsInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -23873,6 +24496,7 @@ export type usersUpdateWithoutCreated_integrationsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -23955,6 +24579,7 @@ export type usersUncheckedUpdateWithoutCreated_integrationsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -24048,6 +24673,7 @@ export type usersUpdateWithoutUpdated_integrationsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -24130,6 +24756,7 @@ export type usersUncheckedUpdateWithoutUpdated_integrationsInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -24212,6 +24839,7 @@ export type usersCreateWithoutChat_model_preferenceInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -24294,6 +24922,7 @@ export type usersUncheckedCreateWithoutChat_model_preferenceInput = {
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -24381,6 +25010,7 @@ export type usersCreateWithoutUpdated_member_chat_model_preferencesInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -24463,6 +25093,7 @@ export type usersUncheckedCreateWithoutUpdated_member_chat_model_preferencesInpu
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -24561,6 +25192,7 @@ export type usersUpdateWithoutChat_model_preferenceInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -24643,6 +25275,7 @@ export type usersUncheckedUpdateWithoutChat_model_preferenceInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -24736,6 +25369,7 @@ export type usersUpdateWithoutUpdated_member_chat_model_preferencesInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -24818,6 +25452,7 @@ export type usersUncheckedUpdateWithoutUpdated_member_chat_model_preferencesInpu
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -24900,6 +25535,7 @@ export type usersCreateWithoutCreated_project_integration_bindingsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -24982,6 +25618,7 @@ export type usersUncheckedCreateWithoutCreated_project_integration_bindingsInput
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -25069,6 +25706,7 @@ export type usersCreateWithoutUpdated_project_integration_bindingsInput = {
   reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
@@ -25151,6 +25789,7 @@ export type usersUncheckedCreateWithoutUpdated_project_integration_bindingsInput
   reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
   assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutAssigneeInput
   reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
   comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
@@ -25249,6 +25888,7 @@ export type usersUpdateWithoutCreated_project_integration_bindingsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -25331,6 +25971,7 @@ export type usersUncheckedUpdateWithoutCreated_project_integration_bindingsInput
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -25424,6 +26065,7 @@ export type usersUpdateWithoutUpdated_project_integration_bindingsInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -25506,6 +26148,7 @@ export type usersUncheckedUpdateWithoutUpdated_project_integration_bindingsInput
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -25617,6 +26260,7 @@ export type usersUpdateWithoutCreatorInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -25699,6 +26343,7 @@ export type usersUncheckedUpdateWithoutCreatorInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -25796,6 +26441,7 @@ export type usersUpdateWithoutUpdaterInput = {
   reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
@@ -25878,6 +26524,7 @@ export type usersUncheckedUpdateWithoutUpdaterInput = {
   reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
   assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_rollup_assignments?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
+  contribution_rollup_assignments?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   chart_hierarchy_rollup_assignments?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutAssigneeNestedInput
   reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
   comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
@@ -25968,6 +26615,7 @@ export type UsersCountOutputType = {
   reporting_lines: number
   assigned_work_items: number
   chart_rollup_assignments: number
+  contribution_rollup_assignments: number
   chart_hierarchy_rollup_assignments: number
   reported_work_items: number
   comments: number
@@ -26036,6 +26684,7 @@ export type UsersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   reporting_lines?: boolean | UsersCountOutputTypeCountReporting_linesArgs
   assigned_work_items?: boolean | UsersCountOutputTypeCountAssigned_work_itemsArgs
   chart_rollup_assignments?: boolean | UsersCountOutputTypeCountChart_rollup_assignmentsArgs
+  contribution_rollup_assignments?: boolean | UsersCountOutputTypeCountContribution_rollup_assignmentsArgs
   chart_hierarchy_rollup_assignments?: boolean | UsersCountOutputTypeCountChart_hierarchy_rollup_assignmentsArgs
   reported_work_items?: boolean | UsersCountOutputTypeCountReported_work_itemsArgs
   comments?: boolean | UsersCountOutputTypeCountCommentsArgs
@@ -26165,6 +26814,13 @@ export type UsersCountOutputTypeCountAssigned_work_itemsArgs<ExtArgs extends run
  */
 export type UsersCountOutputTypeCountChart_rollup_assignmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.work_item_chart_rollupsWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountContribution_rollup_assignmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.sprint_contribution_rollupsWhereInput
 }
 
 /**
@@ -26585,6 +27241,7 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   reporting_lines?: boolean | Prisma.users$reporting_linesArgs<ExtArgs>
   assigned_work_items?: boolean | Prisma.users$assigned_work_itemsArgs<ExtArgs>
   chart_rollup_assignments?: boolean | Prisma.users$chart_rollup_assignmentsArgs<ExtArgs>
+  contribution_rollup_assignments?: boolean | Prisma.users$contribution_rollup_assignmentsArgs<ExtArgs>
   chart_hierarchy_rollup_assignments?: boolean | Prisma.users$chart_hierarchy_rollup_assignmentsArgs<ExtArgs>
   reported_work_items?: boolean | Prisma.users$reported_work_itemsArgs<ExtArgs>
   comments?: boolean | Prisma.users$commentsArgs<ExtArgs>
@@ -26711,6 +27368,7 @@ export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   reporting_lines?: boolean | Prisma.users$reporting_linesArgs<ExtArgs>
   assigned_work_items?: boolean | Prisma.users$assigned_work_itemsArgs<ExtArgs>
   chart_rollup_assignments?: boolean | Prisma.users$chart_rollup_assignmentsArgs<ExtArgs>
+  contribution_rollup_assignments?: boolean | Prisma.users$contribution_rollup_assignmentsArgs<ExtArgs>
   chart_hierarchy_rollup_assignments?: boolean | Prisma.users$chart_hierarchy_rollup_assignmentsArgs<ExtArgs>
   reported_work_items?: boolean | Prisma.users$reported_work_itemsArgs<ExtArgs>
   comments?: boolean | Prisma.users$commentsArgs<ExtArgs>
@@ -26794,6 +27452,7 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     reporting_lines: Prisma.$team_membersPayload<ExtArgs>[]
     assigned_work_items: Prisma.$work_itemsPayload<ExtArgs>[]
     chart_rollup_assignments: Prisma.$work_item_chart_rollupsPayload<ExtArgs>[]
+    contribution_rollup_assignments: Prisma.$sprint_contribution_rollupsPayload<ExtArgs>[]
     chart_hierarchy_rollup_assignments: Prisma.$work_item_chart_hierarchy_rollupsPayload<ExtArgs>[]
     reported_work_items: Prisma.$work_itemsPayload<ExtArgs>[]
     comments: Prisma.$commentsPayload<ExtArgs>[]
@@ -27272,6 +27931,7 @@ export interface Prisma__usersClient<T, Null = never, ExtArgs extends runtime.Ty
   reporting_lines<T extends Prisma.users$reporting_linesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$reporting_linesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$team_membersPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   assigned_work_items<T extends Prisma.users$assigned_work_itemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$assigned_work_itemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$work_itemsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   chart_rollup_assignments<T extends Prisma.users$chart_rollup_assignmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$chart_rollup_assignmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$work_item_chart_rollupsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  contribution_rollup_assignments<T extends Prisma.users$contribution_rollup_assignmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$contribution_rollup_assignmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$sprint_contribution_rollupsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   chart_hierarchy_rollup_assignments<T extends Prisma.users$chart_hierarchy_rollup_assignmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$chart_hierarchy_rollup_assignmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$work_item_chart_hierarchy_rollupsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   reported_work_items<T extends Prisma.users$reported_work_itemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$reported_work_itemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$work_itemsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   comments<T extends Prisma.users$commentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$commentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$commentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -28024,6 +28684,30 @@ export type users$chart_rollup_assignmentsArgs<ExtArgs extends runtime.Types.Ext
   take?: number
   skip?: number
   distinct?: Prisma.Work_item_chart_rollupsScalarFieldEnum | Prisma.Work_item_chart_rollupsScalarFieldEnum[]
+}
+
+/**
+ * users.contribution_rollup_assignments
+ */
+export type users$contribution_rollup_assignmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the sprint_contribution_rollups
+   */
+  select?: Prisma.sprint_contribution_rollupsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the sprint_contribution_rollups
+   */
+  omit?: Prisma.sprint_contribution_rollupsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.sprint_contribution_rollupsInclude<ExtArgs> | null
+  where?: Prisma.sprint_contribution_rollupsWhereInput
+  orderBy?: Prisma.sprint_contribution_rollupsOrderByWithRelationInput | Prisma.sprint_contribution_rollupsOrderByWithRelationInput[]
+  cursor?: Prisma.sprint_contribution_rollupsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Sprint_contribution_rollupsScalarFieldEnum | Prisma.Sprint_contribution_rollupsScalarFieldEnum[]
 }
 
 /**

@@ -35,7 +35,8 @@ export type ChartWidgetTypeId =
   | 'kpi'
   | 'table'
   | 'list'
-  | 'burndown';
+  | 'burndown'
+  | 'sprint-contribution';
 
 /** Values measure for nested-donut (and future numeric charts). */
 export type ChartWidgetMeasure = 'item_count' | 'story_points';

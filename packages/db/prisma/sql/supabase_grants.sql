@@ -34,6 +34,7 @@ REVOKE ALL ON TABLE public.work_item_links FROM anon, authenticated;
 REVOKE ALL ON TABLE public.work_item_chart_rollups FROM anon, authenticated;
 REVOKE ALL ON TABLE public.work_item_chart_hierarchy_rollups FROM anon, authenticated;
 REVOKE ALL ON TABLE public.sprint_burndown_rollups FROM anon, authenticated;
+REVOKE ALL ON TABLE public.sprint_contribution_rollups FROM anon, authenticated;
 REVOKE ALL ON TABLE public.email_outbox FROM anon, authenticated;
 REVOKE ALL ON TABLE public.notification_email_events FROM PUBLIC, anon, authenticated, service_role, postgres;
 GRANT SELECT, INSERT ON TABLE public.notification_email_events TO postgres;

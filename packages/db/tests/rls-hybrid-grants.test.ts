@@ -43,6 +43,7 @@ const STRATEGY_A_TABLES = [
   'work_item_chart_rollups',
   'work_item_chart_hierarchy_rollups',
   'sprint_burndown_rollups',
+  'sprint_contribution_rollups',
   'email_outbox',
   'notification_email_events',
   'weekly_project_reports',
