@@ -7,6 +7,8 @@ import type {
   ChartHierarchySeriesResponse,
   ChartSeriesQuery,
   ChartSeriesResponse,
+  ChartSprintContributionQuery,
+  ChartSprintContributionResponse,
 } from '@repo/types';
 import { apiFetch } from '@/lib/api/api-fetch.reads.use.client';
 
@@ -14,6 +16,7 @@ const SERIES_PATH = '/api/v1/charts/analytics/series';
 const DRILLDOWN_PATH = '/api/v1/charts/analytics/drilldown';
 const HIERARCHY_SERIES_PATH = '/api/v1/charts/analytics/hierarchy-series';
 const HIERARCHY_DRILLDOWN_PATH = '/api/v1/charts/analytics/hierarchy-drilldown';
+const SPRINT_CONTRIBUTION_PATH = '/api/v1/charts/analytics/sprint-contribution';
 
 type AnalyticsQueryParams = Record<string, string | number | undefined>;
 
@@ -107,5 +110,17 @@ export async function fetchChartHierarchyDrilldown(
     parentKey: query.parentKey,
     page: query.page,
     limit: query.limit,
+  });
+}
+
+/** Member logged vs ideal contribution for a concrete project + sprint. */
+export async function fetchChartSprintContribution(
+  query: ChartSprintContributionQuery
+): Promise<ChartSprintContributionResponse> {
+  return fetchChartAnalytics(SPRINT_CONTRIBUTION_PATH, {
+    projectId: query.projectId,
+    sprintId: query.sprintId,
+    assigneeId: query.assigneeId,
+    asOf: query.asOf,
   });
 }

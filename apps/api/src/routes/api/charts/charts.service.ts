@@ -1,5 +1,8 @@
 import {
+  buildSprintContributionGroups,
   ChartSharedNotification,
+  clampContributionAsOf,
+  groupsFromSprintContributionRollupRows,
   NotificationBuilder,
   type ChartDrilldownQuery,
   type ChartDrilldownResponse,
@@ -9,6 +12,9 @@ import {
   type ChartHierarchySeriesResponse,
   type ChartSeriesQuery,
   type ChartSeriesResponse,
+  type ChartSprintContributionQuery,
+  type ChartSprintContributionResponse,
+  type SprintContributionGroup,
 } from '@repo/types';
 import { enqueueDestructiveAction } from '../../../lib/enqueue-destructive-action';
 import type { NotificationsRepository } from '../notifications/notifications.repository';
@@ -18,6 +24,19 @@ import type {
   ShareChartBody,
   UpdateChartBody,
 } from './charts.schemas';
+
+/** Empty string = unassigned bucket; omit = all members. */
+function resolveContributionAssigneeFilter(
+  assigneeId: string | undefined
+): string | null | undefined {
+  if (assigneeId === undefined) {
+    return undefined;
+  }
+  if (assigneeId === '') {
+    return null;
+  }
+  return assigneeId;
+}
 
 export class ChartsService {
   constructor(
@@ -348,6 +367,135 @@ export class ChartsService {
       priority: query.priority,
       assigneeId: query.assigneeId,
     };
+  }
+
+  async getSprintContribution(
+    actorId: string,
+    query: ChartSprintContributionQuery
+  ): Promise<ChartSprintContributionResponse> {
+    await this.resolveProjectScope(actorId, query.projectId);
+
+    const sprint = await this.chartsRepository.getSprintForContribution(
+      query.sprintId
+    );
+    if (!sprint) {
+      throw new Error('Sprint not found');
+    }
+    if (sprint.project_id !== query.projectId) {
+      throw new Error('Sprint not found');
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const asOf = clampContributionAsOf(
+      query.asOf ?? today,
+      sprint.start_date,
+      sprint.end_date
+    );
+
+    const assigneeFilter = resolveContributionAssigneeFilter(query.assigneeId);
+
+    const rollupRows = await this.chartsRepository.listSprintContributionRollup(
+      query.sprintId
+    );
+    const rollupAsOf = rollupRows[0]?.as_of;
+    const useRollup =
+      rollupRows.length > 0 && rollupAsOf !== undefined && rollupAsOf === asOf;
+
+    let groups: SprintContributionGroup[];
+    if (useRollup) {
+      const assigneeIds = [
+        ...new Set(
+          rollupRows
+            .map((row) => row.assignee_id)
+            .filter((id): id is string => typeof id === 'string')
+        ),
+      ];
+      const assigneeNames =
+        await this.chartsRepository.listUserDisplayNames(assigneeIds);
+      groups = groupsFromSprintContributionRollupRows({
+        rows: rollupRows.map((row) => ({
+          assigneeId: row.assignee_id,
+          group: row.group_id,
+          estimatedPoints: row.estimated_points,
+          loggedHours: row.logged_hours,
+          itemCount: row.item_count,
+          asOf: row.as_of,
+        })),
+        startDate: sprint.start_date,
+        endDate: sprint.end_date,
+        asOf,
+        assigneeNames,
+        ...(assigneeFilter !== undefined ? { assigneeId: assigneeFilter } : {}),
+      });
+    } else {
+      groups = await this.computeSprintContributionLive({
+        sprintId: query.sprintId,
+        startDate: sprint.start_date,
+        endDate: sprint.end_date,
+        asOf,
+        assigneeFilter,
+      });
+      void this.chartsRepository.rebuildSprintAnalyticsRollup(query.sprintId);
+    }
+
+    return {
+      projectId: query.projectId,
+      sprintId: sprint.id,
+      sprintName: sprint.name,
+      startDate: sprint.start_date,
+      endDate: sprint.end_date,
+      asOf,
+      ...(query.assigneeId !== undefined
+        ? { assigneeId: query.assigneeId }
+        : {}),
+      groups,
+    };
+  }
+
+  private async computeSprintContributionLive(params: {
+    readonly sprintId: string;
+    readonly startDate: string;
+    readonly endDate: string;
+    readonly asOf: string;
+    readonly assigneeFilter: string | null | undefined;
+  }): Promise<SprintContributionGroup[]> {
+    const items = await this.chartsRepository.listSprintContributionItems(
+      params.sprintId
+    );
+    const workItemIds = items.map((item) => item.id);
+    const logs =
+      await this.chartsRepository.listSprintContributionWorklogs(workItemIds);
+
+    const assigneeIds = [
+      ...new Set(
+        items
+          .map((item) => item.assignee_id)
+          .filter((id): id is string => typeof id === 'string')
+      ),
+    ];
+    const assigneeNames =
+      await this.chartsRepository.listUserDisplayNames(assigneeIds);
+
+    return buildSprintContributionGroups({
+      items: items.map((item) => ({
+        id: item.id,
+        assigneeId: item.assignee_id,
+        storyPoints: item.story_points,
+        isDone: item.status_category === 'done',
+      })),
+      logs: logs.map((log) => ({
+        workItemId: log.work_item_id,
+        loggedAt: log.logged_at,
+        loggedHours: log.logged_hours,
+      })),
+      startDate: params.startDate,
+      endDate: params.endDate,
+      asOf: params.asOf,
+      assigneeNames,
+      ...(params.assigneeFilter !== undefined
+        ? { assigneeId: params.assigneeFilter }
+        : {}),
+    });
   }
 
   private async resolveProjectScope(

@@ -34,6 +34,7 @@ export * from './access-allowlist.js';
 export * from './access-request.js';
 export * from './integrations/index.js';
 export * from './sprint-burndown.js';
+export * from './sprint-contribution.js';
 export * from './optimistic-lock.js';
 export * from './database-busy.js';
 export * from './tiptap-node-attrs.js';

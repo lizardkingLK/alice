@@ -42,6 +42,7 @@ const STRATEGY_A_SELECT_TABLES = [
   'work_item_chart_rollups',
   'work_item_chart_hierarchy_rollups',
   'sprint_burndown_rollups',
+  'sprint_contribution_rollups',
   '_prisma_migrations',
 ] as const;
 
@@ -124,6 +125,7 @@ describeAuthLive('hybrid RLS PostgREST negative checks (authenticated)', () => {
     'work_item_chart_rollups',
     'work_item_chart_hierarchy_rollups',
     'sprint_burndown_rollups',
+    'sprint_contribution_rollups',
   ] as const)('authenticated cannot read %s via PostgREST', async (table) => {
     await expectSelectLocked(authenticatedClient(), table);
   });

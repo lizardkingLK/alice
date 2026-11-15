@@ -69,6 +69,12 @@ export type activities = Prisma.activitiesModel
  */
 export type sprint_burndown_rollups = Prisma.sprint_burndown_rollupsModel
 /**
+ * Model sprint_contribution_rollups
+ * Precomputed sprint contribution rows (trigger-maintained) for Charts.
+ * Ideal / pending / behind are derived at read time from estimate + dates + as_of.
+ */
+export type sprint_contribution_rollups = Prisma.sprint_contribution_rollupsModel
+/**
  * Model work_item_chart_rollups
  * Precomputed categorical counts for Charts Tier 1 (trigger-maintained).
  * `grain_key` encodes bucket + dimensions so upserts ignore SQL NULL uniqueness quirks.

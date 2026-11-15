@@ -102,7 +102,8 @@ When you **create** a workspace you can optionally **Lock to project and
 sprint** (both required). That makes a **scoped** board:
 
 - Board **Filter** is hidden; the header shows **Project · Sprint**
-- Every new Chart / burndown widget inherits that project and sprint
+- Every new Chart / burndown / contribution widget inherits that project and
+  sprint
 - Widget filters hide project/sprint (other dimensions stay)
 - You cannot change the locked pair later — only **Mark as non-scoped** from
   the workspace **⋯** menu (widgets keep their filter values and become
@@ -134,19 +135,20 @@ On `/charts/[id]`:
 1. On a board, select the **+** button.
 2. Choose **Add widget** for the catalog on the **current** workspace.
 3. Under Add widget, pick **Chart**, **Nested donut**, **Data over time**
-   (sprint burndown), or **More widgets** to browse the full catalog (Delivery →
-   **Burndown** is the same burndown widget). Other types still show
+   (sprint burndown), **Sprint contribution**, or **More widgets** to browse
+   the full catalog (Delivery → **Burndown** is the same burndown widget;
+   **Sprint contribution** is also under Delivery). Other types still show
    **Coming soon**.
-4. **Scoped** boards: Chart / Nested donut / burndown widgets are added with the
-   workspace project and sprint — no extra prompt.
+4. **Scoped** boards: Chart / Nested donut / burndown / contribution widgets
+   are added with the workspace project and sprint — no extra prompt.
 5. **Mixed** boards: those widgets use the **current board Filter** selection
    (not only saved defaults). If Filter equals your defaults, they match. For
-   **burndown**, if Filter is missing a concrete project or sprint (for example
-   **All sprints**), you are asked to pick what is missing before the widget is
-   added.
+   **burndown** or **Sprint contribution**, if Filter is missing a concrete
+   project or sprint (for example **All sprints**), you are asked to pick what
+   is missing before the widget is added.
 
-The card header shows **Project · Sprint** for Chart, Nested donut, and burndown
-widgets when those filters are set.
+The card header shows **Project · Sprint** for Chart, Nested donut, burndown,
+and contribution widgets when those filters are set.
 
 ### Nested donut widget
 
@@ -169,6 +171,15 @@ like other chart widgets.
 for a sprint (same math as Overview). The header shows **Project · Sprint**.
 On a mixed board, set project and sprint in Filter first (or complete the
 prompt when sprint is All). On a scoped board, the workspace lock applies.
+
+### Sprint contribution widget
+
+**Sprint contribution** is a table for managers: per member, **Estimate**
+(story points), **Logged** hours, and **Ideal** spend for the sprint so far
+(same 1 SP ≈ 1 hour pace as burndown / worklog reminders). Rows are grouped
+**Active**, **Unassigned**, and **Done**. Members behind ideal pace get a
+row highlight. Use the filter control to set project/sprint (and optionally
+one assignee). The header shows **Project · Sprint**.
 
 ---
 
