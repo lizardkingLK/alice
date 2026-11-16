@@ -66,13 +66,66 @@ flowchart TB
 
 ### Phase 0 — Foundations
 
-- Register Alice **GitHub App** (draft permissions: Contents / Metadata / Pull
-  requests / Commits **read**; webhook events `push`, `pull_request`,
-  `create` / `delete`; **write** scopes deferred until Phase 4–5).
-- Env shape (planned): `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`,
-  `GITHUB_APP_WEBHOOK_SECRET`, install + callback URLs (alongside today’s
-  `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` until Phase 5).
-- Non-goal: no runtime App code required for Phase 0 beyond documentation.
+**Goal:** Register the GitHub App and store credentials locally. No install UX
+or webhook handler required yet. Also covered in
+[DAY_ONE_SETUP.md](../platform/DAY_ONE_SETUP.md) (optional GitHub section).
+
+#### Register the App
+
+1. GitHub → **Settings** → **Developer settings** → **GitHub Apps** → **New
+   GitHub App** (use a dedicated **dev** App for localhost, e.g. `Alice_Dev`).
+2. **Homepage URL:** web app, e.g. `http://localhost:3000`.
+3. **Callback URL:** API App callback (separate from OAuth), e.g.
+   `http://localhost:5000/api/github/app/callback`.
+4. **Setup URL (optional):** e.g. `http://localhost:3000/integrations/github/setup`.
+5. **Webhook:** Active; URL must be **public HTTPS** (GitHub cannot reach
+   localhost), e.g. `https://<api-host>/api/github/webhooks`. Generate a
+   **Webhook secret** and save it.
+6. Checkboxes: **Expire user authorization tokens** = on; **Request user
+   authorization during installation** = off; **Enable Device Flow** = off;
+   **SSL verification** = enable.
+7. **Repository permissions (minimum for planned sync):**
+   - **Metadata** — Read-only (mandatory)
+   - **Contents** — Read-only
+   - **Pull requests** — Read-only for sync; Read and write if you will post
+     replies later
+   - **Commit statuses** — optional Read / Read and write for later checks
+   - **Issues** — No access (v1)
+8. **Subscribe to events:** `Pull request`, `Push`, `Create`, `Delete`,
+   `Pull request review comment` (keep); add `Pull request review` and
+   installation-related events when available. Do **not** ship with only
+   review-comment selected.
+9. **Where can this GitHub App be installed?** Any account (typical for Alice).
+10. Create the App → note **App ID** (and **Client ID** only if you later
+    enable user OAuth).
+11. Banner **generate a private key** → download the `.pem` once. Alice signs
+    JWTs with this key + App ID to mint **installation tokens**.
+
+#### Env shape (`apps/api/.env`)
+
+```dotenv
+# Phase 0+ GitHub App (install identity + webhooks)
+GITHUB_APP_ID="<numeric App ID>"
+GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+GITHUB_APP_WEBHOOK_SECRET="<webhook secret from the App form>"
+
+# Shipped today — user OAuth App (keep until Phase 5)
+GITHUB_CLIENT_ID="..."
+GITHUB_CLIENT_SECRET="..."
+GITHUB_REDIRECT_URI="http://localhost:5000/api/github/oauth/callback"
+```
+
+Keys are listed in `apps/api/sample.env`. Runtime wiring of `GITHUB_APP_*` lands
+in Phase 1–2; storing them in Day One env is still the Phase 0 outcome.
+
+#### Phase 0 done when
+
+- [ ] GitHub App exists with permissions/events above
+- [ ] Private key downloaded and stored outside Git
+- [ ] `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_APP_WEBHOOK_SECRET` set
+      in local (and/or deployed) API env
+- [ ] Team knows the App public link (`https://github.com/apps/<slug>`) for
+      installs in Phase 1
 
 ### Phase 1 — Install + project bind
 
