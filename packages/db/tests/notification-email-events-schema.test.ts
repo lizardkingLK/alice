@@ -108,6 +108,13 @@ describe('GI-656 notification email event migration', () => {
     );
     expect(revokeIndex).toBeGreaterThanOrEqual(0);
     expect(restrictedGrantIndex).toBeGreaterThan(revokeIndex);
+    // Privilege lockdown must run after CREATE TRIGGER (revoke-from-postgres
+    // before the trigger caused migrate deploy 42501 / P3009).
+    expect(revokeIndex).toBeGreaterThan(
+      migration.indexOf(
+        'CREATE TRIGGER notification_email_events_prevent_update'
+      )
+    );
     expect(migration.lastIndexOf(restrictedGrant)).toBe(restrictedGrantIndex);
     expect(
       migration.slice(restrictedGrantIndex + restrictedGrant.length)

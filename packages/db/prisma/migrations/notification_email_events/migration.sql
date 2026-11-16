@@ -1,4 +1,6 @@
 -- GI-656 Phase 2E.2: immutable, server-only notification email event snapshots.
+-- Create objects first, then tighten ACLs. Revoking postgres before CREATE TRIGGER
+-- caused P3009 (42501 permission denied) on migrate deploy.
 
 CREATE TABLE public.notification_email_events (
   notification_id UUID NOT NULL,
@@ -26,12 +28,6 @@ CREATE TABLE public.notification_email_events (
 
 ALTER TABLE public.notification_email_events ENABLE ROW LEVEL SECURITY;
 
--- The API connects through Prisma as the postgres database role. Supabase
--- clients and the service-role PostgREST client do not need this table.
-REVOKE ALL PRIVILEGES ON TABLE public.notification_email_events
-  FROM PUBLIC, anon, authenticated, service_role, postgres;
-GRANT SELECT, INSERT ON TABLE public.notification_email_events TO postgres;
-
 CREATE FUNCTION public.prevent_notification_email_event_update()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -42,9 +38,6 @@ BEGIN
     USING ERRCODE = '55000';
 END;
 $function$;
-
-REVOKE ALL PRIVILEGES ON FUNCTION public.prevent_notification_email_event_update()
-  FROM PUBLIC, anon, authenticated, service_role;
 
 CREATE TRIGGER notification_email_events_prevent_update
   BEFORE UPDATE ON public.notification_email_events
@@ -92,3 +85,13 @@ BEGIN
   END IF;
 END;
 $block$;
+
+-- Tighten ACLs only after DDL/trigger work finishes.
+-- The API connects through Prisma as the postgres database role. Supabase
+-- clients and the service-role PostgREST client do not need this table.
+REVOKE ALL PRIVILEGES ON FUNCTION public.prevent_notification_email_event_update()
+  FROM PUBLIC, anon, authenticated, service_role;
+
+REVOKE ALL PRIVILEGES ON TABLE public.notification_email_events
+  FROM PUBLIC, anon, authenticated, service_role, postgres;
+GRANT SELECT, INSERT ON TABLE public.notification_email_events TO postgres;
