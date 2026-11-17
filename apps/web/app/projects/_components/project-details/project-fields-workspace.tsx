@@ -22,6 +22,7 @@ import {
   Save,
   Sparkles,
   SlidersHorizontal,
+  Trash2,
   X,
 } from '@repo/ui/lib/icons';
 import {
@@ -176,6 +177,10 @@ export function ProjectFieldsWorkspace({
     open: false,
     error: null,
   });
+  const [fieldToRemove, setFieldToRemove] = useState<Pick<
+    ParsedProperty,
+    'key' | 'title'
+  > | null>(null);
 
   const showErrorDialog = (
     error: string,
@@ -391,6 +396,41 @@ export function ProjectFieldsWorkspace({
 
   const handleAddTemplates = (newFields: Record<string, unknown>) => {
     handleApplyTemplates(newFields, []);
+  };
+
+  const handleConfirmFieldRemoval = () => {
+    if (!fieldToRemove) return;
+
+    const currentSchema = parseCurrentSchemaObject(schemaText);
+    const currentProperties = currentSchema.properties;
+    if (
+      !currentProperties ||
+      typeof currentProperties !== TypeofEnum.OBJECT ||
+      Array.isArray(currentProperties)
+    ) {
+      setFieldToRemove(null);
+      return;
+    }
+
+    const updatedProperties = {
+      ...(currentProperties as Record<string, unknown>),
+    };
+    delete updatedProperties[fieldToRemove.key];
+
+    setSchemaText(
+      JSON.stringify(
+        {
+          ...currentSchema,
+          properties: updatedProperties,
+        },
+        null,
+        2
+      )
+    );
+    setValidationResult({
+      status: SchemaValidationStatusEnum.UNVALIDATED,
+    });
+    setFieldToRemove(null);
   };
 
   const handleValidate = () => {
@@ -663,15 +703,37 @@ export function ProjectFieldsWorkspace({
               >
                 <CardHeader className="p-4 pb-2">
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-foreground truncate text-sm font-semibold">
+                    <CardTitle className="text-foreground min-w-0 flex-1 truncate text-sm font-semibold">
                       {prop.title}
                     </CardTitle>
-                    <Badge
-                      variant="secondary"
-                      className="shrink-0 font-mono text-[10px]"
-                    >
-                      {prop.format ? `${prop.type}:${prop.format}` : prop.type}
-                    </Badge>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Badge
+                        variant="secondary"
+                        className="font-mono text-[10px]"
+                      >
+                        {prop.format
+                          ? `${prop.type}:${prop.format}`
+                          : prop.type}
+                      </Badge>
+                      {isManagerOrAdmin && (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="xs"
+                          disabled={isSaving}
+                          aria-label={`Remove ${prop.title}`}
+                          onClick={() =>
+                            setFieldToRemove({
+                              key: prop.key,
+                              title: prop.title,
+                            })
+                          }
+                        >
+                          <Trash2 data-icon="inline-start" />
+                          Remove
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <CardDescription className="text-muted-foreground truncate font-mono text-xs">
                     key: {prop.key}
@@ -853,6 +915,27 @@ export function ProjectFieldsWorkspace({
         existingProperties={existingPropertiesMap}
         onAddTemplates={handleAddTemplates}
         onApplyTemplates={handleApplyTemplates}
+      />
+
+      <ProjectFieldsErrorDialog
+        open={fieldToRemove !== null}
+        title={
+          fieldToRemove ? `Remove Field: ${fieldToRemove.title}` : undefined
+        }
+        description="Remove this field from the current draft? Existing work-item values will be preserved. Use Save Changes to apply the updated field configuration."
+        error={
+          fieldToRemove
+            ? `Field: ${fieldToRemove.title} (key: ${fieldToRemove.key})`
+            : null
+        }
+        showCancel={true}
+        cancelText="Cancel"
+        confirmText="Remove"
+        onConfirm={handleConfirmFieldRemoval}
+        onClose={() => setFieldToRemove(null)}
+        onOpenChange={(open) => {
+          if (!open) setFieldToRemove(null);
+        }}
       />
 
       {/* Sprint-Capacity-Style Error Popup Dialog */}
