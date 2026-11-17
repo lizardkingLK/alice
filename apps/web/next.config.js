@@ -12,6 +12,9 @@ const apiOrigin = (
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    agentUpgrade: 'security',
+  },
   transpilePackages: ['@repo/ui', '@repo/types'],
   images: {
     remotePatterns: [
