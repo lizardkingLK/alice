@@ -10,11 +10,14 @@ widgets replace them.
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ | ------ |
 | [CHARTS.md](./CHARTS.md)                         | `/charts` boards + planned Overview slider, descriptions, fork, mockOverview escape hatch                    | Living |
 | [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md) | Categorical + burndown rollups, series APIs; burndown widget steps; nested open questions; Tier 2–3 scaling  | Living |
+| —                                                | Productivity **Notes** widget → [notes feature](../notes/README.md)                                          | Living |
 | —                                                | See [ARD](../../product/ARD.md) and [TRD](../../architecture/TRD.md); add widget/layout notes here as needed | Living |
 
 Quick links:
 
 - Implementation: `apps/web/app/dashboard/`
+- Notes: [notes feature](../notes/README.md)
+- User guide: [Dashboard overview](../../user-guide/navigation/dashboard-overview.md), [Notes](../../user-guide/navigation/notes.md)
 - Charts UI: `apps/web/app/charts/`
 - Notifications inbox: [notifications feature](../notifications/README.md)
 - Favorites / Saved Views: [views feature](../views/FAVORITES_AND_VIEWS.md)

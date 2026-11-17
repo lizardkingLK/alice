@@ -38,7 +38,7 @@ to personalize the detail page for you on every project:
 
 | Area             | What you can change                                                                           |
 | ---------------- | --------------------------------------------------------------------------------------------- |
-| **Banner color** | Tint from **State color** or **Type color**                                                   |
+| **Banner color** | Tint from **State color**, **Type color**, or **None**                                        |
 | **Title icon**   | **Type icon**, **State icon**, or **None**                                                    |
 | **Sections**     | Show/hide Details, Attachments, Development, Discussion, More fields, Subtasks, Linked issues |
 | **Details rows** | Show/hide individual Details fields (when Details is on)                                      |

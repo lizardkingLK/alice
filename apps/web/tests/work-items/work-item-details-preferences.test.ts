@@ -40,6 +40,9 @@ describe('work-item-details-preferences', () => {
 
     expect(normalized.bannerColor).toBe('state');
     expect(normalized.titleIcon).toBe('type');
+    expect(
+      normalizeWorkItemDetailsPreferences({ bannerColor: 'none' }).bannerColor
+    ).toBe('none');
     expect(normalized.sections.discussion).toBe(false);
     expect(normalized.sections.details).toBe(true);
     expect(normalized.sections.attachments).toBe(true);

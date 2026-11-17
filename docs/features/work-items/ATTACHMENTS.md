@@ -38,17 +38,17 @@ Related:
 
 ## Locked decisions
 
-| Topic            | Decision                                                                                                                    |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Bucket           | `alice_storage_attachments` — **private**                                                                                   |
-| DB row           | Store `storage_path` (+ name, mime, size, uploader); **never** a forever public file URL                                    |
-| Initial load     | Same pattern as discussion: parallel RSC loader next to `getWorkItem`                                                       |
-| Join vs parallel | **Parallel** `getWorkItemAttachments(id)` — do **not** embed attachments (or comments) in a single mega `work_items` select |
-| List UI          | Type icon + name + size; no private `<img src>` thumbnails in v1                                                            |
-| Signed URL       | Mint on click via authenticated API (`createSignedUrl`)                                                                     |
-| Client cache     | In-memory `Map` per details visit: `{ previewUrl, downloadUrl, expiresAt? }`                                                |
-| Expiry           | No automatic refresh; show expired state + **Generate new link** / **Refresh link**                                         |
-| Viewer           | Alice modal: image / PDF when possible + Download; else download-only                                                       |
+| Topic            | Decision                                                                                                                                                                                                                                                            |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bucket           | `alice_storage_attachments` — **private**                                                                                                                                                                                                                           |
+| DB row           | Store `storage_path` (+ name, mime, size, uploader); **never** a forever public file URL                                                                                                                                                                            |
+| Initial load     | Same pattern as discussion: parallel RSC loader next to `getWorkItem`                                                                                                                                                                                               |
+| Join vs parallel | **Parallel** `getWorkItemAttachments(id)` — do **not** embed attachments (or comments) in a single mega `work_items` select                                                                                                                                         |
+| List UI          | Type icon + name + size; no private `<img src>` thumbnails in v1                                                                                                                                                                                                    |
+| Signed URL       | Mint on click via authenticated API (`createSignedUrl`)                                                                                                                                                                                                             |
+| Client cache     | In-memory `Map` per details visit: `{ previewUrl, downloadUrl, expiresAt? }`                                                                                                                                                                                        |
+| Expiry           | No automatic refresh; show expired state + **Generate new link** / **Refresh link**                                                                                                                                                                                 |
+| Viewer           | Alice modal: image / PDF / Markdown (GFM) when possible + Download; else download-only. Expand control widens the shell. Markdown preview pads content, treats the leading `#` as document title chrome (distinct from body headings), and uses medium-weight bold. |
 
 ```mermaid
 flowchart TD

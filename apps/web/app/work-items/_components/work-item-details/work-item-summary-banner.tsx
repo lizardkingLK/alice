@@ -61,6 +61,12 @@ function resolveBannerSurfaceClasses(params: {
   readonly presentation: StatePresentation;
 }): { readonly borderClass: string; readonly tintClass: string } {
   const { bannerColor, workItemType, presentation } = params;
+  if (bannerColor === 'none') {
+    return {
+      borderClass: '',
+      tintClass: '',
+    };
+  }
   if (bannerColor === 'type' && workItemType) {
     return {
       borderClass: workItemTypeBorder(workItemType),

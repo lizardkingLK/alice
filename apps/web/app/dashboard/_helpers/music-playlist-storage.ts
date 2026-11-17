@@ -51,11 +51,14 @@ export const MUSIC_PLAYLIST_URL_MAX = 2048;
 export type MusicPlaylistPreferences = {
   readonly selectedProvider: MusicProviderId;
   readonly urls: Readonly<Partial<Record<MusicProviderId, string>>>;
+  /** Expanded player chrome — survives Focus pane switches in this browser. */
+  readonly playerMaximized: boolean;
 };
 
 export const DEFAULT_MUSIC_PLAYLIST_PREFERENCES: MusicPlaylistPreferences = {
   selectedProvider: DEFAULT_MUSIC_PROVIDER,
   urls: {},
+  playerMaximized: false,
 };
 
 function storageKey(userId: string): string {
@@ -125,7 +128,9 @@ export function normalizeMusicPlaylistPreferences(
     }
   }
 
-  return { selectedProvider, urls };
+  const playerMaximized = source.playerMaximized === true;
+
+  return { selectedProvider, urls, playerMaximized };
 }
 
 export function readMusicPlaylistPreferences(
@@ -179,7 +184,25 @@ export function setMusicPlaylistUrl(
   } else {
     urls[provider] = normalized;
   }
-  return { ...prefs, urls };
+  return {
+    ...prefs,
+    urls,
+    // Clearing the active playlist cannot stay maximized.
+    playerMaximized:
+      !normalized && provider === prefs.selectedProvider
+        ? false
+        : prefs.playerMaximized,
+  };
+}
+
+export function setMusicPlayerMaximized(
+  prefs: MusicPlaylistPreferences,
+  maximized: boolean
+): MusicPlaylistPreferences {
+  if (prefs.playerMaximized === maximized) {
+    return prefs;
+  }
+  return { ...prefs, playerMaximized: maximized };
 }
 
 export function shiftMusicProvider(
@@ -237,4 +260,17 @@ export function musicPlaylistEmbedUrl(
     return null;
   }
   return null;
+}
+
+/** True only when the flag is set and the selected playlist can embed. */
+export function resolveMusicPlayerMaximized(
+  prefs: MusicPlaylistPreferences
+): boolean {
+  if (!prefs.playerMaximized) {
+    return false;
+  }
+  const savedUrl = prefs.urls[prefs.selectedProvider] ?? '';
+  return Boolean(
+    savedUrl && musicPlaylistEmbedUrl(prefs.selectedProvider, savedUrl)
+  );
 }

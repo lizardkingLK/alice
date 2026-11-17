@@ -22,6 +22,9 @@ describe('productivity-dashboard-preferences', () => {
       DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES.widgets['my-work-categories']
     ).toBe(false);
     expect(DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES.widgets.docs).toBe(false);
+    expect(DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES.widgets.notes).toBe(
+      false
+    );
   });
 
   it('keeps known mode and widget flags', () => {

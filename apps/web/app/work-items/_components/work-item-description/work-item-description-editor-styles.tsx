@@ -8,6 +8,11 @@ import { EDITOR_LIST_CLASSES } from '@/lib/editor/editor-list-classes';
 type EditorStyleOptions = {
   /** Taller embedded surface (e.g. agent instructions without maximize). */
   readonly tall?: boolean;
+  /**
+   * Grow with content; parent owns scrolling (avoids nested scrollbars).
+   * Used by the Notes page body.
+   */
+  readonly grow?: boolean;
 };
 
 // Centralized generation function to manage high contrast options and scaling properties cleanly
@@ -20,6 +25,8 @@ const getEditorStyles = function (
   if (maximizedState) {
     sizeClasses =
       'prose-base text-base min-h-[calc(100vh-220px)] max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-thin';
+  } else if (options?.grow) {
+    sizeClasses = 'prose-sm text-sm min-h-[12rem] overflow-visible';
   } else if (options?.tall) {
     sizeClasses =
       'prose-sm text-sm min-h-[28rem] max-h-[min(70vh,48rem)] overflow-y-auto scrollbar-thin';

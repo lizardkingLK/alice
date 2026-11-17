@@ -99,8 +99,8 @@ The in-page path above the title (`WorkItemPathBreadcrumb`) shows hierarchy ance
 ### Details layout preferences (client)
 
 Per-user browser prefs (`alice:work-item-details-prefs:v1:<userId>` + cookie
-`alice_wi_details_prefs_v1`) control the summary banner tint (**state** vs
-**type**), title icon (**type** / **state** / **none**), optional sections
+`alice_wi_details_prefs_v1`) control the summary banner tint (**state** /
+**type** / **none**), title icon (**type** / **state** / **none**), optional sections
 (Details, Attachments, Development, Discussion, More fields, Subtasks, Linked
 issues), Details field rows, and More fields items (including short ID and
 created/updated/resolved dates). Defaults match the previous layout plus a

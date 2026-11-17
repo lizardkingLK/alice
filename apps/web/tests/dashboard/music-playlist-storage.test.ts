@@ -22,6 +22,8 @@ import {
   musicPlaylistEmbedUrl,
   normalizeMusicPlaylistPreferences,
   readMusicPlaylistPreferences,
+  resolveMusicPlayerMaximized,
+  setMusicPlayerMaximized,
   setMusicPlaylistUrl,
   setSelectedMusicProvider,
   shiftMusicProvider,
@@ -58,7 +60,29 @@ describe('music-playlist-storage', () => {
     ).toEqual({
       selectedProvider: 'spotify',
       urls: { spotify: 'https://open.spotify.com/playlist/abc' },
+      playerMaximized: false,
     });
+  });
+
+  it('persists player maximized only when an embeddable playlist is selected', () => {
+    const withUrl = setMusicPlaylistUrl(
+      DEFAULT_MUSIC_PLAYLIST_PREFERENCES,
+      'spotify',
+      'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M'
+    );
+    const maximized = setMusicPlayerMaximized(withUrl, true);
+    writeMusicPlaylistPreferences('user-1', maximized);
+
+    expect(readMusicPlaylistPreferences('user-1').playerMaximized).toBe(true);
+    expect(resolveMusicPlayerMaximized(maximized)).toBe(true);
+    expect(
+      resolveMusicPlayerMaximized(DEFAULT_MUSIC_PLAYLIST_PREFERENCES)
+    ).toBe(false);
+    expect(
+      resolveMusicPlayerMaximized(
+        setMusicPlayerMaximized(DEFAULT_MUSIC_PLAYLIST_PREFERENCES, true)
+      )
+    ).toBe(false);
   });
 
   it('validates http(s) playlist URLs', () => {

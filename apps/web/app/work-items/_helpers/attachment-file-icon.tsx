@@ -49,6 +49,8 @@ const MIME_EXACT_TO_KIND: Record<string, AttachmentIconKind> = {
   'application/json': 'json',
   'text/html': 'code',
   'text/csv': 'spreadsheet',
+  'text/markdown': 'text',
+  'text/x-markdown': 'text',
   'application/zip': 'archive',
   'application/x-zip-compressed': 'archive',
   'application/msword': 'document',
@@ -130,8 +132,27 @@ export function resolveAttachmentIconKind(
   );
 }
 
-export function isAttachmentPreviewable(mimeType: string): boolean {
-  return mimeType.startsWith('image/') || mimeType === 'application/pdf';
+const MARKDOWN_MIME_TYPES = new Set(['text/markdown', 'text/x-markdown']);
+
+/** Markdown by MIME or `.md` extension (browsers often send octet-stream). */
+export function isMarkdownAttachment(
+  mimeType: string,
+  fileName: string
+): boolean {
+  if (MARKDOWN_MIME_TYPES.has(mimeType)) {
+    return true;
+  }
+  return extensionOf(fileName) === 'md';
+}
+
+export function isAttachmentPreviewable(
+  mimeType: string,
+  fileName = ''
+): boolean {
+  if (mimeType.startsWith('image/') || mimeType === 'application/pdf') {
+    return true;
+  }
+  return isMarkdownAttachment(mimeType, fileName);
 }
 
 export function AttachmentFileIcon({
