@@ -578,6 +578,123 @@ describe('ProjectFieldsWorkspace component', () => {
     expect(screen.getByText('key: moscowRating')).toBeInTheDocument();
     expect(screen.getByText('Must')).toBeInTheDocument();
     expect(screen.getByText('Should')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Remove MoSCoW Rating' })
+    ).toBeInTheDocument();
+  });
+
+  it('cancels field removal without changing the draft', async () => {
+    const { updateProjectFieldsConfig } =
+      await import('@/app/projects/_services/projects.mutations.client');
+    render(
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
+    );
+
+    const textarea = screen.getByLabelText<HTMLTextAreaElement>(
+      /json schema specification/i
+    );
+    const originalDraft = textarea.value;
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Remove MoSCoW Rating' })
+    );
+
+    expect(screen.getByText('Remove Field: MoSCoW Rating')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Field: MoSCoW Rating \(key: moscowRating\)/)
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }));
+
+    expect(
+      screen.queryByText('Remove Field: MoSCoW Rating')
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('key: moscowRating')).toBeInTheDocument();
+    expect(textarea.value).toBe(originalDraft);
+    expect(updateProjectFieldsConfig).not.toHaveBeenCalled();
+  });
+
+  it('confirms removal by key while preserving other unsaved draft edits', async () => {
+    const { updateProjectFieldsConfig } =
+      await import('@/app/projects/_services/projects.mutations.client');
+    render(
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
+    );
+
+    const textarea = screen.getByLabelText<HTMLTextAreaElement>(
+      /json schema specification/i
+    );
+    const editedDraft = {
+      type: 'object',
+      title: 'Unsaved schema title',
+      properties: {
+        moscowRating: {
+          type: 'string',
+          title: 'MoSCoW Rating',
+        },
+        acceptanceCriteria: {
+          type: 'string',
+          title: 'Acceptance Criteria',
+          description: 'Unsaved acceptance criteria description',
+        },
+      },
+      additionalProperties: false,
+    };
+    fireEvent.change(textarea, {
+      target: { value: JSON.stringify(editedDraft, null, 2) },
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Remove MoSCoW Rating' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: /^remove$/i }));
+
+    const updatedDraft = JSON.parse(textarea.value);
+    expect(updatedDraft).toMatchObject({
+      title: 'Unsaved schema title',
+      properties: {
+        acceptanceCriteria: {
+          description: 'Unsaved acceptance criteria description',
+        },
+      },
+      additionalProperties: false,
+    });
+    expect(updatedDraft.properties.moscowRating).toBeUndefined();
+    expect(screen.queryByText('key: moscowRating')).not.toBeInTheDocument();
+    expect(screen.getByText('key: acceptanceCriteria')).toBeInTheDocument();
+    expect(updateProjectFieldsConfig).not.toHaveBeenCalled();
+  });
+
+  it('removes the last field from the draft and saves through the existing flow', async () => {
+    const { updateProjectFieldsConfig } =
+      await import('@/app/projects/_services/projects.mutations.client');
+    render(
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
+    );
+
+    const textarea = screen.getByLabelText<HTMLTextAreaElement>(
+      /json schema specification/i
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Remove MoSCoW Rating' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: /^remove$/i }));
+
+    expect(
+      screen.getByText(/no dynamic fields configured yet/i)
+    ).toBeInTheDocument();
+    expect(JSON.parse(textarea.value).properties).toEqual({});
+    expect(updateProjectFieldsConfig).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(updateProjectFieldsConfig).toHaveBeenCalledWith(
+        mockProject.id,
+        expect.objectContaining({ properties: {} }),
+        mockProject.updated_at
+      );
+    });
   });
 
   it('shows read-only banner and disables editing when user is not a manager or admin', () => {
@@ -597,6 +714,9 @@ describe('ProjectFieldsWorkspace component', () => {
     expect(
       screen.getByRole('button', { name: /load template/i })
     ).toBeDisabled();
+    expect(
+      screen.queryByRole('button', { name: 'Remove MoSCoW Rating' })
+    ).not.toBeInTheDocument();
   });
 
   it('initializes LoadTemplateDialog with 0 templates selected for unconfigured projects', () => {
