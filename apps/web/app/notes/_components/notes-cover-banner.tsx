@@ -30,9 +30,9 @@ export function NotesCoverBanner({
       const dataUrl = assertNoteCoverDataUrl(await readFileAsDataUrl(file));
       onChange(dataUrl);
       setDialogOpen(false);
-    } catch (caught) {
+    } catch (error_) {
       setError(
-        caught instanceof Error ? caught.message : 'Could not save cover.'
+        error_ instanceof Error ? error_.message : 'Could not save cover.'
       );
     } finally {
       setBusy(false);

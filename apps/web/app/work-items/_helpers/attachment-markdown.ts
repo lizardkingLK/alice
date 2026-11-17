@@ -7,7 +7,11 @@ export function splitMarkdownDocumentTitle(markdown: string): {
   readonly documentTitle: string | null;
   readonly body: string;
 } {
-  if (markdown.length < 3 || markdown[0] !== '#' || markdown[1] === '#') {
+  if (
+    markdown.length < 3 ||
+    !markdown.startsWith('#') ||
+    markdown.startsWith('##')
+  ) {
     return { documentTitle: null, body: markdown };
   }
 

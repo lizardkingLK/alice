@@ -60,8 +60,8 @@ export function NotesEditorActions({
     try {
       await action();
       toast.success(successMessage);
-    } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : failureFallback);
+    } catch (error_) {
+      toast.error(error_ instanceof Error ? error_.message : failureFallback);
     } finally {
       setBusy(false);
     }
