@@ -16,6 +16,8 @@ the repository root unless a step says otherwise.
 - pnpm 12.4.2, the version pinned by the root `package.json`
 - Access to a Supabase project
 - Access to a Pusher Channels app
+- GitHub CLI (`gh`) when pushing production secrets — included via the
+  `github-cli` devcontainer feature (rebuild the container after pull)
 
 Alice does not include a local Supabase `config.toml`; local development uses a
 hosted or team-provided Supabase project. Docker is not required for the normal
@@ -315,3 +317,24 @@ If startup fails environment validation, compare the reported variable with
 the appropriate `sample.env`. If the API starts but database requests fail,
 recheck that `DIRECT_URL` is the direct migration URL and `DATABASE_URL` is the
 Supavisor session-mode URL on port 5432.
+
+## 9. Production secrets (GitHub → Vercel)
+
+Production app env lives in GitHub Secrets with app prefixes (`API_`, `WEB_`).
+Deploy upserts unprefixed keys onto Vercel before each production build.
+
+Do **not** push from local `.env` / `.env.local` — those usually have localhost
+domains. Use dedicated production files (gitignored):
+
+```bash
+cp apps/api/sample.env apps/api/.env.production
+cp apps/web/sample.env apps/web/.env.production
+# Edit both files with real production URLs, keys, and domains
+gh auth login
+./scripts/gh-secrets-push.sh --app api
+./scripts/gh-secrets-push.sh --app web
+```
+
+Keys in the file stay unprefixed (`DATABASE_URL`); the script stores
+`API_DATABASE_URL` / `WEB_…` in GitHub. See `docs/architecture/TRD.md` (CI/CD
+secrets) and `scripts/vercel-env-sync.sh`.

@@ -1,17 +1,21 @@
 name: Deploy Vercel App
 description: >-
   Build @repo/types, prevalidate Vercel secrets/link, install the Vercel CLI,
-  then pull / build / deploy a production prebuilt project. Requires checkout +
-  setup-workspace first. Expects VERCEL_TOKEN and VERCEL_ORG_ID in the job
-  environment. Project Root Directory is configured in Vercel (e.g. apps/api,
-  apps/web).
+  upsert env from prefixed GitHub secrets, then pull / build / deploy a
+  production prebuilt project. Requires checkout + setup-workspace first.
+  Expects VERCEL_TOKEN and VERCEL_ORG_ID in the job environment, plus prefixed
+  app secrets (API_* or WEB_*). Project Root Directory is configured in Vercel
+  (e.g. apps/api, apps/web).
 
 inputs:
   vercel-project-id:
     description: Vercel project id (VERCEL_PROJECT_ID_API or VERCEL_PROJECT_ID_WEB).
     required: true
+  app:
+    description: App for env sync allowlist/prefix (api or web).
+    required: true
   environment:
-    description: Vercel environment for `vercel pull` (usually production).
+    description: Vercel environment for env sync and `vercel pull` (usually production).
     required: false
     default: production
 
@@ -30,6 +34,12 @@ runs:
     - name: Install Global Vercel CLI Execution Agent
       shell: bash
       run: pnpm install --global vercel@latest --ignore-scripts
+
+    - name: Sync env vars to Vercel
+      uses: ./.github/actions/sync-vercel-env
+      with:
+        app: ${{ inputs.app }}
+        environment: ${{ inputs.environment }}
 
     - name: Pull Vercel Environment Variables
       shell: bash

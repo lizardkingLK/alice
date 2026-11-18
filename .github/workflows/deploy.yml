@@ -96,6 +96,40 @@ jobs:
       needs.validate_and_test.result == 'success' &&
       needs.validate_database.result == 'success'
     runs-on: ubuntu-latest
+    env:
+      API_ATLASSIAN_CLIENT_ID: ${{ secrets.API_ATLASSIAN_CLIENT_ID }}
+      API_ATLASSIAN_CLIENT_SECRET: ${{ secrets.API_ATLASSIAN_CLIENT_SECRET }}
+      API_ATLASSIAN_REDIRECT_URI: ${{ secrets.API_ATLASSIAN_REDIRECT_URI }}
+      API_CRON_SECRET: ${{ secrets.API_CRON_SECRET }}
+      API_DATABASE_URL: ${{ secrets.API_DATABASE_URL }}
+      API_EMAIL_OUTBOX_PROCESSING_ENABLED: ${{ secrets.API_EMAIL_OUTBOX_PROCESSING_ENABLED }}
+      API_EMAIL_RECONCILIATION_ENABLED: ${{ secrets.API_EMAIL_RECONCILIATION_ENABLED }}
+      API_FRONTEND_URL: ${{ secrets.API_FRONTEND_URL }}
+      API_GITHUB_APP_ID: ${{ secrets.API_GITHUB_APP_ID }}
+      API_GITHUB_APP_PRIVATE_KEY: ${{ secrets.API_GITHUB_APP_PRIVATE_KEY }}
+      API_GITHUB_APP_WEBHOOK_SECRET: ${{ secrets.API_GITHUB_APP_WEBHOOK_SECRET }}
+      API_GITHUB_CLIENT_ID: ${{ secrets.API_GITHUB_CLIENT_ID }}
+      API_GITHUB_CLIENT_SECRET: ${{ secrets.API_GITHUB_CLIENT_SECRET }}
+      API_GITHUB_REDIRECT_URI: ${{ secrets.API_GITHUB_REDIRECT_URI }}
+      API_INTEGRATION_TOKEN_ENCRYPTION_KEY: ${{ secrets.API_INTEGRATION_TOKEN_ENCRYPTION_KEY }}
+      API_PORT: ${{ secrets.API_PORT }}
+      API_PUSHER_APP_ID: ${{ secrets.API_PUSHER_APP_ID }}
+      API_PUSHER_CLUSTER: ${{ secrets.API_PUSHER_CLUSTER }}
+      API_PUSHER_KEY: ${{ secrets.API_PUSHER_KEY }}
+      API_PUSHER_SECRET: ${{ secrets.API_PUSHER_SECRET }}
+      API_RESEND_API_KEY: ${{ secrets.API_RESEND_API_KEY }}
+      API_STORAGE_BUCKET_ATTACHMENTS: ${{ secrets.API_STORAGE_BUCKET_ATTACHMENTS }}
+      API_STORAGE_BUCKET_CHAT_ATTACHMENTS: ${{ secrets.API_STORAGE_BUCKET_CHAT_ATTACHMENTS }}
+      API_STORAGE_BUCKET_CHAT_HISTORY: ${{ secrets.API_STORAGE_BUCKET_CHAT_HISTORY }}
+      API_STORAGE_BUCKET_PROFILE_COVERS: ${{ secrets.API_STORAGE_BUCKET_PROFILE_COVERS }}
+      API_STORAGE_BUCKET_PROFILE_PICTURES: ${{ secrets.API_STORAGE_BUCKET_PROFILE_PICTURES }}
+      API_STORAGE_BUCKET_PROJECT_COVERS: ${{ secrets.API_STORAGE_BUCKET_PROJECT_COVERS }}
+      API_STORAGE_BUCKET_PROJECT_LOGOS: ${{ secrets.API_STORAGE_BUCKET_PROJECT_LOGOS }}
+      API_SUPABASE_ANON_KEY: ${{ secrets.API_SUPABASE_ANON_KEY }}
+      API_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.API_SUPABASE_SERVICE_ROLE_KEY }}
+      API_SUPABASE_URL: ${{ secrets.API_SUPABASE_URL }}
+      API_TRANSACTIONAL_EMAIL_FROM: ${{ secrets.API_TRANSACTIONAL_EMAIL_FROM }}
+      API_WEEKLY_REPORT_GENERATION_ENABLED: ${{ secrets.API_WEEKLY_REPORT_GENERATION_ENABLED }}
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -107,6 +141,7 @@ jobs:
         uses: ./.github/actions/deploy-vercel
         with:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID_API }}
+          app: api
 
   deploy_frontend_web:
     name: Deploy Web Frontend to Vercel
@@ -118,6 +153,14 @@ jobs:
       needs.validate_and_test.result == 'success' &&
       needs.validate_database.result == 'success'
     runs-on: ubuntu-latest
+    env:
+      WEB_NEXT_PUBLIC_API_URL: ${{ secrets.WEB_NEXT_PUBLIC_API_URL }}
+      WEB_NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.WEB_NEXT_PUBLIC_SUPABASE_URL }}
+      WEB_NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.WEB_NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      WEB_NEXT_PUBLIC_PUSHER_KEY: ${{ secrets.WEB_NEXT_PUBLIC_PUSHER_KEY }}
+      WEB_NEXT_PUBLIC_PUSHER_CLUSTER: ${{ secrets.WEB_NEXT_PUBLIC_PUSHER_CLUSTER }}
+      WEB_NEXT_PUBLIC_SITE_URL: ${{ secrets.WEB_NEXT_PUBLIC_SITE_URL }}
+      WEB_SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET: ${{ secrets.WEB_SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET }}
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -129,3 +172,4 @@ jobs:
         uses: ./.github/actions/deploy-vercel
         with:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID_WEB }}
+          app: web

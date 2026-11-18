@@ -411,12 +411,30 @@ SonarCloud quality gate runs on `dev` branch after validation.
 
 **Required GitHub secrets**
 
+Infra (unprefixed — CI / deploy plumbing only):
+
 - `VERCEL_TOKEN`
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID_API`
 - `VERCEL_PROJECT_ID_WEB`
 - `DIRECT_URL` (migration status check on `main` deploy)
-- `SONAR_TOKEN` (SonarCloud on `dev`)
+- `SONAR_TOKEN` (SonarCloud on pull requests)
+
+App runtime (prefixed — source of truth for Vercel project env):
+
+- `API_*` — one secret per key in `apps/api/sample.env` (e.g. `API_DATABASE_URL` → Vercel `DATABASE_URL`)
+- `WEB_*` — one secret per production key in `apps/web/sample.env` (skips `CYPRESS_*`)
+
+On each `main` deploy, Actions strips the prefix and upserts into the matching Vercel project before `vercel pull`. Bootstrap from **production** env files (not local `.env` / `.env.local` — those use localhost URLs):
+
+```bash
+cp apps/api/sample.env apps/api/.env.production   # then fill real prod values
+cp apps/web/sample.env apps/web/.env.production
+./scripts/gh-secrets-push.sh --app api
+./scripts/gh-secrets-push.sh --app web
+```
+
+`.env.production` is gitignored. Requires GitHub CLI (`gh`) in the devcontainer (`github-cli` feature) and `gh auth login` with secrets write access. See `scripts/gh-secrets-push.sh` and `scripts/vercel-env-sync.sh`.
 
 ## 11. Development Workflow
 
