@@ -1159,6 +1159,7 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           end_date: string | null
+          figma_url: string | null
           id: string
           key: string
           logo_url: string | null
@@ -1182,6 +1183,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           end_date?: string | null
+          figma_url?: string | null
           id?: string
           key: string
           logo_url?: string | null
@@ -1205,6 +1207,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           end_date?: string | null
+          figma_url?: string | null
           id?: string
           key?: string
           logo_url?: string | null

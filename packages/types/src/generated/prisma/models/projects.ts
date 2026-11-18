@@ -40,6 +40,7 @@ export type ProjectsMinAggregateOutputType = {
   updated_at: Date | null
   pm_connection_id: string | null
   vc_connection_id: string | null
+  figma_url: string | null
   logo_url: string | null
   cover_picture: string | null
 }
@@ -60,6 +61,7 @@ export type ProjectsMaxAggregateOutputType = {
   updated_at: Date | null
   pm_connection_id: string | null
   vc_connection_id: string | null
+  figma_url: string | null
   logo_url: string | null
   cover_picture: string | null
 }
@@ -84,6 +86,7 @@ export type ProjectsCountAggregateOutputType = {
   pm_external: number
   vc_connection_id: number
   vc_external: number
+  figma_url: number
   logo_url: number
   cover_picture: number
   _all: number
@@ -106,6 +109,7 @@ export type ProjectsMinAggregateInputType = {
   updated_at?: true
   pm_connection_id?: true
   vc_connection_id?: true
+  figma_url?: true
   logo_url?: true
   cover_picture?: true
 }
@@ -126,6 +130,7 @@ export type ProjectsMaxAggregateInputType = {
   updated_at?: true
   pm_connection_id?: true
   vc_connection_id?: true
+  figma_url?: true
   logo_url?: true
   cover_picture?: true
 }
@@ -150,6 +155,7 @@ export type ProjectsCountAggregateInputType = {
   pm_external?: true
   vc_connection_id?: true
   vc_external?: true
+  figma_url?: true
   logo_url?: true
   cover_picture?: true
   _all?: true
@@ -247,6 +253,7 @@ export type ProjectsGroupByOutputType = {
   pm_external: runtime.JsonValue | null
   vc_connection_id: string | null
   vc_external: runtime.JsonValue | null
+  figma_url: string | null
   logo_url: string | null
   cover_picture: string | null
   _count: ProjectsCountAggregateOutputType | null
@@ -292,6 +299,7 @@ export type projectsWhereInput = {
   pm_external?: Prisma.JsonNullableFilter<"projects">
   vc_connection_id?: Prisma.UuidNullableFilter<"projects"> | string | null
   vc_external?: Prisma.JsonNullableFilter<"projects">
+  figma_url?: Prisma.StringNullableFilter<"projects"> | string | null
   logo_url?: Prisma.StringNullableFilter<"projects"> | string | null
   cover_picture?: Prisma.StringNullableFilter<"projects"> | string | null
   owner?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
@@ -335,6 +343,7 @@ export type projectsOrderByWithRelationInput = {
   pm_external?: Prisma.SortOrderInput | Prisma.SortOrder
   vc_connection_id?: Prisma.SortOrderInput | Prisma.SortOrder
   vc_external?: Prisma.SortOrderInput | Prisma.SortOrder
+  figma_url?: Prisma.SortOrderInput | Prisma.SortOrder
   logo_url?: Prisma.SortOrderInput | Prisma.SortOrder
   cover_picture?: Prisma.SortOrderInput | Prisma.SortOrder
   owner?: Prisma.usersOrderByWithRelationInput
@@ -381,6 +390,7 @@ export type projectsWhereUniqueInput = Prisma.AtLeast<{
   pm_external?: Prisma.JsonNullableFilter<"projects">
   vc_connection_id?: Prisma.UuidNullableFilter<"projects"> | string | null
   vc_external?: Prisma.JsonNullableFilter<"projects">
+  figma_url?: Prisma.StringNullableFilter<"projects"> | string | null
   logo_url?: Prisma.StringNullableFilter<"projects"> | string | null
   cover_picture?: Prisma.StringNullableFilter<"projects"> | string | null
   owner?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
@@ -424,6 +434,7 @@ export type projectsOrderByWithAggregationInput = {
   pm_external?: Prisma.SortOrderInput | Prisma.SortOrder
   vc_connection_id?: Prisma.SortOrderInput | Prisma.SortOrder
   vc_external?: Prisma.SortOrderInput | Prisma.SortOrder
+  figma_url?: Prisma.SortOrderInput | Prisma.SortOrder
   logo_url?: Prisma.SortOrderInput | Prisma.SortOrder
   cover_picture?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.projectsCountOrderByAggregateInput
@@ -454,6 +465,7 @@ export type projectsScalarWhereWithAggregatesInput = {
   pm_external?: Prisma.JsonNullableWithAggregatesFilter<"projects">
   vc_connection_id?: Prisma.UuidNullableWithAggregatesFilter<"projects"> | string | null
   vc_external?: Prisma.JsonNullableWithAggregatesFilter<"projects">
+  figma_url?: Prisma.StringNullableWithAggregatesFilter<"projects"> | string | null
   logo_url?: Prisma.StringNullableWithAggregatesFilter<"projects"> | string | null
   cover_picture?: Prisma.StringNullableWithAggregatesFilter<"projects"> | string | null
 }
@@ -473,6 +485,7 @@ export type projectsCreateInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -516,6 +529,7 @@ export type projectsUncheckedCreateInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -549,6 +563,7 @@ export type projectsUpdateInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -592,6 +607,7 @@ export type projectsUncheckedUpdateInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -630,6 +646,7 @@ export type projectsCreateManyInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
 }
@@ -649,6 +666,7 @@ export type projectsUpdateManyMutationInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -673,6 +691,7 @@ export type projectsUncheckedUpdateManyInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -707,6 +726,7 @@ export type projectsCountOrderByAggregateInput = {
   pm_external?: Prisma.SortOrder
   vc_connection_id?: Prisma.SortOrder
   vc_external?: Prisma.SortOrder
+  figma_url?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   cover_picture?: Prisma.SortOrder
 }
@@ -727,6 +747,7 @@ export type projectsMaxOrderByAggregateInput = {
   updated_at?: Prisma.SortOrder
   pm_connection_id?: Prisma.SortOrder
   vc_connection_id?: Prisma.SortOrder
+  figma_url?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   cover_picture?: Prisma.SortOrder
 }
@@ -747,6 +768,7 @@ export type projectsMinOrderByAggregateInput = {
   updated_at?: Prisma.SortOrder
   pm_connection_id?: Prisma.SortOrder
   vc_connection_id?: Prisma.SortOrder
+  figma_url?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   cover_picture?: Prisma.SortOrder
 }
@@ -1196,6 +1218,7 @@ export type projectsCreateWithoutOwnerInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
@@ -1237,6 +1260,7 @@ export type projectsUncheckedCreateWithoutOwnerInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -1280,6 +1304,7 @@ export type projectsCreateWithoutCreated_by_userInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -1321,6 +1346,7 @@ export type projectsUncheckedCreateWithoutCreated_by_userInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -1364,6 +1390,7 @@ export type projectsCreateWithoutUpdated_by_userInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -1405,6 +1432,7 @@ export type projectsUncheckedCreateWithoutUpdated_by_userInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -1472,6 +1500,7 @@ export type projectsScalarWhereInput = {
   pm_external?: Prisma.JsonNullableFilter<"projects">
   vc_connection_id?: Prisma.UuidNullableFilter<"projects"> | string | null
   vc_external?: Prisma.JsonNullableFilter<"projects">
+  figma_url?: Prisma.StringNullableFilter<"projects"> | string | null
   logo_url?: Prisma.StringNullableFilter<"projects"> | string | null
   cover_picture?: Prisma.StringNullableFilter<"projects"> | string | null
 }
@@ -1523,6 +1552,7 @@ export type projectsCreateWithoutMembersInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -1565,6 +1595,7 @@ export type projectsUncheckedCreateWithoutMembersInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   teams?: Prisma.teamsUncheckedCreateNestedManyWithoutProjectInput
@@ -1613,6 +1644,7 @@ export type projectsUpdateWithoutMembersInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -1655,6 +1687,7 @@ export type projectsUncheckedUpdateWithoutMembersInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   teams?: Prisma.teamsUncheckedUpdateManyWithoutProjectNestedInput
@@ -1687,6 +1720,7 @@ export type projectsCreateWithoutTeamsInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -1729,6 +1763,7 @@ export type projectsUncheckedCreateWithoutTeamsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -1777,6 +1812,7 @@ export type projectsUpdateWithoutTeamsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -1819,6 +1855,7 @@ export type projectsUncheckedUpdateWithoutTeamsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -1851,6 +1888,7 @@ export type projectsCreateWithoutSprintsInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -1893,6 +1931,7 @@ export type projectsUncheckedCreateWithoutSprintsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -1941,6 +1980,7 @@ export type projectsUpdateWithoutSprintsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -1983,6 +2023,7 @@ export type projectsUncheckedUpdateWithoutSprintsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2015,6 +2056,7 @@ export type projectsCreateWithoutWork_itemsInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -2057,6 +2099,7 @@ export type projectsUncheckedCreateWithoutWork_itemsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2105,6 +2148,7 @@ export type projectsUpdateWithoutWork_itemsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -2147,6 +2191,7 @@ export type projectsUncheckedUpdateWithoutWork_itemsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2179,6 +2224,7 @@ export type projectsCreateWithoutWork_item_linksInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -2221,6 +2267,7 @@ export type projectsUncheckedCreateWithoutWork_item_linksInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2269,6 +2316,7 @@ export type projectsUpdateWithoutWork_item_linksInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -2311,6 +2359,7 @@ export type projectsUncheckedUpdateWithoutWork_item_linksInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2343,6 +2392,7 @@ export type projectsCreateWithoutBurndown_rollupsInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -2385,6 +2435,7 @@ export type projectsUncheckedCreateWithoutBurndown_rollupsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2433,6 +2484,7 @@ export type projectsUpdateWithoutBurndown_rollupsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -2475,6 +2527,7 @@ export type projectsUncheckedUpdateWithoutBurndown_rollupsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2507,6 +2560,7 @@ export type projectsCreateWithoutContribution_rollupsInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -2549,6 +2603,7 @@ export type projectsUncheckedCreateWithoutContribution_rollupsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2597,6 +2652,7 @@ export type projectsUpdateWithoutContribution_rollupsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -2639,6 +2695,7 @@ export type projectsUncheckedUpdateWithoutContribution_rollupsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2671,6 +2728,7 @@ export type projectsCreateWithoutChart_rollupsInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -2713,6 +2771,7 @@ export type projectsUncheckedCreateWithoutChart_rollupsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2761,6 +2820,7 @@ export type projectsUpdateWithoutChart_rollupsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -2803,6 +2863,7 @@ export type projectsUncheckedUpdateWithoutChart_rollupsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2835,6 +2896,7 @@ export type projectsCreateWithoutChart_hierarchy_rollupsInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -2877,6 +2939,7 @@ export type projectsUncheckedCreateWithoutChart_hierarchy_rollupsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2925,6 +2988,7 @@ export type projectsUpdateWithoutChart_hierarchy_rollupsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -2967,6 +3031,7 @@ export type projectsUncheckedUpdateWithoutChart_hierarchy_rollupsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2999,6 +3064,7 @@ export type projectsCreateWithoutWeekly_report_subscriptionsInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -3041,6 +3107,7 @@ export type projectsUncheckedCreateWithoutWeekly_report_subscriptionsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -3089,6 +3156,7 @@ export type projectsUpdateWithoutWeekly_report_subscriptionsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -3131,6 +3199,7 @@ export type projectsUncheckedUpdateWithoutWeekly_report_subscriptionsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -3163,6 +3232,7 @@ export type projectsCreateWithoutWeekly_project_reportsInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -3205,6 +3275,7 @@ export type projectsUncheckedCreateWithoutWeekly_project_reportsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -3253,6 +3324,7 @@ export type projectsUpdateWithoutWeekly_project_reportsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -3295,6 +3367,7 @@ export type projectsUncheckedUpdateWithoutWeekly_project_reportsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -3327,6 +3400,7 @@ export type projectsCreateWithoutPm_connectionInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -3368,6 +3442,7 @@ export type projectsUncheckedCreateWithoutPm_connectionInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -3427,6 +3502,7 @@ export type projectsCreateWithoutVc_connectionInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -3468,6 +3544,7 @@ export type projectsUncheckedCreateWithoutVc_connectionInput = {
   pm_connection_id?: string | null
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -3527,6 +3604,7 @@ export type projectsCreateWithoutSaved_viewsInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -3569,6 +3647,7 @@ export type projectsUncheckedCreateWithoutSaved_viewsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -3617,6 +3696,7 @@ export type projectsUpdateWithoutSaved_viewsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -3659,6 +3739,7 @@ export type projectsUncheckedUpdateWithoutSaved_viewsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -3691,6 +3772,7 @@ export type projectsCreateWithoutProject_integrationsInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -3733,6 +3815,7 @@ export type projectsUncheckedCreateWithoutProject_integrationsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -3781,6 +3864,7 @@ export type projectsUpdateWithoutProject_integrationsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -3823,6 +3907,7 @@ export type projectsUncheckedUpdateWithoutProject_integrationsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -3855,6 +3940,7 @@ export type projectsCreateWithoutIntegration_bindingsInput = {
   updated_at?: Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -3897,6 +3983,7 @@ export type projectsUncheckedCreateWithoutIntegration_bindingsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -3945,6 +4032,7 @@ export type projectsUpdateWithoutIntegration_bindingsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -3987,6 +4075,7 @@ export type projectsUncheckedUpdateWithoutIntegration_bindingsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -4023,6 +4112,7 @@ export type projectsCreateManyOwnerInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
 }
@@ -4046,6 +4136,7 @@ export type projectsCreateManyCreated_by_userInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
 }
@@ -4069,6 +4160,7 @@ export type projectsCreateManyUpdated_by_userInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
 }
@@ -4088,6 +4180,7 @@ export type projectsUpdateWithoutOwnerInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
@@ -4129,6 +4222,7 @@ export type projectsUncheckedUpdateWithoutOwnerInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -4166,6 +4260,7 @@ export type projectsUncheckedUpdateManyWithoutOwnerInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -4185,6 +4280,7 @@ export type projectsUpdateWithoutCreated_by_userInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -4226,6 +4322,7 @@ export type projectsUncheckedUpdateWithoutCreated_by_userInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -4263,6 +4360,7 @@ export type projectsUncheckedUpdateManyWithoutCreated_by_userInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -4282,6 +4380,7 @@ export type projectsUpdateWithoutUpdated_by_userInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -4323,6 +4422,7 @@ export type projectsUncheckedUpdateWithoutUpdated_by_userInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -4360,6 +4460,7 @@ export type projectsUncheckedUpdateManyWithoutUpdated_by_userInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -4383,6 +4484,7 @@ export type projectsCreateManyPm_connectionInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
 }
@@ -4402,6 +4504,7 @@ export type projectsUpdateWithoutPm_connectionInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -4443,6 +4546,7 @@ export type projectsUncheckedUpdateWithoutPm_connectionInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -4480,6 +4584,7 @@ export type projectsUncheckedUpdateManyWithoutPm_connectionInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -4503,6 +4608,7 @@ export type projectsCreateManyVc_connectionInput = {
   pm_connection_id?: string | null
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
   logo_url?: string | null
   cover_picture?: string | null
 }
@@ -4522,6 +4628,7 @@ export type projectsUpdateWithoutVc_connectionInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -4563,6 +4670,7 @@ export type projectsUncheckedUpdateWithoutVc_connectionInput = {
   pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -4600,6 +4708,7 @@ export type projectsUncheckedUpdateManyWithoutVc_connectionInput = {
   pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -4772,6 +4881,7 @@ export type projectsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   pm_external?: boolean
   vc_connection_id?: boolean
   vc_external?: boolean
+  figma_url?: boolean
   logo_url?: boolean
   cover_picture?: boolean
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
@@ -4816,6 +4926,7 @@ export type projectsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   pm_external?: boolean
   vc_connection_id?: boolean
   vc_external?: boolean
+  figma_url?: boolean
   logo_url?: boolean
   cover_picture?: boolean
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
@@ -4845,6 +4956,7 @@ export type projectsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   pm_external?: boolean
   vc_connection_id?: boolean
   vc_external?: boolean
+  figma_url?: boolean
   logo_url?: boolean
   cover_picture?: boolean
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
@@ -4874,11 +4986,12 @@ export type projectsSelectScalar = {
   pm_external?: boolean
   vc_connection_id?: boolean
   vc_external?: boolean
+  figma_url?: boolean
   logo_url?: boolean
   cover_picture?: boolean
 }
 
-export type projectsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "key" | "description" | "owner_id" | "start_date" | "end_date" | "attributes_config" | "workflow_config" | "status" | "deleted_at" | "created_by" | "created_at" | "updated_by" | "updated_at" | "pm_connection_id" | "pm_external" | "vc_connection_id" | "vc_external" | "logo_url" | "cover_picture", ExtArgs["result"]["projects"]>
+export type projectsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "key" | "description" | "owner_id" | "start_date" | "end_date" | "attributes_config" | "workflow_config" | "status" | "deleted_at" | "created_by" | "created_at" | "updated_by" | "updated_at" | "pm_connection_id" | "pm_external" | "vc_connection_id" | "vc_external" | "figma_url" | "logo_url" | "cover_picture", ExtArgs["result"]["projects"]>
 export type projectsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   created_by_user?: boolean | Prisma.projects$created_by_userArgs<ExtArgs>
@@ -4971,6 +5084,10 @@ export type $projectsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
      * Vendor link extras, e.g. `{ "vendor": "github", "repo": "owner/repo" }`.
      */
     vc_external: runtime.JsonValue | null
+    /**
+     * One saved Figma file, prototype, board, or slide URL for this project.
+     */
+    figma_url: string | null
     logo_url: string | null
     cover_picture: string | null
   }, ExtArgs["result"]["projects"]>
@@ -5434,6 +5551,7 @@ export interface projectsFieldRefs {
   readonly pm_external: Prisma.FieldRef<"projects", 'Json'>
   readonly vc_connection_id: Prisma.FieldRef<"projects", 'String'>
   readonly vc_external: Prisma.FieldRef<"projects", 'Json'>
+  readonly figma_url: Prisma.FieldRef<"projects", 'String'>
   readonly logo_url: Prisma.FieldRef<"projects", 'String'>
   readonly cover_picture: Prisma.FieldRef<"projects", 'String'>
 }

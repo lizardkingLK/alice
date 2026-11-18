@@ -413,6 +413,45 @@ describe('projects schemas', () => {
       });
       expect(parsed.success).toBe(true);
     });
+
+    it.each([
+      'https://www.figma.com/design/file-1/Alice',
+      'https://figma.com/proto/file-2/Alice',
+      'https://www.figma.com/board/file-3/Alice',
+    ])('accepts a valid Figma project URL: %s', (figmaUrl) => {
+      const parsed = updateProjectSchema.safeParse({
+        figma_url: figmaUrl,
+        expectedUpdatedAt: '2026-08-25T12:00:00.000Z',
+      });
+      expect(parsed.success).toBe(true);
+      if (parsed.success) {
+        expect(parsed.data.figma_url).toBe(figmaUrl);
+      }
+    });
+
+    it.each([
+      // eslint-disable-next-line sonarjs/no-clear-text-protocols -- verifies HTTPS is required
+      'http://www.figma.com/design/file-1/Alice',
+      'https://example.com/design/file-1/Alice',
+      'https://www.figma.com/',
+      'not-a-url',
+    ])('rejects an invalid Figma project URL: %s', (figmaUrl) => {
+      expect(
+        updateProjectSchema.safeParse({
+          figma_url: figmaUrl,
+          expectedUpdatedAt: '2026-08-25T12:00:00.000Z',
+        }).success
+      ).toBe(false);
+    });
+
+    it('accepts null to remove a Figma project URL', () => {
+      expect(
+        updateProjectSchema.safeParse({
+          figma_url: null,
+          expectedUpdatedAt: '2026-08-25T12:00:00.000Z',
+        }).success
+      ).toBe(true);
+    });
   });
 
   describe('createProjectSchema github_connection_id', () => {

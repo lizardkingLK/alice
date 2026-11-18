@@ -23,7 +23,10 @@ export type Project = Omit<
   | 'pm_external'
   | 'vc_connection_id'
   | 'vc_external'
+  | 'figma_url'
 > & {
+  /** Optional while web clients and generated database types roll out together. */
+  figma_url?: string | null;
   /** Wire aliases mapped from `pm_connection_id` / `pm_external`. */
   jira_connection_id?: string | null;
   jira_project_key?: string | null;
@@ -65,6 +68,7 @@ type ProjectMutationInput = Omit<
   | 'vc_external'
   | 'logo_url'
   | 'cover_picture'
+  | 'figma_url'
   | 'workflow_config'
 > & {
   jira_connection_id?: string | null;
@@ -75,6 +79,7 @@ type ProjectMutationInput = Omit<
   github_token?: string | null;
   logo_url?: string | null;
   cover_picture?: string | null;
+  figma_url?: string | null;
   attributes_config?: unknown;
   workflow_config?: ProjectWorkflowConfig | null;
 };

@@ -48,6 +48,34 @@ export const PROJECT_PROJECTION = 'id, name, key' as const;
 
 export type ProjectProjection = typeof PROJECT_PROJECTION;
 
+export const FIGMA_PROJECT_URL_MESSAGE =
+  'Enter a valid HTTPS Figma URL, for example https://www.figma.com/design/...';
+
+/** Saved-link validation only. Figma OAuth is handled separately. */
+export function isValidFigmaProjectUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    const isFigmaHost =
+      url.hostname === 'figma.com' || url.hostname === 'www.figma.com';
+    return (
+      url.protocol === 'https:' &&
+      isFigmaHost &&
+      url.pathname !== '/' &&
+      url.username === '' &&
+      url.password === '' &&
+      url.port === ''
+    );
+  } catch {
+    return false;
+  }
+}
+
+export const figmaProjectUrlSchema = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine(isValidFigmaProjectUrl, { message: FIGMA_PROJECT_URL_MESSAGE });
+
 /**
  * Build a PostgREST project relation embed, e.g. `project:projects(id, name, key)`.
  * Pass a nested parent select when needed:
@@ -85,6 +113,7 @@ const baseCreateProjectSchema = z.object({
   /** Links `projects.vc_connection_id` to the OAuth connection used for this repo. */
   github_connection_id: z.uuid().nullable().optional(),
   github_token: z.string().nullable().optional(),
+  figma_url: figmaProjectUrlSchema.nullable().optional(),
   attributes_config: ProjectFieldsConfigSchema.nullable().optional(),
   workflow_config: projectWorkflowConfigSchema.nullable().optional(),
 });
@@ -351,6 +380,7 @@ export const PROJECT_SESSION_COLUMNS = [
   'pm_external',
   'vc_connection_id',
   'vc_external',
+  'figma_url',
   'logo_url',
   'cover_picture',
   'attributes_config',
@@ -389,6 +419,7 @@ export const projectDetailSelect = {
   pm_external: true,
   vc_connection_id: true,
   vc_external: true,
+  figma_url: true,
 } as const;
 
 export type ProjectListRow = projectsGetPayload<{
@@ -493,6 +524,12 @@ export const projectIntegrationsSummarySchema = z.object({
     connected: z.boolean(),
     project_key: z.string().nullable(),
     connection_id: z.uuid().nullable(),
+  }),
+  design: z.object({
+    figma: z.object({
+      connected: z.boolean(),
+      url: figmaProjectUrlSchema.nullable(),
+    }),
   }),
   ai_agents: z.object({
     binding_count: z.number().int().nonnegative(),

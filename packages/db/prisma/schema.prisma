@@ -299,6 +299,8 @@ model projects {
   vc_connection_id  String?       @db.Uuid
   /// Vendor link extras, e.g. `{ "vendor": "github", "repo": "owner/repo" }`.
   vc_external       Json?
+  /// One saved Figma file, prototype, board, or slide URL for this project.
+  figma_url         String?
   logo_url          String?
   cover_picture     String?
 

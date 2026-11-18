@@ -16,6 +16,7 @@ import {
 import { GithubSettingsCard } from '@/app/projects/_components/project-details/github-settings-card';
 import { JiraSettingsCard } from '@/app/projects/_components/project-details/jira-settings-card';
 import { ProjectAiModelsCard } from '@/app/projects/_components/project-details/project-ai-models-card';
+import { FigmaSettingsCard } from '@/app/projects/_components/project-details/figma-settings-card';
 import { ProjectIntegrationsSummaryBar } from '@/app/projects/_components/project-details/project-integrations-summary-bar';
 import {
   INTEGRATION_PROVIDER_NONE,
@@ -358,6 +359,23 @@ export function ProjectIntegrationsMarketplace({
               <ProjectAiModelsCard
                 projectId={project.id}
                 canEdit={canEditProject}
+              />
+            </section>
+          ) : null}
+
+          {visibility.showFigma ? (
+            <section className="space-y-4">
+              <div className="space-y-1">
+                <h3 className="text-sm font-medium">
+                  Design &amp; diagramming
+                </h3>
+                <p className="text-muted-foreground text-xs">
+                  Link one design resource directly to this project.
+                </p>
+              </div>
+              <FigmaSettingsCard
+                project={project}
+                canEditProject={canEditProject}
               />
             </section>
           ) : null}

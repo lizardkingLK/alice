@@ -103,6 +103,7 @@ const mockProject = {
   jira_connection_id: null,
   github_repo: null,
   github_token: null,
+  figma_url: null,
   logo_url: null,
   cover_picture: null,
 };
@@ -651,6 +652,45 @@ describe('ProjectsService backend tests', () => {
       expect(updateMock).not.toHaveBeenCalled();
     });
 
+    it.each(['manager', 'admin'] as const)(
+      'allows a %s to save a Figma link',
+      async (role) => {
+        mockActorRole(role);
+        const figmaUrl = 'https://www.figma.com/design/file-1/Alice';
+        updateMock.mockResolvedValue({ ...mockProject, figma_url: figmaUrl });
+
+        await service.updateProject(
+          'actor-id',
+          'project-1',
+          { figma_url: figmaUrl },
+          mockProject.updated_at
+        );
+
+        expect(updateMock).toHaveBeenCalledWith(
+          'project-1',
+          { figma_url: figmaUrl },
+          'actor-id',
+          mockProject.updated_at
+        );
+      }
+    );
+
+    it('rejects a member changing a Figma link through the API service', async () => {
+      mockActorRole('member');
+
+      await expect(
+        service.updateProject(
+          'user-member',
+          'project-1',
+          { figma_url: 'https://www.figma.com/design/file-1/Alice' },
+          mockProject.updated_at
+        )
+      ).rejects.toThrow(
+        'Unauthorized. Only admins and managers can manage projects.'
+      );
+      expect(updateMock).not.toHaveBeenCalled();
+    });
+
     it('updates project successfully as manager/admin', async () => {
       mockActorRole('manager');
       findByKeyMock.mockResolvedValue(null);
@@ -920,6 +960,7 @@ describe('ProjectsService backend tests', () => {
         vc_external: { vendor: 'github', repo: 'acme/alice' },
         pm_connection_id: '22222222-2222-4222-8222-222222222222',
         pm_external: { vendor: 'jira', project_key: 'ALICE' },
+        figma_url: 'https://www.figma.com/design/file-1/Alice',
       });
       projectBindingsFindManyMock.mockResolvedValue([
         {
@@ -950,6 +991,12 @@ describe('ProjectsService backend tests', () => {
           connected: true,
           project_key: 'ALICE',
           connection_id: '22222222-2222-4222-8222-222222222222',
+        },
+        design: {
+          figma: {
+            connected: true,
+            url: 'https://www.figma.com/design/file-1/Alice',
+          },
         },
         ai_agents: {
           binding_count: 2,

@@ -389,6 +389,12 @@ export class ProjectsService {
         project_key: wire.jira_project_key,
         connection_id: wire.jira_connection_id,
       },
+      design: {
+        figma: {
+          connected: Boolean(project.figma_url),
+          url: project.figma_url,
+        },
+      },
       ai_agents: {
         binding_count: bindings.length,
         default_integration_id: projectDefault?.integration_id ?? null,

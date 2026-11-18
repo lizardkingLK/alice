@@ -80,6 +80,9 @@ export function filterProjectMarketplaceCatalog(
   searchQuery: string
 ): WorkspaceIntegration[] {
   return WORKSPACE_INTEGRATIONS.filter((item) => {
+    if (item.id === 'figma') {
+      return false;
+    }
     if (item.filterTab === 'ai-agents') {
       return false;
     }
@@ -94,7 +97,8 @@ export function filterProjectMarketplaceCatalog(
 }
 
 export function sectionVisibleForTab(
-  section: 'source-control' | 'project-management' | 'ai-agents' | 'catalog',
+  section:
+    'source-control' | 'project-management' | 'ai-agents' | 'figma' | 'catalog',
   tab: ProjectIntegrationFilterTab
 ): boolean {
   if (tab === 'all') {
@@ -103,6 +107,9 @@ export function sectionVisibleForTab(
   if (section === 'catalog') {
     return isCatalogGroupTab(tab);
   }
+  if (section === 'figma') {
+    return tab === 'design';
+  }
   return tab === section;
 }
 
@@ -110,6 +117,7 @@ export type MarketplaceSectionVisibility = {
   readonly showSourceControl: boolean;
   readonly showProjectManagement: boolean;
   readonly showAiAgents: boolean;
+  readonly showFigma: boolean;
   readonly showCatalog: boolean;
   readonly hasVisibleContent: boolean;
 };
@@ -131,17 +139,25 @@ export function resolveMarketplaceSectionVisibility(
   const showAiAgents =
     sectionVisibleForTab('ai-agents', activeFilter) &&
     matchesIntegrationSearch('ai agents chat models', searchQuery);
+  const showFigma =
+    sectionVisibleForTab('figma', activeFilter) &&
+    matchesIntegrationSearch(
+      'figma design prototype board slide project link',
+      searchQuery
+    );
   const showCatalog = sectionVisibleForTab('catalog', activeFilter);
 
   return {
     showSourceControl,
     showProjectManagement,
     showAiAgents,
+    showFigma,
     showCatalog,
     hasVisibleContent:
       showSourceControl ||
       showProjectManagement ||
       showAiAgents ||
+      showFigma ||
       (showCatalog && catalogItemCount > 0),
   };
 }

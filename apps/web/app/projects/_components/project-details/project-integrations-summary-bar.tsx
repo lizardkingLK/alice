@@ -78,6 +78,12 @@ export function ProjectIntegrationsSummaryBar({
         summary.project_management.connected,
         summary.project_management.project_key
       )}
+      {providerStatusBadge(
+        'Design',
+        summary.design.figma.connected ? 'Figma' : null,
+        summary.design.figma.connected,
+        null
+      )}
       <Badge variant="outline">
         AI agents: {summary.ai_agents.binding_count} bound
       </Badge>
