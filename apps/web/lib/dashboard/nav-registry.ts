@@ -114,7 +114,7 @@ export function resolveDashboardNavLabel(pathname: string): string {
     return match.label;
   }
   const normalized = normalizeFavoritePathname(pathname);
-  const segment = normalized.split('/').filter(Boolean).at(-1);
+  const segment = normalized.split('/').findLast(Boolean);
   if (!segment) {
     return 'Page';
   }

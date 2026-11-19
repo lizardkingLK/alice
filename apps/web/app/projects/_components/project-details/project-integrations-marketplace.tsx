@@ -70,10 +70,8 @@ function ComingSoonCatalogCard({
   );
 }
 
-type ProviderChangeHandler = {
-  // eslint-disable-next-line no-unused-vars -- callback signature for radio changes
-  (next: string): void;
-};
+// eslint-disable-next-line no-unused-vars -- callback signature for radio changes
+type ProviderChangeHandler = (next: string) => void;
 
 function useLinkedProviderSelection(
   linked: boolean,

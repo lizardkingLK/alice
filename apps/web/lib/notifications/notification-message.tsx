@@ -87,11 +87,15 @@ function buildComponents(onInternalLinkClick?: () => void): Components {
         return <span>{children}</span>;
       }
 
+      // `relative z-10` keeps these above stretch-link row overlays (home panel).
+      const linkClassName =
+        'text-primary relative z-10 font-semibold hover:underline';
+
       if (href.startsWith('/')) {
         return (
           <Link
             href={href}
-            className="text-primary font-semibold hover:underline"
+            className={linkClassName}
             onClick={(event) => {
               event.stopPropagation();
               onInternalLinkClick?.();
@@ -107,7 +111,7 @@ function buildComponents(onInternalLinkClick?: () => void): Components {
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-primary font-semibold hover:underline"
+          className={linkClassName}
           onClick={(event) => {
             event.stopPropagation();
           }}
@@ -122,7 +126,8 @@ function buildComponents(onInternalLinkClick?: () => void): Components {
 /**
  * Renders inbox notification copy with a small Markdown subset
  * (`**bold**`, `[label](/path)` links). Matches project-create messages and
- * stays safe inside the row click target (internal links stop propagation).
+ * stays safe inside a row click target (internal links stop propagation and
+ * sit above stretch-link overlays via `relative z-10`).
  */
 export function NotificationMessage({
   message,

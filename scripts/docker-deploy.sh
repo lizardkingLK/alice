@@ -1,7 +1,15 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Build the monorepo and bring up docker compose from the repo root.
+#
+# Usage:
+#   ./scripts/docker-deploy.sh
+#
+# Expects apps/web and apps/api env files (.env.local or .env), writes
+# secrets_web.txt / secrets_api.txt at the repo root for docker-compose.yml.
+
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 copy_app_secrets() {

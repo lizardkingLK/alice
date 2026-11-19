@@ -273,8 +273,8 @@ export function ReportsWorkspace({ projects, sprints }: ReportsWorkspaceProps) {
         includeAiInsights,
       };
       setReport(await generateDailyReport(request));
-    } catch (caught) {
-      setError(displayError(caught));
+    } catch (error_) {
+      setError(displayError(error_));
     } finally {
       setIsGenerating(false);
     }

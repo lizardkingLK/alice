@@ -1,12 +1,6 @@
 import { z } from 'zod';
 import { ChatRoles } from '../../chat.js';
-import {
-  ChatAttachmentFileTypeEnum,
-  WorkItemDeduplicationActionEnum,
-  WorkItemDeduplicationMatchStatusEnum,
-  type WorkItemDeduplicationItemResult,
-  type WorkItemDeduplicationReport,
-} from '../../chat-attachments.js';
+import { ChatAttachmentFileTypeEnum } from '../../chat-attachments.js';
 import { boardConfigSchema } from './board-config.js';
 import { emptyToUndefined } from './query-preprocess.js';
 import { workflowConfigEnvelopeSchema } from './workflow-config.js';
@@ -14,9 +8,11 @@ import { workflowConfigEnvelopeSchema } from './workflow-config.js';
 export {
   WorkItemDeduplicationActionEnum,
   WorkItemDeduplicationMatchStatusEnum,
-  type WorkItemDeduplicationItemResult,
-  type WorkItemDeduplicationReport,
-};
+} from '../../chat-attachments.js';
+export type {
+  WorkItemDeduplicationItemResult,
+  WorkItemDeduplicationReport,
+} from '../../chat-attachments.js';
 
 /** `/chat` history threads vs dock/widget session-only chats. */
 export const ChatConversationKinds = {

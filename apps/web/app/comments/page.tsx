@@ -174,7 +174,7 @@ async function CommentsData() {
   );
 }
 
-export default async function CommentsPage() {
+export default function CommentsPage() {
   return (
     <DashboardShell description="View, search, and manage discussions across all project work items.">
       <Suspense fallback={<CommentsSkeleton />}>

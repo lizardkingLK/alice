@@ -505,10 +505,10 @@ export function BacklogWorkspace({
         return;
       }
 
-      const draggedItem = workItemsRef.current.find(
+      const isKnownItem = workItemsRef.current.some(
         (item) => item.id === itemId
       );
-      if (draggedItem) {
+      if (isKnownItem) {
         sprintMoveQueue.enqueue(itemId, targetId);
       }
     }

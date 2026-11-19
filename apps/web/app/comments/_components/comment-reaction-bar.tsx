@@ -127,11 +127,8 @@ export function CommentReactionBar({
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-auto p-2">
-          <div
-            className="grid grid-cols-5 gap-1"
-            role="group"
-            aria-label="Reaction picker"
-          >
+          <fieldset className="m-0 grid grid-cols-5 gap-1 border-0 p-0">
+            <legend className="sr-only">Reaction picker</legend>
             {COMMENT_REACTION_EMOJIS.map((emoji) => {
               const mine = summaries.some(
                 (summary) => summary.emoji === emoji && summary.includesMe
@@ -151,7 +148,7 @@ export function CommentReactionBar({
                 </Button>
               );
             })}
-          </div>
+          </fieldset>
         </PopoverContent>
       </Popover>
     </div>

@@ -435,19 +435,20 @@ function ChatClientInner({
     const history = [...messages, userMessage];
 
     try {
-      const response = await sendChatMessage(
+      const response = await sendChatMessage({
         history,
-        activeConversationId,
-        selectedIntegrationId,
-        attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
+        conversationId: activeConversationId,
+        integrationId: selectedIntegrationId,
+        attachments:
+          attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
         viewContext,
-        conversationKind,
-        boundAgentId,
-        resolveChatProjectId({
+        kind: conversationKind,
+        agentId: boundAgentId,
+        projectId: resolveChatProjectId({
           viewContext,
           pathname: pageContext?.pathname,
-        })
-      );
+        }),
+      });
 
       applySuccessfulChatResponse({
         response,

@@ -5,98 +5,102 @@
 @source './**/*.{ts,tsx}';
 @source '../../../packages/ui/src/**/*.{ts,tsx}';
 
-/* Print layout configurations */
+/*
+ * Sprint report print stylesheet.
+ * Kept outside @layer so these rules beat Tailwind utilities without !important
+ * (Tailwind v4 layers lose to unlayered CSS; see workflow-marching-ants below).
+ */
 @page {
-  size: portrait !important;
-  margin: 10mm !important;
+  size: portrait;
+  margin: 10mm;
 }
 
 @media print {
   /* Force browser to print colors and background graphics inside sprint report */
   .print-container * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
-    transition: none !important;
-    animation: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    transition: none;
+    animation: none;
   }
 
   .print-container *::-webkit-scrollbar {
-    display: none !important;
+    display: none;
   }
 
   /* Prevent content truncation inside scroll containers */
   .print-container .overflow-x-auto,
   .print-container .overflow-y-auto {
-    overflow: visible !important;
-    height: auto !important;
-    max-height: none !important;
+    overflow: visible;
+    height: auto;
+    max-height: none;
   }
 
-  /* Global print rules: hide general layout headers/sidebars, notifications, and print-hidden components */
-  aside,
-  header,
-  [data-sidebar='sidebar'],
-  .no-print,
-  .print-hide {
-    display: none !important;
+  /* Hide chrome: shell sidebar/header plus opt-out markers */
+  body aside,
+  body header,
+  body [data-sidebar='sidebar'],
+  body .no-print,
+  body .print-hide {
+    display: none;
   }
 
-  /* Local print rules: hide action buttons and links specifically inside the sprint report card */
+  /* Hide action buttons and links inside the sprint report card */
   .print-container button,
   .print-container a {
-    display: none !important;
+    display: none;
   }
 
-  /* Reset page body background for physical print layouts */
+  /* Reset page body for physical print layouts */
   body {
-    background: white !important;
-    color: #09090b !important;
+    background: white;
+    color: #09090b;
   }
 
   .print-container {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: white !important;
-    color: #09090b !important;
-    box-shadow: none !important;
-    border: none !important;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    background: white;
+    color: #09090b;
+    box-shadow: none;
+    border: none;
   }
 
   /* Ensure metrics grid prints as 3 columns */
   .print-container .sprint-report-stats-grid {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 16px !important;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
   }
 
   .print-container .status-breakdown-grid {
-    display: grid !important;
-    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-    gap: 12px !important;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
   }
 
   .print-container .progress-chart-grid {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 24px !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   /* Split goal and achievements block into 2 columns for print */
   .print-container .sprint-report-goals-grid {
-    display: grid !important;
-    grid-template-columns: 1fr 2fr !important;
-    gap: 24px !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 24px;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
-  /* Force ink-friendly colors on text for physical paper (even from dark mode) */
+  /* Ink-friendly text (overrides dark-mode utilities via unlayered cascade) */
   .print-container h1,
   .print-container h2,
   .print-container h3,
@@ -105,53 +109,53 @@
   .print-container span,
   .print-container td,
   .print-container th {
-    color: #09090b !important;
+    color: #09090b;
   }
 
   .print-container .text-muted-foreground {
-    color: #71717a !important;
+    color: #71717a;
   }
 
   /* Ink-friendly card printing rules */
   .print-container .card {
-    border: 1px solid #e4e4e7 !important;
-    background-color: #fcfcfc !important;
-    color: #09090b !important;
-    box-shadow: none !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
+    border: 1px solid #e4e4e7;
+    background-color: #fcfcfc;
+    color: #09090b;
+    box-shadow: none;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   /* Deliverables card is allowed to break across pages if it is long */
   .print-container .card.deliverables-card {
-    page-break-inside: auto !important;
-    break-inside: auto !important;
+    page-break-inside: auto;
+    break-inside: auto;
   }
 
-  /* Shipped items table layout prints beautifully */
+  /* Shipped items table layout */
   .print-container table {
-    border-collapse: collapse !important;
-    width: 100% !important;
-    table-layout: auto !important;
-    border-color: #e4e4e7 !important;
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: auto;
+    border-color: #e4e4e7;
   }
 
   .print-container th {
-    background-color: #f4f4f5 !important;
-    color: #27272a !important;
-    border-bottom: 2px solid #e4e4e7 !important;
+    background-color: #f4f4f5;
+    color: #27272a;
+    border-bottom: 2px solid #e4e4e7;
   }
 
   /* Prevent title/assignee text from truncating inside printed cells */
   .print-container td {
-    max-width: none !important;
-    white-space: normal !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
+    max-width: none;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
   }
 
   .print-container tr {
-    border-bottom: 1px solid #e4e4e7 !important;
+    border-bottom: 1px solid #e4e4e7;
     page-break-inside: avoid;
   }
 

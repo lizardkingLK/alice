@@ -85,7 +85,7 @@ function renderPipShell(
   target.body.style.fontFamily = 'system-ui, sans-serif';
 
   const root = target.createElement('div');
-  root.setAttribute('data-testid', 'music-pip-player');
+  root.dataset.testid = 'music-pip-player';
   root.setAttribute('aria-label', `${session.label} picture-in-picture player`);
   root.style.display = 'flex';
   root.style.flexDirection = 'column';

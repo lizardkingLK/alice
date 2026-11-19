@@ -34,16 +34,27 @@ export type ApplyWorkflowPatchResponse = {
   readonly updatedAt: string;
 };
 
-export async function sendChatMessage(
-  history: ChatMessage[],
-  conversationId: string | undefined,
-  integrationId: string | undefined,
-  attachments?: ChatAttachmentWire[],
-  viewContext?: ChatViewContext | null,
-  kind: ChatConversationKindValue = ChatConversationKinds.general,
-  agentId?: string,
-  projectId?: string
-): Promise<ChatPostResponse> {
+export type SendChatMessageInput = {
+  readonly history: ChatMessage[];
+  readonly conversationId?: string;
+  readonly integrationId?: string;
+  readonly attachments?: ChatAttachmentWire[];
+  readonly viewContext?: ChatViewContext | null;
+  readonly kind?: ChatConversationKindValue;
+  readonly agentId?: string;
+  readonly projectId?: string;
+};
+
+export async function sendChatMessage({
+  history,
+  conversationId,
+  integrationId,
+  attachments,
+  viewContext,
+  kind = ChatConversationKinds.general,
+  agentId,
+  projectId,
+}: SendChatMessageInput): Promise<ChatPostResponse> {
   const parsed = postChatMessageBodySchema.safeParse({
     messages: history,
     conversationId,
