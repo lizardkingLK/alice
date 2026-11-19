@@ -14,6 +14,7 @@ import {
   Map,
   Settings,
   Sparkles,
+  StickyNote,
   Timer,
   User,
   Users,
@@ -41,6 +42,7 @@ export const PLATFORM_NAV: readonly DashboardNavItem[] = [
   { path: '/notifications', label: 'Notifications', icon: Bell },
   { path: '/reports', label: 'Reports', icon: FileText },
   { path: '/chat', label: 'Alice', icon: Sparkles },
+  { path: '/notes', label: 'Notes', icon: StickyNote },
   { path: '/views', label: 'Views', icon: Layers },
   { path: '/charts', label: 'Charts', icon: BarChart3 },
 ];

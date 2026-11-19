@@ -20,10 +20,14 @@ Upload and download files on a work item.
 ## Open or download
 
 1. Select an attachment card in the list.
-2. Alice opens a **signed preview or download URL** in the browser.
+2. Alice opens a viewer with a **signed preview** when it can (images, PDFs, and
+   Markdown), plus **Download**. Use **Expand** in the viewer header for a larger
+   preview. For Markdown, the first `#` heading is shown as the document title;
+   later headings and bold text stay quieter so they do not compete with that
+   title.
 
-Links expire after a short time. If a link expired, use **Generate new link** on
-the attachment card and try again.
+Links expire after a short time. If a link expired, use **Generate new link** /
+**Refresh link** and try again.
 
 ---
 

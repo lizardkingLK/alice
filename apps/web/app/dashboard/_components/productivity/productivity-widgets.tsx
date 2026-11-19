@@ -99,7 +99,12 @@ import {
   type MyWorkCategoriesPane,
 } from '@/app/dashboard/_helpers/my-work-categories-pane';
 import { MusicWidget } from '@/app/dashboard/_components/productivity/music-widget';
+import { NotesWidget } from '@/app/dashboard/_components/productivity/notes-widget';
 import { PersonalCalendarWidget } from '@/app/dashboard/_components/productivity/personal-calendar-widget';
+import {
+  readMusicPlaylistPreferences,
+  resolveMusicPlayerMaximized,
+} from '@/app/dashboard/_helpers/music-playlist-storage';
 import {
   ensurePomodoroNotifyPermission,
   notifyPomodoroComplete,
@@ -1057,7 +1062,9 @@ function PomodoroWidget({
   const [pane, setPane] = useState<FocusWidgetPane>(() =>
     readFocusWidgetPane(userId)
   );
-  const [musicMaximized, setMusicMaximized] = useState(false);
+  const [musicMaximized, setMusicMaximized] = useState(() =>
+    resolveMusicPlayerMaximized(readMusicPlaylistPreferences(userId))
+  );
   /** Keep the Music embed mounted after first visit so playback survives pane switches. */
   const [musicKeepAlive, setMusicKeepAlive] = useState(false);
   const [durationMinutes, setDurationMinutes] = useState(
@@ -1132,6 +1139,9 @@ function PomodoroWidget({
 
   useEffect(() => {
     setPane(readFocusWidgetPane(userId));
+    setMusicMaximized(
+      resolveMusicPlayerMaximized(readMusicPlaylistPreferences(userId))
+    );
     setMusicKeepAlive(false);
   }, [userId]);
 
@@ -1160,7 +1170,6 @@ function PomodoroWidget({
 
   const persistPane = (next: FocusWidgetPane) => {
     setPane(next);
-    setMusicMaximized(false);
     writeFocusWidgetPane(userId, next);
   };
 
@@ -1519,6 +1528,8 @@ export function ProductivityWidget({
       return <DocsWidget docs={bootstrap.docs} />;
     case 'pomodoro':
       return <PomodoroWidget userId={userId} />;
+    case 'notes':
+      return <NotesWidget userId={userId} />;
     default:
       return null;
   }

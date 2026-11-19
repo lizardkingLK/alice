@@ -24,6 +24,7 @@ export const PRODUCTIVITY_WIDGET_IDS = [
   'alice',
   'docs',
   'pomodoro',
+  'notes',
 ] as const;
 
 export type ProductivityWidgetId = (typeof PRODUCTIVITY_WIDGET_IDS)[number];
@@ -46,6 +47,7 @@ export const DEFAULT_PRODUCTIVITY_DASHBOARD_PREFERENCES: ProductivityDashboardPr
       docs: false,
       /** Focus embeds Calendar + Music via header chevrons. */
       pomodoro: true,
+      notes: false,
     },
   };
 
@@ -58,6 +60,7 @@ export const PRODUCTIVITY_WIDGET_LABELS: Record<ProductivityWidgetId, string> =
     alice: 'Alice',
     docs: 'Docs',
     pomodoro: 'Focus',
+    notes: 'Notes',
   };
 
 function storageKey(userId: string): string {

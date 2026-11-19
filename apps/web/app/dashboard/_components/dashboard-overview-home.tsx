@@ -92,7 +92,7 @@ export function DashboardOverviewHome({
   return (
     <div
       className={cn(
-        'dashboard-productivity-surface dashboard-productivity-surface--shell flex min-h-0 w-full min-w-0 flex-1 flex-col gap-[clamp(0.75rem,2vw,1rem)] p-[clamp(1rem,2.5vw,1.5rem)]'
+        'dashboard-productivity-surface dashboard-productivity-surface--shell flex min-h-0 w-full min-w-0 flex-1 flex-col gap-[clamp(0.5rem,1.5vw,0.75rem)] p-[clamp(0.5rem,1.75vw,1rem)]'
       )}
     >
       {showChartsEmptyBackdrop ? <ChartsOverviewEmptyBackdrop /> : null}

@@ -1,0 +1,23 @@
+/** Curated emoji set for note page icons (Notion-style). */
+export const NOTE_ICON_CHOICES = [
+  '📝',
+  '📋',
+  '💡',
+  '✅',
+  '📌',
+  '🔥',
+  '⭐',
+  '🎯',
+  '📎',
+  '🗂️',
+  '📚',
+  '🧠',
+  '📦',
+  '✏️',
+  '🧾',
+  '🗒️',
+  '🚀',
+  '💬',
+  '🛠️',
+  '🧩',
+] as const;

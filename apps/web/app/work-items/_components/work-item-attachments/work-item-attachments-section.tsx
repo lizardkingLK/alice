@@ -9,17 +9,25 @@ import {
   deleteWorkItemAttachment,
   mintAttachmentUrls,
 } from '@/app/attachments/_services/attachments.mutations.client';
+import { AttachmentMarkdownPreview } from '@/app/work-items/_components/work-item-attachments/attachment-markdown-preview';
 import { WorkItemAttachmentUploadDialog } from '@/app/work-items/_components/work-item-attachments/work-item-attachment-upload-dialog';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardContent } from '@repo/ui/components/ui/card';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@repo/ui/components/ui/tooltip';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { cn } from '@repo/ui/lib/utils';
@@ -27,13 +35,17 @@ import {
   Download,
   FileX2,
   Loader2,
+  Maximize2,
+  Minimize2,
   Plus,
   RefreshCw,
   Trash2,
+  X,
 } from '@repo/ui/lib/icons';
 import {
   AttachmentFileIcon,
   isAttachmentPreviewable,
+  isMarkdownAttachment,
   resolveAttachmentIconKind,
   type AttachmentIconKind,
 } from '@/app/work-items/_helpers/attachment-file-icon';
@@ -114,16 +126,23 @@ function ExpiredOrMissingPreview({
 function MediaPreview({
   iconKind,
   fileName,
+  mimeType,
   previewUrl,
   canPreview,
+  expanded,
   onError,
 }: Readonly<{
   iconKind: AttachmentIconKind;
   fileName: string;
+  mimeType: string;
   previewUrl: string;
   canPreview: boolean;
+  expanded: boolean;
   onError: () => void;
 }>) {
+  const mediaMaxHeight = expanded ? 'max-h-[min(72dvh,44rem)]' : 'max-h-[60vh]';
+  const frameHeight = expanded ? 'h-[min(72dvh,44rem)]' : 'h-[60vh]';
+
   if (canPreview && iconKind === 'image') {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- signed Storage URL, ephemeral
@@ -131,7 +150,7 @@ function MediaPreview({
         key={previewUrl}
         src={previewUrl}
         alt={fileName}
-        className="max-h-[60vh] max-w-full object-contain"
+        className={cn(mediaMaxHeight, 'max-w-full object-contain')}
         onError={onError}
       />
     );
@@ -143,7 +162,19 @@ function MediaPreview({
         key={previewUrl}
         title={fileName}
         src={previewUrl}
-        className="h-[60vh] w-full max-w-full border-0"
+        className={cn(frameHeight, 'w-full max-w-full border-0')}
+        onError={onError}
+      />
+    );
+  }
+
+  if (canPreview && isMarkdownAttachment(mimeType, fileName)) {
+    return (
+      <AttachmentMarkdownPreview
+        key={previewUrl}
+        previewUrl={previewUrl}
+        fileName={fileName}
+        expanded={expanded}
         onError={onError}
       />
     );
@@ -247,6 +278,8 @@ function AttachmentPreviewPane({
   canPreview,
   iconKind,
   fileName,
+  mimeType,
+  expanded,
   onRegenerate,
   onPreviewError,
   onRemove,
@@ -259,6 +292,8 @@ function AttachmentPreviewPane({
   canPreview: boolean;
   iconKind: AttachmentIconKind;
   fileName: string;
+  mimeType: string;
+  expanded: boolean;
   onRegenerate: () => void;
   onPreviewError: () => void;
   onRemove?: () => void;
@@ -286,10 +321,66 @@ function AttachmentPreviewPane({
     <MediaPreview
       iconKind={iconKind}
       fileName={fileName}
+      mimeType={mimeType}
       previewUrl={urls.previewUrl}
       canPreview={canPreview}
+      expanded={expanded}
       onError={onPreviewError}
     />
+  );
+}
+
+function AttachmentViewerChrome({
+  expanded,
+  onToggleExpanded,
+}: Readonly<{
+  expanded: boolean;
+  onToggleExpanded: () => void;
+}>) {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <div className="absolute top-2 right-2 z-20 flex items-center gap-0.5">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={expanded ? 'Collapse preview' : 'Expand preview'}
+              aria-pressed={expanded}
+              className="rounded-md"
+              onClick={onToggleExpanded}
+            >
+              {expanded ? (
+                <Minimize2 className="size-4" />
+              ) : (
+                <Maximize2 className="size-4" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {expanded ? 'Collapse' : 'Expand'}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Close"
+                className="rounded-md"
+              >
+                <X className="size-4" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </DialogClose>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Close</TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
   );
 }
 
@@ -408,10 +499,30 @@ function AttachmentViewerDialog({
   onPreviewError: () => void;
   onDelete: () => void;
 }>) {
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setExpanded(false);
+    }
+  }, [open]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card w-full max-w-[calc(100%-2rem)] min-w-0 overflow-hidden sm:max-w-3xl">
-        <DialogHeader className="min-w-0 gap-1 overflow-hidden pr-8">
+      <DialogContent
+        showCloseButton={false}
+        className={cn(
+          'bg-card flex w-full min-w-0 flex-col overflow-hidden',
+          expanded
+            ? 'h-[min(92dvh,56rem)] max-h-[92dvh] w-[min(96vw,56rem)] sm:max-w-[56rem]'
+            : 'max-w-[calc(100%-2rem)] sm:max-w-3xl'
+        )}
+      >
+        <AttachmentViewerChrome
+          expanded={expanded}
+          onToggleExpanded={() => setExpanded((prev) => !prev)}
+        />
+        <DialogHeader className="min-w-0 gap-1 overflow-hidden pr-16">
           <DialogTitle className="min-w-0 overflow-hidden">
             <TruncatedText className="text-base font-semibold">
               {active?.file_name ?? 'Attachment'}
@@ -427,7 +538,8 @@ function AttachmentViewerDialog({
         <div
           className={cn(
             'bg-muted/40 flex min-h-64 w-full max-w-full min-w-0 items-center justify-center overflow-hidden rounded-lg border',
-            '*:max-w-full *:min-w-0'
+            '*:max-w-full *:min-w-0',
+            expanded && 'min-h-0 flex-1'
           )}
         >
           <AttachmentPreviewPane
@@ -438,6 +550,8 @@ function AttachmentViewerDialog({
             canPreview={canPreview}
             iconKind={iconKind}
             fileName={active?.file_name ?? 'Attachment'}
+            mimeType={active?.mime_type ?? ''}
+            expanded={expanded}
             onRegenerate={onRegenerate}
             onPreviewError={onPreviewError}
             onRemove={readOnly ? undefined : onDelete}
@@ -654,7 +768,9 @@ export function AttachmentsSection({
   const iconKind = active
     ? resolveAttachmentIconKind(active.file_name, active.mime_type)
     : 'generic';
-  const canPreview = active ? isAttachmentPreviewable(active.mime_type) : false;
+  const canPreview = active
+    ? isAttachmentPreviewable(active.mime_type, active.file_name)
+    : false;
 
   return (
     <section className="space-y-3">

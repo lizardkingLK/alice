@@ -27,6 +27,8 @@ import {
   musicProviderMeta,
   MUSIC_PROVIDER_CATALOG,
   readMusicPlaylistPreferences,
+  resolveMusicPlayerMaximized,
+  setMusicPlayerMaximized,
   setMusicPlaylistUrl,
   setSelectedMusicProvider,
   writeMusicPlaylistPreferences,
@@ -42,7 +44,10 @@ type MusicWidgetProps = {
   readonly userId: string;
   /** When true, render pane body only (inside Focus). */
   readonly embedded?: boolean;
-  /** False while shelved off-screen so maximize chrome resets. */
+  /**
+   * False while shelved off-screen (Focus/Calendar). Maximize chrome stays
+   * persisted and restores when Music is shown again.
+   */
   readonly active?: boolean;
   // eslint-disable-next-line no-unused-vars -- maximize callback
   readonly onPlayerMaximizedChange?: (maximized: boolean) => void;
@@ -410,50 +415,9 @@ export function MusicWidget({
     const initial = readMusicPlaylistPreferences(userId);
     return initial.urls[initial.selectedProvider] ?? '';
   });
-  const [playerMaximized, setPlayerMaximized] = useState(false);
-
-  useEffect(() => {
-    const next = readMusicPlaylistPreferences(userId);
-    setPrefs(next);
-    setDraftUrl(next.urls[next.selectedProvider] ?? '');
-    setPlayerMaximized(false);
-    onPlayerMaximizedChange?.(false);
-  }, [userId, onPlayerMaximizedChange]);
-
-  useEffect(() => {
-    if (active) {
-      return;
-    }
-    setPlayerMaximized(false);
-    onPlayerMaximizedChange?.(false);
-  }, [active, onPlayerMaximizedChange]);
-
-  useEffect(() => {
-    if (!playerMaximized) {
-      return;
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setPlayerMaximized(false);
-        onPlayerMaximizedChange?.(false);
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [playerMaximized, onPlayerMaximizedChange]);
-
-  useEffect(() => {
-    return () => {
-      onPlayerMaximizedChange?.(false);
-    };
-  }, [onPlayerMaximizedChange]);
-
-  const setMaximized = (next: boolean) => {
-    setPlayerMaximized(next);
-    onPlayerMaximizedChange?.(next);
-  };
+  const [playerMaximized, setPlayerMaximized] = useState(() =>
+    resolveMusicPlayerMaximized(readMusicPlaylistPreferences(userId))
+  );
 
   const provider = prefs.selectedProvider;
   const providerMeta = musicProviderMeta(provider);
@@ -474,11 +438,54 @@ export function MusicWidget({
     writeMusicPlaylistPreferences(userId, next);
   };
 
+  const setMaximized = (next: boolean) => {
+    const maximized = next && Boolean(embedUrl);
+    setPlayerMaximized(maximized);
+    onPlayerMaximizedChange?.(maximized);
+    persist(setMusicPlayerMaximized(prefs, maximized));
+  };
+
+  useEffect(() => {
+    const next = readMusicPlaylistPreferences(userId);
+    const maximized = resolveMusicPlayerMaximized(next);
+    setPrefs(next);
+    setDraftUrl(next.urls[next.selectedProvider] ?? '');
+    setPlayerMaximized(maximized);
+    onPlayerMaximizedChange?.(maximized);
+  }, [userId, onPlayerMaximizedChange]);
+
+  useEffect(() => {
+    if (!active || !playerMaximized) {
+      return;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') {
+        return;
+      }
+      setPlayerMaximized(false);
+      onPlayerMaximizedChange?.(false);
+      const next = setMusicPlayerMaximized(
+        readMusicPlaylistPreferences(userId),
+        false
+      );
+      setPrefs(next);
+      writeMusicPlaylistPreferences(userId, next);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [active, playerMaximized, userId, onPlayerMaximizedChange]);
+
   const selectProvider = (nextProvider: MusicProviderId) => {
-    const next = setSelectedMusicProvider(prefs, nextProvider);
+    const next = setMusicPlayerMaximized(
+      setSelectedMusicProvider(prefs, nextProvider),
+      false
+    );
     persist(next);
     setDraftUrl(next.urls[nextProvider] ?? '');
-    setMaximized(false);
+    setPlayerMaximized(false);
+    onPlayerMaximizedChange?.(false);
   };
 
   const saveUrl = () => {
@@ -501,7 +508,8 @@ export function MusicWidget({
     const next = setMusicPlaylistUrl(prefs, provider, '');
     persist(next);
     setDraftUrl('');
-    setMaximized(false);
+    setPlayerMaximized(false);
+    onPlayerMaximizedChange?.(false);
   };
 
   const popOutPlayer = () => {

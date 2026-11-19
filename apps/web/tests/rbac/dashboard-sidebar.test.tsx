@@ -150,7 +150,7 @@ describe('DashboardSidebar RBAC', () => {
     ).toBeInTheDocument();
   });
 
-  it('always shows Reports, Views, Charts, and Alice under Platform', () => {
+  it('always shows Reports, Views, Charts, Alice, and Notes under Platform', () => {
     renderSidebar('member');
 
     expect(screen.getByRole('link', { name: /^Reports$/i })).toHaveAttribute(
@@ -169,5 +169,9 @@ describe('DashboardSidebar RBAC', () => {
       .getAllByRole('link', { name: /^Alice$/i })
       .find((link) => link.getAttribute('href') === '/chat');
     expect(aliceChatLink).toBeDefined();
+    expect(screen.getByRole('link', { name: /^Notes$/i })).toHaveAttribute(
+      'href',
+      '/notes'
+    );
   });
 });

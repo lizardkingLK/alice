@@ -101,7 +101,11 @@ export function ProductivityDashboard({
           className="layout"
           width={stableWidth}
           layout={layout}
-          gridConfig={DASHBOARD_GRID_CONFIG}
+          gridConfig={{
+            ...DASHBOARD_GRID_CONFIG,
+            /** Tighter inset than Charts so Overview widgets use more of the pane. */
+            containerPadding: [10, 6],
+          }}
           dragConfig={DASHBOARD_DRAG_CONFIG}
           resizeConfig={DASHBOARD_RESIZE_CONFIG}
           onLayoutChange={handleLayoutChange}
