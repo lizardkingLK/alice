@@ -90,17 +90,29 @@ function bindCommentItemHandlers(options: {
     onStartEdit: () => options.onStartEdit(options.commentId),
     onCancelEdit: options.onCancelEdit,
     onSaveEdit: (doc: JSONContent) => {
-      options.onSaveEdit(options.commentId, doc);
+      Promise.resolve(options.onSaveEdit(options.commentId, doc)).catch(
+        (error: unknown) => {
+          console.error('error. failed to save comment edit:', error);
+        }
+      );
     },
     onStartReply: () => {
       options.onStartReply(options.replyParentId);
     },
     onCancelReply: options.onCancelReply,
     onArchive: () => {
-      options.onArchive(options.commentId);
+      Promise.resolve(options.onArchive(options.commentId)).catch(
+        (error: unknown) => {
+          console.error('error. failed to archive comment:', error);
+        }
+      );
     },
     onRestore: () => {
-      options.onRestore(options.commentId);
+      Promise.resolve(options.onRestore(options.commentId)).catch(
+        (error: unknown) => {
+          console.error('error. failed to restore comment:', error);
+        }
+      );
     },
     onPurge: () => options.onPurge(options.commentId),
     onToggleReaction: (

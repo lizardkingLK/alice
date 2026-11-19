@@ -19,7 +19,7 @@ WHERE name IN (
   'cron.log_run',
   'pgaudit.log'
 )
-ORDER BY name;
+ORDER BY name ASC;
 
 SELECT rolname, rolconfig
 FROM pg_roles
@@ -30,4 +30,4 @@ WHERE rolname IN (
   'authenticated',
   'service_role'
 )
-ORDER BY rolname;
+ORDER BY rolname ASC;

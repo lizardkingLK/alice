@@ -265,16 +265,27 @@ function applyQuickOptionSelection(
   }));
 }
 
-function toggleChartsFilterMode(
-  prev: ChartsFilterMode,
-  scopeLocked: boolean,
-  setRows: Dispatch<SetStateAction<ChartsAdvancedFilterRow[]>>,
-  setQuickField: Dispatch<SetStateAction<ChartsQuickFieldId>>,
-  setQuickSearch: Dispatch<SetStateAction<string>>,
-  members: readonly ChartsSampleMember[],
-  projects: readonly ChartsProjectOption[] = [],
-  projectId?: string | null
-): ChartsFilterMode {
+type ToggleChartsFilterModeArgs = {
+  readonly prev: ChartsFilterMode;
+  readonly scopeLocked: boolean;
+  readonly setRows: Dispatch<SetStateAction<ChartsAdvancedFilterRow[]>>;
+  readonly setQuickField: Dispatch<SetStateAction<ChartsQuickFieldId>>;
+  readonly setQuickSearch: Dispatch<SetStateAction<string>>;
+  readonly members: readonly ChartsSampleMember[];
+  readonly projects?: readonly ChartsProjectOption[];
+  readonly projectId?: string | null;
+};
+
+function toggleChartsFilterMode({
+  prev,
+  scopeLocked,
+  setRows,
+  setQuickField,
+  setQuickSearch,
+  members,
+  projects = [],
+  projectId,
+}: ToggleChartsFilterModeArgs): ChartsFilterMode {
   const next = prev === 'advanced' ? 'quick' : 'advanced';
   if (next === 'advanced') {
     setRows((current) =>
@@ -788,7 +799,7 @@ export function ChartsAdvancedFiltersPopover({
             className="text-muted-foreground hover:text-foreground cursor-pointer text-xs font-medium"
             onClick={() =>
               setMode((prev) =>
-                toggleChartsFilterMode(
+                toggleChartsFilterMode({
                   prev,
                   scopeLocked,
                   setRows,
@@ -796,8 +807,8 @@ export function ChartsAdvancedFiltersPopover({
                   setQuickSearch,
                   members,
                   projects,
-                  resolvedProjectId
-                )
+                  projectId: resolvedProjectId,
+                })
               )
             }
           >

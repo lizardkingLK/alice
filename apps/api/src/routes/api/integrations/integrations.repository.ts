@@ -85,11 +85,11 @@ export type IntegrationUpdateData = {
 export class IntegrationsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
-  async listAccessibleProjectIds(actorId: string): Promise<string[]> {
+  listAccessibleProjectIds(actorId: string): Promise<string[]> {
     return listAccessibleProjectIds(this.db, actorId);
   }
 
-  async list(query: ListIntegrationsQuery): Promise<IntegrationListRow[]> {
+  list(query: ListIntegrationsQuery): Promise<IntegrationListRow[]> {
     return prisma.integrations.findMany({
       where: {
         ...(query.category ? { category: query.category } : {}),
@@ -102,7 +102,7 @@ export class IntegrationsRepository {
     });
   }
 
-  async listActiveChatModels(): Promise<IntegrationListRow[]> {
+  listActiveChatModels(): Promise<IntegrationListRow[]> {
     return prisma.integrations.findMany({
       where: {
         category: IntegrationCategory.ai_agent,
@@ -117,7 +117,7 @@ export class IntegrationsRepository {
   /**
    * Org vault AI models plus this project's own project-scoped AI models.
    */
-  async listProjectAiModels(projectId: string): Promise<IntegrationListRow[]> {
+  listProjectAiModels(projectId: string): Promise<IntegrationListRow[]> {
     return prisma.integrations.findMany({
       where: {
         category: IntegrationCategory.ai_agent,
@@ -129,16 +129,14 @@ export class IntegrationsRepository {
     });
   }
 
-  async findById(id: string): Promise<IntegrationDetailRow | null> {
+  findById(id: string): Promise<IntegrationDetailRow | null> {
     return prisma.integrations.findUnique({
       where: { id },
       select: integrationDetailSelect,
     });
   }
 
-  async findActiveChatModelById(
-    id: string
-  ): Promise<IntegrationDetailRow | null> {
+  findActiveChatModelById(id: string): Promise<IntegrationDetailRow | null> {
     return prisma.integrations.findFirst({
       where: {
         id,
@@ -150,7 +148,7 @@ export class IntegrationsRepository {
     });
   }
 
-  async findDefaultActiveChatModel(): Promise<IntegrationDetailRow | null> {
+  findDefaultActiveChatModel(): Promise<IntegrationDetailRow | null> {
     return prisma.integrations.findFirst({
       where: {
         category: IntegrationCategory.ai_agent,
@@ -311,7 +309,7 @@ export class IntegrationsRepository {
     return this.listActiveChatModelBindingsForProject(projectId);
   }
 
-  async create(data: IntegrationCreateData): Promise<IntegrationDetailRow> {
+  create(data: IntegrationCreateData): Promise<IntegrationDetailRow> {
     const isOrgAiDefault =
       data.is_default &&
       data.category === IntegrationCategory.ai_agent &&
@@ -375,7 +373,7 @@ export class IntegrationsRepository {
     });
   }
 
-  async update(data: IntegrationUpdateData): Promise<IntegrationDetailRow> {
+  update(data: IntegrationUpdateData): Promise<IntegrationDetailRow> {
     return prisma.$transaction(async (tx) => {
       const existing = await tx.integrations.findUnique({
         where: { id: data.id },

@@ -3,39 +3,11 @@
 import type { ComponentProps, ReactNode } from 'react';
 import {
   Background,
-  BaseEdge,
   Controls,
-  Handle,
-  MarkerType,
   MiniMap,
-  Position,
   ReactFlow,
   ReactFlowProvider,
-  SelectionMode,
-  addEdge,
-  applyEdgeChanges,
-  applyNodeChanges,
-  getBezierPath,
-  getSmoothStepPath,
-  reconnectEdge,
-  useConnection,
-  useEdgesState,
-  useNodesState,
-  useReactFlow,
-  useStore,
-  type Connection,
-  type Edge,
-  type EdgeChange,
-  type EdgeProps,
-  type Node,
-  type NodeChange,
-  type NodeProps,
-  type OnConnect,
-  type OnEdgesChange,
-  type OnNodesChange,
-  type ReactFlowInstance,
   type ReactFlowProps,
-  type XYPosition,
 } from '@xyflow/react';
 
 import { cn } from '@repo/ui/lib/utils';
@@ -62,7 +34,7 @@ export {
   useNodesState,
   useReactFlow,
   useStore,
-};
+} from '@xyflow/react';
 
 export type {
   Connection,
@@ -77,7 +49,7 @@ export type {
   OnNodesChange,
   ReactFlowInstance,
   XYPosition,
-};
+} from '@xyflow/react';
 
 type FlowCanvasProps = Omit<ReactFlowProps, 'children'> & {
   readonly className?: string;

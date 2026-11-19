@@ -230,9 +230,10 @@ export function musicPlaylistEmbedUrl(
   try {
     const parsed = new URL(normalizePlaylistUrl(url));
     if (provider === 'spotify') {
-      const match = parsed.pathname.match(
-        /\/(playlist|album|track|episode|show)\/([a-zA-Z0-9]+)/
-      );
+      const match =
+        /\/(playlist|album|track|episode|show)\/([a-zA-Z0-9]+)/.exec(
+          parsed.pathname
+        );
       if (!match) {
         return null;
       }

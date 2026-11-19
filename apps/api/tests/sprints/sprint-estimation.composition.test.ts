@@ -11,13 +11,19 @@ vi.mock('../../src/lib/supabase', () => ({
   supabase: {},
 }));
 
+vi.mock('../../src/lib/prisma', () => ({
+  prisma: {},
+  waitForPrisma: async () => undefined,
+}));
+
 let composition: typeof import('../../src/config/composition.js');
 
 describe('sprint estimation dependency composition', () => {
+  // Cold-loading composition pulls most of the API graph; keep headroom under load.
   beforeAll(async () => {
     vi.stubEnv('GITHUB_ACTIONS', 'true');
     composition = await import('../../src/config/composition.js');
-  });
+  }, 30_000);
 
   afterAll(() => {
     vi.unstubAllEnvs();

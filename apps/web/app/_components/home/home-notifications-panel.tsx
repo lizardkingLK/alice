@@ -71,44 +71,40 @@ export function HomeNotificationList({
           NOTIFICATION_ICON_COLOR_MAP.default ||
           '';
 
-        const row = (
-          <div className="hover:bg-muted/50 flex items-start gap-3 rounded-md px-1.5 py-2.5 transition-colors">
-            <div
-              className={cn(
-                'flex size-8 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold',
-                iconStyles
-              )}
-            >
-              <Icon className="size-4" />
-            </div>
-            <div
-              className="min-w-0 flex-1 space-y-1"
-              title={stripNotificationMarkdown(notification.message)}
-            >
-              <div className="text-foreground line-clamp-3 text-xs leading-relaxed font-medium wrap-break-word">
-                <NotificationMessage message={notification.message} />
-              </div>
-              <HomeNotificationRelativeTime
-                value={notification.createdAt}
-                className="block font-sans text-[10px] font-normal"
-              />
-            </div>
-            <span
-              className="bg-primary mt-1 size-2 shrink-0 animate-pulse self-center rounded-full"
-              aria-hidden
-            />
-          </div>
-        );
+        const plainMessage = stripNotificationMarkdown(notification.message);
 
         return (
-          <li key={notification.id}>
+          <li key={notification.id} className="relative">
+            <div className="hover:bg-muted/50 flex items-start gap-3 rounded-md px-1.5 py-2.5 transition-colors">
+              <div
+                className={cn(
+                  'flex size-8 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold',
+                  iconStyles
+                )}
+              >
+                <Icon className="size-4" />
+              </div>
+              <div className="min-w-0 flex-1 space-y-1" title={plainMessage}>
+                <div className="text-foreground line-clamp-3 text-xs leading-relaxed font-medium wrap-break-word">
+                  <NotificationMessage message={notification.message} />
+                </div>
+                <HomeNotificationRelativeTime
+                  value={notification.createdAt}
+                  className="block font-sans text-[10px] font-normal"
+                />
+              </div>
+              <span
+                className="bg-primary mt-1 size-2 shrink-0 animate-pulse self-center rounded-full"
+                aria-hidden
+              />
+            </div>
             {href ? (
-              <Link href={href} className="block">
-                {row}
-              </Link>
-            ) : (
-              row
-            )}
+              <Link
+                href={href}
+                className="absolute inset-0 z-0 rounded-md"
+                aria-label={plainMessage}
+              />
+            ) : null}
           </li>
         );
       })}
