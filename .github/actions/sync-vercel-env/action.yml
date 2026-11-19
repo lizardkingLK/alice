@@ -1,0 +1,25 @@
+name: Sync prefixed GitHub secrets to Vercel env
+description: >-
+  Upsert unprefixed Vercel project environment variables from prefixed process
+  env (API_* / WEB_*). Call after Vercel CLI install and project link, before
+  vercel pull. Expects VERCEL_TOKEN in the job environment.
+
+inputs:
+  app:
+    description: App allowlist and prefix (api → API_, web → WEB_).
+    required: true
+  environment:
+    description: Vercel environment target (usually production).
+    required: false
+    default: production
+
+runs:
+  using: composite
+  steps:
+    - name: Upsert Vercel env from prefixed secrets
+      shell: bash
+      run: |
+        set -euo pipefail
+        bash "${GITHUB_WORKSPACE}/scripts/vercel-env-sync.sh" \
+          --app "${{ inputs.app }}" \
+          --environment "${{ inputs.environment }}"
