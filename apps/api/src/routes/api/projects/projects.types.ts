@@ -24,6 +24,7 @@ export type ProjectRow = {
   github_repo: string | null;
   github_connection_id?: string | null;
   github_token: string | null;
+  figma_url: string | null;
   attributes_config?: unknown;
   workflow_config?: ProjectWorkflowConfig | null;
   logo_url: string | null;
@@ -66,9 +67,11 @@ type ProjectMutationInput = Omit<
   | 'created_by'
   | 'logo_url'
   | 'cover_picture'
+  | 'figma_url'
 > & {
   logo_url?: string | null;
   cover_picture?: string | null;
+  figma_url?: string | null;
   workflow_config?: ProjectWorkflowConfig | null;
 };
 

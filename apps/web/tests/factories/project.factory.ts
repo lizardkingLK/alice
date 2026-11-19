@@ -21,6 +21,7 @@ export const projectFactory = {
       github_repo: null,
       jira_connection_id: null,
       jira_project_key: null,
+      figma_url: null,
       has_github_token: false,
       logo_url: null,
       cover_picture: null,

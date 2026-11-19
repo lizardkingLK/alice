@@ -39,6 +39,15 @@ vi.mock(
   })
 );
 
+vi.mock(
+  '@/app/projects/_components/project-details/figma-settings-card',
+  () => ({
+    FigmaSettingsCard: () => (
+      <div data-testid="figma-settings-card">Figma card</div>
+    ),
+  })
+);
+
 describe('ProjectIntegrationsMarketplace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -74,6 +83,7 @@ describe('ProjectIntegrationsMarketplace', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByTestId('jira-settings-card')).not.toBeInTheDocument();
     expect(screen.getByTestId('ai-models-card')).toBeInTheDocument();
+    expect(screen.getByTestId('figma-settings-card')).toBeInTheDocument();
   });
 
   it('selects GitHub radio and shows the GitHub settings card', () => {
@@ -129,9 +139,21 @@ describe('ProjectIntegrationsMarketplace', () => {
 
     // Assert
     expect(screen.getByTestId('ai-models-card')).toBeInTheDocument();
+    expect(screen.queryByTestId('figma-settings-card')).not.toBeInTheDocument();
     expect(
       screen.queryByTestId('github-settings-card')
     ).not.toBeInTheDocument();
     expect(screen.queryByTestId('jira-settings-card')).not.toBeInTheDocument();
+  });
+
+  it('shows the Figma card in the design filter', () => {
+    render(<ProjectIntegrationsMarketplace project={projectFactory.build()} />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Design & diagramming' }));
+
+    expect(screen.getByTestId('figma-settings-card')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Figma', { selector: 'h3' })
+    ).not.toBeInTheDocument();
   });
 });

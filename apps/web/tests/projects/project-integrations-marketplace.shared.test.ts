@@ -25,6 +25,8 @@ describe('project-integrations-marketplace.shared', () => {
     expect(sectionVisibleForTab('source-control', 'ai-agents')).toBe(false);
     expect(sectionVisibleForTab('catalog', 'communication')).toBe(true);
     expect(sectionVisibleForTab('catalog', 'source-control')).toBe(false);
+    expect(sectionVisibleForTab('figma', 'design')).toBe(true);
+    expect(sectionVisibleForTab('figma', 'planned')).toBe(false);
   });
 
   it('filterProjectMarketplaceCatalog excludes AI agents and respects tab', () => {
@@ -36,6 +38,7 @@ describe('project-integrations-marketplace.shared', () => {
 
     const all = filterProjectMarketplaceCatalog('all', 'slack');
     expect(all.some((item) => item.id === 'slack')).toBe(true);
+    expect(all.some((item) => item.id === 'figma')).toBe(false);
     expect(all.every((item) => item.filterTab !== 'ai-agents')).toBe(true);
   });
 
@@ -43,11 +46,13 @@ describe('project-integrations-marketplace.shared', () => {
     const all = resolveMarketplaceSectionVisibility('all', '', 2);
     expect(all.showSourceControl).toBe(true);
     expect(all.showAiAgents).toBe(true);
+    expect(all.showFigma).toBe(true);
     expect(all.hasVisibleContent).toBe(true);
 
     const aiOnly = resolveMarketplaceSectionVisibility('all', 'ai agents', 0);
     expect(aiOnly.showSourceControl).toBe(false);
     expect(aiOnly.showAiAgents).toBe(true);
+    expect(aiOnly.showFigma).toBe(false);
     expect(aiOnly.hasVisibleContent).toBe(true);
   });
 });

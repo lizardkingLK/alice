@@ -85,6 +85,7 @@ function applyOptionalProjectIntegrations(
   if (data.github_connection_id !== undefined) {
     patch.vc_connection_id = data.github_connection_id;
   }
+  if (data.figma_url !== undefined) patch.figma_url = data.figma_url;
   if (data.logo_url !== undefined) patch.logo_url = data.logo_url;
   if (data.cover_picture !== undefined) {
     patch.cover_picture = data.cover_picture;
@@ -668,6 +669,7 @@ export class ProjectsRepository {
                 vc_external:
                   projectVcExternalFromGithubRepo(data.github_repo) ??
                   Prisma.DbNull,
+                figma_url: data.figma_url ?? null,
                 logo_url: data.logo_url ?? null,
                 cover_picture: data.cover_picture ?? null,
                 attributes_config:

@@ -3569,6 +3569,7 @@ export const ProjectsScalarFieldEnum = {
   pm_external: 'pm_external',
   vc_connection_id: 'vc_connection_id',
   vc_external: 'vc_external',
+  figma_url: 'figma_url',
   logo_url: 'logo_url',
   cover_picture: 'cover_picture'
 } as const
