@@ -39,6 +39,7 @@ runs:
       uses: ./.github/actions/sync-vercel-env
       with:
         app: ${{ inputs.app }}
+        vercel-project-id: ${{ inputs.vercel-project-id }}
         environment: ${{ inputs.environment }}
 
     - name: Pull Vercel Environment Variables

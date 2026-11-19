@@ -28,7 +28,10 @@ Usage: scripts/vercel-env-sync.sh --app api|web [--environment production] [--sa
 
 For each basename in the app sample.env allowlist, reads ${PREFIX}_${NAME} from
 the environment, skips empty values, and runs:
-  vercel env add NAME <environment> --yes --force
+  vercel env add NAME --environment <environment> --yes --force
+
+Requires VERCEL_TOKEN. When VERCEL_ORG_ID is set (CI), VERCEL_PROJECT_ID must
+also be set so the CLI targets the correct project.
 EOF
 }
 
@@ -102,6 +105,11 @@ if [[ "$DRY_RUN" -eq 0 ]]; then
     echo "error. VERCEL_TOKEN is required" >&2
     exit 1
   fi
+
+  if [[ -n "${VERCEL_ORG_ID:-}" && -z "${VERCEL_PROJECT_ID:-}" ]]; then
+    echo "error. VERCEL_ORG_ID is set but VERCEL_PROJECT_ID is missing" >&2
+    exit 1
+  fi
 fi
 
 upserted=0
@@ -125,7 +133,8 @@ while IFS= read -r name || [[ -n "$name" ]]; do
     continue
   fi
 
-  printf '%s' "$value" | vercel env add "$name" "$ENVIRONMENT" \
+  printf '%s' "$value" | vercel env add "$name" \
+    --environment "$ENVIRONMENT" \
     --token "$VERCEL_TOKEN" \
     --yes \
     --force
