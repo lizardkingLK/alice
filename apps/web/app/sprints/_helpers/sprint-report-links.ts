@@ -5,7 +5,11 @@
 
 import { isUuidSegment, toShortId } from '@/app/_shared/utility';
 import type { DashboardBreadcrumbOverride } from '@/app/dashboard/_components/dashboard-breadcrumb';
-import { projectDetailHref } from '@/app/projects/_helpers/project-links';
+import {
+  looksLikeProjectKey,
+  projectDetailHref,
+} from '@/app/projects/_helpers/project-links';
+import { projectScopedHref } from '@/app/projects/_helpers/project-tree-links';
 
 export const SPRINT_REPORT_FROM_QUERY = 'from';
 
@@ -14,8 +18,20 @@ export type SprintReportFrom =
 
 export function sprintReportHref(
   sprintId: string,
-  from: SprintReportFrom
+  from: SprintReportFrom,
+  tree?: {
+    readonly projectKey?: string | null;
+    readonly sprintSlug?: string | null;
+  }
 ): string {
+  if (tree?.projectKey && tree.sprintSlug) {
+    return projectScopedHref({
+      projectKeyOrId: tree.projectKey,
+      area: 'sprints',
+      sprintSlug: tree.sprintSlug,
+      summaryReport: true,
+    });
+  }
   return `/sprints/${sprintId}/report?${SPRINT_REPORT_FROM_QUERY}=${from}`;
 }
 
@@ -41,7 +57,11 @@ export function sprintReportBackNav(
   readonly href: string;
   readonly label: string;
 } {
-  if (from === 'project' && projectId && isUuidSegment(projectId)) {
+  if (
+    from === 'project' &&
+    projectId &&
+    (isUuidSegment(projectId) || looksLikeProjectKey(projectId))
+  ) {
     return {
       href: projectDetailHref(projectId, 'sprints'),
       label: 'Back to Sprints',
@@ -62,6 +82,7 @@ export function sprintReportBackNav(
 export type SprintReportBreadcrumbSprint = {
   readonly id: string;
   readonly name?: string | null;
+  readonly slug?: string | null;
   readonly project?: {
     readonly id: string;
     readonly name?: string | null;
@@ -85,22 +106,32 @@ export function buildSprintReportBreadcrumbOverrides(
   const project = sprint.project;
 
   if (project?.id && isUuidSegment(project.id)) {
+    const projectRef = project.key?.trim() || project.id;
     const projectLabel =
       project.name?.trim() || project.key?.trim() || toShortId(project.id);
+    const sprintSlug =
+      'slug' in sprint && typeof sprint.slug === 'string' ? sprint.slug : null;
+    const treeReportUrl =
+      project.key?.trim() && sprintSlug
+        ? sprintReportHref(sprint.id, from, {
+            projectKey: project.key.trim(),
+            sprintSlug,
+          })
+        : reportUrl;
     return [
       { label: 'Dashboard', url: '/dashboard' },
       { label: 'Projects', url: '/projects' },
       {
         label: projectLabel,
-        url: projectDetailHref(project.id),
+        url: projectDetailHref(projectRef),
       },
       {
         label: 'Sprints',
-        url: projectDetailHref(project.id, 'sprints'),
+        url: projectDetailHref(projectRef, 'sprints'),
       },
       {
         label: sprintLabel,
-        url: reportUrl,
+        url: treeReportUrl,
       },
     ];
   }

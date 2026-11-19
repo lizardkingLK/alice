@@ -7,6 +7,7 @@ import {
   parseStandardParams,
   parseTeamStatusFilter,
   parseWorkItemFilters,
+  parseWorkItemFocusId,
   parseWorkItemListView,
   parseWorkItemRecordStatus,
   workItemHierarchyListFilter,
@@ -18,9 +19,11 @@ import {
   getTeamListPaginated,
   type Team,
 } from '@/app/manager/_services/teams.reads.server';
-import {
-  getWorkItemsPaginated,
-  type DbWorkItem,
+import { loadWorkItemsListPage } from '@/app/work-items/_services/work-items.list-page.server';
+import type {
+  DbWorkItem,
+  GetWorkItemsHierarchyPageResponse,
+  WorkItemAncestor,
 } from '@/app/work-items/_services/work-items.reads.server';
 import {
   getProjectDetails,
@@ -50,6 +53,12 @@ const EMPTY_WORK_ITEMS = {
   page: 1,
   limit: 10,
   totalPages: 1,
+  childrenByParentId: {} as Record<string, DbWorkItem[]>,
+  mode: 'tree' as const,
+  searchPanelItems: [] as DbWorkItem[],
+  searchMatchIds: [] as string[],
+  ancestorsById: {} as Record<string, WorkItemAncestor[]>,
+  focusId: null as string | null,
 };
 
 const EMPTY_TEAMS = {
@@ -65,13 +74,7 @@ const EMPTY_SPRINTS: PaginatedSprints = {
   pagination: { page: 1, limit: 10, totalCount: 0, totalPages: 1 },
 };
 
-type WorkItemsResult = {
-  workItems: DbWorkItem[];
-  totalCount: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-};
+type WorkItemsResult = GetWorkItemsHierarchyPageResponse;
 
 type TeamsResult = {
   teams: Team[];
@@ -219,6 +222,7 @@ async function fetchProjectWorkItemsBundle(options: {
   readonly sprintId: string | undefined;
   readonly recordStatus: 'active' | 'archived';
   readonly listView: ReturnType<typeof parseWorkItemListView>;
+  readonly focusId?: string | null;
 }): Promise<WorkItemsResult> {
   if (!options.shouldLoad) {
     return EMPTY_WORK_ITEMS;
@@ -231,24 +235,28 @@ async function fetchProjectWorkItemsBundle(options: {
     search: options.search,
   });
 
+  const filters = buildProjectWorkItemFilters({
+    projectId: options.projectId,
+    isWorkItemsTab: options.isWorkItemsTab,
+    type: options.type,
+    assigneeId: options.assigneeId,
+    labels: options.labels,
+    sprintId: options.sprintId,
+    recordStatus: options.recordStatus,
+    listView: options.listView,
+  });
+
   return safeServerFetch(
-    getWorkItemsPaginated(
-      listQuery.page,
-      listQuery.limit,
-      listQuery.search,
-      buildProjectWorkItemFilters({
-        projectId: options.projectId,
-        isWorkItemsTab: options.isWorkItemsTab,
-        type: options.type,
-        assigneeId: options.assigneeId,
-        labels: options.labels,
-        sprintId: options.sprintId,
-        recordStatus: options.recordStatus,
-        listView: options.listView,
-      })
-    ),
+    loadWorkItemsListPage({
+      page: listQuery.page,
+      limit: listQuery.limit,
+      search: listQuery.search,
+      filters,
+      listView: options.listView,
+      focusId: options.focusId,
+    }),
     EMPTY_WORK_ITEMS,
-    'fetch project work items'
+    'fetch project work items list page'
   );
 }
 
@@ -355,6 +363,11 @@ function toWorkItemsPayload(
 ) {
   return {
     initialWorkItems: options.active ? result.workItems : [],
+    initialChildrenByParentId: options.active ? result.childrenByParentId : {},
+    searchPanelItems: options.active ? result.searchPanelItems : [],
+    searchMatchIds: options.active ? result.searchMatchIds : [],
+    ancestorsById: options.active ? result.ancestorsById : {},
+    hierarchyMode: options.active ? result.mode : ('tree' as const),
     totalCount: result.totalCount,
     page: result.page,
     limit: options.active ? result.limit : options.defaultLimit,
@@ -420,6 +433,11 @@ export type ProjectWorkspaceAllowed = {
   readonly currentUserRole: string;
   readonly workItems: {
     initialWorkItems: DbWorkItem[];
+    initialChildrenByParentId: Record<string, DbWorkItem[]>;
+    searchPanelItems: DbWorkItem[];
+    searchMatchIds: readonly string[];
+    ancestorsById: Record<string, WorkItemAncestor[]>;
+    hierarchyMode: 'tree' | 'search';
     totalCount: number;
     page: number;
     limit: number;
@@ -472,6 +490,7 @@ type ProjectWorkspacePlan = {
   readonly labels: string[] | undefined;
   readonly sprintId: string | undefined;
   readonly listView: ReturnType<typeof parseWorkItemListView>;
+  readonly focusId: string | null;
   readonly teamStatus: ReturnType<typeof parseTeamStatusFilter>;
   readonly shouldLoadSprints: boolean;
   readonly shouldLoadTeams: boolean;
@@ -496,6 +515,7 @@ function buildProjectWorkspacePlan(
   const { type, assigneeId, labels, sprintId } =
     parseWorkItemFilters(searchParams);
   const listView = parseWorkItemListView(searchParams.view);
+  const focusId = parseWorkItemFocusId(searchParams.focus);
   const teamStatus = parseTeamStatusFilter(searchParams.teamStatus);
   const isManagerOrAdmin =
     role === UserRoleEnum.admin || role === UserRoleEnum.manager;
@@ -518,6 +538,7 @@ function buildProjectWorkspacePlan(
     labels,
     sprintId,
     listView,
+    focusId,
     teamStatus,
     shouldLoadSprints: shouldFetchProjectSprints({
       isWorkItemsTab,
@@ -551,11 +572,9 @@ function buildProjectWorkspacePlan(
 
 function workItemsFromBundleCounts(totalCount: number): WorkItemsResult {
   return {
-    workItems: [],
+    ...EMPTY_WORK_ITEMS,
     totalCount,
-    page: 1,
     limit: 1,
-    totalPages: 1,
   };
 }
 
@@ -625,6 +644,7 @@ async function loadProjectWorkspaceSlices(options: {
       sprintId: plan.sprintId,
       recordStatus: plan.workItemRecordStatus,
       listView: plan.listView,
+      focusId: plan.focusId,
     }),
     fetchProjectTeamsBundle({
       shouldLoad: plan.shouldLoadTeams && !useRpcCounts,

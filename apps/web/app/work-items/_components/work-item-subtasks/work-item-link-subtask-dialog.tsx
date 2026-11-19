@@ -22,7 +22,11 @@ type WorkItemLinkSubtaskDialogProps = {
   readonly onOpenChange: (open: boolean) => void;
   readonly parentWorkItemId: string;
   readonly parentType: WorkItemType;
+  /** Catalog display name for `parentType` (falls back to key). */
+  readonly parentTypeLabel?: string;
   readonly childType: WorkItemType;
+  /** Catalog display name for `childType` (falls back to key). */
+  readonly childTypeLabel?: string;
   readonly candidates: readonly LinkableWorkItemOption[];
   readonly onLinked: () => void;
 };
@@ -33,10 +37,14 @@ export function WorkItemLinkSubtaskDialog({
   onOpenChange,
   parentWorkItemId,
   parentType,
+  parentTypeLabel,
   childType,
+  childTypeLabel,
   candidates,
   onLinked,
 }: Readonly<WorkItemLinkSubtaskDialogProps>) {
+  const parentLabel = parentTypeLabel ?? parentType;
+  const childLabel = childTypeLabel ?? childType;
   const [selectedId, setSelectedId] = useState('');
   const [isPending, setIsPending] = useState(false);
   const [alert, setAlert] = useState<{
@@ -100,7 +108,7 @@ export function WorkItemLinkSubtaskDialog({
       open={open}
       onOpenChange={onOpenChange}
       title="Link Subtask"
-      description={`Link an existing ${childType} under this ${parentType}.`}
+      description={`Link an existing ${childLabel} under this ${parentLabel}.`}
       isPending={isPending}
       onSubmit={() => {
         handleSave().catch(() => {});
@@ -110,10 +118,10 @@ export function WorkItemLinkSubtaskDialog({
       submitDisabled={candidates.length === 0}
     >
       <div className="space-y-2">
-        <Label htmlFor="link-subtask-work-item">{childType}</Label>
+        <Label htmlFor="link-subtask-work-item">{childLabel}</Label>
         {candidates.length === 0 ? (
           <p className="text-muted-foreground text-sm">
-            No unparented {childType} items in this project to link.
+            No unparented {childLabel} items in this project to link.
           </p>
         ) : (
           <SearchableSelect

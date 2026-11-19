@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { WORK_ITEM_TYPES } from '@repo/types';
 import { ALL_OPTION } from '@/app/_shared/values';
 import {
   applyProjectFilterToSearchParams,
@@ -15,6 +14,7 @@ import {
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
+import { collectWorkItemTypeFilterOptions } from '@/app/work-items/_helpers/collect-work-item-type-filter-options';
 import {
   FilterDialogShell,
   FilterOptionsChecklistPane,
@@ -22,6 +22,7 @@ import {
   type FilterDialogNavField,
   type FilterDialogOption,
 } from '@/components/filter-dialog-shell';
+import { useSoftInvalidateUserId } from '@/components/soft-invalidate/soft-invalidate-provider';
 import { QUERY_FILTER_ALL_VALUE } from '@/hooks/use-query-filter';
 
 export type CalendarFilterDraft = {
@@ -99,6 +100,7 @@ export function CalendarFilterDialog({
   onApplyFilters,
   onSaveWorkspaceDefaults,
 }: Readonly<CalendarFilterDialogProps>) {
+  const userId = useSoftInvalidateUserId();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<CalendarFilterDraft>({
     project: projectValue || QUERY_FILTER_ALL_VALUE,
@@ -154,14 +156,18 @@ export function CalendarFilterDialog({
           label: user.name,
         }));
       case 'type':
-        return WORK_ITEM_TYPES.map((workItemType) => ({
-          value: workItemType,
-          label: workItemType,
-        }));
+        return collectWorkItemTypeFilterOptions({
+          projects,
+          projectId:
+            draft.project && draft.project !== QUERY_FILTER_ALL_VALUE
+              ? draft.project
+              : null,
+          userId,
+        });
       default:
         return [];
     }
-  }, [activeFieldId, draft.project, projects, sprints, users]);
+  }, [activeFieldId, draft.project, projects, sprints, users, userId]);
 
   const filteredOptions = filterDialogOptionsBySearch(options, optionSearch);
 
@@ -221,6 +227,7 @@ export function CalendarFilterDialog({
               projectValue: draft.project,
               sprintValue: draft.sprint,
               allValue: QUERY_FILTER_ALL_VALUE,
+              projects,
               sprints,
             })
           );

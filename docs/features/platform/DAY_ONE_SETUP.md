@@ -2,7 +2,7 @@
 
 Status: **Living**
 
-Last updated: 2026-10-05
+Last updated: 2026-11-16
 
 Use this guide to clone Alice, configure its local environment, initialize its
 Supabase database, and run the web and API applications. Run all commands from
@@ -16,6 +16,8 @@ the repository root unless a step says otherwise.
 - pnpm 12.4.2, the version pinned by the root `package.json`
 - Access to a Supabase project
 - Access to a Pusher Channels app
+- GitHub CLI (`gh`) when pushing production secrets — included via the
+  `github-cli` devcontainer feature (rebuild the container after pull)
 
 Alice does not include a local Supabase `config.toml`; local development uses a
 hosted or team-provided Supabase project. Docker is not required for the normal
@@ -161,6 +163,52 @@ their lines after copying `sample.env`. Do not leave `YOUR_*` placeholders in
 place because the API treats non-empty placeholder strings as configured
 values.
 
+#### Optional: GitHub source control (OAuth today + App Phase 0)
+
+**Shipped today (manual PR links):** user **OAuth App** credentials:
+
+```dotenv
+GITHUB_CLIENT_ID="<OAuth App client id>"
+GITHUB_CLIENT_SECRET="<OAuth App client secret>"
+GITHUB_REDIRECT_URI="http://localhost:5000/api/github/oauth/callback"
+```
+
+**Phase 0 (GitHub App — register now, wire in Phase 1+):** create a GitHub App
+under GitHub → Settings → Developer settings → GitHub Apps (dev apps often use
+localhost homepage/callback and a **public HTTPS** webhook URL such as a Vercel
+API). After registration:
+
+1. Copy **App ID**.
+2. Click **Generate a private key** and download the `.pem` (shown once).
+3. Set a **Webhook secret** (random 32+ bytes) — same value in GitHub and env.
+4. Put values in `apps/api/.env` (templates already list these keys in
+   `apps/api/sample.env`):
+
+```dotenv
+GITHUB_APP_ID="<numeric App ID>"
+# Entire PEM; use \n for newlines in a single line, or a secret manager file mount
+GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+GITHUB_APP_WEBHOOK_SECRET="<same secret as the GitHub App webhook form>"
+```
+
+Suggested **dev** App URLs when registering:
+
+| Field        | Local / dev example                                                  |
+| ------------ | -------------------------------------------------------------------- |
+| Homepage URL | `http://localhost:3000`                                              |
+| Callback URL | `http://localhost:5000/api/github/app/callback`                      |
+| Setup URL    | `http://localhost:3000/integrations/github/setup`                    |
+| Webhook URL  | Public HTTPS API, e.g. `https://<your-api-host>/api/github/webhooks` |
+
+Leave **Request user authorization during installation** and **Device Flow**
+unchecked for Phase 0–2. Keep **Expire user authorization tokens** on.
+Webhook **Active** can stay on; deliveries fail until Phase 2 implements the
+route (or disable Active until then).
+
+Never commit the `.pem` or webhook secret. Full permissions/events checklist
+and Phases 0–5:
+[GITHUB_INTEGRATION.md](../projects/GITHUB_INTEGRATION.md#phase-0--foundations).
+
 ### `packages/db/.env`
 
 Configure the Prisma/migration connection and seed credentials:
@@ -269,3 +317,24 @@ If startup fails environment validation, compare the reported variable with
 the appropriate `sample.env`. If the API starts but database requests fail,
 recheck that `DIRECT_URL` is the direct migration URL and `DATABASE_URL` is the
 Supavisor session-mode URL on port 5432.
+
+## 9. Production secrets (GitHub → Vercel)
+
+Production app env lives in GitHub Secrets with app prefixes (`API_`, `WEB_`).
+Deploy upserts unprefixed keys onto Vercel before each production build.
+
+Do **not** push from local `.env` / `.env.local` — those usually have localhost
+domains. Use dedicated production files (gitignored):
+
+```bash
+cp apps/api/sample.env apps/api/.env.production
+cp apps/web/sample.env apps/web/.env.production
+# Edit both files with real production URLs, keys, and domains
+gh auth login
+./scripts/gh-secrets-push.sh --app api
+./scripts/gh-secrets-push.sh --app web
+```
+
+Keys in the file stay unprefixed (`DATABASE_URL`); the script stores
+`API_DATABASE_URL` / `WEB_…` in GitHub. See `docs/architecture/TRD.md` (CI/CD
+secrets) and `scripts/vercel-env-sync.sh`.

@@ -6,7 +6,6 @@ import {
 } from './query-preprocess.js';
 import { WORK_ITEM_PRIORITIES } from '../../work-item-priorities.js';
 import { WORK_ITEM_STATUSES } from '../../work-item-status.js';
-import { WORK_ITEM_TYPES } from '../../work-item-types.js';
 import {
   WORKFLOW_STATE_CATEGORIES,
   type WorkflowStateCategory,
@@ -114,7 +113,8 @@ const chartScopeFilterFields = {
   sprintId: optionalUuid,
   /** Quick / advanced equality filters applied on rollups and drilldown. */
   status: z.preprocess(emptyToUndefined, z.enum(WORK_ITEM_STATUSES).optional()),
-  type: z.preprocess(emptyToUndefined, z.enum(WORK_ITEM_TYPES).optional()),
+  /** Catalog key (seed or custom UUID / legacy slug). */
+  type: z.preprocess(emptyToUndefined, z.string().trim().min(1).optional()),
   priority: z.preprocess(
     emptyToUndefined,
     z.enum(WORK_ITEM_PRIORITIES).optional()
@@ -314,4 +314,57 @@ export type ChartHierarchyDrilldownResponse = {
   page: number;
   limit: number;
   totalPages: number;
+};
+
+/** Manager sprint contribution table (Charts widget). */
+export const chartSprintContributionQuerySchema = z.object({
+  projectId: z.uuid(),
+  sprintId: z.uuid(),
+  /**
+   * Optional member filter. Empty string = unassigned bucket only.
+   * Omit for all members + unassigned.
+   */
+  assigneeId: z.preprocess(
+    (value) => {
+      if (value === '' || value === 'unassigned') {
+        return '';
+      }
+      return emptyToUndefined(value);
+    },
+    z.union([z.uuid(), z.literal('')]).optional()
+  ),
+  /** YYYY-MM-DD; defaults to today (clamped to sprint) in the service. */
+  asOf: optionalDateOnly,
+});
+
+export type ChartSprintContributionQuery = z.infer<
+  typeof chartSprintContributionQuerySchema
+>;
+
+export type ChartSprintContributionRowWire = {
+  readonly assigneeId: string | null;
+  readonly assigneeName: string | null;
+  readonly group: 'active' | 'unassigned' | 'done';
+  readonly estimatedPoints: number;
+  readonly loggedHours: number;
+  readonly idealSpent: number;
+  readonly pendingHours: number;
+  readonly behind: boolean;
+  readonly itemCount: number;
+};
+
+export type ChartSprintContributionGroupWire = {
+  readonly id: 'active' | 'unassigned' | 'done';
+  readonly rows: readonly ChartSprintContributionRowWire[];
+};
+
+export type ChartSprintContributionResponse = {
+  readonly projectId: string;
+  readonly sprintId: string;
+  readonly sprintName: string;
+  readonly startDate: string;
+  readonly endDate: string;
+  readonly asOf: string;
+  readonly assigneeId?: string;
+  readonly groups: readonly ChartSprintContributionGroupWire[];
 };

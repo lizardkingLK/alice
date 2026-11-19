@@ -18,6 +18,10 @@ Use **Save** to persist canvas layout and Settings together, or **Discard** to
 revert unsaved edits. Members can use the board and change states according to
 the published workflow; they cannot open or edit the graph.
 
+After you save, teammates with that project open may see a **Refresh** prompt
+(or an automatic board refresh) so their columns and state options match what
+you published.
+
 ---
 
 ## What you design
@@ -39,8 +43,9 @@ change what transitions are allowed until you **Save**.
 Managers and admins can change the graph on the canvas (Alice remains an
 optional alternate path):
 
-1. Press **Ctrl/Cmd+Alt+N** to add a state (opens Settings so you can rename
-   it), or right-click the canvas and choose **Add state**.
+1. Press **Ctrl/Cmd+Alt+N**, click the floating **+** on the canvas (bottom
+   right), or right-click the canvas and choose **Add state** (opens Settings so
+   you can rename it).
 2. Drag from a handle on one state to a handle on another to create a
    transition (handles sit on all four sides; they stay hidden until you hover
    or select a state, start a connection, or an edge already uses that port).
@@ -63,8 +68,9 @@ optional alternate path):
    changes** to keep the previous graph.
 
 Use the **Kanban** icon in the toolbar to open this project’s **Board**. Open
-**Help** (?) for the full keyboard list, or **right-click** the canvas for the
-same commands with shortcuts shown.
+**Help** (?) for the keyboard list and a **designer legend** (states, edges,
+wildcards, Settings), or **right-click** the canvas for the same commands with
+shortcuts shown.
 
 ### Keyboard
 
@@ -84,14 +90,17 @@ same commands with shortcuts shown.
 
 Select a state, then open **Settings**:
 
-| Setting                       | What it does                                                                                               |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| **Name** / description        | Labels on the board and in pickers (updates the canvas node live)                                          |
-| **Category**                  | Groups states for filters and reports (`todo`, `in progress`, `done`, …); updates the node live            |
-| **Lock record in this state** | While an item is here, most fields are read-only; changing state (for example reopen) can still be allowed |
-| **Terminal state**            | No outbound transitions. If edges already leave this state, remove them before you can turn this on        |
+| Setting                              | What it does                                                                                                                                                                                                          |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Name** / description               | Labels on the board and in pickers (updates the canvas node live)                                                                                                                                                     |
+| **Category**                         | Groups states for filters and reports (`todo`, `in progress`, `done`, …); updates the node live                                                                                                                       |
+| **Lock record in this state**        | While an item is here, most fields are read-only; changing state (for example reopen) can still be allowed                                                                                                            |
+| **Terminal state**                   | No outbound transitions. If edges already leave this state, remove them before you can turn this on                                                                                                                   |
+| **Allow transitions from any state** | Every other state can move here without drawing each edge. Explicit transitions keep their own rules (who can move, children, forms). The node shows a **From any** chip (same primary/green color as forward edges). |
+| **Allow transitions to any state**   | This state can move to every other state without drawing each edge. Explicit transitions keep their own rules. Not available on terminal states. The node shows a **To any** chip (same dark color as reverse edges). |
 
-Use the info icons for short explanations of each option.
+Use the info icons for short explanations of each option. Chips appear only when
+the flag is on and grow the node height as needed.
 
 ---
 
@@ -101,7 +110,7 @@ Select an edge between two states:
 
 | Setting                   | What it does                                                                                                                                                                                                           |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Who can move**          | **Everyone**, or **Restricted** to roles, teams, or people                                                                                                                                                             |
+| **Who can move**          | **Everyone**, or **Restricted** (opens a dialog to pick roles, teams, or members). Save the workflow after you apply.                                                                                                  |
 | **Requires escalation**   | Turn on when this move needs a form. Then **Create new…** or pick a form, open **Edit form**, click **Save** in the dialog, and **Save** the workflow                                                                  |
 | **Resolution form**       | Named form people complete when taking this transition (required when escalation is on). Full editor opens in a dialog; changes apply only when you click **Save** there                                               |
 | **Require children**      | **Off** — no check. **All complete** — all direct subtasks must be in a done category. **Match parent target** — all direct subtasks must already be in the parent’s target state (or same category when types differ) |
@@ -135,7 +144,7 @@ board move) asks for **fields** and an **Outcome** before the status changes.
 
 ---
 
-## Default and forks
+## Default, forks, and import
 
 Next to the workflow switcher:
 
@@ -143,14 +152,31 @@ Next to the workflow switcher:
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Title**        | Rename the active workflow (saved with the envelope)                                                                                                                                    |
 | **Fork**         | Copy the active workflow into a new editable fork (disabled on an existing fork)                                                                                                        |
+| **Import**       | Copy a workflow from another **active** project into this one as a **new** workflow (see below)                                                                                         |
 | **Mark default** | Make the active workflow the project default (disabled when it already is). Also moves the previous default’s type bindings here and reassigns work items that were on the old default. |
 | **Delete**       | Remove a non-default workflow when more than one exists (confirm first; promote another default first). That workflow’s type bindings and work items move to the project default.       |
 
 - A **team manager** (set on the project team) may **fork** once via the same
   control; that fork cannot be forked again. Forks start with **no** type
   bindings until you mark them default (or bind types later).
-- Unsaved canvas edits are saved before Fork / Mark default / Delete so the
-  server stays in sync.
+- Unsaved canvas edits are saved before Fork / Import / Mark default / Delete so
+  the server stays in sync.
+
+### Import from another project
+
+Managers and admins can open **Import** and:
+
+1. Choose another **active** project you can access, then pick one of its
+   workflows.
+2. Edit the **title** for the new workflow in this project.
+3. Optionally check **Mark as default after import**.
+4. Click **Import**.
+
+States, categories, transitions, resolution forms, and layout are copied.
+**Who can move** restrictions on transitions are **not** imported — every
+imported edge starts as **Everyone**. After import, select each transition and
+set **Who can move** again if you need restricted moves. The import dialog shows
+this note once a source workflow is selected.
 
 If configuration is missing or invalid, the project safely uses a **seeded
 default** workflow so the board keeps working.

@@ -3,6 +3,10 @@ import { z } from 'zod';
 const serverSchema = z.object({
   PORT: z.coerce.number(),
   FRONTEND_URL: z.string().min(1),
+  // Blank values are treated as unconfigured by the Resend adapter so an
+  // optional email integration cannot prevent the API from starting.
+  RESEND_API_KEY: z.string().optional(),
+  TRANSACTIONAL_EMAIL_FROM: z.string().optional(),
   SUPABASE_URL: z.url(),
   SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
@@ -30,8 +34,11 @@ const serverSchema = z.object({
   GITHUB_CLIENT_ID: z.string().min(1).optional(),
   GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
   GITHUB_REDIRECT_URI: z.string().min(1).optional(),
-  /** Optional; when set, notification cron routes require `Authorization: Bearer <CRON_SECRET>`. */
+  /** All cron routes require `Authorization: Bearer <CRON_SECRET>`. */
   CRON_SECRET: z.string().min(1),
+  EMAIL_RECONCILIATION_ENABLED: z.enum(['true', 'false']).default('false'),
+  EMAIL_OUTBOX_PROCESSING_ENABLED: z.enum(['true', 'false']).default('false'),
+  WEEKLY_REPORT_GENERATION_ENABLED: z.enum(['true', 'false']).default('false'),
   /** Pooled Postgres URL for Prisma Client (Supavisor session mode, port 5432). */
   DATABASE_URL: z.string().min(1),
 });
@@ -41,6 +48,8 @@ type EnvSchemaType = z.infer<typeof serverSchema>;
 const mock: EnvSchemaType = {
   PORT: 5000,
   FRONTEND_URL: 'http://localhost:3000',
+  RESEND_API_KEY: undefined,
+  TRANSACTIONAL_EMAIL_FROM: undefined,
   SUPABASE_URL: 'https://supabase.co',
   SUPABASE_ANON_KEY: 'mock',
   SUPABASE_SERVICE_ROLE_KEY: 'mock',
@@ -63,12 +72,17 @@ const mock: EnvSchemaType = {
   GITHUB_CLIENT_SECRET: 'mock-github-client-secret',
   GITHUB_REDIRECT_URI: 'http://localhost:5000/api/github/oauth/callback',
   CRON_SECRET: 'mock-cron-secret',
+  EMAIL_RECONCILIATION_ENABLED: 'false',
+  EMAIL_OUTBOX_PROCESSING_ENABLED: 'false',
+  WEEKLY_REPORT_GENERATION_ENABLED: 'false',
   DATABASE_URL: 'postgresql://localhost:5432/postgres',
 };
 
 const processEnv = {
   PORT: process.env.PORT,
   FRONTEND_URL: process.env.FRONTEND_URL,
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
+  TRANSACTIONAL_EMAIL_FROM: process.env.TRANSACTIONAL_EMAIL_FROM,
   SUPABASE_URL: process.env.SUPABASE_URL,
   SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -92,6 +106,10 @@ const processEnv = {
   GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
   GITHUB_REDIRECT_URI: process.env.GITHUB_REDIRECT_URI,
   CRON_SECRET: process.env.CRON_SECRET,
+  EMAIL_RECONCILIATION_ENABLED: process.env.EMAIL_RECONCILIATION_ENABLED,
+  EMAIL_OUTBOX_PROCESSING_ENABLED: process.env.EMAIL_OUTBOX_PROCESSING_ENABLED,
+  WEEKLY_REPORT_GENERATION_ENABLED:
+    process.env.WEEKLY_REPORT_GENERATION_ENABLED,
   DATABASE_URL: process.env.DATABASE_URL,
 };
 

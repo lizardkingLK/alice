@@ -3,10 +3,10 @@ import { render, screen } from '@testing-library/react';
 import { ProjectSummaryMetrics } from '@/app/projects/_components/project-details/project-summary-metrics';
 
 describe('ProjectSummaryMetrics', () => {
-  it('links metric cards to project tabs and hides Sprints for members', () => {
+  it('opens Board, Backlog, and My Work in a new tab and links shell tabs in-place', () => {
     const { rerender } = render(
       <ProjectSummaryMetrics
-        projectId="project-1"
+        projectKey="ABC"
         memberCount={4}
         teamCount={0}
         workItemCount={20}
@@ -17,34 +17,47 @@ describe('ProjectSummaryMetrics', () => {
       />
     );
 
+    const board = screen.getByRole('link', { name: /board/i });
+    expect(board).toHaveAttribute('href', '/projects/ABC/board');
+    expect(board).toHaveAttribute('target', '_blank');
+    expect(board).toHaveAttribute('rel', 'noopener noreferrer');
+
+    const backlog = screen.getByRole('link', { name: /backlog/i });
+    expect(backlog).toHaveAttribute('href', '/projects/ABC/backlog');
+    expect(backlog).toHaveAttribute('target', '_blank');
+
+    const myWork = screen.getByRole('link', { name: /my work/i });
+    expect(myWork).toHaveAttribute('href', '/projects/ABC/member');
+    expect(myWork).toHaveAttribute('target', '_blank');
+
     expect(screen.getByRole('link', { name: /members/i })).toHaveAttribute(
       'href',
-      '/projects/project-1?tab=members'
+      '/projects/ABC?tab=members'
     );
     expect(screen.getByRole('link', { name: /teams/i })).toHaveAttribute(
       'href',
-      '/projects/project-1?tab=teams'
+      '/projects/ABC?tab=teams'
     );
     expect(screen.getByRole('link', { name: /work items/i })).toHaveAttribute(
       'href',
-      '/projects/project-1?tab=work-items'
+      '/projects/ABC?tab=work-items'
     );
     expect(screen.getByRole('link', { name: /sprints/i })).toHaveAttribute(
       'href',
-      '/projects/project-1?tab=sprints'
+      '/projects/ABC?tab=sprints'
     );
     expect(screen.getByRole('link', { name: /integrations/i })).toHaveAttribute(
       'href',
-      '/projects/project-1?tab=integrations'
+      '/projects/ABC?tab=integrations'
     );
     expect(screen.getByRole('link', { name: /fields/i })).toHaveAttribute(
       'href',
-      '/projects/project-1?tab=fields'
+      '/projects/ABC?tab=fields'
     );
 
     rerender(
       <ProjectSummaryMetrics
-        projectId="project-1"
+        projectKey="ABC"
         memberCount={4}
         teamCount={0}
         workItemCount={20}
@@ -59,5 +72,8 @@ describe('ProjectSummaryMetrics', () => {
       screen.queryByRole('link', { name: /sprints/i })
     ).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /members/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /board/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /backlog/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /my work/i })).toBeInTheDocument();
   });
 });

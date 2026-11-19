@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  useEffect,
   useState,
   type ClipboardEvent,
   type ComponentType,
@@ -24,7 +25,10 @@ import {
   PanelLeftClose,
   Paperclip,
 } from '@repo/ui/lib/icons';
-import type { ChatModelOption } from '@repo/types';
+import {
+  WORK_ITEM_IMPORT_FILE_ACCEPT,
+  type ChatModelOption,
+} from '@repo/types';
 import {
   isCompactChatChrome,
   type ChatClientVariant,
@@ -43,9 +47,29 @@ import ChatClientMain from '@/app/chat/_components/chat-client-main';
 import { ChatAgentAvatar } from '@/app/chat/_components/chat-agent-avatar';
 import { ChatAssistantNameBlock } from '@/app/chat/_components/chat-assistant-name-block';
 import { ChatAgentsPanelDialog } from '@/app/chat/_components/chat-agents-panel-dialog';
-import { useBoundChatAgent } from '@/app/chat/_helpers/use-bound-chat-agent';
+import { ChatAgentChevronSwitcher } from '@/app/chat/_components/chat-agent-chevron-switcher';
+import {
+  EMPTY_PREFERRED_CHAT_AGENTS,
+  preferredChatAssistantFromWire,
+  shiftPreferredChatAssistant,
+  type PreferredChatAssistantBootstrap,
+} from '@/app/chat/_helpers/chat-assistant-identity';
+import {
+  getPreferredChatAgentId,
+  rememberPreferredChatAgent,
+} from '@/app/chat/_helpers/preferred-chat-agent-storage';
+import {
+  useBoundChatAgent,
+  type ChatAssistantIdentity,
+} from '@/app/chat/_helpers/use-bound-chat-agent';
+import { listChatAgentsClient } from '@/app/chat/_services/chat-agents.reads.client';
 import type { DashboardBreadcrumbOverride } from '@/app/dashboard/_components/dashboard-breadcrumb';
-import type { AppRole } from '@/lib/rbac';
+import { isManagerOrAdmin, type AppRole } from '@/lib/rbac';
+import {
+  ChatDockContextBar,
+  type ChatDockPageContext,
+} from '@/app/chat/_components/chat-dock-context-bar';
+import type { ChatViewContext } from '@repo/types/api/v1';
 
 const CHAT_PANEL_HEADER_CLASS =
   'border-border flex h-14 shrink-0 items-center border-b px-3';
@@ -70,6 +94,7 @@ function DefaultAliceMark() {
 
 type ChatFrameHeaderIdentityProps = {
   readonly isPage: boolean;
+  readonly hasChatModels: boolean;
   readonly identity: ReturnType<typeof useBoundChatAgent>;
   readonly onOpenGallery: () => void;
   // eslint-disable-next-line no-unused-vars
@@ -78,10 +103,16 @@ type ChatFrameHeaderIdentityProps = {
 
 function ChatFrameHeaderIdentity({
   isPage,
+  hasChatModels,
   identity,
   onOpenGallery,
   onOpenDetail,
 }: Readonly<ChatFrameHeaderIdentityProps>) {
+  // No model pool → empty gate; skip static Alice / personality chrome.
+  if (!hasChatModels) {
+    return null;
+  }
+
   if (identity) {
     return (
       <Tooltip>
@@ -165,16 +196,21 @@ type ChatFramePanelHeaderProps = {
   readonly showHistory: boolean;
   readonly assistantIdentity: ReturnType<typeof useBoundChatAgent>;
   readonly chatModels: readonly ChatModelOption[];
+  readonly canSwitchAgents: boolean;
   readonly selectedIntegrationId: string | undefined;
   readonly canManageChatModels: boolean;
   readonly isInputDisabled: boolean;
   readonly isMarkingDefault: boolean;
+  readonly isLoadingModels?: boolean;
   readonly onToggleHistory: () => void;
   readonly onOpenGallery: () => void;
   // eslint-disable-next-line no-unused-vars -- callback prop types
   readonly onOpenDetail: (agentId: string) => void;
+  // eslint-disable-next-line no-unused-vars -- direction callback
+  readonly onShiftAgent: (direction: -1 | 1) => void;
   readonly onNewChat: () => void;
   readonly onMarkSelectedAsDefault: () => Promise<void>;
+  readonly onEnsureModelsLoaded?: () => Promise<unknown>;
   // eslint-disable-next-line no-unused-vars -- callback prop types
   readonly onSelectedIntegrationIdChange: (value: string) => void;
   readonly onClose?: () => void;
@@ -186,20 +222,29 @@ function ChatFramePanelHeader({
   showHistory,
   assistantIdentity,
   chatModels,
+  canSwitchAgents,
   selectedIntegrationId,
   canManageChatModels,
   isInputDisabled,
   isMarkingDefault,
+  isLoadingModels = false,
   onToggleHistory,
   onOpenGallery,
   onOpenDetail,
+  onShiftAgent,
   onNewChat,
   onMarkSelectedAsDefault,
+  onEnsureModelsLoaded,
   onSelectedIntegrationIdChange,
   onClose,
 }: Readonly<ChatFramePanelHeaderProps>) {
   const isCompact = isCompactChatChrome(variant);
   const isWidget = variant === 'widget';
+  const hasChatModels = chatModels.length > 0;
+  const agentSwitcher =
+    hasChatModels && canSwitchAgents ? (
+      <ChatAgentChevronSwitcher onShift={onShiftAgent} />
+    ) : null;
 
   return (
     <header
@@ -220,10 +265,12 @@ function ChatFramePanelHeader({
           ) : null}
           <ChatFrameHeaderIdentity
             isPage={isPage}
+            hasChatModels={hasChatModels}
             identity={assistantIdentity}
             onOpenGallery={onOpenGallery}
             onOpenDetail={onOpenDetail}
           />
+          {agentSwitcher}
         </div>
       )}
       <div className="flex shrink-0 items-center gap-1">
@@ -234,8 +281,10 @@ function ChatFramePanelHeader({
           selectedIntegrationId={selectedIntegrationId}
           canManageChatModels={canManageChatModels}
           isMarkingDefault={isMarkingDefault}
+          isLoadingModels={isLoadingModels}
           onSelectedIntegrationIdChange={onSelectedIntegrationIdChange}
           onMarkSelectedAsDefault={onMarkSelectedAsDefault}
+          onEnsureModelsLoaded={onEnsureModelsLoaded}
           onNewChat={onNewChat}
           onOpenAgentsGallery={isPage ? onOpenGallery : undefined}
           onClose={onClose}
@@ -251,6 +300,9 @@ type ChatFrameComposerProps = {
   readonly inputValue: string;
   readonly isInputDisabled: boolean;
   readonly fileInputRef: RefObject<HTMLInputElement | null>;
+  readonly pageContext?: ChatDockPageContext | null;
+  readonly viewContext?: ChatViewContext | null;
+  readonly onDismissPageContext?: () => void;
   // eslint-disable-next-line no-unused-vars -- callback prop types
   readonly onRemoveAttachment: (id: string) => void;
   // eslint-disable-next-line no-unused-vars -- callback prop types
@@ -273,6 +325,9 @@ function ChatFrameComposer({
   inputValue,
   isInputDisabled,
   fileInputRef,
+  pageContext = null,
+  viewContext = null,
+  onDismissPageContext,
   onRemoveAttachment,
   onFormSubmit,
   onFileSelect,
@@ -286,12 +341,21 @@ function ChatFrameComposer({
     (Boolean(inputValue.trim()) || pendingAttachments.length > 0) &&
     !isInputDisabled &&
     !isUploading;
+  const showDockContext = variant === 'docked';
 
   return (
     <div
       className={cn('bg-muted/20 shrink-0', isCompact ? 'p-2.5' : 'p-3 sm:p-4')}
     >
       <div className="mx-auto max-w-3xl">
+        {showDockContext ? (
+          <ChatDockContextBar
+            className="mb-2"
+            pageContext={pageContext}
+            viewContext={viewContext}
+            onDismiss={onDismissPageContext}
+          />
+        ) : null}
         <ChatAttachmentTiles
           attachments={pendingAttachments}
           onRemove={onRemoveAttachment}
@@ -308,6 +372,7 @@ function ChatFrameComposer({
             ref={fileInputRef}
             type="file"
             multiple
+            accept={WORK_ITEM_IMPORT_FILE_ACCEPT}
             className="hidden"
             onChange={(e) => {
               if (e.target.files && e.target.files.length > 0) {
@@ -323,13 +388,13 @@ function ChatFrameComposer({
                 size={isCompact ? 'icon' : 'icon-lg'}
                 disabled={isInputDisabled}
                 onClick={() => fileInputRef.current?.click()}
-                aria-label="Attach files (JSON, CSV, etc.)"
+                aria-label="Attach JSON or CSV work-item files"
               >
                 <Paperclip className={isCompact ? 'size-4' : 'size-5'} />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">
-              Attach files (or paste with Ctrl+V)
+              Attach JSON or CSV (or paste with Ctrl+V)
             </TooltipContent>
           </Tooltip>
 
@@ -377,6 +442,7 @@ type ChatClientFrameProps = {
   readonly canManageChatModels: boolean;
   readonly isInputDisabled: boolean;
   readonly isMarkingDefault: boolean;
+  readonly isLoadingModels?: boolean;
   readonly isPending: boolean;
   readonly isActiveConversationProcessing: boolean;
   readonly showHero: boolean;
@@ -392,10 +458,17 @@ type ChatClientFrameProps = {
   readonly inputValue: string;
   readonly fileInputRef: RefObject<HTMLInputElement | null>;
   readonly boundAgentId?: string;
+  readonly initialAssistantIdentity?: ChatAssistantIdentity | null;
+  readonly initialChatAgents?: readonly PreferredChatAssistantBootstrap[];
+  // eslint-disable-next-line no-unused-vars -- agent id callback
+  readonly onBoundAgentIdChange?: (agentId: string | undefined) => void;
   readonly conversationToDelete: ChatConversation | null;
   readonly conversationToRename: ChatConversation | null;
   readonly isDeleting: boolean;
   readonly isRenaming: boolean;
+  readonly pageContext?: ChatDockPageContext | null;
+  readonly viewContext?: ChatViewContext | null;
+  readonly onDismissPageContext?: () => void;
   readonly onClose?: () => void;
   // eslint-disable-next-line no-unused-vars -- callback prop types
   readonly onConversationSearchChange: (value: string) => void;
@@ -416,6 +489,7 @@ type ChatClientFrameProps = {
   ) => void;
   readonly onToggleHistory: () => void;
   readonly onMarkSelectedAsDefault: () => Promise<void>;
+  readonly onEnsureModelsLoaded?: () => Promise<unknown>;
   // eslint-disable-next-line no-unused-vars -- callback prop types
   readonly onSelectedIntegrationIdChange: (value: string) => void;
   // eslint-disable-next-line no-unused-vars -- callback prop types
@@ -463,6 +537,7 @@ export function ChatClientFrame({
   canManageChatModels,
   isInputDisabled,
   isMarkingDefault,
+  isLoadingModels = false,
   isPending,
   isActiveConversationProcessing,
   showHero,
@@ -478,10 +553,16 @@ export function ChatClientFrame({
   inputValue,
   fileInputRef,
   boundAgentId,
+  initialAssistantIdentity = null,
+  initialChatAgents = EMPTY_PREFERRED_CHAT_AGENTS,
+  onBoundAgentIdChange,
   conversationToDelete,
   conversationToRename,
   isDeleting,
   isRenaming,
+  pageContext = null,
+  viewContext = null,
+  onDismissPageContext,
   onClose,
   onConversationSearchChange,
   onSelectConversation,
@@ -490,6 +571,7 @@ export function ChatClientFrame({
   onDeleteConversationClick,
   onToggleHistory,
   onMarkSelectedAsDefault,
+  onEnsureModelsLoaded,
   onSelectedIntegrationIdChange,
   onSendMessage,
   onRemoveAttachment,
@@ -504,13 +586,77 @@ export function ChatClientFrame({
   onConfirmRename,
   TrailBreadcrumb,
 }: Readonly<ChatClientFrameProps>) {
-  const assistantIdentity = useBoundChatAgent(
-    isPage ? boundAgentId : undefined
-  );
   const [agentsPanelOpen, setAgentsPanelOpen] = useState(false);
   const [agentsPanelAgentId, setAgentsPanelAgentId] = useState<string | null>(
     null
   );
+  const [chatAgents, setChatAgents] = useState<
+    PreferredChatAssistantBootstrap[]
+  >(() => [...initialChatAgents]);
+
+  // Only apply parent/SSR seeds — never wipe a client-loaded roster with [].
+  useEffect(() => {
+    if (initialChatAgents.length === 0) {
+      return;
+    }
+    setChatAgents([...initialChatAgents]);
+  }, [initialChatAgents]);
+
+  useEffect(() => {
+    if (chatModels.length === 0) {
+      return;
+    }
+    if (initialChatAgents.length > 0) {
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const rows = await listChatAgentsClient({ status: 'active' });
+        if (cancelled) {
+          return;
+        }
+        setChatAgents(rows.map((row) => preferredChatAssistantFromWire(row)));
+      } catch {
+        if (!cancelled) {
+          setChatAgents([]);
+        }
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [chatModels.length, initialChatAgents.length]);
+
+  useEffect(() => {
+    if (boundAgentId || chatAgents.length === 0 || !onBoundAgentIdChange) {
+      return;
+    }
+    const preferredId =
+      initialAssistantIdentity?.id ?? getPreferredChatAgentId() ?? undefined;
+    const preferred =
+      (preferredId
+        ? chatAgents.find((agent) => agent.agentId === preferredId)
+        : undefined) ?? chatAgents[0];
+    if (preferred) {
+      rememberPreferredChatAgent(preferred.agentId);
+      onBoundAgentIdChange(preferred.agentId);
+    }
+  }, [
+    boundAgentId,
+    chatAgents,
+    initialAssistantIdentity?.id,
+    onBoundAgentIdChange,
+  ]);
+
+  const rosterIdentity =
+    (boundAgentId &&
+      chatAgents.find((agent) => agent.agentId === boundAgentId)?.identity) ||
+    null;
+  const assistantIdentity = useBoundChatAgent(boundAgentId, {
+    initialIdentity: initialAssistantIdentity ?? rosterIdentity,
+  });
 
   const openAgentsGallery = () => {
     setAgentsPanelAgentId(null);
@@ -520,6 +666,19 @@ export function ChatClientFrame({
   const openAgentDetail = (agentId: string) => {
     setAgentsPanelAgentId(agentId);
     setAgentsPanelOpen(true);
+  };
+
+  const shiftBoundAgent = (direction: -1 | 1) => {
+    const next = shiftPreferredChatAssistant(
+      chatAgents,
+      boundAgentId,
+      direction
+    );
+    if (!next) {
+      return;
+    }
+    rememberPreferredChatAgent(next.agentId);
+    onBoundAgentIdChange?.(next.agentId);
   };
 
   return (
@@ -559,15 +718,19 @@ export function ChatClientFrame({
           showHistory={showHistory}
           assistantIdentity={assistantIdentity}
           chatModels={chatModels}
+          canSwitchAgents={chatAgents.length > 1}
           selectedIntegrationId={selectedIntegrationId}
           canManageChatModels={canManageChatModels}
           isInputDisabled={isInputDisabled}
           isMarkingDefault={isMarkingDefault}
+          isLoadingModels={isLoadingModels}
           onToggleHistory={onToggleHistory}
           onOpenGallery={openAgentsGallery}
           onOpenDetail={openAgentDetail}
+          onShiftAgent={shiftBoundAgent}
           onNewChat={onNewChat}
           onMarkSelectedAsDefault={onMarkSelectedAsDefault}
+          onEnsureModelsLoaded={onEnsureModelsLoaded}
           onSelectedIntegrationIdChange={onSelectedIntegrationIdChange}
           onClose={onClose}
         />
@@ -586,6 +749,7 @@ export function ChatClientFrame({
             currentUserImageUrl={currentUserImageUrl}
             assistantIdentity={assistantIdentity}
             messagesEndRef={messagesEndRef}
+            canConfigureChatModels={isManagerOrAdmin(currentUserRole)}
             onSendMessage={onSendMessage}
           />
 
@@ -596,6 +760,9 @@ export function ChatClientFrame({
             inputValue={inputValue}
             isInputDisabled={isInputDisabled}
             fileInputRef={fileInputRef}
+            pageContext={pageContext}
+            viewContext={viewContext}
+            onDismissPageContext={onDismissPageContext}
             onRemoveAttachment={onRemoveAttachment}
             onFormSubmit={onFormSubmit}
             onFileSelect={onFileSelect}

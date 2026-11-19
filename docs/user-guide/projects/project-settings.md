@@ -1,6 +1,7 @@
 # Project types
 
-Configure which work-item types are permitted in a project.
+Configure the project’s work-item **type catalog** (name, icon, description,
+hierarchy level) — including custom types beyond the create defaults.
 
 **Audience:** Managers and admins
 
@@ -16,20 +17,27 @@ Managers and admins who can access the project workspace see **Types**.
 **Members** do not see the Types, Workflow, Board, Fields, Teams, Sprints, or
 Integrations sidebar entries (deep links fall back to Details).
 
-On **Types**, permitted work-item types use a stacked list with confirmation
-before removing a previously saved type. When you save after removing types that
-still have work items (active or archived), a conflict dialog asks how to handle
-each type: **delete permanently** or **convert to** a remaining type. Parent
-links that would become invalid are detached first. Archive is not offered,
-because restoring would put a disallowed type back into the project.
+On **Types**, edit the catalog as a stacked list: add types (each gets a hidden
+stable key), rename display names (must be unique), set icons/colors and
+descriptions, and reorder **levels** (one linear parent→child chain). Removing a
+saved type asks for confirmation. When you save after removing types that still
+have work items (active or archived), a conflict dialog asks how to handle each
+type: **delete permanently** or **convert to** a remaining type. Parent links
+that would become invalid are detached first. Archive is not offered, because
+restoring would put a removed type back into the project.
 
-Submit **Save Types** when finished.
+Submit **Save Types** when finished. See
+[Work-item types and hierarchy](./work-item-types-and-hierarchy.md) for hierarchy
+rules, forms, and Jira mapping.
 
 ---
 
 ## Branding and metadata
 
 Project name, dates, description, and owner appear on the **Details** banner.
+The key badge includes a **copy** control for the shareable `/projects/{KEY}`
+link — the same path shown in the address bar while you work in the project
+(see [Browse projects](./browse-projects.md#share-a-project-link)).
 Managers and admins on an **active** project can select **Edit** to open a light
 dialog for those fields plus status (active/archived). Owner options are limited
 to users with the **manager** role. Cover and logo actions appear only on

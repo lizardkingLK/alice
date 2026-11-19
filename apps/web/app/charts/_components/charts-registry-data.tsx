@@ -60,6 +60,7 @@ export async function ChartsRegistryData({
       projects={activeProjects.map((project) => ({
         id: project.id,
         name: project.name,
+        key: project.key,
       }))}
       sprints={sprintsResult.sprints.flatMap((sprint) =>
         sprint.project?.id

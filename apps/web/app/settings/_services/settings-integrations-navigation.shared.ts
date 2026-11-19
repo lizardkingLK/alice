@@ -14,6 +14,7 @@ export const INTEGRATION_CATEGORY_FILTER_TAB: Record<
 
 const INTEGRATION_FILTER_TABS = new Set<IntegrationFilterTab>([
   'all',
+  'active',
   'ai-agents',
   'communication',
   'design',

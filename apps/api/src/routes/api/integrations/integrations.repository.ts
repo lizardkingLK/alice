@@ -3,8 +3,10 @@ import {
   prismaAuditCreateWithoutStatus,
   prismaAuditUpdate,
 } from '../../../lib/prisma-audit';
+import { listAccessibleProjectIds } from '../../../lib/project-access';
 import {
   IntegrationCategory,
+  IntegrationScope,
   IntegrationStatus,
   Prisma,
   type integrations,
@@ -21,7 +23,20 @@ import { SupabaseClient } from '@supabase/supabase-js';
 
 type IntegrationsTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
-async function clearAiAgentDefaults(
+/** Org vault rows, or project-scoped rows for the given project. */
+function orgOrProjectAiWhere(projectId: string): Prisma.integrationsWhereInput {
+  return {
+    OR: [
+      { scope: IntegrationScope.organization },
+      {
+        scope: IntegrationScope.project,
+        project_id: projectId,
+      },
+    ],
+  };
+}
+
+async function clearOrgAiAgentDefaults(
   tx: IntegrationsTx,
   actorId: string,
   excludeId?: string
@@ -29,6 +44,7 @@ async function clearAiAgentDefaults(
   await tx.integrations.updateMany({
     where: {
       category: IntegrationCategory.ai_agent,
+      scope: IntegrationScope.organization,
       is_default: true,
       ...(excludeId ? { id: { not: excludeId } } : {}),
     },
@@ -49,6 +65,8 @@ export type IntegrationCreateData = {
   config: Prisma.InputJsonValue;
   is_default: boolean;
   sort_order: number;
+  scope: IntegrationScope;
+  project_id: string | null;
 };
 
 export type IntegrationUpdateData = {
@@ -67,10 +85,15 @@ export type IntegrationUpdateData = {
 export class IntegrationsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
-  async list(query: ListIntegrationsQuery): Promise<IntegrationListRow[]> {
+  listAccessibleProjectIds(actorId: string): Promise<string[]> {
+    return listAccessibleProjectIds(this.db, actorId);
+  }
+
+  list(query: ListIntegrationsQuery): Promise<IntegrationListRow[]> {
     return prisma.integrations.findMany({
       where: {
         ...(query.category ? { category: query.category } : {}),
+        scope: query.scope ?? IntegrationScope.organization,
         ...(query.status ? { status: query.status } : {}),
         ...(query.catalog_id ? { catalog_id: query.catalog_id } : {}),
       },
@@ -79,10 +102,11 @@ export class IntegrationsRepository {
     });
   }
 
-  async listActiveChatModels(): Promise<IntegrationListRow[]> {
+  listActiveChatModels(): Promise<IntegrationListRow[]> {
     return prisma.integrations.findMany({
       where: {
         category: IntegrationCategory.ai_agent,
+        scope: IntegrationScope.organization,
         status: IntegrationStatus.active,
       },
       select: integrationListSelect,
@@ -90,30 +114,45 @@ export class IntegrationsRepository {
     });
   }
 
-  async findById(id: string): Promise<IntegrationDetailRow | null> {
+  /**
+   * Org vault AI models plus this project's own project-scoped AI models.
+   */
+  listProjectAiModels(projectId: string): Promise<IntegrationListRow[]> {
+    return prisma.integrations.findMany({
+      where: {
+        category: IntegrationCategory.ai_agent,
+        status: IntegrationStatus.active,
+        ...orgOrProjectAiWhere(projectId),
+      },
+      select: integrationListSelect,
+      orderBy: [{ provider: 'asc' }, { sort_order: 'asc' }, { name: 'asc' }],
+    });
+  }
+
+  findById(id: string): Promise<IntegrationDetailRow | null> {
     return prisma.integrations.findUnique({
       where: { id },
       select: integrationDetailSelect,
     });
   }
 
-  async findActiveChatModelById(
-    id: string
-  ): Promise<IntegrationDetailRow | null> {
+  findActiveChatModelById(id: string): Promise<IntegrationDetailRow | null> {
     return prisma.integrations.findFirst({
       where: {
         id,
         category: IntegrationCategory.ai_agent,
+        scope: IntegrationScope.organization,
         status: IntegrationStatus.active,
       },
       select: integrationDetailSelect,
     });
   }
 
-  async findDefaultActiveChatModel(): Promise<IntegrationDetailRow | null> {
+  findDefaultActiveChatModel(): Promise<IntegrationDetailRow | null> {
     return prisma.integrations.findFirst({
       where: {
         category: IntegrationCategory.ai_agent,
+        scope: IntegrationScope.organization,
         status: IntegrationStatus.active,
         is_default: true,
       },
@@ -121,30 +160,220 @@ export class IntegrationsRepository {
     });
   }
 
-  async create(data: IntegrationCreateData): Promise<IntegrationDetailRow> {
-    return prisma.$transaction(async (tx) => {
-      if (data.is_default && data.category === IntegrationCategory.ai_agent) {
-        await clearAiAgentDefaults(tx, data.actorId);
+  async findMemberChatModelPreference(
+    userId: string
+  ): Promise<{ default_integration_id: string | null } | null> {
+    return await prisma.member_chat_model_preferences.findUnique({
+      where: { user_id: userId },
+      select: { default_integration_id: true },
+    });
+  }
+
+  /**
+   * Active org chat model preferred by the member, if still valid.
+   */
+  async findActiveMemberPreferredChatModel(
+    userId: string
+  ): Promise<IntegrationDetailRow | null> {
+    const preference = await this.findMemberChatModelPreference(userId);
+    if (!preference?.default_integration_id) {
+      return null;
+    }
+    return this.findActiveChatModelById(preference.default_integration_id);
+  }
+
+  async upsertMemberChatModelPreference(params: {
+    readonly userId: string;
+    readonly defaultIntegrationId: string | null;
+  }): Promise<{ default_integration_id: string | null }> {
+    const { userId, defaultIntegrationId } = params;
+
+    if (defaultIntegrationId) {
+      const active = await this.findActiveChatModelById(defaultIntegrationId);
+      if (!active) {
+        throw new Error(
+          'Preferred chat model must be an active organization AI model'
+        );
+      }
+    }
+
+    return prisma.member_chat_model_preferences.upsert({
+      where: { user_id: userId },
+      create: {
+        user_id: userId,
+        default_integration_id: defaultIntegrationId,
+        updated_by: userId,
+      },
+      update: {
+        default_integration_id: defaultIntegrationId,
+        updated_by: userId,
+      },
+      select: { default_integration_id: true },
+    });
+  }
+
+  /**
+   * Active chat-model integrations bound to a project (org- or project-scoped
+   * rows via `project_integration_bindings`). Empty ⇒ caller falls through to
+   * org pool.
+   */
+  async listActiveChatModelBindingsForProject(projectId: string): Promise<
+    Array<{
+      integration_id: string;
+      is_default_for_project: boolean;
+      integration: IntegrationDetailRow;
+    }>
+  > {
+    const rows = await prisma.project_integration_bindings.findMany({
+      where: {
+        project_id: projectId,
+        integration: {
+          category: IntegrationCategory.ai_agent,
+          status: IntegrationStatus.active,
+          ...orgOrProjectAiWhere(projectId),
+        },
+      },
+      select: {
+        integration_id: true,
+        is_default_for_project: true,
+        integration: { select: integrationDetailSelect },
+      },
+      orderBy: [{ is_default_for_project: 'desc' }, { created_at: 'asc' }],
+    });
+
+    return rows.map((row) => ({
+      integration_id: row.integration_id,
+      is_default_for_project: row.is_default_for_project,
+      integration: row.integration,
+    }));
+  }
+
+  /**
+   * Replace all AI bindings for a project. Empty `bindings` clears the pool
+   * (chat falls through to organization defaults).
+   */
+  async replaceProjectChatModelBindings(params: {
+    readonly projectId: string;
+    readonly actorId: string;
+    readonly bindings: ReadonlyArray<{
+      readonly integration_id: string;
+      readonly is_default_for_project: boolean;
+    }>;
+  }): Promise<
+    Array<{
+      integration_id: string;
+      is_default_for_project: boolean;
+      integration: IntegrationDetailRow;
+    }>
+  > {
+    const { projectId, actorId, bindings } = params;
+
+    if (bindings.length > 0) {
+      const ids = bindings.map((row) => row.integration_id);
+      const eligible = await prisma.integrations.findMany({
+        where: {
+          id: { in: ids },
+          category: IntegrationCategory.ai_agent,
+          status: IntegrationStatus.active,
+          ...orgOrProjectAiWhere(projectId),
+        },
+        select: { id: true },
+      });
+      if (eligible.length !== ids.length) {
+        throw new Error(
+          'One or more integrations are not eligible AI models for this project'
+        );
+      }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.project_integration_bindings.deleteMany({
+        where: { project_id: projectId },
+      });
+
+      if (bindings.length === 0) {
+        return;
       }
 
-      return tx.integrations.create({
+      await tx.project_integration_bindings.createMany({
+        data: bindings.map((row) => ({
+          project_id: projectId,
+          integration_id: row.integration_id,
+          is_default_for_project: row.is_default_for_project,
+          created_by: actorId,
+          updated_by: actorId,
+        })),
+      });
+    });
+
+    return this.listActiveChatModelBindingsForProject(projectId);
+  }
+
+  create(data: IntegrationCreateData): Promise<IntegrationDetailRow> {
+    const isOrgAiDefault =
+      data.is_default &&
+      data.category === IntegrationCategory.ai_agent &&
+      data.scope === IntegrationScope.organization;
+
+    return prisma.$transaction(async (tx) => {
+      if (isOrgAiDefault) {
+        await clearOrgAiAgentDefaults(tx, data.actorId);
+      }
+
+      const row = await tx.integrations.create({
         data: {
           catalog_id: data.catalog_id,
           category: data.category,
+          scope: data.scope,
+          project_id: data.project_id,
           provider: data.provider,
           name: data.name,
           status: data.status,
           config: data.config,
-          is_default: data.is_default,
+          is_default:
+            data.scope === IntegrationScope.organization
+              ? data.is_default
+              : false,
           sort_order: data.sort_order,
           ...prismaAuditCreateWithoutStatus(data.actorId),
         },
         select: integrationDetailSelect,
       });
+
+      if (
+        data.scope === IntegrationScope.project &&
+        data.project_id &&
+        data.category === IntegrationCategory.ai_agent
+      ) {
+        if (data.is_default) {
+          await tx.project_integration_bindings.updateMany({
+            where: {
+              project_id: data.project_id,
+              is_default_for_project: true,
+            },
+            data: {
+              is_default_for_project: false,
+              ...prismaAuditUpdate(data.actorId),
+            },
+          });
+        }
+
+        await tx.project_integration_bindings.create({
+          data: {
+            project_id: data.project_id,
+            integration_id: row.id,
+            is_default_for_project: data.is_default,
+            created_by: data.actorId,
+            updated_by: data.actorId,
+          },
+        });
+      }
+
+      return row;
     });
   }
 
-  async update(data: IntegrationUpdateData): Promise<IntegrationDetailRow> {
+  update(data: IntegrationUpdateData): Promise<IntegrationDetailRow> {
     return prisma.$transaction(async (tx) => {
       const existing = await tx.integrations.findUnique({
         where: { id: data.id },
@@ -152,6 +381,7 @@ export class IntegrationsRepository {
           category: true,
           status: true,
           is_default: true,
+          scope: true,
         },
       });
 
@@ -166,9 +396,10 @@ export class IntegrationsRepository {
       if (
         nextIsDefault &&
         nextCategory === IntegrationCategory.ai_agent &&
-        nextStatus === IntegrationStatus.active
+        nextStatus === IntegrationStatus.active &&
+        existing.scope === IntegrationScope.organization
       ) {
-        await clearAiAgentDefaults(tx, data.actorId, data.id);
+        await clearOrgAiAgentDefaults(tx, data.actorId, data.id);
       }
 
       return tx.integrations.update({
@@ -182,7 +413,8 @@ export class IntegrationsRepository {
           ...(data.name !== undefined ? { name: data.name } : {}),
           ...(data.status !== undefined ? { status: data.status } : {}),
           ...(data.config !== undefined ? { config: data.config } : {}),
-          ...(data.is_default !== undefined
+          ...(data.is_default !== undefined &&
+          existing.scope === IntegrationScope.organization
             ? { is_default: data.is_default }
             : {}),
           ...(data.sort_order !== undefined

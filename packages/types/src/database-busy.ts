@@ -50,6 +50,9 @@ export function isDatabaseBusyMessage(message: string): boolean {
     normalized.includes(
       'timed out fetching a new connection from the connection pool'
     ) ||
+    normalized.includes('emaxconnsession') ||
+    normalized.includes('max clients reached') ||
+    normalized.includes('max clients are limited to pool_size') ||
     normalized.includes(DATABASE_BUSY_USER_MESSAGE.toLowerCase()) ||
     normalized.includes('database is busy')
   );

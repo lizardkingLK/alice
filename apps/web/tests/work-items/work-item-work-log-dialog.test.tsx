@@ -9,12 +9,12 @@ describe('WorkItemWorkLogDialog', () => {
       <WorkItemWorkLogDialog
         open
         onOpenChange={() => {}}
-        loggedHoursInput="1.5"
-        loggedAtInput="2026-10-11"
+        startAtInput="2026-10-11T23:30"
+        endAtInput="2026-10-12T01:00"
         workLogCommentInput="Fix tests"
         isLoggingWork={false}
-        onLoggedHoursChange={() => {}}
-        onLoggedAtChange={() => {}}
+        onStartAtChange={() => {}}
+        onEndAtChange={() => {}}
         onWorkLogCommentChange={() => {}}
         onSubmit={(event) => event.preventDefault()}
       />
@@ -22,8 +22,18 @@ describe('WorkItemWorkLogDialog', () => {
 
     // Assert
     expect(screen.getByLabelText('Work log form')).toBeInTheDocument();
-    expect(screen.getByLabelText(/Log time/i)).toHaveValue(1.5);
-    expect(screen.getByLabelText(/Date started/i)).toHaveValue('2026-10-11');
+    expect(screen.getByLabelText(/Start date and time/i)).toHaveValue(
+      '2026-10-11T23:30'
+    );
+    expect(screen.getByLabelText(/End date and time/i)).toHaveValue(
+      '2026-10-12T01:00'
+    );
+    expect(screen.getByText('1h 30m')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Only the start date, calculated duration, and description are saved/i
+      )
+    ).toBeInTheDocument();
     expect(screen.getByLabelText(/Work description/i)).toHaveValue('Fix tests');
   });
 
@@ -36,12 +46,12 @@ describe('WorkItemWorkLogDialog', () => {
       <WorkItemWorkLogDialog
         open
         onOpenChange={() => {}}
-        loggedHoursInput="2"
-        loggedAtInput="2026-10-11"
+        startAtInput="2026-10-11T08:00"
+        endAtInput="2026-10-11T10:00"
         workLogCommentInput=""
         isLoggingWork={false}
-        onLoggedHoursChange={() => {}}
-        onLoggedAtChange={() => {}}
+        onStartAtChange={() => {}}
+        onEndAtChange={() => {}}
         onWorkLogCommentChange={() => {}}
         onSubmit={onSubmit}
       />

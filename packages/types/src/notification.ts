@@ -34,6 +34,13 @@ export class AssignNotification extends NotificationType {
   }
 }
 
+export class StatusChangeNotification extends NotificationType {
+  constructor() {
+    super();
+    this.type = 'status_change';
+  }
+}
+
 export class MentionNotification extends NotificationType {
   constructor() {
     super();
@@ -60,6 +67,29 @@ export class ChartSharedNotification extends NotificationType {
     super();
     this.type = 'chart_shared';
   }
+}
+
+export class WorklogPendingNotification extends NotificationType {
+  constructor() {
+    super();
+    this.type = 'worklog_pending';
+  }
+}
+
+/** Round pending hours for inbox copy (whole hours when close enough). */
+export function formatPendingHours(hours: number): string {
+  const rounded = Math.round(hours * 10) / 10;
+  if (Math.abs(rounded - Math.round(rounded)) < 0.05) {
+    return String(Math.round(rounded));
+  }
+  return rounded.toFixed(1);
+}
+
+/** Humanized worklog burndown gap message for the inbox. */
+export function formatWorklogPendingMessage(pendingHours: number): string {
+  const amount = formatPendingHours(pendingHours);
+  const unit = amount === '1' ? 'hour' : 'hours';
+  return `You're about ${amount} ${unit} behind today's ideal pace — log work to catch up.`;
 }
 
 export class NotificationBuilder<T extends NotificationType> {

@@ -17,11 +17,13 @@ import {
 import { ProjectFieldsConfigSchema } from './dynamic-fields.js';
 import { initialSprintSchema } from './sprints.js';
 import { initialProjectTeamSchema } from './teams.js';
+import { withJiraProjectDtoFields } from './pm-external.js';
+import { withGithubProjectDtoFields } from './vc-external.js';
+import { projectIntegrationBindingItemSchema } from './integrations.js';
 
 export * from './jira-import-types.js';
 export { projectWorkflowConfigSchema };
 export type { ProjectWorkflowConfig } from './board-config.js';
-
 export {
   DynamicFieldTypeEnum,
   TemplateFieldCategoryEnum,
@@ -46,6 +48,34 @@ export const PROJECT_PROJECTION = 'id, name, key' as const;
 
 export type ProjectProjection = typeof PROJECT_PROJECTION;
 
+export const FIGMA_PROJECT_URL_MESSAGE =
+  'Enter a valid HTTPS Figma URL, for example https://www.figma.com/design/...';
+
+/** Saved-link validation only. Figma OAuth is handled separately. */
+export function isValidFigmaProjectUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    const isFigmaHost =
+      url.hostname === 'figma.com' || url.hostname === 'www.figma.com';
+    return (
+      url.protocol === 'https:' &&
+      isFigmaHost &&
+      url.pathname !== '/' &&
+      url.username === '' &&
+      url.password === '' &&
+      url.port === ''
+    );
+  } catch {
+    return false;
+  }
+}
+
+export const figmaProjectUrlSchema = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine(isValidFigmaProjectUrl, { message: FIGMA_PROJECT_URL_MESSAGE });
+
 /**
  * Build a PostgREST project relation embed, e.g. `project:projects(id, name, key)`.
  * Pass a nested parent select when needed:
@@ -58,8 +88,8 @@ export function projectRelationSelect(
   return `${alias}:projects(${projection})`;
 }
 
-const workItemTypeValues = Constants.public.Enums.WorkItemType;
-const workItemTypeField = z.enum(workItemTypeValues);
+/** Catalog type key (free-form). */
+const workItemTypeField = z.string().trim().min(1);
 
 const baseCreateProjectSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -80,7 +110,10 @@ const baseCreateProjectSchema = z.object({
   jira_project_key: z.string().nullable().optional(),
   jira_connection_id: z.uuid().nullable().optional(),
   github_repo: z.string().nullable().optional(),
+  /** Links `projects.vc_connection_id` to the OAuth connection used for this repo. */
+  github_connection_id: z.uuid().nullable().optional(),
   github_token: z.string().nullable().optional(),
+  figma_url: figmaProjectUrlSchema.nullable().optional(),
   attributes_config: ProjectFieldsConfigSchema.nullable().optional(),
   workflow_config: projectWorkflowConfigSchema.nullable().optional(),
 });
@@ -89,6 +122,37 @@ export const createProjectSchema = baseCreateProjectSchema
   .extend({
     sprint: initialSprintSchema.optional(),
     team: initialProjectTeamSchema.optional(),
+    /** Org AI models to bind on create (bind-by-reference). */
+    integration_bindings: z
+      .array(projectIntegrationBindingItemSchema)
+      .optional(),
+  })
+  .superRefine((data, context) => {
+    if (!data.integration_bindings) {
+      return;
+    }
+    const seen = new Set<string>();
+    for (const [index, binding] of data.integration_bindings.entries()) {
+      if (seen.has(binding.integration_id)) {
+        context.addIssue({
+          code: 'custom',
+          message: 'Duplicate integration_id in bindings.',
+          path: ['integration_bindings', index, 'integration_id'],
+        });
+        return;
+      }
+      seen.add(binding.integration_id);
+    }
+    const defaults = data.integration_bindings.filter(
+      (row) => row.is_default_for_project
+    );
+    if (defaults.length > 1) {
+      context.addIssue({
+        code: 'custom',
+        message: 'At most one binding may be the project default.',
+        path: ['integration_bindings'],
+      });
+    }
   })
   .refine(
     (data) => {
@@ -147,13 +211,13 @@ export const workItemTypeRemovalStrategySchema = z
     if (value.action === 'migrate') {
       if (!value.migrateTo) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: 'custom',
           message: 'migrateTo is required when action is migrate',
           path: ['migrateTo'],
         });
       } else if (value.migrateTo === value.type) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: 'custom',
           message: 'migrateTo must differ from the removed type',
           path: ['migrateTo'],
         });
@@ -163,7 +227,7 @@ export const workItemTypeRemovalStrategySchema = z
 
 export const workItemTypeRemovalStrategiesSchema = z
   .array(workItemTypeRemovalStrategySchema)
-  .max(workItemTypeValues.length);
+  .max(50);
 
 export type WorkItemTypeRemovalStrategy = z.infer<
   typeof workItemTypeRemovalStrategySchema
@@ -223,26 +287,112 @@ export type WorkItemTypeRemovalApplyResult = {
 
 /**
  * Strip integration secrets before project rows reach clients.
- * Deletes `github_token` and adds `has_github_token`.
+ * Prefer `withGithubProjectDtoFields` when the row has `vc_*` columns.
+ * Legacy: deletes `github_token` and adds `has_github_token`.
  */
 export function withoutIntegrationSecrets<
-  T extends { github_token?: string | null },
+  T extends {
+    github_token?: string | null;
+    vc_connection_id?: string | null;
+    has_github_token?: boolean;
+  },
 >(project: T): Omit<T, 'github_token'> & { has_github_token: boolean } {
   const { github_token: githubToken, ...rest } = project;
+  const hasToken =
+    typeof rest.has_github_token === 'boolean'
+      ? rest.has_github_token
+      : Boolean(rest.vc_connection_id) || Boolean(githubToken);
   return {
     ...(rest as Omit<T, 'github_token'>),
-    has_github_token: Boolean(githubToken),
+    has_github_token: hasToken,
   };
 }
 
 /** @deprecated Prefer `withoutIntegrationSecrets` — same mapping. */
 export const withoutGithubToken = withoutIntegrationSecrets;
 
+type ProjectWireSource = {
+  pm_connection_id?: string | null;
+  pm_external?: unknown;
+  vc_connection_id?: string | null;
+  vc_external?: unknown;
+  github_token?: string | null;
+  has_github_token?: boolean;
+};
+
+const PROJECT_DB_ONLY_KEYS = [
+  'pm_connection_id',
+  'pm_external',
+  'vc_connection_id',
+  'vc_external',
+] as const;
+
+/**
+ * DB/project row → client wire: `jira_*` + `github_*` aliases, no secrets,
+ * no raw `pm_*` / `vc_*` columns.
+ */
+export function mapProjectRowForWire<T extends ProjectWireSource>(
+  row: T
+): Omit<T, 'github_token'> & {
+  jira_connection_id: string | null;
+  jira_project_key: string | null;
+  github_repo: string | null;
+  github_connection_id: string | null;
+  has_github_token: boolean;
+} {
+  const aliased = withGithubProjectDtoFields(withJiraProjectDtoFields(row));
+  const stripped = { ...aliased } as Record<string, unknown>;
+  for (const key of PROJECT_DB_ONLY_KEYS) {
+    delete stripped[key];
+  }
+  return withoutIntegrationSecrets(stripped as typeof aliased) as Omit<
+    T,
+    'github_token'
+  > & {
+    jira_connection_id: string | null;
+    jira_project_key: string | null;
+    github_repo: string | null;
+    github_connection_id: string | null;
+    has_github_token: boolean;
+  };
+}
+
 export const projectOwnerSelect = {
   id: true,
   name: true,
   email: true,
 } as const;
+
+/**
+ * Explicit project columns for PostgREST session/API readers.
+ * Prefer this over `select('*')` so future secret columns are not pulled by default.
+ */
+export const PROJECT_SESSION_COLUMNS = [
+  'id',
+  'name',
+  'key',
+  'description',
+  'status',
+  'owner_id',
+  'start_date',
+  'end_date',
+  'pm_connection_id',
+  'pm_external',
+  'vc_connection_id',
+  'vc_external',
+  'figma_url',
+  'logo_url',
+  'cover_picture',
+  'attributes_config',
+  'workflow_config',
+  'created_by',
+  'created_at',
+  'updated_by',
+  'updated_at',
+  'deleted_at',
+] as const;
+
+export const projectSessionPostgrestSelect = PROJECT_SESSION_COLUMNS.join(', ');
 
 export const projectListSelect = {
   id: true,
@@ -265,10 +415,11 @@ export const projectDetailSelect = {
   ...projectListSelect,
   attributes_config: true,
   workflow_config: true,
-  jira_project_key: true,
-  jira_connection_id: true,
-  github_repo: true,
-  github_token: true,
+  pm_connection_id: true,
+  pm_external: true,
+  vc_connection_id: true,
+  vc_external: true,
+  figma_url: true,
 } as const;
 
 export type ProjectListRow = projectsGetPayload<{
@@ -355,3 +506,45 @@ export type ListProjectsForActorResponse = {
   userRole: UserRole;
   permissions: ProjectRegistryPermissions;
 };
+
+/**
+ * Unified project integrations read model (Phase F facade).
+ * Source control / PM stay on `*_connections` + `pm_*`/`vc_*`; AI on bindings.
+ */
+export const projectIntegrationsSummarySchema = z.object({
+  project_id: z.uuid(),
+  source_control: z.object({
+    provider: z.literal('github').nullable(),
+    connected: z.boolean(),
+    repo: z.string().nullable(),
+    connection_id: z.uuid().nullable(),
+  }),
+  project_management: z.object({
+    provider: z.literal('jira').nullable(),
+    connected: z.boolean(),
+    project_key: z.string().nullable(),
+    connection_id: z.uuid().nullable(),
+  }),
+  design: z.object({
+    figma: z.object({
+      connected: z.boolean(),
+      url: figmaProjectUrlSchema.nullable(),
+    }),
+  }),
+  ai_agents: z.object({
+    binding_count: z.number().int().nonnegative(),
+    default_integration_id: z.uuid().nullable(),
+  }),
+});
+
+export type ProjectIntegrationsSummary = z.infer<
+  typeof projectIntegrationsSummarySchema
+>;
+
+export const projectIntegrationsSummaryResponseSchema = z.object({
+  summary: projectIntegrationsSummarySchema,
+});
+
+export type ProjectIntegrationsSummaryResponse = z.infer<
+  typeof projectIntegrationsSummaryResponseSchema
+>;

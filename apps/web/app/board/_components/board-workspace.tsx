@@ -16,7 +16,12 @@ import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { parseBoardPageTab, type BoardPageTab } from '@/lib/search-params';
-import type { BoardColumn, BoardWorkflowTab } from '@repo/types/api/v1';
+import type {
+  BoardColumn,
+  BoardWorkflowTab,
+  TransitionRuleActorContext,
+} from '@repo/types/api/v1';
+import type { BoardTransitionAuthRule } from '@/app/board/_helpers/board-transition-auth';
 
 type BoardWorkspaceProps = {
   readonly boardColumns: BoardColumn[];
@@ -24,6 +29,8 @@ type BoardWorkspaceProps = {
   readonly workflowTabs: readonly BoardWorkflowTab[];
   readonly activeWorkflowId: string | null;
   readonly boardMode: 'workflow' | 'legacy' | 'default';
+  readonly transitionAuthRules: readonly BoardTransitionAuthRule[];
+  readonly transitionActor: TransitionRuleActorContext | null;
   readonly initialWorkItems: DbWorkItem[];
   readonly projects: Project[];
   readonly sprints: Sprint[];
@@ -41,6 +48,8 @@ export function BoardWorkspace({
   workflowTabs,
   activeWorkflowId,
   boardMode,
+  transitionAuthRules,
+  transitionActor,
   initialWorkItems,
   projects,
   sprints,
@@ -95,6 +104,8 @@ export function BoardWorkspace({
           workflowTabs={workflowTabs}
           activeWorkflowId={activeWorkflowId}
           boardMode={boardMode}
+          transitionAuthRules={transitionAuthRules}
+          transitionActor={transitionActor}
           initialWorkItems={initialWorkItems}
           projects={projects}
           sprints={sprints}

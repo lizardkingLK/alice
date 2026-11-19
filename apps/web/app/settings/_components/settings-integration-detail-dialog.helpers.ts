@@ -141,10 +141,16 @@ export async function saveIntegrationModel(params: {
   displayLabel: string;
   apiKey: string;
   isDefault: boolean;
+  /** Defaults to organization (Settings vault). */
+  scope?: 'organization' | 'project';
+  /** Required when `scope` is `project`. */
+  projectId?: string;
 }): Promise<IntegrationSaveFeedback> {
   const trimmedApiKey = params.apiKey.trim();
   const trimmedModel = params.modelId.trim();
   const trimmedLabel = params.displayLabel.trim();
+  const scope = params.scope ?? 'organization';
+  const isProjectScope = scope === 'project';
 
   if (!trimmedModel || !trimmedLabel) {
     return {
@@ -160,6 +166,13 @@ export async function saveIntegrationModel(params: {
     };
   }
 
+  if (isProjectScope && !params.projectId && !params.selectedRow) {
+    return {
+      success: null,
+      error: 'Project id is required for project-scoped models.',
+    };
+  }
+
   try {
     const catalogMeta = CONFIGURABLE_CATALOG_PROVIDERS[params.catalogId];
 
@@ -167,7 +180,7 @@ export async function saveIntegrationModel(params: {
       await patchWorkspaceIntegration(params.selectedRow.id, {
         name: trimmedLabel,
         status: 'active',
-        is_default: params.isDefault,
+        ...(isProjectScope ? {} : { is_default: params.isDefault }),
         config: {
           kind: 'chat_model',
           model: trimmedModel,
@@ -176,7 +189,12 @@ export async function saveIntegrationModel(params: {
         },
       });
 
-      return { success: 'Integration updated.', error: null };
+      return {
+        success: isProjectScope
+          ? 'Project model updated.'
+          : 'Integration updated.',
+        error: null,
+      };
     }
 
     await createWorkspaceIntegration({
@@ -186,6 +204,9 @@ export async function saveIntegrationModel(params: {
       name: trimmedLabel,
       status: 'active',
       is_default: params.isDefault,
+      ...(isProjectScope
+        ? { scope: 'project' as const, project_id: params.projectId }
+        : {}),
       config: {
         kind: 'chat_model',
         model: trimmedModel,
@@ -195,7 +216,9 @@ export async function saveIntegrationModel(params: {
     });
 
     return {
-      success: 'Model connected for your workspace.',
+      success: isProjectScope
+        ? 'Project model connected.'
+        : 'Model connected for your workspace.',
       error: null,
     };
   } catch (error) {

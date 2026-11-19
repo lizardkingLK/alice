@@ -1,4 +1,9 @@
-import { USER_PROJECTION_WITH_ROLE, userRelationSelect } from '@repo/types';
+import {
+  USER_PROJECTION_WITH_ROLE,
+  userRelationSelect,
+  mapProjectRowForWire,
+  projectSessionPostgrestSelect,
+} from '@repo/types';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getDbUser, getUser } from '@/lib/auth';
@@ -11,7 +16,6 @@ import {
   zeroCountsById,
 } from '@/lib/db/query';
 import { listAccessibleProjectIds } from '@/lib/projects/project-workspace-access';
-import { withoutIntegrationSecrets } from '@/lib/projects/sanitize-project-secrets';
 import {
   ProjectStatusEnum,
   type ProjectStatusTab,
@@ -33,10 +37,14 @@ const PROJECT_MEMBER_USER_SELECT = userRelationSelect(
 
 type ProjectRowWithSecrets = Project & {
   github_token?: string | null;
+  pm_connection_id?: string | null;
+  pm_external?: unknown;
+  vc_connection_id?: string | null;
+  vc_external?: unknown;
 };
 
 function sanitizeProjectRow(row: ProjectRowWithSecrets): Project {
-  return withoutIntegrationSecrets(row) as Project;
+  return mapProjectRowForWire(row) as Project;
 }
 
 /**
@@ -63,7 +71,9 @@ export async function getProjectListPaginatedFromSupabase(
 
   let query = supabase
     .from('projects')
-    .select(`*, ${OWNER_SELECT}`, { count: 'exact' });
+    .select(`${projectSessionPostgrestSelect}, ${OWNER_SELECT}` as '*', {
+      count: 'exact',
+    });
 
   query = query.in('id', accessibleIds);
 
@@ -102,13 +112,41 @@ export async function getProjectFromSupabase(id: string): Promise<Project> {
 
   const { data, error } = await supabase
     .from('projects')
-    .select(`*, ${OWNER_SELECT}`)
+    .select(`${projectSessionPostgrestSelect}, ${OWNER_SELECT}` as '*')
     .eq('id', id)
     .maybeSingle();
 
   throwIfError(error, 'failed to find project by id', 'Failed to find project');
 
   return sanitizeProjectRow(data as unknown as ProjectRowWithSecrets);
+}
+
+/**
+ * Resolve a project id from its unique key (share URLs). Returns null when
+ * no row matches — callers map that to notFound / redirect skips.
+ */
+export async function getProjectIdByKeyFromSupabase(
+  key: string
+): Promise<string | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('key', key)
+    .maybeSingle();
+
+  throwIfError(
+    error,
+    'failed to find project by key',
+    'Failed to find project by key'
+  );
+
+  if (!data || typeof data.id !== 'string') {
+    return null;
+  }
+
+  return data.id;
 }
 
 export async function getProjectMembersFromSupabase(

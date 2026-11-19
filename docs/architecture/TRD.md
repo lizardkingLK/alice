@@ -41,7 +41,7 @@ Both apps deploy to Vercel. The API runs as Vercel Serverless Functions. Protect
 - `src/routes/api/health/health.route.ts` — health check router
 - `src/routes/api/users/` — users router, service, and repository with secure endpoints and user registration
 - `src/routes/api/projects/` — projects router, service, repository, and schema validation supporting full project CRUD (with soft delete)
-- `src/routes/api/sprints/` — sprints router, service, repository, and schema validation supporting sprint lifecycle (planned, active, closed, archived)
+- `src/routes/api/sprints/` — sprints router, service, repository, and schema validation supporting sprint lifecycle (planned, active, closed, archived), burndown metrics, and AI-powered sprint estimation
 - `src/routes/api/attributes/` — attributes router, service, and repository to retrieve custom fields metadata
 - `src/routes/api/attachments/` — attachments upload router (Storage via `lib/file-helpers.ts`)
 - `src/lib/file-helpers.ts` — shared Storage upload / public URL / signed URL helpers
@@ -315,6 +315,7 @@ One Supabase project serves both development and production. Migrations must be 
   - `PATCH /api/sprints/:id` — protected. Updates sprint details (validates request body via `updateSprintBodySchema`).
   - `PATCH /api/sprints/:id/status` — protected. Updates sprint status (validates body via `updateSprintStatusSchema`).
   - `GET /api/sprints/:id/burndown` — protected. Returns burndown series for a sprint (web dashboard prefers the RSC reader in `sprint-burndown.server.ts`).
+  - `POST /api/sprints/:id/estimates` (and `/api/v1/sprints/:id/estimates`) — protected, Manager or Admin required, project member. Generates read-only sprint planning effort estimates (suggested hours, min/max uncertainty ranges, confidence, and rationales) combining historical work logs, deterministic median calculations, and LLM evaluation (Gemini/SpaceXAI). Strictly read-only; no database updates. Batches up to 20 items with max concurrency of 3, isolated 10s timeouts, and full cancellation propagation. See [AI_SPRINT_ESTIMATION.md](../features/sprints/AI_SPRINT_ESTIMATION.md).
   - Sprint **list/detail reads** are not Express GETs — dashboard pages use direct Supabase RSC readers (`sprints.service.server.ts`).
 
 - **Attributes**
@@ -335,7 +336,7 @@ One Supabase project serves both development and production. Migrations must be 
 
 **Routes**
 
-- `/` — home page ("Alice") with Sign In / Sign Up controls
+- `/` — home page ("Alice"): marketing landing when signed out; greeting + Dashboard CTA when signed in
 - `/about`, `/contact` — public marketing pages
 - `/login` — email/password sign-in (Server Action)
 - `/signup` — registration (Server Action)
@@ -381,6 +382,10 @@ Cross-cutting pagination support is built via:
 - Web frontend: `apps/web`
 - API backend: `apps/api` (Node.js Serverless, configured in `vercel.json`)
 
+**Planned long-lived apps (not deployed yet)**
+
+- `apps/worker` / `apps/streamer` on Render (BullMQ + Upstash Redis; separate processes) — see [WORKER_AND_STREAMER.md](./WORKER_AND_STREAMER.md)
+
 **Serverless constraints**
 
 - No WebSockets
@@ -406,12 +411,30 @@ SonarCloud quality gate runs on `dev` branch after validation.
 
 **Required GitHub secrets**
 
+Infra (unprefixed — CI / deploy plumbing only):
+
 - `VERCEL_TOKEN`
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID_API`
 - `VERCEL_PROJECT_ID_WEB`
 - `DIRECT_URL` (migration status check on `main` deploy)
-- `SONAR_TOKEN` (SonarCloud on `dev`)
+- `SONAR_TOKEN` (SonarCloud on pull requests)
+
+App runtime (prefixed — source of truth for Vercel project env):
+
+- `API_*` — one secret per key in `apps/api/sample.env` (e.g. `API_DATABASE_URL` → Vercel `DATABASE_URL`)
+- `WEB_*` — one secret per production key in `apps/web/sample.env` (skips `CYPRESS_*`)
+
+On each `main` deploy, Actions strips the prefix and upserts into the matching Vercel project before `vercel pull`. Bootstrap from **production** env files (not local `.env` / `.env.local` — those use localhost URLs):
+
+```bash
+cp apps/api/sample.env apps/api/.env.production   # then fill real prod values
+cp apps/web/sample.env apps/web/.env.production
+./scripts/gh-secrets-push.sh --app api
+./scripts/gh-secrets-push.sh --app web
+```
+
+`.env.production` is gitignored. Requires GitHub CLI (`gh`) in the devcontainer (`github-cli` feature) and `gh auth login` with secrets write access. See `scripts/gh-secrets-push.sh` and `scripts/vercel-env-sync.sh`.
 
 ## 11. Development Workflow
 

@@ -74,7 +74,7 @@ export function UnlinkIssueButton({
       type="button"
       variant="ghost"
       size="icon-sm"
-      className="text-muted-foreground hover:text-destructive cursor-pointer"
+      className="text-muted-foreground hover:text-foreground cursor-pointer"
       aria-label="Unlink issue"
       title="Unlink issue"
       onClick={onClick}

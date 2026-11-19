@@ -20,8 +20,18 @@ import {
   type IntegrationWire,
   type ListIntegrationsQuery,
   type PatchIntegrationBody,
+  type MemberChatModelPreferenceWire,
+  type ProjectAiModelOption,
+  type ProjectIntegrationBindingWire,
+  type PutMemberChatModelPreferenceBody,
+  type PutProjectIntegrationBindingsBody,
 } from '@repo/types';
-import { IntegrationStatus, Prisma } from '@repo/types/prisma';
+import {
+  IntegrationScope,
+  IntegrationStatus,
+  Prisma,
+} from '@repo/types/prisma';
+import { prisma } from '../../../lib/prisma';
 import { resolveApprovedChatProviderApiUrl } from './chat-providers/chat-provider-endpoints';
 import type { ResolvedChatModelConfig } from './chat-providers/chat-provider.types';
 import type { IntegrationsRepository } from './integrations.repository';
@@ -32,6 +42,154 @@ async function requireIntegrationManager(actorId: string) {
     [UserRoleEnum.admin, UserRoleEnum.manager],
     'Unauthorized. Only admins and managers can manage integrations.'
   );
+}
+
+async function assertProjectExists(projectId: string): Promise<void> {
+  const project = await prisma.projects.findFirst({
+    where: { id: projectId, deleted_at: null },
+    select: { id: true },
+  });
+  if (!project) {
+    throw new Error('Project not found');
+  }
+}
+
+async function assertProjectAccessible(
+  repository: IntegrationsRepository,
+  actorId: string,
+  projectId: string
+): Promise<void> {
+  await assertProjectExists(projectId);
+  const accessible = await repository.listAccessibleProjectIds(actorId);
+  if (!accessible.includes(projectId)) {
+    throw new Error('Unauthorized project access.');
+  }
+}
+
+async function assertCanManageProjectScopedIntegration(
+  repository: IntegrationsRepository,
+  actorId: string,
+  row: Pick<IntegrationDetailRow, 'scope' | 'project_id'>
+): Promise<void> {
+  if (row.scope !== IntegrationScope.project) {
+    return;
+  }
+  if (!row.project_id) {
+    throw new Error('Project-scoped integration is missing project_id');
+  }
+  await assertProjectAccessible(repository, actorId, row.project_id);
+}
+
+function ownerDisplayName(row: IntegrationListRow): {
+  created_by: string | null;
+  created_by_name: string | null;
+} {
+  return {
+    created_by: row.created_by ?? null,
+    created_by_name: row.created_by_user?.name ?? null,
+  };
+}
+
+function mapBindingRowsToWire(
+  rows: ReadonlyArray<{
+    integration_id: string;
+    is_default_for_project: boolean;
+    integration: IntegrationDetailRow | IntegrationListRow;
+  }>
+): ProjectIntegrationBindingWire[] {
+  return rows.flatMap((row) => {
+    const option = toChatModelOption(row.integration);
+    if (!option) {
+      return [];
+    }
+    return [
+      {
+        integration_id: row.integration_id,
+        is_default_for_project: row.is_default_for_project,
+        integration: option,
+      },
+    ];
+  });
+}
+
+type ProjectBindingRow = {
+  integration_id: string;
+  is_default_for_project: boolean;
+  integration: IntegrationDetailRow;
+};
+
+async function resolveExplicitChatModel(params: {
+  readonly repository: IntegrationsRepository;
+  readonly integrationId: string;
+  readonly projectBindings: readonly ProjectBindingRow[];
+}): Promise<ResolvedChatModelConfig> {
+  if (params.projectBindings.length > 0) {
+    const bound = params.projectBindings.find(
+      (row) => row.integration_id === params.integrationId
+    );
+    if (!bound) {
+      throw new Error('Chat model is not enabled for this project context');
+    }
+    return mapIntegrationRowToChatModelConfig(bound.integration);
+  }
+
+  const row = await params.repository.findActiveChatModelById(
+    params.integrationId
+  );
+  if (!row) {
+    throw new Error('Chat model integration not found or inactive');
+  }
+  return mapIntegrationRowToChatModelConfig(row);
+}
+
+async function resolveProjectPoolChatModel(params: {
+  readonly repository: IntegrationsRepository;
+  readonly userId?: string;
+  readonly projectBindings: readonly ProjectBindingRow[];
+}): Promise<ResolvedChatModelConfig | null> {
+  if (params.projectBindings.length === 0) {
+    return null;
+  }
+
+  if (params.userId) {
+    const memberPreferred =
+      await params.repository.findActiveMemberPreferredChatModel(params.userId);
+    if (memberPreferred) {
+      const bound = params.projectBindings.find(
+        (row) => row.integration_id === memberPreferred.id
+      );
+      if (bound) {
+        return mapIntegrationRowToChatModelConfig(bound.integration);
+      }
+    }
+  }
+
+  const projectDefault =
+    params.projectBindings.find((row) => row.is_default_for_project) ??
+    params.projectBindings[0];
+  return projectDefault
+    ? mapIntegrationRowToChatModelConfig(projectDefault.integration)
+    : null;
+}
+
+async function resolveMemberOrOrgDefaultChatModel(params: {
+  readonly repository: IntegrationsRepository;
+  readonly userId?: string;
+}): Promise<ResolvedChatModelConfig> {
+  if (params.userId) {
+    const memberPreferred =
+      await params.repository.findActiveMemberPreferredChatModel(params.userId);
+    if (memberPreferred) {
+      return mapIntegrationRowToChatModelConfig(memberPreferred);
+    }
+  }
+
+  const defaultRow = await params.repository.findDefaultActiveChatModel();
+  if (defaultRow) {
+    return mapIntegrationRowToChatModelConfig(defaultRow);
+  }
+
+  throw new Error('No chat model configured');
 }
 
 function encryptConfigSecrets(
@@ -123,13 +281,29 @@ function prepareStoredConfigForPatch(
   return base as Prisma.InputJsonValue;
 }
 
-function stripIntegrationSecrets<T extends IntegrationListRow>(
-  row: T
-): Omit<T, 'config'> & { config: IntegrationConfigPublic } {
-  const { config, ...rest } = row;
+function stripIntegrationSecrets(
+  row: IntegrationListRow | IntegrationDetailRow
+): IntegrationDetailWire {
+  const owner = ownerDisplayName(row);
   return {
-    ...rest,
-    config: withoutIntegrationConfigSecrets(config) as IntegrationConfigPublic,
+    id: row.id,
+    catalog_id: row.catalog_id,
+    category: row.category,
+    scope: row.scope,
+    project_id: row.project_id ?? null,
+    provider: row.provider,
+    name: row.name,
+    status: row.status,
+    is_default: row.is_default,
+    sort_order: row.sort_order,
+    created_by: owner.created_by,
+    created_by_name: owner.created_by_name,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    updated_by: 'updated_by' in row ? (row.updated_by ?? null) : null,
+    config: withoutIntegrationConfigSecrets(
+      row.config
+    ) as IntegrationConfigPublic,
   };
 }
 
@@ -183,6 +357,8 @@ function toChatModelOption(row: IntegrationListRow): ChatModelOption | null {
     return null;
   }
 
+  const owner = ownerDisplayName(row);
+
   return {
     id: row.id,
     provider: row.provider,
@@ -194,6 +370,35 @@ function toChatModelOption(row: IntegrationListRow): ChatModelOption | null {
       typeof row.config.model_version === 'string'
         ? row.config.model_version
         : undefined,
+    scope: row.scope,
+    project_id: row.project_id ?? null,
+    created_by: owner.created_by,
+    created_by_name: owner.created_by_name,
+  };
+}
+
+function toProjectAiModelOption(
+  row: IntegrationListRow
+): ProjectAiModelOption | null {
+  const base = toChatModelOption(row);
+  if (!base) {
+    return null;
+  }
+
+  const publicConfig = withoutIntegrationConfigSecrets(row.config);
+  const hasApiKey =
+    isPlainRecord(publicConfig) &&
+    'has_api_key' in publicConfig &&
+    publicConfig.has_api_key === true;
+
+  return {
+    ...base,
+    catalog_id: row.catalog_id,
+    scope: row.scope,
+    project_id: row.project_id ?? null,
+    created_by: base.created_by ?? null,
+    created_by_name: base.created_by_name ?? null,
+    has_api_key: hasApiKey,
   };
 }
 
@@ -285,6 +490,20 @@ export class IntegrationsService {
   ): Promise<IntegrationDetailWire> {
     await requireIntegrationManager(actorId);
 
+    const scope = input.scope ?? IntegrationScope.organization;
+    const projectId = input.project_id ?? null;
+
+    if (scope === IntegrationScope.project) {
+      if (!projectId) {
+        throw new Error('project_id is required when scope is project');
+      }
+      await assertProjectAccessible(
+        this.integrationsRepository,
+        actorId,
+        projectId
+      );
+    }
+
     assertValidIntegrationConfiguration({
       catalogId: input.catalog_id,
       category: input.category,
@@ -302,6 +521,8 @@ export class IntegrationsService {
       config: prepareStoredConfigForCreate(input.config),
       is_default: input.is_default ?? false,
       sort_order: input.sort_order ?? 0,
+      scope,
+      project_id: projectId,
     });
 
     return stripIntegrationSecrets(row);
@@ -318,6 +539,12 @@ export class IntegrationsService {
     if (!existing) {
       throw new Error('Integration not found');
     }
+
+    await assertCanManageProjectScopedIntegration(
+      this.integrationsRepository,
+      actorId,
+      existing
+    );
 
     const preparedConfig =
       input.config !== undefined
@@ -360,29 +587,138 @@ export class IntegrationsService {
 
   async deleteIntegration(actorId: string, id: string): Promise<void> {
     await requireIntegrationManager(actorId);
+    const existing = await this.integrationsRepository.findById(id);
+    if (!existing) {
+      throw new Error('Integration not found');
+    }
+    await assertCanManageProjectScopedIntegration(
+      this.integrationsRepository,
+      actorId,
+      existing
+    );
     await this.integrationsRepository.disable(id, actorId);
+  }
+
+  async listProjectAiModels(
+    actorId: string,
+    projectId: string
+  ): Promise<ProjectAiModelOption[]> {
+    await requireIntegrationManager(actorId);
+    await assertProjectAccessible(
+      this.integrationsRepository,
+      actorId,
+      projectId
+    );
+
+    const rows =
+      await this.integrationsRepository.listProjectAiModels(projectId);
+    return rows
+      .map(toProjectAiModelOption)
+      .filter((option): option is ProjectAiModelOption => option !== null);
+  }
+
+  async listProjectChatModelBindings(
+    actorId: string,
+    projectId: string
+  ): Promise<ProjectIntegrationBindingWire[]> {
+    await requireIntegrationManager(actorId);
+    await assertProjectAccessible(
+      this.integrationsRepository,
+      actorId,
+      projectId
+    );
+
+    const rows =
+      await this.integrationsRepository.listActiveChatModelBindingsForProject(
+        projectId
+      );
+    return mapBindingRowsToWire(rows);
+  }
+
+  async replaceProjectChatModelBindings(
+    actorId: string,
+    projectId: string,
+    body: PutProjectIntegrationBindingsBody
+  ): Promise<ProjectIntegrationBindingWire[]> {
+    await requireIntegrationManager(actorId);
+    await assertProjectAccessible(
+      this.integrationsRepository,
+      actorId,
+      projectId
+    );
+
+    const rows =
+      await this.integrationsRepository.replaceProjectChatModelBindings({
+        projectId,
+        actorId,
+        bindings: body.bindings,
+      });
+
+    return mapBindingRowsToWire(rows);
+  }
+
+  async getMemberChatModelPreference(
+    actorId: string
+  ): Promise<MemberChatModelPreferenceWire> {
+    await requireUserWithRole(
+      actorId,
+      [UserRoleEnum.admin, UserRoleEnum.manager, UserRoleEnum.member],
+      'Unauthorized.'
+    );
+    const row =
+      await this.integrationsRepository.findMemberChatModelPreference(actorId);
+    return { default_integration_id: row?.default_integration_id ?? null };
+  }
+
+  async putMemberChatModelPreference(
+    actorId: string,
+    body: PutMemberChatModelPreferenceBody
+  ): Promise<MemberChatModelPreferenceWire> {
+    await requireUserWithRole(
+      actorId,
+      [UserRoleEnum.admin, UserRoleEnum.manager, UserRoleEnum.member],
+      'Unauthorized.'
+    );
+    const row =
+      await this.integrationsRepository.upsertMemberChatModelPreference({
+        userId: actorId,
+        defaultIntegrationId: body.default_integration_id,
+      });
+    return { default_integration_id: row.default_integration_id };
   }
 
   async resolveChatModelForChat(params: {
     integrationId?: string;
+    projectId?: string;
+    userId?: string;
     legacyModelId?: string;
   }): Promise<ResolvedChatModelConfig> {
+    const projectBindings = params.projectId
+      ? await this.integrationsRepository.listActiveChatModelBindingsForProject(
+          params.projectId
+        )
+      : [];
+
     if (params.integrationId) {
-      const row = await this.integrationsRepository.findActiveChatModelById(
-        params.integrationId
-      );
-      if (!row) {
-        throw new Error('Chat model integration not found or inactive');
-      }
-      return mapIntegrationRowToChatModelConfig(row);
+      return resolveExplicitChatModel({
+        repository: this.integrationsRepository,
+        integrationId: params.integrationId,
+        projectBindings,
+      });
     }
 
-    const defaultRow =
-      await this.integrationsRepository.findDefaultActiveChatModel();
-    if (defaultRow) {
-      return mapIntegrationRowToChatModelConfig(defaultRow);
+    const fromProjectPool = await resolveProjectPoolChatModel({
+      repository: this.integrationsRepository,
+      userId: params.userId,
+      projectBindings,
+    });
+    if (fromProjectPool) {
+      return fromProjectPool;
     }
 
-    throw new Error('No chat model configured');
+    return resolveMemberOrOrgDefaultChatModel({
+      repository: this.integrationsRepository,
+      userId: params.userId,
+    });
   }
 }

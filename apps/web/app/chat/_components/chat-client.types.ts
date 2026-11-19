@@ -6,6 +6,11 @@ import type {
   ChatViewContext,
 } from '@repo/types';
 import type { AppRole } from '@/lib/rbac';
+import type { ChatDockPageContext } from '@/app/chat/_components/chat-dock-context-bar';
+import type {
+  ChatAssistantIdentity,
+  PreferredChatAssistantBootstrap,
+} from '@/app/chat/_helpers/chat-assistant-identity';
 
 export type ActionItem = ChatToolActionWire;
 export type ChatMessage = ChatMessageWire;
@@ -25,6 +30,9 @@ export type ChatClientProps = {
   readonly onClose?: () => void;
   /** Page-aware context (e.g. workflow designer draft) sent with each turn. */
   readonly viewContext?: ChatViewContext | null;
+  /** Dock-only: page Alice was opened from (shown above the composer). */
+  readonly pageContext?: ChatDockPageContext | null;
+  readonly onDismissPageContext?: () => void;
   readonly currentUserName?: string | null;
   readonly currentUserEmail?: string | null;
   readonly currentUserImageUrl?: string | null;
@@ -33,8 +41,12 @@ export type ChatClientProps = {
   readonly initialConversationId?: string;
   readonly initialMessages?: ChatMessage[];
   readonly initialChatModels?: ChatModelOption[];
-  /** Bound agent from `/chat?agentId=` (page variant). */
+  /** Bound agent from `/chat?agentId=` (page variant) or Overview SSR seed. */
   readonly initialAgentId?: string;
+  /** SSR preferred-agent identity (avoids client DefaultAlice flash). */
+  readonly initialAssistantIdentity?: ChatAssistantIdentity | null;
+  /** SSR / parent roster for personality chevrons (Overview /chat). */
+  readonly initialChatAgents?: readonly PreferredChatAssistantBootstrap[];
   /** SSR cookie preference for the conversation history sidebar. */
   readonly initialHistoryOpen?: boolean;
   readonly currentUserId?: string | null;

@@ -11,6 +11,7 @@ import {
 import {
   buildWorkItemLabelsOrFilter,
   buildWorkItemSearchOrFilter,
+  withJiraIssueKeyDtoField,
 } from '@repo/types';
 import type {
   DbWorkItem,
@@ -230,7 +231,10 @@ export async function listWorkItemsPaginatedFromSupabase(
     }
   );
 
-  return { workItems, ...meta };
+  return {
+    workItems: workItems.map((row) => withJiraIssueKeyDtoField(row)),
+    ...meta,
+  };
 }
 
 export async function getWorkItemFromSupabase(
@@ -246,7 +250,38 @@ export async function getWorkItemFromSupabase(
 
   throwIfError(error, 'failed to get work-item', 'Failed to get work-item');
 
-  return (data as unknown as DbWorkItem | null) ?? null;
+  if (!data) {
+    return null;
+  }
+
+  return withJiraIssueKeyDtoField(data as unknown as DbWorkItem);
+}
+
+/** Resolve a work item by project-scoped URL slug. */
+export async function getWorkItemByProjectSlugFromSupabase(
+  projectId: string,
+  slug: string
+): Promise<DbWorkItem | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('work_items')
+    .select(workItemDetailPostgrestSelect())
+    .eq('project_id', projectId)
+    .eq('slug', slug)
+    .maybeSingle();
+
+  throwIfError(
+    error,
+    'failed to get work-item by slug',
+    'Failed to get work-item'
+  );
+
+  if (!data) {
+    return null;
+  }
+
+  return withJiraIssueKeyDtoField(data as unknown as DbWorkItem);
 }
 
 /**

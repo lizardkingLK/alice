@@ -17,5 +17,11 @@ export {
   type IntegrationSecretKey,
 } from './config.js';
 
-export { IntegrationCategory } from '../generated/prisma/enums.js';
+export {
+  IntegrationCategory,
+  IntegrationScope,
+  IntegrationStatus,
+} from '../generated/prisma/enums.js';
 export type { IntegrationCategory as IntegrationCategoryEnum } from '../generated/prisma/enums.js';
+export type { IntegrationScope as IntegrationScopeEnum } from '../generated/prisma/enums.js';
+export type { IntegrationStatus as IntegrationStatusEnum } from '../generated/prisma/enums.js';

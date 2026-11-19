@@ -1,4 +1,5 @@
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
+import type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 import {
   DeleteSprintWorkItemsActionEnum,
@@ -9,6 +10,7 @@ import {
 } from '@repo/types';
 import type { ResponseDTO } from '@repo/types/connection';
 export { mapSprintRowToResponse as mapDbSprintToSprint } from '@repo/types';
+export type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 
 /** Re-export the shared response type under its original local name. */
 export type Sprint = SprintResponse;
@@ -94,10 +96,14 @@ export async function forceUpdateSprintStatus(
   id: string,
   pendingFields: Record<string, unknown>,
   expectedUpdatedAt: string
-): Promise<Sprint> {
+): Promise<Sprint | DestructiveActionAccepted> {
   const status = pendingFields.status as Sprint['status'] | undefined;
   if (!status) {
     return forceUpdateSprint(id, pendingFields, expectedUpdatedAt);
+  }
+
+  if (status === 'archived') {
+    return archiveSprint(id, expectedUpdatedAt);
   }
 
   const data = await apiFetch<ResponseDTO<Sprint>>(
@@ -111,11 +117,19 @@ export async function forceUpdateSprintStatus(
   return data.data!;
 }
 
+/** Fire-and-forget archive — API returns 202; inbox notifies when done. */
 export async function archiveSprint(
   id: string,
   expectedUpdatedAt: string
-): Promise<Sprint> {
-  return updateSprintStatus(id, 'archived', expectedUpdatedAt);
+): Promise<DestructiveActionAccepted> {
+  return await apiFetch<DestructiveActionAccepted>(
+    `${apiSprints}/${id}/status`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'archived', expectedUpdatedAt }),
+      skipDatabaseBusyRetry: true,
+    }
+  );
 }
 
 export async function restoreSprint(
@@ -125,18 +139,20 @@ export async function restoreSprint(
   return updateSprintStatus(id, 'closed', expectedUpdatedAt);
 }
 
+/** Fire-and-forget purge — API returns 202; inbox notifies when done. */
 export async function hardDeleteSprint(
   id: string,
   options?: DeleteSprintAction
-): Promise<void> {
+): Promise<DestructiveActionAccepted> {
   const resolvedOptions: DeleteSprintAction = options ?? {
     workItemsAction: DeleteSprintWorkItemsActionEnum.DeleteContent,
   };
-  await apiFetch<void>(
+  return await apiFetch<DestructiveActionAccepted>(
     `${apiSprints}/${id}?workItemsAction=${resolvedOptions.workItemsAction}`,
     {
       method: 'DELETE',
       body: JSON.stringify(resolvedOptions),
+      skipDatabaseBusyRetry: true,
     }
   );
 }

@@ -38,11 +38,13 @@ type AgentsPanelBodyProps = {
   readonly currentUserName: string | null;
   readonly currentUserEmail: string | null;
   readonly currentUserRole: AppRole | null;
+  readonly galleryRefreshToken: number;
   // eslint-disable-next-line no-unused-vars
   readonly onSelectAgent: (agentId: string) => void;
   readonly onBack: () => void;
   readonly onDeleted: () => void;
   readonly onBeforeChat: () => void;
+  readonly onCatalogChanged: () => void;
 };
 
 function AgentsPanelBody({
@@ -51,13 +53,21 @@ function AgentsPanelBody({
   currentUserName,
   currentUserEmail,
   currentUserRole,
+  galleryRefreshToken,
   onSelectAgent,
   onBack,
   onDeleted,
   onBeforeChat,
+  onCatalogChanged,
 }: Readonly<AgentsPanelBodyProps>) {
   if (view === 'gallery') {
-    return <ChatAgentsGallery onSelectAgent={onSelectAgent} />;
+    return (
+      <ChatAgentsGallery
+        onSelectAgent={onSelectAgent}
+        currentUserName={currentUserName}
+        refreshToken={galleryRefreshToken}
+      />
+    );
   }
   if (!detailAgentId) {
     return null;
@@ -72,6 +82,7 @@ function AgentsPanelBody({
       onOpenAgent={onSelectAgent}
       onDeleted={onDeleted}
       onBeforeChat={onBeforeChat}
+      onCatalogChanged={onCatalogChanged}
     />
   );
 }
@@ -87,6 +98,7 @@ export function ChatAgentsPanelDialog({
   const [view, setView] = useState<AgentsPanelView>('gallery');
   const [detailAgentId, setDetailAgentId] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [galleryRefreshToken, setGalleryRefreshToken] = useState(0);
 
   useEffect(() => {
     if (!open) {
@@ -120,7 +132,7 @@ export function ChatAgentsPanelDialog({
           'flex flex-col gap-0 overflow-hidden p-0',
           isFullscreen
             ? 'h-[100dvh] max-h-[100dvh] w-screen max-w-none rounded-none sm:max-w-none'
-            : 'h-[min(90dvh,52rem)] max-h-[90dvh] w-[min(96vw,72rem)] sm:max-w-[72rem]'
+            : 'h-[min(92dvh,56rem)] max-h-[92dvh] w-[min(98vw,90rem)] sm:max-w-[90rem]'
         )}
       >
         <div className="border-border flex shrink-0 items-center justify-between gap-2 border-b px-4 py-2.5 pr-12">
@@ -163,10 +175,14 @@ export function ChatAgentsPanelDialog({
             currentUserName={currentUserName}
             currentUserEmail={currentUserEmail}
             currentUserRole={currentUserRole}
+            galleryRefreshToken={galleryRefreshToken}
             onSelectAgent={openAgent}
             onBack={backToGallery}
             onDeleted={backToGallery}
             onBeforeChat={() => onOpenChange(false)}
+            onCatalogChanged={() =>
+              setGalleryRefreshToken((token) => token + 1)
+            }
           />
         </div>
       </DialogContent>

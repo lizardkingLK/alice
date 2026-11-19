@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Constants } from '../../generated/supabase/database.types.js';
+import { normalizeProjectWorkItemTypeDefs } from '../../work-item-types.js';
 import {
   BOARD_WORK_ITEM_STATUSES,
   WORK_ITEM_STATUSES,
@@ -206,16 +207,78 @@ export const boardConfigSchema = z.union([
   boardConfigV2Schema,
 ]);
 
+export const projectWorkItemTypeDefSchema = z.object({
+  key: z.string().trim().min(1, 'Type key is required'),
+  name: z.string().trim().min(1, 'Type name is required'),
+  description: z.string().optional(),
+  icon: z.string().trim().min(1, 'Type icon is required'),
+  color: z
+    .string()
+    .trim()
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Type color must be a hex color (#RRGGBB)')
+    .optional(),
+  level: z.number().int().min(0, 'Type level must be a non-negative integer'),
+});
+
+/**
+ * Accepts catalog defs or legacy string[] (normalized to defs).
+ * Enforces unique key + unique level.
+ */
+export const projectWorkItemTypesConfigSchema = z.preprocess(
+  (value) => {
+    if (value === undefined || value === null) {
+      return value;
+    }
+    return normalizeProjectWorkItemTypeDefs(value);
+  },
+  z
+    .array(projectWorkItemTypeDefSchema)
+    .min(1, 'At least one work item type must be configured')
+    .superRefine((defs, context) => {
+      const keys = new Set<string>();
+      const levels = new Set<number>();
+      const names = new Set<string>();
+      for (const [index, def] of defs.entries()) {
+        if (keys.has(def.key)) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Duplicate work-item type identity. Change the type name.',
+            path: [index, 'name'],
+          });
+        }
+        keys.add(def.key);
+        if (levels.has(def.level)) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Duplicate work-item type level: ${def.level}`,
+            path: [index, 'level'],
+          });
+        }
+        levels.add(def.level);
+
+        const normalizedName = def.name.trim().toLowerCase();
+        if (normalizedName && names.has(normalizedName)) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message:
+              'Type names must be unique in this project. Change the name.',
+            path: [index, 'name'],
+          });
+        }
+        if (normalizedName) {
+          names.add(normalizedName);
+        }
+      }
+    })
+);
+
 export const projectWorkflowConfigSchema = z
   .object({
     version: z.union([z.literal('1'), z.literal('2')]).optional(),
     columns: boardColumnsSchema.optional(),
     transitions: z.array(boardTransitionSchema).optional(),
     statusTransitions: z.array(workItemStatusTransitionSchema).optional(),
-    work_item_types: z
-      .array(z.enum(Constants.public.Enums.WorkItemType))
-      .min(1, 'At least one work item type must be configured')
-      .optional(),
+    work_item_types: projectWorkItemTypesConfigSchema.optional(),
     hierarchy: z.record(z.string(), z.string().nullable()).optional(),
   })
   .passthrough()
@@ -228,6 +291,8 @@ export const projectWorkflowConfigSchema = z
     }
     validateStatusTransitions(config.statusTransitions ?? [], context);
   });
+
+export type { ProjectWorkItemTypeDef } from '../../work-item-types.js';
 
 export type BoardColumn = z.infer<typeof boardColumnSchema>;
 export type BoardRuleMatcher = z.infer<typeof boardRuleMatcherSchema>;

@@ -40,13 +40,21 @@ import {
   hardDeleteProject as clientHardDeleteProject,
   type Project,
 } from '@/app/projects/_services/projects.mutations.client';
+import { projectDetailHref } from '@/app/projects/_helpers/project-links';
 import {
   ProjectStatusEnum,
   PROJECT_STATUS_TABS,
   type ProjectStatusTab,
 } from '@/app/projects/_helpers/project-status';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
-import { runRegistryLockedAction } from '@/lib/optimistic-lock/run-locked-mutation';
+import {
+  runAcceptedDestructiveAction,
+  runLockedAcceptedDestructiveAction,
+} from '@/lib/api/run-accepted-destructive-action';
+import {
+  runRegistryLockedAction,
+  type RunLockedMutationOptions,
+} from '@/lib/optimistic-lock/run-locked-mutation';
 import {
   Folder,
   Calendar,
@@ -120,7 +128,7 @@ function ProjectNameCell({ proj }: Readonly<{ proj: Project }>) {
   return (
     <div className="flex items-center gap-3">
       <Link
-        href={`/projects/${proj.id}`}
+        href={projectDetailHref(proj.key)}
         className="group/row flex min-w-0 flex-1 items-center gap-3 transition-opacity hover:opacity-85"
       >
         <Avatar
@@ -161,7 +169,7 @@ function ProjectNameCell({ proj }: Readonly<{ proj: Project }>) {
         asChild
       >
         <Link
-          href={`/projects/${proj.id}?tab=teams`}
+          href={projectDetailHref(proj.key, 'teams')}
           className="inline-flex items-center gap-1"
         >
           <Network className="size-3" />
@@ -241,6 +249,97 @@ const PROJECT_COLUMNS: ColumnDef<Project>[] = [
   },
 ];
 
+async function runSoftArchive(params: {
+  readonly project: Project;
+  readonly handleMutationError: RunLockedMutationOptions<unknown>['handleMutationError'];
+  readonly currentUserId?: string | null;
+  // eslint-disable-next-line no-unused-vars -- callback option bag
+  readonly onError: (message: string) => void;
+}): Promise<boolean> {
+  const { project, handleMutationError, currentUserId, onError } = params;
+  return runLockedAcceptedDestructiveAction({
+    mutate: () => clientSoftDeleteProject(project.id, project.updated_at),
+    handleMutationError,
+    entityType: 'project',
+    entityId: project.id,
+    expectedUpdatedAt: project.updated_at,
+    pendingFields: { status: ProjectStatusEnum.archived },
+    currentUserId,
+    onError,
+    failureFallback: 'Failed to soft delete project.',
+  });
+}
+
+async function runHardPurge(params: {
+  readonly projectId: string;
+  // eslint-disable-next-line no-unused-vars -- callback option bag
+  readonly onError: (message: string) => void;
+}): Promise<boolean> {
+  return runAcceptedDestructiveAction({
+    mutate: () => clientHardDeleteProject(params.projectId),
+    onError: params.onError,
+    failureFallback: 'Failed to hard delete project.',
+  });
+}
+
+function AddProjectOverlay({
+  users,
+  currentUserId,
+  isMaximized,
+  isWide,
+  onMaximizedChange,
+  onWideChange,
+  onClose,
+  onSuccess,
+}: Readonly<{
+  users: ProjectRegistryProps['users'];
+  currentUserId?: string | null;
+  isMaximized: boolean;
+  isWide: boolean;
+  // eslint-disable-next-line no-unused-vars
+  onMaximizedChange: (maximized: boolean) => void;
+  // eslint-disable-next-line no-unused-vars
+  onWideChange: (wide: boolean) => void;
+  onClose: () => void;
+  onSuccess: () => void;
+}>) {
+  let shellClassName =
+    'zoom-in-95 max-h-[calc(100vh-2rem)] overflow-y-auto p-1 max-w-xl';
+  if (isMaximized) {
+    shellClassName = 'h-full max-h-none max-w-none overflow-hidden p-0';
+  } else if (isWide) {
+    shellClassName =
+      'zoom-in-95 max-h-[calc(100vh-2rem)] overflow-y-auto p-1 max-w-2xl';
+  }
+
+  return (
+    <div
+      className={cn(
+        'animate-in fade-in fixed inset-0 z-50 flex bg-black/60 backdrop-blur-sm duration-200',
+        isMaximized
+          ? 'items-stretch justify-stretch p-0'
+          : 'items-center justify-center p-4'
+      )}
+    >
+      <div
+        className={cn(
+          'animate-in fade-in no-scrollbar w-full transition-all duration-300',
+          shellClassName
+        )}
+      >
+        <ProjectForm
+          users={users}
+          currentUserId={currentUserId}
+          onMaximizedChange={onMaximizedChange}
+          onClose={onClose}
+          onSuccess={onSuccess}
+          onJiraImportToggle={onWideChange}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function ProjectRegistry({
   projects,
   totalCount,
@@ -265,6 +364,7 @@ export function ProjectRegistry({
   const { handleMutationError } = useOptimisticLock();
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isAddWide, setIsAddWide] = useState(false);
+  const [isAddMaximized, setIsAddMaximized] = useState(true);
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [deleteMode, setDeleteMode] = useState<'soft' | 'hard'>('soft');
@@ -332,36 +432,19 @@ export function ProjectRegistry({
     if (!projectToDelete) return;
 
     startTransition(async () => {
-      if (isSoftDelete) {
-        const ok = await runRegistryLockedAction({
-          mutate: () =>
-            clientSoftDeleteProject(
-              projectToDelete.id,
-              projectToDelete.updated_at
-            ),
-          handleMutationError,
-          entityType: 'project',
-          entityId: projectToDelete.id,
-          expectedUpdatedAt: projectToDelete.updated_at,
-          pendingFields: { status: ProjectStatusEnum.archived },
-          currentUserId,
-          failureFallback: `Failed to ${deleteMode} delete project.`,
-          onError: setError,
-        });
-        if (!ok) {
-          return;
-        }
-      } else {
-        try {
-          await clientHardDeleteProject(projectToDelete.id);
-        } catch (err) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : `Failed to ${deleteMode} delete project.`
-          );
-          return;
-        }
+      const ok = isSoftDelete
+        ? await runSoftArchive({
+            project: projectToDelete,
+            handleMutationError,
+            currentUserId,
+            onError: setError,
+          })
+        : await runHardPurge({
+            projectId: projectToDelete.id,
+            onError: setError,
+          });
+      if (!ok) {
+        return;
       }
 
       setProjectToDelete(null);
@@ -469,29 +552,25 @@ export function ProjectRegistry({
       </Card>
 
       {isAddProjectOpen ? (
-        <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
-          <div
-            className={cn(
-              'animate-in fade-in zoom-in-95 no-scrollbar max-h-[calc(100vh-2rem)] w-full overflow-y-auto p-1 transition-all duration-300',
-              isAddWide ? 'max-w-2xl' : 'max-w-xl'
-            )}
-          >
-            <ProjectForm
-              users={users}
-              currentUserId={currentUserId}
-              onClose={() => {
-                setIsAddProjectOpen(false);
-                setIsAddWide(false);
-              }}
-              onSuccess={() => {
-                setIsAddProjectOpen(false);
-                setIsAddWide(false);
-                router.refresh();
-              }}
-              onJiraImportToggle={setIsAddWide}
-            />
-          </div>
-        </div>
+        <AddProjectOverlay
+          users={users}
+          currentUserId={currentUserId}
+          isMaximized={isAddMaximized}
+          isWide={isAddWide}
+          onMaximizedChange={setIsAddMaximized}
+          onWideChange={setIsAddWide}
+          onClose={() => {
+            setIsAddProjectOpen(false);
+            setIsAddWide(false);
+            setIsAddMaximized(true);
+          }}
+          onSuccess={() => {
+            setIsAddProjectOpen(false);
+            setIsAddWide(false);
+            setIsAddMaximized(true);
+            router.refresh();
+          }}
+        />
       ) : null}
 
       {projectToEdit ? (

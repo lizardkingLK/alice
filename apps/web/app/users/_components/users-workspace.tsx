@@ -41,6 +41,7 @@ interface UsersWorkspaceProps {
   readonly focusedAccessRequest?: AccessRequestEntry | null;
   readonly currentUserEmail?: string | null;
   readonly projects?: readonly Project[];
+  readonly domainAllowlistEntries?: readonly AccessAllowlistEntry[];
 }
 
 export function UsersWorkspace({
@@ -66,6 +67,7 @@ export function UsersWorkspace({
   focusedAccessRequest = null,
   currentUserEmail = null,
   projects = [],
+  domainAllowlistEntries = [],
 }: Readonly<UsersWorkspaceProps>) {
   const router = useRouter();
   const pathname = usePathname();
@@ -160,6 +162,7 @@ export function UsersWorkspace({
           search={search}
           focusedRequest={focusedAccessRequest}
           projects={projects}
+          domainAllowlistEntries={domainAllowlistEntries}
         />
       </TabsContent>
 

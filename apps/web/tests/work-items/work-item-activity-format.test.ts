@@ -48,6 +48,22 @@ describe('work-item-activity-format', () => {
     expect(formatActivityFieldValue('sprint_id', null)).toBe('Backlog');
   });
 
+  it('resolves work item type keys to catalog names', () => {
+    expect(
+      formatActivityFieldValue('type', 'New_type_2', {
+        typeDefs: [
+          {
+            key: 'New_type_2',
+            name: 'Initiative',
+            icon: 'layers',
+            level: 0,
+          },
+        ],
+      })
+    ).toBe('Initiative');
+    expect(formatActivityFieldValue('type', 'New_type_2')).toBe('New type 2');
+  });
+
   it('builds member and sprint lookup maps with extras', () => {
     const lookups = buildActivityValueLookups({
       projectMembers: [{ id: 'm-1', name: 'Member One' }],

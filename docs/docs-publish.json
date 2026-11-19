@@ -57,16 +57,20 @@
           "order": 2
         },
         {
-          "path": "user-guide/navigation/charts.md",
+          "path": "user-guide/navigation/notes.md",
           "order": 3
         },
         {
-          "path": "user-guide/navigation/keyboard-shortcuts.md",
+          "path": "user-guide/navigation/charts.md",
           "order": 4
         },
         {
-          "path": "user-guide/navigation/favorites-and-views.md",
+          "path": "user-guide/navigation/keyboard-shortcuts.md",
           "order": 5
+        },
+        {
+          "path": "user-guide/navigation/favorites-and-views.md",
+          "order": 6
         }
       ]
     },
@@ -237,6 +241,10 @@
         {
           "path": "user-guide/work-items/attachments.md",
           "order": 7
+        },
+        {
+          "path": "user-guide/work-items/work-log-excel-upload.md",
+          "order": 8
         }
       ]
     },
@@ -302,7 +310,7 @@
           "order": 2
         },
         {
-          "path": "user-guide/chat/agents.md",
+          "path": "user-guide/chat/alice-agents.md",
           "order": 3
         },
         {

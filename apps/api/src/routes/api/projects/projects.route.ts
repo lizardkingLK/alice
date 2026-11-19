@@ -24,6 +24,7 @@ import {
   updateProjectSchema,
   putWorkflowConfigSchema,
   forkWorkflowConfigSchema,
+  importWorkflowConfigSchema,
   workflowIdParamActionSchema,
 } from './projects.schemas';
 import { withoutIntegrationSecrets } from './projects.repository';
@@ -41,6 +42,11 @@ import {
   type JiraImportConfig,
   type WorkItemType,
   WorkItemTypeEnum,
+  buildDefaultProjectTypeDefs,
+  mapToProjectWorkItemTypeKey,
+  normalizeProjectWorkItemTypeDefs,
+  type ProjectWorkItemTypeDef,
+  jiraIssueKeyFromPmExternal,
 } from '@repo/types';
 
 const TYPE_STRING = 'string';
@@ -67,13 +73,15 @@ function listProjectsQueryFromRequest(query: Record<string, unknown>) {
 async function loadExistingJiraKeys(projectId: string): Promise<Set<string>> {
   const { data: existingWorkItems } = await supabase
     .from('work_items')
-    .select('jira_issue_key')
+    .select('pm_external')
     .eq('project_id', projectId)
-    .not('jira_issue_key', 'is', null);
+    .not('pm_external', 'is', null);
 
   return new Set(
     (existingWorkItems || [])
-      .map((item: { jira_issue_key: string | null }) => item.jira_issue_key)
+      .map((item: { pm_external: unknown }) =>
+        jiraIssueKeyFromPmExternal(item.pm_external)
+      )
       .filter((key: string | null): key is string => Boolean(key))
   );
 }
@@ -169,6 +177,31 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
   );
 
   projectsRouter.get(
+    '/:id/integrations-summary',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.id);
+      if (!parsedId.success) {
+        return res.status(400).json({ error: 'Invalid project id' });
+      }
+
+      try {
+        const summary = await projectsService.getProjectIntegrationsSummary(
+          parsedId.data,
+          req.userId!
+        );
+        res.json({ summary });
+      } catch (error) {
+        const { status, error: message } = jsonErrorFromCaught(
+          error,
+          'Failed to load project integrations summary'
+        );
+        res.status(status).json({ error: message });
+      }
+    }
+  );
+
+  projectsRouter.get(
     '/:id/workflow-config',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
@@ -235,6 +268,33 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         res.status(201).json(result);
       } catch (error) {
         sendWorkflowMutationError(res, error, 'Failed to fork workflow');
+      }
+    }
+  );
+
+  projectsRouter.post(
+    '/:id/workflow-config/import',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ error: 'Project ID is required' });
+      }
+      const parsed = importWorkflowConfigSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+      try {
+        const { expectedUpdatedAt, ...input } = parsed.data;
+        const result = await projectsService.importWorkflow(
+          req.userId!,
+          id,
+          input,
+          expectedUpdatedAt
+        );
+        res.status(201).json(result);
+      } catch (error) {
+        sendWorkflowMutationError(res, error, 'Failed to import workflow');
       }
     }
   );
@@ -317,9 +377,7 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         return raw
           .split(',')
           .map((part) => part.trim())
-          .filter((part): part is WorkItemType =>
-            (Object.values(WorkItemTypeEnum) as string[]).includes(part)
-          );
+          .filter((part) => part.length > 0);
       };
 
       const removedTypes = parseTypes(removeRaw);
@@ -419,8 +477,13 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
     issues: ParsedJiraIssue[];
     existingKeys: Set<string>;
     config?: JiraImportConfig;
+    typeDefs: readonly ProjectWorkItemTypeDef[];
   }): Promise<number> {
     const typeMappings = params.config?.typeMappings || {};
+    const fallbackKey = mapToProjectWorkItemTypeKey(
+      WorkItemTypeEnum.Issue,
+      params.typeDefs
+    );
 
     const toImport: { key: string; input: WorkItemBody }[] = [];
     for (const issue of params.issues) {
@@ -435,14 +498,26 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         continue;
       }
 
-      let resolvedType: WorkItemType = issue.type;
+      let resolvedType: WorkItemType = mapToProjectWorkItemTypeKey(
+        issue.type,
+        params.typeDefs,
+        fallbackKey
+      );
       if (mapping?.action === JiraImportActionEnum.Drop) {
-        resolvedType = WorkItemTypeEnum.Issue;
+        resolvedType = mapToProjectWorkItemTypeKey(
+          mapping.targetType ?? WorkItemTypeEnum.Issue,
+          params.typeDefs,
+          fallbackKey
+        );
       } else if (
         mapping?.action === JiraImportActionEnum.Map &&
         mapping.targetType
       ) {
-        resolvedType = mapping.targetType;
+        resolvedType = mapToProjectWorkItemTypeKey(
+          mapping.targetType,
+          params.typeDefs,
+          fallbackKey
+        );
       }
 
       toImport.push({
@@ -616,6 +691,18 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         const config = importConfig.success ? importConfig.data : undefined;
 
         const existingKeys = await loadExistingJiraKeys(id);
+        const projectBeforeImport = await projectsService.getProjectById(id);
+        const existingConfig = projectBeforeImport.workflow_config as Record<
+          string,
+          unknown
+        > | null;
+        let typeDefs = normalizeProjectWorkItemTypeDefs(
+          existingConfig?.work_item_types
+        );
+        if (config?.hierarchy && config.hierarchy.length > 0) {
+          typeDefs = buildDefaultProjectTypeDefs(config.hierarchy);
+        }
+
         const issues = await jiraService.fetchIssuesForProjectLink(
           req.userId!,
           link.connectionId,
@@ -628,17 +715,13 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
           issues,
           existingKeys,
           config,
+          typeDefs,
         });
 
         let customHierarchyMap: Record<string, string> | undefined;
         const activeTypes: WorkItemType[] | undefined = config?.hierarchy;
 
         if (config?.hierarchy && config.hierarchy.length > 0) {
-          const project = await projectsService.getProjectById(id);
-          const existingConfig = project.workflow_config as Record<
-            string,
-            unknown
-          > | null;
           customHierarchyMap = {};
           for (let i = 0; i < config.hierarchy.length - 1; i++) {
             customHierarchyMap[config.hierarchy[i]!] = config.hierarchy[i + 1]!;
@@ -649,11 +732,11 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
             {
               workflow_config: {
                 ...existingConfig,
-                work_item_types: config.hierarchy,
+                work_item_types: typeDefs,
                 hierarchy: customHierarchyMap,
               },
             },
-            project.updated_at
+            projectBeforeImport.updated_at
           );
         }
 
@@ -663,7 +746,8 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
             id,
             issues,
             customHierarchyMap,
-            activeTypes
+            activeTypes,
+            typeDefs
           );
         } catch (linkError) {
           console.error(
@@ -719,20 +803,37 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
     }
   );
 
-  registerLockedStatusPatch({
-    router: projectsRouter,
-    path: '/:id/soft-delete',
-    auth: requireApiAuth,
-    missingIdMessage: 'Project ID is required',
-    parseBody: (req) => projectLockActionSchema.safeParse(req.body),
-    treeifyError: (error) => z.treeifyError(error as z.ZodError),
-    action: (actorId, projectId, expectedUpdatedAt) =>
-      projectsService.softDeleteProject(actorId, projectId, expectedUpdatedAt),
-    toResponseBody: (project) => ({
-      project: withoutIntegrationSecrets(project),
-    }),
-    failureMessage: 'Failed to soft delete project',
-  });
+  projectsRouter.patch(
+    '/:id/soft-delete',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ error: 'Project ID is required' });
+      }
+
+      const parsed = projectLockActionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        const accepted = await projectsService.enqueueSoftDeleteProject(
+          req.userId!,
+          id,
+          parsed.data.expectedUpdatedAt
+        );
+        // 202 — archive finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
+      } catch (error) {
+        sendRouteMutationError(res, error, 'Failed to soft delete project');
+      }
+    }
+  );
 
   registerLockedStatusPatch({
     router: projectsRouter,
@@ -759,14 +860,18 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
       }
 
       try {
-        await projectsService.hardDeleteProject(req.userId!, id);
-        res.json({ success: true });
-      } catch (error) {
-        const { status, error: message } = jsonErrorFromCaught(
-          error,
-          'Failed to hard delete project'
+        const accepted = await projectsService.enqueueHardDeleteProject(
+          req.userId!,
+          id
         );
-        return res.status(status).json({ error: message });
+        // 202 — purge finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
+      } catch (error) {
+        sendRouteMutationError(res, error, 'Failed to hard delete project');
       }
     }
   );

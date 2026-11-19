@@ -82,6 +82,7 @@ import {
   chartOwnershipForViewer,
   chartWorkspaceFromApiRow,
 } from '@/app/charts/_helpers/charts-workspace-map';
+import { toast } from '@repo/ui/components/ui/sonner';
 
 const TABS: ReadonlyArray<{
   id: ChartsRegistryListTab;
@@ -244,7 +245,6 @@ function ChartsActionsCell({
         ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="text-rose-600 focus:text-rose-600"
           onSelect={() => {
             afterDialogClose(() =>
               onRequestDelete({ kind: 'owned', workspace })
@@ -335,17 +335,22 @@ function useChartsRegistryMutations(params: {
       setPendingId(workspace.id);
       setError(null);
       try {
-        const row =
-          action === 'archive'
-            ? await archiveChartWorkspace(workspace.id)
-            : await restoreChartWorkspace(workspace.id);
-        const next = chartWorkspaceFromApiRow(
-          row,
-          chartOwnershipForViewer(row, currentUserId)
-        );
-        setWorkspaces((previous) =>
-          previous.map((item) => (item.id === next.id ? next : item))
-        );
+        if (action === 'archive') {
+          const accepted = await archiveChartWorkspace(workspace.id);
+          toast.success(accepted.message);
+          setWorkspaces((previous) =>
+            previous.filter((item) => item.id !== workspace.id)
+          );
+        } else {
+          const row = await restoreChartWorkspace(workspace.id);
+          const next = chartWorkspaceFromApiRow(
+            row,
+            chartOwnershipForViewer(row, currentUserId)
+          );
+          setWorkspaces((previous) =>
+            previous.map((item) => (item.id === next.id ? next : item))
+          );
+        }
       } catch (err) {
         if (isSessionExpiredError(err)) {
           return;
@@ -371,7 +376,8 @@ function useChartsRegistryMutations(params: {
       );
 
       try {
-        await deleteChartWorkspace(target.workspace.id);
+        const accepted = await deleteChartWorkspace(target.workspace.id);
+        toast.success(accepted.message);
       } catch (err) {
         if (isSessionExpiredError(err)) {
           return;

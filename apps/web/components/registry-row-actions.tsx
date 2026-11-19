@@ -91,19 +91,13 @@ export function RegistryRowActions({
             </DropdownMenuItem>
           )}
           {showArchive && (
-            <DropdownMenuItem
-              onClick={onArchive}
-              className="gap-2 text-amber-600 focus:text-amber-600 dark:text-amber-400"
-            >
+            <DropdownMenuItem onClick={onArchive} className="gap-2">
               <Archive className="h-3.5 w-3.5" />
               Archive
             </DropdownMenuItem>
           )}
           {showPurge && (
-            <DropdownMenuItem
-              onClick={onPurge}
-              className="text-destructive focus:text-destructive gap-2"
-            >
+            <DropdownMenuItem onClick={onPurge} className="gap-2">
               <Trash2 className="h-3.5 w-3.5" />
               Purge
             </DropdownMenuItem>

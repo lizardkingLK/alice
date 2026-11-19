@@ -26,7 +26,23 @@ export type WorkflowStateNodeData = {
   readonly category: WorkflowStateCategory;
   readonly lockRecord: boolean;
   readonly terminal: boolean;
+  readonly acceptFromAnyState: boolean;
+  readonly allowToAnyState: boolean;
 };
+
+/** Settings / canvas patch keys for a workflow state node. */
+export type WorkflowStateDocumentPatch = Partial<
+  Pick<
+    WorkflowStateNode,
+    | 'name'
+    | 'category'
+    | 'lockRecord'
+    | 'terminal'
+    | 'requiresEscalation'
+    | 'acceptFromAnyState'
+    | 'allowToAnyState'
+  >
+>;
 
 export type WorkflowFlowNode = {
   readonly id: string;
@@ -179,6 +195,8 @@ export function workflowStateToFlowNode(
       category: state.category,
       lockRecord: state.lockRecord,
       terminal: state.terminal,
+      acceptFromAnyState: state.acceptFromAnyState,
+      allowToAnyState: state.allowToAnyState,
     },
   };
 }
@@ -291,12 +309,7 @@ export function replaceWorkflowInEnvelope(
 export function patchStateInDocument(
   document: WorkflowDocument,
   stateId: string,
-  patch: Partial<
-    Pick<
-      WorkflowStateNode,
-      'name' | 'category' | 'lockRecord' | 'terminal' | 'requiresEscalation'
-    >
-  >
+  patch: WorkflowStateDocumentPatch
 ): WorkflowDocument {
   return {
     ...document,
@@ -330,7 +343,7 @@ export function makeStateTerminalInDocument(
   return patchStateInDocument(
     removeOutboundEdgesFromState(document, stateId),
     stateId,
-    { terminal: true }
+    { terminal: true, allowToAnyState: false }
   );
 }
 
@@ -418,6 +431,8 @@ export function addStateToDocument(
     readonly lockRecord?: boolean;
     readonly terminal?: boolean;
     readonly requiresEscalation?: boolean;
+    readonly acceptFromAnyState?: boolean;
+    readonly allowToAnyState?: boolean;
   }
 ): {
   readonly document: WorkflowDocument;
@@ -426,13 +441,16 @@ export function addStateToDocument(
   const stateId = createWorkflowStateId();
   const index = document.graph.states.length;
   const position = options?.position ?? defaultStatePosition(index);
+  const terminal = options?.terminal ?? false;
   const state: WorkflowStateNode = {
     id: stateId,
     name: options?.name?.trim() || 'New state',
     category: options?.category ?? 'todo',
     lockRecord: options?.lockRecord ?? false,
-    terminal: options?.terminal ?? false,
+    terminal,
     requiresEscalation: options?.requiresEscalation ?? false,
+    acceptFromAnyState: options?.acceptFromAnyState ?? false,
+    allowToAnyState: terminal ? false : (options?.allowToAnyState ?? false),
   };
 
   return {
@@ -587,6 +605,8 @@ export type WorkflowStateClipboard = {
   readonly lockRecord: boolean;
   readonly terminal: boolean;
   readonly requiresEscalation: boolean;
+  readonly acceptFromAnyState: boolean;
+  readonly allowToAnyState: boolean;
   readonly position: WorkflowNodePosition;
 };
 
@@ -611,6 +631,8 @@ export function captureStateClipboard(
     lockRecord: state.lockRecord,
     terminal: state.terminal,
     requiresEscalation: state.requiresEscalation,
+    acceptFromAnyState: state.acceptFromAnyState,
+    allowToAnyState: state.allowToAnyState,
     position: readLayoutPosition(document.layout, stateId, Math.max(index, 0)),
   };
 }
@@ -646,6 +668,8 @@ export function pasteStateFromClipboard(
     lockRecord: clipboard.lockRecord,
     terminal: clipboard.terminal,
     requiresEscalation: clipboard.requiresEscalation,
+    acceptFromAnyState: clipboard.acceptFromAnyState,
+    allowToAnyState: clipboard.allowToAnyState,
     position: {
       x: clipboard.position.x + PASTE_OFFSET,
       y: clipboard.position.y + PASTE_OFFSET,

@@ -10,7 +10,14 @@ import {
 } from '@/app/work-items/_services/work-items.mutations.client';
 import { countWorkItemDescendants } from '@/app/work-items/_services/work-items.reads.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
-import { runRegistryLockedAction } from '@/lib/optimistic-lock/run-locked-mutation';
+import {
+  runAcceptedDestructiveAction,
+  runLockedAcceptedDestructiveAction,
+} from '@/lib/api/run-accepted-destructive-action';
+import {
+  runRegistryLockedAction,
+  type RunLockedMutationOptions,
+} from '@/lib/optimistic-lock/run-locked-mutation';
 import {
   workItemLifecycleConfirmCopy,
   type WorkItemLifecycleConfirmMode,
@@ -23,6 +30,40 @@ type UseWorkItemLifecycleActionsArgs = {
   /** Called after a successful restore, before `router.refresh()`. */
   readonly onRestoreSuccess?: (workItem: DbWorkItem) => void;
 };
+/* eslint-enable no-unused-vars */
+
+async function runArchiveWorkItem(params: {
+  readonly workItem: DbWorkItem;
+  readonly handleMutationError: RunLockedMutationOptions<unknown>['handleMutationError'];
+  readonly currentUserId?: string | null;
+  // eslint-disable-next-line no-unused-vars -- callback option bag
+  readonly onError: (message: string | null) => void;
+}): Promise<boolean> {
+  const { workItem, handleMutationError, currentUserId, onError } = params;
+  return runLockedAcceptedDestructiveAction({
+    mutate: () => archiveWorkItem(workItem.id, workItem.updated_at),
+    handleMutationError,
+    entityType: 'work_item',
+    entityId: workItem.id,
+    expectedUpdatedAt: workItem.updated_at,
+    pendingFields: { record_status: 'archived' },
+    currentUserId: currentUserId ?? undefined,
+    onError: (message) => onError(message),
+    failureFallback: 'Failed to archive work item.',
+  });
+}
+
+async function runPurgeWorkItem(params: {
+  readonly workItemId: string;
+  // eslint-disable-next-line no-unused-vars -- callback option bag
+  readonly onError: (message: string | null) => void;
+}): Promise<boolean> {
+  return runAcceptedDestructiveAction({
+    mutate: () => purgeWorkItem(params.workItemId),
+    onError: (message) => params.onError(message),
+    failureFallback: 'Failed to permanently delete work item.',
+  });
+}
 
 export function useWorkItemLifecycleActions({
   currentUserId,
@@ -119,32 +160,20 @@ export function useWorkItemLifecycleActions({
         return;
       }
 
-      if (mode === 'archive') {
-        const ok = await runRegistryLockedAction({
-          mutate: () => archiveWorkItem(target.id, target.updated_at),
-          handleMutationError,
-          entityType: 'work_item',
-          entityId: target.id,
-          expectedUpdatedAt: target.updated_at,
-          pendingFields: { record_status: 'archived' },
-          currentUserId: currentUserId ?? undefined,
-          failureFallback: 'Failed to archive work item.',
-          onError,
-        });
-        if (!ok) {
-          return;
-        }
-      } else {
-        try {
-          await purgeWorkItem(target.id);
-        } catch (purgeError) {
-          onError(
-            purgeError instanceof Error
-              ? purgeError.message
-              : 'Failed to permanently delete work item.'
-          );
-          return;
-        }
+      const ok =
+        mode === 'archive'
+          ? await runArchiveWorkItem({
+              workItem: target,
+              handleMutationError,
+              currentUserId,
+              onError,
+            })
+          : await runPurgeWorkItem({
+              workItemId: target.id,
+              onError,
+            });
+      if (!ok) {
+        return;
       }
 
       setItemToConfirm(null);

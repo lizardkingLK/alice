@@ -9,7 +9,9 @@ import {
   BreadcrumbSeparator,
 } from '@repo/ui/components/ui/breadcrumb';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import { projectDetailHref } from '@/app/projects/_helpers/project-links';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
+import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import type {
   DbWorkItem,
   WorkItemAncestor,
@@ -28,11 +30,20 @@ type WorkItemPathBreadcrumbProps = {
 function PathTypeChip({
   type,
   title,
-}: Readonly<{ type: WorkItemType; title: string }>) {
+  projectId,
+}: Readonly<{
+  type: WorkItemType;
+  title: string;
+  projectId?: string | null;
+}>) {
   const label = title.trim() || 'Untitled';
   return (
     <span className="flex min-w-0 items-center gap-2">
-      <WorkItemTypeBadge type={type} className="shrink-0 font-normal" />
+      <WorkItemTypeBadge
+        type={type}
+        projectId={projectId}
+        className="shrink-0 font-normal"
+      />
       <TruncatedText as="span" className="max-w-28 text-xs sm:max-w-40">
         {label}
       </TruncatedText>
@@ -51,7 +62,10 @@ export function WorkItemPathBreadcrumb({
   ancestors = [],
 }: Readonly<WorkItemPathBreadcrumbProps>) {
   const projectKey = workItem.project?.key?.trim() || '—';
+  const projectHrefKey = workItem.project?.key?.trim();
   const projectId = workItem.project?.id;
+  const projectHrefRef = projectHrefKey || projectId;
+  const projectHref = projectHrefRef ? projectDetailHref(projectHrefRef) : null;
   const sprintName = workItem.sprint?.name?.trim() ?? null;
   const hasSprint = Boolean(workItem.sprint_id && sprintName);
   // Guard against duplicate ids (e.g. parent cycles) so React keys stay unique.
@@ -69,12 +83,12 @@ export function WorkItemPathBreadcrumb({
     <Breadcrumb>
       <BreadcrumbList className="gap-1.5 text-xs sm:gap-2">
         <BreadcrumbItem>
-          {projectId ? (
+          {projectHref ? (
             <BreadcrumbLink
               asChild
               className="text-muted-foreground hover:text-primary font-mono tracking-wide uppercase"
             >
-              <Link href={`/projects/${projectId}`}>{projectKey}</Link>
+              <Link href={projectHref}>{projectKey}</Link>
             </BreadcrumbLink>
           ) : (
             <span className="text-muted-foreground font-mono tracking-wide uppercase">
@@ -102,8 +116,18 @@ export function WorkItemPathBreadcrumb({
           <BreadcrumbSeparator key={`sep-${ancestor.id}`} />,
           <BreadcrumbItem key={ancestor.id} className="min-w-0">
             <BreadcrumbLink asChild className="hover:text-primary min-w-0">
-              <Link href={`/work-items/${ancestor.id}`} className="min-w-0">
-                <PathTypeChip type={ancestor.type} title={ancestor.title} />
+              <Link
+                href={workItemDetailHref(ancestor.id, {
+                  projectKey: projectHrefKey,
+                  workItemSlug: ancestor.slug,
+                })}
+                className="min-w-0"
+              >
+                <PathTypeChip
+                  type={ancestor.type}
+                  title={ancestor.title}
+                  projectId={projectId}
+                />
               </Link>
             </BreadcrumbLink>
           </BreadcrumbItem>,
@@ -113,7 +137,11 @@ export function WorkItemPathBreadcrumb({
 
         <BreadcrumbItem className="min-w-0">
           <BreadcrumbPage className="min-w-0">
-            <PathTypeChip type={workItem.type} title={workItem.title} />
+            <PathTypeChip
+              type={workItem.type}
+              title={workItem.title}
+              projectId={projectId}
+            />
           </BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>

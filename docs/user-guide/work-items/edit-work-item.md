@@ -10,7 +10,9 @@ Update title, description, and fields on an existing item.
 
 1. From **Work Items**, **Board**, **Backlog**, or a project tab, select a row
    or card.
-2. You'll land on `/work-items/[id]`.
+2. You'll land on `/projects/{KEY}/work-items/{slug}` when the project key and
+   item slug are known. Older `/work-items/[id]` bookmarks redirect into that
+   tree.
 
 ---
 
@@ -36,7 +38,7 @@ to personalize the detail page for you on every project:
 
 | Area             | What you can change                                                                           |
 | ---------------- | --------------------------------------------------------------------------------------------- |
-| **Banner color** | Tint from **State color** or **Type color**                                                   |
+| **Banner color** | Tint from **State color**, **Type color**, or **None**                                        |
 | **Title icon**   | **Type icon**, **State icon**, or **None**                                                    |
 | **Sections**     | Show/hide Details, Attachments, Development, Discussion, More fields, Subtasks, Linked issues |
 | **Details rows** | Show/hide individual Details fields (when Details is on)                                      |

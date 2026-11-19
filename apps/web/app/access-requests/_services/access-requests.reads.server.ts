@@ -1,6 +1,6 @@
 import { apiFetch } from '@/lib/api/api-fetch.reads.use.server';
 import { getDbUser } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { paginationMeta } from '@/lib/db/pagination';
 import { applyListSearch, runPaginatedSelect } from '@/lib/db/query';
 import { isAdmin } from '@/lib/rbac/roles';
@@ -29,7 +29,8 @@ export async function listAccessRequests(
     return { items: [], ...paginationMeta(0, page, limit) };
   }
 
-  const supabase = await createClient();
+  // Service-role: `access_requests` is PostgREST-locked (see RLS_HYBRID_ROLLOUT).
+  const supabase = createAdminClient();
   let query = supabase.from('access_requests').select('*', { count: 'exact' });
 
   if (status !== 'all') {
@@ -61,7 +62,7 @@ export async function getAccessRequestById(
     return null;
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('access_requests')
     .select('*')

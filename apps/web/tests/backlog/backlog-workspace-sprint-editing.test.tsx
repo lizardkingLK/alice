@@ -9,9 +9,11 @@ import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { BacklogWorkspace } from '@/app/backlog/_components/backlog-workspace';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import type { AppliedFilterBadgeItem } from '@/components/applied-filter-badges';
 import { projectFactory } from '../factories/project.factory';
 import { sprintFactory } from '../factories/sprint.factory';
+import { workItemFactory } from '../factories/workItem.factory';
 
 vi.mock('@/components/optimistic-lock/optimistic-lock-provider', () => ({
   useOptimisticLock: () => ({ handleMutationError: vi.fn() }),
@@ -29,11 +31,14 @@ vi.mock('@/app/backlog/_components/backlog-toolbar', () => ({
   BacklogToolbar: ({
     sprints,
     onSprintFilterChange,
+    onSearchChange,
     appliedFilterItems,
   }: {
     sprints: readonly Sprint[];
     // eslint-disable-next-line no-unused-vars -- callback signature
     onSprintFilterChange: (value: string) => void;
+    // eslint-disable-next-line no-unused-vars -- callback signature
+    onSearchChange: (value: string) => void;
     appliedFilterItems: readonly AppliedFilterBadgeItem[];
   }) => (
     <div>
@@ -48,6 +53,9 @@ vi.mock('@/app/backlog/_components/backlog-toolbar', () => ({
       >
         Filter first sprint
       </button>
+      <button type="button" onClick={() => onSearchChange('no-match')}>
+        Hide work items with search
+      </button>
       <div data-testid="active-filter-badges">
         {appliedFilterItems.map((item) => (
           <span key={item.id}>{item.label}</span>
@@ -60,22 +68,55 @@ vi.mock('@/app/backlog/_components/backlog-toolbar', () => ({
 vi.mock('@/app/backlog/_components/backlog-sprint-card', () => ({
   BacklogSprintCard: ({
     sprint,
+    items,
+    isManagerOrAdmin,
     onEditSprint,
+    onEstimateSprint,
   }: {
     sprint: Sprint;
+    items: readonly DbWorkItem[];
+    isManagerOrAdmin: boolean;
     // eslint-disable-next-line no-unused-vars -- callback signature
     onEditSprint: (sprint: Sprint) => void;
+    // eslint-disable-next-line no-unused-vars -- callback signature
+    onEstimateSprint: (sprint: Sprint) => void;
   }) => (
     <article data-testid={`sprint-card-${sprint.id}`}>
       <span>{sprint.name}</span>
+      <span data-testid={`visible-items-${sprint.id}`}>{items.length}</span>
       <span data-testid={`sprint-details-${sprint.id}`}>
         {sprint.startDate}|{sprint.endDate}
       </span>
-      <button type="button" onClick={() => onEditSprint(sprint)}>
-        Edit {sprint.name}
-      </button>
+      {isManagerOrAdmin ? (
+        <>
+          <button type="button" onClick={() => onEditSprint(sprint)}>
+            Edit {sprint.name}
+          </button>
+          <button type="button" onClick={() => onEstimateSprint(sprint)}>
+            Estimate {sprint.name}
+          </button>
+        </>
+      ) : null}
     </article>
   ),
+}));
+
+vi.mock('@/app/backlog/_components/backlog-sprint-estimation-dialog', () => ({
+  BacklogSprintEstimationDialog: ({
+    sprint,
+    workItems,
+  }: {
+    sprint: Sprint | null;
+    workItems: readonly DbWorkItem[];
+  }) =>
+    sprint ? (
+      <div data-testid="sprint-estimation-dialog">
+        <span>{sprint.name}</span>
+        {workItems.map((item) => (
+          <span key={item.id}>{item.title}</span>
+        ))}
+      </div>
+    ) : null,
 }));
 
 vi.mock('@/app/backlog/_components/backlog-panel', () => ({
@@ -152,21 +193,61 @@ const secondSprint = sprintFactory.build({
   name: 'Sprint Two',
 });
 
-function renderWorkspace() {
+function renderWorkspace(
+  initialWorkItems: DbWorkItem[] = [],
+  userRole = 'manager'
+) {
   return render(
     <BacklogWorkspace
       projects={[project]}
       projectMembers={[]}
       teamCapacities={[]}
-      initialWorkItems={[]}
+      initialWorkItems={initialWorkItems}
       sprints={[firstSprint, secondSprint]}
-      userRole="manager"
+      userRole={userRole}
       currentUserId={null}
     />
   );
 }
 
 describe('BacklogWorkspace sprint editing synchronization', () => {
+  it('does not expose sprint estimation actions or the dialog to members', () => {
+    renderWorkspace([], 'member');
+
+    expect(
+      screen.queryByRole('button', { name: /Estimate Sprint/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('sprint-estimation-dialog')
+    ).not.toBeInTheDocument();
+  });
+
+  it('opens estimation for the selected sprint with unfiltered work-item context', () => {
+    const item = workItemFactory.build({
+      id: 'work-item-1',
+      title: 'Context hidden by search',
+      sprint_id: firstSprint.id,
+      project_id: project.id,
+    });
+    renderWorkspace([item]);
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Hide work items with search' })
+    );
+    expect(screen.getByTestId('visible-items-sprint-1')).toHaveTextContent('0');
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Estimate Sprint One' })
+    );
+
+    expect(screen.getByTestId('sprint-estimation-dialog')).toHaveTextContent(
+      'Sprint One'
+    );
+    expect(screen.getByTestId('sprint-estimation-dialog')).toHaveTextContent(
+      'Context hidden by search'
+    );
+  });
+
   it('replaces only the edited sprint and updates every sprint data consumer', async () => {
     renderWorkspace();
 

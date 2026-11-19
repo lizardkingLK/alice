@@ -60,13 +60,13 @@ Replace assets in place; no route handler is required.
 
 Included in `sitemap.ts` and allowed in `robots.ts`:
 
-| Path       | Notes                                        |
-| ---------- | -------------------------------------------- |
-| `/`        | Home / marketing landing                     |
-| `/about`   | About page                                   |
-| `/contact` | Contact page                                 |
-| `/login`   | Sign-in entry (low priority in sitemap)      |
-| `/signup`  | Registration entry (low priority in sitemap) |
+| Path       | Notes                                              |
+| ---------- | -------------------------------------------------- |
+| `/`        | Home / marketing landing (signed-in: greeting hub) |
+| `/about`   | About page                                         |
+| `/contact` | Contact page                                       |
+| `/login`   | Sign-in entry (low priority in sitemap)            |
+| `/signup`  | Registration entry (low priority in sitemap)       |
 
 ### Forbidden routes (no indexing)
 

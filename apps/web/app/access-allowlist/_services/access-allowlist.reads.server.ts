@@ -1,9 +1,13 @@
 import { apiFetch } from '@/lib/api/api-fetch.reads.use.server';
 import { shouldReadViaApi } from '@/lib/data-retrieval.server';
 import { listAccessAllowlistFromApi } from './access-allowlist.reads.api.server';
-import { listAccessAllowlistFromSupabase } from './access-allowlist.reads.supabase.server';
+import {
+  listAccessAllowlistFromSupabase,
+  listAllowlistDomainEntriesFromSupabase,
+} from './access-allowlist.reads.supabase.server';
 import { createAccessAllowlistService } from './access-allowlist.mutations.shared';
 import type {
+  AccessAllowlistEntry,
   AccessAllowlistListParams,
   AccessAllowlistListResult,
 } from './access-allowlist.mutations.shared';
@@ -24,6 +28,11 @@ export async function listAccessAllowlist(
   }
 
   return listAccessAllowlistFromSupabase(params);
+}
+
+/** Domain allowlist rows for covering-domain / renew grant UX (service-role). */
+export function listAllowlistDomainEntries(): Promise<AccessAllowlistEntry[]> {
+  return listAllowlistDomainEntriesFromSupabase();
 }
 
 export const createAccessAllowlistEntry = service.createAccessAllowlistEntry;

@@ -22,18 +22,19 @@ schemas in `packages/types`, API tests under `apps/api/tests`, web under
 
 ## Unit / package tests (`packages/types` and shared helpers)
 
-| Area             | Cases                                                                    |
-| ---------------- | ------------------------------------------------------------------------ |
-| Envelope schema  | Valid multi-workflow; missing default; duplicate workflow ids            |
-| Graph            | Self-loop rejected; duplicate `A→B` rejected; `A→B`+`B→A` accepted       |
-| Fork             | `forkedFromId` depth > 1 rejected                                        |
-| Type bindings    | Overlap across workflows rejected (or documented first-wins — match Zod) |
-| Terminal         | State with outbound edges invalid when `terminal: true`                  |
-| Escalation       | Edge (or legacy state) `requiresEscalation` without linked form rejected |
-| Require children | Enum `off` \| `all_complete` \| `match_parent_target`                    |
-| Fallback         | `null` / garbage / wrong shape → seeded default helper                   |
-| State bridge     | category from state; legacy status sync; history map optional            |
-| Presets          | MVP field types; promote/load id stability                               |
+| Area             | Cases                                                                     |
+| ---------------- | ------------------------------------------------------------------------- |
+| Envelope schema  | Valid multi-workflow; missing default; duplicate workflow ids             |
+| Graph            | Self-loop rejected; duplicate `A→B` rejected; `A→B`+`B→A` accepted        |
+| Fork             | `forkedFromId` depth > 1 rejected                                         |
+| Type bindings    | Overlap across workflows rejected (or documented first-wins — match Zod)  |
+| Terminal         | State with outbound edges invalid when `terminal: true`                   |
+| Wildcards        | `acceptFromAnyState` / `allowToAnyState`; terminal + allow-to-any invalid |
+| Escalation       | Edge (or legacy state) `requiresEscalation` without linked form rejected  |
+| Require children | Enum `off` \| `all_complete` \| `match_parent_target`                     |
+| Fallback         | `null` / garbage / wrong shape → seeded default helper                    |
+| State bridge     | category from state; legacy status sync; history map optional             |
+| Presets          | MVP field types; promote/load id stability                                |
 
 ---
 
@@ -58,18 +59,19 @@ schemas in `packages/types`, API tests under `apps/api/tests`, web under
 
 ## Web tests (`apps/web`)
 
-| Area              | Cases                                                             |
-| ----------------- | ----------------------------------------------------------------- |
-| Designer Settings | Terminal blocked until outbound removed; Lock record independent  |
-| Require children  | Control persists on save/reload                                   |
-| Active workflow   | Columns/cards follow `?workflow=` / default; foreign types hidden |
-| DnD               | Optimistic success; API conflict reverts                          |
-| Details           | Workflow title shown; state list from item workflow               |
-| Resolution dialog | Renders preset; submit sends payload                              |
-| Activity tab      | Renders events; empty state                                       |
-| Alice card        | Apply calls apply tool only after click; Reject drops proposal    |
-| Dirty chat path   | Save then Apply without full navigation mock                      |
-| Charts UI         | State label visible only when project selected                    |
+| Area              | Cases                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Designer Settings | Terminal blocked until outbound removed; Lock record independent; from-any / to-any toggles; FAB adds state; Help legend |
+| Wildcards         | New→Done via acceptFromAny; New→Testing via allowToAny; explicit edge rules still win when present                       |
+| Require children  | Control persists on save/reload                                                                                          |
+| Active workflow   | Columns/cards follow `?workflow=` / default; foreign types hidden                                                        |
+| DnD               | Optimistic success; API conflict reverts                                                                                 |
+| Details           | Workflow title shown; state list from item workflow                                                                      |
+| Resolution dialog | Renders preset; submit sends payload                                                                                     |
+| Activity tab      | Renders events; empty state                                                                                              |
+| Alice card        | Apply calls apply tool only after click; Reject drops proposal                                                           |
+| Dirty chat path   | Save then Apply without full navigation mock                                                                             |
+| Charts UI         | State label visible only when project selected                                                                           |
 
 ---
 

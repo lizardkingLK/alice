@@ -26,6 +26,7 @@ import type { Project as DbProject } from '@/app/projects/_services/projects.mut
 import type { User as DbUser } from '@/app/users/_services/users.mutations.client';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { QUERY_FILTER_ALL_VALUE } from '@/hooks/use-query-filter';
+import { PendingSyncIndicator } from '@/components/pending-sync-indicator';
 import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
 import { SearchInput } from '@/components/search-input';
 
@@ -35,6 +36,7 @@ type BacklogToolbarProps = {
   readonly sprints: readonly Sprint[];
   readonly projectMembers: DbUser[];
   readonly isManagerOrAdmin: boolean;
+  readonly isSyncing?: boolean;
   readonly activeTab: BacklogActiveTab;
   readonly onTabChange: (tab: BacklogActiveTab) => void;
   readonly preferredLayout: BacklogLayoutId;
@@ -73,6 +75,7 @@ export function BacklogToolbar({
   sprints,
   projectMembers,
   isManagerOrAdmin,
+  isSyncing = false,
   activeTab,
   onTabChange,
   preferredLayout,
@@ -140,6 +143,8 @@ export function BacklogToolbar({
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2 self-start sm:self-auto">
+        <PendingSyncIndicator active={isSyncing} />
+
         <BacklogLayoutMenu
           preferredLayout={preferredLayout}
           onLayoutChange={onLayoutChange}

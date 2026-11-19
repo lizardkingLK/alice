@@ -9,6 +9,7 @@ export function createCommentListRow(
     author_id: '11111111-1111-4111-8111-111111111111',
     parent_id: null,
     content: { type: 'doc', content: [] },
+    reactions: [],
     edited: false,
     status: 'active',
     created_at: new Date('2026-08-01T00:00:00.000Z'),

@@ -1,0 +1,93 @@
+/* Signed-in marketing home — soft grey field + light green wash. */
+.home-signed-in-surface {
+  --home-glow-a: color-mix(in oklch, var(--primary) 5%, transparent);
+  --home-glow-b: color-mix(in oklch, var(--primary) 3.5%, transparent);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      110% 70% at 0% 0%,
+      color-mix(in oklch, var(--muted) 70%, var(--background)),
+      transparent 58%
+    ),
+    radial-gradient(
+      90% 60% at 100% 12%,
+      color-mix(in oklch, var(--muted) 55%, transparent),
+      transparent 52%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--muted) 45%, var(--background)),
+      color-mix(in oklch, var(--background) 92%, var(--muted)) 42%,
+      color-mix(in oklch, var(--muted) 38%, var(--background))
+    );
+}
+
+.home-signed-in-surface::before {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: -18%;
+  z-index: 0;
+  background:
+    radial-gradient(36% 32% at 20% 25%, var(--home-glow-a), transparent 72%),
+    radial-gradient(40% 36% at 78% 20%, var(--home-glow-b), transparent 74%),
+    radial-gradient(
+      34% 30% at 55% 78%,
+      color-mix(in oklch, var(--primary) 3%, transparent),
+      transparent 72%
+    );
+  will-change: transform;
+  animation: home-signed-in-glow-drift 36s ease-in-out infinite;
+}
+
+.home-signed-in-surface > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes home-signed-in-glow-drift {
+  0% {
+    transform: translate3d(-6%, -4%, 0);
+  }
+  25% {
+    transform: translate3d(7%, -5%, 0);
+  }
+  50% {
+    transform: translate3d(5%, 7%, 0);
+  }
+  75% {
+    transform: translate3d(-7%, 5%, 0);
+  }
+  100% {
+    transform: translate3d(-6%, -4%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-signed-in-surface::before {
+    animation: none;
+    will-change: auto;
+    inset: 0;
+    transform: none;
+  }
+}
+
+.home-signed-in-glass {
+  border-color: color-mix(in oklch, var(--border) 55%, white 20%);
+  background: color-mix(in oklch, var(--card) 55%, transparent);
+  backdrop-filter: blur(18px) saturate(1.35);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, white 35%, transparent),
+    0 8px 28px color-mix(in oklch, var(--foreground) 6%, transparent);
+}
+
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  .home-signed-in-glass {
+    background: color-mix(in oklch, var(--card) 92%, transparent);
+  }
+}

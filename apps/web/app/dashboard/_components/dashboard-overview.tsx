@@ -72,7 +72,7 @@ export function DashboardOverview({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
           <p className="text-sm font-medium">Overview</p>

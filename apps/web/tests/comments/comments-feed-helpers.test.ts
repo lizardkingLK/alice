@@ -12,6 +12,7 @@ function comment(overrides: Partial<CommentItem> = {}): CommentItem {
     author_id: 'u1',
     parent_id: null,
     content: { type: 'doc', content: [] },
+    reactions: [],
     edited: false,
     status: 'active',
     created_at: '2026-10-01T00:00:00.000Z',

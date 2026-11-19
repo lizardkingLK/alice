@@ -8,8 +8,16 @@ import React, {
   useMemo,
 } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChatRoles, type ChatAttachmentWire } from '@repo/types';
-import type { ChatMessage, ChatClientProps } from './chat-client.types';
+import {
+  ChatConversationKinds,
+  ChatRoles,
+  type ChatAttachmentWire,
+} from '@repo/types';
+import {
+  isCompactChatChrome,
+  type ChatMessage,
+  type ChatClientProps,
+} from './chat-client.types';
 import {
   sendChatMessage,
   deleteConversation,
@@ -20,6 +28,7 @@ import { deleteChatAttachment } from '../_services/chat-attachments.client';
 import type { PendingChatAttachment } from './chat-attachment-tiles';
 import { loadConversationHistory } from './chat-client-bootstrap';
 import { writeChatHistorySidebarOpenCookie } from '@/app/chat/_helpers/chat-history-sidebar-storage';
+import { resolveChatProjectId } from '@/app/chat/_helpers/chat-project-context';
 import { revalidateChatConversations } from '../_services/chat.reads.actions.server';
 import { ChatClientFrame } from '@/app/chat/_components/chat-client-frame';
 import { useWorkspaceChatModels } from '@/app/chat/_components/use-workspace-chat-models';
@@ -34,10 +43,13 @@ import {
   useChatConversationsRealtime,
   useChatProcessingPoll,
 } from './use-chat-client-session';
+import { EMPTY_PREFERRED_CHAT_AGENTS } from '@/app/chat/_helpers/chat-assistant-identity';
 import {
   ChatEmptyGateView,
+  ChatModelsLoadingView,
   ChatPageTrailBreadcrumb,
   NO_CHAT_MODEL_ERROR,
+  normalizeChatErrorMessage,
   applySuccessfulChatResponse,
   buildChatBreadcrumbTrail,
   nextChatMessageId,
@@ -48,7 +60,12 @@ import {
 } from './chat-client-support';
 
 export function ChatClient(props: Readonly<ChatClientProps>) {
-  const chatModelSelection = useWorkspaceChatModels(props.initialChatModels);
+  const compact = isCompactChatChrome(props.variant ?? 'page');
+  const chatModelSelection = useWorkspaceChatModels({
+    initialChatModels: props.initialChatModels,
+    userId: props.currentUserId,
+    lazy: compact && props.initialChatModels === undefined,
+  });
 
   return (
     <ChatClientConversationScope
@@ -79,6 +96,8 @@ function ChatClientInner({
   variant = 'page',
   onClose,
   viewContext = null,
+  pageContext = null,
+  onDismissPageContext,
   currentUserName,
   currentUserEmail = null,
   currentUserImageUrl,
@@ -86,6 +105,8 @@ function ChatClientInner({
   initialConversationId,
   initialMessages,
   initialAgentId,
+  initialAssistantIdentity = null,
+  initialChatAgents = EMPTY_PREFERRED_CHAT_AGENTS,
   initialHistoryOpen = true,
   currentUserId,
   currentUserRole,
@@ -136,18 +157,33 @@ function ChatClientInner({
   }, []);
   const [hasStartedEmptyConversation, setHasStartedEmptyConversation] =
     useState(Boolean(initialAgentId));
-  const [boundAgentId] = useState<string | undefined>(initialAgentId);
+  const [boundAgentId, setBoundAgentId] = useState<string | undefined>(
+    initialAgentId
+  );
   const {
     chatModels,
     selectedIntegrationId,
     setSelectedIntegrationId,
     isMarkingDefault,
+    isLoadingModels,
+    modelsReady,
+    ensureModelsLoaded,
     markSelectedAsDefault,
   } = chatModelSelection;
+  const isCompact = isCompactChatChrome(variant);
+  const conversationKind = isCompact
+    ? ChatConversationKinds.temporary
+    : ChatConversationKinds.general;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hydratedRef = useRef<string | null>(null);
+
+  // Compact layouts lazy-load models for the menu — still resolve once so the
+  // no-models empty gate works in docked / drawer / widget chrome.
+  useEffect(() => {
+    void ensureModelsLoaded();
+  }, [ensureModelsLoaded]);
 
   useChatClientBootstrap({
     hasServerBootstrap,
@@ -206,11 +242,15 @@ function ChatClientInner({
     if (isConversationBusy) return;
     if (id === activeConversationId && messages.length > 0) return;
 
+    const selected = conversations.find((row) => row.id === id);
+    const nextAgentId = selected?.agent_id ?? undefined;
+    setBoundAgentId(nextAgentId);
+
     if (isPage) {
       router.replace(
         buildChatHref({
           conversationId: id,
-          agentId: boundAgentId,
+          agentId: nextAgentId,
         })
       );
     }
@@ -344,9 +384,19 @@ function ChatClientInner({
       return;
     }
 
-    if (!selectedIntegrationId) {
+    // Page requires an explicit selection; dock/widget omit id so the API
+    // uses the workspace default until the model menu has been opened.
+    if (!isCompact && !selectedIntegrationId) {
       setError(NO_CHAT_MODEL_ERROR);
       return;
+    }
+
+    if (isCompact) {
+      const models = await ensureModelsLoaded();
+      if (models.length === 0) {
+        setError(NO_CHAT_MODEL_ERROR);
+        return;
+      }
     }
 
     const attachmentsToSend: ChatAttachmentWire[] = pendingAttachments
@@ -385,13 +435,20 @@ function ChatClientInner({
     const history = [...messages, userMessage];
 
     try {
-      const response = await sendChatMessage(
+      const response = await sendChatMessage({
         history,
-        activeConversationId,
-        selectedIntegrationId,
-        attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
-        viewContext
-      );
+        conversationId: activeConversationId,
+        integrationId: selectedIntegrationId,
+        attachments:
+          attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
+        viewContext,
+        kind: conversationKind,
+        agentId: boundAgentId,
+        projectId: resolveChatProjectId({
+          viewContext,
+          pathname: pageContext?.pathname,
+        }),
+      });
 
       applySuccessfulChatResponse({
         response,
@@ -403,8 +460,11 @@ function ChatClientInner({
         hydratedRef,
         router,
         syncUrl: isPage,
+        conversationKind,
       });
-      void revalidateChatConversations();
+      if (conversationKind === ChatConversationKinds.general) {
+        void revalidateChatConversations();
+      }
 
       await syncChatMutationSideEffects({
         actions: response.actions,
@@ -415,7 +475,7 @@ function ChatClientInner({
       console.error('Chat error:', err);
       const message =
         err instanceof Error
-          ? err.message
+          ? normalizeChatErrorMessage(err.message)
           : 'Something went wrong. Please try again. If this keeps happening, contact your administrator.';
       setError(message);
     } finally {
@@ -473,12 +533,29 @@ function ChatClientInner({
   const emptyGate = resolveChatEmptyGate({
     isPage,
     isLoadingConversations,
+    modelsReady,
+    isLoadingModels,
     chatModelCount: chatModels.length,
     conversationCount: conversations.length,
     hasStartedEmptyConversation,
     activeConversationId,
     messageCount: messages.length,
   });
+
+  // Avoid chat-chrome flash before the no-models gate (dock/widget without SSR).
+  // Warm localStorage sets modelsReady so remounts skip this spinner.
+  if (!modelsReady) {
+    return (
+      <ChatModelsLoadingView
+        isPage={isPage}
+        chatBreadcrumbTrail={chatBreadcrumbTrail}
+        isLoadingConversations={isLoadingConversations}
+        isLoadingHistory={isLoadingHistory}
+        activeConversationId={activeConversationId}
+        onClose={onClose}
+      />
+    );
+  }
 
   if (emptyGate) {
     return (
@@ -492,6 +569,7 @@ function ChatClientInner({
         onCreateConversation={() => {
           setHasStartedEmptyConversation(true);
         }}
+        onClose={onClose}
       />
     );
   }
@@ -527,10 +605,16 @@ function ChatClientInner({
       inputValue={inputValue}
       fileInputRef={fileInputRef}
       boundAgentId={boundAgentId}
+      initialAssistantIdentity={initialAssistantIdentity}
+      initialChatAgents={initialChatAgents}
+      onBoundAgentIdChange={setBoundAgentId}
       conversationToDelete={conversationToDelete}
       conversationToRename={conversationToRename}
       isDeleting={isDeleting}
       isRenaming={isRenaming}
+      pageContext={pageContext}
+      viewContext={viewContext}
+      onDismissPageContext={onDismissPageContext}
       onClose={onClose}
       onConversationSearchChange={setConversationSearch}
       onSelectConversation={(id) => {
@@ -541,6 +625,8 @@ function ChatClientInner({
       onDeleteConversationClick={handleDeleteConversationClick}
       onToggleHistory={handleToggleHistory}
       onMarkSelectedAsDefault={markSelectedAsDefault}
+      onEnsureModelsLoaded={ensureModelsLoaded}
+      isLoadingModels={isLoadingModels}
       onSelectedIntegrationIdChange={setSelectedIntegrationId}
       onSendMessage={(text) => {
         void handleSendMessage(text);

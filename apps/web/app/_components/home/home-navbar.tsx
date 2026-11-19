@@ -1,12 +1,14 @@
 import Link from 'next/link';
-import { Button } from '@repo/ui/components/ui/button';
 import { AuthControls } from '@/app/dashboard/_components/dashboard-auth';
 import { appTitle } from '@/app/_shared/values';
 import { cn } from '@repo/ui/lib/utils';
 
-const NAV_LINKS = [
+const MARKETING_NAV_LINKS = [
   { href: '/#how-it-works', label: 'How it works' },
   { href: '/#pricing', label: 'Pricing' },
+] as const;
+
+const ALWAYS_NAV_LINKS = [
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
 ] as const;
@@ -14,16 +16,16 @@ const NAV_LINKS = [
 type HomeNavbarProps = {
   readonly email?: string | null;
   readonly profilePicture?: string | null;
-  /** Home page only: green Dashboard CTA left of the profile control when signed in. */
-  readonly showDashboardButton?: boolean;
 };
 
 export function HomeNavbar({
   email,
   profilePicture,
-  showDashboardButton = false,
 }: Readonly<HomeNavbarProps>) {
   const isSignedIn = Boolean(email);
+  const navLinks = isSignedIn
+    ? []
+    : [...MARKETING_NAV_LINKS, ...ALWAYS_NAV_LINKS];
 
   return (
     <header className="border-border/60 bg-background shrink-0 border-b">
@@ -46,27 +48,26 @@ export function HomeNavbar({
           </span>
         </Link>
 
-        <nav
-          aria-label="Marketing"
-          className="hidden items-center gap-7 md:flex"
-        >
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        {navLinks.length > 0 ? (
+          <nav
+            aria-label="Marketing"
+            className="hidden items-center gap-7 md:flex"
+          >
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        ) : (
+          <div className="flex-1" aria-hidden />
+        )}
 
         <div className="flex items-center gap-3">
-          {showDashboardButton && isSignedIn ? (
-            <Button asChild size="sm" className="cursor-pointer">
-              <Link href="/dashboard">Dashboard</Link>
-            </Button>
-          ) : null}
           <AuthControls email={email} profilePicture={profilePicture} />
         </div>
       </div>

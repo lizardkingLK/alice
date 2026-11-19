@@ -1,4 +1,5 @@
 import {
+  assertWorkItemImportAttachment,
   detectChatAttachmentFileType,
   type ChatAttachmentSignedUrls,
   type ChatAttachmentUploadSession,
@@ -93,7 +94,8 @@ export class ChatAttachmentsRepository {
   async createUploadSession(
     params: CreateChatAttachmentUploadSessionParameters
   ): Promise<ChatAttachmentUploadSession> {
-    const { userId, conversationId, fileName } = params;
+    const { userId, conversationId, fileName, contentType } = params;
+    assertWorkItemImportAttachment(fileName, contentType);
     const bucketName = await this.ensureChatAttachmentsBucketExists();
 
     if (conversationId) {
@@ -142,6 +144,8 @@ export class ChatAttachmentsRepository {
       throw new Error('Invalid upload target');
     }
 
+    const detectedFileType = assertWorkItemImportAttachment(fileName, mimeType);
+
     if (conversationId) {
       const conversation = await prisma.chat_conversations.findFirst({
         where: { id: conversationId, user_id: userId },
@@ -165,8 +169,6 @@ export class ChatAttachmentsRepository {
       storagePath,
       expiresInSeconds
     );
-
-    const detectedFileType = detectChatAttachmentFileType(fileName, mimeType);
 
     const attachmentRecord = await prisma.chat_attachments.create({
       data: {
@@ -206,6 +208,7 @@ export class ChatAttachmentsRepository {
     const { userId, conversationId, fileName, fileBuffer, mimeType, fileSize } =
       parameters;
 
+    const detectedFileType = assertWorkItemImportAttachment(fileName, mimeType);
     const bucketName = await this.ensureChatAttachmentsBucketExists();
 
     if (conversationId) {
@@ -237,8 +240,6 @@ export class ChatAttachmentsRepository {
         uploaded.path,
         expiresInSeconds
       );
-
-      const detectedFileType = detectChatAttachmentFileType(fileName, mimeType);
 
       const attachmentRecord = await prisma.chat_attachments.create({
         data: {

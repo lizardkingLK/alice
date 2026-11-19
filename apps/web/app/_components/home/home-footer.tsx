@@ -2,6 +2,12 @@ import Link from 'next/link';
 import { Separator } from '@repo/ui/components/ui/separator';
 import { cn } from '@repo/ui/lib/utils';
 
+const COMPANY_LINKS = [
+  { href: '/#pricing', label: 'Pricing' },
+  { href: '/about', label: 'About' },
+  { href: '/contact', label: 'Contact' },
+] as const;
+
 const footerColumns = [
   {
     title: 'Workspace',
@@ -32,11 +38,7 @@ const footerColumns = [
   },
   {
     title: 'Company',
-    links: [
-      { href: '/#pricing', label: 'Pricing' },
-      { href: '/about', label: 'About' },
-      { href: '/contact', label: 'Contact' },
-    ],
+    links: COMPANY_LINKS,
   },
 ] as const;
 
@@ -45,25 +47,43 @@ const APP_ONLY_COLUMN_TITLES = new Set(['Workspace', 'People']);
 type HomeFooterProps = {
   /** Show Workspace / People links (allowlisted signed-in users). */
   showAppLinks?: boolean;
+  /**
+   * Hide in-page marketing anchors (e.g. Pricing) when the signed-in home
+   * no longer renders those sections.
+   */
+  hideMarketingAnchors?: boolean;
   /** `snap` fills a home scroll panel; `inline` sizes to content for other pages. */
   variant?: 'snap' | 'inline';
 };
 
 export function HomeFooter({
   showAppLinks = false,
+  hideMarketingAnchors = false,
   variant = 'snap',
 }: Readonly<HomeFooterProps>) {
-  const columns = showAppLinks
-    ? footerColumns
-    : footerColumns.filter(
-        (column) => !APP_ONLY_COLUMN_TITLES.has(column.title)
-      );
+  const columns = (
+    showAppLinks
+      ? footerColumns
+      : footerColumns.filter(
+          (column) => !APP_ONLY_COLUMN_TITLES.has(column.title)
+        )
+  ).map((column) => {
+    if (column.title !== 'Company' || !hideMarketingAnchors) {
+      return column;
+    }
+    return {
+      ...column,
+      links: column.links.filter((link) => link.href !== '/#pricing'),
+    };
+  });
 
   return (
     <footer
       className={cn(
-        'border-border/60 bg-muted/20 flex flex-col border-t px-6 pt-12 pb-8',
-        variant === 'snap' ? 'h-dvh shrink-0 snap-start' : 'min-h-0'
+        'border-border/60 bg-muted/20 flex flex-col border-t px-6 pt-12',
+        variant === 'snap'
+          ? 'h-dvh shrink-0 snap-start pb-16 sm:pb-20'
+          : 'min-h-0 pb-10'
       )}
     >
       <div
@@ -83,7 +103,7 @@ export function HomeFooter({
           <div className="max-w-xs">
             <p className="text-base font-semibold tracking-tight">Alice</p>
             <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-              A focused workspace for boards, backlogs, and delivery.
+              Product Development Automated
             </p>
           </div>
 
@@ -112,7 +132,7 @@ export function HomeFooter({
 
         <div className="text-muted-foreground mt-6 flex flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Alice</p>
-          <p>Built for planning, delivery, and team visibility.</p>
+          <p>Product Development Automated</p>
         </div>
       </div>
     </footer>

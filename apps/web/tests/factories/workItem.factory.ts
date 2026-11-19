@@ -12,6 +12,7 @@ export const workItemFactory = {
     return {
       id: 'wi-1',
       title: 'Implement dashboard filters',
+      slug: 'implement-dashboard-filters',
       type: 'Task',
       status: 'ToDo',
       state: null,
@@ -30,6 +31,7 @@ export const workItemFactory = {
       updated_at: '2026-07-09T10:00:00Z',
       created_by: null,
       updated_by: null,
+      pm_external: null,
       jira_issue_key: null,
       labels: [],
       record_status: 'active',

@@ -1,6 +1,6 @@
 import { RecordStatusEnum } from '@repo/types';
 import { getDbUser } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { paginationMeta } from '@/lib/db/pagination';
 import { applyListSearch, runPaginatedSelect } from '@/lib/db/query';
 import { isAdmin } from '@/lib/rbac/roles';
@@ -13,8 +13,9 @@ import type {
 const ALLOWLIST_SEARCH_FIELDS = ['value', 'label'] as const;
 
 /**
- * Reads query Supabase directly from the RSC layer to skip the `web → api`
- * hop. Mutations still go through the API. Admin-only (same as the old GET).
+ * Admin-only RSC list. Uses the service-role client because `access_allowlist`
+ * is PostgREST-locked (RLS + revoke for anon/authenticated). Mutations stay on
+ * the API. See docs/guides/RLS_HYBRID_ROLLOUT.md.
  */
 export async function listAccessAllowlistFromSupabase(
   params: AccessAllowlistListParams = {}
@@ -31,7 +32,7 @@ export async function listAccessAllowlistFromSupabase(
     return { items: [], ...paginationMeta(0, page, limit) };
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   let query = supabase.from('access_allowlist').select('*', { count: 'exact' });
 
   if (status !== 'all') {
@@ -48,4 +49,31 @@ export async function listAccessAllowlistFromSupabase(
     });
 
   return { items, ...meta };
+}
+
+/**
+ * All domain allowlist rows (any status, not paginated). Used by access-request
+ * grant UI for covering-domain / renew-before-grant.
+ */
+export async function listAllowlistDomainEntriesFromSupabase(): Promise<
+  AccessAllowlistEntry[]
+> {
+  const dbUser = await getDbUser();
+  if (!isAdmin(dbUser?.role)) {
+    return [];
+  }
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from('access_allowlist')
+    .select('*')
+    .eq('kind', 'domain')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('failed to list allowlist domains:', error.message);
+    return [];
+  }
+
+  return (data ?? []) as AccessAllowlistEntry[];
 }

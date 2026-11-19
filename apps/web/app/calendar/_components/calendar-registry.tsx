@@ -14,6 +14,7 @@ import { toNameCase } from '@repo/types';
 import { ALL_OPTION } from '@/app/_shared/values';
 import { AppliedFilterBadges } from '@/components/applied-filter-badges';
 import { buildAppliedFilterBadgeItems } from '@/components/applied-filter-badges.model';
+import { PendingSyncIndicator } from '@/components/pending-sync-indicator';
 import { type CalendarActionItem } from './calendar-client.types';
 import { applyCalendarFilterChange } from './calendar-filter-controls';
 import {
@@ -555,6 +556,9 @@ export function CalendarRegistry({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <PendingSyncIndicator
+            active={dueDateDrag.pendingDueDateIds.size > 0}
+          />
           <Button
             variant="outline"
             size="icon-sm"

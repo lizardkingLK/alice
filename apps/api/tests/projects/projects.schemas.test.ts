@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { buildDefaultProjectTypeDefs } from '@repo/types';
 import {
   createProjectSchema,
   updateProjectSchema,
@@ -47,17 +48,73 @@ describe('projects schemas', () => {
     });
 
     it('accepts workflow config in the create contract', () => {
+      const typeKeys = ['Epic', 'Story', 'Task', 'Issue'] as const;
       const parsed = createProjectSchema.safeParse({
         ...validCreateInput,
         workflow_config: {
-          work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+          work_item_types: [...typeKeys],
         },
       });
       expect(parsed.success).toBe(true);
       if (parsed.success) {
         expect(parsed.data.workflow_config).toEqual({
-          work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+          work_item_types: buildDefaultProjectTypeDefs(typeKeys),
         });
+      }
+    });
+
+    it('accepts UUID catalog keys and unique display names', () => {
+      const customKey = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+      const parsed = createProjectSchema.safeParse({
+        ...validCreateInput,
+        workflow_config: {
+          work_item_types: [
+            {
+              key: 'Epic',
+              name: 'Epic',
+              icon: 'layers',
+              level: 0,
+            },
+            {
+              key: customKey,
+              name: 'Initiative',
+              icon: 'trophy',
+              color: '#123456',
+              level: 1,
+            },
+          ],
+        },
+      });
+      expect(parsed.success).toBe(true);
+    });
+
+    it('rejects duplicate type display names (case-insensitive)', () => {
+      const parsed = createProjectSchema.safeParse({
+        ...validCreateInput,
+        workflow_config: {
+          work_item_types: [
+            {
+              key: 'Epic',
+              name: 'Story',
+              icon: 'layers',
+              level: 0,
+            },
+            {
+              key: 'Story',
+              name: ' story ',
+              icon: 'bookmark',
+              level: 1,
+            },
+          ],
+        },
+      });
+      expect(parsed.success).toBe(false);
+      if (!parsed.success) {
+        expect(
+          parsed.error.issues.some((issue) =>
+            issue.message.includes('Type names must be unique')
+          )
+        ).toBe(true);
       }
     });
 
@@ -346,6 +403,65 @@ describe('projects schemas', () => {
           'End date must be on or after the start date.'
         );
       }
+    });
+
+    it('accepts github_connection_id on update', () => {
+      const parsed = updateProjectSchema.safeParse({
+        github_repo: 'acme/alice',
+        github_connection_id: '11111111-1111-4111-8111-111111111111',
+        expectedUpdatedAt: '2026-08-25T12:00:00.000Z',
+      });
+      expect(parsed.success).toBe(true);
+    });
+
+    it.each([
+      'https://www.figma.com/design/file-1/Alice',
+      'https://figma.com/proto/file-2/Alice',
+      'https://www.figma.com/board/file-3/Alice',
+    ])('accepts a valid Figma project URL: %s', (figmaUrl) => {
+      const parsed = updateProjectSchema.safeParse({
+        figma_url: figmaUrl,
+        expectedUpdatedAt: '2026-08-25T12:00:00.000Z',
+      });
+      expect(parsed.success).toBe(true);
+      if (parsed.success) {
+        expect(parsed.data.figma_url).toBe(figmaUrl);
+      }
+    });
+
+    it.each([
+      // eslint-disable-next-line sonarjs/no-clear-text-protocols -- verifies HTTPS is required
+      'http://www.figma.com/design/file-1/Alice',
+      'https://example.com/design/file-1/Alice',
+      'https://www.figma.com/',
+      'not-a-url',
+    ])('rejects an invalid Figma project URL: %s', (figmaUrl) => {
+      expect(
+        updateProjectSchema.safeParse({
+          figma_url: figmaUrl,
+          expectedUpdatedAt: '2026-08-25T12:00:00.000Z',
+        }).success
+      ).toBe(false);
+    });
+
+    it('accepts null to remove a Figma project URL', () => {
+      expect(
+        updateProjectSchema.safeParse({
+          figma_url: null,
+          expectedUpdatedAt: '2026-08-25T12:00:00.000Z',
+        }).success
+      ).toBe(true);
+    });
+  });
+
+  describe('createProjectSchema github_connection_id', () => {
+    it('accepts optional github_connection_id with a repo', () => {
+      const parsed = createProjectSchema.safeParse({
+        ...validCreateInput,
+        github_repo: 'acme/alice',
+        github_connection_id: '11111111-1111-4111-8111-111111111111',
+      });
+      expect(parsed.success).toBe(true);
     });
   });
 });

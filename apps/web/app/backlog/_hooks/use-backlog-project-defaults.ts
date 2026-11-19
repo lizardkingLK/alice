@@ -14,18 +14,26 @@ type UseBacklogProjectDefaultsOptions = {
   readonly userId: string | null;
   readonly projects: readonly DbProject[];
   readonly sprints: readonly Sprint[];
+  /** When set, project filter is locked to this project (nested project backlog). */
+  readonly lockedProjectId?: string | null;
 };
 
 export function useBacklogProjectDefaults({
   userId,
   projects,
   sprints,
+  lockedProjectId,
 }: UseBacklogProjectDefaultsOptions) {
-  const [projectFilter, setProjectFilter] = useState('all');
+  const [projectFilter, setProjectFilter] = useState(lockedProjectId ?? 'all');
   const [sprintFilter, setSprintFilter] = useState('');
 
   const applyPreferenceFilters = useCallback(
     (preference: BoardDefaultsPreference | null) => {
+      if (lockedProjectId) {
+        setProjectFilter(lockedProjectId);
+        setSprintFilter(preference ? preferenceToSprintFilter(preference) : '');
+        return;
+      }
       if (!preference) {
         setProjectFilter('all');
         setSprintFilter('');
@@ -34,7 +42,7 @@ export function useBacklogProjectDefaults({
       setProjectFilter(preferenceToProjectFilter(preference));
       setSprintFilter(preferenceToSprintFilter(preference));
     },
-    []
+    [lockedProjectId]
   );
 
   const { savedPreference, saveDefaults, consumeBootstrap } =
@@ -54,6 +62,17 @@ export function useBacklogProjectDefaults({
 
   const updateProjectFilter = useCallback(
     (nextProjectFilter: string, nextSprintFilter?: string) => {
+      if (lockedProjectId) {
+        setProjectFilter(lockedProjectId);
+        if (nextSprintFilter !== undefined) {
+          setSprintFilter(
+            nextSprintFilter === 'all' || !nextSprintFilter
+              ? ''
+              : nextSprintFilter
+          );
+        }
+        return;
+      }
       setProjectFilter(nextProjectFilter);
       if (nextSprintFilter !== undefined) {
         setSprintFilter(
@@ -75,7 +94,7 @@ export function useBacklogProjectDefaults({
         setSprintFilter('');
       }
     },
-    [sprintFilter, sprints]
+    [lockedProjectId, sprintFilter, sprints]
   );
 
   const updateSprintFilter = useCallback((nextSprintFilter: string) => {

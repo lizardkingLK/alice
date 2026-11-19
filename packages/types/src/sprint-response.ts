@@ -1,10 +1,12 @@
 import type { Tables } from './generated/supabase/database.types.js';
+import { slugifyTitle } from './slug.js';
 import type { SprintStatus } from './sprint-status.js';
 
 type DbSprint = Tables<'sprints'>;
 
 /** Camel-case sprint returned from the API / used on the client. */
 export type SprintResponse = Pick<DbSprint, 'id' | 'name' | 'goal'> & {
+  slug: string;
   status: SprintStatus;
   startDate: DbSprint['start_date'];
   endDate: DbSprint['end_date'];
@@ -36,6 +38,7 @@ export function mapSprintRowToResponse(
     id: row.id,
     name: row.name,
     goal: row.goal,
+    slug: row.slug?.trim() || slugifyTitle(row.name),
     status: row.status,
     startDate: row.start_date,
     endDate: row.end_date,

@@ -13,7 +13,7 @@ Related:
 - RBAC (roles after admission): [RBAC_AUTHORIZATION_SKELETON.md](../../auth/RBAC_AUTHORIZATION_SKELETON.md)
 - Users registry: [USER_MANAGEMENT.md](../users/USER_MANAGEMENT.md)
 - Notifications inbox: dashboard notifications + `notifications` table
-- Home footer: `apps/web/app/_components/home/home-footer.tsx`
+- Signed-in home + footer: `apps/web/app/page.tsx`, `apps/web/app/_components/home/`
 - Auth callback: `apps/web/app/auth/callback/route.ts`
 - Session proxy: `apps/web/proxy.ts` → `lib/supabase/middleware.ts`
 
@@ -328,11 +328,25 @@ Route: `/check-email` remains a public helper for invite / set-password copy
 mistyped password from an unset invite password, so we do not redirect
 allowlisted failures to `/check-email`.
 
-### 4. Home footer — **implemented**
+### 4. Home for signed-in users — **implemented**
+
+When a session exists, `/` skips the marketing product hero (how-it-works,
+pricing, CTA). Layout is:
+
+1. Navbar with **About** and **Contact** only (no How it works / Pricing;
+   Dashboard CTA lives in the hero, not the nav)
+2. Centered time-of-day greeting (`Good Morning` / `Afternoon` / `Evening`)
+   plus the user's name, with a large **Dashboard** button
+3. Footer (same allowlist gating as below)
+
+Signed-out visitors still see the full marketing landing.
+
+### 5. Home footer — **implemented**
 
 `apps/web/app/_components/home/home-footer.tsx` accepts `showAppLinks`.
 The home page (`app/page.tsx`) sets it via `isEmailAllowed(user.email)` when
-signed in.
+signed in. Signed-in home also sets `hideMarketingAnchors` so Company omits
+the Pricing hash link (that section is not rendered).
 
 | Column                            | Anonymous / not allowlisted | Allowlisted signed-in |
 | --------------------------------- | --------------------------- | --------------------- |
@@ -349,7 +363,9 @@ See [ACCESS_REQUESTS.md](./ACCESS_REQUESTS.md).
 
 Admins review admission requests from **`/access-denied`** and Contact (subject
 **Access request**) on **`/users?tab=requests`**. Requesters can name project
-keys; grant opens the email allowlist form with those keys prefilled. Limits:
+keys; **Edit** opens the grant dialog (accessible projects + Member). When
+there is no covering domain, grant creates the email allowlist ACL; when a
+domain covers the email, grant adds project members only. Limits:
 **3 submissions per email per rolling 30 days** (constants in `@repo/types`).
 Grant via allowlist email row; deny via explicit admin action. Both archive
 linked notifications.
@@ -428,8 +444,17 @@ Invitees should use the invite email or **Forgot password**.
 - Allowlist status badge is **display-derived**: inactive/archived/deleted stay
   as stored; `active` + past `expires_at` (UTC) shows **expired** via
   `getAccessAllowlistDisplayStatus` (does not mutate the row).
-- Allowlist reads for the gate may use service-role or a tight RLS policy
-  (authenticated read of active rows is OK; writes admin-only).
+- **Email create vs domain:** creating an email row is rejected when a domain
+  row with `status=active` already covers that address — including
+  **display-expired** rows (`expires_at` in the past; status stays `active`).
+  Message: `EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE` (check Allowlist for an
+  expired/inactive domain; renew or reactivate it — do not add a per-email
+  bypass). Project membership is for project access after admission, not a
+  substitute for allowlist admission.
+- Allowlist is **service-role only** on PostgREST (RLS + revoke for
+  `anon`/`authenticated`). Gate and admin RSC list use `createAdminClient`
+  after app checks; mutations stay on the API. See
+  [RLS_HYBRID_ROLLOUT.md](../../guides/RLS_HYBRID_ROLLOUT.md).
 - Never trust client-only checks; middleware + callback are mandatory.
 - Expired rows: treat as absent; optionally soft-disable via `status`.
 - Invited users: invite email must already satisfy allowlist **or** admin

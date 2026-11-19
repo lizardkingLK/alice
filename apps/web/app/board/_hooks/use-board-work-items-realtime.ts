@@ -43,7 +43,8 @@ export function useBoardWorkItemsRealtime(
 
 export function applyRealtimeBoardRow(
   items: readonly DbWorkItem[],
-  row: Partial<DbWorkItem> & { id: string }
+  row: Partial<DbWorkItem> & { id: string },
+  options?: Parameters<typeof applyRealtimeWorkItemRow>[3]
 ): DbWorkItem[] | null {
-  return applyRealtimeWorkItemRow(items, row, BOARD_PLACEMENT_FIELDS);
+  return applyRealtimeWorkItemRow(items, row, BOARD_PLACEMENT_FIELDS, options);
 }

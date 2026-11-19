@@ -13,17 +13,23 @@ Tracked in [alice#562](https://github.com/lizardkingLK/alice/issues/562).
 
 1. **Pool size** — `PG_POOL_MAX` in `packages/db/src/client.ts` (20).
 2. **Server** — `withBusyRetry` from `@repo/db` around sensitive `$transaction`
-   calls (e.g. project create), with raised `maxWait` / `timeout`.
+   calls (e.g. project create, chat-agent fork / patch / set-default), with
+   raised `maxWait` / `timeout`.
 3. **API contract** — exhausted / detected busy failures return **503** with
    `code: DATABASE_BUSY` and a friendly message.
 4. **Client** — `apiFetch` (browser) wraps requests in `withApiBusyRetry` and
    shows a Sonner toast: “Database is busy. Retrying…”.
-5. **Exception — async project create** — `POST /api/projects` returns **202**
-   after sync validation; the busy `$transaction` runs in the background. The
-   create mutation passes `skipDatabaseBusyRetry: true` so the global busy-retry
-   toast is **not** shown for that call. Server-side `withBusyRetry` still runs;
-   success / failure is delivered via inbox notifications
-   (`project_created` / `project_create_failed`).
+5. **Exception — async 202 jobs** — mutations that return **202** after sync
+   validation (project create, soft archive, and hard purge across projects,
+   teams, work items, sprints, charts, saved views, comments, allowlist, and
+   access requests) pass `skipDatabaseBusyRetry: true` so the global busy-retry
+   toast is **not** shown for the acknowledge call. Background work may still
+   use server-side `withBusyRetry`; success / failure is delivered via inbox
+   notifications (`project_created` / `project_create_failed`, or
+   `entity_archived` / `entity_archive_failed` / `entity_purged` /
+   `entity_purge_failed`). See
+   [WORKER_AND_STREAMER.md](../architecture/WORKER_AND_STREAMER.md) for the
+   interim in-process pattern and the BullMQ migration checklist.
 
 ## Related
 

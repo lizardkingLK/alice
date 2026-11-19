@@ -3,15 +3,19 @@
 Status: **Implemented**
 
 Conversational assistant for creating and inspecting projects, sprints, and
-work items. UI labels: **Alice** / sidebar **Alice**. System prompt
-name: **Alice Assistant**. Alice supports configured Google Gemini, xAI,
-OpenAI, and Anthropic models through a shared provider interface with tool
-calling.
+work items. UI labels: **Alice** / sidebar **Alice**. Runtime system
+instructions come from the resolved **chat agent** (seeded default Alice,
+admin-customized original, or a member fork) — see
+[AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md). Alice supports
+configured Google Gemini, xAI, OpenAI, and Anthropic models through a shared
+provider interface with tool calling.
 
 Related:
 
 - Feature index: [README.md](./README.md)
+- Agents (persona, encrypted instructions, tools/skills): [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md)
 - Workspace integrations (model pool, DB): [SETTINGS_INTEGRATIONS.md](../integrations/SETTINGS_INTEGRATIONS.md)
+- Planned org/project/member scopes + chat context: [INTEGRATION_SCOPES.md](../integrations/INTEGRATION_SCOPES.md)
 - Auth: [AUTHENTICATION.md](../../auth/AUTHENTICATION.md),
   [RBAC](../../auth/RBAC_AUTHORIZATION_SKELETON.md)
 - Domain APIs: `apps/api/src/routes/api/{projects,sprints,workItems}/`
@@ -23,13 +27,14 @@ Related:
 
 - Let signed-in users ask in natural language to list/create **projects**,
   **sprints**, and **work items**.
-- Attach and process documents (**JSON**, **CSV**, **TSV**, **Markdown tables**, **Indented text outlines**, **YAML**, and **Images**) directly in the chat composer.
+- Attach and process work-item documents (**JSON** and **CSV** only) directly in
+  the chat composer. Images and other formats are rejected at upload/parse time.
 - Use a **direct-to-storage upload session** flow to avoid Vercel/serverless request payload size limits.
 - Automatically refresh signed URLs on expiration across both backend hydration and frontend interactive links (`chat-attachment-link.tsx`).
 - Automatically parse attached documents into hierarchical and flat work item trees with custom dynamic fields (`parse_work_item_attachment`).
 - Run **duplicate checking and similarity analysis** against existing project items (`check_work_item_duplicates`).
 - Execute **atomic batch work item imports** with pre-validation, automatic DB rollback on failure, and interactive user choice protocol (`batch_import_work_items`).
-- Support **incremental backlog synchronization** on file re-upload: update existing items and parent links in place without creating duplicates (`updateExisting`). Detect and explicitly report hierarchy changes in chat responses across all formats (JSON, CSV, TSV, Markdown, outlines, YAML). Enforce strict **no-deletion policy via chat**: omitted items are preserved in the project backlog with an informative user notice.
+- Support **incremental backlog synchronization** on file re-upload: update existing items and parent links in place without creating duplicates (`updateExisting`). Detect and explicitly report hierarchy changes in chat responses for JSON and CSV imports. Enforce strict **no-deletion policy via chat**: omitted items are preserved in the project backlog with an informative user notice.
 - Enforce strict **project scope guardrails** keeping Alice dedicated solely to ALICE system operations.
 - Persist multi-turn conversations and attachment metadata per user (sidebar history on `/chat`).
 - Surface Alice from the dashboard **navbar** (between notifications and
@@ -43,8 +48,12 @@ Related:
 - Vector RAG / embeddings over workspace content
 - Slack / Teams / external chat integrations (see ROADMAP)
 - Chat-specific RBAC beyond “authenticated user”
-- Dedicated `chat_messages` table (history lives in Storage)
+- Dedicated `chat_messages` table (history lives in Storage until the Planned
+  encrypted conversation-record migration — see agents
+  [Planned next](./AGENT_PERSONALIZATION.md#planned-next))
 - Automatic triage, NL backlog search, or other ROADMAP AI items
+- Views-style agent sharing (Planned; see
+  [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md#planned-next))
 
 ---
 
@@ -53,7 +62,7 @@ Related:
 | Surface         | Location                                  | Behavior                                                                                                                                                                           |
 | --------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Full page       | `/chat`                                   | Edge-to-edge in the dashboard shell; history sidebar; Agents gallery via header icon dialog; New Chat / model icons; breadcrumb shows active chat title; suggestions, action cards |
-| Agents          | Header **Agents** dialog on `/chat`       | Gallery (Mine / Shared / Archived) and customize detail in-panel — see [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md)                                                      |
+| Agents          | Header **Agents** dialog on `/chat`       | Gallery (Mine / Archived; Shared Planned) and customize detail in-panel — see [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md)                                               |
 | Navbar launcher | All `DashboardShell` pages except `/chat` | Header control between notifications and profile → right drawer; same `ChatClient` (`variant="drawer"`); conversation-only (no Agents panel)                                       |
 | Nav             | Platform → **Alice** (`Sparkles` icon)    | Links to `/chat`                                                                                                                                                                   |
 
@@ -81,10 +90,11 @@ Main **Alice** toolbar has a fixed `h-14` height.
 
 ### Data loading (PERFORMANCE.md)
 
-| Surface         | Initial conversations                          | Initial message history                        | Interactions after mount                     |
-| --------------- | ---------------------------------------------- | ---------------------------------------------- | -------------------------------------------- |
-| `/chat` page    | RSC direct Supabase (`chat.service.server.ts`) | RSC `apiFetch` → API (Storage is service-role) | Client `apiFetch` for send / switch / delete |
-| Floating drawer | Server action `listChatConversationsAction`    | Client `apiFetch` on open (Storage)            | Same                                         |
+| Surface         | Initial conversations                          | Initial message history                        | Models                                                          | Interactions after mount                     |
+| --------------- | ---------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------- |
+| `/chat` page    | RSC direct Supabase (`chat.service.server.ts`) | RSC `apiFetch` → API (Storage is service-role) | RSC seed                                                        | Client `apiFetch` for send / switch / delete |
+| App-shell dock  | None (opens instantly; empty session)          | None on open                                   | Client on open + `localStorage` warm cache; spinner until ready | Client `apiFetch` on send                    |
+| Overview widget | From productivity bootstrap                    | None                                           | SSR models + active agents; chevrons cycle preferred agent      | Client `apiFetch` on send                    |
 
 `/chat` uses `Suspense` + `safeServerFetch(getChatPageBootstrap())` so the
 shell streams first; the client receives bootstrap props and **does not**
@@ -97,6 +107,36 @@ a live list and an owned **by-id** lookup before 404ing so the new thread stays
 reachable. The header favorite star stays disabled until the URL
 `conversationId` matches the active thread (avoids starring the wrong chat
 while create/select is still hydrating).
+
+`DashboardShell` does **not** prefetch chat models (avoids an every-page SSR
+hit). The dock mounts `ChatClient` without `initialChatModels`;
+`useWorkspaceChatModels` shows a spinner until `modelsReady`, hydrates from
+`alice:chat-models-cache:v1:<userId>` when present, then revalidates via
+`GET /api/v1/integrations/chat-models`. Overview SSR-seeds models **and** the
+active agent list for the Alice widget: header avatar/name come from the
+preferred/default agent, chevrons cycle personalities (writes the preferred
+agent cookie), and both avatar + chevrons stay hidden when the model pool is
+empty so the no-models gate stays clean.
+
+### Dock vs `/chat` conversation kinds
+
+`chat_conversations.kind` (`ChatConversationKinds` in `@repo/types`):
+
+| Kind        | Created from                     | Listed on `/chat` history | Persistence                                   |
+| ----------- | -------------------------------- | ------------------------- | --------------------------------------------- |
+| `general`   | Full `/chat` page                | Yes                       | Normal history + Storage markdown             |
+| `temporary` | App-shell dock / Overview widget | No                        | Saved for multi-turn within the shell session |
+
+Apply migration `add_chat_conversation_kind` before deploying API/web that
+filter on `kind`.
+
+The dock opens with **no** conversation list or latest-thread hydrate. Models
+load on open (spinner, or instant from localStorage cache) so the no-models
+empty gate never flashes behind chat chrome. Closing the dock keeps the panel
+mounted (hidden) so the temporary thread continues for the page session. A
+**Context** bar sits above the composer (Jira Rovo-style): page Alice was opened
+on (nav icon + label), plus workflow designer via the existing `viewContext`
+bridge when registered.
 
 ---
 
@@ -194,14 +234,21 @@ needed elsewhere in the API.
 2. The frontend sends that integration row's UUID as `integrationId`.
 3. The backend loads the active integration, validates its provider identity
    and endpoint, and decrypts its API key in-process.
-4. `ChatService` resolves the provider strategy and sends the system
-   instruction, conversation history, and Alice tool declarations.
-5. The provider returns text, tool requests, or both.
-6. Alice validates provider tool-call structures and executes only known
-   server-side tools with the authenticated user's identity.
-7. Tool results are matched to their original call IDs and returned to the
+4. `ChatService` resolves the **chat agent** (`agentId` on `POST /api/v1/chat`
+   when visible, else the conversation’s stored `agent_id`, else workspace
+   `is_default`), decrypts `instructions` at rest, appends the workspace
+   snapshot, and filters tool declarations to that agent’s **enabled** catalog
+   keys that exist in the code registry. Chart / dynamic-fields helpers load
+   the matching tool `instruction` (with hardcoded fallback if unset).
+5. `ChatService` resolves the provider strategy and sends that system
+   instruction, conversation history, and the filtered tool declarations.
+6. The provider returns text, tool requests, or both.
+7. Alice validates provider tool-call structures and executes only known
+   **and agent-enabled** server-side tools with the authenticated user's
+   identity.
+8. Tool results are matched to their original call IDs and returned to the
    provider for the next round.
-8. Alice returns the final assistant text and any executed action cards.
+9. Alice returns the final assistant text and any executed action cards.
 
 | Provider       | API format                                                  | Authentication        |
 | -------------- | ----------------------------------------------------------- | --------------------- |
@@ -226,23 +273,32 @@ credentials.
 
 ## Tools (function calling)
 
-The 13 tools are declared in `chat.route.data.ts` and executed server-side:
+Tool **handlers and JSON schemas** are declared in `chat.route.data.ts` and
+executed server-side. Enablement and optional per-tool natural-language
+`instruction` text (dynamic fields, chart description, etc.) live in the
+seeded `chat_tools` catalog and per-agent `chat_agent_tools` rows — see
+[AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md). The code registry
+remains the source of truth for callable shapes; the DB cannot invent new
+handlers.
 
-| Tool                             | Effect                                                                                                      |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `list_projects`                  | List projects (id, name, key)                                                                               |
-| `create_project`                 | Create project via projects service                                                                         |
-| `list_sprints`                   | List sprints for a `projectId`                                                                              |
-| `create_sprint`                  | Create sprint via sprints service                                                                           |
-| `list_users`                     | List users (id, name, email) for assignee matching                                                          |
-| `get_workflow_config`            | Read the current workflow envelope, preferring a live designer draft when available                         |
-| `propose_workflow_patch`         | Create a reviewable workflow proposal; does not save until the user applies it                              |
-| `dismiss_workflow_proposal`      | Dismiss an unapplied workflow proposal without changing the canvas                                          |
-| `create_work_item`               | Create single work item; maps chat types (bug → Issue, task → Task, story → Story)                          |
-| `parse_work_item_attachment`     | Fetch and parse attached document (JSON, CSV, TSV, Markdown, Outline, YAML) into structured work item trees |
-| `check_work_item_duplicates`     | Compare parsed items against existing project items to identify new vs duplicate items                      |
-| `batch_import_work_items`        | Bulk create or synchronize work items with hierarchy links, atomic rollback, and update/deletion controls   |
-| `generate_project_fields_schema` | Generate a validated project dynamic-fields JSON schema                                                     |
+The tools below are declared in `chat.route.data.ts` and executed server-side:
+
+| Tool                             | Effect                                                                                                    |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `list_projects`                  | List projects (id, name, key)                                                                             |
+| `create_project`                 | Create project via projects service                                                                       |
+| `list_sprints`                   | List sprints for a `projectId`                                                                            |
+| `create_sprint`                  | Create sprint via sprints service                                                                         |
+| `list_users`                     | List users (id, name, email) for assignee matching                                                        |
+| `get_workflow_config`            | Read the current workflow envelope, preferring a live designer draft when available                       |
+| `propose_workflow_patch`         | Create a reviewable workflow proposal; does not save until the user applies it                            |
+| `dismiss_workflow_proposal`      | Dismiss an unapplied workflow proposal without changing the canvas                                        |
+| `get_project_work_item_types`    | List a project's work-item type catalog (keys, names, levels, hierarchy) before create                    |
+| `create_work_item`               | Create single work item; maps type via project catalog (`mapToProjectWorkItemTypeKey`, not seed-only)     |
+| `parse_work_item_attachment`     | Fetch and parse attached JSON or CSV into structured work item trees (rejects images and other types)     |
+| `check_work_item_duplicates`     | Compare parsed items against existing project items to identify new vs duplicate items                    |
+| `batch_import_work_items`        | Bulk create or synchronize work items with hierarchy links, atomic rollback, and update/deletion controls |
+| `generate_project_fields_schema` | Generate a validated project dynamic-fields JSON schema                                                   |
 
 A provider may request multiple tools in one response. `ChatService` executes
 those calls concurrently, preserves each call ID, and returns each result with
@@ -262,28 +318,27 @@ for another round. The loop allows at most five provider/tool rounds.
 
 ---
 
-### Universal Multi-Format Attachment Parser
+### Work-item attachment parser (JSON + CSV only)
 
-The parser (`chat-attachment-parser.ts`) supports heterogeneous document formats, converting all structures into a uniform `ParsedWorkItemNode[]` tree:
+Upload, finalize, and `parse_work_item_attachment` accept **only** JSON and CSV.
+Images (PNG/JPG/WebP) and other formats are rejected before download/parse with a
+clear unsupported-type error. Shared gates live in `@repo/types`
+(`assertWorkItemImportAttachment` / `assertWorkItemImportFileType`).
+
+Supported formats converting into a uniform `ParsedWorkItemNode[]` tree:
 
 1. **JSON (`.json`)**:
    - Supports wrapped `{ items: [...] }` or raw root arrays `[...]`.
    - Supports nested hierarchical trees (`children` or `subtasks`) or flat lists with `parentReference` / `parent`.
    - Extracts custom dynamic fields into `dynamicFields`.
-2. **CSV & TSV (`.csv`, `.tsv`)**:
-   - Delimited text parser handling commas or tabs with robust quoted string support.
+2. **CSV (`.csv`)**:
+   - Delimited text parser with robust quoted string support.
    - Header aliases: matches variations such as `Issue key` / `Key` / `ID`, `Parent` / `Parent Key`, `Type` / `Issue Type`, `Story Points` / `Points` / `Estimate`, `Title` / `Summary` / `Name`.
    - Dynamic columns automatically captured as key-value pairs in `dynamicFields`.
-3. **Markdown Tables (`.md`)**:
-   - Pipe-delimited GitHub-flavored markdown tables (`| Key | Title | Type | Parent | ... |`).
-   - Parses header row, delimiter divider line, and body rows.
-4. **Indented Text Outlines (`.txt`, `.md`)**:
-   - Hierarchical bulleted (`-`, `*`, `+`) or numbered lists.
-   - Derives parent-child hierarchy automatically from indentation depth (spaces or tabs).
-   - Extracts inline explicit types (e.g. `[Epic]`, `[Feature]`, `[Story]`) and inline metadata annotations (e.g. `(Key: PROJ-12, Priority: High, Points: 5)`).
-   - Formats `Title: Description` automatically when colons are present.
-5. **YAML (`.yaml`, `.yml`)**:
-   - Supports YAML lists and objects mapping directly into work item nodes.
+
+Legacy helpers for YAML / Markdown tables / indented outlines remain in the
+codebase for unit tests only (`LEGACY_PARSER_REGISTRY`) and are not wired into
+chat import.
 
 ---
 
@@ -327,7 +382,7 @@ When an attached file contains hierarchy errors:
 
 ### Incremental Backlog Synchronization Protocol
 
-When a user re-uploads an updated document (JSON, CSV, TSV, Markdown, or Outline) to modify work items:
+When a user re-uploads an updated JSON or CSV document to modify work items:
 
 1. **Identity Resolution**: Alice matches each file item against existing project items by `jira_issue_key`, database `id`, or normalized `title`.
 2. **In-Place Field Updates**: For existing matches, Alice updates fields (`title`, `description`, `priority`, `story_points`, `type`, etc.) and sets the new `parent_id` (applying hierarchy reorganizations) via `prisma.work_items.update`.
@@ -420,10 +475,13 @@ approval step before tool mutations run.
 Managers and admins configure one or more **`integrations`** rows (category
 `ai_agent`, `config.kind = chat_model`) from **Settings → Integrations**. Alice
 Chat lists active rows via `GET /api/v1/integrations/chat-models` and sends
-`integrationId` on `POST /api/v1/chat`. When `integrationId` is omitted, the
-backend uses the active workspace default. An explicitly selected missing or
-inactive integration returns **400** and is not replaced by the default. If no
-active default exists, the backend returns **400** `"No chat model configured"`.
+`integrationId` on `POST /api/v1/chat`, plus optional **`projectId`** (from the
+dock pathname or view bridge) for project → page → org resolution. When the
+project has `project_integration_bindings`, that pool (and its project default)
+wins; otherwise the active organization default is used. An explicitly selected
+missing, inactive, or unbound integration returns **400** and is not replaced
+by the default. If no active default exists, the backend returns **400**
+`"No chat model configured"`.
 
 The header uses compact **icon buttons**: a **Cpu** control opens the
 **provider → model** nested menu (`DropdownMenuSub`); selection remains the
@@ -438,11 +496,11 @@ See [SETTINGS_INTEGRATIONS.md](../integrations/SETTINGS_INTEGRATIONS.md).
 
 Per-model API keys and optional `config.api_url` live in encrypted JSONB — not in app env vars.
 
-| Variable                                     | Where                 | Purpose                                                                     |
-| -------------------------------------------- | --------------------- | --------------------------------------------------------------------------- |
-| `INTEGRATION_TOKEN_ENCRYPTION_KEY`           | `apps/api/.env`       | Encrypt/decrypt integration secrets (shared with GitHub/Jira tokens)        |
-| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Zod `env.ts` + sample | Shared service-role client (`lib/supabase.ts`) used by `chat.repository.ts` |
-| `STORAGE_BUCKET_CHAT_HISTORY`                | Zod `env.ts` + sample | Chat history bucket name (same pattern as attachments / profile pictures)   |
+| Variable                                     | Where                 | Purpose                                                                                                                   |
+| -------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `INTEGRATION_TOKEN_ENCRYPTION_KEY`           | `apps/api/.env`       | Encrypt/decrypt integration secrets **and** chat agent / tool instruction fields at rest (shared with GitHub/Jira tokens) |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Zod `env.ts` + sample | Shared service-role client (`lib/supabase.ts`) used by `chat.repository.ts`                                               |
+| `STORAGE_BUCKET_CHAT_HISTORY`                | Zod `env.ts` + sample | Chat history bucket name (same pattern as attachments / profile pictures)                                                 |
 
 Do **not** introduce `CHAT_SUPABASE_URL` / `CHAT_SUPABASE_SERVICE_ROLE_KEY` —
 chat must not maintain a second Supabase client or project. Prefer importing
@@ -452,8 +510,6 @@ chat must not maintain a second Supabase client or project. Prefer importing
 No active chat model rows → `POST /api/chat` returns **400** with a configuration message.
 
 ---
-
-## Reliability
 
 ## Reliability
 
@@ -530,6 +586,11 @@ For full step-by-step instructions for testing from the browser UI (with sample 
     deep links from action cards.
 12. Broader AI roadmap items (smart triage, NL search, Slack/Teams) are **Plan**
     only and are not provided by this chatbot.
+13. Chat model **resolution**, bindings, create/details AI enable UI,
+    **project-scoped AI mint**, and **member preferred org model** (Preferences)
+    are **shipped**. Import-from-project was removed. Personal API-key rows
+    remain **Planned** — see
+    [INTEGRATION_SCOPES.md](../integrations/INTEGRATION_SCOPES.md).
 
 ---
 
@@ -541,5 +602,6 @@ For full step-by-step instructions for testing from the browser UI (with sample 
 3. Full-page `/chat` + navbar launcher drawer on dashboard shell
 4. Action cards after successful mutations
 5. Document attachment processing (upload-session, Supabase Storage direct upload, JSON/CSV parsing, deduplication engine, batch work item import, and strict project scope guardrails)
-6. Universal multi-format parser (TSV, Markdown tables, Indented text outlines, YAML), signed URL auto-refresh & expiration handling, atomic hierarchy pre-validation & user choice protocol, incremental backlog synchronization (`updateExisting`), and action card expansion (`update_work_item`).
+6. JSON/CSV work-item attachment parser (images and other types rejected), signed URL auto-refresh & expiration handling, atomic hierarchy pre-validation & user choice protocol, incremental backlog synchronization (`updateExisting`), and action card expansion (`update_work_item`).
 7. Comprehensive hierarchy & field change detection across all attachment formats with mandatory conversational reporting, strict work-item deletion disallowance via chat (omitted items retained in backlog with user notice), and resilient chat provider network error handling with retry and exponential backoff.
+8. **Agents:** `chat_agents` + `chat_tools` / `chat_skills` catalogs, encrypted instructions at rest, admin default Alice + member fork-once, ChatService tool filtering by agent enablement, web gallery/customize on the chat-agents API, preferred agent cookie + SSR seed, conversation `agent_id` bind round-trip — see [AGENT_PERSONALIZATION.md](./AGENT_PERSONALIZATION.md). Conversation history remains in Storage until the Planned encrypted-records / worker migration.

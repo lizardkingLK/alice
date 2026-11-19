@@ -19,6 +19,7 @@ type BacklogDropZoneProps = {
   readonly emptyMessage: string;
   readonly emptyPaddingClass?: string;
   readonly emptyIconClass?: string;
+  readonly pendingSprintMoveIds?: ReadonlySet<string>;
   readonly onSelectItem: (item: DbWorkItem) => void;
   readonly onItemDragStart: (event: React.DragEvent, id: string) => void;
   readonly onDragOver: (
@@ -40,6 +41,7 @@ export function BacklogDropZone({
   emptyMessage,
   emptyPaddingClass = 'py-6',
   emptyIconClass = 'mb-1.5 h-5 w-5',
+  pendingSprintMoveIds,
   onSelectItem,
   onItemDragStart,
   onDragOver,
@@ -78,6 +80,7 @@ export function BacklogDropZone({
             item={item}
             projects={projects}
             projectMembers={projectMembers}
+            isPending={pendingSprintMoveIds?.has(item.id) ?? false}
             onSelect={onSelectItem}
             onDragStart={onItemDragStart}
           />

@@ -22,6 +22,7 @@ type BacklogPanelProps = {
   readonly projectMembers: readonly BacklogAssignee[];
   readonly isCollapsed: boolean;
   readonly isDragOver: boolean;
+  readonly pendingSprintMoveIds?: ReadonlySet<string>;
   readonly onToggle: () => void;
   readonly onCreateIssue: () => void;
   readonly onSelectItem: (item: DbWorkItem) => void;
@@ -41,6 +42,7 @@ export function BacklogPanel({
   projectMembers,
   isCollapsed,
   isDragOver,
+  pendingSprintMoveIds,
   onToggle,
   onCreateIssue,
   onSelectItem,
@@ -106,6 +108,7 @@ export function BacklogPanel({
           emptyMessage="Backlog is empty"
           emptyPaddingClass="py-10"
           emptyIconClass="mb-2 h-6 w-6"
+          pendingSprintMoveIds={pendingSprintMoveIds}
           onSelectItem={onSelectItem}
           onItemDragStart={onItemDragStart}
           onDragOver={onDragOver}

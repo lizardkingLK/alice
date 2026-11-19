@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    setupFiles: ['tests/setup.ts'],
     testTimeout: isCi ? 15_000 : 10_000,
     hookTimeout: isCi ? 15_000 : 10_000,
     ...(isCi ? { maxWorkers: 2 } : {}),

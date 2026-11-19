@@ -105,4 +105,93 @@ describe('getResponse', () => {
         'State "todo" requires escalation — outbound edge must reference a resolution preset',
     });
   });
+
+  it('aborts a request when its configured timeout expires', async () => {
+    vi.stubEnv('INTERNAL_API_URL', 'http://api.test');
+    let requestSignal: AbortSignal | null | undefined;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+        requestSignal = init?.signal;
+        return new Promise<Response>((_resolve, reject) => {
+          requestSignal?.addEventListener(
+            'abort',
+            () => reject(requestSignal?.reason),
+            { once: true }
+          );
+        });
+      })
+    );
+
+    await expect(
+      getResponse('/api/v1/sprints/sprint-1/estimates', 'token', {
+        method: 'POST',
+        timeoutMs: 5,
+      })
+    ).rejects.toMatchObject({ name: 'BackendUnreachableError' });
+    expect(requestSignal?.aborted).toBe(true);
+  });
+
+  it('returns successful binary responses as blobs', async () => {
+    vi.stubEnv('INTERNAL_API_URL', 'http://api.test');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response('xlsx-bytes', {
+          status: 200,
+          headers: {
+            'Content-Type':
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          },
+        })
+      )
+    );
+
+    const blob = await getResponse<Blob>('/api/worklogs/template', 'token', {
+      responseType: 'blob',
+    });
+
+    expect(blob).toBeInstanceOf(Blob);
+    await expect(blob.text()).resolves.toBe('xlsx-bytes');
+  });
+
+  it('keeps structured Excel row errors on ApiError details', async () => {
+    vi.stubEnv('INTERNAL_API_URL', 'http://api.test');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: 'Excel validation failed.',
+            errors: [
+              {
+                row_number: 7,
+                field: 'End Date/Time',
+                message: 'End must be later than start.',
+              },
+            ],
+          }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      )
+    );
+
+    await expect(
+      getResponse('/api/worklogs/preview', 'token', {
+        method: 'POST',
+      })
+    ).rejects.toMatchObject({
+      status: 400,
+      details: [
+        {
+          row_number: 7,
+          field: 'End Date/Time',
+          message: 'End must be later than start.',
+        },
+      ],
+    });
+  });
 });

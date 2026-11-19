@@ -4,19 +4,25 @@ import {
   DEFAULT_WORK_ITEM_PRIORITY,
   WORK_ITEM_PRIORITIES,
   ProjectStatusEnum,
-  mapToWorkItemType,
+  mapToProjectWorkItemTypeKey,
+  normalizeProjectWorkItemTypeDefs,
+  resolveProjectHierarchyFromLevels,
+  type ProjectWorkItemTypeDef,
   ChatRoles,
   ChatTurnRoles,
   toChatTurnRole,
   getAllowedChildType,
   ChatAttachmentFileTypeEnum,
   UserRoleEnum,
+  ChatConversationKinds,
+  type ChatConversationKind as ChatConversationKindValue,
   type ParsedWorkItemNode,
   ProjectFieldsConfigSchema,
   type ProjectFieldsConfig,
   ChatTurnRoleEnum,
   type WorkItemPriority,
   type WorkItemType,
+  withJiraIssueKeyDtoField,
 } from '@repo/types';
 import {
   type ChatViewContext,
@@ -30,17 +36,19 @@ import type { ProjectsRepository } from '../projects/projects.repository';
 import type { IntegrationsService } from '../integrations/integrations.service';
 import type { ResolvedChatModelConfig } from '../integrations/chat-providers/chat-provider.types';
 import { resolveChatProvider } from '../integrations/chat-providers/resolve-chat-provider';
-import {
-  systemInstruction,
-  aliceChatTools,
-  chartDescriptionSystemPrompt,
-  dynamicFieldsSystemPrompt,
-} from './chat.route.data';
+import { aliceChatTools } from './chat.route.data';
 import type { ChatRepository } from './chat.repository';
 import { ChatAttachmentsRepository } from './chat-attachments.repository';
 import { fetchAndParseWorkItemAttachment } from './chat-attachment-parser';
 import { WorkItemDeduplicationAgent } from './work-item-deduplication.agent';
 import { sanitizeLog } from './chat.utils';
+import type { ChatAgentsRepository } from '../chat-agents/chat-agents.repository';
+import {
+  CHART_DESCRIPTION_TOOL_KEY,
+  DYNAMIC_FIELDS_TOOL_KEY,
+  resolveChatAgentRuntime,
+  resolveSpecializedSystemInstruction,
+} from './chat-agent-runtime';
 import {
   parseDismissWorkflowProposalInput,
   parseProposeWorkflowPatchInput,
@@ -64,7 +72,7 @@ import type {
   StoredChatMessage,
 } from './chat.route.types';
 
-export { sanitizeLog } from './chat.utils';
+export { sanitizeLog };
 
 export type ChatServiceDeps = {
   chat: ChatRepository;
@@ -85,7 +93,22 @@ export type ChatServiceDeps = {
     'listAll' | 'findById' | 'listAccessibleProjectIds'
   >;
   integrationsService: Pick<IntegrationsService, 'resolveChatModelForChat'>;
+  chatAgents?: Pick<
+    ChatAgentsRepository,
+    | 'findVisibleById'
+    | 'findActiveDefault'
+    | 'listEnablementForAgents'
+    | 'listActiveTools'
+  >;
 };
+
+function projectTypeDefsFromWorkflowConfig(
+  workflowConfig: unknown
+): ProjectWorkItemTypeDef[] {
+  return normalizeProjectWorkItemTypeDefs(
+    (workflowConfig as { work_item_types?: unknown } | null)?.work_item_types
+  );
+}
 
 function serializeDynamicFieldValue(value: unknown): string {
   if (value === null || value === undefined) {
@@ -448,6 +471,7 @@ function isFlatItemHierarchyValid(
 interface ExistingWorkItemMatch {
   id: string;
   title: string;
+  slug?: string | null;
   jira_issue_key: string | null;
   type: string;
   status: string;
@@ -601,6 +625,7 @@ async function rollbackBatchImport(params: {
 interface ExistingWorkItemRecord {
   id: string;
   title: string;
+  slug?: string | null;
   jira_issue_key: string | null;
   type: string;
   status: string;
@@ -749,6 +774,8 @@ async function executeSingleNodeImport(
       id: existing.id,
       key: workItemKey,
       title: node.title || existing.title,
+      slug: existing.slug ?? undefined,
+      projectKey: ctx.projectKey,
     };
     ctx.updatedItems.push(summary);
     ctx.toolActionsPerformed.push({
@@ -795,6 +822,8 @@ async function executeSingleNodeImport(
       id: created.id,
       key: workItemKey,
       title: created.title,
+      slug: created.slug ?? undefined,
+      projectKey: ctx.projectKey,
     };
     ctx.createdItems.push(summary);
     ctx.toolActionsPerformed.push({
@@ -960,6 +989,8 @@ export class ChatService {
 
   resolveChatModelForChat(params: {
     integrationId?: string;
+    projectId?: string;
+    userId?: string;
     legacyModelId?: string;
   }): Promise<ResolvedChatModelConfig> {
     return this.deps.integrationsService.resolveChatModelForChat(params);
@@ -968,7 +999,10 @@ export class ChatService {
   async callChatModelAPI(
     chatModel: ResolvedChatModelConfig,
     contents: ChatContentTurn[],
-    contextInstruction: string
+    options: {
+      readonly systemInstruction: string;
+      readonly tools?: typeof aliceChatTools;
+    }
   ): Promise<ChatLlmResponse> {
     const provider = resolveChatProvider(chatModel.provider);
     return provider.generateWithTools({
@@ -976,8 +1010,8 @@ export class ChatService {
       apiUrl: chatModel.apiUrl,
       model: chatModel.model,
       contents,
-      systemInstruction: systemInstruction + '\n' + contextInstruction,
-      tools: aliceChatTools,
+      systemInstruction: options.systemInstruction,
+      tools: options.tools ?? aliceChatTools,
     });
   }
 
@@ -986,7 +1020,8 @@ export class ChatService {
     functionCalls: ChatContentPart[],
     toolActionsPerformed: ToolAction[],
     history: StoredChatMessage[] = [],
-    viewContext?: ChatViewContext | null
+    viewContext?: ChatViewContext | null,
+    enabledToolNames: ReadonlySet<string> | null = null
   ): Promise<ChatContentPart[]> {
     const callable = functionCalls.filter(
       (
@@ -1002,6 +1037,11 @@ export class ChatService {
         let result: unknown;
 
         try {
+          if (enabledToolNames && !enabledToolNames.has(name)) {
+            throw new Error(
+              `Tool "${name}" is not enabled for this chat agent.`
+            );
+          }
           result = await this.executeTool(
             userId,
             name,
@@ -1058,6 +1098,8 @@ export class ChatService {
         ),
       dismiss_workflow_proposal: () =>
         this.handleDismissWorkflowProposal(userId, args, toolActionsPerformed),
+      get_project_work_item_types: () =>
+        this.handleGetProjectWorkItemTypes(userId, args),
       create_work_item: () =>
         this.handleCreateWorkItem(userId, args, toolActionsPerformed),
       parse_work_item_attachment: () =>
@@ -1363,9 +1405,56 @@ export class ChatService {
       startDate,
       endDate,
     });
-    const result = { id: sprint.id, name: sprint.name, status: sprint.status };
+    const project = await this.deps.projectsRepository.findById(projectId);
+    const result = {
+      id: sprint.id,
+      name: sprint.name,
+      status: sprint.status,
+      slug: sprint.slug ?? undefined,
+      projectKey: project?.key ?? undefined,
+    };
     toolActionsPerformed.push({ type: 'create_sprint', entity: result });
     return result;
+  }
+
+  private async handleGetProjectWorkItemTypes(
+    userId: string,
+    args: Record<string, unknown>
+  ): Promise<unknown> {
+    const projectId = typeof args.projectId === 'string' ? args.projectId : '';
+    if (!projectId) {
+      throw new Error('projectId is required.');
+    }
+
+    const accessible =
+      await this.deps.projectsRepository.listAccessibleProjectIds(userId);
+    if (!accessible.includes(projectId)) {
+      throw new WorkItemAccessError('You do not have access to this project.');
+    }
+
+    const project = await this.deps.projectsRepository.findById(projectId);
+    if (!project) {
+      throw new Error('Project not found.');
+    }
+
+    const typeDefs = projectTypeDefsFromWorkflowConfig(project.workflow_config);
+    const hierarchy = resolveProjectHierarchyFromLevels(typeDefs);
+
+    return {
+      projectId,
+      projectName: project.name,
+      projectKey: project.key,
+      types: typeDefs.map((def) => ({
+        key: def.key,
+        name: def.name,
+        icon: def.icon,
+        color: def.color ?? null,
+        level: def.level,
+        description: def.description ?? null,
+      })),
+      hierarchy: hierarchy.parentToChild,
+      defaultTypeKey: mapToProjectWorkItemTypeKey('task', typeDefs),
+    };
   }
 
   private async handleCreateWorkItem(
@@ -1379,10 +1468,20 @@ export class ChatService {
     const assigneeId =
       typeof args.assigneeId === 'string' ? args.assigneeId : null;
 
+    if (!projectId) {
+      throw new Error('projectId is required.');
+    }
+
+    const project = await this.deps.projectsRepository.findById(projectId);
+    if (!project) {
+      throw new Error('Project not found.');
+    }
+
+    const typeDefs = projectTypeDefsFromWorkflowConfig(project.workflow_config);
     const typeValue =
       typeof args.type === 'string'
-        ? mapToWorkItemType(args.type)
-        : WorkItemTypeEnum.Task;
+        ? mapToProjectWorkItemTypeKey(args.type, typeDefs)
+        : mapToProjectWorkItemTypeKey('task', typeDefs);
 
     const rawPriority =
       typeof args.priority === 'string'
@@ -1406,10 +1505,18 @@ export class ChatService {
       description: textToProseMirrorJson(description),
       due_date: null,
     });
-    const project = await this.deps.projectsRepository.findById(projectId);
-    const projectKey = project?.key || 'TASK';
+    const projectKey = project.key || 'TASK';
     const workItemKey = `${projectKey}-${workItem.id.slice(0, 4).toUpperCase()}`;
-    const result = { id: workItem.id, key: workItemKey, title: workItem.title };
+    const typeDef = typeDefs.find((def) => def.key === typeValue);
+    const result = {
+      id: workItem.id,
+      key: workItemKey,
+      title: workItem.title,
+      type: typeValue,
+      typeName: typeDef?.name ?? typeValue,
+      slug: workItem.slug ?? undefined,
+      projectKey: project.key ?? undefined,
+    };
     toolActionsPerformed.push({ type: 'create_work_item', entity: result });
     return result;
   }
@@ -1668,13 +1775,18 @@ export class ChatService {
       select: {
         id: true,
         title: true,
-        jira_issue_key: true,
+        slug: true,
+        pm_external: true,
         type: true,
         status: true,
         parent_id: true,
         priority: true,
       },
     });
+
+    const existingWorkItemsForImport = existingWorkItems.map((row) =>
+      withJiraIssueKeyDtoField(row)
+    );
 
     const ctx = createBatchImportContext({
       userId,
@@ -1684,7 +1796,7 @@ export class ChatService {
       skipInvalidHierarchy,
       updateExisting,
       workItemService: this.deps.workItemService,
-      existingWorkItems,
+      existingWorkItems: existingWorkItemsForImport,
       skippedItems,
       toolActionsPerformed,
     });
@@ -1696,7 +1808,7 @@ export class ChatService {
 
       const omittedItems = identifyOmittedWorkItems({
         projectKey,
-        existingWorkItems,
+        existingWorkItems: existingWorkItemsForImport,
         matchedExistingIds: ctx.matchedExistingIds,
       });
 
@@ -1875,9 +1987,24 @@ export class ChatService {
   async createConversation(
     userId: string,
     title = 'New Chat',
-    isProcessing = false
+    isProcessing = false,
+    kind: ChatConversationKindValue = ChatConversationKinds.general,
+    agentId?: string | null
   ): Promise<string> {
-    return this.chat.createConversation(userId, title, isProcessing);
+    return this.chat.createConversation(
+      userId,
+      title,
+      isProcessing,
+      kind,
+      agentId
+    );
+  }
+
+  async getConversationAgentId(
+    userId: string,
+    conversationId: string
+  ): Promise<string | null> {
+    return this.chat.getConversationAgentId(userId, conversationId);
   }
 
   async setProcessingStatus(
@@ -2002,8 +2129,14 @@ Active UI View Context:
     userId: string,
     history: StoredChatMessage[],
     chatModel: ResolvedChatModelConfig,
-    viewContext?: ChatViewContext | null
+    viewContext?: ChatViewContext | null,
+    agentId?: string | null
   ): Promise<{ responseText: string; toolActionsPerformed: ToolAction[] }> {
+    const agentRuntime = await resolveChatAgentRuntime({
+      userId,
+      agentId,
+      chatAgents: this.deps.chatAgents,
+    });
     const contents: ChatContentTurn[] = history.map((msg) => {
       const role = toChatTurnRole(msg.role);
       let text = msg.content;
@@ -2038,7 +2171,7 @@ Active UI View Context:
       attachmentsInstruction = `
 User Attached Documents in Conversation:
 ${attachmentsList}
-You should access and parse these attachments using "parse_work_item_attachment". When calling "check_work_item_duplicates" or "batch_import_work_items", pass the attachmentUrl (or file name) or the parsed items.
+Only JSON (.json) and CSV (.csv) attachments can be parsed as work items. If an attachment is an image or another unsupported type, tell the user to upload a JSON or CSV file instead — do not call "parse_work_item_attachment" for those. For supported attachments, use "parse_work_item_attachment". When calling "check_work_item_duplicates" or "batch_import_work_items", pass the attachmentUrl (or file name) or the parsed items.
 `;
     }
 
@@ -2059,11 +2192,10 @@ ${this.buildViewContextInstruction(viewContext)}
         return '';
       }
 
-      const llmResponse = await this.callChatModelAPI(
-        chatModel,
-        contents,
-        contextInstruction
-      );
+      const llmResponse = await this.callChatModelAPI(chatModel, contents, {
+        systemInstruction: `${agentRuntime.instructions}\n${contextInstruction}`,
+        tools: agentRuntime.tools,
+      });
       const candidate = llmResponse.candidates?.[0];
       const modelContent = candidate?.content;
 
@@ -2089,7 +2221,8 @@ ${this.buildViewContextInstruction(viewContext)}
         functionCalls,
         toolActionsPerformed,
         history,
-        viewContext
+        viewContext,
+        agentRuntime.enabledToolNames
       );
       contents.push({
         role: ChatTurnRoles.User,
@@ -2108,7 +2241,8 @@ ${this.buildViewContextInstruction(viewContext)}
     conversationId: string,
     history: StoredChatMessage[],
     chatModel: ResolvedChatModelConfig,
-    viewContext?: ChatViewContext | null
+    viewContext?: ChatViewContext | null,
+    agentId?: string | null
   ): Promise<void> {
     try {
       const { responseText, toolActionsPerformed } =
@@ -2116,7 +2250,8 @@ ${this.buildViewContextInstruction(viewContext)}
           userId,
           history,
           chatModel,
-          viewContext
+          viewContext,
+          agentId
         );
 
       const newAssistantMessage: StoredChatMessage = {
@@ -2200,11 +2335,17 @@ ${this.buildViewContextInstruction(viewContext)}
       },
     ];
 
-    const response = await this.callChatModelAPI(
-      chatModel,
-      contents,
-      chartDescriptionSystemPrompt
-    );
+    const agentRuntime = await resolveChatAgentRuntime({
+      userId: '',
+      chatAgents: this.deps.chatAgents,
+    });
+    const response = await this.callChatModelAPI(chatModel, contents, {
+      systemInstruction: resolveSpecializedSystemInstruction(
+        agentRuntime,
+        CHART_DESCRIPTION_TOOL_KEY
+      ),
+      tools: [],
+    });
 
     const parts = response.candidates?.[0]?.content?.parts ?? [];
     let text = '';
@@ -2239,11 +2380,25 @@ ${this.buildViewContextInstruction(viewContext)}
       },
     ];
 
-    const response = await this.callChatModelAPI(
-      chatModel,
-      contents,
-      dynamicFieldsSystemPrompt
+    const agentRuntime = await resolveChatAgentRuntime({
+      userId: '',
+      chatAgents: this.deps.chatAgents,
+    });
+    const dynamicFieldsTool = agentRuntime.tools.filter(
+      (tool) => tool.name === DYNAMIC_FIELDS_TOOL_KEY
     );
+    const response = await this.callChatModelAPI(chatModel, contents, {
+      systemInstruction: resolveSpecializedSystemInstruction(
+        agentRuntime,
+        DYNAMIC_FIELDS_TOOL_KEY
+      ),
+      tools:
+        dynamicFieldsTool.length > 0
+          ? dynamicFieldsTool
+          : aliceChatTools.filter(
+              (tool) => tool.name === DYNAMIC_FIELDS_TOOL_KEY
+            ),
+    });
 
     const parts = response.candidates?.[0]?.content?.parts ?? [];
     const toolCallParsed = tryExtractToolCallSchema(parts);

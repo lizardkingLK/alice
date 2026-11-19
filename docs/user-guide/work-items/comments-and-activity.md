@@ -22,14 +22,19 @@ Use the rich-text composer to add comments. You can:
 - Submit with **Ctrl/⌘+Enter**
 - Press **M** to focus the composer from elsewhere on the page
 
+React to a comment with the emoji chips under it, or open **Add reaction** to
+pick from a small set (including 👍). Hover a chip to see who reacted. The time
+under each comment is relative (for example, “2 minutes ago”); hover it for the
+full date and time.
+
 On the global **Comments** page, `#` suggestions appear after you pick a target
 work item (scoped to that item's project).
 
 Mentions and replies can generate [notifications](../notifications/dashboard-inbox.md)
 for mentionable teammates.
 
-While you keep the work-item page open, new and edited comments from teammates
-(or another tab) appear in Discussion without refreshing the page.
+While you keep the work-item page open, new and edited comments (and reactions)
+from teammates (or another tab) appear in Discussion without refreshing the page.
 
 ---
 
@@ -68,6 +73,8 @@ Work Log tab bar (or **+** next to **Time Tracking** in the sidebar) to open the
 log-work dialog. Done or archived items may hide that control.
 
 New work-log entries from teammates appear live while the page stays open.
+
+To add several entries, see [Upload worklogs from Excel](./work-log-excel-upload.md).
 
 ---
 

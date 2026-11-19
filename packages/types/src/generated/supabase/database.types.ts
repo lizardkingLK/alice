@@ -409,6 +409,185 @@ export type Database = {
           },
         ]
       }
+      chat_agent_skills: {
+        Row: {
+          agent_id: string
+          created_at: string
+          enabled: boolean
+          id: string
+          skill_id: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          skill_id: string
+          updated_at: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          skill_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_agent_skills_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "chat_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_agent_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "chat_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_agent_tools: {
+        Row: {
+          agent_id: string
+          created_at: string
+          enabled: boolean
+          id: string
+          tool_id: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          tool_id: string
+          updated_at: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          tool_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_agent_tools_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "chat_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_agent_tools_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "chat_tools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_agents: {
+        Row: {
+          autonomy: Database["public"]["Enums"]["ChatAgentAutonomy"]
+          avatar_seed: string
+          avatar_style: string
+          created_at: string
+          created_by: string | null
+          description: string
+          forked_from_id: string | null
+          id: string
+          instructions: string
+          is_default: boolean
+          key: string | null
+          name: string
+          owner_id: string | null
+          status: Database["public"]["Enums"]["RecordStatus"]
+          tagline: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          autonomy?: Database["public"]["Enums"]["ChatAgentAutonomy"]
+          avatar_seed?: string
+          avatar_style?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          forked_from_id?: string | null
+          id?: string
+          instructions: string
+          is_default?: boolean
+          key?: string | null
+          name: string
+          owner_id?: string | null
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          tagline?: string
+          title: string
+          updated_at: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          autonomy?: Database["public"]["Enums"]["ChatAgentAutonomy"]
+          avatar_seed?: string
+          avatar_style?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          forked_from_id?: string | null
+          id?: string
+          instructions?: string
+          is_default?: boolean
+          key?: string | null
+          name?: string
+          owner_id?: string | null
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          tagline?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_agents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_agents_forked_from_id_fkey"
+            columns: ["forked_from_id"]
+            isOneToOne: false
+            referencedRelation: "chat_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_agents_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_agents_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_attachments: {
         Row: {
           conversation_id: string | null
@@ -468,30 +647,43 @@ export type Database = {
       }
       chat_conversations: {
         Row: {
+          agent_id: string | null
           created_at: string
           id: string
           is_processing: boolean
+          kind: Database["public"]["Enums"]["ChatConversationKind"]
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          agent_id?: string | null
           created_at?: string
           id?: string
           is_processing?: boolean
+          kind?: Database["public"]["Enums"]["ChatConversationKind"]
           title?: string
           updated_at: string
           user_id: string
         }
         Update: {
+          agent_id?: string | null
           created_at?: string
           id?: string
           is_processing?: boolean
+          kind?: Database["public"]["Enums"]["ChatConversationKind"]
           title?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "chat_conversations_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "chat_agents"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "chat_conversations_user_id_fkey"
             columns: ["user_id"]
@@ -500,6 +692,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      chat_skills: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          key: string
+          label: string
+          sort_order: number
+          status: Database["public"]["Enums"]["RecordStatus"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          key: string
+          label: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          updated_at: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          key?: string
+          label?: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chat_tools: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          instruction: string | null
+          key: string
+          label: string
+          sort_order: number
+          status: Database["public"]["Enums"]["RecordStatus"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          instruction?: string | null
+          key: string
+          label: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          updated_at: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          instruction?: string | null
+          key?: string
+          label?: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["RecordStatus"]
+          updated_at?: string
+        }
+        Relationships: []
       }
       comments: {
         Row: {
@@ -510,6 +771,7 @@ export type Database = {
           edited: boolean
           id: string
           parent_id: string | null
+          reactions: Json
           status: Database["public"]["Enums"]["RecordStatus"]
           updated_at: string
           updated_by: string | null
@@ -523,6 +785,7 @@ export type Database = {
           edited?: boolean
           id?: string
           parent_id?: string | null
+          reactions?: Json
           status?: Database["public"]["Enums"]["RecordStatus"]
           updated_at: string
           updated_by?: string | null
@@ -536,6 +799,7 @@ export type Database = {
           edited?: boolean
           id?: string
           parent_id?: string | null
+          reactions?: Json
           status?: Database["public"]["Enums"]["RecordStatus"]
           updated_at?: string
           updated_by?: string | null
@@ -579,56 +843,6 @@ export type Database = {
           },
         ]
       }
-      github_pull_requests: {
-        Row: {
-          branch_name: string | null
-          created_at: string
-          id: string
-          pr_number: number
-          pr_title: string
-          pr_url: string
-          repo_name: string
-          repo_owner: string
-          status: string | null
-          updated_at: string
-          work_item_id: string
-        }
-        Insert: {
-          branch_name?: string | null
-          created_at?: string
-          id?: string
-          pr_number: number
-          pr_title: string
-          pr_url: string
-          repo_name: string
-          repo_owner: string
-          status?: string | null
-          updated_at: string
-          work_item_id: string
-        }
-        Update: {
-          branch_name?: string | null
-          created_at?: string
-          id?: string
-          pr_number?: number
-          pr_title?: string
-          pr_url?: string
-          repo_name?: string
-          repo_owner?: string
-          status?: string | null
-          updated_at?: string
-          work_item_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "github_pull_requests_work_item_id_fkey"
-            columns: ["work_item_id"]
-            isOneToOne: false
-            referencedRelation: "work_items"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       integrations: {
         Row: {
           catalog_id: string
@@ -640,6 +854,7 @@ export type Database = {
           is_default: boolean
           name: string
           provider: string
+          scope: Database["public"]["Enums"]["IntegrationScope"]
           sort_order: number
           status: Database["public"]["Enums"]["IntegrationStatus"]
           updated_at: string
@@ -655,6 +870,7 @@ export type Database = {
           is_default?: boolean
           name: string
           provider: string
+          scope?: Database["public"]["Enums"]["IntegrationScope"]
           sort_order?: number
           status?: Database["public"]["Enums"]["IntegrationStatus"]
           updated_at: string
@@ -670,6 +886,7 @@ export type Database = {
           is_default?: boolean
           name?: string
           provider?: string
+          scope?: Database["public"]["Enums"]["IntegrationScope"]
           sort_order?: number
           status?: Database["public"]["Enums"]["IntegrationStatus"]
           updated_at?: string
@@ -686,59 +903,6 @@ export type Database = {
           {
             foreignKeyName: "integrations_updated_by_fkey"
             columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      jira_connections: {
-        Row: {
-          access_token_enc: string | null
-          access_token_expires_at: string | null
-          account_email: string | null
-          cloud_id: string
-          created_at: string
-          id: string
-          refresh_token_enc: string
-          scopes: string
-          site_url: string
-          status: Database["public"]["Enums"]["JiraConnectionStatus"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          access_token_enc?: string | null
-          access_token_expires_at?: string | null
-          account_email?: string | null
-          cloud_id: string
-          created_at?: string
-          id?: string
-          refresh_token_enc: string
-          scopes: string
-          site_url: string
-          status?: Database["public"]["Enums"]["JiraConnectionStatus"]
-          updated_at: string
-          user_id: string
-        }
-        Update: {
-          access_token_enc?: string | null
-          access_token_expires_at?: string | null
-          account_email?: string | null
-          cloud_id?: string
-          created_at?: string
-          id?: string
-          refresh_token_enc?: string
-          scopes?: string
-          site_url?: string
-          status?: Database["public"]["Enums"]["JiraConnectionStatus"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "jira_connections_user_id_fkey"
-            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -802,6 +966,124 @@ export type Database = {
           },
           {
             foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_integration_bindings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          integration_id: string
+          is_default_for_project: boolean
+          project_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          integration_id: string
+          is_default_for_project?: boolean
+          project_id: string
+          updated_at: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          integration_id?: string
+          is_default_for_project?: boolean
+          project_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_integration_bindings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_integration_bindings_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_integration_bindings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_integration_bindings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_management_connections: {
+        Row: {
+          access_token_enc: string | null
+          access_token_expires_at: string | null
+          created_at: string
+          display_label: string | null
+          external_id: string
+          id: string
+          provider_config: Json
+          refresh_token_enc: string
+          scopes: string
+          status: Database["public"]["Enums"]["ProjectManagementConnectionStatus"]
+          updated_at: string
+          user_id: string
+          vendor: Database["public"]["Enums"]["ProjectManagementVendor"]
+        }
+        Insert: {
+          access_token_enc?: string | null
+          access_token_expires_at?: string | null
+          created_at?: string
+          display_label?: string | null
+          external_id: string
+          id?: string
+          provider_config?: Json
+          refresh_token_enc: string
+          scopes: string
+          status?: Database["public"]["Enums"]["ProjectManagementConnectionStatus"]
+          updated_at: string
+          user_id: string
+          vendor: Database["public"]["Enums"]["ProjectManagementVendor"]
+        }
+        Update: {
+          access_token_enc?: string | null
+          access_token_expires_at?: string | null
+          created_at?: string
+          display_label?: string | null
+          external_id?: string
+          id?: string
+          provider_config?: Json
+          refresh_token_enc?: string
+          scopes?: string
+          status?: Database["public"]["Enums"]["ProjectManagementConnectionStatus"]
+          updated_at?: string
+          user_id?: string
+          vendor?: Database["public"]["Enums"]["ProjectManagementVendor"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_management_connections_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -877,19 +1159,20 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           end_date: string | null
-          github_repo: string | null
-          github_token: string | null
+          figma_url: string | null
           id: string
-          jira_connection_id: string | null
-          jira_project_key: string | null
           key: string
           logo_url: string | null
           name: string
           owner_id: string
+          pm_connection_id: string | null
+          pm_external: Json | null
           start_date: string | null
           status: Database["public"]["Enums"]["ProjectStatus"]
           updated_at: string
           updated_by: string | null
+          vc_connection_id: string | null
+          vc_external: Json | null
           workflow_config: Json | null
         }
         Insert: {
@@ -900,19 +1183,20 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           end_date?: string | null
-          github_repo?: string | null
-          github_token?: string | null
+          figma_url?: string | null
           id?: string
-          jira_connection_id?: string | null
-          jira_project_key?: string | null
           key: string
           logo_url?: string | null
           name: string
           owner_id: string
+          pm_connection_id?: string | null
+          pm_external?: Json | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["ProjectStatus"]
           updated_at: string
           updated_by?: string | null
+          vc_connection_id?: string | null
+          vc_external?: Json | null
           workflow_config?: Json | null
         }
         Update: {
@@ -923,19 +1207,20 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           end_date?: string | null
-          github_repo?: string | null
-          github_token?: string | null
+          figma_url?: string | null
           id?: string
-          jira_connection_id?: string | null
-          jira_project_key?: string | null
           key?: string
           logo_url?: string | null
           name?: string
           owner_id?: string
+          pm_connection_id?: string | null
+          pm_external?: Json | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["ProjectStatus"]
           updated_at?: string
           updated_by?: string | null
+          vc_connection_id?: string | null
+          vc_external?: Json | null
           workflow_config?: Json | null
         }
         Relationships: [
@@ -947,13 +1232,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "projects_jira_connection_id_fkey"
-            columns: ["jira_connection_id"]
-            isOneToOne: false
-            referencedRelation: "jira_connections"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "projects_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
@@ -961,10 +1239,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "projects_pm_connection_id_fkey"
+            columns: ["pm_connection_id"]
+            isOneToOne: false
+            referencedRelation: "project_management_connections"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "projects_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_vc_connection_id_fkey"
+            columns: ["vc_connection_id"]
+            isOneToOne: false
+            referencedRelation: "version_control_connections"
             referencedColumns: ["id"]
           },
         ]
@@ -1169,6 +1461,7 @@ export type Database = {
           id: string
           name: string
           project_id: string
+          slug: string
           start_date: string
           status: Database["public"]["Enums"]["SprintStatus"]
           summary_report: Json | null
@@ -1183,6 +1476,7 @@ export type Database = {
           id?: string
           name: string
           project_id: string
+          slug: string
           start_date: string
           status?: Database["public"]["Enums"]["SprintStatus"]
           summary_report?: Json | null
@@ -1197,6 +1491,7 @@ export type Database = {
           id?: string
           name?: string
           project_id?: string
+          slug?: string
           start_date?: string
           status?: Database["public"]["Enums"]["SprintStatus"]
           summary_report?: Json | null
@@ -1442,6 +1737,195 @@ export type Database = {
           },
         ]
       }
+      version_control_connections: {
+        Row: {
+          access_token_enc: string | null
+          access_token_expires_at: string | null
+          created_at: string
+          display_label: string | null
+          external_id: string
+          id: string
+          provider_config: Json
+          refresh_token_enc: string
+          scopes: string
+          status: Database["public"]["Enums"]["VersionControlConnectionStatus"]
+          updated_at: string
+          user_id: string
+          vendor: Database["public"]["Enums"]["VersionControlVendor"]
+        }
+        Insert: {
+          access_token_enc?: string | null
+          access_token_expires_at?: string | null
+          created_at?: string
+          display_label?: string | null
+          external_id: string
+          id?: string
+          provider_config?: Json
+          refresh_token_enc: string
+          scopes: string
+          status?: Database["public"]["Enums"]["VersionControlConnectionStatus"]
+          updated_at: string
+          user_id: string
+          vendor: Database["public"]["Enums"]["VersionControlVendor"]
+        }
+        Update: {
+          access_token_enc?: string | null
+          access_token_expires_at?: string | null
+          created_at?: string
+          display_label?: string | null
+          external_id?: string
+          id?: string
+          provider_config?: Json
+          refresh_token_enc?: string
+          scopes?: string
+          status?: Database["public"]["Enums"]["VersionControlConnectionStatus"]
+          updated_at?: string
+          user_id?: string
+          vendor?: Database["public"]["Enums"]["VersionControlVendor"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "version_control_connections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      version_control_pull_requests: {
+        Row: {
+          branch_name: string | null
+          created_at: string
+          id: string
+          pr_number: number
+          pr_title: string
+          pr_url: string
+          repo_name: string
+          repo_owner: string
+          status: string | null
+          updated_at: string
+          vendor: Database["public"]["Enums"]["VersionControlVendor"]
+          work_item_id: string
+        }
+        Insert: {
+          branch_name?: string | null
+          created_at?: string
+          id?: string
+          pr_number: number
+          pr_title: string
+          pr_url: string
+          repo_name: string
+          repo_owner: string
+          status?: string | null
+          updated_at: string
+          vendor?: Database["public"]["Enums"]["VersionControlVendor"]
+          work_item_id: string
+        }
+        Update: {
+          branch_name?: string | null
+          created_at?: string
+          id?: string
+          pr_number?: number
+          pr_title?: string
+          pr_url?: string
+          repo_name?: string
+          repo_owner?: string
+          status?: string | null
+          updated_at?: string
+          vendor?: Database["public"]["Enums"]["VersionControlVendor"]
+          work_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "version_control_pull_requests_work_item_id_fkey"
+            columns: ["work_item_id"]
+            isOneToOne: false
+            referencedRelation: "work_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_item_chart_hierarchy_rollups: {
+        Row: {
+          assignee_id: string | null
+          bucket_date: string
+          item_count: number
+          parent_id: string | null
+          priority: Database["public"]["Enums"]["WorkItemPriority"]
+          project_id: string
+          sprint_id: string | null
+          state_id: string
+          status: Database["public"]["Enums"]["WorkItemStatus"]
+          status_category: string
+          story_points: number
+          type: string
+          work_item_id: string
+          workflow_id: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          bucket_date: string
+          item_count?: number
+          parent_id?: string | null
+          priority: Database["public"]["Enums"]["WorkItemPriority"]
+          project_id: string
+          sprint_id?: string | null
+          state_id: string
+          status: Database["public"]["Enums"]["WorkItemStatus"]
+          status_category: string
+          story_points?: number
+          type: string
+          work_item_id: string
+          workflow_id: string
+        }
+        Update: {
+          assignee_id?: string | null
+          bucket_date?: string
+          item_count?: number
+          parent_id?: string | null
+          priority?: Database["public"]["Enums"]["WorkItemPriority"]
+          project_id?: string
+          sprint_id?: string | null
+          state_id?: string
+          status?: Database["public"]["Enums"]["WorkItemStatus"]
+          status_category?: string
+          story_points?: number
+          type?: string
+          work_item_id?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_item_chart_hierarchy_rollups_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_item_chart_hierarchy_rollups_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_item_chart_hierarchy_rollups_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "sprints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_item_chart_hierarchy_rollups_work_item_id_fkey"
+            columns: ["work_item_id"]
+            isOneToOne: true
+            referencedRelation: "work_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_item_chart_rollups: {
         Row: {
           assignee_id: string | null
@@ -1454,7 +1938,7 @@ export type Database = {
           state_id: string
           status: Database["public"]["Enums"]["WorkItemStatus"]
           status_category: string
-          type: Database["public"]["Enums"]["WorkItemType"]
+          type: string
           workflow_id: string
         }
         Insert: {
@@ -1468,7 +1952,7 @@ export type Database = {
           state_id: string
           status: Database["public"]["Enums"]["WorkItemStatus"]
           status_category: string
-          type: Database["public"]["Enums"]["WorkItemType"]
+          type: string
           workflow_id: string
         }
         Update: {
@@ -1482,7 +1966,7 @@ export type Database = {
           state_id?: string
           status?: Database["public"]["Enums"]["WorkItemStatus"]
           status_category?: string
-          type?: Database["public"]["Enums"]["WorkItemType"]
+          type?: string
           workflow_id?: string
         }
         Relationships: [
@@ -1505,6 +1989,65 @@ export type Database = {
             columns: ["sprint_id"]
             isOneToOne: false
             referencedRelation: "sprints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_item_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          link_type: Database["public"]["Enums"]["WorkItemLinkType"]
+          project_id: string
+          source_id: string
+          target_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          link_type?: Database["public"]["Enums"]["WorkItemLinkType"]
+          project_id: string
+          source_id: string
+          target_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          link_type?: Database["public"]["Enums"]["WorkItemLinkType"]
+          project_id?: string
+          source_id?: string
+          target_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_item_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_item_links_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_item_links_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "work_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_item_links_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "work_items"
             referencedColumns: ["id"]
           },
         ]
@@ -1576,9 +2119,9 @@ export type Database = {
           done_at: string | null
           due_date: string | null
           id: string
-          jira_issue_key: string | null
           labels: Json
           parent_id: string | null
+          pm_external: Json | null
           priority: Database["public"]["Enums"]["WorkItemPriority"]
           project_id: string
           record_status: Database["public"]["Enums"]["RecordStatus"]
@@ -1590,8 +2133,9 @@ export type Database = {
           status: Database["public"]["Enums"]["WorkItemStatus"]
           status_category: string
           story_points: number | null
+          slug: string
           title: string
-          type: Database["public"]["Enums"]["WorkItemType"]
+          type: string
           updated_at: string
           updated_by: string | null
         }
@@ -1604,9 +2148,9 @@ export type Database = {
           done_at?: string | null
           due_date?: string | null
           id?: string
-          jira_issue_key?: string | null
           labels?: Json
           parent_id?: string | null
+          pm_external?: Json | null
           priority?: Database["public"]["Enums"]["WorkItemPriority"]
           project_id: string
           record_status?: Database["public"]["Enums"]["RecordStatus"]
@@ -1618,8 +2162,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["WorkItemStatus"]
           status_category?: string
           story_points?: number | null
+          slug: string
           title: string
-          type: Database["public"]["Enums"]["WorkItemType"]
+          type: string
           updated_at: string
           updated_by?: string | null
         }
@@ -1632,9 +2177,9 @@ export type Database = {
           done_at?: string | null
           due_date?: string | null
           id?: string
-          jira_issue_key?: string | null
           labels?: Json
           parent_id?: string | null
+          pm_external?: Json | null
           priority?: Database["public"]["Enums"]["WorkItemPriority"]
           project_id?: string
           record_status?: Database["public"]["Enums"]["RecordStatus"]
@@ -1646,8 +2191,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["WorkItemStatus"]
           status_category?: string
           story_points?: number | null
+          slug?: string
           title?: string
-          type?: Database["public"]["Enums"]["WorkItemType"]
+          type?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -1708,31 +2254,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_backlog_workspace_bundle: {
-        Args: { p_project_ids: string[] }
-        Returns: Json
-      }
-      get_project_workspace_bundle: {
-        Args: { p_project_id: string }
-        Returns: Json
-      }
-      get_work_items_hierarchy_page: {
-        Args: {
-          p_assignee_id?: string | null
-          p_focus_id?: string | null
-          p_labels?: Json | null
-          p_page?: number
-          p_page_size?: number
-          p_project_id?: string | null
-          p_project_ids?: string[] | null
-          p_record_status?: string
-          p_search?: string | null
-          p_sprint_id?: string | null
-          p_sprint_is_null?: boolean
-          p_type?: Database["public"]["Enums"]["WorkItemType"] | null
-        }
-        Returns: Json
-      }
+      can_access_project: { Args: { p_project_id: string }; Returns: boolean }
       deactivate_user_guarded: {
         Args: {
           p_actor_id: string
@@ -1761,6 +2283,42 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_backlog_workspace_bundle: {
+        Args: { p_project_ids: string[] }
+        Returns: Json
+      }
+      get_worklog_burndown_pending: {
+        Args: { p_as_of?: string }
+        Returns: {
+          assignee_id: string
+          estimated_points: number
+          ideal_spent_eod: number
+          logged_hours: number
+          pending_hours: number
+          sprint_id: string
+        }[]
+      }
+      get_project_workspace_bundle: {
+        Args: { p_project_id: string }
+        Returns: Json
+      }
+      get_work_items_hierarchy_page: {
+        Args: {
+          p_assignee_id?: string
+          p_focus_id?: string
+          p_labels?: Json
+          p_page?: number
+          p_page_size?: number
+          p_project_id?: string
+          p_project_ids?: string[]
+          p_record_status?: string
+          p_search?: string
+          p_sprint_id?: string
+          p_sprint_is_null?: boolean
+          p_type?: string
+        }
+        Returns: Json
+      }
       rebuild_sprint_burndown_rollups: {
         Args: { p_sprint_id: string }
         Returns: undefined
@@ -1768,6 +2326,24 @@ export type Database = {
       work_item_chart_category_from_status: {
         Args: { p_status: Database["public"]["Enums"]["WorkItemStatus"] }
         Returns: string
+      }
+      work_item_chart_hierarchy_rollup_upsert: {
+        Args: {
+          p_assignee_id: string
+          p_bucket_date: string
+          p_parent_id: string
+          p_priority: Database["public"]["Enums"]["WorkItemPriority"]
+          p_project_id: string
+          p_sprint_id: string
+          p_state_id: string
+          p_status: Database["public"]["Enums"]["WorkItemStatus"]
+          p_status_category: string
+          p_story_points: number
+          p_type: string
+          p_work_item_id: string
+          p_workflow_id: string
+        }
+        Returns: undefined
       }
       work_item_chart_resolve_placement: {
         Args: {
@@ -1792,7 +2368,7 @@ export type Database = {
           p_state_id: string
           p_status: Database["public"]["Enums"]["WorkItemStatus"]
           p_status_category: string
-          p_type: Database["public"]["Enums"]["WorkItemType"]
+          p_type: string
           p_workflow_id: string
         }
         Returns: undefined
@@ -1807,7 +2383,7 @@ export type Database = {
           p_state_id: string
           p_status: Database["public"]["Enums"]["WorkItemStatus"]
           p_status_category: string
-          p_type: Database["public"]["Enums"]["WorkItemType"]
+          p_type: string
           p_workflow_id: string
         }
         Returns: string
@@ -1825,13 +2401,15 @@ export type Database = {
         | "commented"
         | "workflow_transition"
         | "escalation_resolved"
+      ChatAgentAutonomy: "suggest" | "approve"
+      ChatConversationKind: "general" | "temporary"
       IntegrationCategory:
         | "ai_agent"
         | "communication"
         | "design"
         | "productivity"
+      IntegrationScope: "organization" | "project" | "member"
       IntegrationStatus: "active" | "disabled" | "draft"
-      JiraConnectionStatus: "active" | "revoked" | "expired"
       NotificationType:
         | "assign"
         | "status_change"
@@ -1845,12 +2423,22 @@ export type Database = {
         | "chart_shared"
         | "project_created"
         | "project_create_failed"
+        | "worklog_pending"
+        | "entity_archived"
+        | "entity_archive_failed"
+        | "entity_purged"
+        | "entity_purge_failed"
+      ProjectManagementConnectionStatus: "active" | "revoked" | "expired"
+      ProjectManagementVendor: "jira"
       ProjectStatus: "active" | "archived"
       RecordStatus: "active" | "inactive" | "archived" | "deleted"
       SavedViewResourceKind: "page" | "chart"
       SprintStatus: "planned" | "active" | "closed" | "archived"
       UserMembershipStatus: "pending" | "active"
       UserRole: "admin" | "manager" | "member"
+      VersionControlConnectionStatus: "active" | "revoked" | "expired"
+      VersionControlVendor: "github"
+      WorkItemLinkType: "relates_to"
       WorkItemPriority: "lowest" | "low" | "medium" | "high" | "highest"
       WorkItemStatus:
         | "Draft"
@@ -1859,7 +2447,6 @@ export type Database = {
         | "InProgress"
         | "Testing"
         | "Done"
-      WorkItemType: "Epic" | "Story" | "Task" | "Issue" | "Feature"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1999,14 +2586,16 @@ export const Constants = {
         "workflow_transition",
         "escalation_resolved",
       ],
+      ChatAgentAutonomy: ["suggest", "approve"],
+      ChatConversationKind: ["general", "temporary"],
       IntegrationCategory: [
         "ai_agent",
         "communication",
         "design",
         "productivity",
       ],
+      IntegrationScope: ["organization", "project", "member"],
       IntegrationStatus: ["active", "disabled", "draft"],
-      JiraConnectionStatus: ["active", "revoked", "expired"],
       NotificationType: [
         "assign",
         "status_change",
@@ -2020,16 +2609,25 @@ export const Constants = {
         "chart_shared",
         "project_created",
         "project_create_failed",
+        "worklog_pending",
+        "entity_archived",
+        "entity_archive_failed",
+        "entity_purged",
+        "entity_purge_failed",
       ],
+      ProjectManagementConnectionStatus: ["active", "revoked", "expired"],
+      ProjectManagementVendor: ["jira"],
       ProjectStatus: ["active", "archived"],
       RecordStatus: ["active", "inactive", "archived", "deleted"],
       SavedViewResourceKind: ["page", "chart"],
       SprintStatus: ["planned", "active", "closed", "archived"],
       UserMembershipStatus: ["pending", "active"],
       UserRole: ["admin", "manager", "member"],
+      VersionControlConnectionStatus: ["active", "revoked", "expired"],
+      VersionControlVendor: ["github"],
+      WorkItemLinkType: ["relates_to"],
       WorkItemPriority: ["lowest", "low", "medium", "high", "highest"],
       WorkItemStatus: ["Draft", "New", "ToDo", "InProgress", "Testing", "Done"],
-      WorkItemType: ["Epic", "Story", "Task", "Issue", "Feature"],
     },
   },
 } as const

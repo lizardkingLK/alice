@@ -97,6 +97,7 @@ const mockProjectRow = {
   deleted_at: null,
   logo_url: null,
   cover_picture: null,
+  figma_url: null,
   owner: { id: 'owner-1', name: 'Owner', email: 'owner@example.com' },
 };
 
@@ -199,6 +200,30 @@ describe('ProjectsRepository Prisma reads', () => {
     });
   });
 
+  it('atomically inserts a member while ignoring a concurrent duplicate', async () => {
+    memberCreateManyMock.mockResolvedValueOnce({ count: 1 });
+
+    await expect(
+      repository.addMember('project-1', 'user-1', 'actor-1')
+    ).resolves.toBe(true);
+    expect(memberCreateManyMock).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          project_id: 'project-1',
+          user_id: 'user-1',
+          created_by: 'actor-1',
+          updated_by: 'actor-1',
+        }),
+      ],
+      skipDuplicates: true,
+    });
+
+    memberCreateManyMock.mockResolvedValueOnce({ count: 0 });
+    await expect(
+      repository.addMember('project-1', 'user-1', 'actor-1')
+    ).resolves.toBe(false);
+  });
+
   it('persists workflow config through the optimistic project update', async () => {
     updateManyMock.mockResolvedValue({ count: 1 });
     const expectedUpdatedAt = '2026-08-25T12:00:00.000Z';
@@ -247,6 +272,49 @@ describe('ProjectsRepository Prisma reads', () => {
 
     const data = updateManyMock.mock.calls[0]?.[0].data;
     expect(data).not.toHaveProperty('workflow_config');
+  });
+
+  it('stores different Figma links on different project rows', async () => {
+    updateManyMock.mockResolvedValue({ count: 1 });
+    findUniqueMock.mockImplementation(
+      async ({ where }: { where: { id: string } }) => ({
+        ...mockProjectRow,
+        id: where.id,
+      })
+    );
+    const expectedUpdatedAt = '2026-08-25T12:00:00.000Z';
+
+    await repository.update(
+      'project-a',
+      { figma_url: 'https://www.figma.com/design/file-a/Alice' },
+      'actor-1',
+      expectedUpdatedAt
+    );
+    await repository.update(
+      'project-b',
+      { figma_url: 'https://www.figma.com/design/file-b/Bob' },
+      'actor-1',
+      expectedUpdatedAt
+    );
+
+    expect(updateManyMock).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'project-a' }),
+        data: expect.objectContaining({
+          figma_url: 'https://www.figma.com/design/file-a/Alice',
+        }),
+      })
+    );
+    expect(updateManyMock).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'project-b' }),
+        data: expect.objectContaining({
+          figma_url: 'https://www.figma.com/design/file-b/Bob',
+        }),
+      })
+    );
   });
 
   it('keeps optimistic-lock conflict behavior for workflow config saves', async () => {
@@ -331,6 +399,7 @@ describe('ProjectsRepository Prisma reads', () => {
     expect(sprintCreateMock).toHaveBeenCalledWith({
       data: {
         name: 'Sprint 1',
+        slug: 'sprint-1',
         goal: null,
         start_date: new Date('2099-09-01'),
         end_date: new Date('2099-09-14'),

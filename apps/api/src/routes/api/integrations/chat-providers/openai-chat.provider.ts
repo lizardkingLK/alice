@@ -54,10 +54,12 @@ export class OpenAiChatProvider implements ChatModelProvider {
       modelId: input.model,
       messagesCount: input.contents.length,
       resolveUserFacingError: resolveOpenAIUserFacingError,
+      signal: input.signal,
       fetchOnce: () =>
         fetch(apiUrl, {
           method: 'POST',
           redirect: 'error',
+          ...(input.signal ? { signal: input.signal } : {}),
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${input.apiKey}`,
@@ -73,7 +75,8 @@ export class OpenAiChatProvider implements ChatModelProvider {
     return openAiChatCompletionResponseToChatLlmResponse(
       response,
       'OpenAI',
-      input.tools
+      input.tools,
+      input.signal
     );
   }
 }

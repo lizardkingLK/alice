@@ -10,6 +10,7 @@ import {
   CommentEditor,
   type CommentEditorHandle,
 } from '@/app/comments/_components/comment-editor';
+import type { CommentMentionAgent } from '@/app/comments/_components/comment-mention-list';
 import type {
   CommentUser,
   CommentWorkItemOption,
@@ -17,6 +18,7 @@ import type {
 
 type CommentEditorFormShellProps = {
   users: CommentUser[];
+  agents: CommentMentionAgent[];
   workItems: Pick<CommentWorkItemOption, 'id' | 'key' | 'title'>[];
   initialContent?: Json | string | null;
   placeholder?: string;
@@ -37,6 +39,7 @@ type CommentEditorFormShellProps = {
 
 export function CommentEditorFormShell({
   users,
+  agents,
   workItems,
   initialContent,
   placeholder,
@@ -59,6 +62,7 @@ export function CommentEditorFormShell({
         ref={editorRef}
         initialContent={initialContent}
         users={users}
+        agents={agents}
         workItems={workItems}
         placeholder={placeholder}
         autoFocus={autoFocus}

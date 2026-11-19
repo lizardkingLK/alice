@@ -7,6 +7,7 @@ import {
   parsePatchWorkItemFormData,
 } from '@/app/work-items/_helpers/work-item-mutation-body';
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
+import type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 import {
   linkWorkItemGithubPrBodySchema,
   patchWorkItemStatusBodySchema,
@@ -19,6 +20,8 @@ import {
   type WorkItemLinkListItem,
 } from '@repo/types';
 import { ResponseDTO } from '@repo/types/connection';
+
+export type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 
 const workItemsPath = '/api/work-items';
 
@@ -36,15 +39,21 @@ export type WorkItemUpdateResponse = ResponseDTO<DbWorkItem> & {
   readonly cascadedSprintDescendantIds?: readonly string[];
 };
 
+export type WorkItemMutationRequestOptions = {
+  readonly keepalive?: boolean;
+};
+
 export async function updateWorkItem(
   id: string,
   formData: FormData,
-  expectedUpdatedAt: string
+  expectedUpdatedAt: string,
+  requestOptions?: WorkItemMutationRequestOptions
 ): Promise<WorkItemUpdateResponse> {
   const body = parsePatchWorkItemFormData(formData, expectedUpdatedAt);
   return await apiFetch<WorkItemUpdateResponse>(`${workItemsPath}/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(body),
+    ...(requestOptions?.keepalive === true ? { keepalive: true } : {}),
   });
 }
 
@@ -53,7 +62,8 @@ export async function updateWorkItemStatus(
   status: DbWorkItem['status'],
   expectedUpdatedAt: string,
   boardColumnId?: string | null,
-  resolution?: PatchWorkItemStatusBody['resolution']
+  resolution?: PatchWorkItemStatusBody['resolution'],
+  requestOptions?: WorkItemMutationRequestOptions
 ): Promise<ResponseDTO<DbWorkItem>> {
   const body: PatchWorkItemStatusBody = {
     status,
@@ -69,6 +79,7 @@ export async function updateWorkItemStatus(
   return await apiFetch<ResponseDTO<DbWorkItem>>(`${workItemsPath}/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(parsed.data),
+    ...(requestOptions?.keepalive === true ? { keepalive: true } : {}),
   });
 }
 
@@ -87,7 +98,7 @@ export async function forceUpdateWorkItemFields(
 
 async function patchWorkItemLifecycle(
   id: string,
-  action: 'archive' | 'restore',
+  action: 'restore',
   expectedUpdatedAt: string
 ): Promise<DbWorkItem> {
   const body: WorkItemLifecycleActionBody = { expectedUpdatedAt };
@@ -106,11 +117,25 @@ async function patchWorkItemLifecycle(
   return data.workItem;
 }
 
+/** Fire-and-forget archive — API returns 202; inbox notifies when done. */
 export async function archiveWorkItem(
   id: string,
   expectedUpdatedAt: string
-): Promise<DbWorkItem> {
-  return patchWorkItemLifecycle(id, 'archive', expectedUpdatedAt);
+): Promise<DestructiveActionAccepted> {
+  const body: WorkItemLifecycleActionBody = { expectedUpdatedAt };
+  const parsed = workItemLifecycleActionBodySchema.safeParse(body);
+  if (!parsed.success) {
+    throw new Error('Invalid work item archive request');
+  }
+
+  return await apiFetch<DestructiveActionAccepted>(
+    `${workItemsPath}/${id}/archive`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(parsed.data),
+      skipDatabaseBusyRetry: true,
+    }
+  );
 }
 
 export async function restoreWorkItem(
@@ -120,9 +145,13 @@ export async function restoreWorkItem(
   return patchWorkItemLifecycle(id, 'restore', expectedUpdatedAt);
 }
 
-export async function purgeWorkItem(id: string): Promise<void> {
-  await apiFetch<void>(`${workItemsPath}/${id}`, {
+/** Fire-and-forget purge — API returns 202; inbox notifies when done. */
+export async function purgeWorkItem(
+  id: string
+): Promise<DestructiveActionAccepted> {
+  return await apiFetch<DestructiveActionAccepted>(`${workItemsPath}/${id}`, {
     method: 'DELETE',
+    skipDatabaseBusyRetry: true,
   });
 }
 

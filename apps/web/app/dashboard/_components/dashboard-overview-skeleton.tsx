@@ -1,7 +1,7 @@
 export function DashboardOverviewSkeleton() {
   return (
     <div
-      className="w-full space-y-4"
+      className="w-full space-y-4 p-6"
       aria-busy="true"
       aria-label="Loading dashboard overview"
     >

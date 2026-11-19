@@ -101,7 +101,7 @@ export function ChartsWorkspaceActionsMenu({
         ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="cursor-pointer gap-2 text-rose-600 focus:text-rose-600"
+          className="cursor-pointer gap-2"
           onSelect={() => {
             afterDialogClose(onRequestDelete);
           }}

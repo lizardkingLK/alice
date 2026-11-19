@@ -9,7 +9,10 @@ export function DashboardOverviewFrame({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <DashboardShell description={DASHBOARD_OVERVIEW_DESCRIPTION}>
+    <DashboardShell
+      description={DASHBOARD_OVERVIEW_DESCRIPTION}
+      contentClassName="p-0"
+    >
       {children}
     </DashboardShell>
   );

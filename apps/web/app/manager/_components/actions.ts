@@ -37,8 +37,10 @@ async function runTeamMutation<T extends ActionState>(mutate: MutationAction) {
   }
 }
 
-async function revalidateTeamViews(projectId?: string | null) {
+function revalidateTeamViews(projectId?: string | null) {
   revalidatePath('/manager');
+  // Project workspace URLs are key-based; invalidate the projects segment.
+  revalidatePath('/projects', 'layout');
   if (projectId) {
     revalidatePath(`/projects/${projectId}`);
   }

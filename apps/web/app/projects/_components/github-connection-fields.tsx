@@ -160,7 +160,7 @@ function GithubLinkedCard({
                 size="sm"
                 onClick={() => onDisconnect(activeConnection.id)}
                 disabled={isDisconnecting}
-                className="text-destructive hover:text-destructive h-8 px-2 text-xs"
+                className="h-8 px-2 text-xs"
               >
                 {isDisconnecting ? (
                   <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />

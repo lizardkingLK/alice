@@ -6,12 +6,17 @@ import {
   WORK_ITEM_TYPES,
   getAllowedParentType,
   parseWorkItemLabels,
+  normalizeProjectWorkItemTypeDefs,
+  resolveProjectTypeKeys,
+  workItemTypeDisplayName,
   type WorkItemPriority,
   type WorkItemStatus,
   type WorkItemType,
 } from '@repo/types';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
+import { useSoftInvalidateHoldAutoRefresh } from '@/lib/soft-invalidate/use-soft-invalidate-hold-auto-refresh';
+import { useSoftInvalidateProject } from '@/lib/soft-invalidate/use-soft-invalidate-project';
 import { DialogFooter } from '@repo/ui/components/ui/dialog';
 import { Loader2 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
@@ -34,6 +39,7 @@ import { WorkItemFormClassicFields } from '@/app/work-items/_components/work-ite
 import { WorkItemFormModernFields } from '@/app/work-items/_components/work-item-form/work-item-form-modern';
 import { WorkItemTypeChangeDetachDialog } from '@/app/work-items/_components/work-item-form/work-item-type-change-detach-dialog';
 import type { WorkItemCreateFormMode } from '@/app/work-items/_helpers/work-item-create-form-preference';
+import type { WorkItemFormDialogLayout } from '@/app/work-items/_components/work-item-form/work-item-form-dialog-layout';
 import { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import { useProjectMembers } from '@/app/work-items/_hooks/use-project-members';
 import { useProjectSprints } from '@/app/work-items/_hooks/use-project-sprints';
@@ -104,6 +110,11 @@ export interface WorkItemFormProps {
    */
   createFormMode?: WorkItemCreateFormMode;
   /**
+   * Dialog chrome layout from {@link WorkItemFormDialog}. Expanded (`fullscreen`)
+   * and floating use a vertical label+control list; center uses compact pills.
+   */
+  dialogLayout?: WorkItemFormDialogLayout;
+  /**
    * When set, skips API create/update and uses this handler instead
    * (charts mock board / local-only demos). Still calls `onSuccess`.
    */
@@ -154,7 +165,7 @@ function isWorkItemPriority(value: string): value is WorkItemPriority {
 }
 
 function isWorkItemType(value: string): value is WorkItemType {
-  return (WORK_ITEM_TYPES as readonly string[]).includes(value);
+  return value.trim().length > 0;
 }
 
 function keepOrClearParentId(
@@ -199,11 +210,9 @@ function resolveAvailableTypes(
   if (explicitAllowedTypes && explicitAllowedTypes.length > 0) {
     return explicitAllowedTypes;
   }
-  if (
-    projectConfig?.work_item_types &&
-    projectConfig.work_item_types.length > 0
-  ) {
-    return projectConfig.work_item_types;
+  const fromConfig = resolveProjectTypeKeys(projectConfig?.work_item_types);
+  if (fromConfig.length > 0) {
+    return fromConfig;
   }
   return taskTypes;
 }
@@ -212,12 +221,13 @@ function resolveAllowedParentType(
   type: string,
   parentLocked: boolean,
   availableTypes: readonly WorkItemType[],
-  hierarchy?: Record<string, string | null> | null
+  hierarchy?: Record<string, string | null> | null,
+  typeDefs?: ReturnType<typeof normalizeProjectWorkItemTypeDefs> | null
 ): WorkItemType | null {
   if (!isWorkItemType(type) || parentLocked) {
     return null;
   }
-  return getAllowedParentType(type, availableTypes, hierarchy);
+  return getAllowedParentType(type, availableTypes, hierarchy, typeDefs);
 }
 
 export function WorkItemForm({
@@ -240,6 +250,7 @@ export function WorkItemForm({
   defaultDueDate,
   lockDueDate = false,
   createFormMode = 'classic',
+  dialogLayout = 'center',
   localMutate,
   preferProvidedMembers = false,
   preferProvidedSprints = false,
@@ -261,6 +272,8 @@ export function WorkItemForm({
   const [projectId, setProjectId] = useState(
     itemToEdit?.project_id ?? (lockProject ? (projects[0]?.id ?? '') : '')
   );
+  useSoftInvalidateHoldAutoRefresh(true);
+  useSoftInvalidateProject(projectId || null);
 
   const selectedProject = projects.find((p) => p.id === projectId);
   const projectWorkflowConfig = selectedProject?.workflow_config as
@@ -268,6 +281,9 @@ export function WorkItemForm({
   const availableTypes = resolveAvailableTypes(
     allowedTypes,
     projectWorkflowConfig
+  );
+  const typeDefs = normalizeProjectWorkItemTypeDefs(
+    projectWorkflowConfig?.work_item_types
   );
   const typeLocked = lockType || availableTypes.length === 1;
 
@@ -343,7 +359,8 @@ export function WorkItemForm({
     type,
     parentLocked,
     availableTypes,
-    projectWorkflowConfig?.hierarchy
+    projectWorkflowConfig?.hierarchy,
+    typeDefs
   );
 
   const effectiveParentId = parentLocked
@@ -579,6 +596,7 @@ export function WorkItemForm({
     projects,
     projectMembers: currentMembers,
     availableTypes,
+    typeDefs,
     projectId,
     assigneeId,
     sprintId,
@@ -590,7 +608,9 @@ export function WorkItemForm({
     parentId: effectiveParentId,
     parentOptions,
     parentOptionsLoading,
-    parentTypeLabel: allowedParentType,
+    parentTypeLabel: allowedParentType
+      ? workItemTypeDisplayName(allowedParentType, typeDefs)
+      : null,
     lockParent: parentLocked,
     lockSprintFromParent,
     lockProject,
@@ -660,6 +680,7 @@ export function WorkItemForm({
         {useModernLayout ? (
           <WorkItemFormModernFields
             {...fieldProps}
+            dialogLayout={dialogLayout}
             titleDefault={itemToEdit?.title ?? ''}
             dueDateDefault={dueDateDefault}
             lockDueDate={!isEditMode && lockDueDate}
@@ -692,9 +713,8 @@ export function WorkItemForm({
 
       <DialogFooter
         className={cn(
-          'shrink-0',
-          stickyActions &&
-            'bg-muted/50 mx-0 mt-auto mb-0 rounded-none border-t px-6 py-4'
+          'mt-auto shrink-0 border-0 bg-transparent',
+          stickyActions && 'mx-0 mb-0 rounded-none px-6 py-4'
         )}
       >
         {onClose ? (

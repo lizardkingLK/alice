@@ -40,13 +40,8 @@ const workItemService = {
   updateWorkItemStatus: updateWorkItemStatusMock,
 } as unknown as WorkItemService;
 
-const notificationsService = {
-  createAssignNotification: vi.fn(),
-};
-
 const workItemsRouter = createWorkItemsRouter({
   workItemService,
-  notificationsService,
 });
 
 describe('work-items unused Prisma GET routes', () => {

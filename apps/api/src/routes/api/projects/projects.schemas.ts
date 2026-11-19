@@ -31,6 +31,16 @@ export const forkWorkflowConfigSchema = z.object({
   description: z.string().max(2000).optional(),
 });
 
+/** Copy a workflow graph from another active project into this one. */
+export const importWorkflowConfigSchema = z.object({
+  expectedUpdatedAt: expectedUpdatedAtSchema,
+  sourceProjectId: z.uuid(),
+  sourceWorkflowId: z.string().trim().min(1).optional(),
+  title: z.string().trim().min(1).max(120).optional(),
+  description: z.string().max(2000).optional(),
+  markAsDefault: z.boolean().optional().default(false),
+});
+
 export const workflowIdParamActionSchema = z.object({
   expectedUpdatedAt: expectedUpdatedAtSchema,
 });

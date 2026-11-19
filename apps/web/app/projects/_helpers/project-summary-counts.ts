@@ -17,7 +17,7 @@ export function countProjectFields(attributesConfig: unknown): number {
 }
 
 /**
- * Count linked integrations (Jira site + project key, and/or GitHub repo/token).
+ * Count linked integrations (Jira, GitHub, and saved Figma project link).
  */
 export function countProjectIntegrations(project: Project): number {
   let count = 0;
@@ -27,6 +27,10 @@ export function countProjectIntegrations(project: Project): number {
   }
 
   if (project.github_repo || project.has_github_token) {
+    count += 1;
+  }
+
+  if (project.figma_url) {
     count += 1;
   }
 

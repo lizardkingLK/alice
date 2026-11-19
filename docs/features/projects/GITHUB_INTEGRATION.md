@@ -1,33 +1,208 @@
-# GitHub Integration — OAuth 2.1 & Secrets Configuration
+# GitHub Integration — OAuth today, GitHub App + orchestrator planned
 
-**Status:** Implemented (GitHub OAuth 2.1/OIDC with AES-256-GCM encryption-at-rest & JIT refresh)  
-**Related:** [Projects README](./README.md), [JIRA_INTEGRATION.md](./JIRA_INTEGRATION.md) (shared crypto and popup UX pattern), work-item PR link/list
+**Status (shipped):** GitHub **OAuth App** (Authorization Code) with AES-256-GCM
+encryption-at-rest and JIT refresh — enough to connect an account, bind one
+`owner/repo` per project, and **manually** link PRs to work items.
+
+**Status (planned):** Migrate source control to a **GitHub App** (install +
+webhooks + installation tokens), sync PRs/commits/branches automatically, then
+feed an in-app **workflow orchestrator** that can enqueue **agent tools**
+(e.g. Cursor) on `apps/worker`. See [Phased delivery (planned)](#phased-delivery-planned).
+
+**Related:** [Projects README](./README.md),
+[JIRA_INTEGRATION.md](./JIRA_INTEGRATION.md) (shared crypto and popup UX),
+[WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md),
+[INTEGRATION_SCOPES.md](../integrations/INTEGRATION_SCOPES.md),
+user guide [project-integrations.md](../../user-guide/projects/project-integrations.md)
 
 ---
 
-## Architecture & Model
+## North-star topology (planned)
 
-GitHub integration enables Alice workspaces to link pull requests, commits, and branches to work items, following the same OAuth UX pattern established by the Jira integration.
+GitHub App is the **event and install identity** plane. It must not call agent
+tools directly. Alice normalizes domain state and events; the orchestrator
+decides; workers execute.
 
-| Concern                    | Approach                                                                                                                                                                                                          |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Authentication Flow**    | **GitHub OAuth 2.0 Authorization Code Flow** with signed HMAC `state` for CSRF protection and Alice `userId` binding (no DB session row for the in-flight OAuth)                                                  |
-| **Client Credentials**     | Configured via environment variables: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_REDIRECT_URI`                                                                                                           |
-| **Requested Scopes**       | Least privilege: `repo read:user`                                                                                                                                                                                 |
-| **Token Storage**          | Stored in the `integrations` table (`provider: 'github'`, `category: 'productivity'`). Both `access_token` and `refresh_token` are encrypted at rest with AES-256-GCM (`v1:...`)                                  |
-| **Project Binding**        | `projects.github_repo` stores the target repository path (`owner/repo`). Pull requests and repository links resolve credentials through the user's active GitHub OAuth integration                                |
-| **Token Refresh**          | **Just-In-Time (JIT) refresh**: `getValidAccessToken()` validates expiration with clock skew buffer (60s) and automatically refreshes tokens via GitHub OAuth refresh endpoint before making upstream requests    |
-| **Client DTO**             | Decrypted tokens are **never** returned to the browser or logged. The frontend only receives connection metadata (`GithubConnectionDto`: `id`, `name`, `status`, `account_login`, `account_avatar_url`, `scopes`) |
-| **Backward Compatibility** | Legacy project-level encrypted PATs in `projects.github_token` are supported as fallback if no OAuth connection exists for the user                                                                               |
+```mermaid
+flowchart TB
+  gh[GitHub_App_webhooks]
+  api[apps_api_verify_enqueue]
+  redis[(BullMQ_Redis)]
+  worker[apps_worker]
+  db[(Postgres_domain_state)]
+  orch[Workflow_orchestrator]
+  cursor[Cursor_or_agent_tools]
+  streamer[apps_streamer]
+
+  gh -->|PR_push_comment| api
+  api -->|normalize_and_persist| db
+  api -->|enqueue_sync_or_workflow| redis
+  worker -->|consume| redis
+  worker --> db
+  orch -->|decide_next_steps| redis
+  worker -->|invoke| cursor
+  worker -->|progress| streamer
+```
+
+| Layer                     | Owns                                                                    | Does not own                                       |
+| ------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------- |
+| **GitHub App**            | Install identity, permissions, webhooks, installation tokens, repo list | Agent prompts, workflow graphs, Cursor credentials |
+| **SC sync**               | Upsert PRs / commits / branches / comment refs; link to work items      | “Resolve this issue” product decisions             |
+| **Workflow orchestrator** | Triggers, conditions, approvals, multi-step runs                        | Raw GitHub HMAC / token minting                    |
+| **Agent integrations**    | Cursor (and peers) as tools on the worker                               | GitHub App private keys                            |
+
+---
+
+## Phased delivery (planned)
+
+| Phase | Deliverable                                                                                                              | Depends on          |
+| ----- | ------------------------------------------------------------------------------------------------------------------------ | ------------------- |
+| **0** | App registration checklist + env shape in docs (this section)                                                            | —                   |
+| **1** | Install UX + `installation_id` on `version_control_connections`; project bind via `vc_*`                                 | 0                   |
+| **2** | Signed webhooks → enqueue → worker sync for **PRs, commits, branches**                                                   | 1 + worker skeleton |
+| **3** | Normalized SC domain events + job kinds aligned with [WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md) | 2                   |
+| **4** | Workflow orchestrator MVP; agent tools (e.g. Cursor) with human-in-the-loop                                              | 3                   |
+| **5** | Migrate off user OAuth; optional write-back (checks/comments); Issues policy TBD                                         | 4                   |
+
+### Phase 0 — Foundations
+
+**Goal:** Register the GitHub App and store credentials locally. No install UX
+or webhook handler required yet. Also covered in
+[DAY_ONE_SETUP.md](../platform/DAY_ONE_SETUP.md) (optional GitHub section).
+
+#### Register the App
+
+1. GitHub → **Settings** → **Developer settings** → **GitHub Apps** → **New
+   GitHub App** (use a dedicated **dev** App for localhost, e.g. `Alice_Dev`).
+2. **Homepage URL:** web app, e.g. `http://localhost:3000`.
+3. **Callback URL:** API App callback (separate from OAuth), e.g.
+   `http://localhost:5000/api/github/app/callback`.
+4. **Setup URL (optional):** e.g. `http://localhost:3000/integrations/github/setup`.
+5. **Webhook:** Active; URL must be **public HTTPS** (GitHub cannot reach
+   localhost), e.g. `https://<api-host>/api/github/webhooks`. Generate a
+   **Webhook secret** and save it.
+6. Checkboxes: **Expire user authorization tokens** = on; **Request user
+   authorization during installation** = off; **Enable Device Flow** = off;
+   **SSL verification** = enable.
+7. **Repository permissions (minimum for planned sync):**
+   - **Metadata** — Read-only (mandatory)
+   - **Contents** — Read-only
+   - **Pull requests** — Read-only for sync; Read and write if you will post
+     replies later
+   - **Commit statuses** — optional Read / Read and write for later checks
+   - **Issues** — No access (v1)
+8. **Subscribe to events:** `Pull request`, `Push`, `Create`, `Delete`,
+   `Pull request review comment` (keep); add `Pull request review` and
+   installation-related events when available. Do **not** ship with only
+   review-comment selected.
+9. **Where can this GitHub App be installed?** Any account (typical for Alice).
+10. Create the App → note **App ID** (and **Client ID** only if you later
+    enable user OAuth).
+11. Banner **generate a private key** → download the `.pem` once. Alice signs
+    JWTs with this key + App ID to mint **installation tokens**.
+
+#### Env shape (`apps/api/.env`)
+
+```dotenv
+# Phase 0+ GitHub App (install identity + webhooks)
+GITHUB_APP_ID="<numeric App ID>"
+GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+GITHUB_APP_WEBHOOK_SECRET="<webhook secret from the App form>"
+
+# Shipped today — user OAuth App (keep until Phase 5)
+GITHUB_CLIENT_ID="..."
+GITHUB_CLIENT_SECRET="..."
+GITHUB_REDIRECT_URI="http://localhost:5000/api/github/oauth/callback"
+```
+
+Keys are listed in `apps/api/sample.env`. Runtime wiring of `GITHUB_APP_*` lands
+in Phase 1–2; storing them in Day One env is still the Phase 0 outcome.
+
+#### Phase 0 done when
+
+- [ ] GitHub App exists with permissions/events above
+- [ ] Private key downloaded and stored outside Git
+- [ ] `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_APP_WEBHOOK_SECRET` set
+      in local (and/or deployed) API env
+- [ ] Team knows the App public link (`https://github.com/apps/<slug>`) for
+      installs in Phase 1
+
+### Phase 1 — Install + project bind
+
+- Install UX: trust App on org/user → select repos (same product rhyme as Jira
+  “connect then pick resource”; **auth model is App install**, not user 3LO).
+- Persist `installation_id` (and account metadata) in
+  `version_control_connections.provider_config`.
+- Mint short-lived **installation tokens** for API calls.
+- Keep project binding on `projects.vc_connection_id` /
+  `projects.vc_external` (wire aliases `github_connection_id` / `github_repo`).
+- New connects prefer App; legacy user OAuth remains until Phase 5.
+
+### Phase 2 — Webhook ingest + domain sync
+
+- Signed webhook endpoint on `apps/api` → verify → idempotent enqueue → **202**.
+- Worker job kinds upsert into `version_control_pull_requests` (and
+  commit/branch tables as designed).
+- Auto and/or manual link to Alice work items (branch naming / commit trailers
+  where possible). Manual PR link remains as fallback.
+- **Out of scope:** GitHub Issues → Alice work items (avoids dual ontology with
+  Jira import). Revisit as an explicit product choice later.
+
+### Phase 3 — Normalized SC events + worker bridge
+
+- Emit Alice domain events (e.g. `PullRequestOpened`, `PushReceived`, later
+  `ReviewCommentReceived`) as orchestrator inputs — not raw GitHub payloads.
+- Queue names / `job_runs` follow WORKER_AND_STREAMER; API never runs agent
+  loops or BullMQ `Worker` processes.
+
+### Phase 4 — Workflow orchestrator + agent tools
+
+- In-app workflows subscribe to SC events; enqueue agent steps on `apps/worker`.
+- Cursor (and peers) live as **org agent integrations/tools** (Settings vault /
+  agent connectors), **not** columns on `version_control_connections`.
+- Default **human-in-the-loop** for “resolve from PR comment” and architecture
+  proposals; optional post-back to GitHub when write permissions exist.
+
+### Phase 5 — Migration + write-back
+
+- Migrate or require re-install off user OAuth App connections.
+- Expand App permissions for checks / PR comments as workflows need.
+- Optional GitHub Issues policy (link vs import) as a separate decision.
+
+### Locks
+
+- Auth: **GitHub App install**, not “more user OAuth scopes.”
+- v1 sync: **PRs + commits + branches**; Issues later.
+- Binding: **one** primary repo per Alice project (`vc_*`).
+- Storage: extend `version_control_connections`; do **not** fold SC into
+  Settings `integrations` rows (Phase F facade stays valid).
+- Execution: sync and agents on **worker**; orchestrator reacts to Alice events.
+
+---
+
+## Architecture & Model (current — OAuth App)
+
+GitHub integration today enables Alice workspaces to link pull requests, commits, and branches to work items, following the same OAuth UX pattern established by the Jira integration.
+
+| Concern                 | Approach                                                                                                                                                                                                                |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Authentication Flow** | **GitHub OAuth 2.0 Authorization Code Flow** with signed HMAC `state` for CSRF protection and Alice `userId` binding (no DB session row for the in-flight OAuth)                                                        |
+| **Client Credentials**  | Configured via environment variables: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_REDIRECT_URI`                                                                                                                 |
+| **Requested Scopes**    | Least privilege: `repo read:user`                                                                                                                                                                                       |
+| **Token Storage**       | `version_control_connections` (`vendor: github`). Tokens in `access_token_enc` / `refresh_token_enc` (AES-256-GCM `v1:...`). Non-secret fields in `provider_config` JSONB. Strategy A RLS (service-role / Prisma only). |
+| **Project Binding**     | `projects.vc_connection_id` (FK) + `projects.vc_external` e.g. `{ "vendor": "github", "repo": "owner/repo" }`. HTTP/UI still use `github_repo` / `has_github_token` wire aliases.                                       |
+| **PR links**            | `version_control_pull_requests` (was `github_pull_requests`) with `vendor` column                                                                                                                                       |
+| **Token Refresh**       | **Just-In-Time (JIT) refresh**: `getValidAccessToken()` validates expiration with clock skew buffer (60s) and refreshes via GitHub OAuth before upstream requests                                                       |
+| **Client DTO**          | Decrypted tokens are **never** returned to the browser. Frontend receives `GithubConnectionDto` metadata only                                                                                                           |
 
 ### Mental model
 
-| Layer                  | Role                                                                                    |
-| ---------------------- | --------------------------------------------------------------------------------------- |
-| Alice login            | Who is connecting (`requireApiAuth` on `/oauth/start` + `userId` inside signed `state`) |
-| GitHub OAuth           | Grants Alice’s OAuth app access to that GitHub account                                  |
-| `integrations` row     | Encrypted tokens + account metadata (created/updated **after** callback succeeds)       |
-| `projects.github_repo` | Which `owner/repo` to use (binding), not the credential itself                          |
+| Layer                         | Role                                                                                    |
+| ----------------------------- | --------------------------------------------------------------------------------------- |
+| Alice login                   | Who is connecting (`requireApiAuth` on `/oauth/start` + `userId` inside signed `state`) |
+| GitHub OAuth                  | Grants Alice’s OAuth app access to that GitHub account                                  |
+| `version_control_connections` | Encrypted tokens + `provider_config` (created/updated **after** callback)               |
+| `projects.vc_external`        | Which `owner/repo` to use (binding), not the credential itself                          |
 
 ---
 

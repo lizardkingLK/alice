@@ -43,6 +43,8 @@ import {
   ChatTurnRoles,
   ChatAttachmentFileTypeEnum,
   WorkItemTypeEnum,
+  buildDefaultProjectTypeDefs,
+  createProjectWorkItemTypeKey,
 } from '@repo/types';
 import { prisma } from '../../src/lib/prisma';
 import {
@@ -153,7 +155,14 @@ describe('ChatService tool authorization', () => {
         listAccessibleProjectIds: vi
           .fn()
           .mockResolvedValue(options.accessibleProjectIds),
-        findById: vi.fn().mockResolvedValue({ key: 'ALICE' }),
+        findById: vi.fn().mockResolvedValue({
+          id: 'project-allowed',
+          key: 'ALICE',
+          name: 'Alice',
+          workflow_config: {
+            work_item_types: buildDefaultProjectTypeDefs(),
+          },
+        }),
       } as never,
       workItemService: {
         createWorkItem: options.createWorkItem ?? vi.fn(),
@@ -222,6 +231,135 @@ describe('ChatService tool authorization', () => {
       error: "You're not a member of this project.",
     });
     expect(listSprintsByProject).not.toHaveBeenCalled();
+  });
+
+  it('returns the project work-item type catalog for create guidance', async () => {
+    const customKey = createProjectWorkItemTypeKey();
+    const typeDefs = [
+      ...buildDefaultProjectTypeDefs(['Epic', 'Story', 'Task']),
+      {
+        key: customKey,
+        name: 'Initiative',
+        icon: 'trophy',
+        color: '#123456',
+        level: 3,
+      },
+    ];
+    const findById = vi.fn().mockResolvedValue({
+      id: 'project-allowed',
+      key: 'ALICE',
+      name: 'Alice',
+      workflow_config: { work_item_types: typeDefs },
+    });
+    const service = new ChatService({
+      chat: {} as never,
+      projectsRepository: {
+        listAccessibleProjectIds: vi
+          .fn()
+          .mockResolvedValue(['project-allowed']),
+        findById,
+      } as never,
+      workItemService: { createWorkItem: vi.fn() } as never,
+      sprintsService: {} as never,
+      projectsService: {} as never,
+      integrationsService: {} as never,
+    });
+
+    const [response] = await service.processFunctionCalls(
+      'trusted-user',
+      [
+        {
+          functionCall: {
+            name: 'get_project_work_item_types',
+            args: { projectId: 'project-allowed' },
+          },
+        },
+      ],
+      []
+    );
+
+    expect(response?.functionResponse?.response.result).toEqual(
+      expect.objectContaining({
+        projectId: 'project-allowed',
+        types: expect.arrayContaining([
+          expect.objectContaining({ key: customKey, name: 'Initiative' }),
+          expect.objectContaining({ key: 'Task', name: 'Task' }),
+        ]),
+        defaultTypeKey: 'Task',
+      })
+    );
+  });
+
+  it('maps create_work_item type through the project catalog by name', async () => {
+    const customKey = createProjectWorkItemTypeKey();
+    const typeDefs = [
+      ...buildDefaultProjectTypeDefs(['Epic', 'Story', 'Task']),
+      {
+        key: customKey,
+        name: 'Initiative',
+        icon: 'trophy',
+        level: 3,
+      },
+    ];
+    const createWorkItem = vi.fn().mockResolvedValue({
+      id: 'wi-created',
+      title: 'Kickoff',
+    });
+    const service = new ChatService({
+      chat: {} as never,
+      projectsRepository: {
+        listAccessibleProjectIds: vi
+          .fn()
+          .mockResolvedValue(['project-allowed']),
+        findById: vi.fn().mockResolvedValue({
+          id: 'project-allowed',
+          key: 'ALICE',
+          name: 'Alice',
+          workflow_config: { work_item_types: typeDefs },
+        }),
+      } as never,
+      workItemService: { createWorkItem } as never,
+      sprintsService: {} as never,
+      projectsService: {} as never,
+      integrationsService: {} as never,
+    });
+
+    const toolActionsPerformed: ToolAction[] = [];
+    await service.processFunctionCalls(
+      'trusted-user',
+      [
+        {
+          functionCall: {
+            name: 'create_work_item',
+            args: {
+              title: 'Kickoff',
+              projectId: 'project-allowed',
+              type: 'Initiative',
+              priority: 'medium',
+            },
+          },
+        },
+      ],
+      toolActionsPerformed
+    );
+
+    expect(createWorkItem).toHaveBeenCalledWith(
+      'trusted-user',
+      expect.objectContaining({
+        title: 'Kickoff',
+        project_id: 'project-allowed',
+        type: customKey,
+      })
+    );
+    expect(toolActionsPerformed).toContainEqual(
+      expect.objectContaining({
+        type: 'create_work_item',
+        entity: expect.objectContaining({
+          type: customKey,
+          typeName: 'Initiative',
+        }),
+      })
+    );
   });
 
   it('loads active sprint context only for accessible project ids', async () => {
@@ -1173,7 +1311,7 @@ describe('ChatService batch_import_work_items', () => {
       {
         id: 'existing-story-id',
         title: 'Design UI',
-        jira_issue_key: 'ALICE-001',
+        pm_external: { vendor: 'jira', issue_key: 'ALICE-001' },
         type: WorkItemTypeEnum.Story,
         status: 'New',
         parent_id: 'old-epic-id',
@@ -1182,7 +1320,7 @@ describe('ChatService batch_import_work_items', () => {
       {
         id: 'new-parent-feature-id',
         title: 'Feature Container',
-        jira_issue_key: 'ALICE-002',
+        pm_external: { vendor: 'jira', issue_key: 'ALICE-002' },
         type: WorkItemTypeEnum.Feature,
         status: 'New',
         parent_id: null,
@@ -1255,7 +1393,7 @@ describe('ChatService batch_import_work_items', () => {
       {
         id: 'item-to-keep',
         title: 'Keep Item',
-        jira_issue_key: 'ALICE-1',
+        pm_external: { vendor: 'jira', issue_key: 'ALICE-1' },
         type: WorkItemTypeEnum.Story,
         status: 'New',
         parent_id: null,
@@ -1264,7 +1402,7 @@ describe('ChatService batch_import_work_items', () => {
       {
         id: 'item-to-remove',
         title: 'Omitted Item',
-        jira_issue_key: 'ALICE-2',
+        pm_external: { vendor: 'jira', issue_key: 'ALICE-2' },
         type: WorkItemTypeEnum.Story,
         status: 'New',
         parent_id: null,
@@ -1334,7 +1472,7 @@ describe('ChatService batch_import_work_items', () => {
       {
         id: 'parent-1',
         title: 'Parent Epic',
-        jira_issue_key: 'ALICE-1',
+        pm_external: { vendor: 'jira', issue_key: 'ALICE-1' },
         type: WorkItemTypeEnum.Epic,
         status: 'New',
         parent_id: null,
@@ -1343,7 +1481,7 @@ describe('ChatService batch_import_work_items', () => {
       {
         id: 'child-1',
         title: 'Child Task',
-        jira_issue_key: 'ALICE-2',
+        pm_external: { vendor: 'jira', issue_key: 'ALICE-2' },
         type: WorkItemTypeEnum.Task,
         status: 'New',
         parent_id: null,
@@ -1423,7 +1561,7 @@ describe('ChatService batch_import_work_items', () => {
       {
         id: 'uuid-epic-1',
         title: 'Core Infrastructure',
-        jira_issue_key: 'ALICE-1',
+        pm_external: { vendor: 'jira', issue_key: 'ALICE-1' },
         type: WorkItemTypeEnum.Epic,
         status: 'In Progress',
         parent_id: null,
@@ -1432,7 +1570,7 @@ describe('ChatService batch_import_work_items', () => {
       {
         id: 'uuid-feature-2',
         title: 'Authentication Service',
-        jira_issue_key: 'ALICE-2',
+        pm_external: { vendor: 'jira', issue_key: 'ALICE-2' },
         type: WorkItemTypeEnum.Feature,
         status: 'New',
         parent_id: null,

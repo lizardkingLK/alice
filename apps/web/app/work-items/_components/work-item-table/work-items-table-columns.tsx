@@ -21,6 +21,7 @@ import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badg
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import { WorkItemOverdueBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-overdue';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
+import { resolveWorkItemTypeDefFromProjects } from '@/app/work-items/_helpers/resolve-work-item-type-def-from-projects';
 import { WorkItemLabelsTrain } from '@/app/work-items/_components/work-item-labels/work-item-labels-train';
 import {
   RegistryRowActions,
@@ -33,6 +34,7 @@ import type {
 import type { WorkItemWorkspaceProps } from '@/app/work-items/_components/work-items-workspace';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { isWorkItemOverdue } from '@/app/work-items/_helpers/work-item-due-date';
+import { projectDetailHref } from '@/app/projects/_helpers/project-links';
 import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import { resolveWorkItemStateColumnModel } from '@/app/work-items/_helpers/work-item-state-column';
 import { RegistryTitleCell } from '@/components/registry-title-cell';
@@ -58,11 +60,15 @@ const titleRenderer = ({
   row,
   fromProjectId,
   fromAssigneeId,
+  projectKeysById,
+  sprintSlugsById,
   isHierarchy,
   onToggleExpand,
 }: HierarchyRendererProps & {
   fromProjectId?: string | null;
   fromAssigneeId?: string | null;
+  projectKeysById: ReadonlyMap<string, string>;
+  sprintSlugsById: ReadonlyMap<string, string>;
   isHierarchy: boolean;
   // eslint-disable-next-line no-unused-vars -- expand toggle callback
   onToggleExpand?: (workItemId: string) => void;
@@ -71,6 +77,14 @@ const titleRenderer = ({
   const indentClass =
     TITLE_INDENT_CLASS[Math.min(depth, TITLE_INDENT_CLASS.length - 1)] ??
     'pl-12';
+  const projectKey =
+    workItem.project?.key ??
+    (workItem.project_id
+      ? projectKeysById.get(workItem.project_id)
+      : undefined);
+  const sprintSlug =
+    workItem.sprint?.slug ??
+    (workItem.sprint_id ? sprintSlugsById.get(workItem.sprint_id) : undefined);
 
   return (
     <RegistryTitleCell
@@ -78,6 +92,9 @@ const titleRenderer = ({
       href={workItemDetailHref(workItem.id, {
         fromProjectId,
         fromAssigneeId,
+        projectKey,
+        workItemSlug: workItem.slug,
+        sprintSlug,
       })}
       title={workItem.title}
       subtitle={`Created ${formatDate(workItem.created_at)}`}
@@ -190,6 +207,22 @@ function nameByIdMap(
   return new Map(items.map((item) => [item.id, item.name]));
 }
 
+function projectKeyByIdMap(
+  items: readonly {
+    readonly id: string;
+    readonly key?: string | null;
+  }[]
+): ReadonlyMap<string, string> {
+  const entries: Array<[string, string]> = [];
+  for (const item of items) {
+    const key = item.key?.trim();
+    if (key) {
+      entries.push([item.id, key]);
+    }
+  }
+  return new Map(entries);
+}
+
 function nameFromMap(
   namesById: ReadonlyMap<string, string>,
   id: string | null | undefined
@@ -246,17 +279,20 @@ function RelationBadge({
 function ProjectCell({
   projectId,
   projectNamesById,
+  projectKeysById,
 }: Readonly<{
   projectId: string | null | undefined;
   projectNamesById: ReadonlyMap<string, string>;
+  projectKeysById: ReadonlyMap<string, string>;
 }>) {
   const name = nameFromMap(projectNamesById, projectId);
   if (!projectId || name === '—') {
     return <span className="text-muted-foreground">—</span>;
   }
+  const projectKey = projectKeysById.get(projectId);
   return (
     <RelationBadge
-      href={`/projects/${projectId}`}
+      href={projectDetailHref(projectKey ?? projectId)}
       label={name}
       icon={<FolderDot data-icon="inline-start" />}
     />
@@ -266,10 +302,16 @@ function ProjectCell({
 function SprintCell({
   sprintId,
   sprintNamesById,
+  sprintSlugsById,
+  projectKeysById,
+  projectId,
   linkToReport,
 }: Readonly<{
   sprintId: string | null | undefined;
   sprintNamesById: ReadonlyMap<string, string>;
+  sprintSlugsById: ReadonlyMap<string, string>;
+  projectKeysById: ReadonlyMap<string, string>;
+  projectId?: string | null;
   /** Managers/admins can open sprint summary; members see a plain badge. */
   linkToReport: boolean;
 }>) {
@@ -277,9 +319,18 @@ function SprintCell({
   if (!sprintId || name === '—') {
     return <span className="text-muted-foreground">—</span>;
   }
+  const projectKey = projectId ? projectKeysById.get(projectId) : undefined;
+  const sprintSlug = sprintSlugsById.get(sprintId);
   return (
     <RelationBadge
-      href={linkToReport ? sprintReportHref(sprintId, 'work-items') : undefined}
+      href={
+        linkToReport
+          ? sprintReportHref(sprintId, 'work-items', {
+              projectKey,
+              sprintSlug,
+            })
+          : undefined
+      }
       label={name}
       icon={<Calendar data-icon="inline-start" />}
     />
@@ -367,7 +418,13 @@ export function buildWorkItemColumns(options: {
   } = options;
 
   const projectNamesById = nameByIdMap(projects);
+  const projectKeysById = projectKeyByIdMap(projects);
   const sprintNamesById = nameByIdMap(sprints);
+  const sprintSlugsById = new Map(
+    sprints
+      .filter((sprint) => Boolean(sprint.slug))
+      .map((sprint) => [sprint.id, sprint.slug] as const)
+  );
 
   const columns: ColumnDef<DisplayRow>[] = [
     {
@@ -378,6 +435,8 @@ export function buildWorkItemColumns(options: {
           row,
           fromProjectId: lockedProjectId,
           fromAssigneeId: lockedAssigneeId,
+          projectKeysById,
+          sprintSlugsById,
           isHierarchy,
           onToggleExpand,
         }),
@@ -385,9 +444,20 @@ export function buildWorkItemColumns(options: {
     {
       id: 'type',
       header: 'Type',
-      cell: ({ row }) => (
-        <WorkItemTypeBadge type={row.original.workItem.type} />
-      ),
+      cell: ({ row }) => {
+        const workItem = row.original.workItem;
+        return (
+          <WorkItemTypeBadge
+            type={workItem.type}
+            projectId={workItem.project_id}
+            typeDef={resolveWorkItemTypeDefFromProjects(
+              projects,
+              workItem.project_id,
+              workItem.type
+            )}
+          />
+        );
+      },
     },
     {
       id: 'status',
@@ -443,6 +513,7 @@ export function buildWorkItemColumns(options: {
         <ProjectCell
           projectId={row.original.workItem.project_id}
           projectNamesById={projectNamesById}
+          projectKeysById={projectKeysById}
         />
       ),
     });
@@ -456,6 +527,9 @@ export function buildWorkItemColumns(options: {
         <SprintCell
           sprintId={row.original.workItem.sprint_id}
           sprintNamesById={sprintNamesById}
+          sprintSlugsById={sprintSlugsById}
+          projectKeysById={projectKeysById}
+          projectId={row.original.workItem.project_id}
           linkToReport={canLinkSprintReport}
         />
       ),

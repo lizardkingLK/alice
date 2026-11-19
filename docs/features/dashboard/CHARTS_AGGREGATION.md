@@ -54,10 +54,10 @@ Related:
 ### Tier 2 locks
 
 - Browser → Render **reader** → Neon
-- Enqueue: Express **post-commit** publisher (generic interceptor) → Upstash
+- Enqueue: Express **post-commit** publisher (generic interceptor) → **Upstash Redis + BullMQ** (see [WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md); not QStash-as-primary)
 - Neon holds a **lean** `work_items` projection (+ chart reads), not a full row mirror of the whole schema
 - Queue **consumer on `worker`**; **reader** HTTP-only
-- **Streamer** = Pusher auth/BFF until outgrown
+- **Streamer** = Pusher auth/BFF until outgrown (native WS later if needed)
 - Cutover: dual-run + feature flag
 
 ### Tier 3 locks
@@ -68,18 +68,20 @@ Related:
 
 ---
 
-## Future apps rename (before Tier 3)
+## Future apps (Tier 2+)
 
-| Today      | Target     | Role                                                                |
-| ---------- | ---------- | ------------------------------------------------------------------- |
-| `apps/web` | `client`   | UI (Vercel)                                                         |
-| `apps/api` | `writer`   | Mutations + post-commit publish (Vercel)                            |
-| —          | `reader`   | Neon-backed read HTTP API (Render)                                  |
-| —          | `streamer` | Realtime gateway (Pusher auth / façade)                             |
-| —          | `worker`   | Long-running jobs, queue consumers, heavy crons (Render or similar) |
+Keep **`web` / `api` names**. Add siblings as needed (do not rename to `client` /
+`writer` for symmetry — see [WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md)).
 
-Tier 2 may add `reader` / `worker` without renaming `web` / `api`. Rename
-`client` / `writer` just before Tier 3.
+| App             | Role                                                                |
+| --------------- | ------------------------------------------------------------------- |
+| `apps/web`      | UI (Vercel) — unchanged name                                        |
+| `apps/api`      | Mutations + post-commit publish (Vercel) — unchanged name           |
+| `apps/reader`   | Neon-backed read HTTP API (Render) — later                          |
+| `apps/streamer` | Realtime gateway (Pusher auth / façade; native WS if outgrown)      |
+| `apps/worker`   | Long-running jobs, BullMQ consumers, AI tools, heavy crons (Render) |
+
+Tier 2 may add `worker` / `streamer` / `reader` without renaming `web` / `api`.
 
 ---
 
@@ -472,6 +474,25 @@ be filled in the service from dates + estimated total if not stored.
 - Capacity-aware ideal line (see BURNDOWN_CHART phase 5)
 - Story points measure on categorical rollup
 - Switching overview off live compute (only if B4 chooses it)
+
+---
+
+## Sprint contribution rollup (living)
+
+**Goal:** Cheap manager reads for **Sprint contribution** under busy worklog
+traffic without a second trigger chain.
+
+| Concern         | Choice                                                                                                                                                             |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Table           | `sprint_contribution_rollups` — one row per `(sprint_id, assignee_key)`                                                                                            |
+| Grain           | Snapshot for rebuild `as_of` (today UTC clamped into sprint), not daily                                                                                            |
+| Stored          | `estimated_points`, `logged_hours`, `item_count`, `group_id`, `as_of`                                                                                              |
+| Derived at read | Ideal / pending / behind via `groupsFromSprintContributionRollupRows`                                                                                              |
+| Write path      | `rebuild_sprint_analytics_rollups` = burndown rebuild then contribution; existing burndown triggers call the wrapper; also watch `assignee_id` / `status_category` |
+| Read path       | Prefer rollup when `as_of` matches; else live items + worklogs + best-effort analytics rebuild                                                                     |
+
+Migration: `packages/db/prisma/migrations/add_sprint_contribution_rollups/`.
+API: `GET /api/v1/charts/analytics/sprint-contribution`.
 
 ---
 

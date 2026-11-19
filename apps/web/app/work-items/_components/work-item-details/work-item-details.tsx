@@ -13,6 +13,7 @@ import {
 } from 'react';
 import {
   getAllowedChildType,
+  workItemTypeDisplayName,
   type WorkItemType,
   type WorkItemStatus,
   type AttachmentWithUploader,
@@ -21,6 +22,8 @@ import {
   type WorkItemLinkListItem,
   type WorkItemWorkLog,
 } from '@repo/types';
+import { typeDefsFromWorkflowConfig } from '@/app/work-items/_helpers/resolve-work-item-type-def-from-projects';
+import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import type { JSONContent } from '@tiptap/react';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
@@ -60,7 +63,15 @@ import { DescriptionView } from '@/app/work-items/_components/work-item-descript
 import { toTiptapContent } from '@/app/work-items/_helpers/work-item-description';
 import { updateWorkItem } from '@/app/work-items/_services/work-items.mutations.client';
 import { WorkItemWorkLogDialog } from '@/app/work-items/_components/work-item-work-logs/work-item-work-log-dialog';
-import { createWorkItemWorkLog } from '@/app/worklogs/_services/worklogs.mutations.client';
+import { WorkItemWorkLogExcelDialog } from '@/app/work-items/_components/work-item-work-logs/work-item-work-log-excel-dialog';
+import {
+  createWorkItemWorkLog,
+  downloadWorklogExcelTemplate,
+} from '@/app/worklogs/_services/worklogs.mutations.client';
+import {
+  calculateWorkLogEntry,
+  createDefaultWorkLogDateTimes,
+} from '@/app/work-items/_helpers/work-item-work-log-time';
 import { useWorkItemLifecycleActions } from '@/app/work-items/_hooks/use-work-item-lifecycle-actions';
 import WorkItemSidebar from '@/app/work-items/_components/work-item-details/work-item-details-sidebar';
 import { WorkItemSummaryBanner } from '@/app/work-items/_components/work-item-details/work-item-summary-banner';
@@ -98,6 +109,7 @@ import {
 } from '@/app/work-items/_helpers/apply-realtime-work-log-row';
 import { rowFromRealtimePayload } from '@/lib/realtime/realtime-change-row';
 import { useScopedTableRealtime } from '@/lib/realtime/use-scoped-table-realtime';
+import { useSoftInvalidateProject } from '@/lib/soft-invalidate/use-soft-invalidate-project';
 import {
   readMoreFieldsOpen,
   writeMoreFieldsOpen,
@@ -122,20 +134,6 @@ import { useOptimisticPending } from '@/lib/optimistic-lock/use-optimistic-pendi
 import { useOptimisticPendingHydrate } from '@/lib/optimistic-lock/use-optimistic-pending-hydrate';
 import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
 
-function validateWorkLogInputs(
-  loggedHoursInput: string,
-  loggedAtInput: string
-): string | null {
-  const nextHours = Number(loggedHoursInput);
-  if (!Number.isFinite(nextHours) || nextHours <= 0) {
-    return 'Enter a valid amount of hours.';
-  }
-  if (!loggedAtInput) {
-    return 'Please provide a date for the work log.';
-  }
-  return null;
-}
-
 function resolveDiscussionWorkItems(
   provided: readonly CommentWorkItemOption[],
   workItem: DbWorkItem
@@ -159,6 +157,68 @@ function clearArchivedRecordStatus(prev: DbWorkItem): DbWorkItem {
     ...prev,
     record_status: 'active',
     ...(prev.parent_id ? { parent_id: null } : {}),
+  };
+}
+
+function saveDownloadedTemplate(blob: Blob): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = 'worklog-upload-template.xlsx';
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+function excelImportSuccessMessage(count: number): string {
+  return `${count} worklog${count === 1 ? '' : 's'} imported`;
+}
+
+function useWorkLogExcelActions({
+  readOnly,
+  refresh,
+  setActivityTab,
+}: Readonly<{
+  readOnly: boolean;
+  refresh: () => void;
+  setActivityTab: Dispatch<SetStateAction<WorkItemActivityTab>>;
+}>) {
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const downloadTemplate = () => {
+    setIsDownloading(true);
+    downloadWorklogExcelTemplate()
+      .then((blob) => {
+        saveDownloadedTemplate(blob);
+      })
+      .catch((error: unknown) => {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Failed to download the Excel template.';
+        toast.error(message);
+      })
+      .finally(() => {
+        setIsDownloading(false);
+      });
+  };
+
+  const handleImported = (count: number) => {
+    setUploadOpen(false);
+    setActivityTab('work-log');
+    toast.success(excelImportSuccessMessage(count));
+    refresh();
+  };
+
+  return {
+    uploadOpen,
+    setUploadOpen,
+    isDownloading,
+    downloadTemplate,
+    handleImported,
+    openUpload: readOnly ? undefined : () => setUploadOpen(true),
   };
 }
 
@@ -258,6 +318,7 @@ type WorkItemChildRef = Pick<
 /* eslint-disable no-unused-vars -- callback prop signatures */
 type WorkItemSubtasksSectionProps = {
   readonly items: readonly DbWorkItem[];
+  readonly projectKey?: string | null;
   readonly childCommentCounts: Readonly<Record<string, number>>;
   readonly childDonePercent: number;
   readonly canCreateSubtask: boolean;
@@ -274,6 +335,7 @@ type WorkItemSubtasksSectionProps = {
 
 function WorkItemSubtasksSection({
   items,
+  projectKey,
   childCommentCounts,
   childDonePercent,
   canCreateSubtask,
@@ -352,7 +414,11 @@ function WorkItemSubtasksSection({
                   </TableCell>
                   <TableCell className="max-w-0 p-0 whitespace-normal">
                     <Link
-                      href={`/work-items/${child.id}`}
+                      href={workItemDetailHref(child.id, {
+                        projectKey,
+                        workItemSlug: child.slug,
+                        sprintSlug: child.sprint?.slug,
+                      })}
                       className="hover:text-primary block min-w-0 px-2 py-2.5"
                     >
                       <TruncatedText className="text-sm">
@@ -415,6 +481,7 @@ type LinkedIssueUnlinkTarget = {
 /* eslint-disable no-unused-vars -- callback prop signatures */
 type WorkItemLinkedIssuesSectionProps = {
   readonly links: readonly WorkItemLinkListItem[];
+  readonly projectKey?: string | null;
   readonly readOnly: boolean;
   readonly onLinkIssue: () => void;
   readonly onUnlink: (target: LinkedIssueUnlinkTarget) => void;
@@ -423,6 +490,7 @@ type WorkItemLinkedIssuesSectionProps = {
 
 function WorkItemLinkedIssuesSection({
   links,
+  projectKey,
   readOnly,
   onLinkIssue,
   onUnlink,
@@ -475,7 +543,10 @@ function WorkItemLinkedIssuesSection({
                   </TableCell>
                   <TableCell className="max-w-0 p-0 whitespace-normal">
                     <Link
-                      href={`/work-items/${link.related.id}`}
+                      href={workItemDetailHref(link.related.id, {
+                        projectKey,
+                        workItemSlug: link.related.slug,
+                      })}
                       className="hover:text-primary block min-w-0 px-2 py-2.5"
                     >
                       <TruncatedText className="text-sm">
@@ -548,7 +619,11 @@ type WorkItemDetailsMainColumnProps = {
   readonly currentUserId?: string;
   readonly workLogs: WorkItemWorkLog[];
   readonly onAddWorkLogClick?: () => void;
+  readonly onExcelUploadClick?: () => void;
+  readonly onDownloadTemplateClick?: () => void;
+  readonly isDownloadingTemplate?: boolean;
   readonly onlineMembersSlot?: ReactNode;
+  readonly onWorkItemPatched?: (updated: Partial<DbWorkItem>) => void;
 };
 /* eslint-enable no-unused-vars */
 
@@ -587,7 +662,11 @@ function WorkItemDetailsMainColumn({
   currentUserId,
   workLogs,
   onAddWorkLogClick,
+  onExcelUploadClick,
+  onDownloadTemplateClick,
+  isDownloadingTemplate,
   onlineMembersSlot,
+  onWorkItemPatched,
 }: Readonly<WorkItemDetailsMainColumnProps>) {
   return (
     <div className="space-y-8 lg:col-span-3">
@@ -639,6 +718,7 @@ function WorkItemDetailsMainColumn({
           <Separator />
           <WorkItemSubtasksSection
             items={sortedChildWorkItems}
+            projectKey={workItem.project?.key}
             childCommentCounts={childCommentCounts}
             childDonePercent={childDonePercent}
             canCreateSubtask={canCreateSubtask}
@@ -659,6 +739,7 @@ function WorkItemDetailsMainColumn({
           <Separator />
           <WorkItemLinkedIssuesSection
             links={linkedIssues}
+            projectKey={workItem.project?.key}
             readOnly={isRecordReadOnly}
             onLinkIssue={onLinkIssue}
             onUnlink={onUnlinkIssue}
@@ -680,8 +761,12 @@ function WorkItemDetailsMainColumn({
             currentUserId={currentUserId}
             workLogs={workLogs}
             onAddWorkLogClick={onAddWorkLogClick}
+            onExcelUploadClick={onExcelUploadClick}
+            onDownloadTemplateClick={onDownloadTemplateClick}
+            isDownloadingTemplate={isDownloadingTemplate}
             readOnly={isRecordReadOnly}
             onlineMembersSlot={onlineMembersSlot}
+            onWorkItemPatched={onWorkItemPatched}
           />
         </>
       ) : null}
@@ -747,6 +832,7 @@ export default function WorkItemDetails({
   discussionWorkItems?: CommentWorkItemOption[];
   initialDetailsPreferences?: WorkItemDetailsPreferences;
 }>) {
+  useSoftInvalidateProject(project?.id ?? workItemDetails.project_id ?? null);
   const router = useRouter();
   const { isUserOnline } = useRealtime();
   const { handleMutationError } = useOptimisticLock();
@@ -792,10 +878,8 @@ export default function WorkItemDetails({
     useState<WorkItemActivity[]>(initialActivities);
   const [activityTab, setActivityTab] =
     useState<WorkItemActivityTab>('discussion');
-  const [loggedHoursInput, setLoggedHoursInput] = useState<string>('');
-  const [loggedAtInput, setLoggedAtInput] = useState<string>(() =>
-    new Date().toISOString().slice(0, 10)
-  );
+  const [workLogStartAtInput, setWorkLogStartAtInput] = useState<string>('');
+  const [workLogEndAtInput, setWorkLogEndAtInput] = useState<string>('');
   const [workLogCommentInput, setWorkLogCommentInput] = useState<string>('');
   const [workLogDialogOpen, setWorkLogDialogOpen] = useState(false);
   const [isLoggingWork, setIsLoggingWork] = useState(false);
@@ -877,11 +961,27 @@ export default function WorkItemDetails({
   };
 
   const allowedChildType = getAllowedChildType(workItem.type as WorkItemType);
+  const projectTypeDefs = useMemo(
+    () => typeDefsFromWorkflowConfig(project?.workflow_config),
+    [project?.workflow_config]
+  );
+  const parentTypeLabel = workItemTypeDisplayName(
+    workItem.type,
+    projectTypeDefs
+  );
+  const childTypeLabel = allowedChildType
+    ? workItemTypeDisplayName(allowedChildType, projectTypeDefs)
+    : null;
   const isArchived = workItem.record_status === 'archived';
   const isRecordReadOnly = workItem.status === 'Done' || isArchived;
   const canCreateSubtask = Boolean(
     allowedChildType && project && !isRecordReadOnly
   );
+  const workLogExcel = useWorkLogExcelActions({
+    readOnly: isRecordReadOnly,
+    refresh: () => router.refresh(),
+    setActivityTab,
+  });
 
   const handleWorkItemPatched = (updated: Partial<DbWorkItem>) => {
     setWorkItem((prev) => ({ ...prev, ...updated }));
@@ -927,6 +1027,7 @@ export default function WorkItemDetails({
         assignee: workItem.assignee,
         reporter: workItem.reporter,
         sprint: workItem.sprint,
+        typeDefs: projectTypeDefs,
       }),
     [
       projectMembers,
@@ -934,6 +1035,7 @@ export default function WorkItemDetails({
       workItem.assignee,
       workItem.reporter,
       workItem.sprint,
+      projectTypeDefs,
     ]
   );
 
@@ -977,12 +1079,12 @@ export default function WorkItemDetails({
 
   const handleWorkLogSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const validationError = validateWorkLogInputs(
-      loggedHoursInput,
-      loggedAtInput
+    const calculation = calculateWorkLogEntry(
+      workLogStartAtInput,
+      workLogEndAtInput
     );
-    if (validationError) {
-      toast.error(validationError);
+    if ('error' in calculation) {
+      toast.error(calculation.error);
       return;
     }
 
@@ -990,13 +1092,14 @@ export default function WorkItemDetails({
 
     try {
       const created = await createWorkItemWorkLog(workItem.id, {
-        loggedHours: Number(loggedHoursInput),
-        loggedAt: loggedAtInput,
+        loggedHours: calculation.loggedHours,
+        loggedAt: calculation.loggedAt,
         comment: workLogCommentInput.trim() ? workLogCommentInput : null,
       });
 
       setWorkLogs((prev) => [created, ...prev]);
-      setLoggedHoursInput('');
+      setWorkLogStartAtInput('');
+      setWorkLogEndAtInput('');
       setWorkLogCommentInput('');
       setWorkLogDialogOpen(false);
       toast.success('Work logged');
@@ -1010,6 +1113,9 @@ export default function WorkItemDetails({
   };
 
   const openWorkLogDialog = () => {
+    const defaults = createDefaultWorkLogDateTimes();
+    setWorkLogStartAtInput(defaults.startAt);
+    setWorkLogEndAtInput(defaults.endAt);
     setWorkLogDialogOpen(true);
   };
 
@@ -1162,6 +1268,10 @@ export default function WorkItemDetails({
             currentUserId={currentUserId}
             workLogs={workLogs}
             onAddWorkLogClick={workLogClickHandler}
+            onExcelUploadClick={workLogExcel.openUpload}
+            onDownloadTemplateClick={workLogExcel.downloadTemplate}
+            isDownloadingTemplate={workLogExcel.isDownloading}
+            onWorkItemPatched={handleWorkItemPatched}
             onlineMembersSlot={
               <OnlineMembersAvatarGroup
                 members={projectMembers.map((member) => ({
@@ -1200,14 +1310,23 @@ export default function WorkItemDetails({
           <WorkItemWorkLogDialog
             open={workLogDialogOpen}
             onOpenChange={setWorkLogDialogOpen}
-            loggedHoursInput={loggedHoursInput}
-            loggedAtInput={loggedAtInput}
+            startAtInput={workLogStartAtInput}
+            endAtInput={workLogEndAtInput}
             workLogCommentInput={workLogCommentInput}
             isLoggingWork={isLoggingWork}
-            onLoggedHoursChange={setLoggedHoursInput}
-            onLoggedAtChange={setLoggedAtInput}
+            onStartAtChange={setWorkLogStartAtInput}
+            onEndAtChange={setWorkLogEndAtInput}
             onWorkLogCommentChange={setWorkLogCommentInput}
             onSubmit={handleWorkLogSubmit}
+          />
+        ) : null}
+
+        {workLogExcel.openUpload ? (
+          <WorkItemWorkLogExcelDialog
+            open={workLogExcel.uploadOpen}
+            onOpenChange={workLogExcel.setUploadOpen}
+            workItemId={workItem.id}
+            onImported={workLogExcel.handleImported}
           />
         ) : null}
 
@@ -1217,7 +1336,7 @@ export default function WorkItemDetails({
               open={subtaskDialogOpen}
               onOpenChange={setSubtaskDialogOpen}
               title="Create Subtask"
-              description={`Create a ${allowedChildType} under this ${workItem.type}.`}
+              description={`Create a ${childTypeLabel} under this ${parentTypeLabel}.`}
               projects={[project]}
               projectMembers={projectMembers}
               parentId={workItem.id}
@@ -1234,7 +1353,9 @@ export default function WorkItemDetails({
               onOpenChange={setLinkSubtaskDialogOpen}
               parentWorkItemId={workItem.id}
               parentType={workItem.type as WorkItemType}
+              parentTypeLabel={parentTypeLabel}
               childType={allowedChildType}
+              childTypeLabel={childTypeLabel ?? allowedChildType}
               candidates={linkableWorkItems}
               onLinked={handleSubtaskLinked}
             />

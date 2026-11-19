@@ -209,4 +209,47 @@ describe('WorkItemActivityTabs maximize', () => {
       screen.getByText('Alex changed status from New to Done')
     ).toBeInTheDocument();
   });
+
+  it('shows Excel actions on the work log tab and respects read-only mode', () => {
+    const onDownload = vi.fn();
+    const onUpload = vi.fn();
+    const { rerender } = render(
+      <WorkItemActivityTabs
+        activeTab="work-log"
+        onActiveTabChange={() => {}}
+        initialComments={[]}
+        workItem={{ id: 'wi-1' } as never}
+        discussionWorkItems={[]}
+        workLogs={[]}
+        onDownloadTemplateClick={onDownload}
+        onExcelUploadClick={onUpload}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Download template' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Excel upload' }));
+    expect(onDownload).toHaveBeenCalledOnce();
+    expect(onUpload).toHaveBeenCalledOnce();
+
+    rerender(
+      <WorkItemActivityTabs
+        activeTab="work-log"
+        onActiveTabChange={() => {}}
+        initialComments={[]}
+        workItem={{ id: 'wi-1' } as never}
+        discussionWorkItems={[]}
+        workLogs={[]}
+        readOnly
+        onDownloadTemplateClick={onDownload}
+        onExcelUploadClick={onUpload}
+      />
+    );
+
+    expect(
+      screen.getByRole('button', { name: 'Download template' })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Excel upload' })
+    ).not.toBeInTheDocument();
+  });
 });

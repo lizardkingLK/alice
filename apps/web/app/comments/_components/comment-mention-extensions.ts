@@ -3,6 +3,8 @@ import Mention from '@tiptap/extension-mention';
 
 const MENTION_CLASS =
   'rounded-sm bg-blue-500/10 px-1 py-0.5 font-semibold text-blue-600 dark:text-blue-400';
+const AGENT_MENTION_CLASS =
+  'rounded-sm bg-emerald-500/10 px-1 py-0.5 font-semibold text-emerald-600 dark:text-emerald-400';
 const WORK_ITEM_MENTION_CLASS =
   'rounded-sm bg-violet-500/10 px-1 py-0.5 font-semibold text-violet-600 dark:text-violet-400';
 
@@ -15,7 +17,7 @@ type MentionAttrs = {
 };
 
 function mentionAttrSpecs(defaults: {
-  mentionType: 'user' | 'workItem';
+  mentionType: 'user' | 'agent' | 'workItem';
   mentionSuggestionChar: '@' | '#';
 }) {
   return {
@@ -70,7 +72,7 @@ function workItemMentionText(attrs: MentionAttrs): string {
 function createTypedMentionExtension(config: {
   name: 'mention' | 'workItemMention';
   className: string;
-  mentionType: 'user' | 'workItem';
+  mentionType: 'user' | 'agent' | 'workItem';
   mentionSuggestionChar: '@' | '#';
   // eslint-disable-next-line no-unused-vars -- callback signature
   toPlainText: (attrs: MentionAttrs) => string;
@@ -87,15 +89,21 @@ function createTypedMentionExtension(config: {
       });
     },
   }).configure({
-    HTMLAttributes: { class: config.className },
+    HTMLAttributes: {},
     renderText({ node }) {
       return config.toPlainText(node.attrs as MentionAttrs);
     },
     renderHTML({ options, node }) {
+      const attrs = node.attrs as MentionAttrs;
+      const className =
+        attrs.mentionType === 'agent' ? AGENT_MENTION_CLASS : config.className;
       return [
         'span',
-        mergeAttributes({ 'data-type': config.name }, options.HTMLAttributes),
-        config.toPlainText(node.attrs as MentionAttrs),
+        mergeAttributes(options.HTMLAttributes, {
+          'data-type': config.name,
+          class: className,
+        }),
+        config.toPlainText(attrs),
       ];
     },
   });

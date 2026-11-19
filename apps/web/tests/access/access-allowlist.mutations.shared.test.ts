@@ -52,11 +52,17 @@ describe('createAccessAllowlistService', () => {
 
   it('deletes an allowlist entry via DELETE', async () => {
     // Arrange
-    const apiFetch = vi.fn().mockResolvedValue({ success: true });
+    const accepted = {
+      accepted: true as const,
+      message:
+        'Allowlist entry permanent delete started. You’ll be notified when it finishes.',
+      correlationId: 'corr-1',
+    };
+    const apiFetch = vi.fn().mockResolvedValue(accepted);
     const service = createAccessAllowlistService(apiFetch);
 
     // Act
-    await service.deleteAccessAllowlistEntry(
+    const result = await service.deleteAccessAllowlistEntry(
       'allowlist-123',
       '2024-01-02T00:00:00.000Z'
     );
@@ -69,7 +75,9 @@ describe('createAccessAllowlistService', () => {
         body: JSON.stringify({
           expectedUpdatedAt: '2024-01-02T00:00:00.000Z',
         }),
+        skipDatabaseBusyRetry: true,
       }
     );
+    expect(result).toEqual(accepted);
   });
 });

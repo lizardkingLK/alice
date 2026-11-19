@@ -1,4 +1,5 @@
 import { WorkItemsData } from '@/app/work-items/_components/work-items-data';
+import { redirectLegacyGlobalFilterQuery } from '@/app/board/_helpers/redirect-legacy-filter-query';
 import {
   REGISTRY_PAGES,
   RegistrySuspensePage,
@@ -6,17 +7,23 @@ import {
 import type { RawSearchParams } from '@/lib/search-params';
 
 /**
- * Keep this page sync: awaiting cookies here would delay the Suspense fallback
- * until the parent resolves. Cookie-accurate column counts live in `loading.tsx`.
+ * Keep the shell sync so Suspense can paint immediately; await searchParams
+ * only for the legacy UUID query → path redirect.
  */
-export default function WorkItemsDashboard({
+export default async function WorkItemsDashboard({
   searchParams,
 }: Readonly<{
   searchParams: Promise<RawSearchParams>;
 }>) {
+  const resolvedSearchParams = await searchParams;
+  await redirectLegacyGlobalFilterQuery({
+    area: 'work-items',
+    searchParams: resolvedSearchParams,
+  });
+
   return (
     <RegistrySuspensePage meta={REGISTRY_PAGES.workItems}>
-      <WorkItemsData searchParams={searchParams} />
+      <WorkItemsData searchParams={Promise.resolve(resolvedSearchParams)} />
     </RegistrySuspensePage>
   );
 }

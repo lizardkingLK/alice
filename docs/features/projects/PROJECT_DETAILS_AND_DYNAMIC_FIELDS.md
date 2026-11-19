@@ -38,6 +38,7 @@ Furthermore, development teams need the ability to define **project-specific dyn
 ### Key Objectives & Delivered Capabilities
 
 - **Sidebar Navigation**: Replaced the top horizontal tab bar with an intuitive, responsive vertical sidebar navigation adhering to Alice design standards (`SettingsWorkspace` pattern).
+- **Shareable key URL**: `/projects/{KEY}` is the canonical workspace path (auth/allowlist first). UUID paths redirect to the key. The Details banner key control copies the absolute share URL.
 - **Banner Isolation**: Rendered the `ProjectSummaryBanner` exclusively on the `Details` tab, allowing other tabs (`Members`, `Teams`, `Work Items`, `Integrations`, `Fields`) to utilize the full available canvas area.
 - **Fields Configuration Workspace**: Added a dedicated `Fields` tab allowing authorized managers and administrators to view, edit, beautify, validate, and save dynamic field definitions with optimistic concurrency control.
 - **Starter Templates Catalog**: Delivered 8 production-ready agile field templates across 6 categories (Agile Prioritization, Requirements & QA, Strategy & Value, Release Management, Security & Governance, Defects & QA, DevOps & Deployment).
@@ -79,17 +80,17 @@ Project Details Workspace (/projects/[id])
 
 The active tab is tracked using the `tab` URL query parameter, preserving bookmarkability, deep linking, and browser back/forward history:
 
-| Tab ID         | URL Route                                        | Minimum Viewer Role  | Description                                         |
-| :------------- | :----------------------------------------------- | :------------------- | :-------------------------------------------------- |
-| `details`      | `/projects/[id]` or `/projects/[id]?tab=details` | Member               | Overview, metrics, branding banner, start/end dates |
-| `members`      | `/projects/[id]?tab=members`                     | Member               | Project member roster and assignments               |
-| `teams`        | `/projects/[id]?tab=teams`                       | Manager+             | Teams associated with the project                   |
-| `work-items`   | `/projects/[id]?tab=work-items`                  | Member               | Flat/hierarchical work-item table & backlog         |
-| `sprints`      | `/projects/[id]?tab=sprints`                     | Manager+             | Sprint registry for this project                    |
-| `integrations` | `/projects/[id]?tab=integrations`                | Manager+ (view/edit) | Jira Cloud & GitHub repository links                |
-| `fields`       | `/projects/[id]?tab=fields`                      | Manager+             | Dynamic fields JSON Schema configuration            |
-| `workflow`     | `/projects/[id]?tab=workflow`                    | Manager+             | Workflow graph designer (states / transitions)      |
-| `types`        | `/projects/[id]?tab=types`                       | Manager+             | Allowed work-item types                             |
+| Tab ID         | URL Route                                        | Minimum Viewer Role  | Description                                                                                             |
+| :------------- | :----------------------------------------------- | :------------------- | :------------------------------------------------------------------------------------------------------ |
+| `details`      | `/projects/[id]` or `/projects/[id]?tab=details` | Member               | Overview, metrics, branding banner, start/end dates                                                     |
+| `members`      | `/projects/[id]?tab=members`                     | Member               | Project member roster and assignments                                                                   |
+| `teams`        | `/projects/[id]?tab=teams`                       | Manager+             | Teams associated with the project                                                                       |
+| `work-items`   | `/projects/[id]?tab=work-items`                  | Member               | Flat/hierarchical work-item table & backlog                                                             |
+| `sprints`      | `/projects/[id]?tab=sprints`                     | Manager+             | Sprint registry for this project                                                                        |
+| `integrations` | `/projects/[id]?tab=integrations`                | Manager+ (view/edit) | Jira Cloud, GitHub, and AI model binds ([INTEGRATION_SCOPES.md](../integrations/INTEGRATION_SCOPES.md)) |
+| `fields`       | `/projects/[id]?tab=fields`                      | Manager+             | Dynamic fields JSON Schema configuration                                                                |
+| `workflow`     | `/projects/[id]?tab=workflow`                    | Manager+             | Workflow graph designer (states / transitions)                                                          |
+| `types`        | `/projects/[id]?tab=types`                       | Manager+             | Allowed work-item types                                                                                 |
 
 Legacy `?tab=board` bookmarks resolve to **Workflow** (Board designer retired).
 
@@ -588,7 +589,7 @@ The AI bot **does not write directly to the database**. All AI-generated schemas
 | **Member**  | Yes (Read-only summary)  | No (Hidden/Locked) |  No (Hidden / Locked)  |     Yes (Optional input)      |
 
 - **Client side**: When viewed by a Member, action buttons (`Load Template`, `Beautify`, `Generate with Alice`, `Save Changes`) are disabled or hidden, and an amber view-only banner is displayed (`Lock` icon).
-- **Members sidebar**: Only Details, Members, and Work Items. Teams, Integrations, Fields, Workflow, Sprints, and Types are hidden (deep links fall back to Details). Active/Archived on project Work Items and `/work-items` is hidden; use My Work (`/member`) for archived items. Nav uses Next.js `Link`s with tab-scoped RSC loads.
+- **Members sidebar**: Only Details, Members, and Work Items. Teams, Integrations, Fields, Workflow, Sprints, and Types are hidden (deep links fall back to Details). Board, Backlog, and My Work are Details overview launch cards (`target=_blank`) rather than sidebar tabs, so they do not replace the project shell. Active/Archived on project Work Items and `/work-items` is hidden; use My Work (`/member`) for archived items. Nav uses Next.js `Link`s with tab-scoped RSC loads.
 - **Server side**: Server actions and PUT endpoints verify `isManagerOrAdmin(currentUserRole)` and check project membership before updating `projects.attributes_config`.
 
 ---

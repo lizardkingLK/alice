@@ -18,6 +18,8 @@ Central docs for **Alice**.
 | [product/ROADMAP.md](./product/ROADMAP.md)                                 | Product roadmap (AI, integrations)                  | Plan   |
 | [architecture/TRD.md](./architecture/TRD.md)                               | Engineering / architecture                          | Living |
 | [guides/DATABASE.md](./guides/DATABASE.md)                                 | Anyone touching schema or migrations                | Living |
+| [guides/RLS_HYBRID_ROLLOUT.md](./guides/RLS_HYBRID_ROLLOUT.md)             | Hybrid RLS / PostgREST lockdown plan                | Living |
+| [guides/SUPABASE_LOG_INGEST.md](./guides/SUPABASE_LOG_INGEST.md)           | Free-plan Logs Ingest diagnosis and quiet defaults  | Living |
 | [guides/TESTING_DEVELOPMENT_FLOW.md](./guides/TESTING_DEVELOPMENT_FLOW.md) | Anyone developing features & running unit/e2e tests | Living |
 
 ---
@@ -39,6 +41,7 @@ How the monorepo fits together (apps, auth, deployment).
 - [DI.md](./architecture/DI.md) — Express composition root (`config/composition.ts`) / constructor injection (**Plan**; work-items, sprints, chat, projects, users, teams, profile, savedViews Living)
 - [API_VERSIONING.md](./architecture/API_VERSIONING.md) — Prisma GETs (unused), Zod mutation DTOs, `/api/v1` (**Plan**)
 - [DATA_RETRIEVAL.md](./architecture/DATA_RETRIEVAL.md) — app toggle: RSC supabase-js vs Express Prisma GETs (**Plan**)
+- [WORKER_AND_STREAMER.md](./architecture/WORKER_AND_STREAMER.md) — `apps/worker` + `apps/streamer`; BullMQ + Upstash Redis; parent/child jobs (**Plan**)
 
 ### Features
 
@@ -95,6 +98,7 @@ How we work day to day.
 
 - [TESTING_DEVELOPMENT_FLOW.md](./guides/TESTING_DEVELOPMENT_FLOW.md) — Project development & testing flow for all features
 - [DATABASE.md](./guides/DATABASE.md) — Prisma / Supabase workflow
+- [SUPABASE_LOG_INGEST.md](./guides/SUPABASE_LOG_INGEST.md) — Logs Ingest quota, Postgres quieting, diagnosis
 - [DAY_ONE_SETUP.md](./features/platform/DAY_ONE_SETUP.md) — clone, configure, initialize, and run Alice locally
 - [PERFORMANCE.md](./guides/PERFORMANCE.md) — RSC data loading, caching, parallel fetches + roadmap
 - [DEBUGGING.md](./guides/DEBUGGING.md) — IDE debug configs

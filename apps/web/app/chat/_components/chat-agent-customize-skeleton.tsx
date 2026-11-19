@@ -24,29 +24,37 @@ export function ChatAgentCustomizeSkeleton() {
         </div>
       </header>
 
-      <div className="no-scrollbar flex min-h-0 flex-1 justify-center overflow-y-auto px-4 py-6 pb-8 sm:px-6">
-        <div className="grid w-full max-w-5xl grid-cols-1 gap-8 lg:grid-cols-2">
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <Skeleton className="size-24 rounded-xl" />
-              <Skeleton className="size-9 rounded-md" />
+      <div className="no-scrollbar flex min-h-0 flex-1 justify-center overflow-y-auto px-4 py-6 pb-16 sm:px-6">
+        <div className="flex w-full max-w-7xl flex-col gap-8">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <Skeleton className="size-24 rounded-xl" />
+                <Skeleton className="size-9 rounded-md" />
+              </div>
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-24 w-full rounded-md" />
             </div>
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-10 w-full rounded-md" />
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-10 w-full rounded-md" />
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-24 w-full rounded-md" />
+            <div className="space-y-4">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-40 w-full rounded-md" />
+            </div>
           </div>
-          <div className="space-y-4">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-40 w-full rounded-md" />
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-28 w-full rounded-md" />
+          <div className="space-y-3">
             <Skeleton className="h-4 w-14" />
-            <Skeleton className="h-28 w-full rounded-md" />
+            <Skeleton className="h-36 w-full rounded-md" />
+          </div>
+          <div className="space-y-2">
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-10 w-full max-w-sm rounded-md" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-72 w-full rounded-md" />
           </div>
         </div>
       </div>

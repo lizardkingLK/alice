@@ -78,9 +78,13 @@ export const accessRequestDenySchema = z.object({
 
 export type AccessRequestDenyInput = z.infer<typeof accessRequestDenySchema>;
 
+export const accessRequestGrantProjectSchema = z.object({
+  projectId: z.string().uuid(),
+  addMember: z.boolean(),
+});
+
 export const accessRequestGrantSchema = z.object({
-  requestId: z.string().uuid().optional(),
-  expectedUpdatedAt: z.string().optional(),
+  projects: z.array(accessRequestGrantProjectSchema).min(1),
 });
 
 export type AccessRequestGrantInput = z.infer<typeof accessRequestGrantSchema>;

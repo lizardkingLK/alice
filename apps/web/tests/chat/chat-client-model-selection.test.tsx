@@ -136,6 +136,7 @@ const existingConversation = {
   created_at: '2026-10-16T00:00:00.000Z',
   updated_at: '2026-10-16T00:00:00.000Z',
   is_processing: false,
+  kind: 'general' as const,
 };
 
 const createdMessages: ChatMessage[] = [
@@ -205,16 +206,18 @@ describe('ChatClient model selection lifecycle', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Send' }));
 
     await waitFor(() => expect(sendChatMessageMock).toHaveBeenCalledTimes(1));
-    expect(sendChatMessageMock).toHaveBeenNthCalledWith(
-      1,
-      expect.arrayContaining([
+    expect(sendChatMessageMock).toHaveBeenNthCalledWith(1, {
+      history: expect.arrayContaining([
         expect.objectContaining({ content: 'First message' }),
       ]),
-      undefined,
-      SELECTED_INTEGRATION_ID,
-      undefined,
-      null
-    );
+      conversationId: undefined,
+      integrationId: SELECTED_INTEGRATION_ID,
+      attachments: undefined,
+      viewContext: null,
+      kind: 'general',
+      agentId: undefined,
+      projectId: undefined,
+    });
     expect(mockReplace).toHaveBeenCalledWith(
       `/chat?conversationId=${CREATED_CONVERSATION_ID}`
     );
@@ -242,16 +245,18 @@ describe('ChatClient model selection lifecycle', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Send' }));
 
     await waitFor(() => expect(sendChatMessageMock).toHaveBeenCalledTimes(2));
-    expect(sendChatMessageMock).toHaveBeenNthCalledWith(
-      2,
-      expect.arrayContaining([
+    expect(sendChatMessageMock).toHaveBeenNthCalledWith(2, {
+      history: expect.arrayContaining([
         expect.objectContaining({ content: 'Second message' }),
       ]),
-      CREATED_CONVERSATION_ID,
-      SELECTED_INTEGRATION_ID,
-      undefined,
-      null
-    );
+      conversationId: CREATED_CONVERSATION_ID,
+      integrationId: SELECTED_INTEGRATION_ID,
+      attachments: undefined,
+      viewContext: null,
+      kind: 'general',
+      agentId: undefined,
+      projectId: undefined,
+    });
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), {
       target: { value: 'Do not carry this draft' },

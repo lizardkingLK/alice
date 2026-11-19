@@ -143,7 +143,7 @@ export default function ChatClientSidebar({
                 variant="ghost"
                 size="icon-xs"
                 onClick={(e) => onDeleteConversationClick(e, conv)}
-                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted"
                 aria-label={`Delete chat session ${conv.title}`}
               >
                 <Trash2 />

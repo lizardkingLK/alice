@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createCommentsRouter } from '../../src/routes/api/comments/comments.route';
 import type { CommentsService } from '../../src/routes/api/comments/comments.service';
 import { createCommentListRow } from '../factories/comment.factory';
-import { CommentAccessError } from '../../src/routes/api/comments/comments.errors';
+import {
+  CommentAccessError,
+  CommentReplyScopeError,
+} from '../../src/routes/api/comments/comments.errors';
 import { withMountedRouter } from '../helpers/route-test.harness';
 
 const {
@@ -11,16 +14,22 @@ const {
   createCommentMock,
   updateCommentMock,
   archiveCommentMock,
+  enqueueArchiveCommentMock,
   restoreCommentMock,
   hardDeleteCommentMock,
+  enqueueHardDeleteCommentMock,
+  toggleCommentReactionMock,
 } = vi.hoisted(() => ({
   listCommentsPaginatedMock: vi.fn(),
   getCommentDetailMock: vi.fn(),
   createCommentMock: vi.fn(),
   updateCommentMock: vi.fn(),
   archiveCommentMock: vi.fn(),
+  enqueueArchiveCommentMock: vi.fn(),
   restoreCommentMock: vi.fn(),
   hardDeleteCommentMock: vi.fn(),
+  enqueueHardDeleteCommentMock: vi.fn(),
+  toggleCommentReactionMock: vi.fn(),
 }));
 
 vi.mock('../../src/middlewares/auth', () => ({
@@ -40,8 +49,11 @@ const commentsService = {
   createComment: createCommentMock,
   updateComment: updateCommentMock,
   archiveComment: archiveCommentMock,
+  enqueueArchiveComment: enqueueArchiveCommentMock,
   restoreComment: restoreCommentMock,
   hardDeleteComment: hardDeleteCommentMock,
+  enqueueHardDeleteComment: enqueueHardDeleteCommentMock,
+  toggleCommentReaction: toggleCommentReactionMock,
 } as unknown as CommentsService;
 
 async function withApp(run: (baseUrl: string) => Promise<void>): Promise<void> {
@@ -197,6 +209,59 @@ describe('comments routes', () => {
       });
     });
 
+    it('returns 403 when comment creation is outside project access', async () => {
+      const comment = createCommentListRow();
+      createCommentMock.mockRejectedValue(new CommentAccessError());
+
+      await withApp(async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/api/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            work_item_id: comment.work_item_id,
+            content: {
+              type: 'doc',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [{ type: 'text', text: 'Hello' }],
+                },
+              ],
+            },
+          }),
+        });
+
+        expect(response.status).toBe(403);
+      });
+    });
+
+    it('returns 400 when a reply parent is outside the target work item', async () => {
+      const comment = createCommentListRow();
+      createCommentMock.mockRejectedValue(new CommentReplyScopeError());
+
+      await withApp(async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/api/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            work_item_id: comment.work_item_id,
+            parent_id: comment.id,
+            content: {
+              type: 'doc',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [{ type: 'text', text: 'Reply' }],
+                },
+              ],
+            },
+          }),
+        });
+
+        expect(response.status).toBe(400);
+      });
+    });
+
     it('handles PATCH /:id (update comment)', async () => {
       const comment = createCommentListRow();
       updateCommentMock.mockResolvedValue(comment);
@@ -233,30 +298,46 @@ describe('comments routes', () => {
     });
 
     it('handles DELETE /:id (archive comment)', async () => {
+      enqueueArchiveCommentMock.mockResolvedValue({
+        correlationId: 'corr-comment-1',
+        message:
+          'Comment archive started. You’ll be notified when it finishes.',
+      });
+
       await withApp(async (baseUrl) => {
+        const expectedUpdatedAt = new Date().toISOString();
         const response = await fetch(
           `${baseUrl}/api/comments/44444444-4444-4444-8444-444444444444`,
           {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              expectedUpdatedAt: new Date().toISOString(),
-            }),
+            body: JSON.stringify({ expectedUpdatedAt }),
           }
         );
         const body = await response.json();
 
-        expect(response.status).toBe(200);
-        expect(body.data.success).toBe(true);
-        expect(body.error).toBeNull();
-        expect(archiveCommentMock).toHaveBeenCalledWith(
+        expect(response.status).toBe(202);
+        expect(body).toEqual({
+          accepted: true,
+          message:
+            'Comment archive started. You’ll be notified when it finishes.',
+          correlationId: 'corr-comment-1',
+        });
+        expect(enqueueArchiveCommentMock).toHaveBeenCalledWith(
+          'user-1',
           '44444444-4444-4444-8444-444444444444',
-          expect.any(String)
+          expectedUpdatedAt
         );
       });
     });
 
     it('handles DELETE /:id?permanent=true (hard delete)', async () => {
+      enqueueHardDeleteCommentMock.mockResolvedValue({
+        correlationId: 'corr-comment-2',
+        message:
+          'Comment permanent delete started. You’ll be notified when it finishes.',
+      });
+
       await withApp(async (baseUrl) => {
         const response = await fetch(
           `${baseUrl}/api/comments/44444444-4444-4444-8444-444444444444?permanent=true`,
@@ -266,10 +347,15 @@ describe('comments routes', () => {
         );
         const body = await response.json();
 
-        expect(response.status).toBe(200);
-        expect(body.data.success).toBe(true);
-        expect(body.error).toBeNull();
-        expect(hardDeleteCommentMock).toHaveBeenCalledWith(
+        expect(response.status).toBe(202);
+        expect(body).toEqual({
+          accepted: true,
+          message:
+            'Comment permanent delete started. You’ll be notified when it finishes.',
+          correlationId: 'corr-comment-2',
+        });
+        expect(enqueueHardDeleteCommentMock).toHaveBeenCalledWith(
+          'user-1',
           '44444444-4444-4444-8444-444444444444'
         );
       });
@@ -294,8 +380,56 @@ describe('comments routes', () => {
         expect(body.error).toBeNull();
         expect(restoreCommentMock).toHaveBeenCalledWith(
           '44444444-4444-4444-8444-444444444444',
-          expect.any(String)
+          expect.any(String),
+          'user-1'
         );
+      });
+    });
+
+    it('handles POST /:id/reactions (merge toggle without lock)', async () => {
+      const comment = createCommentListRow({
+        reactions: [{ user_id: 'user-1', emoji: '👍' }],
+      });
+      toggleCommentReactionMock.mockResolvedValue(comment);
+
+      await withApp(async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/api/comments/${comment.id}/reactions`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emoji: '👍', action: 'add' }),
+          }
+        );
+        const body = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(body.data.id).toBe(comment.id);
+        expect(body.error).toBeNull();
+        expect(toggleCommentReactionMock).toHaveBeenCalledWith(
+          comment.id,
+          'user-1',
+          '👍',
+          'add'
+        );
+      });
+    });
+
+    it('rejects invalid reaction emoji with 400', async () => {
+      await withApp(async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/api/comments/44444444-4444-4444-8444-444444444444/reactions`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emoji: 'pizza', action: 'add' }),
+          }
+        );
+        const body = await response.json();
+
+        expect(response.status).toBe(400);
+        expect(body.data).toBeNull();
+        expect(toggleCommentReactionMock).not.toHaveBeenCalled();
       });
     });
   });

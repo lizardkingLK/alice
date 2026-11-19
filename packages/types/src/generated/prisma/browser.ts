@@ -69,6 +69,12 @@ export type activities = Prisma.activitiesModel
  */
 export type sprint_burndown_rollups = Prisma.sprint_burndown_rollupsModel
 /**
+ * Model sprint_contribution_rollups
+ * Precomputed sprint contribution rows (trigger-maintained) for Charts.
+ * Ideal / pending / behind are derived at read time from estimate + dates + as_of.
+ */
+export type sprint_contribution_rollups = Prisma.sprint_contribution_rollupsModel
+/**
  * Model work_item_chart_rollups
  * Precomputed categorical counts for Charts Tier 1 (trigger-maintained).
  * `grain_key` encodes bucket + dimensions so upserts ignore SQL NULL uniqueness quirks.
@@ -101,6 +107,31 @@ export type attachments = Prisma.attachmentsModel
  */
 export type notifications = Prisma.notificationsModel
 /**
+ * Model notification_email_events
+ * 
+ */
+export type notification_email_events = Prisma.notification_email_eventsModel
+/**
+ * Model notification_email_preferences
+ * 
+ */
+export type notification_email_preferences = Prisma.notification_email_preferencesModel
+/**
+ * Model email_outbox
+ * 
+ */
+export type email_outbox = Prisma.email_outboxModel
+/**
+ * Model weekly_project_report_subscriptions
+ * 
+ */
+export type weekly_project_report_subscriptions = Prisma.weekly_project_report_subscriptionsModel
+/**
+ * Model weekly_project_reports
+ * 
+ */
+export type weekly_project_reports = Prisma.weekly_project_reportsModel
+/**
  * Model access_allowlist
  * Admission allowlist: approved email domains or exact emails (see docs/features/access).
  */
@@ -111,10 +142,17 @@ export type access_allowlist = Prisma.access_allowlistModel
  */
 export type access_requests = Prisma.access_requestsModel
 /**
- * Model jira_connections
- * 
+ * Model project_management_connections
+ * OAuth connections for project-management vendors (Jira first).
+ * Vendor-specific display fields live in `provider_config` (never tokens).
  */
-export type jira_connections = Prisma.jira_connectionsModel
+export type project_management_connections = Prisma.project_management_connectionsModel
+/**
+ * Model version_control_connections
+ * OAuth connections for version-control vendors (GitHub first).
+ * Vendor-specific display fields live in `provider_config` (never tokens).
+ */
+export type version_control_connections = Prisma.version_control_connectionsModel
 /**
  * Model chat_conversations
  * 
@@ -125,6 +163,33 @@ export type chat_conversations = Prisma.chat_conversationsModel
  * 
  */
 export type chat_attachments = Prisma.chat_attachmentsModel
+/**
+ * Model chat_tools
+ * Seeded Alice chat tool catalog. `key` matches code registry tool `name`.
+ * `instruction` stores AES-GCM ciphertext (`v1:…`) when set.
+ */
+export type chat_tools = Prisma.chat_toolsModel
+/**
+ * Model chat_skills
+ * Seeded skill catalog (admin-/owner-toggleable labels on agents).
+ */
+export type chat_skills = Prisma.chat_skillsModel
+/**
+ * Model chat_agents
+ * Workspace Alice originals (`owner_id` null) and personal forks.
+ * `instructions` is AES-GCM ciphertext (`v1:…`).
+ */
+export type chat_agents = Prisma.chat_agentsModel
+/**
+ * Model chat_agent_tools
+ * 
+ */
+export type chat_agent_tools = Prisma.chat_agent_toolsModel
+/**
+ * Model chat_agent_skills
+ * 
+ */
+export type chat_agent_skills = Prisma.chat_agent_skillsModel
 /**
  * Model saved_views
  * Personal saved navigation snapshots (pathname + query); shareable via saved_view_shares.
@@ -146,13 +211,26 @@ export type charts = Prisma.chartsModel
  */
 export type chart_shares = Prisma.chart_sharesModel
 /**
- * Model github_pull_requests
+ * Model version_control_pull_requests
  * 
  */
-export type github_pull_requests = Prisma.github_pull_requestsModel
+export type version_control_pull_requests = Prisma.version_control_pull_requestsModel
 /**
  * Model integrations
  * Workspace-level integration instance (chat models, Slack, Figma, etc.).
  * Secrets live encrypted inside `config` JSONB; API access is service-role only.
  */
 export type integrations = Prisma.integrationsModel
+/**
+ * Model member_chat_model_preferences
+ * Per-user preferred org chat model (bind-by-reference). Null id ⇒ workspace default.
+ * See docs/features/integrations/INTEGRATION_SCOPES.md (Phase E).
+ */
+export type member_chat_model_preferences = Prisma.member_chat_model_preferencesModel
+/**
+ * Model project_integration_bindings
+ * Project enablement of an organization (or project-scoped) integration.
+ * Empty for a project ⇒ Alice Chat falls through to organization defaults.
+ * See docs/features/integrations/INTEGRATION_SCOPES.md (Phase B).
+ */
+export type project_integration_bindings = Prisma.project_integration_bindingsModel

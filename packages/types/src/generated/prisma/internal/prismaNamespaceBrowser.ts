@@ -61,23 +61,37 @@ export const ModelName = {
   work_item_links: 'work_item_links',
   activities: 'activities',
   sprint_burndown_rollups: 'sprint_burndown_rollups',
+  sprint_contribution_rollups: 'sprint_contribution_rollups',
   work_item_chart_rollups: 'work_item_chart_rollups',
   work_item_chart_hierarchy_rollups: 'work_item_chart_hierarchy_rollups',
   work_item_worklogs: 'work_item_worklogs',
   comments: 'comments',
   attachments: 'attachments',
   notifications: 'notifications',
+  notification_email_events: 'notification_email_events',
+  notification_email_preferences: 'notification_email_preferences',
+  email_outbox: 'email_outbox',
+  weekly_project_report_subscriptions: 'weekly_project_report_subscriptions',
+  weekly_project_reports: 'weekly_project_reports',
   access_allowlist: 'access_allowlist',
   access_requests: 'access_requests',
-  jira_connections: 'jira_connections',
+  project_management_connections: 'project_management_connections',
+  version_control_connections: 'version_control_connections',
   chat_conversations: 'chat_conversations',
   chat_attachments: 'chat_attachments',
+  chat_tools: 'chat_tools',
+  chat_skills: 'chat_skills',
+  chat_agents: 'chat_agents',
+  chat_agent_tools: 'chat_agent_tools',
+  chat_agent_skills: 'chat_agent_skills',
   saved_views: 'saved_views',
   saved_view_shares: 'saved_view_shares',
   charts: 'charts',
   chart_shares: 'chart_shares',
-  github_pull_requests: 'github_pull_requests',
-  integrations: 'integrations'
+  version_control_pull_requests: 'version_control_pull_requests',
+  integrations: 'integrations',
+  member_chat_model_preferences: 'member_chat_model_preferences',
+  project_integration_bindings: 'project_integration_bindings'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -131,10 +145,11 @@ export const ProjectsScalarFieldEnum = {
   created_at: 'created_at',
   updated_by: 'updated_by',
   updated_at: 'updated_at',
-  jira_project_key: 'jira_project_key',
-  jira_connection_id: 'jira_connection_id',
-  github_repo: 'github_repo',
-  github_token: 'github_token',
+  pm_connection_id: 'pm_connection_id',
+  pm_external: 'pm_external',
+  vc_connection_id: 'vc_connection_id',
+  vc_external: 'vc_external',
+  figma_url: 'figma_url',
   logo_url: 'logo_url',
   cover_picture: 'cover_picture'
 } as const
@@ -194,6 +209,7 @@ export const SprintsScalarFieldEnum = {
   id: 'id',
   project_id: 'project_id',
   name: 'name',
+  slug: 'slug',
   goal: 'goal',
   start_date: 'start_date',
   end_date: 'end_date',
@@ -214,6 +230,7 @@ export const Work_itemsScalarFieldEnum = {
   sprint_id: 'sprint_id',
   parent_id: 'parent_id',
   title: 'title',
+  slug: 'slug',
   type: 'type',
   priority: 'priority',
   description: 'description',
@@ -234,7 +251,7 @@ export const Work_itemsScalarFieldEnum = {
   created_at: 'created_at',
   updated_by: 'updated_by',
   updated_at: 'updated_at',
-  jira_issue_key: 'jira_issue_key'
+  pm_external: 'pm_external'
 } as const
 
 export type Work_itemsScalarFieldEnum = (typeof Work_itemsScalarFieldEnum)[keyof typeof Work_itemsScalarFieldEnum]
@@ -278,6 +295,21 @@ export const Sprint_burndown_rollupsScalarFieldEnum = {
 } as const
 
 export type Sprint_burndown_rollupsScalarFieldEnum = (typeof Sprint_burndown_rollupsScalarFieldEnum)[keyof typeof Sprint_burndown_rollupsScalarFieldEnum]
+
+
+export const Sprint_contribution_rollupsScalarFieldEnum = {
+  sprint_id: 'sprint_id',
+  assignee_key: 'assignee_key',
+  assignee_id: 'assignee_id',
+  project_id: 'project_id',
+  as_of: 'as_of',
+  group_id: 'group_id',
+  estimated_points: 'estimated_points',
+  logged_hours: 'logged_hours',
+  item_count: 'item_count'
+} as const
+
+export type Sprint_contribution_rollupsScalarFieldEnum = (typeof Sprint_contribution_rollupsScalarFieldEnum)[keyof typeof Sprint_contribution_rollupsScalarFieldEnum]
 
 
 export const Work_item_chart_rollupsScalarFieldEnum = {
@@ -341,6 +373,7 @@ export const CommentsScalarFieldEnum = {
   author_id: 'author_id',
   parent_id: 'parent_id',
   content: 'content',
+  reactions: 'reactions',
   edited: 'edited',
   status: 'status',
   created_by: 'created_by',
@@ -381,10 +414,93 @@ export const NotificationsScalarFieldEnum = {
   created_by: 'created_by',
   created_at: 'created_at',
   updated_by: 'updated_by',
-  updated_at: 'updated_at'
+  updated_at: 'updated_at',
+  dedupe_key: 'dedupe_key'
 } as const
 
 export type NotificationsScalarFieldEnum = (typeof NotificationsScalarFieldEnum)[keyof typeof NotificationsScalarFieldEnum]
+
+
+export const Notification_email_eventsScalarFieldEnum = {
+  notification_id: 'notification_id',
+  version: 'version',
+  template: 'template',
+  payload: 'payload',
+  created_at: 'created_at'
+} as const
+
+export type Notification_email_eventsScalarFieldEnum = (typeof Notification_email_eventsScalarFieldEnum)[keyof typeof Notification_email_eventsScalarFieldEnum]
+
+
+export const Notification_email_preferencesScalarFieldEnum = {
+  user_id: 'user_id',
+  email_enabled: 'email_enabled',
+  work_item_assignment_enabled: 'work_item_assignment_enabled',
+  work_item_reassignment_enabled: 'work_item_reassignment_enabled',
+  work_item_status_change_enabled: 'work_item_status_change_enabled',
+  weekly_reports_enabled: 'weekly_reports_enabled',
+  timezone: 'timezone',
+  weekly_report_weekday: 'weekly_report_weekday',
+  weekly_report_hour: 'weekly_report_hour',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Notification_email_preferencesScalarFieldEnum = (typeof Notification_email_preferencesScalarFieldEnum)[keyof typeof Notification_email_preferencesScalarFieldEnum]
+
+
+export const Email_outboxScalarFieldEnum = {
+  id: 'id',
+  notification_id: 'notification_id',
+  user_id: 'user_id',
+  recipient_email: 'recipient_email',
+  template: 'template',
+  payload: 'payload',
+  status: 'status',
+  idempotency_key: 'idempotency_key',
+  attempt_count: 'attempt_count',
+  max_attempts: 'max_attempts',
+  next_attempt_at: 'next_attempt_at',
+  locked_by: 'locked_by',
+  locked_at: 'locked_at',
+  locked_until: 'locked_until',
+  last_attempt_at: 'last_attempt_at',
+  sent_at: 'sent_at',
+  cancelled_at: 'cancelled_at',
+  failed_at: 'failed_at',
+  provider_message_id: 'provider_message_id',
+  last_error_code: 'last_error_code',
+  last_error_message: 'last_error_message',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Email_outboxScalarFieldEnum = (typeof Email_outboxScalarFieldEnum)[keyof typeof Email_outboxScalarFieldEnum]
+
+
+export const Weekly_project_report_subscriptionsScalarFieldEnum = {
+  user_id: 'user_id',
+  project_id: 'project_id',
+  enabled: 'enabled',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Weekly_project_report_subscriptionsScalarFieldEnum = (typeof Weekly_project_report_subscriptionsScalarFieldEnum)[keyof typeof Weekly_project_report_subscriptionsScalarFieldEnum]
+
+
+export const Weekly_project_reportsScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  user_id: 'user_id',
+  period_start: 'period_start',
+  period_end: 'period_end',
+  snapshot: 'snapshot',
+  notification_id: 'notification_id',
+  created_at: 'created_at'
+} as const
+
+export type Weekly_project_reportsScalarFieldEnum = (typeof Weekly_project_reportsScalarFieldEnum)[keyof typeof Weekly_project_reportsScalarFieldEnum]
 
 
 export const Access_allowlistScalarFieldEnum = {
@@ -423,12 +539,13 @@ export const Access_requestsScalarFieldEnum = {
 export type Access_requestsScalarFieldEnum = (typeof Access_requestsScalarFieldEnum)[keyof typeof Access_requestsScalarFieldEnum]
 
 
-export const Jira_connectionsScalarFieldEnum = {
+export const Project_management_connectionsScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
-  cloud_id: 'cloud_id',
-  site_url: 'site_url',
-  account_email: 'account_email',
+  vendor: 'vendor',
+  external_id: 'external_id',
+  display_label: 'display_label',
+  provider_config: 'provider_config',
   refresh_token_enc: 'refresh_token_enc',
   access_token_enc: 'access_token_enc',
   access_token_expires_at: 'access_token_expires_at',
@@ -438,7 +555,26 @@ export const Jira_connectionsScalarFieldEnum = {
   updated_at: 'updated_at'
 } as const
 
-export type Jira_connectionsScalarFieldEnum = (typeof Jira_connectionsScalarFieldEnum)[keyof typeof Jira_connectionsScalarFieldEnum]
+export type Project_management_connectionsScalarFieldEnum = (typeof Project_management_connectionsScalarFieldEnum)[keyof typeof Project_management_connectionsScalarFieldEnum]
+
+
+export const Version_control_connectionsScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  vendor: 'vendor',
+  external_id: 'external_id',
+  display_label: 'display_label',
+  provider_config: 'provider_config',
+  refresh_token_enc: 'refresh_token_enc',
+  access_token_enc: 'access_token_enc',
+  access_token_expires_at: 'access_token_expires_at',
+  scopes: 'scopes',
+  status: 'status',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Version_control_connectionsScalarFieldEnum = (typeof Version_control_connectionsScalarFieldEnum)[keyof typeof Version_control_connectionsScalarFieldEnum]
 
 
 export const Chat_conversationsScalarFieldEnum = {
@@ -446,6 +582,8 @@ export const Chat_conversationsScalarFieldEnum = {
   user_id: 'user_id',
   title: 'title',
   is_processing: 'is_processing',
+  kind: 'kind',
+  agent_id: 'agent_id',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -468,6 +606,84 @@ export const Chat_attachmentsScalarFieldEnum = {
 } as const
 
 export type Chat_attachmentsScalarFieldEnum = (typeof Chat_attachmentsScalarFieldEnum)[keyof typeof Chat_attachmentsScalarFieldEnum]
+
+
+export const Chat_toolsScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  label: 'label',
+  description: 'description',
+  instruction: 'instruction',
+  sort_order: 'sort_order',
+  status: 'status',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_toolsScalarFieldEnum = (typeof Chat_toolsScalarFieldEnum)[keyof typeof Chat_toolsScalarFieldEnum]
+
+
+export const Chat_skillsScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  label: 'label',
+  description: 'description',
+  sort_order: 'sort_order',
+  status: 'status',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_skillsScalarFieldEnum = (typeof Chat_skillsScalarFieldEnum)[keyof typeof Chat_skillsScalarFieldEnum]
+
+
+export const Chat_agentsScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  owner_id: 'owner_id',
+  name: 'name',
+  title: 'title',
+  description: 'description',
+  instructions: 'instructions',
+  autonomy: 'autonomy',
+  status: 'status',
+  version: 'version',
+  forked_from_id: 'forked_from_id',
+  is_default: 'is_default',
+  tagline: 'tagline',
+  avatar_style: 'avatar_style',
+  avatar_seed: 'avatar_seed',
+  created_by: 'created_by',
+  created_at: 'created_at',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_agentsScalarFieldEnum = (typeof Chat_agentsScalarFieldEnum)[keyof typeof Chat_agentsScalarFieldEnum]
+
+
+export const Chat_agent_toolsScalarFieldEnum = {
+  id: 'id',
+  agent_id: 'agent_id',
+  tool_id: 'tool_id',
+  enabled: 'enabled',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_agent_toolsScalarFieldEnum = (typeof Chat_agent_toolsScalarFieldEnum)[keyof typeof Chat_agent_toolsScalarFieldEnum]
+
+
+export const Chat_agent_skillsScalarFieldEnum = {
+  id: 'id',
+  agent_id: 'agent_id',
+  skill_id: 'skill_id',
+  enabled: 'enabled',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_agent_skillsScalarFieldEnum = (typeof Chat_agent_skillsScalarFieldEnum)[keyof typeof Chat_agent_skillsScalarFieldEnum]
 
 
 export const Saved_viewsScalarFieldEnum = {
@@ -536,9 +752,10 @@ export const Chart_sharesScalarFieldEnum = {
 export type Chart_sharesScalarFieldEnum = (typeof Chart_sharesScalarFieldEnum)[keyof typeof Chart_sharesScalarFieldEnum]
 
 
-export const Github_pull_requestsScalarFieldEnum = {
+export const Version_control_pull_requestsScalarFieldEnum = {
   id: 'id',
   work_item_id: 'work_item_id',
+  vendor: 'vendor',
   pr_number: 'pr_number',
   repo_owner: 'repo_owner',
   repo_name: 'repo_name',
@@ -550,13 +767,15 @@ export const Github_pull_requestsScalarFieldEnum = {
   updated_at: 'updated_at'
 } as const
 
-export type Github_pull_requestsScalarFieldEnum = (typeof Github_pull_requestsScalarFieldEnum)[keyof typeof Github_pull_requestsScalarFieldEnum]
+export type Version_control_pull_requestsScalarFieldEnum = (typeof Version_control_pull_requestsScalarFieldEnum)[keyof typeof Version_control_pull_requestsScalarFieldEnum]
 
 
 export const IntegrationsScalarFieldEnum = {
   id: 'id',
   catalog_id: 'catalog_id',
   category: 'category',
+  scope: 'scope',
+  project_id: 'project_id',
   provider: 'provider',
   name: 'name',
   status: 'status',
@@ -570,6 +789,30 @@ export const IntegrationsScalarFieldEnum = {
 } as const
 
 export type IntegrationsScalarFieldEnum = (typeof IntegrationsScalarFieldEnum)[keyof typeof IntegrationsScalarFieldEnum]
+
+
+export const Member_chat_model_preferencesScalarFieldEnum = {
+  user_id: 'user_id',
+  default_integration_id: 'default_integration_id',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type Member_chat_model_preferencesScalarFieldEnum = (typeof Member_chat_model_preferencesScalarFieldEnum)[keyof typeof Member_chat_model_preferencesScalarFieldEnum]
+
+
+export const Project_integration_bindingsScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  integration_id: 'integration_id',
+  is_default_for_project: 'is_default_for_project',
+  created_by: 'created_by',
+  created_at: 'created_at',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type Project_integration_bindingsScalarFieldEnum = (typeof Project_integration_bindingsScalarFieldEnum)[keyof typeof Project_integration_bindingsScalarFieldEnum]
 
 
 export const SortOrder = {

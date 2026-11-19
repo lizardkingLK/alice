@@ -10,6 +10,8 @@ import {
   createIntegrationBodySchema,
   listIntegrationsQuerySchema,
   patchIntegrationBodySchema,
+  putMemberChatModelPreferenceBodySchema,
+  putProjectIntegrationBindingsBodySchema,
 } from './integrations.schemas';
 import { IntegrationsService } from './integrations.service';
 
@@ -28,6 +30,7 @@ function firstQueryValue(value: unknown): string | undefined {
 function listIntegrationsQueryFromRequest(query: Record<string, unknown>) {
   return listIntegrationsQuerySchema.safeParse({
     category: firstQueryValue(query.category),
+    scope: firstQueryValue(query.scope),
     status: firstQueryValue(query.status),
     catalog_id: firstQueryValue(query.catalog_id),
   });
@@ -76,6 +79,52 @@ export function createIntegrationsRouter(deps: IntegrationsRouterDeps) {
   );
 
   integrationsRouter.get(
+    '/member-chat-model-preference',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const actorId = requireActorId(req);
+        const preference =
+          await integrationsService.getMemberChatModelPreference(actorId);
+        res.json({ preference });
+      } catch (error) {
+        sendRouteError(
+          res,
+          error,
+          'Failed to get member chat model preference'
+        );
+      }
+    }
+  );
+
+  integrationsRouter.put(
+    '/member-chat-model-preference',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsed = putMemberChatModelPreferenceBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        const actorId = requireActorId(req);
+        const preference =
+          await integrationsService.putMemberChatModelPreference(
+            actorId,
+            parsed.data
+          );
+        res.json({ preference });
+      } catch (error) {
+        sendRouteError(
+          res,
+          error,
+          'Failed to update member chat model preference'
+        );
+      }
+    }
+  );
+
+  integrationsRouter.get(
     '/',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
@@ -95,6 +144,89 @@ export function createIntegrationsRouter(deps: IntegrationsRouterDeps) {
         res.json({ integrations });
       } catch (error) {
         sendRouteError(res, error, 'Failed to list integrations');
+      }
+    }
+  );
+
+  integrationsRouter.get(
+    '/project-ai-models/:projectId',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.projectId);
+      if (!parsedId.success) {
+        return res.status(400).json({ error: 'Invalid project id' });
+      }
+
+      try {
+        const actorId = requireActorId(req);
+        const models = await integrationsService.listProjectAiModels(
+          actorId,
+          parsedId.data
+        );
+        res.json({ models });
+      } catch (error) {
+        sendRouteError(res, error, 'Failed to list project AI models');
+      }
+    }
+  );
+
+  integrationsRouter.get(
+    '/project-bindings/:projectId',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.projectId);
+      if (!parsedId.success) {
+        return res.status(400).json({ error: 'Invalid project id' });
+      }
+
+      try {
+        const actorId = requireActorId(req);
+        const bindings = await integrationsService.listProjectChatModelBindings(
+          actorId,
+          parsedId.data
+        );
+        res.json({ bindings });
+      } catch (error) {
+        sendRouteError(
+          res,
+          error,
+          'Failed to list project integration bindings'
+        );
+      }
+    }
+  );
+
+  integrationsRouter.put(
+    '/project-bindings/:projectId',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.projectId);
+      if (!parsedId.success) {
+        return res.status(400).json({ error: 'Invalid project id' });
+      }
+
+      const parsed = putProjectIntegrationBindingsBodySchema.safeParse(
+        req.body
+      );
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        const actorId = requireActorId(req);
+        const bindings =
+          await integrationsService.replaceProjectChatModelBindings(
+            actorId,
+            parsedId.data,
+            parsed.data
+          );
+        res.json({ bindings });
+      } catch (error) {
+        sendRouteError(
+          res,
+          error,
+          'Failed to update project integration bindings'
+        );
       }
     }
   );

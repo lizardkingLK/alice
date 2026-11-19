@@ -22,6 +22,7 @@ const baseProject = {
   jira_project_key: null,
   jira_connection_id: null,
   github_repo: null,
+  figma_url: null,
   logo_url: null,
   cover_picture: null,
   attributes_config: null,
@@ -58,5 +59,14 @@ describe('countProjectIntegrations', () => {
 
   it('returns 0 when nothing is linked', () => {
     expect(countProjectIntegrations(baseProject)).toBe(0);
+  });
+
+  it('counts a saved Figma project link', () => {
+    expect(
+      countProjectIntegrations({
+        ...baseProject,
+        figma_url: 'https://www.figma.com/design/file-1/Alice',
+      })
+    ).toBe(1);
   });
 });

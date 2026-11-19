@@ -5,6 +5,9 @@ import {
 } from '@repo/types';
 import { z } from 'zod';
 
+/** Reaction toggle — merge semantics, no optimistic lock. */
+export { toggleCommentReactionSchema as toggleCommentReactionBodySchema } from '@repo/types';
+
 const commentContentSchema = z.custom<Json>(
   (value) => isValidCommentDoc(value),
   {
@@ -13,9 +16,12 @@ const commentContentSchema = z.custom<Json>(
 );
 
 export const createCommentSchema = z.object({
-  work_item_id: z.string().min(1, 'Work item ID is required'),
+  work_item_id: z.uuid('Work item ID must be a valid UUID'),
   content: commentContentSchema,
-  parent_id: z.string().min(1).nullable().optional(),
+  parent_id: z
+    .uuid('Parent comment ID must be a valid UUID')
+    .nullable()
+    .optional(),
 });
 
 export const updateCommentSchema = z.object({

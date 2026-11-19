@@ -5,8 +5,10 @@ import {
   chartRollupGroupColumn,
   CHART_HIERARCHY_MAX_DEPTH,
   CHART_SERIES_NULL_SLICE_KEY,
+  normalizeProjectWorkItemTypeDefs,
   paginationMeta,
   parseWorkflowConfigEnvelope,
+  workItemTypeDisplayName,
   type ChartDrilldownItemRow,
   type ChartHierarchyMeasure,
   type ChartHierarchyRing,
@@ -15,6 +17,7 @@ import {
   type ChartSeriesLabelField,
   type ChartSeriesSlice,
   type Database,
+  type ProjectWorkItemTypeDef,
   type WorkItemPriority,
   type WorkItemStatus,
   type WorkItemType,
@@ -654,6 +657,17 @@ export class ChartsRepository {
       }));
     }
 
+    if (labelField === 'type') {
+      const catalogDefs = await this.loadTypeCatalogDefs(projectIds);
+      return slices.map((slice) => ({
+        ...slice,
+        label:
+          slice.key === CHART_SERIES_NULL_SLICE_KEY
+            ? 'Unassigned'
+            : workItemTypeDisplayName(slice.key, catalogDefs),
+      }));
+    }
+
     if (labelField !== 'owner') {
       return slices.map((slice) => ({
         ...slice,
@@ -687,6 +701,31 @@ export class ChartsRepository {
           ? 'Unassigned'
           : (nameById.get(slice.key) ?? slice.key),
     }));
+  }
+
+  private async loadTypeCatalogDefs(
+    projectIds: readonly string[]
+  ): Promise<ProjectWorkItemTypeDef[]> {
+    if (projectIds.length === 0) {
+      return [];
+    }
+    const projects = await prisma.projects.findMany({
+      where: { id: { in: [...projectIds] } },
+      select: { workflow_config: true },
+    });
+    const byKey = new Map<string, ProjectWorkItemTypeDef>();
+    for (const project of projects) {
+      const defs = normalizeProjectWorkItemTypeDefs(
+        (project.workflow_config as { work_item_types?: unknown } | null)
+          ?.work_item_types
+      );
+      for (const def of defs) {
+        if (!byKey.has(def.key)) {
+          byKey.set(def.key, def);
+        }
+      }
+    }
+    return [...byKey.values()];
   }
 
   async create(ownerId: string, input: CreateChartBody): Promise<ChartRow> {
@@ -890,5 +929,174 @@ export class ChartsRepository {
     await prisma.chart_shares.deleteMany({
       where: { chart_id: params.chartId, user_id: params.userId },
     });
+  }
+
+  async getSprintForContribution(sprintId: string): Promise<{
+    id: string;
+    name: string;
+    project_id: string;
+    start_date: string;
+    end_date: string;
+    status: string;
+  } | null> {
+    const sprint = await prisma.sprints.findUnique({
+      where: { id: sprintId },
+      select: {
+        id: true,
+        name: true,
+        project_id: true,
+        start_date: true,
+        end_date: true,
+        status: true,
+      },
+    });
+    if (!sprint) {
+      return null;
+    }
+    return {
+      id: sprint.id,
+      name: sprint.name,
+      project_id: sprint.project_id,
+      start_date: sprint.start_date.toISOString().slice(0, 10),
+      end_date: sprint.end_date.toISOString().slice(0, 10),
+      status: sprint.status,
+    };
+  }
+
+  async listSprintContributionItems(sprintId: string): Promise<
+    Array<{
+      id: string;
+      assignee_id: string | null;
+      story_points: number | null;
+      status_category: string;
+    }>
+  > {
+    const rows = await prisma.work_items.findMany({
+      where: {
+        sprint_id: sprintId,
+        record_status: RecordStatus.active,
+      },
+      select: {
+        id: true,
+        assignee_id: true,
+        story_points: true,
+        status_category: true,
+      },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      assignee_id: row.assignee_id,
+      story_points: row.story_points,
+      status_category: row.status_category,
+    }));
+  }
+
+  async listSprintContributionWorklogs(workItemIds: readonly string[]): Promise<
+    Array<{
+      work_item_id: string;
+      logged_at: string;
+      logged_hours: number;
+    }>
+  > {
+    if (workItemIds.length === 0) {
+      return [];
+    }
+    const rows = await prisma.work_item_worklogs.findMany({
+      where: {
+        work_item_id: { in: [...workItemIds] },
+        status: RecordStatus.active,
+      },
+      select: {
+        work_item_id: true,
+        logged_at: true,
+        logged_hours: true,
+      },
+    });
+    return rows.map((row) => ({
+      work_item_id: row.work_item_id,
+      logged_at: row.logged_at.toISOString(),
+      logged_hours: row.logged_hours,
+    }));
+  }
+
+  async listUserDisplayNames(
+    userIds: readonly string[]
+  ): Promise<Readonly<Record<string, string>>> {
+    if (userIds.length === 0) {
+      return {};
+    }
+    const users = await prisma.users.findMany({
+      where: { id: { in: [...userIds] } },
+      select: { id: true, name: true, email: true },
+    });
+    const names: Record<string, string> = {};
+    for (const user of users) {
+      names[user.id] = user.name || user.email || user.id;
+    }
+    return names;
+  }
+
+  /**
+   * Precomputed contribution rows. Empty when migration not applied or not
+   * backfilled yet.
+   */
+  async listSprintContributionRollup(sprintId: string): Promise<
+    Array<{
+      assignee_id: string | null;
+      group_id: 'active' | 'unassigned' | 'done';
+      estimated_points: number;
+      logged_hours: number;
+      item_count: number;
+      as_of: string;
+    }>
+  > {
+    try {
+      const rows = await prisma.sprint_contribution_rollups.findMany({
+        where: { sprint_id: sprintId },
+        select: {
+          assignee_id: true,
+          group_id: true,
+          estimated_points: true,
+          logged_hours: true,
+          item_count: true,
+          as_of: true,
+        },
+      });
+      return rows.map((row) => ({
+        assignee_id: row.assignee_id,
+        group_id: row.group_id as 'active' | 'unassigned' | 'done',
+        estimated_points: row.estimated_points,
+        logged_hours: row.logged_hours,
+        item_count: row.item_count,
+        as_of: row.as_of.toISOString().slice(0, 10),
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (
+        message.includes('sprint_contribution_rollups') ||
+        message.includes('does not exist')
+      ) {
+        console.warn(
+          'warn. sprint_contribution_rollups unavailable; using live contribution compute.'
+        );
+        return [];
+      }
+      throw error;
+    }
+  }
+
+  /** Best-effort burndown + contribution rebuild after live fallback. */
+  async rebuildSprintAnalyticsRollup(sprintId: string): Promise<void> {
+    try {
+      await prisma.$executeRawUnsafe(
+        'SELECT public.rebuild_sprint_analytics_rollups($1::uuid)',
+        sprintId
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(
+        `warn. rebuild_sprint_analytics_rollups failed for ${sprintId}: ${message}`
+      );
+    }
   }
 }

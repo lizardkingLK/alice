@@ -33,4 +33,19 @@ describe('logLlmProviderError', () => {
     expect(logged).not.toContain('api_key');
     expect(logged).not.toContain('Body:');
   });
+
+  it('includes a sanitized rejection category when provided', () => {
+    logLlmProviderError('anthropic', {
+      timestamp: '2026-11-10T05:32:39.197Z',
+      status: 200,
+      attempt: 1,
+      messagesCount: 3,
+      responseBodyBytes: 0,
+      rejectionCategory: 'invalid_stop_reason\nforged',
+    });
+
+    const logged = String(appendFileSyncMock.mock.calls[0]?.[1]);
+    expect(logged).toContain('Rejection category: invalid_stop_reason_forged');
+    expect(logged).not.toContain('\nforged');
+  });
 });

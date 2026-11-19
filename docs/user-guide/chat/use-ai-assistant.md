@@ -10,7 +10,7 @@ Chat with Alice to inspect and create workspace data.
 
 1. Open **Alice** in the sidebar (`/chat`).
 2. Optionally open **Agents** from the grid icon in the chat header to browse
-   and customize role agents (see [Alice agents](./agents.md)).
+   and customize role agents (see [Alice agents](./alice-agents.md)).
 3. Optionally pick a **model** from the **Cpu** icon in the chat header (when
    your workspace has configured models). Models are grouped under **Gemini**,
    **SpaceXAI**, **OpenAI**, or **Anthropic**; open a provider and choose a model
@@ -31,8 +31,15 @@ threads. When a conversation is open, the header breadcrumb shows
 **Dashboard → Chat →** that chat’s title.
 
 Only active integrations appear in the model menu. If no models are connected,
-Alice asks you to **add an AI model** first; contact a manager or admin. If
-models exist but you have no conversations yet, use **Create conversation**.
+Alice shows **Add an AI model first** in every layout (full page, header dock,
+drawer, and Overview widget); contact a manager or admin. The full `/chat` page
+and Overview widget learn model availability on the server. The header dock
+loads models when you open Alice (a brief spinner, then the gate or chat) and
+remembers the last result in this browser so reopen is instant. When models are
+connected, left/right chevrons next to the agent name cycle available
+personalities (Overview Alice and the header dock); the choice is remembered as
+your preferred agent. If models exist but you have no conversations yet on the
+full chat page, use **Create conversation**.
 
 ---
 
@@ -42,21 +49,30 @@ On any dashboard page (except `/chat`):
 
 1. Select the **Alice** control in the header (between notifications and your
    profile).
-2. Alice opens as a **right-hand sidebar** that shares the page width — it does
-   **not** cover the page with a blur overlay.
-3. Select the control again (or the **Close** control in Alice’s header) to
-   hide the sidebar and give the page full width.
-4. Continue the conversation without leaving your current page.
+2. Alice opens **immediately** as a **right-hand sidebar** that shares the page
+   width — it does **not** cover the page with a blur overlay.
+3. A **Context** strip just above the message box shows the page you opened
+   Alice from (icon + name). When you are on the **Workflow** designer, that
+   context is included so Alice can work with the live draft. You can dismiss
+   the page chip with the **X** on the strip.
+4. Select the control again (or the **Close** control in Alice’s header) to
+   hide the sidebar and give the page full width. Closing does **not** clear
+   the dock conversation for that session — reopen to continue.
+5. Dock chats are **temporary**: they are saved while you talk on that page, but
+   they do **not** appear in the history list on the full `/chat` page.
+6. Alice uses the workspace **default model**. Models load when the dock opens
+   (spinner on first open in this browser; later opens use a local cache and
+   refresh in the background). You can still switch models from the menu.
 
 ---
 
 ## Workflow designer context
 
 When the project **Workflow** designer is open (managers/admins), Alice is
-**aware of that designer** (project, live draft, unsaved changes). You can ask
-in natural language to change the graph — for example add a state, connect Dev
-to QA, or turn on **Lock record in this state**, **Terminal state**, or
-**Require children** on a transition.
+**aware of that designer** (project, live draft, unsaved changes) via the dock
+**Context** strip. You can ask in natural language to change the graph — for
+example add a state, connect Dev to QA, or turn on **Lock record in this
+state**, **Terminal state**, or **Require children** on a transition.
 
 Board column drafts are no longer offered; workflow proposals are the only
 structured configuration path.
@@ -90,7 +106,7 @@ Examples:
 - **Propose workflow designer changes** (managers) with Apply / Reject cards when
   the workflow side panel is open. Ask Alice to undo or cancel before you Apply
   to dismiss a pending proposal without changing the canvas
-- **Attach and inspect documents**: Click the paperclip icon (📎) to attach JSON, CSV, TSV, Markdown tables, Indented text outlines, YAML, or image files
+- **Attach and inspect documents**: Click the paperclip icon (📎) to attach **JSON** or **CSV** work-item files (other types, including images, are rejected)
 - **Universal file parsing**: Ask Alice to extract work items, estimates, priorities, parent links, and custom dynamic fields from any supported document format
 - **Check duplicates**: Ask Alice to compare parsed items against existing project items to spot duplicates before creating
 - **Atomic batch import**: Bulk create work items with strict hierarchy validation (`Epic` &rarr; `Feature` &rarr; `Story` &rarr; `Task` &rarr; `Issue`). If invalid, zero items are created and Alice asks whether you want to fix the file or skip invalid items

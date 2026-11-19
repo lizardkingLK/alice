@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { AlertTriangle } from '@repo/ui/lib/icons';
 import { TeamRegistry } from '@/app/manager/_components/team-registry';
 import type { Team } from '@/app/manager/_services/teams.mutations.client';
+import { projectDetailHref } from '@/app/projects/_helpers/project-links';
 import type {
   Project,
   ProjectMemberWithUser,
@@ -47,7 +48,7 @@ export function ProjectTeamsPanel({
         <p className="mt-1">
           Teams draw members from the project roster.{' '}
           <Link
-            href={`/projects/${project.id}?tab=members`}
+            href={projectDetailHref(project.key, 'members')}
             className="text-primary font-medium hover:underline"
           >
             Go to Project Members

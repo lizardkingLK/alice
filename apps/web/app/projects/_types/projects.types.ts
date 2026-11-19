@@ -2,6 +2,7 @@ import type { Tables } from '@repo/types';
 import type {
   InitialProjectTeamInput,
   InitialSprintInput,
+  ProjectIntegrationBindingItem,
   ProjectWorkflowConfig,
   WorkItemTypeRemovalStrategy,
 } from '@repo/types/api/v1';
@@ -15,7 +16,23 @@ export {
   type ListProjectsQuery,
 } from '@repo/types/api/v1';
 
-export type Project = Omit<Tables<'projects'>, 'github_token'> & {
+export type Project = Omit<
+  Tables<'projects'>,
+  | 'github_token'
+  | 'pm_connection_id'
+  | 'pm_external'
+  | 'vc_connection_id'
+  | 'vc_external'
+  | 'figma_url'
+> & {
+  /** Optional while web clients and generated database types roll out together. */
+  figma_url?: string | null;
+  /** Wire aliases mapped from `pm_connection_id` / `pm_external`. */
+  jira_connection_id?: string | null;
+  jira_project_key?: string | null;
+  /** Wire aliases mapped from `vc_connection_id` / `vc_external`. */
+  github_repo?: string | null;
+  github_connection_id?: string | null;
   owner?:
     | (Pick<User, 'id' | 'name' | 'email'> & {
         profile_picture?: string | null;
@@ -45,21 +62,24 @@ type ProjectMutationInput = Omit<
   | 'deleted_at'
   | 'created_by'
   | 'updated_by'
-  | 'jira_connection_id'
-  | 'jira_project_key'
-  | 'github_repo'
-  | 'github_token'
+  | 'pm_connection_id'
+  | 'pm_external'
+  | 'vc_connection_id'
+  | 'vc_external'
   | 'logo_url'
   | 'cover_picture'
+  | 'figma_url'
   | 'workflow_config'
 > & {
   jira_connection_id?: string | null;
   jira_project_key?: string | null;
   github_repo?: string | null;
+  github_connection_id?: string | null;
   /** Write-only; omit on edit when blank to leave existing PAT unchanged. */
   github_token?: string | null;
   logo_url?: string | null;
   cover_picture?: string | null;
+  figma_url?: string | null;
   attributes_config?: unknown;
   workflow_config?: ProjectWorkflowConfig | null;
 };
@@ -67,6 +87,8 @@ type ProjectMutationInput = Omit<
 export type CreateProjectInput = ProjectMutationInput & {
   sprint?: InitialSprintInput;
   team?: InitialProjectTeamInput;
+  /** Org AI models to bind on create (bind-by-reference; no secrets). */
+  integration_bindings?: ProjectIntegrationBindingItem[];
 };
 
 export type UpdateProjectInput = Partial<ProjectMutationInput> & {

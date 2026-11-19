@@ -8,9 +8,12 @@ import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { SprintForm } from '@/app/sprints/_components/sprint-form';
 import {
   Sprint,
+  archiveSprint,
   hardDeleteSprint,
 } from '@/app/sprints/_services/sprints.mutations.client';
 import { updateSprintStatusWithOptimisticLock } from '@/app/sprints/_helpers/update-sprint-status-with-lock';
+import { toast } from '@repo/ui/components/ui/sonner';
+import { runLockedMutation } from '@/lib/optimistic-lock/run-locked-mutation';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Archive, CircleDot, ListTodo, Search, Plus } from '@repo/ui/lib/icons';
@@ -438,18 +441,29 @@ export function SprintsWorkspace({
     }
     setActionError(null);
     startTransition(async () => {
-      await runLockedStatusUpdate({
-        sprint: sprintToArchive,
-        status: SprintStatusEnum.Archived,
+      const sprint = sprintToArchive;
+      const result = await runLockedMutation({
+        mutate: () => archiveSprint(sprint.id, sprint.updatedAt),
         handleMutationError,
+        entityType: 'sprint',
+        entityId: sprint.id,
+        expectedUpdatedAt: sprint.updatedAt,
+        pendingFields: { status: SprintStatusEnum.Archived },
         currentUserId,
-        onUpdated: (updated) => {
-          setSprintToArchive(null);
-          handleSprintUpdated(updated);
-        },
-        failureMessage: 'Failed to archive sprint',
-        onFailure: setActionError,
       });
+      if (!result.ok) {
+        if (!result.conflict) {
+          setActionError(
+            result.error instanceof Error
+              ? result.error.message
+              : 'Failed to archive sprint'
+          );
+        }
+        return;
+      }
+      toast.success(result.data.message);
+      setSprintToArchive(null);
+      refreshOrPreviousPage();
     });
   };
 
@@ -475,7 +489,10 @@ export function SprintsWorkspace({
     setActionError(null);
     startTransition(async () => {
       try {
-        await hardDeleteSprint(sprintToDelete.id, { workItemsAction: action });
+        const accepted = await hardDeleteSprint(sprintToDelete.id, {
+          workItemsAction: action,
+        });
+        toast.success(accepted.message);
         setSprintToDelete(null);
         refreshOrPreviousPage();
       } catch (deleteError) {

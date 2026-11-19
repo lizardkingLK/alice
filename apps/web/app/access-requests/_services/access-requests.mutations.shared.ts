@@ -1,4 +1,11 @@
-import type { AccessRequestKind, AccessRequestStatus } from '@repo/types';
+import type {
+  AccessRequestGrantInput,
+  AccessRequestKind,
+  AccessRequestStatus,
+} from '@repo/types';
+import type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
+
+export type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 
 export type AccessRequestEntry = {
   id: string;
@@ -34,8 +41,12 @@ export type AccessRequestListResult = {
 };
 
 export function createAccessRequestsService(
-  // eslint-disable-next-line no-unused-vars -- structural callback type
-  apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>
+  apiFetch: <T>(
+    // eslint-disable-next-line no-unused-vars
+    path: string,
+    // eslint-disable-next-line no-unused-vars
+    init?: RequestInit & { skipDatabaseBusyRetry?: boolean }
+  ) => Promise<T>
 ) {
   const apiAccessRequests = '/api/access-requests';
 
@@ -46,5 +57,42 @@ export function createAccessRequestsService(
     );
   }
 
-  return { denyAccessRequest };
+  async function grantAccessRequest(
+    requestId: string,
+    input: AccessRequestGrantInput
+  ): Promise<void> {
+    await apiFetch<{ success: boolean }>(
+      `${apiAccessRequests}/${requestId}/grant`,
+      { method: 'POST', body: JSON.stringify(input) }
+    );
+  }
+
+  async function listSharedMemberships(
+    requestId: string
+  ): Promise<Array<{ id: string; key: string; name: string }>> {
+    const data = await apiFetch<{
+      projects: Array<{ id: string; key: string; name: string }>;
+    }>(`${apiAccessRequests}/${requestId}/shared-memberships`);
+    return data.projects ?? [];
+  }
+
+  /** Fire-and-forget purge — API returns 202; inbox notifies when done. */
+  async function deleteAccessRequest(
+    requestId: string
+  ): Promise<DestructiveActionAccepted> {
+    return await apiFetch<DestructiveActionAccepted>(
+      `${apiAccessRequests}/${requestId}`,
+      {
+        method: 'DELETE',
+        skipDatabaseBusyRetry: true,
+      }
+    );
+  }
+
+  return {
+    denyAccessRequest,
+    grantAccessRequest,
+    listSharedMemberships,
+    deleteAccessRequest,
+  };
 }

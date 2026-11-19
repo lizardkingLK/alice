@@ -44,6 +44,35 @@ function diffWorkflowMembership(
   return lines;
 }
 
+type StateBooleanFlagKey =
+  'lockRecord' | 'terminal' | 'acceptFromAnyState' | 'allowToAnyState';
+
+const STATE_BOOLEAN_FLAG_DIFFS: readonly {
+  readonly key: StateBooleanFlagKey;
+  readonly phrase: (after: WorkflowStateNode) => string;
+}[] = [
+  {
+    key: 'lockRecord',
+    phrase: (after) =>
+      `${after.lockRecord ? 'Enabled' : 'Disabled'} lock record on “${after.name}”`,
+  },
+  {
+    key: 'terminal',
+    phrase: (after) =>
+      `${after.terminal ? 'Marked' : 'Unmarked'} “${after.name}” as terminal`,
+  },
+  {
+    key: 'acceptFromAnyState',
+    phrase: (after) =>
+      `${after.acceptFromAnyState ? 'Enabled' : 'Disabled'} accept from any state on “${after.name}”`,
+  },
+  {
+    key: 'allowToAnyState',
+    phrase: (after) =>
+      `${after.allowToAnyState ? 'Enabled' : 'Disabled'} allow to any state on “${after.name}”`,
+  },
+];
+
 function diffStateFlags(
   beforeState: WorkflowStateNode,
   afterState: WorkflowStateNode,
@@ -60,15 +89,11 @@ function diffStateFlags(
       `Changed category of “${afterState.name}” to ${afterState.category} in ${label}.`
     );
   }
-  if (beforeState.lockRecord !== afterState.lockRecord) {
-    lines.push(
-      `${afterState.lockRecord ? 'Enabled' : 'Disabled'} lock record on “${afterState.name}” in ${label}.`
-    );
-  }
-  if (beforeState.terminal !== afterState.terminal) {
-    lines.push(
-      `${afterState.terminal ? 'Marked' : 'Unmarked'} “${afterState.name}” as terminal in ${label}.`
-    );
+  for (const flag of STATE_BOOLEAN_FLAG_DIFFS) {
+    if (beforeState[flag.key] === afterState[flag.key]) {
+      continue;
+    }
+    lines.push(`${flag.phrase(afterState)} in ${label}.`);
   }
   return lines;
 }

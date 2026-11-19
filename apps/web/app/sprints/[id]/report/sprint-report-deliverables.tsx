@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
+import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
 import { useRealtime } from '@/components/realtime/realtime-provider';
 import { UserAvatar } from '@/components/user-avatar';
 import { FileText } from '@repo/ui/lib/icons';
@@ -124,9 +125,10 @@ export function SprintReportDeliverables({
                       className="hover:bg-muted/30 transition-colors"
                     >
                       <td className="p-4 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 rounded-md bg-zinc-500/10 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                          {item.type}
-                        </span>
+                        <WorkItemTypeBadge
+                          type={item.type}
+                          projectId={item.project_id ?? item.project?.id}
+                        />
                       </td>
                       <td className="p-4 font-mono text-xs font-semibold whitespace-nowrap">
                         {item.project

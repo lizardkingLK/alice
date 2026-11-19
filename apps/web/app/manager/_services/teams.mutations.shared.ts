@@ -2,6 +2,9 @@
 import { Tables } from '@repo/types';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
+import type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
+
+export type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 
 export type Team = Tables<'teams'> & {
   manager?: Pick<User, 'id' | 'name' | 'email'> | null;
@@ -32,7 +35,10 @@ export type CreateTeamInput = Omit<
 export type UpdateTeamInput = Partial<CreateTeamInput>;
 
 export function createTeamsService(
-  apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>
+  apiFetch: <T>(
+    path: string,
+    init?: RequestInit & { skipDatabaseBusyRetry?: boolean }
+  ) => Promise<T>
 ) {
   const apiTeams = '/api/teams';
 
@@ -74,18 +80,19 @@ export function createTeamsService(
       return data.team;
     },
 
+    /** Fire-and-forget archive — API returns 202; inbox notifies when done. */
     async softDeleteTeam(
       id: string,
       expectedUpdatedAt: string
-    ): Promise<Tables<'teams'>> {
-      const data = await apiFetch<{ team: Tables<'teams'> }>(
+    ): Promise<DestructiveActionAccepted> {
+      return await apiFetch<DestructiveActionAccepted>(
         `${apiTeams}/${id}/soft-delete`,
         {
           method: 'PATCH',
           body: JSON.stringify({ expectedUpdatedAt }),
+          skipDatabaseBusyRetry: true,
         }
       );
-      return data.team;
     },
 
     async restoreTeam(
@@ -102,9 +109,11 @@ export function createTeamsService(
       return data.team;
     },
 
-    async hardDeleteTeam(id: string): Promise<void> {
-      await apiFetch<void>(`${apiTeams}/${id}`, {
+    /** Fire-and-forget purge — API returns 202; inbox notifies when done. */
+    async hardDeleteTeam(id: string): Promise<DestructiveActionAccepted> {
+      return await apiFetch<DestructiveActionAccepted>(`${apiTeams}/${id}`, {
         method: 'DELETE',
+        skipDatabaseBusyRetry: true,
       });
     },
   };

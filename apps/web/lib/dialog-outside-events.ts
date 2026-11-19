@@ -17,6 +17,9 @@ const FLOATING_PORTAL_TARGET_SELECTOR = [
   '[data-radix-select-viewport]',
   '[data-radix-select-trigger]',
   '[role="listbox"]',
+  // Sonner mounts under body; toast dismiss must not close the parent dialog.
+  '[data-sonner-toaster]',
+  '[data-sonner-toast]',
 ].join(',');
 
 /**

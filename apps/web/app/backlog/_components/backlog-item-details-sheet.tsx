@@ -109,6 +109,7 @@ export function BacklogItemDetailsSheet({
             <SheetHeader className="space-y-3 pb-2">
               <WorkItemTypeBadge
                 type={item.type}
+                projectId={item.project_id}
                 compact
                 className="text-[10px] font-semibold"
               />
@@ -335,6 +336,15 @@ export function BacklogItemDetailsSheet({
                 <a
                   href={workItemDetailHref(item.id, {
                     fromProjectId: item.project_id,
+                    projectKey:
+                      item.project?.key ??
+                      projects.find((project) => project.id === item.project_id)
+                        ?.key,
+                    workItemSlug: item.slug,
+                    sprintSlug:
+                      item.sprint?.slug ??
+                      sprints.find((sprint) => sprint.id === item.sprint_id)
+                        ?.slug,
                   })}
                   target="_blank"
                   rel="noopener noreferrer"

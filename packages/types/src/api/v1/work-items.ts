@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { Json } from '../../generated/supabase/database.types.js';
 import type { work_itemsGetPayload } from '../../generated/prisma/models/work_items.js';
 import { todayDateString, toDateOnly } from '../../date-only.js';
 import { expectedUpdatedAtSchema } from '../../optimistic-lock.js';
@@ -9,7 +10,7 @@ import {
   WORK_ITEM_STATUSES,
   type WorkItemStatus,
 } from '../../work-item-status.js';
-import { WORK_ITEM_TYPES, type WorkItemType } from '../../work-item-types.js';
+import type { WorkItemType } from '../../work-item-types.js';
 import {
   coerceLabelsFormField,
   normalizeWorkItemLabels,
@@ -47,7 +48,7 @@ export const WORK_ITEM_REPORTER_POSTGREST_SELECT = userRelationSelect(
  * Field list must stay aligned with `workItemListSelect` keys.
  */
 export const WORK_ITEM_LIST_POSTGREST_COLUMNS =
-  'id, project_id, sprint_id, parent_id, title, type, priority, labels, assignee_id, reporter_id, due_date, story_points, status, state, board_column_id, record_status, done_at, created_by, created_at, updated_by, updated_at, jira_issue_key' as const;
+  'id, project_id, sprint_id, parent_id, title, slug, type, priority, labels, assignee_id, reporter_id, due_date, story_points, status, state, board_column_id, record_status, done_at, created_by, created_at, updated_by, updated_at, pm_external' as const;
 
 /** PostgREST select for list/board reads (optional TipTap description). */
 export function workItemListPostgrestSelect(
@@ -60,7 +61,8 @@ export function workItemListPostgrestSelect(
 }
 
 export const WORK_ITEM_PROJECT_POSTGREST_SELECT = projectRelationSelect();
-export const WORK_ITEM_SPRINT_POSTGREST_SELECT = 'sprint:sprints(id, name)';
+export const WORK_ITEM_SPRINT_POSTGREST_SELECT =
+  'sprint:sprints(id, name, slug)';
 
 /** PostgREST select for detail reads — aligned with `workItemDetailSelect` embeds. */
 export function workItemDetailPostgrestSelect(): string {
@@ -76,6 +78,7 @@ export const workItemProjectSelect = {
 export const workItemSprintSelect = {
   id: true,
   name: true,
+  slug: true,
 } as const;
 
 /** List/board columns — omit TipTap `description` (matches RSC compact list). */
@@ -85,6 +88,7 @@ export const workItemListSelect = {
   sprint_id: true,
   parent_id: true,
   title: true,
+  slug: true,
   type: true,
   priority: true,
   labels: true,
@@ -101,7 +105,7 @@ export const workItemListSelect = {
   created_at: true,
   updated_by: true,
   updated_at: true,
-  jira_issue_key: true,
+  pm_external: true,
   assignee: { select: workItemUserSelect },
   reporter: { select: workItemUserSelect },
 } as const;
@@ -167,12 +171,14 @@ export type WorkItemReadRow = Omit<
   description?: WorkItemListWithDescriptionWireRow['description'];
   project?: WorkItemDetailWireRow['project'];
   sprint?: WorkItemDetailWireRow['sprint'];
+  /** Wire alias mapped from `pm_external` (Jira issue key). */
+  jira_issue_key?: string | null;
 };
 
 /** Minimal ancestor fields for the in-page hierarchy path. */
 export type WorkItemAncestorWireRow = Pick<
   WorkItemReadRow,
-  'id' | 'type' | 'title' | 'parent_id'
+  'id' | 'type' | 'title' | 'slug' | 'parent_id'
 >;
 
 export type WorkItemDueDateFilter =
@@ -265,7 +271,7 @@ export const listWorkItemsQuerySchema = z
     projectId: optionalUuid,
     sprintId: optionalNullableId,
     parentId: optionalNullableId,
-    type: z.preprocess(emptyToUndefined, z.enum(WORK_ITEM_TYPES).optional()),
+    type: z.preprocess(emptyToUndefined, z.string().trim().min(1).optional()),
     assigneeId: optionalUuid,
     labels: z.preprocess(emptyToUndefined, z.string().optional()),
     view: z.preprocess(
@@ -333,9 +339,10 @@ const dateStringSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
 
-const workItemTypeSchema = z.enum(WORK_ITEM_TYPES, {
-  message: 'Please select a work item type',
-});
+const workItemTypeSchema = z
+  .string({ error: 'Please select a work item type' })
+  .trim()
+  .min(1, { message: 'Please select a work item type' });
 
 const workItemPrioritySchema = z.enum(WORK_ITEM_PRIORITIES, {
   message: 'Please select a valid priority',
@@ -560,6 +567,47 @@ export type WorkItemLifecycleActionBody = z.infer<
 >;
 export type LinkWorkItemGithubPrBody = z.infer<
   typeof linkWorkItemGithubPrBodySchema
+>;
+
+export const generateWorkItemAiProposalsBodySchema = z
+  .object({
+    agentId: z.string().trim().min(1, 'Agent ID is required'),
+    commentIds: z.array(z.uuid()).max(12).default([]),
+    context: z.string().trim().max(4_000).optional(),
+  })
+  .strict();
+
+export const workItemAiProposalSuggestionSchema = z.object({
+  id: z.uuid(),
+  title: z.string().trim().min(1).max(200),
+  description: z.custom<Json>(),
+  token: z.string().min(1),
+});
+
+export const workItemAiProposalResponseSchema = z.object({
+  suggestions: z.array(workItemAiProposalSuggestionSchema).min(2).max(3),
+});
+
+export const applyWorkItemAiProposalBodySchema = z
+  .object({
+    token: z.string().min(1, 'Proposal confirmation token is required'),
+    title: z.string().trim().min(1, 'Title is required').max(200),
+    description: z.custom<Json>(),
+    expectedUpdatedAt: expectedUpdatedAtSchema,
+  })
+  .strict();
+
+export type GenerateWorkItemAiProposalsBody = z.infer<
+  typeof generateWorkItemAiProposalsBodySchema
+>;
+export type WorkItemAiProposalSuggestion = z.infer<
+  typeof workItemAiProposalSuggestionSchema
+>;
+export type WorkItemAiProposalResponse = z.infer<
+  typeof workItemAiProposalResponseSchema
+>;
+export type ApplyWorkItemAiProposalBody = z.infer<
+  typeof applyWorkItemAiProposalBodySchema
 >;
 
 export type WorkItemUpdateBody = CreateWorkItemBody & {

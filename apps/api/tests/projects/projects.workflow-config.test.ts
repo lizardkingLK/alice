@@ -361,4 +361,145 @@ describe('ProjectsService workflow config', () => {
       )
     ).rejects.toThrow(/Mark another workflow as default/);
   });
+
+  it('importWorkflow clones from another active project and clears allowAnyOf', async () => {
+    const sourceId = '22222222-2222-4222-8222-222222222222';
+    const sourceEnvelope = createSeededDefaultWorkflowConfig();
+    sourceEnvelope.workflows[0] = {
+      ...sourceEnvelope.workflows[0]!,
+      title: 'Source default',
+      graph: {
+        ...sourceEnvelope.workflows[0]!.graph,
+        edges: sourceEnvelope.workflows[0]!.graph.edges.map((edge, index) =>
+          index === 0
+            ? {
+                ...edge,
+                allowAnyOf: [
+                  { scope: 'role', role: 'manager' },
+                  {
+                    scope: 'user',
+                    userId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+                  },
+                ],
+              }
+            : edge
+        ),
+      },
+    };
+    const targetEnvelope = createSeededDefaultWorkflowConfig();
+    listAccessibleProjectIdsMock.mockResolvedValue([projectBase.id, sourceId]);
+    findByIdMock.mockImplementation(async (id: string) => {
+      if (id === sourceId) {
+        return {
+          ...projectBase,
+          id: sourceId,
+          name: 'Source',
+          key: 'SRC',
+          workflow_config: sourceEnvelope,
+        };
+      }
+      return {
+        ...projectBase,
+        workflow_config: targetEnvelope,
+      };
+    });
+    updateMock.mockImplementation(async (_id, data) => ({
+      ...projectBase,
+      workflow_config: data.workflow_config,
+      updated_at: '2026-01-06T00:00:00.000Z',
+    }));
+
+    const result = await service.importWorkflow(
+      'user-manager',
+      projectBase.id,
+      {
+        sourceProjectId: sourceId,
+        title: 'Imported board',
+      },
+      projectBase.updated_at
+    );
+
+    expect(result.importedWorkflowId).toMatch(/^wf-/);
+    const imported = result.config.workflows.find(
+      (workflow) => workflow.id === result.importedWorkflowId
+    );
+    expect(imported?.title).toBe('Imported board');
+    expect(imported?.forkedFromId).toBeNull();
+    expect(imported?.typeBindings).toEqual([]);
+    expect(
+      imported?.graph.edges.every((edge) => edge.allowAnyOf.length === 0)
+    ).toBe(true);
+    expect(result.config.defaultWorkflowId).toBe(DEFAULT_WORKFLOW_ID);
+  });
+
+  it('importWorkflow can mark the import as default', async () => {
+    const sourceId = '33333333-3333-4333-8333-333333333333';
+    const sourceEnvelope = createSeededDefaultWorkflowConfig();
+    const targetEnvelope = createSeededDefaultWorkflowConfig();
+    targetEnvelope.workflows[0] = {
+      ...targetEnvelope.workflows[0]!,
+      typeBindings: ['Story'],
+    };
+    listAccessibleProjectIdsMock.mockResolvedValue([projectBase.id, sourceId]);
+    findByIdMock.mockImplementation(async (id: string) => {
+      if (id === sourceId) {
+        return {
+          ...projectBase,
+          id: sourceId,
+          workflow_config: sourceEnvelope,
+        };
+      }
+      return {
+        ...projectBase,
+        workflow_config: targetEnvelope,
+      };
+    });
+    updateMock.mockImplementation(async (_id, data) => ({
+      ...projectBase,
+      workflow_config: data.workflow_config,
+      updated_at: '2026-01-07T00:00:00.000Z',
+    }));
+
+    const result = await service.importWorkflow(
+      'user-manager',
+      projectBase.id,
+      {
+        sourceProjectId: sourceId,
+        markAsDefault: true,
+      },
+      projectBase.updated_at
+    );
+
+    expect(result.config.defaultWorkflowId).toBe(result.importedWorkflowId);
+    expect(
+      result.config.workflows.find(
+        (workflow) => workflow.id === result.importedWorkflowId
+      )?.typeBindings
+    ).toEqual(['Story']);
+  });
+
+  it('importWorkflow rejects importing from the same project', async () => {
+    await expect(
+      service.importWorkflow(
+        'user-manager',
+        projectBase.id,
+        { sourceProjectId: projectBase.id },
+        projectBase.updated_at
+      )
+    ).rejects.toBeInstanceOf(WorkflowConfigError);
+  });
+
+  it('importWorkflow rejects a source project the actor cannot read', async () => {
+    const sourceId = '44444444-4444-4444-8444-444444444444';
+    listAccessibleProjectIdsMock.mockResolvedValue([projectBase.id]);
+
+    await expect(
+      service.importWorkflow(
+        'user-manager',
+        projectBase.id,
+        { sourceProjectId: sourceId },
+        projectBase.updated_at
+      )
+    ).rejects.toBeInstanceOf(WorkflowConfigError);
+  });
 });

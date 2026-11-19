@@ -1,5 +1,6 @@
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import { buildGlobalFilterHref } from '@/app/board/_helpers/global-filter-href';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
 import { SprintStatusEnum, UserRoleEnum } from '@repo/types';
 
@@ -184,15 +185,52 @@ export function pushOptimisticProjectFilter(options: {
   options.push(query ? `${options.pathname}?${query}` : options.pathname);
 }
 
+function workspaceAreaFromPathname(
+  pathname: string
+): 'board' | 'backlog' | 'member' | 'work-items' | null {
+  if (pathname === '/board' || pathname.startsWith('/board/')) {
+    return 'board';
+  }
+  if (pathname === '/backlog' || pathname.startsWith('/backlog/')) {
+    return 'backlog';
+  }
+  if (pathname === '/member' || pathname.startsWith('/member/')) {
+    return 'member';
+  }
+  if (pathname === '/work-items' || pathname.startsWith('/work-items/')) {
+    return 'work-items';
+  }
+  return null;
+}
+
 export function buildWorkspaceFilterRedirectPath(
   pathname: string,
   options: {
     readonly projectId?: string;
     readonly sprintId?: string;
+    /** Prefer path masks when KEY/slug are known (board/backlog/member). */
+    readonly projectKey?: string | null;
+    readonly sprintSlug?: string | null;
     /** Preserved when seeding defaults (e.g. `calendar` on `/board`). */
     readonly tab?: string;
   }
 ): string | null {
+  const area = workspaceAreaFromPathname(pathname);
+
+  if (area && options.projectKey) {
+    const rest = new URLSearchParams();
+    if (options.tab) {
+      rest.set('tab', options.tab);
+    }
+    return buildGlobalFilterHref({
+      area,
+      projectKey: options.projectKey,
+      sprintSlug:
+        area === 'board' || area === 'work-items' ? options.sprintSlug : null,
+      searchParams: rest,
+    });
+  }
+
   const params = new URLSearchParams();
   if (options.projectId) {
     params.set('project', options.projectId);
@@ -226,6 +264,8 @@ export function isWorkspaceDefaultQueryPath(
 
 /**
  * Attach stored project/sprint defaults to a workspace nav path.
+ * Prefers KEY/slug path masks when shortcodes are stored; otherwise falls
+ * back to UUID query (legacy redirect still masks on the server).
  * Returns the bare path when there is no preference.
  */
 export function buildWorkspaceNavHref(
@@ -233,6 +273,8 @@ export function buildWorkspaceNavHref(
   preference: {
     readonly projectId: string;
     readonly sprintId: string | null;
+    readonly projectKey?: string | null;
+    readonly sprintSlug?: string | null;
   } | null
 ): string {
   if (!preference || !isWorkspaceDefaultQueryPath(basePath)) {
@@ -243,6 +285,8 @@ export function buildWorkspaceNavHref(
     buildWorkspaceFilterRedirectPath(basePath, {
       projectId: preference.projectId,
       sprintId: preference.sprintId ?? undefined,
+      projectKey: preference.projectKey,
+      sprintSlug: preference.sprintSlug,
     }) ?? basePath
   );
 }

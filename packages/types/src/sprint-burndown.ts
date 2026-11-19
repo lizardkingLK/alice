@@ -62,6 +62,25 @@ export function computeBurndownIdeal(
 }
 
 /**
+ * Ideal spent by end of `dayLabel` (same slope as
+ * `get_worklog_burndown_pending.ideal_spent_eod`).
+ */
+export function computeBurndownIdealSpent(
+  estimatedTotal: number,
+  startDate: string,
+  endDate: string,
+  dayLabel: string
+): number {
+  const remaining = computeBurndownIdeal(
+    estimatedTotal,
+    startDate,
+    endDate,
+    dayLabel
+  );
+  return Math.round((estimatedTotal - remaining) * 100) / 100;
+}
+
+/**
  * Attach ideal values to rollup remaining rows (ideal is derived, not stored).
  */
 export function seriesFromBurndownRollupRows(

@@ -83,4 +83,19 @@ describe('WorkItemDetailsConfigureForm', () => {
       expect.objectContaining({ bannerColor: 'type' })
     );
   });
+
+  it('allows turning banner color off', () => {
+    const onChange = vi.fn();
+    const value = normalizeWorkItemDetailsPreferences(
+      DEFAULT_WORK_ITEM_DETAILS_PREFERENCES
+    );
+
+    render(<WorkItemDetailsConfigureForm value={value} onChange={onChange} />);
+
+    fireEvent.click(document.getElementById('wi-banner-none')!);
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ bannerColor: 'none' })
+    );
+  });
 });

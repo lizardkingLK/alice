@@ -9,6 +9,7 @@ import {
 } from '@/app/projects/_services/projects.reads.api.server';
 import {
   getProjectFromSupabase,
+  getProjectIdByKeyFromSupabase,
   getProjectListPaginatedFromSupabase,
   getProjectMembersFromSupabase,
 } from '@/app/projects/_services/projects.reads.supabase.server';
@@ -18,6 +19,7 @@ import type {
   Project,
   ProjectMemberWithUser,
 } from '@/app/projects/_services/projects.mutations.shared';
+import { normalizeProjectKey } from '@/app/projects/_helpers/project-links';
 
 const service = createProjectsService(apiFetch);
 
@@ -63,6 +65,14 @@ export async function getProjectDetails(id: string): Promise<Project> {
 
 /** Alias for `getProjectDetails` (same Express / Supabase twin). */
 export const getProject = getProjectDetails;
+
+/**
+ * Key → id for share URL redirects. Supabase-only (no Express twin); used
+ * before the UUID workspace page loads.
+ */
+export function getProjectIdByKey(key: string): Promise<string | null> {
+  return getProjectIdByKeyFromSupabase(normalizeProjectKey(key));
+}
 
 export async function getProjectMembers(
   projectId: string

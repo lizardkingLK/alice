@@ -5,3 +5,11 @@ export class CommentAccessError extends Error {
     this.name = 'CommentAccessError';
   }
 }
+
+/** Reply target is outside the work-item discussion receiving the reply. */
+export class CommentReplyScopeError extends Error {
+  constructor() {
+    super('Reply parent must belong to the same work item.');
+    this.name = 'CommentReplyScopeError';
+  }
+}

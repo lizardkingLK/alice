@@ -10,6 +10,7 @@ import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
 import {
   Sprint,
+  archiveSprint,
   hardDeleteSprint,
 } from '@/app/sprints/_services/sprints.mutations.client';
 import { updateSprintStatusWithOptimisticLock } from '@/app/sprints/_helpers/update-sprint-status-with-lock';
@@ -23,6 +24,10 @@ vi.mock('@/app/sprints/_helpers/update-sprint-status-with-lock', () => ({
   updateSprintStatusWithOptimisticLock: vi.fn(),
 }));
 
+vi.mock('@repo/ui/components/ui/sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
+
 vi.mock(
   '@/app/sprints/_services/sprints.mutations.client',
   async (importOriginal) => {
@@ -32,6 +37,7 @@ vi.mock(
       >();
     return {
       ...actual,
+      archiveSprint: vi.fn(),
       hardDeleteSprint: vi.fn(),
     };
   }
@@ -82,6 +88,7 @@ const mockSprints: Sprint[] = [
   {
     id: 'sprint-1',
     name: 'Sprint Alpha',
+    slug: 'sprint-alpha',
     goal: 'Goal Alpha',
     status: 'active' as const,
     startDate: '2026-07-01',
@@ -99,6 +106,7 @@ const mockSprints: Sprint[] = [
   {
     id: 'sprint-2',
     name: 'Sprint Beta',
+    slug: 'sprint-beta',
     goal: '',
     status: 'planned' as const,
     startDate: '2026-07-15',
@@ -368,6 +376,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-completed',
         name: 'Completed Sprint',
+        slug: 'completed-sprint',
         goal: null,
         status: 'closed' as const,
         startDate: '2026-07-01',
@@ -381,6 +390,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-ongoing',
         name: 'Ongoing Sprint',
+        slug: 'ongoing-sprint',
         goal: null,
         status: 'active' as const,
         startDate: '2026-07-01',
@@ -394,6 +404,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-planned',
         name: 'Planned Sprint',
+        slug: 'planned-sprint',
         goal: null,
         status: 'planned' as const,
         startDate: '2026-07-01',
@@ -446,6 +457,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-archived',
         name: 'Archived Sprint',
+        slug: 'archived-sprint',
         goal: null,
         status: 'archived' as const,
         startDate: '2026-07-01',
@@ -459,6 +471,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-completed',
         name: 'Completed Sprint',
+        slug: 'completed-sprint',
         goal: null,
         status: 'closed' as const,
         startDate: '2026-07-01',
@@ -506,6 +519,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-archived',
         name: 'Archived Sprint',
+        slug: 'archived-sprint',
         goal: null,
         status: 'archived' as const,
         startDate: '2026-07-01',
@@ -542,6 +556,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-archived',
         name: 'Archived Sprint',
+        slug: 'archived-sprint',
         goal: null,
         status: 'archived' as const,
         startDate: '2026-07-01',
@@ -582,6 +597,7 @@ describe('SprintList Component', () => {
       {
         id: 'sprint-archived',
         name: 'Archived Sprint',
+        slug: 'archived-sprint',
         goal: null,
         status: 'archived' as const,
         startDate: '2026-07-01',
@@ -627,19 +643,20 @@ describe('SprintList Component', () => {
     expect(sprintLink).toBeInTheDocument();
     expect(sprintLink).toHaveAttribute(
       'href',
-      '/sprints/sprint-1/report?from=sprints'
+      '/projects/PAL/sprints/sprint-alpha/summary-report'
     );
   });
 
-  it('opens archive modal for completed sprint and on confirm updates status to archived without moving to archive tab', async () => {
+  it('opens archive modal for completed sprint and on confirm starts async archive without moving to archive tab', async () => {
     const completedSprint: Sprint = {
       ...mockSprints[0]!,
       status: 'closed',
     };
 
-    vi.mocked(updateSprintStatusWithOptimisticLock).mockResolvedValue({
-      ...completedSprint,
-      status: 'archived',
+    vi.mocked(archiveSprint).mockResolvedValue({
+      accepted: true,
+      message: 'Sprint archive started. You’ll be notified when it finishes.',
+      correlationId: 'corr-archive-1',
     });
 
     render(
@@ -672,11 +689,9 @@ describe('SprintList Component', () => {
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-      expect(updateSprintStatusWithOptimisticLock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          sprint: completedSprint,
-          status: 'archived',
-        })
+      expect(archiveSprint).toHaveBeenCalledWith(
+        completedSprint.id,
+        completedSprint.updatedAt
       );
       // Ensure page does NOT automatically move to archive tab
       expect(mockPush).not.toHaveBeenCalledWith('/sprints?tab=archived&page=1');
@@ -686,13 +701,17 @@ describe('SprintList Component', () => {
 
   it('opens delete modal for admin in archived tab with permanent delete notice and no move_out option', async () => {
     vi.mocked(hardDeleteSprint).mockResolvedValue({
-      data: { id: 'sprint-archived' },
-    } as never);
+      accepted: true,
+      message:
+        'Sprint permanent delete started. You’ll be notified when it finishes.',
+      correlationId: 'corr-1',
+    });
 
     const archivedSprints: Sprint[] = [
       {
         id: 'sprint-archived',
         name: 'Archived Sprint',
+        slug: 'archived-sprint',
         goal: 'Goal',
         status: 'archived' as const,
         startDate: '2026-07-01',
@@ -751,6 +770,7 @@ describe('SprintList Component', () => {
     const archivedSprint: Sprint = {
       id: 'sprint-archived',
       name: 'Archived Sprint',
+      slug: 'archived-sprint',
       goal: 'Goal',
       status: 'archived' as const,
       startDate: '2026-07-01',

@@ -6,14 +6,22 @@ import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@repo/ui/components/ui/tooltip';
+import {
   Calendar,
+  Check,
   CheckCircle,
   AlertCircle,
+  Copy,
   ImagePlus,
   PencilIcon,
   RefreshCw,
   Trash2,
 } from '@repo/ui/lib/icons';
+import { toast } from '@repo/ui/components/ui/sonner';
 import { cn } from '@repo/ui/lib/utils';
 import { formatDate } from '@/app/_shared/utility';
 import { ImagePositionUploadDialog } from '@/components/image-position-upload-dialog';
@@ -25,6 +33,10 @@ import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import { DismissibleError } from '@/components/dismissible-error';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runRegistryLockedAction } from '@/lib/optimistic-lock/run-locked-mutation';
+import {
+  buildProjectShareUrl,
+  projectShareHref,
+} from '@/app/projects/_helpers/project-links';
 import { ProjectStatusEnum } from '@/app/projects/_helpers/project-status';
 import {
   hardDeleteProject,
@@ -96,13 +108,11 @@ function BannerActionButton({
   icon,
   onClick,
   disabled,
-  destructive,
 }: Readonly<{
   label: string;
   icon: ReactNode;
   onClick: () => void;
   disabled?: boolean;
-  destructive?: boolean;
 }>) {
   return (
     <Button
@@ -110,10 +120,7 @@ function BannerActionButton({
       size="sm"
       variant="secondary"
       disabled={disabled}
-      className={cn(
-        bannerActionButtonClassName,
-        destructive && 'text-destructive hover:text-destructive'
-      )}
+      className={bannerActionButtonClassName}
       onClick={onClick}
     >
       {icon}
@@ -169,7 +176,6 @@ function ProjectBannerActions({
           label="Purge"
           icon={<Trash2 data-icon="inline-start" />}
           disabled={isPending}
-          destructive
           onClick={onPurge}
         />
       ) : null}
@@ -187,6 +193,62 @@ function ProjectBannerActions({
           />
         </>
       ) : null}
+    </div>
+  );
+}
+
+function ProjectKeyShareControl({
+  projectKey,
+}: Readonly<{ projectKey: string }>) {
+  const [copied, setCopied] = useState(false);
+  const sharePath = projectShareHref(projectKey);
+
+  const handleCopy = () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const shareUrl = origin
+      ? buildProjectShareUrl(origin, projectKey)
+      : sharePath;
+
+    navigator.clipboard
+      .writeText(shareUrl)
+      .then(() => {
+        setCopied(true);
+        toast.success('Project link copied');
+        window.setTimeout(() => setCopied(false), 2000);
+      })
+      .catch((err: unknown) => {
+        console.error(
+          'error. failed to copy project share link:',
+          err instanceof Error ? err.message : err
+        );
+        toast.error('Could not copy project link');
+      });
+  };
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="bg-primary/10 text-primary border-primary/20 inline-flex items-center rounded-md border px-2 py-0.5 font-mono text-xs font-semibold tracking-wide">
+        {projectKey}
+      </span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={handleCopy}
+            className="text-muted-foreground hover:text-foreground"
+            aria-label="Copy URL"
+          >
+            {copied ? (
+              <Check className="size-3.5" aria-hidden />
+            ) : (
+              <Copy className="size-3.5" aria-hidden />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Copy URL</TooltipContent>
+      </Tooltip>
     </div>
   );
 }
@@ -240,9 +302,7 @@ function ProjectBannerIdentity({
               {project.status}
             </Badge>
           )}
-          <span className="bg-primary/10 text-primary border-primary/20 inline-flex items-center rounded-md border px-2 py-0.5 font-mono text-xs font-semibold tracking-wide">
-            {project.key}
-          </span>
+          <ProjectKeyShareControl projectKey={project.key} />
         </div>
 
         <h1 className="text-foreground text-2xl font-bold tracking-tight md:text-3xl">
@@ -522,7 +582,8 @@ export function ProjectSummaryBanner({
     setActionError(null);
     startTransition(async () => {
       try {
-        await hardDeleteProject(project.id);
+        const accepted = await hardDeleteProject(project.id);
+        toast.success(accepted.message);
         setConfirmMode(null);
         router.push('/projects?tab=archived');
         router.refresh();

@@ -1,7 +1,10 @@
 import { unstable_cache, updateTag } from 'next/cache';
-import { filterProductUsableUsers } from '@repo/types';
+import {
+  filterProductUsableUsers,
+  mapProjectRowForWire,
+  projectSessionPostgrestSelect,
+} from '@repo/types';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { withoutIntegrationSecrets } from '@/lib/projects/sanitize-project-secrets';
 import { getUser } from '@/lib/auth';
 
 /**
@@ -52,7 +55,7 @@ async function fetchProjectsForDropdown(): Promise<unknown[]> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('projects')
-    .select(`*, ${OWNER_SELECT}`)
+    .select(`${projectSessionPostgrestSelect}, ${OWNER_SELECT}` as '*')
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -61,8 +64,14 @@ async function fetchProjectsForDropdown(): Promise<unknown[]> {
   }
 
   return (data ?? []).map((row) =>
-    withoutIntegrationSecrets(
-      row as { github_token?: string | null } & Record<string, unknown>
+    mapProjectRowForWire(
+      row as {
+        github_token?: string | null;
+        pm_connection_id?: string | null;
+        pm_external?: unknown;
+        vc_connection_id?: string | null;
+        vc_external?: unknown;
+      } & Record<string, unknown>
     )
   );
 }

@@ -44,6 +44,22 @@ export const SavedViewResourceKind = {
 export type SavedViewResourceKind = (typeof SavedViewResourceKind)[keyof typeof SavedViewResourceKind]
 
 
+export const ChatConversationKind = {
+  general: 'general',
+  temporary: 'temporary'
+} as const
+
+export type ChatConversationKind = (typeof ChatConversationKind)[keyof typeof ChatConversationKind]
+
+
+export const ChatAgentAutonomy = {
+  suggest: 'suggest',
+  approve: 'approve'
+} as const
+
+export type ChatAgentAutonomy = (typeof ChatAgentAutonomy)[keyof typeof ChatAgentAutonomy]
+
+
 export const ProjectStatus = {
   active: 'active',
   archived: 'archived'
@@ -60,17 +76,6 @@ export const SprintStatus = {
 } as const
 
 export type SprintStatus = (typeof SprintStatus)[keyof typeof SprintStatus]
-
-
-export const WorkItemType = {
-  Epic: 'Epic',
-  Feature: 'Feature',
-  Story: 'Story',
-  Task: 'Task',
-  Issue: 'Issue'
-} as const
-
-export type WorkItemType = (typeof WorkItemType)[keyof typeof WorkItemType]
 
 
 export const WorkItemStatus = {
@@ -115,10 +120,38 @@ export const NotificationType = {
   chat_processed: 'chat_processed',
   access_request: 'access_request',
   project_created: 'project_created',
-  project_create_failed: 'project_create_failed'
+  project_create_failed: 'project_create_failed',
+  worklog_pending: 'worklog_pending',
+  weekly_project_report: 'weekly_project_report',
+  entity_archived: 'entity_archived',
+  entity_archive_failed: 'entity_archive_failed',
+  entity_purged: 'entity_purged',
+  entity_purge_failed: 'entity_purge_failed'
 } as const
 
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType]
+
+
+export const EmailOutboxStatus = {
+  pending: 'pending',
+  processing: 'processing',
+  retry: 'retry',
+  sent: 'sent',
+  cancelled: 'cancelled',
+  dead: 'dead'
+} as const
+
+export type EmailOutboxStatus = (typeof EmailOutboxStatus)[keyof typeof EmailOutboxStatus]
+
+
+export const EmailTemplate = {
+  work_item_assignment: 'work_item_assignment',
+  work_item_reassignment: 'work_item_reassignment',
+  work_item_status_change: 'work_item_status_change',
+  weekly_project_report: 'weekly_project_report'
+} as const
+
+export type EmailTemplate = (typeof EmailTemplate)[keyof typeof EmailTemplate]
 
 
 export const ActivityAction = {
@@ -159,13 +192,36 @@ export const AccessRequestKind = {
 export type AccessRequestKind = (typeof AccessRequestKind)[keyof typeof AccessRequestKind]
 
 
-export const JiraConnectionStatus = {
+export const ProjectManagementVendor = {
+  jira: 'jira'
+} as const
+
+export type ProjectManagementVendor = (typeof ProjectManagementVendor)[keyof typeof ProjectManagementVendor]
+
+
+export const ProjectManagementConnectionStatus = {
   active: 'active',
   revoked: 'revoked',
   expired: 'expired'
 } as const
 
-export type JiraConnectionStatus = (typeof JiraConnectionStatus)[keyof typeof JiraConnectionStatus]
+export type ProjectManagementConnectionStatus = (typeof ProjectManagementConnectionStatus)[keyof typeof ProjectManagementConnectionStatus]
+
+
+export const VersionControlVendor = {
+  github: 'github'
+} as const
+
+export type VersionControlVendor = (typeof VersionControlVendor)[keyof typeof VersionControlVendor]
+
+
+export const VersionControlConnectionStatus = {
+  active: 'active',
+  revoked: 'revoked',
+  expired: 'expired'
+} as const
+
+export type VersionControlConnectionStatus = (typeof VersionControlConnectionStatus)[keyof typeof VersionControlConnectionStatus]
 
 
 export const IntegrationCategory = {
@@ -185,3 +241,12 @@ export const IntegrationStatus = {
 } as const
 
 export type IntegrationStatus = (typeof IntegrationStatus)[keyof typeof IntegrationStatus]
+
+
+export const IntegrationScope = {
+  organization: 'organization',
+  project: 'project',
+  member: 'member'
+} as const
+
+export type IntegrationScope = (typeof IntegrationScope)[keyof typeof IntegrationScope]

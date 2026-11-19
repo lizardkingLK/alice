@@ -39,6 +39,7 @@ export function WorkItemFormClassicFields({
   projects,
   projectMembers,
   availableTypes,
+  typeDefs,
   projectId,
   assigneeId,
   sprintId,
@@ -127,6 +128,7 @@ export function WorkItemFormClassicFields({
           type={type}
           onTypeChange={onTypeChange}
           availableTypes={availableTypes}
+          typeDefs={typeDefs}
           typeLocked={typeLocked}
         />
       </div>

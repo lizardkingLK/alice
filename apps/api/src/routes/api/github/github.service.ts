@@ -7,12 +7,18 @@ import {
   createOAuthState,
   verifyOAuthState,
 } from '../../../lib/secrets/oauth-state';
-import { IntegrationStatus, Prisma } from '@repo/types/prisma';
-import { UserRoleEnum, utcNow } from '@repo/types';
+import { VersionControlConnectionStatus } from '@repo/types/prisma';
+import {
+  UserRoleEnum,
+  utcNow,
+  buildGithubProviderConfig,
+  tryParseGithubProviderConfig,
+} from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import type {
   GithubRepository,
-  IntegrationWithCreator,
+  VcConnectionFull,
+  VcConnectionPublic,
 } from './github.repository';
 import {
   GithubConnectionStatusEnum,
@@ -20,7 +26,6 @@ import {
   GithubReauthorizationRequiredError,
   type GithubApiRepoResponse,
   type GithubConnectionDto,
-  type GithubOAuthConfigStored,
   type GithubRepoOption,
   type GithubTokenResponse,
   type GithubUserResponse,
@@ -78,7 +83,10 @@ export class GithubService {
 
     const activeAdminConn =
       await this.githubRepository.findActiveAdminConnection();
-    if (activeAdminConn && activeAdminConn.created_by !== actorId) {
+    if (
+      activeAdminConn?.user_id != null &&
+      activeAdminConn.user_id !== actorId
+    ) {
       throw new Error(
         'An administrator has connected GitHub. That administrator must disconnect the existing connection before a different account can be connected.'
       );
@@ -99,7 +107,10 @@ export class GithubService {
 
     const activeAdminConn =
       await this.githubRepository.findActiveAdminConnection();
-    if (activeAdminConn && activeAdminConn.created_by !== userId) {
+    if (
+      activeAdminConn?.user_id != null &&
+      activeAdminConn.user_id !== userId
+    ) {
       throw new Error(
         'An administrator has connected GitHub. That administrator must disconnect the existing connection before a different account can be connected.'
       );
@@ -109,40 +120,28 @@ export class GithubService {
     const userInfo = await this.fetchUserProfile(tokens.access_token);
 
     const expiresAt = tokens.expires_in
-      ? new Date(utcNow().getTime() + tokens.expires_in * 1000).toISOString()
-      : undefined;
-
-    const storedConfig: GithubOAuthConfigStored = {
-      kind: 'github_oauth',
-      access_token: encryptSecret(tokens.access_token),
-      refresh_token: tokens.refresh_token
-        ? encryptSecret(tokens.refresh_token)
-        : undefined,
-      expires_at: expiresAt,
-      scope: tokens.scope ?? OAUTH_SCOPES,
-      account_login: userInfo.login,
-      account_id: userInfo.id,
-      account_name: userInfo.name ?? undefined,
-      account_avatar_url: userInfo.avatar_url ?? undefined,
-    };
-
-    const user = await this.githubRepository.getUserById(userId);
+      ? new Date(utcNow().getTime() + tokens.expires_in * 1000)
+      : null;
 
     const row = await this.githubRepository.upsertConnection({
       userId,
-      name: `GitHub (@${userInfo.login})`,
-      config: storedConfig as unknown as Prisma.InputJsonValue,
-      status: IntegrationStatus.active,
+      externalId: String(userInfo.id),
+      displayLabel: `GitHub (@${userInfo.login})`,
+      providerConfig: buildGithubProviderConfig({
+        account_login: userInfo.login,
+        account_name: userInfo.name ?? null,
+        account_avatar_url: userInfo.avatar_url ?? null,
+      }),
+      refreshTokenEnc: tokens.refresh_token
+        ? encryptSecret(tokens.refresh_token)
+        : '',
+      accessTokenEnc: encryptSecret(tokens.access_token),
+      accessTokenExpiresAt: expiresAt,
+      scopes: tokens.scope ?? OAUTH_SCOPES,
+      status: VersionControlConnectionStatus.active,
     });
 
-    return this.toConnectionDto(
-      {
-        ...row,
-        created_by_user: user,
-      },
-      userId,
-      actor.role
-    );
+    return this.toConnectionDto(row, userId, actor.role);
   }
 
   async listConnections(actorId: string): Promise<GithubConnectionDto[]> {
@@ -168,16 +167,15 @@ export class GithubService {
       throw new Error('GitHub connection not found.');
     }
 
-    const isCreatedByAdmin =
-      connection.created_by_user?.role === UserRoleEnum.admin;
+    const isCreatedByAdmin = connection.user?.role === UserRoleEnum.admin;
 
-    if (isCreatedByAdmin && connection.created_by !== actorId) {
+    if (isCreatedByAdmin && connection.user_id !== actorId) {
       throw new Error(
         'This GitHub connection was established by an administrator and can only be disconnected by that administrator.'
       );
     }
 
-    const deleted = await this.githubRepository.deleteById(id, actorId);
+    const deleted = await this.githubRepository.deleteById(id);
     if (!deleted) {
       throw new Error('GitHub connection not found.');
     }
@@ -194,47 +192,46 @@ export class GithubService {
       );
     }
 
-    if (connection.status !== IntegrationStatus.active) {
+    if (connection.status !== VersionControlConnectionStatus.active) {
       throw new GithubReauthorizationRequiredError(
         `GitHub connection is ${connection.status}. Reconnect GitHub to continue.`
       );
     }
 
-    const config = connection.config as unknown as GithubOAuthConfigStored;
-    if (!config?.access_token) {
+    if (!connection.access_token_enc) {
       throw new GithubReauthorizationRequiredError(
         'GitHub access token is missing. Please reconnect GitHub.'
       );
     }
 
-    if (!this.hasRequiredScopes(config.scope)) {
+    if (!this.hasRequiredScopes(connection.scopes)) {
       throw new GithubInsufficientScopeError(
         'GitHub connection has insufficient permissions. Reconnecting with required scopes is needed.'
       );
     }
 
-    const expiresAt = config.expires_at
-      ? new Date(config.expires_at).getTime()
+    const expiresAt = connection.access_token_expires_at
+      ? connection.access_token_expires_at.getTime()
       : null;
     const isExpired =
       expiresAt !== null &&
       expiresAt <= utcNow().getTime() + ACCESS_TOKEN_SKEW_MS;
 
     if (!isExpired) {
-      return decryptSecret(config.access_token);
+      return decryptSecret(connection.access_token_enc);
     }
 
-    if (!config.refresh_token) {
+    if (!connection.refresh_token_enc) {
       await this.githubRepository.updateStatus(
         connection.id,
-        IntegrationStatus.disabled
+        VersionControlConnectionStatus.expired
       );
       throw new GithubReauthorizationRequiredError(
         'GitHub access token has expired and no refresh token is available. Please reconnect GitHub.'
       );
     }
 
-    return await this.refreshAccessToken(connection.id, config);
+    return await this.refreshAccessToken(connection);
   }
 
   async listRepositories(
@@ -297,11 +294,10 @@ export class GithubService {
   }
 
   private async refreshAccessToken(
-    connectionId: string,
-    currentConfig: GithubOAuthConfigStored
+    connection: VcConnectionFull
   ): Promise<string> {
     const { clientId, clientSecret } = requireGithubConfig();
-    const refreshToken = decryptSecret(currentConfig.refresh_token!);
+    const refreshToken = decryptSecret(connection.refresh_token_enc);
 
     const response = await fetch(`${GITHUB_OAUTH_URL}/access_token`, {
       method: 'POST',
@@ -319,8 +315,8 @@ export class GithubService {
 
     if (!response.ok) {
       await this.githubRepository.updateStatus(
-        connectionId,
-        IntegrationStatus.disabled
+        connection.id,
+        VersionControlConnectionStatus.expired
       );
       const errorText = await response.text();
       throw new GithubReauthorizationRequiredError(
@@ -331,8 +327,8 @@ export class GithubService {
     const data = (await response.json()) as GithubTokenResponse;
     if (data.error) {
       await this.githubRepository.updateStatus(
-        connectionId,
-        IntegrationStatus.disabled
+        connection.id,
+        VersionControlConnectionStatus.expired
       );
       throw new GithubReauthorizationRequiredError(
         `GitHub token refresh failed: ${data.error_description || data.error}`
@@ -340,26 +336,19 @@ export class GithubService {
     }
 
     const expiresAt = data.expires_in
-      ? new Date(utcNow().getTime() + data.expires_in * 1000).toISOString()
-      : currentConfig.expires_at;
+      ? new Date(utcNow().getTime() + data.expires_in * 1000)
+      : connection.access_token_expires_at;
 
     const nextRefreshToken = data.refresh_token
       ? encryptSecret(data.refresh_token)
-      : currentConfig.refresh_token;
+      : connection.refresh_token_enc;
 
-    const updatedConfig: GithubOAuthConfigStored = {
-      ...currentConfig,
-      access_token: encryptSecret(data.access_token),
-      refresh_token: nextRefreshToken,
-      expires_at: expiresAt,
-      scope: data.scope ?? currentConfig.scope,
-    };
-
-    await this.githubRepository.updateConfig(
-      connectionId,
-      updatedConfig as unknown as Prisma.InputJsonValue,
-      IntegrationStatus.active
-    );
+    await this.githubRepository.updateTokens(connection.id, {
+      accessTokenEnc: encryptSecret(data.access_token),
+      refreshTokenEnc: nextRefreshToken,
+      accessTokenExpiresAt: expiresAt,
+      scopes: data.scope ?? connection.scopes,
+    });
 
     return data.access_token;
   }
@@ -422,39 +411,51 @@ export class GithubService {
   }
 
   private toConnectionDto(
-    row: IntegrationWithCreator,
+    row: VcConnectionPublic | VcConnectionFull,
     actorId?: string,
     actorRole?: string
   ): GithubConnectionDto {
-    const config = (row.config as unknown as GithubOAuthConfigStored) || {};
-    const createdByRole = row.created_by_user?.role;
+    const config = tryParseGithubProviderConfig(row.provider_config);
+    const createdByRole = row.user?.role;
     const isAdminOwned = createdByRole === UserRoleEnum.admin;
     const canManage = isAdminOwned
-      ? Boolean(actorId && row.created_by && row.created_by === actorId)
+      ? Boolean(actorId && row.user_id === actorId)
       : actorRole === UserRoleEnum.admin || actorRole === UserRoleEnum.manager;
+
+    const full = row as VcConnectionFull;
+    const hasTokenFields = 'access_token_enc' in row;
+    const expiresAt =
+      hasTokenFields && full.access_token_expires_at
+        ? full.access_token_expires_at.toISOString()
+        : null;
 
     return {
       id: row.id,
-      name: row.name,
+      name:
+        row.display_label || `GitHub (@${config?.account_login ?? 'unknown'})`,
       status:
-        row.status === IntegrationStatus.active
+        row.status === VersionControlConnectionStatus.active
           ? GithubConnectionStatusEnum.active
           : GithubConnectionStatusEnum.revoked,
-      account_login: config.account_login || 'unknown',
-      account_id: config.account_id,
-      account_name: config.account_name,
-      account_avatar_url: config.account_avatar_url,
-      scope: config.scope,
-      expires_at: config.expires_at || null,
-      has_access_token: Boolean(config.access_token),
-      has_refresh_token: Boolean(config.refresh_token),
+      account_login: config?.account_login || 'unknown',
+      account_id: row.external_id,
+      account_name: config?.account_name ?? undefined,
+      account_avatar_url: config?.account_avatar_url ?? undefined,
+      scope: row.scopes,
+      expires_at: expiresAt,
+      has_access_token: hasTokenFields
+        ? Boolean(full.access_token_enc)
+        : row.status === VersionControlConnectionStatus.active,
+      has_refresh_token: hasTokenFields
+        ? Boolean(full.refresh_token_enc)
+        : row.status === VersionControlConnectionStatus.active,
       created_at: row.created_at,
       updated_at: row.updated_at,
-      authorized_repo: config.authorized_repo || null,
-      repositories: config.repositories,
-      created_by_user_id: row.created_by,
+      authorized_repo: config?.authorized_repo || null,
+      repositories: config?.repositories,
+      created_by_user_id: row.user_id,
       created_by_role: createdByRole,
-      created_by_name: row.created_by_user?.name || null,
+      created_by_name: row.user?.name || null,
       is_admin_owned: isAdminOwned,
       can_manage: canManage,
     };

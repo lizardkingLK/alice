@@ -15,10 +15,17 @@ describe('flattenWorkItemAncestorEmbed', () => {
       id: 'epic-1',
       type: 'Epic',
       title: 'Epic',
+      slug: 'epic',
       parent_id: null,
     };
     expect(flattenWorkItemAncestorEmbed(row)).toEqual([
-      { id: 'epic-1', type: 'Epic', title: 'Epic', parent_id: null },
+      {
+        id: 'epic-1',
+        type: 'Epic',
+        title: 'Epic',
+        slug: 'epic',
+        parent_id: null,
+      },
     ]);
   });
 
@@ -27,25 +34,46 @@ describe('flattenWorkItemAncestorEmbed', () => {
       id: 'task-1',
       type: 'Task',
       title: 'Task',
+      slug: 'task',
       parent_id: 'story-1',
       parent: {
         id: 'story-1',
         type: 'Story',
         title: 'Story',
+        slug: 'story',
         parent_id: 'epic-1',
         parent: {
           id: 'epic-1',
           type: 'Epic',
           title: 'Epic',
+          slug: 'epic',
           parent_id: null,
         },
       },
     };
 
     expect(flattenWorkItemAncestorEmbed(row)).toEqual([
-      { id: 'epic-1', type: 'Epic', title: 'Epic', parent_id: null },
-      { id: 'story-1', type: 'Story', title: 'Story', parent_id: 'epic-1' },
-      { id: 'task-1', type: 'Task', title: 'Task', parent_id: 'story-1' },
+      {
+        id: 'epic-1',
+        type: 'Epic',
+        title: 'Epic',
+        slug: 'epic',
+        parent_id: null,
+      },
+      {
+        id: 'story-1',
+        type: 'Story',
+        title: 'Story',
+        slug: 'story',
+        parent_id: 'epic-1',
+      },
+      {
+        id: 'task-1',
+        type: 'Task',
+        title: 'Task',
+        slug: 'task',
+        parent_id: 'story-1',
+      },
     ]);
   });
 
@@ -54,21 +82,25 @@ describe('flattenWorkItemAncestorEmbed', () => {
       id: 'a',
       type: 'Issue',
       title: 'A',
+      slug: 'a',
       parent_id: 'b',
       parent: {
         id: 'b',
         type: 'Task',
         title: 'B',
+        slug: 'b',
         parent_id: 'c',
         parent: {
           id: 'c',
           type: 'Story',
           title: 'C',
+          slug: 'c',
           parent_id: 'd',
           parent: {
             id: 'd',
             type: 'Epic',
             title: 'D',
+            slug: 'd',
             parent_id: null,
           },
         },
@@ -76,8 +108,8 @@ describe('flattenWorkItemAncestorEmbed', () => {
     };
 
     expect(flattenWorkItemAncestorEmbed(row, 2)).toEqual([
-      { id: 'b', type: 'Task', title: 'B', parent_id: 'c' },
-      { id: 'a', type: 'Issue', title: 'A', parent_id: 'b' },
+      { id: 'b', type: 'Task', title: 'B', slug: 'b', parent_id: 'c' },
+      { id: 'a', type: 'Issue', title: 'A', slug: 'a', parent_id: 'b' },
     ]);
   });
 
@@ -86,24 +118,39 @@ describe('flattenWorkItemAncestorEmbed', () => {
       id: 'task-1',
       type: 'Task',
       title: 'Task',
+      slug: 'task',
       parent_id: 'story-1',
       parent: {
         id: 'story-1',
         type: 'Story',
         title: 'Story',
+        slug: 'story',
         parent_id: 'task-1',
         parent: {
           id: 'task-1',
           type: 'Task',
           title: 'Task again',
+          slug: 'task-again',
           parent_id: 'story-1',
         },
       },
     };
 
     expect(flattenWorkItemAncestorEmbed(row)).toEqual([
-      { id: 'story-1', type: 'Story', title: 'Story', parent_id: 'task-1' },
-      { id: 'task-1', type: 'Task', title: 'Task', parent_id: 'story-1' },
+      {
+        id: 'story-1',
+        type: 'Story',
+        title: 'Story',
+        slug: 'story',
+        parent_id: 'task-1',
+      },
+      {
+        id: 'task-1',
+        type: 'Task',
+        title: 'Task',
+        slug: 'task',
+        parent_id: 'story-1',
+      },
     ]);
   });
 
@@ -112,6 +159,7 @@ describe('flattenWorkItemAncestorEmbed', () => {
       id: 'story-1',
       type: 'Story' as const,
       title: 'Story',
+      slug: 'story',
       parent_id: 'epic-1',
       // PostgREST child embed mistaken for parent
       parent: [
@@ -119,13 +167,20 @@ describe('flattenWorkItemAncestorEmbed', () => {
           id: 'task-1',
           type: 'Task' as const,
           title: 'Child task',
+          slug: 'child-task',
           parent_id: 'story-1',
         },
       ],
     } as unknown as WorkItemAncestorEmbedRow;
 
     expect(flattenWorkItemAncestorEmbed(row)).toEqual([
-      { id: 'story-1', type: 'Story', title: 'Story', parent_id: 'epic-1' },
+      {
+        id: 'story-1',
+        type: 'Story',
+        title: 'Story',
+        slug: 'story',
+        parent_id: 'epic-1',
+      },
     ]);
   });
 });

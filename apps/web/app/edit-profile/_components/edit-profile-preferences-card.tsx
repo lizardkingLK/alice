@@ -14,6 +14,11 @@ import {
   writeWorkItemCreateFormMode,
 } from '@/app/work-items/_helpers/work-item-create-form-preference';
 import {
+  readProjectCreationDraftAuto,
+  writeProjectCreationDraftAuto,
+} from '@/app/projects/_helpers/project-creation-draft-preference';
+import { EditProfileChatModelPreferenceCard } from '@/app/edit-profile/_components/edit-profile-chat-model-preference-card';
+import {
   Card,
   CardContent,
   CardDescription,
@@ -34,6 +39,7 @@ export function EditProfilePreferencesCard({
   userId = null,
 }: Readonly<EditProfilePreferencesCardProps>) {
   const [modernCreate, setModernCreate] = useState(false);
+  const [autoProjectDraft, setAutoProjectDraft] = useState(false);
   const [detailsPrefs, setDetailsPrefs] = useState<WorkItemDetailsPreferences>(
     () =>
       normalizeWorkItemDetailsPreferences(DEFAULT_WORK_ITEM_DETAILS_PREFERENCES)
@@ -42,6 +48,7 @@ export function EditProfilePreferencesCard({
 
   useEffect(() => {
     setModernCreate(readWorkItemCreateFormMode() === 'modern');
+    setAutoProjectDraft(readProjectCreationDraftAuto(userId));
     setDetailsPrefs(readWorkItemDetailsPreferences(userId));
     setHydrated(true);
   }, [userId]);
@@ -79,6 +86,29 @@ export function EditProfilePreferencesCard({
               }}
             />
           </div>
+          <div className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
+            <div className="min-w-0 space-y-0.5">
+              <Label
+                htmlFor="pref-project-draft-auto"
+                className="text-sm font-medium"
+              >
+                Auto-save project drafts
+              </Label>
+              <p className="text-muted-foreground text-xs">
+                Automatically save create-project progress and resume it the
+                next time you open Add Project.
+              </p>
+            </div>
+            <Switch
+              id="pref-project-draft-auto"
+              checked={autoProjectDraft}
+              disabled={!hydrated}
+              onCheckedChange={(checked) => {
+                setAutoProjectDraft(checked);
+                writeProjectCreationDraftAuto(userId, checked);
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -102,6 +132,8 @@ export function EditProfilePreferencesCard({
           />
         </CardContent>
       </Card>
+
+      <EditProfileChatModelPreferenceCard />
     </div>
   );
 }

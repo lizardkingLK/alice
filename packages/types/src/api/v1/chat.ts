@@ -8,13 +8,24 @@ import { workflowConfigEnvelopeSchema } from './workflow-config.js';
 export {
   WorkItemDeduplicationActionEnum,
   WorkItemDeduplicationMatchStatusEnum,
-  type WorkItemDeduplicationItemResult,
-  type WorkItemDeduplicationReport,
 } from '../../chat-attachments.js';
+export type {
+  WorkItemDeduplicationItemResult,
+  WorkItemDeduplicationReport,
+} from '../../chat-attachments.js';
+
+/** `/chat` history threads vs dock/widget session-only chats. */
+export const ChatConversationKinds = {
+  general: 'general',
+  temporary: 'temporary',
+} as const;
+
+export type ChatConversationKind =
+  (typeof ChatConversationKinds)[keyof typeof ChatConversationKinds];
 
 /** PostgREST column list for chat conversation list reads (RSC + API parity). */
 export const CHAT_CONVERSATION_POSTGREST_SELECT =
-  'id, title, created_at, updated_at, is_processing' as const;
+  'id, title, created_at, updated_at, is_processing, kind, agent_id' as const;
 
 export enum ChatTurnRoleEnum {
   USER = 'user',
@@ -138,6 +149,14 @@ const createdEntitySchema = z.object({
   key: z.string().optional(),
   title: z.string().optional(),
   status: z.string().optional(),
+  /** Work-item type key when the action creates/updates a work item. */
+  type: z.string().optional(),
+  /** Display name for the work-item type. */
+  typeName: z.string().optional(),
+  /** Project KEY for path-masked chat action links. */
+  projectKey: z.string().optional(),
+  /** Entity slug (sprint / work item) for path-masked links. */
+  slug: z.string().optional(),
 });
 
 export const chatToolActionSchema = z.discriminatedUnion('type', [
@@ -164,6 +183,7 @@ export const chatToolActionSchema = z.discriminatedUnion('type', [
     entity: z.object({
       projectId: z.string(),
       projectName: z.string(),
+      projectKey: z.string().optional(),
       config: boardConfigSchema,
     }),
   }),
@@ -172,6 +192,7 @@ export const chatToolActionSchema = z.discriminatedUnion('type', [
     entity: z.object({
       projectId: z.string(),
       projectName: z.string(),
+      projectKey: z.string().optional(),
       summary: z.string(),
       confirmationToken: z.string(),
       proposedConfig: workflowConfigEnvelopeSchema,
@@ -183,6 +204,7 @@ export const chatToolActionSchema = z.discriminatedUnion('type', [
     entity: z.object({
       projectId: z.string(),
       projectName: z.string(),
+      projectKey: z.string().optional(),
       reason: z.string().optional(),
     }),
   }),
@@ -239,6 +261,11 @@ export const chatConversationSummarySchema = z.object({
   created_at: z.string(),
   updated_at: z.string(),
   is_processing: z.boolean(),
+  kind: z.enum([
+    ChatConversationKinds.general,
+    ChatConversationKinds.temporary,
+  ]),
+  agent_id: z.uuid().nullable().optional(),
 });
 
 export type ChatConversationSummaryWire = z.infer<
@@ -262,8 +289,20 @@ export const postChatMessageBodySchema = z.object({
   conversationId: z.preprocess(emptyToUndefined, z.uuid().optional()),
   integrationId: z.preprocess(emptyToUndefined, z.uuid().optional()),
   modelId: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  /**
+   * Active project context for model resolution (project → page → org).
+   * Prefer explicit id from the dock page or view bridge; viewContext.projectId
+   * is a fallback when this is omitted.
+   */
+  projectId: z.preprocess(emptyToUndefined, z.uuid().optional()),
+  /** Bound chat agent; omitted → workspace default Alice agent. */
+  agentId: z.preprocess(emptyToUndefined, z.uuid().optional()),
   attachments: z.array(chatAttachmentWireSchema).optional(),
   viewContext: chatViewContextSchema.optional(),
+  /** Defaults to `general` (`/chat`). Dock/widget send `temporary`. */
+  kind: z
+    .enum([ChatConversationKinds.general, ChatConversationKinds.temporary])
+    .optional(),
 });
 
 export type PostChatMessageBody = z.infer<typeof postChatMessageBodySchema>;

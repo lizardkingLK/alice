@@ -4,6 +4,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useSoftInvalidateProject } from '@/lib/soft-invalidate/use-soft-invalidate-project';
 import {
   ClipboardPenLine,
   GitBranch,
@@ -47,7 +48,10 @@ import type {
 import type { Team } from '@/app/manager/_services/teams.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import WorkItemsWorkspace from '@/app/work-items/_components/work-items-workspace';
-import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import type {
+  DbWorkItem,
+  WorkItemAncestor,
+} from '@/app/work-items/_services/work-items.reads.server';
 import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import {
@@ -78,6 +82,11 @@ const WorkflowDesignerWorkspace = dynamic(
 
 interface ProjectWorkItemsProps {
   readonly initialWorkItems: DbWorkItem[];
+  readonly initialChildrenByParentId: Record<string, DbWorkItem[]>;
+  readonly searchPanelItems: DbWorkItem[];
+  readonly searchMatchIds: readonly string[];
+  readonly ancestorsById: Record<string, WorkItemAncestor[]>;
+  readonly hierarchyMode: 'tree' | 'search';
   readonly totalCount: number;
   readonly page: number;
   readonly limit: number;
@@ -140,12 +149,14 @@ const MANAGER_ONLY_TABS = new Set<ProjectDetailsTabId>([
   'types',
 ]);
 
-const PROJECT_NAV_ITEMS: ReadonlyArray<{
+type ProjectNavItem = {
   readonly id: ProjectDetailsTabId;
   readonly label: string;
   readonly Icon: typeof Info;
   readonly managerOrAdminOnly?: boolean;
-}> = [
+};
+
+const PROJECT_NAV_ITEMS: ReadonlyArray<ProjectNavItem> = [
   {
     id: 'details',
     label: 'Details',
@@ -311,6 +322,7 @@ export function ProjectDetailsWorkspace({
   const searchParams = useSearchParams();
   const requestedTab = parseProjectDetailsTab(searchParams.get('tab'));
   const [sidebarOpen, setSidebarOpen] = useState(initialSidebarOpen);
+  useSoftInvalidateProject(project.id);
 
   const appRole = isAppRole(currentUserRole) ? currentUserRole : null;
   const canEditProject = isManagerOrAdmin(appRole);
@@ -369,6 +381,7 @@ export function ProjectDetailsWorkspace({
             <ul className="flex flex-row gap-0.5 md:flex-col">
               {visibleNavItems.map(({ id, label, Icon }) => {
                 const isActive = activeTab === id;
+                const href = projectDetailHref(project.key, id);
                 const linkClassName = cn(
                   'flex items-center rounded-lg text-left text-sm whitespace-nowrap transition-colors',
                   sidebarOpen
@@ -382,7 +395,7 @@ export function ProjectDetailsWorkspace({
 
                 const link = (
                   <Link
-                    href={projectDetailHref(project.id, id)}
+                    href={href}
                     prefetch
                     className={linkClassName}
                     aria-current={isActive ? 'page' : undefined}
@@ -500,6 +513,11 @@ export function ProjectDetailsWorkspace({
               projectMembersByProjectId={{ [project.id]: members }}
               sprints={sprints.sprints}
               initialWorkItems={workItems.initialWorkItems}
+              initialChildrenByParentId={workItems.initialChildrenByParentId}
+              searchPanelItems={workItems.searchPanelItems}
+              searchMatchIds={workItems.searchMatchIds}
+              ancestorsById={workItems.ancestorsById}
+              hierarchyMode={workItems.hierarchyMode}
               totalCount={workItems.totalCount}
               page={workItems.page}
               limit={workItems.limit}
@@ -571,6 +589,7 @@ export function ProjectDetailsWorkspace({
             <ProjectSettingsTab
               project={project}
               isManagerOrAdmin={canEditProject}
+              userId={currentUserId}
             />
           </div>
         )}

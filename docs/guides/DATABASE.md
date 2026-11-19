@@ -1,6 +1,6 @@
 # Database workflow
 
-See also: [`docs/database/ER_DIAGRAM.md`](../database/ER_DIAGRAM.md) — entity model from the 1BT-JIRA task breakdown. [`docs/database/AUDIT_COLUMNS.md`](../database/AUDIT_COLUMNS.md) — audit metadata conventions and helpers. [`docs/database/WORK_ITEM_DESCRIPTION.md`](../database/WORK_ITEM_DESCRIPTION.md) — TipTap JSON for `work_items.description`. Planned new-project bootstrap (migrate, Storage, Google, SMTP): [`docs/features/platform/DAY_ONE_SETUP.md`](../features/platform/DAY_ONE_SETUP.md).
+See also: [`docs/database/ER_DIAGRAM.md`](../database/ER_DIAGRAM.md) — entity model from the 1BT-JIRA task breakdown. [`docs/database/AUDIT_COLUMNS.md`](../database/AUDIT_COLUMNS.md) — audit metadata conventions and helpers. [`docs/database/WORK_ITEM_DESCRIPTION.md`](../database/WORK_ITEM_DESCRIPTION.md) — TipTap JSON for `work_items.description`. Planned new-project bootstrap (migrate, Storage, Google, SMTP): [`docs/features/platform/DAY_ONE_SETUP.md`](../features/platform/DAY_ONE_SETUP.md). Logs Ingest / Free-plan quota: [`docs/guides/SUPABASE_LOG_INGEST.md`](./SUPABASE_LOG_INGEST.md).
 
 ## Packages
 
@@ -70,20 +70,22 @@ Prisma creates objects as `postgres`. The Supabase Data API (`anon`, `authentica
 - Baseline: `0_init_supabase` includes grants from `prisma/sql/supabase_grants.sql`
 - `create:migrate` appends the same grants block to every new migration
 - After `migrate:reset`, grants are reapplied automatically via migrations
+- The grants file ends with a **secrets re-lock** (`REVOKE` on admission/token tables) so blanket `GRANT`s do not reopen PostgREST access — see [RLS_HYBRID_ROLLOUT.md](./RLS_HYBRID_ROLLOUT.md)
 
 ## Seed data (`pnpm db seed`)
 
 Idempotent dev sample data in `packages/db/src/seed.ts`:
 
-| Entity     | Sample                                                                                                                                                             |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Users      | Core: `admin@alice.dev`, `manager@alice.dev`, `member@alice.dev`. Plus 18 squad members (`firstname.lastinitial@alice.dev`, ASCII-folded). All have Auth accounts. |
-| Allowlist  | Domain `alice.dev` (`access_allowlist`) so seed emails pass admission                                                                                              |
-| Project    | `ALICE` — Alice Platform                                                                                                                                           |
-| Team       | Platform Team (manager + member)                                                                                                                                   |
-| Sprints    | Sprint 1 (active), Sprint 2 (planned)                                                                                                                              |
-| Work items | Epic → Story → Task → Issue via `parent_id`; one backlog story — each with TipTap JSON descriptions (headings, lists, bold/italic/code)                            |
-| Other      | Comments (threaded), attachment, notifications                                                                                                                     |
+| Entity      | Sample                                                                                                                              |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Users       | Core: `admin@alice.dev`, `manager@alice.dev`, `member@alice.dev`. All have Auth accounts.                                           |
+| Allowlist   | Domain `alice.dev` (`access_allowlist`) so seed emails pass admission                                                               |
+| Project     | `THIS` — This (“Alice - Product Development”)                                                                                       |
+| Team        | Platform Team (manager + member)                                                                                                    |
+| Sprints     | Sprint 1 (active), Sprint 2 (planned)                                                                                               |
+| Work items  | Epic → Story → Task via `parent_id`; one backlog story — TipTap JSON descriptions (headings, lists, bold/italic/code)               |
+| Other       | Comments (threaded), attachment, notifications                                                                                      |
+| Chat agents | Tool + skill catalogs; default **Alice** agent (`key=alice-default`, encrypted instructions via `INTEGRATION_TOKEN_ENCRYPTION_KEY`) |
 
 Re-running seed refreshes work item descriptions on existing seed titles. Format: [`WORK_ITEM_DESCRIPTION.md`](../database/WORK_ITEM_DESCRIPTION.md).
 

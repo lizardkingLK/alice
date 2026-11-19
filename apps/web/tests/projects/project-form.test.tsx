@@ -14,10 +14,12 @@ import {
   saveProjectCreationDraft,
   type ProjectCreationDraft,
 } from '@/app/projects/_helpers/project-creation-draft-storage';
+import { writeProjectCreationDraftAuto } from '@/app/projects/_helpers/project-creation-draft-preference';
 import {
   getComboboxOptions,
   pickComboboxOption,
 } from '../helpers/pick-combobox-option';
+import { buildDefaultProjectTypeDefs } from '@repo/types';
 
 vi.mock('@/lib/api/api-fetch.mutations.use.client', () => ({
   apiFetch: vi.fn(),
@@ -33,10 +35,14 @@ vi.mock('@/app/projects/_services/projects.cache.actions.server', () => ({
 }));
 
 vi.mock('@/app/projects/_helpers/project-creation-draft-storage', () => ({
-  PROJECT_CREATION_DRAFT_VERSION: 1,
+  PROJECT_CREATION_DRAFT_VERSION: 4,
   saveProjectCreationDraft: vi.fn(),
   readProjectCreationDraft: vi.fn(),
   clearProjectCreationDraft: vi.fn(),
+}));
+
+vi.mock('@/app/chat/_services/chat-models.reads.client', () => ({
+  listChatModelsForChatClient: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('@repo/ui/components/ui/select', () =>
@@ -158,7 +164,7 @@ const mockGithubConnection = {
 };
 
 const mockProjectCreationDraft: ProjectCreationDraft = {
-  version: 1,
+  version: 4,
   currentStep: 5,
   basicInfo: {
     name: 'Restored Project',
@@ -168,7 +174,24 @@ const mockProjectCreationDraft: ProjectCreationDraft = {
     status: 'archived',
     startDate: '2099-09-01',
     endDate: '2099-10-01',
-    selectedWorkItemTypes: ['Epic', 'Story'],
+    workItemTypeDefs: [
+      {
+        key: 'Epic',
+        name: 'Epic',
+        description: 'Top-level initiative',
+        icon: 'layers',
+        color: '#6B5B95',
+        level: 0,
+      },
+      {
+        key: 'Story',
+        name: 'Story',
+        description: 'User story / deliverable',
+        icon: 'bookmark',
+        color: '#3B6FDB',
+        level: 1,
+      },
+    ],
   },
   imports: {
     importFromJira: true,
@@ -179,6 +202,10 @@ const mockProjectCreationDraft: ProjectCreationDraft = {
     enableGithub: true,
     githubOwner: 'octocat',
     githubRepoName: 'hello-world',
+  },
+  integrations: {
+    aiBindingIds: [],
+    defaultAiIntegrationId: null,
   },
   sprint: {
     createInitialSprint: true,
@@ -252,9 +279,11 @@ async function advanceCreateFormToStep(targetStep: 1 | 2 | 3 | 4 | 5) {
   for (let nextStep = 2; nextStep <= targetStep; nextStep += 1) {
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     if (nextStep === 2) {
-      await screen.findByText('Import sources');
+      await screen.findByText('Work-Item Types');
     } else if (nextStep === 3) {
+      await screen.findByText('Project management');
       await screen.findByText('Source control');
+      await screen.findByText('AI agents');
     } else if (nextStep === 4) {
       await screen.findByRole('checkbox', {
         name: /Create an initial sprint/i,
@@ -267,6 +296,10 @@ async function advanceCreateFormToStep(targetStep: 1 | 2 | 3 | 4 | 5) {
   }
 }
 
+async function advanceCreateFormToIntegrationsStep() {
+  await advanceCreateFormToStep(3);
+}
+
 async function advanceCreateFormToSprintStep() {
   await advanceCreateFormToStep(4);
 }
@@ -277,6 +310,7 @@ async function advanceCreateFormToTeamStep() {
 
 describe('ProjectForm Component', () => {
   beforeEach(() => {
+    localStorage.clear();
     clearGithubCache();
     mockJiraApiFetch({ connections: [] });
     vi.mocked(invalidateProjectDropdownCache).mockResolvedValue(undefined);
@@ -337,7 +371,7 @@ describe('ProjectForm Component', () => {
     fireEvent.change(screen.getByLabelText(/Project Key/i), {
       target: { value: 'alice' },
     });
-    fireEvent.change(screen.getByLabelText(/Description/i), {
+    fireEvent.change(screen.getByLabelText(/^Description$/i), {
       target: { value: 'Project description details' },
     });
     await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
@@ -370,11 +404,12 @@ describe('ProjectForm Component', () => {
         status: 'active',
         attributes_config: null,
         workflow_config: {
-          work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+          work_item_types: buildDefaultProjectTypeDefs(),
         },
         jira_connection_id: null,
         jira_project_key: null,
         github_repo: null,
+        github_connection_id: null,
         github_token: null,
       });
     });
@@ -703,7 +738,7 @@ describe('ProjectForm Component', () => {
 
     expect(screen.getByLabelText(/Project Name/i)).toHaveValue('Project Alice');
     expect(screen.getByLabelText(/Project Key/i)).toHaveValue('ALICE');
-    expect(screen.getByLabelText(/Description/i)).toHaveValue(
+    expect(screen.getByLabelText(/^Description$/i)).toHaveValue(
       'Project description details'
     );
     expect(screen.getByLabelText(/Project Owner/i)).toHaveValue(
@@ -736,11 +771,12 @@ describe('ProjectForm Component', () => {
           status: 'active',
           attributes_config: null,
           workflow_config: {
-            work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+            work_item_types: buildDefaultProjectTypeDefs(),
           },
           jira_connection_id: null,
           jira_project_key: null,
           github_repo: null,
+          github_connection_id: null,
           github_token: null,
         },
         '2026-07-09T10:00:00Z'
@@ -821,26 +857,31 @@ describe('ProjectForm Component', () => {
     expect(screen.getByLabelText(/Sprint End Date/i)).toHaveValue('2099-09-14');
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-    expect(screen.getByRole('checkbox', { name: /^GitHub$/i })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /^GitHub$/i })).toBeChecked();
     expect(screen.getByLabelText(/GitHub Repository URL/i)).toHaveValue(
       'https://github.com/octocat/hello-world'
     );
     expect(screen.queryByLabelText(/Personal Access Token/i)).toBeNull();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-    expect(screen.getByRole('checkbox', { name: /^Jira$/i })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /^Jira$/i })).toBeChecked();
     await waitFor(() => {
       const jiraSelects = screen.getAllByTestId('ui-select');
       expect(jiraSelects[0]).toHaveValue('conn-1');
       expect(jiraSelects[1]).toHaveValue('TEST');
     });
+    expect(screen.getByText('AI agents')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByText('Work-Item Types')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Epic')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Story')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('Feature')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(screen.getByLabelText(/Project Name/i)).toHaveValue(
       'Restored Project'
     );
     expect(screen.getByLabelText(/Project Key/i)).toHaveValue('RESTORE');
-    expect(screen.getByLabelText(/Description/i)).toHaveValue(
+    expect(screen.getByLabelText(/^Description$/i)).toHaveValue(
       'Restored project description'
     );
     expect(screen.getByLabelText(/Project Owner/i)).toHaveValue(
@@ -848,9 +889,6 @@ describe('ProjectForm Component', () => {
     );
     expect(screen.getByLabelText(/Start Date/i)).toHaveValue('2099-09-01');
     expect(screen.getByLabelText(/End Date/i)).toHaveValue('2099-10-01');
-    expect(screen.getByRole('checkbox', { name: 'Epic' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'Story' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'Feature' })).not.toBeChecked();
     expect(onJiraImportToggle).toHaveBeenCalledWith(true);
 
     fireEvent.change(screen.getByLabelText(/Project Name/i), {
@@ -1033,7 +1071,7 @@ describe('ProjectForm Component', () => {
     expect(saveProjectCreationDraft).toHaveBeenCalledWith(
       'user-admin',
       expect.objectContaining({
-        version: 1,
+        version: 4,
         currentStep: 5,
         basicInfo: expect.objectContaining({
           name: 'Project Alice',
@@ -1049,6 +1087,10 @@ describe('ProjectForm Component', () => {
           enableGithub: false,
           githubOwner: '',
           githubRepoName: '',
+        },
+        integrations: {
+          aiBindingIds: [],
+          defaultAiIntegrationId: null,
         },
         sprint: {
           createInitialSprint: false,
@@ -1131,6 +1173,58 @@ describe('ProjectForm Component', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it('auto-resumes a saved draft when the preference is enabled', async () => {
+    writeProjectCreationDraftAuto('user-admin', true);
+    vi.mocked(readProjectCreationDraft).mockReturnValue(
+      mockProjectCreationDraft
+    );
+
+    render(
+      <ProjectForm
+        users={mockUsers}
+        currentUserId="user-admin"
+        onJiraImportToggle={vi.fn()}
+      />
+    );
+
+    expect(
+      await screen.findByRole('checkbox', {
+        name: /Create an initial team/i,
+      })
+    ).toBeChecked();
+    expect(screen.getByLabelText(/Team Name/i)).toHaveValue('Restored Team');
+    expect(
+      screen.queryByText('Resume saved project draft?')
+    ).not.toBeInTheDocument();
+  });
+
+  it('auto-saves and closes without a draft prompt when the preference is enabled', async () => {
+    writeProjectCreationDraftAuto('user-admin', true);
+    const onClose = vi.fn();
+    render(
+      <ProjectForm
+        users={mockUsers}
+        currentUserId="user-admin"
+        onClose={onClose}
+      />
+    );
+
+    await fillStep1Basics();
+    fireEvent.click(screen.getByRole('button', { name: /Close modal/i }));
+
+    expect(screen.queryByText('Save project draft?')).not.toBeInTheDocument();
+    expect(saveProjectCreationDraft).toHaveBeenCalledWith(
+      'user-admin',
+      expect.objectContaining({
+        basicInfo: expect.objectContaining({
+          name: 'Project Alice',
+          key: 'alice',
+        }),
+      })
+    );
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
   it('keeps the existing close behavior in edit mode', () => {
     const onClose = vi.fn();
     render(
@@ -1153,14 +1247,14 @@ describe('ProjectForm Component', () => {
     expect(readProjectCreationDraft).not.toHaveBeenCalled();
   });
 
-  it('shows Jira OAuth fields when checkbox is toggled with an existing connection', async () => {
+  it('shows Jira OAuth fields when Jira radio is selected with an existing connection', async () => {
     mockJiraApiFetch();
 
     render(<ProjectForm users={mockUsers} />);
     await fillStep1Basics();
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await advanceCreateFormToIntegrationsStep();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /^Jira$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^Jira$/i }));
 
     expect(
       await screen.findByRole('button', { name: /Connect Jira/i })
@@ -1182,7 +1276,7 @@ describe('ProjectForm Component', () => {
     expect(projectSelect).toHaveValue('TEST');
   });
 
-  it('advances from Imports to Source Control without creating the project', async () => {
+  it('shows Jira and GitHub on the Integrations step without creating the project', async () => {
     mockJiraApiFetch();
     vi.mocked(createProject).mockResolvedValue({
       accepted: true,
@@ -1192,9 +1286,9 @@ describe('ProjectForm Component', () => {
 
     render(<ProjectForm users={mockUsers} />);
     await fillStep1Basics();
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await advanceCreateFormToIntegrationsStep();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /^Jira$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^Jira$/i }));
     const selects = await screen.findAllByTestId('ui-select');
     fireEvent.change(selects[0]!, { target: { value: 'conn-1' } });
     await waitFor(() => {
@@ -1206,11 +1300,10 @@ describe('ProjectForm Component', () => {
       target: { value: 'TEST' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-
     expect(
-      await screen.findByRole('checkbox', { name: /^GitHub$/i })
+      screen.getByRole('radio', { name: /^GitHub$/i })
     ).toBeInTheDocument();
+    expect(screen.getByText('AI agents')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Next/i })).toBeInTheDocument();
     expect(createProject).not.toHaveBeenCalled();
   });
@@ -1227,9 +1320,9 @@ describe('ProjectForm Component', () => {
     render(<ProjectForm users={mockUsers} onSuccess={onSuccess} />);
 
     await fillStep1Basics();
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await advanceCreateFormToIntegrationsStep();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /^Jira$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^Jira$/i }));
 
     const selects = await screen.findAllByTestId('ui-select');
     fireEvent.change(selects[0]!, { target: { value: 'conn-1' } });
@@ -1243,8 +1336,6 @@ describe('ProjectForm Component', () => {
     const projectSelect = (await screen.findAllByTestId('ui-select'))[1]!;
     fireEvent.change(projectSelect, { target: { value: 'TEST' } });
 
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-    await screen.findByRole('checkbox', { name: /^GitHub$/i });
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     await screen.findByRole('checkbox', { name: /Create an initial sprint/i });
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
@@ -1277,10 +1368,9 @@ describe('ProjectForm Component', () => {
     render(<ProjectForm users={mockUsers} />);
 
     await fillStep1Basics();
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await advanceCreateFormToIntegrationsStep();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^GitHub$/i }));
 
     fireEvent.change(screen.getByLabelText(/GitHub Repository URL/i), {
       target: { value: 'https://github.com/facebook/react' },
@@ -1306,10 +1396,9 @@ describe('ProjectForm Component', () => {
     render(<ProjectForm users={mockUsers} />);
 
     await fillStep1Basics();
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await advanceCreateFormToIntegrationsStep();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^GitHub$/i }));
 
     expect(
       await screen.findByText(/Status: Not connected/i)
@@ -1331,10 +1420,9 @@ describe('ProjectForm Component', () => {
     render(<ProjectForm users={mockUsers} />);
 
     await fillStep1Basics();
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await advanceCreateFormToIntegrationsStep();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^GitHub$/i }));
 
     expect(await screen.findByText('@octocat')).toBeInTheDocument();
     expect(screen.getByText('Connected')).toBeInTheDocument();
@@ -1356,10 +1444,9 @@ describe('ProjectForm Component', () => {
     render(<ProjectForm users={mockUsers} />);
 
     await fillStep1Basics();
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await advanceCreateFormToIntegrationsStep();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^GitHub$/i }));
 
     fireEvent.change(screen.getByLabelText(/GitHub Repository URL/i), {
       target: { value: 'https://github.com/facebook/react.git' },

@@ -115,7 +115,38 @@ vi.mock(
 vi.mock(
   '@/app/work-items/_components/work-item-details/work-item-activity-tabs',
   () => ({
-    WorkItemActivityTabs: () => <div data-testid="activity-tabs" />,
+    WorkItemActivityTabs: ({
+      onExcelUploadClick,
+    }: {
+      onExcelUploadClick?: () => void;
+    }) => (
+      <div data-testid="activity-tabs">
+        {onExcelUploadClick ? (
+          <button type="button" onClick={onExcelUploadClick}>
+            Open Excel upload
+          </button>
+        ) : null}
+      </div>
+    ),
+  })
+);
+
+vi.mock(
+  '@/app/work-items/_components/work-item-work-logs/work-item-work-log-excel-dialog',
+  () => ({
+    WorkItemWorkLogExcelDialog: ({
+      open,
+      onImported,
+    }: {
+      open: boolean;
+      // eslint-disable-next-line no-unused-vars -- callback signature
+      onImported: (count: number) => void;
+    }) =>
+      open ? (
+        <button type="button" onClick={() => onImported(2)}>
+          Complete Excel import
+        </button>
+      ) : null,
   })
 );
 
@@ -525,6 +556,30 @@ describe('WorkItemDetails subtasks', () => {
     // Assert
     await waitFor(() => {
       expect(mockRefresh).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('refreshes worklogs and time tracking after an Excel import', async () => {
+    const story = workItemFactory.build({
+      id: 'wi-story',
+      type: 'Story',
+      project_id: project.id,
+    });
+    render(
+      <WorkItemDetails
+        workItemDetails={story}
+        project={project}
+        projectMembers={members}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Excel upload' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Complete Excel import' })
+    );
+
+    await waitFor(() => {
+      expect(mockRefresh).toHaveBeenCalledOnce();
     });
   });
 

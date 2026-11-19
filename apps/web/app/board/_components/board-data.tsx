@@ -1,4 +1,6 @@
 import { BoardWorkspace } from '@/app/board/_components/board-workspace';
+import { getBoardTransitionActorContext } from '@/app/board/_helpers/board-actor-context.server';
+import type { BoardTransitionAuthRule } from '@/app/board/_helpers/board-transition-auth';
 import { needsWorkspaceProjectBootstrap } from '@/app/board/_helpers/workspace-defaults-shared';
 import { EMPTY_ACTIVE_SPRINTS_PAGE } from '@/app/board/_services/board.reads.defaults.server';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
@@ -21,6 +23,7 @@ import {
   resolveProjectBoardRuntime,
   type BoardColumn,
   type BoardWorkflowTab,
+  type TransitionRuleActorContext,
 } from '@repo/types/api/v1';
 
 type ProjectBoardLoadResult = {
@@ -29,6 +32,7 @@ type ProjectBoardLoadResult = {
   readonly workflowTabs: readonly BoardWorkflowTab[];
   readonly activeWorkflowId: string | null;
   readonly boardMode: 'workflow' | 'legacy' | 'default';
+  readonly transitionAuthRules: readonly BoardTransitionAuthRule[];
 };
 
 async function getProjectBoardRuntime(
@@ -41,6 +45,7 @@ async function getProjectBoardRuntime(
     workflowTabs: [],
     activeWorkflowId: null,
     boardMode: 'default',
+    transitionAuthRules: [],
   };
 
   try {
@@ -71,6 +76,11 @@ async function getProjectBoardRuntime(
         workflowTabs: runtime.tabs,
         activeWorkflowId: runtime.activeWorkflow.id,
         boardMode: 'workflow',
+        transitionAuthRules: runtime.activeWorkflow.graph.edges.map((edge) => ({
+          from: edge.from,
+          to: edge.to,
+          allowAnyOf: edge.allowAnyOf,
+        })),
       };
     }
 
@@ -81,6 +91,7 @@ async function getProjectBoardRuntime(
         workflowTabs: [],
         activeWorkflowId: null,
         boardMode: 'legacy',
+        transitionAuthRules: [],
       };
     }
 
@@ -154,7 +165,17 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
         workflowTabs: [],
         activeWorkflowId: null,
         boardMode: 'default' as const,
+        transitionAuthRules: [] as const,
       };
+
+  let transitionActor: TransitionRuleActorContext | null = null;
+  if (dbUser && scopedProjectId) {
+    transitionActor = await safeServerFetch(
+      getBoardTransitionActorContext(dbUser.id, scopedProjectId, dbUser.role),
+      null,
+      'fetch board transition actor context'
+    );
+  }
 
   const needsClientBootstrap = needsWorkspaceProjectBootstrap(
     resolvedSearchParams.project
@@ -168,6 +189,8 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
       workflowTabs={boardConfig.workflowTabs}
       activeWorkflowId={boardConfig.activeWorkflowId}
       boardMode={boardConfig.boardMode}
+      transitionAuthRules={boardConfig.transitionAuthRules}
+      transitionActor={transitionActor}
       initialWorkItems={boardItems}
       projects={activeProjects}
       sprints={sprints}

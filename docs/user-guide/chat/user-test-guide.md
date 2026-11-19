@@ -209,15 +209,13 @@ Verify that files upload directly to Supabase Storage via signed upload URLs:
 
 ---
 
-### 6. Multi-format parsing (CSV, Outlines, Markdown, YAML)
+### 6. CSV parsing and unsupported-file rejection
 
 1. Attach `test-work-items-hierarchy.csv` and ask:
    > _"Import the work items from this CSV into project [Project Key]."_
    - Alice extracts the multi-tier hierarchy (`CORE-1` &rarr; `CORE-2` &rarr; `CORE-3` &rarr; `CORE-4`) and custom columns (`Department`).
-2. Attach `test-work-items-outline.txt` and ask:
-   > _"Parse this outline and import into project [Project Key]."_
-   - Alice creates the items preserving tree depth from indentation and explicit types/points.
-3. Attach an image (`.png`, `.jpg`, `.webp`) to verify clean rendering with the `IMAGE` badge.
+2. Try attaching an image (`.png`, `.jpg`, `.webp`) or a `.md`/`.txt` file:
+   - Upload is rejected immediately with a message that only JSON and CSV are supported.
 
 ---
 

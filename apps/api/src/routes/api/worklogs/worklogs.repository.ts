@@ -70,4 +70,24 @@ export class WorklogsRepository {
 
     return normalizeWorkLogRow(data as unknown as WorkItemWorkLogRowRaw);
   }
+
+  /** Persists an already validated import as one all-or-nothing operation. */
+  async createManyAtomic(
+    inputs: readonly CreateWorkLogInput[]
+  ): Promise<number> {
+    return await prisma.$transaction(async (transaction) => {
+      const result = await transaction.work_item_worklogs.createMany({
+        data: inputs.map((input) => ({
+          work_item_id: input.workItemId,
+          user_id: input.actorId,
+          logged_hours: input.loggedHours,
+          logged_at: prismaOptionalDate(input.loggedAtIso)!,
+          comment: input.comment,
+          ...prismaAuditCreate(input.actorId),
+        })),
+      });
+
+      return result.count;
+    });
+  }
 }

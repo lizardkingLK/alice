@@ -11,6 +11,7 @@ Find your way around Alice — sidebar, dashboard, shortcuts, and saved views.
 | Page                                            | What you'll learn                  |
 | ----------------------------------------------- | ---------------------------------- |
 | [Dashboard overview](./dashboard-overview.md)   | Overview widgets and layout        |
+| [Notes](./notes.md)                             | Personal rich-text drafts          |
 | [Charts](./charts.md)                           | Custom chart boards and widgets    |
 | [Keyboard shortcuts](./keyboard-shortcuts.md)   | Speed up common actions            |
 | [Favorites and views](./favorites-and-views.md) | Star pages and save filtered views |
@@ -21,18 +22,25 @@ Find your way around Alice — sidebar, dashboard, shortcuts, and saved views.
 
 After sign-in, the left sidebar organizes the app:
 
-| Group         | Examples                                                                                              |
-| ------------- | ----------------------------------------------------------------------------------------------------- |
-| **Favorites** | Pages you starred (appears at the top when you have at least one)                                     |
-| **Platform**  | Overview, Backlog, Board, Work Items, My Work, Alice, Views, Charts; **Projects**; **Users** (admins) |
-| **Account**   | Profile, Settings                                                                                     |
-| **Help**      | Help, Docs, Roadmap                                                                                   |
+| Group         | Examples                                                                                                     |
+| ------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Favorites** | Pages you starred (appears at the top when you have at least one)                                            |
+| **Platform**  | Overview, Backlog, Board, Work Items, My Work, Alice, Notes, Views, Charts; **Projects**; **Users** (admins) |
+| **Account**   | Profile, Settings                                                                                            |
+| **Help**      | Help, Docs, Roadmap                                                                                          |
 
 Select any item to open that area. Collapse or expand the sidebar with the
 trigger at the top or **Ctrl/⌘+B**. When the sidebar is collapsed to icons,
 hover an icon to see its name; scroll if the list is long. Alice remembers your
 preference (cookie) and applies it on load for every dashboard page — Docs,
 Settings, and Profile no longer force the sidebar closed.
+
+Inside a project, Board / Backlog / My Work / Work items / Sprints live under
+`/projects/{KEY}/…`. Cross-project Board, Backlog, Work Items, and My Work stay
+at `/board`, `/backlog`, `/work-items`, and `/member`; when a project filter is
+applied the address bar uses `/board/projects/{KEY}` (and `/sprints/{slug}` on
+Board and Work Items when a sprint is selected). Legacy `?project=` /
+`?sprint=` UUID query links redirect to these path forms.
 
 ---
 

@@ -16,8 +16,16 @@ import { commentFactory } from '../factories/comment.factory';
 import { formatDateToISOString } from '@/app/_shared/utility';
 import { plainTextToCommentDoc } from '@repo/types';
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+}));
+
 vi.mock('@/components/realtime/realtime-provider', () => ({
   useRealtime: () => ({ isUserOnline: () => false }),
+}));
+
+vi.mock('@/app/chat/_services/chat-agents.reads.client', () => ({
+  listChatAgentsClient: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('@/lib/supabase/client', () => {
@@ -91,6 +99,10 @@ vi.mock(
   '@repo/ui/components/ui/dropdown-menu',
   () => import('../mocks/dropdown-menu')
 );
+
+vi.mock('@repo/ui/components/ui/sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
 
 vi.mock('@repo/ui/components/ui/select', () =>
   import('../mocks/select').then((module) =>
@@ -355,7 +367,11 @@ describe('CommentsFeed Component', () => {
   });
 
   it('calls archiveComment when a comment is archived', async () => {
-    vi.mocked(archiveComment).mockResolvedValue(undefined);
+    vi.mocked(archiveComment).mockResolvedValue({
+      accepted: true,
+      message: 'Comment archive started. You’ll be notified when it finishes.',
+      correlationId: 'corr-1',
+    });
 
     renderFeed({ currentUserId: aliceAdmin.id });
 
@@ -376,7 +392,11 @@ describe('CommentsFeed Component', () => {
   });
 
   it('calls archiveComment (permanent) when an archived reply is purged', async () => {
-    vi.mocked(archiveComment).mockResolvedValue(undefined);
+    vi.mocked(archiveComment).mockResolvedValue({
+      accepted: true,
+      message: 'Comment archive started. You’ll be notified when it finishes.',
+      correlationId: 'corr-1',
+    });
 
     const archivedReply: CommentItem = {
       ...mockComments[2]!,
@@ -437,7 +457,11 @@ describe('CommentsFeed Component', () => {
       id: 'comment-archived-1',
       status: 'archived',
     };
-    vi.mocked(archiveComment).mockResolvedValue(undefined);
+    vi.mocked(archiveComment).mockResolvedValue({
+      accepted: true,
+      message: 'Comment archive started. You’ll be notified when it finishes.',
+      correlationId: 'corr-1',
+    });
 
     renderFeed({
       currentUserId: aliceAdmin.id,

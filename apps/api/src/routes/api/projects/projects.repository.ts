@@ -1,7 +1,8 @@
 import {
   USER_PROJECTION_WITH_ROLE,
   userRelationSelect,
-  withoutIntegrationSecrets,
+  mapProjectRowForWire,
+  projectSessionPostgrestSelect,
   type Database,
   projectListSelect,
   projectDetailSelect,
@@ -11,8 +12,13 @@ import {
   type ProjectMemberRow,
   type WorkItemType,
   WorkItemTypeEnum,
+  buildDefaultProjectTypeDefs,
   resolveProjectHierarchy,
+  type ProjectWorkItemTypeDef,
   type ActorProjectsSummary,
+  projectPmExternalFromJiraKey,
+  jiraIssueKeyFromPmExternal,
+  projectVcExternalFromGithubRepo,
 } from '@repo/types';
 import { Prisma, ProjectStatus, RecordStatus } from '@repo/types/prisma';
 import { withBusyRetry } from '@repo/db';
@@ -29,11 +35,11 @@ import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import { listAccessibleProjectIds } from '../../../lib/project-access';
 import { insertSprint } from '../sprints/sprints.prisma';
 import type {
+  CreateProjectInput,
   ProjectMemberWithUser,
   ProjectRow,
   ProjectRowWithOwner,
   ProjectUpdateInput,
-  CreateProjectInput,
 } from './projects.types';
 
 export type {
@@ -42,8 +48,9 @@ export type {
   ProjectRow,
   ProjectRowWithOwner,
   ProjectUpdateInput,
-  UpdateProjectInput,
-} from './projects.types';
+};
+export type { UpdateProjectInput } from './projects.types';
+export { withoutIntegrationSecrets } from '@repo/types';
 
 export type ActiveProjectMember = {
   readonly id: string;
@@ -52,20 +59,33 @@ export type ActiveProjectMember = {
   readonly role: string;
 };
 
-export { withoutIntegrationSecrets };
-
 function applyOptionalProjectIntegrations(
   patch: Record<string, unknown>,
   data: ProjectUpdateInput
 ): void {
-  if (data.jira_project_key !== undefined) {
-    patch.jira_project_key = data.jira_project_key;
+  if (
+    data.jira_project_key !== undefined ||
+    data.jira_connection_id !== undefined
+  ) {
+    if (data.jira_connection_id !== undefined) {
+      patch.pm_connection_id = data.jira_connection_id;
+    }
+    if (data.jira_project_key !== undefined) {
+      patch.pm_external =
+        projectPmExternalFromJiraKey(data.jira_project_key) ?? Prisma.DbNull;
+    }
   }
-  if (data.jira_connection_id !== undefined) {
-    patch.jira_connection_id = data.jira_connection_id;
+  if (data.github_repo !== undefined) {
+    patch.vc_external =
+      projectVcExternalFromGithubRepo(data.github_repo) ?? Prisma.DbNull;
+    if (!data.github_repo) {
+      patch.vc_connection_id = null;
+    }
   }
-  if (data.github_repo !== undefined) patch.github_repo = data.github_repo;
-  if (data.github_token !== undefined) patch.github_token = data.github_token;
+  if (data.github_connection_id !== undefined) {
+    patch.vc_connection_id = data.github_connection_id;
+  }
+  if (data.figma_url !== undefined) patch.figma_url = data.figma_url;
   if (data.logo_url !== undefined) patch.logo_url = data.logo_url;
   if (data.cover_picture !== undefined) {
     patch.cover_picture = data.cover_picture;
@@ -218,11 +238,13 @@ async function applyTypeRemovalActions(
 async function pruneInvalidHierarchyLinks(
   projectId: string,
   allowedTypes: WorkItemType[],
-  customHierarchy?: Record<string, string | null> | null
+  customHierarchy?: Record<string, string | null> | null,
+  typeDefs?: ProjectWorkItemTypeDef[] | null
 ): Promise<number> {
   const { parentToChild } = resolveProjectHierarchy(
     allowedTypes,
-    customHierarchy
+    customHierarchy,
+    typeDefs
   );
   const itemsWithParents = await prisma.work_items.findMany({
     where: {
@@ -426,7 +448,7 @@ export class ProjectsRepository {
     if (!row) {
       return null;
     }
-    const wired = {
+    return mapProjectRowForWire({
       ...row,
       start_date: row.start_date
         ? row.start_date.toISOString().split('T')[0]!
@@ -435,8 +457,7 @@ export class ProjectsRepository {
       created_at: row.created_at.toISOString(),
       updated_at: row.updated_at.toISOString(),
       deleted_at: row.deleted_at?.toISOString() ?? null,
-    };
-    return withoutIntegrationSecrets(wired) as unknown as ProjectRowWithOwner;
+    }) as unknown as ProjectRowWithOwner;
   }
 
   async listMembersPrisma(projectId: string): Promise<ProjectMemberRow[]> {
@@ -474,9 +495,12 @@ export class ProjectsRepository {
   }
 
   async listAll(): Promise<ProjectRowWithOwner[]> {
+    // Explicit columns at runtime; `as '*'` satisfies supabase-js select typing.
     const { data, error } = await this.db
       .from('projects')
-      .select('*, owner:users!projects_owner_id_fkey(id, name, email)')
+      .select(
+        `${projectSessionPostgrestSelect}, owner:users!projects_owner_id_fkey(id, name, email)` as '*'
+      )
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -484,11 +508,16 @@ export class ProjectsRepository {
       throw new Error('Failed to list projects');
     }
 
-    return unsafeCast<ProjectRowWithOwner[]>(data);
+    return unsafeCast<ProjectRowWithOwner[]>(
+      (data ?? []).map((row) => mapProjectRowForWire(row))
+    );
   }
 
   async findByKey(key: string, excludeId?: string): Promise<ProjectRow | null> {
-    let query = this.db.from('projects').select('*').eq('key', key);
+    let query = this.db
+      .from('projects')
+      .select(projectSessionPostgrestSelect as '*')
+      .eq('key', key);
     if (excludeId) {
       query = query.neq('id', excludeId);
     }
@@ -497,13 +526,18 @@ export class ProjectsRepository {
       console.error('error. failed to find project by key:', error.message);
       throw new Error('Failed to find duplicate project key');
     }
-    return unsafeCast<ProjectRow | null>(data);
+    if (!data) {
+      return null;
+    }
+    return unsafeCast<ProjectRow | null>(mapProjectRowForWire(data));
   }
 
   async findById(id: string): Promise<ProjectRowWithOwner | null> {
     const { data, error } = await this.db
       .from('projects')
-      .select('*, owner:users!projects_owner_id_fkey(id, name, email)')
+      .select(
+        `${projectSessionPostgrestSelect}, owner:users!projects_owner_id_fkey(id, name, email)` as '*'
+      )
       .eq('id', id)
       .maybeSingle();
 
@@ -511,7 +545,10 @@ export class ProjectsRepository {
       console.error('error. failed to find project by id:', error.message);
       throw new Error('Failed to find project');
     }
-    return unsafeCast<ProjectRowWithOwner | null>(data);
+    if (!data) {
+      return null;
+    }
+    return unsafeCast<ProjectRowWithOwner | null>(mapProjectRowForWire(data));
   }
 
   async listMembers(projectId: string): Promise<ProjectMemberWithUser[]> {
@@ -529,18 +566,31 @@ export class ProjectsRepository {
     return unsafeCast<ProjectMemberWithUser[]>(data);
   }
 
+  /** Active project memberships for a user (project ids only). */
+  async listActiveMemberProjectIds(userId: string): Promise<string[]> {
+    const rows = await prisma.project_members.findMany({
+      where: { user_id: userId, status: 'active' },
+      select: { project_id: true },
+    });
+    return rows.map((row) => row.project_id);
+  }
+
   async addMember(
     projectId: string,
     userId: string,
     actorId: string
-  ): Promise<void> {
-    await prisma.project_members.create({
-      data: {
-        project_id: projectId,
-        user_id: userId,
-        ...prismaAuditCreate(actorId),
-      },
+  ): Promise<boolean> {
+    const result = await prisma.project_members.createMany({
+      data: [
+        {
+          project_id: projectId,
+          user_id: userId,
+          ...prismaAuditCreate(actorId),
+        },
+      ],
+      skipDuplicates: true,
     });
+    return result.count === 1;
   }
 
   /**
@@ -609,10 +659,17 @@ export class ProjectsRepository {
                 start_date: prismaOptionalDate(data.start_date) ?? null,
                 end_date: prismaOptionalDate(data.end_date) ?? null,
                 owner_id: data.owner_id,
-                jira_project_key: data.jira_project_key,
-                jira_connection_id: data.jira_connection_id,
-                github_repo: data.github_repo,
-                github_token: data.github_token,
+                pm_connection_id: data.jira_connection_id ?? null,
+                pm_external:
+                  projectPmExternalFromJiraKey(data.jira_project_key) ??
+                  Prisma.DbNull,
+                vc_connection_id: data.github_repo
+                  ? (data.github_connection_id ?? null)
+                  : null,
+                vc_external:
+                  projectVcExternalFromGithubRepo(data.github_repo) ??
+                  Prisma.DbNull,
+                figma_url: data.figma_url ?? null,
                 logo_url: data.logo_url ?? null,
                 cover_picture: data.cover_picture ?? null,
                 attributes_config:
@@ -701,6 +758,21 @@ export class ProjectsRepository {
               });
             }
 
+            if (
+              data.integration_bindings &&
+              data.integration_bindings.length > 0
+            ) {
+              await tx.project_integration_bindings.createMany({
+                data: data.integration_bindings.map((binding) => ({
+                  project_id: project.id,
+                  integration_id: binding.integration_id,
+                  is_default_for_project: binding.is_default_for_project,
+                  created_by: actorId,
+                  updated_by: actorId,
+                })),
+              });
+            }
+
             return project;
           },
           {
@@ -758,7 +830,8 @@ export class ProjectsRepository {
     removedTypes: WorkItemType[],
     keptTypes: WorkItemType[],
     customHierarchy?: Record<string, string | null> | null,
-    previewLimitPerType = 100
+    previewLimitPerType = 100,
+    typeDefs?: ProjectWorkItemTypeDef[] | null
   ): Promise<{
     groups: Array<{
       type: WorkItemType;
@@ -781,9 +854,11 @@ export class ProjectsRepository {
       return { groups: [], totalAffected: 0 };
     }
 
+    const hierarchyTypes = [...keptTypes, ...removedTypes];
     const { parentToChild } = resolveProjectHierarchy(
-      [...keptTypes, ...removedTypes],
-      customHierarchy
+      hierarchyTypes,
+      customHierarchy,
+      typeDefs ?? buildDefaultProjectTypeDefs(hierarchyTypes)
     );
 
     const items = await prisma.work_items.findMany({
@@ -798,7 +873,7 @@ export class ProjectsRepository {
         status: true,
         record_status: true,
         parent_id: true,
-        jira_issue_key: true,
+        pm_external: true,
         parent: { select: { id: true, title: true } },
       },
       orderBy: [{ type: 'asc' }, { title: 'asc' }],
@@ -821,7 +896,7 @@ export class ProjectsRepository {
           record_status: item.record_status,
           parent_id: item.parent_id,
           parent_title: item.parent?.title ?? null,
-          jira_issue_key: item.jira_issue_key,
+          jira_issue_key: jiraIssueKeyFromPmExternal(item.pm_external),
         })),
       };
     });
@@ -840,7 +915,8 @@ export class ProjectsRepository {
     projectId: string,
     allowedTypes: WorkItemType[],
     strategies: TypeRemovalStrategy[],
-    customHierarchy?: Record<string, string | null> | null
+    customHierarchy?: Record<string, string | null> | null,
+    typeDefs?: ProjectWorkItemTypeDef[] | null
   ): Promise<{
     detachedCount: number;
     deletedCount: number;
@@ -870,10 +946,12 @@ export class ProjectsRepository {
       affected
     );
 
+    const defs = typeDefs ?? buildDefaultProjectTypeDefs(allowedTypes);
     detachedCount += await pruneInvalidHierarchyLinks(
       projectId,
       allowedTypes,
-      customHierarchy
+      customHierarchy,
+      defs
     );
 
     return { detachedCount, deletedCount, migratedCount };
@@ -937,21 +1015,32 @@ export class ProjectsRepository {
     projectId: string,
     issues: { key: string; parentKey?: string | null }[],
     hierarchy?: Record<string, string | null> | null,
-    allowedTypes?: WorkItemType[] | null
+    allowedTypes?: WorkItemType[] | null,
+    typeDefs?: ProjectWorkItemTypeDef[] | null
   ): Promise<void> {
     const allWorkItems = await prisma.work_items.findMany({
       where: { project_id: projectId },
-      select: { id: true, jira_issue_key: true, parent_id: true, type: true },
+      select: { id: true, pm_external: true, parent_id: true, type: true },
     });
 
     const keyToItemMap = new Map<string, (typeof allWorkItems)[number]>();
     for (const item of allWorkItems) {
-      if (item.jira_issue_key) {
-        keyToItemMap.set(item.jira_issue_key, item);
+      const issueKey = jiraIssueKeyFromPmExternal(item.pm_external);
+      if (issueKey) {
+        keyToItemMap.set(issueKey, item);
       }
     }
 
-    const { parentToChild } = resolveProjectHierarchy(allowedTypes, hierarchy);
+    const defs =
+      typeDefs ??
+      (allowedTypes && allowedTypes.length > 0
+        ? buildDefaultProjectTypeDefs(allowedTypes)
+        : null);
+    const { parentToChild } = resolveProjectHierarchy(
+      allowedTypes,
+      hierarchy,
+      defs
+    );
 
     const parentLinkUpdates: { childId: string; parentId: string }[] = [];
     for (const issue of issues) {

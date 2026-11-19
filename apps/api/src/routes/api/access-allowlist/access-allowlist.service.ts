@@ -1,4 +1,6 @@
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { enqueueDestructiveAction } from '../../../lib/enqueue-destructive-action';
+import { OptimisticLockError } from '../../../lib/optimistic-lock';
 import {
   UserRoleEnum,
   RecordStatusEnum,
@@ -14,6 +16,7 @@ import {
   type AccessAllowlistPaginatedList,
   type AccessAllowlistRow,
   type AccessAllowlistStatus,
+  type AccessAllowlistTransaction,
 } from './access-allowlist.repository';
 import { notifyAllowlistedEmail } from './notify-allowlisted-email';
 import type { AccessRequestsService } from '../access-requests/access-requests.service';
@@ -63,6 +66,7 @@ export type CreateAccessAllowlistInput = {
   expires_at?: string | null;
   allowed_project_ids?: string[] | null;
   status?: AccessAllowlistStatus;
+  requestId?: string;
 };
 
 export type UpdateAccessAllowlistInput = {
@@ -120,24 +124,53 @@ export class AccessAllowlistService {
       }
     }
 
-    const entry = await this.accessAllowlistRepository.create({
-      actorId,
-      kind: input.kind,
-      value: input.value,
-      label: input.label,
-      expires_at: input.expires_at,
-      allowed_project_ids: input.allowed_project_ids,
-      status: input.status ?? RecordStatusEnum.active,
-    });
+    const status = input.status ?? RecordStatusEnum.active;
+    const createEntry = (transaction?: AccessAllowlistTransaction) =>
+      this.accessAllowlistRepository.create(
+        {
+          actorId,
+          kind: input.kind,
+          value: input.value,
+          label: input.label,
+          expires_at: input.expires_at,
+          allowed_project_ids: input.allowed_project_ids,
+          status,
+        },
+        transaction
+      );
+
+    const accessRequestsService = this.accessRequestsService;
+    let entry: AccessAllowlistRow;
+    if (
+      input.kind === 'email' &&
+      status === RecordStatusEnum.active &&
+      accessRequestsService
+    ) {
+      entry = await this.accessAllowlistRepository.withTransaction(
+        async (transaction) => {
+          const created = await createEntry(transaction);
+          if (input.requestId) {
+            await accessRequestsService.markGrantedForRequest(
+              actorId,
+              input.requestId,
+              created.value,
+              transaction
+            );
+          } else {
+            await accessRequestsService.markGrantedForEmail(
+              actorId,
+              created.value,
+              transaction
+            );
+          }
+          return created;
+        }
+      );
+    } else {
+      entry = await createEntry();
+    }
 
     await notifyIfEmailAllowlisted(entry);
-
-    if (entry.kind === 'email' && this.accessRequestsService) {
-      await this.accessRequestsService.markGrantedForEmail(
-        actorId,
-        entry.value
-      );
-    }
 
     return entry;
   }
@@ -155,27 +188,47 @@ export class AccessAllowlistService {
       nextStatus: input.status,
     });
 
-    const entry = await this.accessAllowlistRepository.update({
-      actorId,
-      id,
-      label: input.label,
-      expires_at: input.expires_at,
-      allowed_project_ids: input.allowed_project_ids,
-      status: input.status,
-      expectedUpdatedAt: input.expectedUpdatedAt,
-    });
+    const updateEntry = (transaction?: AccessAllowlistTransaction) =>
+      this.accessAllowlistRepository.update(
+        {
+          actorId,
+          id,
+          label: input.label,
+          expires_at: input.expires_at,
+          allowed_project_ids: input.allowed_project_ids,
+          status: input.status,
+          expectedUpdatedAt: input.expectedUpdatedAt,
+        },
+        transaction
+      );
+    const isReactivatingEmail =
+      previous.kind === 'email' &&
+      input.status === RecordStatusEnum.active &&
+      previous.status !== RecordStatusEnum.active;
+    const accessRequestsService = this.accessRequestsService;
+
+    let entry: AccessAllowlistRow;
+    if (isReactivatingEmail && accessRequestsService) {
+      entry = await this.accessAllowlistRepository.withTransaction(
+        async (transaction) => {
+          const updated = await updateEntry(transaction);
+          await accessRequestsService.markGrantedForEmail(
+            actorId,
+            updated.value,
+            transaction
+          );
+          return updated;
+        }
+      );
+    } else {
+      entry = await updateEntry();
+    }
 
     if (
       input.status === RecordStatusEnum.active &&
       previous.status !== RecordStatusEnum.active
     ) {
       await notifyIfEmailAllowlisted(entry);
-      if (entry.kind === 'email' && this.accessRequestsService) {
-        await this.accessRequestsService.markGrantedForEmail(
-          actorId,
-          entry.value
-        );
-      }
     }
 
     return entry;
@@ -192,6 +245,39 @@ export class AccessAllowlistService {
     return await this.accessAllowlistRepository.hardDelete({
       id,
       expectedUpdatedAt,
+    });
+  }
+
+  /**
+   * Validate sync, accept permanent delete, finish in the background,
+   * inbox-notify. Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueDeleteAccessAllowlist(
+    actorId: string,
+    id: string,
+    expectedUpdatedAt: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    const { actor, entry } = await this.requireAdminAllowlistEntry(actorId, id);
+    rejectOwnDomainLockout(entry, actor.email, { deleting: true });
+    if (entry.updated_at !== expectedUpdatedAt) {
+      throw new OptimisticLockError(
+        entry,
+        'This allowlist entry was updated by someone else.'
+      );
+    }
+
+    const entityLabel = entry.label?.trim() || entry.value;
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'purge',
+      entityType: 'access_allowlist',
+      entityLabel,
+      relatedItemId: null,
+      detailHref: '/users?tab=allowlist',
+      run: async () => {
+        await this.deleteAccessAllowlist(actorId, id, expectedUpdatedAt);
+      },
     });
   }
 }

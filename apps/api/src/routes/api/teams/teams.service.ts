@@ -1,4 +1,6 @@
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { enqueueDestructiveAction } from '../../../lib/enqueue-destructive-action';
+import { OptimisticLockError } from '../../../lib/optimistic-lock';
 import {
   RecordStatusEnum,
   UserRoleEnum,
@@ -139,6 +141,40 @@ export class TeamsService {
     );
   }
 
+  /**
+   * Validate sync, accept archive, finish in the background, inbox-notify.
+   * Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueSoftDeleteTeam(
+    actorId: string,
+    teamId: string,
+    expectedUpdatedAt: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    await requireTeamManager(actorId);
+    const team = await this.teamsRepository.findById(teamId);
+    if (!team) {
+      throw new Error('Team not found');
+    }
+    if (team.updated_at !== expectedUpdatedAt) {
+      throw new OptimisticLockError(
+        team,
+        'This team was updated by someone else.'
+      );
+    }
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'archive',
+      entityType: 'team',
+      entityLabel: team.name,
+      relatedItemId: teamId,
+      detailHref: '/manager',
+      run: async () => {
+        await this.softDeleteTeam(actorId, teamId, expectedUpdatedAt);
+      },
+    });
+  }
+
   async restoreTeam(
     actorId: string,
     teamId: string,
@@ -177,5 +213,32 @@ export class TeamsService {
     await requireAdmin(actorId);
 
     await this.teamsRepository.delete(teamId);
+  }
+
+  /**
+   * Validate sync, accept permanent delete, finish in the background,
+   * inbox-notify. Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueHardDeleteTeam(
+    actorId: string,
+    teamId: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    await requireAdmin(actorId);
+    const team = await this.teamsRepository.findById(teamId);
+    if (!team) {
+      throw new Error('Team not found');
+    }
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'purge',
+      entityType: 'team',
+      entityLabel: team.name,
+      relatedItemId: null,
+      detailHref: '/manager?tab=archived',
+      run: async () => {
+        await this.hardDeleteTeam(actorId, teamId);
+      },
+    });
   }
 }

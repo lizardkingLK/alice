@@ -15,7 +15,6 @@ import {
   type WorkflowEdge,
   type WorkflowOrphanedStatesConflict,
   type WorkflowResolutionPreset,
-  type WorkflowStateNode,
   type WorkflowStateRemap,
 } from '@repo/types/api/v1';
 import { Button } from '@repo/ui/components/ui/button';
@@ -57,10 +56,12 @@ import {
 } from '@repo/ui/components/ui/tooltip';
 import {
   CircleHelp,
+  Download,
   GitBranch,
   GitFork,
   Kanban,
   Lock,
+  Plus,
   RotateCcw,
   Save,
   Star,
@@ -71,12 +72,18 @@ import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-
 import { ApiError } from '@/lib/api/api-fetch.helper';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
+import { invalidateProjectDropdownCache } from '@/app/projects/_services/projects.cache.actions.server';
 import {
   deleteProjectWorkflow,
   forkProjectWorkflow,
+  importProjectWorkflow,
   putProjectWorkflowConfig,
   setDefaultProjectWorkflow,
 } from '@/app/projects/_services/projects.workflow-config.client';
+import {
+  WorkflowImportDialog,
+  type WorkflowImportSubmitInput,
+} from '@/app/projects/_components/project-details/workflow-import-dialog';
 import { WorkflowOrphanedStatesDialog } from '@/app/projects/_components/project-details/workflow-orphaned-states-dialog';
 import { WorkflowStateFlowNode } from '@/app/projects/_components/project-details/workflow-state-flow-node';
 import { WorkflowTransitionEdge } from '@/app/projects/_components/project-details/workflow-transition-edge';
@@ -111,6 +118,7 @@ import {
   updateEdgeHandlesInDocument,
   workflowDocumentToFlowElements,
   workflowFlowEdgePresentation,
+  type WorkflowStateDocumentPatch,
   type WorkflowStateClipboard,
 } from '@/app/projects/_helpers/workflow-designer.layout';
 import {
@@ -169,6 +177,7 @@ type WorkflowManageResult = {
   readonly config: WorkflowConfigEnvelope;
   readonly updatedAt: string;
   readonly forkedWorkflowId?: string;
+  readonly importedWorkflowId?: string;
 };
 
 /* eslint-disable no-unused-vars -- callback parameter names document the payload */
@@ -237,6 +246,8 @@ function WorkflowDesignerCanvas({
               category: state.category,
               lockRecord: state.lockRecord,
               terminal: state.terminal,
+              acceptFromAnyState: state.acceptFromAnyState,
+              allowToAnyState: state.allowToAnyState,
             }
           : node.data,
       };
@@ -373,6 +384,7 @@ export function WorkflowDesignerWorkspace({
   const [isSaving, setIsSaving] = useState(false);
   const [isManaging, setIsManaging] = useState(false);
   const [deleteWorkflowOpen, setDeleteWorkflowOpen] = useState(false);
+  const [importWorkflowOpen, setImportWorkflowOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [messageIsError, setMessageIsError] = useState(false);
@@ -468,15 +480,7 @@ export function WorkflowDesignerWorkspace({
   );
 
   const handleStateChange = useCallback(
-    (
-      stateId: string,
-      patch: Partial<
-        Pick<
-          WorkflowStateNode,
-          'name' | 'category' | 'lockRecord' | 'terminal' | 'requiresEscalation'
-        >
-      >
-    ) => {
+    (stateId: string, patch: WorkflowStateDocumentPatch) => {
       const coalesceKey =
         'name' in patch
           ? `state-name:${stateId}`
@@ -793,6 +797,12 @@ export function WorkflowDesignerWorkspace({
       setMessage(options.successMessage);
       setMessageIsError(false);
       toast.success(options.successMessage, { duration: SUCCESS_FEEDBACK_MS });
+      invalidateProjectDropdownCache().catch((error: unknown) => {
+        console.warn(
+          'warn. failed to invalidate project dropdown cache after workflow save:',
+          error
+        );
+      });
       router.refresh();
     },
     [resetUndo, router]
@@ -1022,6 +1032,23 @@ export function WorkflowDesignerWorkspace({
     ).catch(() => {
       /* errors surfaced in runManageAction */
     });
+  };
+
+  const handleImportWorkflow = (input: WorkflowImportSubmitInput) => {
+    runManageAction(
+      (expectedUpdatedAt) =>
+        importProjectWorkflow(project.id, expectedUpdatedAt, input),
+      input.markAsDefault
+        ? 'Workflow imported and marked as default.'
+        : 'Workflow imported.',
+      (result) => result.importedWorkflowId
+    )
+      .then(() => {
+        setImportWorkflowOpen(false);
+      })
+      .catch(() => {
+        /* errors surfaced in runManageAction */
+      });
   };
 
   const handleMarkDefault = () => {
@@ -1285,6 +1312,19 @@ export function WorkflowDesignerWorkspace({
               type="button"
               variant="outline"
               size="sm"
+              disabled={manageBusy}
+              data-testid="workflow-designer-import"
+              onClick={() => {
+                setImportWorkflowOpen(true);
+              }}
+            >
+              <Download data-icon="inline-start" className="size-4" />
+              Import
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
               disabled={manageBusy || isDefaultWorkflow}
               data-testid="workflow-designer-mark-default"
               onClick={handleMarkDefault}
@@ -1296,7 +1336,6 @@ export function WorkflowDesignerWorkspace({
               type="button"
               variant="outline"
               size="sm"
-              className="text-destructive hover:text-destructive"
               disabled={manageBusy || !canDeleteWorkflow}
               data-testid="workflow-designer-delete"
               onClick={() => {
@@ -1313,7 +1352,7 @@ export function WorkflowDesignerWorkspace({
       <div className="flex h-[min(560px,calc(100dvh-16rem))] min-h-80 gap-4 pb-2">
         <ContextMenu>
           <ContextMenuTrigger asChild>
-            <div className="min-h-0 min-w-0 flex-1">
+            <div className="relative min-h-0 min-w-0 flex-1">
               <ReactFlowProvider>
                 <WorkflowDesignerCanvas
                   key={`${activeWorkflow.id}:${canvasEpoch}`}
@@ -1327,6 +1366,25 @@ export function WorkflowDesignerWorkspace({
                   onReconnect={handleReconnect}
                 />
               </ReactFlowProvider>
+              {canEdit ? (
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        className="absolute right-4 bottom-36 z-10 size-10 rounded-full shadow-md"
+                        aria-label="Add state"
+                        data-testid="workflow-designer-add-state-fab"
+                        onClick={handleAddState}
+                      >
+                        <Plus className="size-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">Add state</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : null}
             </div>
           </ContextMenuTrigger>
           <WorkflowDesignerContextMenuContent
@@ -1404,6 +1462,14 @@ export function WorkflowDesignerWorkspace({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <WorkflowImportDialog
+        open={importWorkflowOpen}
+        onOpenChange={setImportWorkflowOpen}
+        currentProjectId={project.id}
+        busy={manageBusy}
+        onImport={handleImportWorkflow}
+      />
     </div>
   );
 }

@@ -3,15 +3,34 @@ import {
   ACCESS_REQUEST_IDEMPOTENCY_MS,
   ACCESS_REQUEST_LIMIT_MESSAGE,
   ACCESS_REQUEST_MAX_SUBMISSIONS,
+  RecordStatusEnum,
   UserRoleEnum,
+  emailDomainFromAddress,
   isAccessRequestContactTitle,
   normalizeAccessRequestEmail,
   parseRequestedProjectKeysInput,
+  type AccessRequestGrantInput,
   type ContactRequestInput,
 } from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
-import { AccessRequestsRepository } from './access-requests.repository';
+import { enqueueDestructiveAction } from '../../../lib/enqueue-destructive-action';
+import { randomUUID } from 'node:crypto';
+import { prisma } from '../../../lib/prisma';
+import { prismaAuditCreate } from '../../../lib/prisma-audit';
+import {
+  AccessRequestsRepository,
+  type AccessRequestRow,
+  type AccessRequestsTransaction,
+} from './access-requests.repository';
 import type { NotificationsRepository } from '../notifications/notifications.repository';
+import type { AccessAllowlistRepository } from '../access-allowlist/access-allowlist.repository';
+import { notifyAllowlistedEmail } from '../access-allowlist/notify-allowlisted-email';
+import type { ProjectsRepository } from '../projects/projects.repository';
+import type { UserRow, UsersRepository } from '../users/users.repository';
+import {
+  buildProjectMemberAddedEmail,
+  type ProjectMemberEmailSender,
+} from '../projects/project-member-email';
 
 async function requireAdmin(actorId: string) {
   return requireUserWithRole(
@@ -30,10 +49,302 @@ function requestedKeysFromContact(
   return parseRequestedProjectKeysInput(input.requestedProjectKeys);
 }
 
+export type AccessRequestsGrantDeps = {
+  readonly accessAllowlistRepository: AccessAllowlistRepository;
+  readonly projectsRepository: ProjectsRepository;
+  readonly usersRepository: UsersRepository;
+  readonly projectMemberEmailSender: ProjectMemberEmailSender;
+  readonly frontendUrl: string;
+};
+
+function requireExistingRequest(
+  existing: AccessRequestRow | null
+): AccessRequestRow {
+  if (!existing) {
+    throw new Error('Access request not found');
+  }
+  return existing;
+}
+
+/** Pending or denied — denied supports re-grant from Edit. */
+function requireGrantableRequest(
+  existing: AccessRequestRow | null
+): AccessRequestRow {
+  const row = requireExistingRequest(existing);
+  if (row.status !== 'pending' && row.status !== 'denied') {
+    throw new Error('Only pending or denied access requests can be granted.');
+  }
+  return row;
+}
+
+/** Pending (simple deny) or granted (revoke memberships + email ACL). */
+function requireDeniableRequest(
+  existing: AccessRequestRow | null
+): AccessRequestRow {
+  const row = requireExistingRequest(existing);
+  if (row.status !== 'pending' && row.status !== 'granted') {
+    throw new Error('Only pending or granted access requests can be denied.');
+  }
+  return row;
+}
+
+function uniqueGrantProjectIds(input: AccessRequestGrantInput): string[] {
+  const projectIds = [...new Set(input.projects.map((row) => row.projectId))];
+  if (projectIds.length === 0) {
+    throw new Error('Select at least one project to grant.');
+  }
+  return projectIds;
+}
+
+async function assertAccessibleProjectIds(
+  projectsRepository: ProjectsRepository,
+  actorId: string,
+  projectIds: readonly string[]
+): Promise<void> {
+  const accessibleIds =
+    await projectsRepository.listAccessibleProjectIds(actorId);
+  const accessibleSet = new Set(accessibleIds);
+  const unauthorized = projectIds.some((id) => !accessibleSet.has(id));
+  if (unauthorized) {
+    throw new Error(
+      'Unauthorized. You can only grant projects you can access.'
+    );
+  }
+}
+
+type GrantProject = {
+  readonly id: string;
+  readonly key: string;
+  readonly name: string;
+};
+
+async function loadProjectsById(
+  projectIds: readonly string[]
+): Promise<Map<string, GrantProject>> {
+  const projectRows = await prisma.projects.findMany({
+    where: { id: { in: [...projectIds] } },
+    select: { id: true, key: true, name: true },
+  });
+  if (projectRows.length !== projectIds.length) {
+    throw new Error('One or more selected projects were not found.');
+  }
+  return new Map(projectRows.map((row) => [row.id, row]));
+}
+
+function memberProjectIdsForGrant(
+  coveringDomain: unknown,
+  projectIds: readonly string[],
+  input: AccessRequestGrantInput
+): string[] {
+  if (coveringDomain) {
+    return [...projectIds];
+  }
+  return input.projects
+    .filter((row) => row.addMember)
+    .map((row) => row.projectId);
+}
+
+async function resolveRequesterUser(
+  usersRepository: UsersRepository,
+  email: string,
+  memberProjectIds: readonly string[]
+): Promise<UserRow | null> {
+  if (memberProjectIds.length === 0) {
+    return null;
+  }
+  const user = await usersRepository.findByEmail(email);
+  if (!user) {
+    throw new Error(
+      'No Alice user exists for this email yet. Ask them to complete sign-up once, or invite them from Users, then grant again.'
+    );
+  }
+  return user;
+}
+
+async function notifyAllowlistedEmailQuietly(email: string): Promise<void> {
+  try {
+    await notifyAllowlistedEmail(email);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('error. allowlist admission email failed:', message);
+  }
+}
+
+async function createEmailAllowlistForGrant(
+  accessAllowlistRepository: AccessAllowlistRepository,
+  params: {
+    readonly actorId: string;
+    readonly email: string;
+    readonly label: string | null;
+    readonly projectIds: readonly string[];
+    readonly projectById: ReadonlyMap<string, GrantProject>;
+  },
+  transaction: AccessRequestsTransaction
+): Promise<string | null> {
+  const allowedKeys = params.projectIds
+    .map((id) => params.projectById.get(id)?.key)
+    .filter((key): key is string => Boolean(key));
+
+  const existing = await accessAllowlistRepository.findEmailByValue(
+    params.email,
+    transaction
+  );
+
+  if (existing) {
+    const wasInactive = existing.status !== RecordStatusEnum.active;
+    await accessAllowlistRepository.update(
+      {
+        actorId: params.actorId,
+        id: existing.id,
+        label: params.label,
+        expires_at: null,
+        allowed_project_ids: allowedKeys,
+        status: RecordStatusEnum.active,
+        expectedUpdatedAt: existing.updated_at,
+      },
+      transaction
+    );
+    return wasInactive ? existing.value : null;
+  }
+
+  const entry = await accessAllowlistRepository.create(
+    {
+      actorId: params.actorId,
+      kind: 'email',
+      value: params.email,
+      label: params.label,
+      expires_at: null,
+      allowed_project_ids: allowedKeys,
+      status: RecordStatusEnum.active,
+    },
+    transaction
+  );
+
+  return entry.value;
+}
+
+async function deactivateEmailAllowlistForDeny(
+  accessAllowlistRepository: AccessAllowlistRepository,
+  params: { readonly actorId: string; readonly email: string },
+  transaction: AccessRequestsTransaction
+): Promise<void> {
+  const existing = await accessAllowlistRepository.findEmailByValue(
+    params.email,
+    transaction
+  );
+  if (existing?.status !== RecordStatusEnum.active) {
+    return;
+  }
+  await accessAllowlistRepository.update(
+    {
+      actorId: params.actorId,
+      id: existing.id,
+      status: RecordStatusEnum.inactive,
+      expectedUpdatedAt: existing.updated_at,
+    },
+    transaction
+  );
+}
+
+async function revokeSharedMembershipsForDeny(
+  projectsRepository: ProjectsRepository,
+  params: {
+    readonly actorId: string;
+    readonly requesterUserId: string;
+  }
+): Promise<string[]> {
+  const [accessibleIds, memberIds] = await Promise.all([
+    projectsRepository.listAccessibleProjectIds(params.actorId),
+    projectsRepository.listActiveMemberProjectIds(params.requesterUserId),
+  ]);
+  const accessibleSet = new Set(accessibleIds);
+  const revokeIds = memberIds.filter((id) => accessibleSet.has(id));
+  await Promise.all(
+    revokeIds.map((projectId) =>
+      projectsRepository.removeMember(projectId, params.requesterUserId)
+    )
+  );
+  return revokeIds;
+}
+
+async function ensureGrantProjectMemberships(
+  transaction: AccessRequestsTransaction,
+  params: {
+    readonly actorId: string;
+    readonly requesterUserId: string;
+    readonly memberProjectIds: readonly string[];
+  }
+): Promise<Array<{ projectId: string; eventId: string }>> {
+  const { actorId, requesterUserId, memberProjectIds } = params;
+  const createdMemberships: Array<{ projectId: string; eventId: string }> = [];
+
+  async function createNextMembership(index: number): Promise<void> {
+    const projectId = memberProjectIds[index];
+    if (projectId === undefined) {
+      return;
+    }
+
+    const eventId = randomUUID();
+    const result = await transaction.project_members.createMany({
+      data: [
+        {
+          project_id: projectId,
+          user_id: requesterUserId,
+          ...prismaAuditCreate(actorId),
+        },
+      ],
+      skipDuplicates: true,
+    });
+    if (result.count === 1) {
+      createdMemberships.push({ projectId, eventId });
+    }
+
+    // Preserve stop-on-first-error ordering inside the transaction.
+    await createNextMembership(index + 1);
+  }
+
+  await createNextMembership(0);
+  return createdMemberships;
+}
+
+async function notifyProjectMembershipsQuietly(params: {
+  readonly sender: ProjectMemberEmailSender;
+  readonly user: UserRow;
+  readonly projectById: ReadonlyMap<string, GrantProject>;
+  readonly frontendUrl: string;
+  readonly memberships: ReadonlyArray<{
+    projectId: string;
+    eventId: string;
+  }>;
+}): Promise<void> {
+  await Promise.all(
+    params.memberships.map(async ({ projectId, eventId }) => {
+      try {
+        const project = params.projectById.get(projectId);
+        if (!project) {
+          throw new Error('Project not found for membership notification.');
+        }
+        const email = buildProjectMemberAddedEmail({
+          recipientEmail: params.user.email,
+          recipientName: params.user.name,
+          projectKey: project.key,
+          projectName: project.name,
+          frontendUrl: params.frontendUrl,
+          notificationEventId: eventId,
+        });
+        await params.sender.send(email);
+      } catch {
+        console.error('error. project member email notification failed');
+      }
+    })
+  );
+}
+
 export class AccessRequestsService {
   constructor(
     private readonly accessRequestsRepository: AccessRequestsRepository,
-    private readonly notificationsRepository: NotificationsRepository
+    private readonly notificationsRepository: NotificationsRepository,
+    private readonly grantDeps?: AccessRequestsGrantDeps
   ) {}
 
   async submitFromContact(
@@ -126,44 +437,336 @@ export class AccessRequestsService {
 
   async denyAccessRequest(actorId: string, requestId: string) {
     await requireAdmin(actorId);
+    if (!this.grantDeps) {
+      throw new Error('Access request grant is not configured.');
+    }
+
+    const { accessAllowlistRepository, projectsRepository, usersRepository } =
+      this.grantDeps;
+
+    const existing = requireDeniableRequest(
+      await this.accessRequestsRepository.findById(requestId)
+    );
+
+    if (existing.status === 'pending') {
+      const resolved =
+        await this.accessRequestsRepository.resolvePendingAndArchive({
+          id: requestId,
+          status: 'denied',
+          actorId,
+        });
+      if (!resolved) {
+        throw new Error('This access request is already resolved.');
+      }
+      return;
+    }
+
+    const user = await usersRepository.findByEmail(existing.requester_email);
+    if (user) {
+      await revokeSharedMembershipsForDeny(projectsRepository, {
+        actorId,
+        requesterUserId: user.id,
+      });
+    }
+
+    await accessAllowlistRepository.withTransaction(async (transaction) => {
+      const current = requireExistingRequest(
+        await this.accessRequestsRepository.findById(requestId, transaction)
+      );
+      if (
+        current.status !== 'granted' ||
+        normalizeAccessRequestEmail(current.requester_email) !==
+          normalizeAccessRequestEmail(existing.requester_email)
+      ) {
+        throw new Error('This access request is already resolved.');
+      }
+
+      await deactivateEmailAllowlistForDeny(
+        accessAllowlistRepository,
+        { actorId, email: current.requester_email },
+        transaction
+      );
+
+      const resolved =
+        await this.accessRequestsRepository.resolveFromStatusAndArchive(
+          {
+            id: requestId,
+            expectedStatus: 'granted',
+            status: 'denied',
+            actorId,
+          },
+          transaction
+        );
+      if (!resolved) {
+        throw new Error('This access request is already resolved.');
+      }
+    });
+  }
+
+  /**
+   * Projects where the requester is a member and the actor can access —
+   * shown in Edit when status is granted (revoke candidates).
+   */
+  async listSharedMembershipProjects(actorId: string, requestId: string) {
+    await requireAdmin(actorId);
+    if (!this.grantDeps) {
+      throw new Error('Access request grant is not configured.');
+    }
+
+    const { projectsRepository, usersRepository } = this.grantDeps;
+    const existing = requireExistingRequest(
+      await this.accessRequestsRepository.findById(requestId)
+    );
+
+    const user = await usersRepository.findByEmail(existing.requester_email);
+    if (!user) {
+      return [] as Array<{ id: string; key: string; name: string }>;
+    }
+
+    const [accessibleIds, memberIds] = await Promise.all([
+      projectsRepository.listAccessibleProjectIds(actorId),
+      projectsRepository.listActiveMemberProjectIds(user.id),
+    ]);
+    const accessibleSet = new Set(accessibleIds);
+    const sharedIds = memberIds.filter((id) => accessibleSet.has(id));
+    if (sharedIds.length === 0) {
+      return [];
+    }
+
+    const rows = await prisma.projects.findMany({
+      where: { id: { in: sharedIds } },
+      select: { id: true, key: true, name: true },
+      orderBy: { key: 'asc' },
+    });
+    return rows;
+  }
+
+  async deleteAccessRequest(actorId: string, requestId: string) {
+    await requireAdmin(actorId);
 
     const existing = await this.accessRequestsRepository.findById(requestId);
+    if (!existing) {
+      throw new Error('Access request not found');
+    }
+
+    await this.accessRequestsRepository.archiveNotificationsForRequest(
+      requestId
+    );
+    await this.accessRequestsRepository.deleteById(requestId);
+  }
+
+  /**
+   * Validate sync, accept permanent delete, finish in the background,
+   * inbox-notify. Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueDeleteAccessRequest(
+    actorId: string,
+    requestId: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    await requireAdmin(actorId);
+
+    const existing = await this.accessRequestsRepository.findById(requestId);
+    if (!existing) {
+      throw new Error('Access request not found');
+    }
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'purge',
+      entityType: 'access_request',
+      entityLabel: existing.requester_email,
+      relatedItemId: null,
+      detailHref: '/users?tab=requests',
+      run: async () => {
+        await this.deleteAccessRequest(actorId, requestId);
+      },
+    });
+  }
+
+  async grantAccessRequest(
+    actorId: string,
+    requestId: string,
+    input: AccessRequestGrantInput
+  ) {
+    await requireAdmin(actorId);
+    if (!this.grantDeps) {
+      throw new Error('Access request grant is not configured.');
+    }
+
+    const {
+      accessAllowlistRepository,
+      projectsRepository,
+      usersRepository,
+      projectMemberEmailSender,
+      frontendUrl,
+    } = this.grantDeps;
+
+    const existing = requireGrantableRequest(
+      await this.accessRequestsRepository.findById(requestId)
+    );
+    const projectIds = uniqueGrantProjectIds(input);
+    await assertAccessibleProjectIds(projectsRepository, actorId, projectIds);
+    const projectById = await loadProjectsById(projectIds);
+
+    const domain = emailDomainFromAddress(existing.requester_email);
+    const coveringDomain = domain
+      ? await accessAllowlistRepository.findActiveDomainByValue(domain)
+      : null;
+
+    const memberProjectIds = memberProjectIdsForGrant(
+      coveringDomain,
+      projectIds,
+      input
+    );
+    const requesterUser = await resolveRequesterUser(
+      usersRepository,
+      existing.requester_email,
+      memberProjectIds
+    );
+
+    const result = await accessAllowlistRepository.withTransaction(
+      async (transaction) => {
+        const current = requireGrantableRequest(
+          await this.accessRequestsRepository.findById(requestId, transaction)
+        );
+        if (
+          current.status !== existing.status ||
+          normalizeAccessRequestEmail(current.requester_email) !==
+            normalizeAccessRequestEmail(existing.requester_email)
+        ) {
+          throw new Error('This access request is already resolved.');
+        }
+
+        const notificationEmail = coveringDomain
+          ? null
+          : await createEmailAllowlistForGrant(
+              accessAllowlistRepository,
+              {
+                actorId,
+                email: current.requester_email,
+                label: current.requester_name,
+                projectIds,
+                projectById,
+              },
+              transaction
+            );
+
+        const createdMemberships = requesterUser
+          ? await ensureGrantProjectMemberships(transaction, {
+              actorId,
+              requesterUserId: requesterUser.id,
+              memberProjectIds,
+            })
+          : [];
+
+        const resolved =
+          current.status === 'pending'
+            ? await this.accessRequestsRepository.resolvePendingAndArchive(
+                {
+                  id: requestId,
+                  status: 'granted',
+                  actorId,
+                },
+                transaction
+              )
+            : await this.accessRequestsRepository.resolveFromStatusAndArchive(
+                {
+                  id: requestId,
+                  expectedStatus: 'denied',
+                  status: 'granted',
+                  actorId,
+                },
+                transaction
+              );
+        if (!resolved) {
+          throw new Error('This access request is already resolved.');
+        }
+
+        return { notificationEmail, createdMemberships };
+      }
+    );
+
+    if (result.notificationEmail) {
+      await notifyAllowlistedEmailQuietly(result.notificationEmail);
+    }
+    if (requesterUser && result.createdMemberships.length > 0) {
+      await notifyProjectMembershipsQuietly({
+        sender: projectMemberEmailSender,
+        user: requesterUser,
+        projectById,
+        frontendUrl,
+        memberships: result.createdMemberships,
+      });
+    }
+  }
+
+  async markGrantedForRequest(
+    actorId: string,
+    requestId: string,
+    email: string,
+    transaction?: AccessRequestsTransaction
+  ): Promise<void> {
+    const normalized = normalizeAccessRequestEmail(email);
+    const existing = await this.accessRequestsRepository.findById(
+      requestId,
+      transaction
+    );
     if (!existing) {
       throw new Error('Access request not found');
     }
     if (existing.status !== 'pending') {
       throw new Error('This access request is already resolved.');
     }
+    if (
+      !normalized ||
+      normalizeAccessRequestEmail(existing.requester_email) !== normalized
+    ) {
+      throw new Error('Access request does not match the allowlist email.');
+    }
 
-    await this.accessRequestsRepository.resolveRequest({
-      id: requestId,
-      status: 'denied',
-      actorId,
-    });
-    await this.accessRequestsRepository.archiveNotificationsForRequest(
-      requestId
-    );
+    const resolved =
+      await this.accessRequestsRepository.resolvePendingAndArchive(
+        {
+          id: requestId,
+          status: 'granted',
+          actorId,
+        },
+        transaction
+      );
+    if (!resolved) {
+      throw new Error('This access request is already resolved.');
+    }
   }
 
-  async markGrantedForEmail(actorId: string, email: string) {
+  async markGrantedForEmail(
+    actorId: string,
+    email: string,
+    transaction?: AccessRequestsTransaction
+  ) {
     const normalized = normalizeAccessRequestEmail(email);
     if (!normalized) {
       return;
     }
 
-    const pending =
-      await this.accessRequestsRepository.findPendingByEmail(normalized);
+    const pending = await this.accessRequestsRepository.findPendingByEmail(
+      normalized,
+      transaction
+    );
     if (!pending) {
       return;
     }
 
-    await this.accessRequestsRepository.resolveRequest({
-      id: pending.id,
-      status: 'granted',
-      actorId,
-    });
-    await this.accessRequestsRepository.archiveNotificationsForRequest(
-      pending.id
-    );
+    const resolved =
+      await this.accessRequestsRepository.resolvePendingAndArchive(
+        {
+          id: pending.id,
+          status: 'granted',
+          actorId,
+        },
+        transaction
+      );
+    if (!resolved) {
+      throw new Error('This access request is already resolved.');
+    }
   }
 }

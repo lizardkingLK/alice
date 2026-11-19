@@ -332,13 +332,16 @@ export function openAiChatCompletionToChatLlmResponse(
 export async function openAiChatCompletionResponseToChatLlmResponse(
   response: Response,
   providerLabel: string,
-  tools?: AliceChatTools
+  tools?: AliceChatTools,
+  signal?: AbortSignal
 ): Promise<ChatLlmResponse> {
   let payload: unknown;
   try {
     payload = await response.json();
   } catch {
+    signal?.throwIfAborted();
     throw invalidResponse(providerLabel);
   }
+  signal?.throwIfAborted();
   return openAiChatCompletionToChatLlmResponse(payload, providerLabel, tools);
 }

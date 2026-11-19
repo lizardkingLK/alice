@@ -14,6 +14,16 @@ Work items carry a single-current **`state`** JSONB placement.
 | [WORKFLOW_IMPLEMENTATION_PLAN.md](./WORKFLOW_IMPLEMENTATION_PLAN.md) | Atomic development steps (Step 3 split 3a/3b/3c), deferred-next backlog | Steps 1–13 Done; N1–N11 next |
 | [WORKFLOW_TESTING.md](./WORKFLOW_TESTING.md)                         | Unit / API / UI test matrix and manual QA                               | Living                       |
 
+## Soft client invalidation
+
+When a manager saves workflow config while other users have the board, work-item
+forms, or details open, those tabs subscribe to Supabase Realtime on `projects`
+and show a soft **Refresh** banner (board with a concrete project selected may
+auto-refresh when no form dialog is open). API transition checks already use
+live DB config; this syncs the UI. Publication migration:
+`add_projects_users_realtime_publication`. Designer saves also invalidate the
+shared project dropdown cache tag.
+
 ## Related
 
 - Board (Kanban runtime; column designer **retired**):

@@ -8,14 +8,18 @@ import {
   auditCreateWithoutStatus,
   auditUpdate,
 } from '@repo/types/audit';
-import { plainTextToCommentDoc, commentContentToPlainText } from '@repo/types';
+import {
+  commentContentToPlainText,
+  plainTextToCommentDoc,
+  slugifyTitle,
+} from '@repo/types';
 import { createClient } from '@supabase/supabase-js';
 import pg from 'pg';
 
 import { env } from './env.js';
 import { dbPackageRoot } from './package-root.js';
+import { seedChatAgents } from './seed-chat-agents.js';
 import { isSeedResetRequested, resetDevData } from './seed-reset.js';
-import { SEED_SQUAD_MEMBERS, squadSeedUsers } from './seed-squad.js';
 
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
@@ -65,7 +69,7 @@ function requireUserId(userIds: UserIds, email: string): string {
   return id;
 }
 
-const ALL_SEED_USERS: SeedUser[] = [...SEED_USERS, ...squadSeedUsers()];
+const ALL_SEED_USERS: SeedUser[] = [...SEED_USERS];
 
 type TiptapMark = { type: string };
 
@@ -263,27 +267,41 @@ async function ensureAuthUser(user: SeedUser): Promise<string> {
 
 async function seedUsers(): Promise<UserIds> {
   const ids = {} as UserIds;
-  let adminId: string | undefined;
 
-  for (const user of ALL_SEED_USERS) {
-    const authId = await ensureAuthUser(user);
+  const authIds = await Promise.all(
+    ALL_SEED_USERS.map(async (user) => {
+      const authId = await ensureAuthUser(user);
+      return { user, authId };
+    })
+  );
 
-    const { data: existing } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', user.email)
-      .maybeSingle();
+  const existingRows = await Promise.all(
+    authIds.map(async ({ user }) => {
+      const { data: existing } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', user.email)
+        .maybeSingle();
+      return { user, existing };
+    })
+  );
 
+  for (const { user, existing } of existingRows) {
     if (existing) {
       ids[user.email] = existing.id;
-      if (user.role === 'admin') {
-        adminId = existing.id;
-      }
-      continue;
     }
+  }
 
-    const actorId = adminId ?? authId;
+  const adminEntry = authIds.find(({ user }) => user.role === 'admin');
+  if (!adminEntry) {
+    throw new Error('Seed requires an admin user.');
+  }
 
+  async function insertPublicUser(
+    user: SeedUser,
+    authId: string,
+    actorId: string
+  ): Promise<void> {
     const { error } = await supabase.from('users').insert({
       id: authId,
       email: user.email,
@@ -299,10 +317,26 @@ async function seedUsers(): Promise<UserIds> {
     }
 
     ids[user.email] = authId;
-    if (user.role === 'admin') {
-      adminId = authId;
-    }
   }
+
+  // After a wipe, insert admin first so other users can FK `created_by` to them.
+  if (!ids[adminEntry.user.email]) {
+    await insertPublicUser(
+      adminEntry.user,
+      adminEntry.authId,
+      adminEntry.authId
+    );
+  }
+
+  const adminActorId = requireUserId(ids, adminEntry.user.email);
+  const remaining = authIds.filter(
+    ({ user }) => user.role !== 'admin' && !ids[user.email]
+  );
+  await Promise.all(
+    remaining.map(({ user, authId }) =>
+      insertPublicUser(user, authId, adminActorId)
+    )
+  );
 
   return ids;
 }
@@ -370,37 +404,58 @@ async function seedTeamMembers(
       })),
   ];
 
-  for (const member of members) {
-    const { data: existing } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('team_id', teamId)
-      .eq('user_id', member.user_id)
-      .maybeSingle();
+  await Promise.all(
+    members.map(async (member) => {
+      const { data: existing } = await supabase
+        .from('team_members')
+        .select('team_id')
+        .eq('team_id', teamId)
+        .eq('user_id', member.user_id)
+        .maybeSingle();
 
-    if (existing) {
-      continue;
-    }
+      if (existing) {
+        return;
+      }
 
-    const { error } = await supabase.from('team_members').insert({
-      team_id: teamId,
-      ...member,
-      ...auditCreate(actorId),
-    });
+      const { error } = await supabase.from('team_members').insert({
+        team_id: teamId,
+        ...member,
+        ...auditCreate(actorId),
+      });
 
-    if (error) {
-      throw new Error(`Failed to seed team member: ${error.message}`);
-    }
-  }
+      if (error) {
+        throw new Error(`Failed to seed team member: ${error.message}`);
+      }
+    })
+  );
 }
 
-async function seedProject(userIds: UserIds, actorId: string): Promise<string> {
+type SeedProjectDef = {
+  readonly name: string;
+  readonly key: string;
+  readonly description: string;
+};
+
+/** Local-dev sample project — keep the set small and stable. */
+const SEED_PROJECTS: readonly SeedProjectDef[] = [
+  {
+    name: 'This',
+    key: 'THIS',
+    description: 'Alice - Product Development',
+  },
+];
+
+async function seedProject(
+  project: SeedProjectDef,
+  userIds: UserIds,
+  actorId: string
+): Promise<string> {
   const ownerId = requireUserId(userIds, 'admin@alice.dev');
 
   const { data: existing } = await supabase
     .from('projects')
     .select('id')
-    .eq('key', 'ALICE')
+    .eq('key', project.key)
     .maybeSingle();
 
   if (existing) {
@@ -410,9 +465,9 @@ async function seedProject(userIds: UserIds, actorId: string): Promise<string> {
   const { data, error } = await supabase
     .from('projects')
     .insert({
-      name: 'Alice Platform',
-      key: 'ALICE',
-      description: '1BT JIRA clone — sample project for local development',
+      name: project.name,
+      key: project.key,
+      description: project.description,
       owner_id: ownerId,
       start_date: '2026-06-01',
       end_date: '2026-12-31',
@@ -423,7 +478,9 @@ async function seedProject(userIds: UserIds, actorId: string): Promise<string> {
     .single();
 
   if (error) {
-    throw new Error(`Failed to seed project: ${error.message}`);
+    throw new Error(
+      `Failed to seed project "${project.key}": ${error.message}`
+    );
   }
 
   return data.id;
@@ -434,30 +491,32 @@ async function seedProjectMembers(
   userIds: UserIds,
   actorId: string
 ): Promise<void> {
-  for (const email of Object.keys(userIds)) {
-    const userId = requireUserId(userIds, email);
+  await Promise.all(
+    Object.keys(userIds).map(async (email) => {
+      const userId = requireUserId(userIds, email);
 
-    const { data: existing } = await supabase
-      .from('project_members')
-      .select('project_id')
-      .eq('project_id', projectId)
-      .eq('user_id', userId)
-      .maybeSingle();
+      const { data: existing } = await supabase
+        .from('project_members')
+        .select('project_id')
+        .eq('project_id', projectId)
+        .eq('user_id', userId)
+        .maybeSingle();
 
-    if (existing) {
-      continue;
-    }
+      if (existing) {
+        return;
+      }
 
-    const { error } = await supabase.from('project_members').insert({
-      project_id: projectId,
-      user_id: userId,
-      ...auditCreate(actorId),
-    });
+      const { error } = await supabase.from('project_members').insert({
+        project_id: projectId,
+        user_id: userId,
+        ...auditCreate(actorId),
+      });
 
-    if (error) {
-      throw new Error(`Failed to seed project member: ${error.message}`);
-    }
-  }
+      if (error) {
+        throw new Error(`Failed to seed project member: ${error.message}`);
+      }
+    })
+  );
 }
 
 async function seedSprints(
@@ -484,44 +543,47 @@ async function seedSprints(
     },
   ] as const;
 
-  const ids: string[] = [];
+  const seeded = await Promise.all(
+    sprints.map(async (sprint) => {
+      const { data: existing } = await supabase
+        .from('sprints')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('name', sprint.name)
+        .maybeSingle();
 
-  for (const sprint of sprints) {
-    const { data: existing } = await supabase
-      .from('sprints')
-      .select('id')
-      .eq('project_id', projectId)
-      .eq('name', sprint.name)
-      .maybeSingle();
+      if (existing) {
+        return { status: sprint.status, id: existing.id };
+      }
 
-    if (existing) {
-      ids.push(existing.id);
-      continue;
-    }
+      const { data, error } = await supabase
+        .from('sprints')
+        .insert({
+          project_id: projectId,
+          ...sprint,
+          slug: slugifyTitle(sprint.name),
+          ...auditCreateWithoutStatus(actorId),
+        })
+        .select('id')
+        .single();
 
-    const { data, error } = await supabase
-      .from('sprints')
-      .insert({
-        project_id: projectId,
-        ...sprint,
-        ...auditCreateWithoutStatus(actorId),
-      })
-      .select('id')
-      .single();
+      if (error) {
+        throw new Error(
+          `Failed to seed sprint "${sprint.name}": ${error.message}`
+        );
+      }
 
-    if (error) {
-      throw new Error(
-        `Failed to seed sprint "${sprint.name}": ${error.message}`
-      );
-    }
+      return { status: sprint.status, id: data.id };
+    })
+  );
 
-    ids.push(data.id);
+  const activeSprintId = seeded.find((row) => row.status === 'active')?.id;
+  const plannedSprintId = seeded.find((row) => row.status === 'planned')?.id;
+  if (!activeSprintId || !plannedSprintId) {
+    throw new Error('Failed to seed required active and planned sprints.');
   }
 
-  return {
-    activeSprintId: ids[0]!,
-    plannedSprintId: ids[1]!,
-  };
+  return { activeSprintId, plannedSprintId };
 }
 
 async function ensureWorkItem(
@@ -566,6 +628,7 @@ async function ensureWorkItem(
     .insert({
       project_id: projectId,
       title,
+      slug: slugifyTitle(title),
       ...values,
       ...auditCreateWithoutStatus(auditActor),
     })
@@ -767,45 +830,48 @@ type NotificationSeed = {
 async function seedNotifications(
   userIds: UserIds,
   relatedItemId: string,
-  actorId: string
+  actorId: string,
+  projectLabel: string
 ): Promise<void> {
   const notifications: NotificationSeed[] = [
     {
       user_id: requireUserId(userIds, 'member@alice.dev'),
       type: 'assign',
-      message: 'You were assigned to "Admin user registry screen".',
+      message: `[${projectLabel}] You were assigned to "Admin user registry screen".`,
       related_item_id: relatedItemId,
       read_status: false,
     },
     {
       user_id: requireUserId(userIds, 'manager@alice.dev'),
       type: 'sprint',
-      message: 'Sprint 1 — Auth & Users is now active.',
+      message: `[${projectLabel}] Sprint 1 — Auth & Users is now active.`,
       related_item_id: relatedItemId,
       read_status: true,
     },
   ];
 
-  for (const notification of notifications) {
-    const { data: existing } = await supabase
-      .from('notifications')
-      .select('id')
-      .eq('user_id', notification.user_id)
-      .eq('message', notification.message)
-      .maybeSingle();
+  await Promise.all(
+    notifications.map(async (notification) => {
+      const { data: existing } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('user_id', notification.user_id)
+        .eq('message', notification.message)
+        .maybeSingle();
 
-    if (existing) {
-      continue;
-    }
+      if (existing) {
+        return;
+      }
 
-    const { error } = await supabase
-      .from('notifications')
-      .insert({ ...notification, ...auditCreate(actorId) });
+      const { error } = await supabase
+        .from('notifications')
+        .insert({ ...notification, ...auditCreate(actorId) });
 
-    if (error) {
-      throw new Error(`Failed to seed notification: ${error.message}`);
-    }
-  }
+      if (error) {
+        throw new Error(`Failed to seed notification: ${error.message}`);
+      }
+    })
+  );
 }
 
 /** Company domain so seed users (@alice.dev) pass the admission gate. */
@@ -893,31 +959,40 @@ async function main(): Promise<void> {
   const teamId = await seedTeam(userIds, adminId);
   await seedTeamMembers(teamId, userIds, adminId);
 
-  console.log('info. seeding project...');
-  const projectId = await seedProject(userIds, adminId);
-  await seedProjectMembers(projectId, userIds, adminId);
+  await Promise.all(
+    SEED_PROJECTS.map(async (project) => {
+      console.log(`info. seeding project ${project.key} (${project.name})...`);
+      const projectId = await seedProject(project, userIds, adminId);
+      await seedProjectMembers(projectId, userIds, adminId);
 
-  console.log('info. seeding sprints...');
-  const sprintIds = await seedSprints(projectId, adminId);
+      console.log(`info. seeding sprints for ${project.key}...`);
+      const sprintIds = await seedSprints(projectId, adminId);
 
-  console.log('info. seeding work items...');
-  const workItems = await seedWorkItems(projectId, sprintIds, userIds);
+      console.log(`info. seeding work items for ${project.key}...`);
+      const workItems = await seedWorkItems(projectId, sprintIds, userIds);
 
-  console.log('info. seeding comments, attachments, notifications...');
-  const commentId = await seedComments(
-    workItems.storyId,
-    requireUserId(userIds, 'manager@alice.dev')
+      console.log(
+        `info. seeding comments, attachments, notifications for ${project.key}...`
+      );
+      const commentId = await seedComments(
+        workItems.storyId,
+        requireUserId(userIds, 'manager@alice.dev')
+      );
+      await seedCommentReply(
+        workItems.storyId,
+        requireUserId(userIds, 'member@alice.dev'),
+        commentId
+      );
+      await seedAttachment(
+        workItems.storyId,
+        requireUserId(userIds, 'member@alice.dev')
+      );
+      await seedNotifications(userIds, workItems.storyId, adminId, project.key);
+    })
   );
-  await seedCommentReply(
-    workItems.storyId,
-    requireUserId(userIds, 'member@alice.dev'),
-    commentId
-  );
-  await seedAttachment(
-    workItems.storyId,
-    requireUserId(userIds, 'member@alice.dev')
-  );
-  await seedNotifications(userIds, workItems.storyId, adminId);
+
+  console.log('info. seeding chat tools, skills, and default Alice agent...');
+  await seedChatAgents(supabase, adminId);
 
   console.log('info. seed completed.');
   console.log(
@@ -926,9 +1001,6 @@ async function main(): Promise<void> {
   for (const user of SEED_USERS) {
     console.log(`  - ${user.email} (${user.role})`);
   }
-  console.log(
-    `info. also seeded ${SEED_SQUAD_MEMBERS.length} squad members @alice.dev.`
-  );
 }
 
 main().catch((error: unknown) => {

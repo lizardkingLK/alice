@@ -3,6 +3,7 @@ import { Metadata } from 'next';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { BoardData } from '@/app/board/_components/board-data';
 import { BoardPageSkeleton } from '@/app/board/_components/board-page-skeleton';
+import { redirectLegacyGlobalFilterQuery } from '@/app/board/_helpers/redirect-legacy-filter-query';
 import type { RawSearchParams } from '@/lib/search-params';
 
 export const metadata: Metadata = {
@@ -23,6 +24,12 @@ export default async function BoardPage({
 }: Readonly<{
   searchParams: Promise<RawSearchParams>;
 }>) {
+  const resolvedSearchParams = await searchParams;
+  await redirectLegacyGlobalFilterQuery({
+    area: 'board',
+    searchParams: resolvedSearchParams,
+  });
+
   return (
     <DashboardShell
       description="Track progress, update task statuses, and organize work-items in real-time."
@@ -30,7 +37,7 @@ export default async function BoardPage({
       contentScrollable={false}
     >
       <Suspense fallback={<BoardPageSkeleton />}>
-        <BoardData searchParams={searchParams} />
+        <BoardData searchParams={Promise.resolve(resolvedSearchParams)} />
       </Suspense>
     </DashboardShell>
   );

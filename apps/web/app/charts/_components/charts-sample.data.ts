@@ -1,8 +1,5 @@
-import {
-  BOARD_WORK_ITEM_STATUSES,
-  WORK_ITEM_PRIORITIES,
-  WORK_ITEM_TYPES,
-} from '@repo/types';
+import { BOARD_WORK_ITEM_STATUSES, WORK_ITEM_PRIORITIES } from '@repo/types';
+import { collectWorkItemTypeFilterOptions } from '@/app/work-items/_helpers/collect-work-item-type-filter-options';
 import { PRIORITY_LABELS } from '@/app/work-items/_helpers/work-item-priority-ui';
 import { STATUS_META } from '@/app/work-items/_helpers/work-item-status';
 
@@ -18,6 +15,8 @@ export type ChartsSampleMember = {
 export type ChartsProjectOption = {
   readonly id: string;
   readonly name: string;
+  /** Project KEY for path-masked work-item Open links. */
+  readonly key?: string | null;
   /** Project workflow envelope for State column labels in the drilldown table. */
   readonly workflowConfig?: unknown;
 };
@@ -84,7 +83,12 @@ export type ChartsFilterOption = {
 
 export function chartsFilterValueOptions(
   column: ChartsFilterColumnId,
-  members: readonly ChartsSampleMember[] = []
+  members: readonly ChartsSampleMember[] = [],
+  options?: {
+    readonly projects?: readonly ChartsProjectOption[];
+    readonly projectId?: string | null;
+    readonly userId?: string | null;
+  }
 ): readonly ChartsFilterOption[] {
   switch (column) {
     case 'status':
@@ -93,10 +97,11 @@ export function chartsFilterValueOptions(
         label: STATUS_META[status]?.label ?? status,
       }));
     case 'type':
-      return WORK_ITEM_TYPES.map((type) => ({
-        value: type,
-        label: type,
-      }));
+      return collectWorkItemTypeFilterOptions({
+        projects: options?.projects,
+        projectId: options?.projectId,
+        userId: options?.userId,
+      });
     case 'assignee':
       return [
         { value: 'unassigned', label: 'Unassigned' },
@@ -179,6 +184,7 @@ export function chartsQuickFieldOptions(
     readonly sprints?: readonly ChartsSprintOption[];
     readonly projectId?: string | null;
     readonly members?: readonly ChartsSampleMember[];
+    readonly userId?: string | null;
   }
 ): readonly ChartsFilterOption[] {
   if (field === 'project') {
@@ -201,7 +207,11 @@ export function chartsQuickFieldOptions(
   }
   return [
     { value: 'all', label: QUICK_FIELD_ALL_LABELS[field] },
-    ...chartsFilterValueOptions(field, options?.members),
+    ...chartsFilterValueOptions(field, options?.members, {
+      projects,
+      projectId: options?.projectId,
+      userId: options?.userId,
+    }),
   ];
 }
 

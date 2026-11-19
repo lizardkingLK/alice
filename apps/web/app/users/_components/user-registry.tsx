@@ -222,7 +222,7 @@ function ActionsCell({
   let toggleItem = null;
   if (!isSelf) {
     toggleItem = usr.active ? (
-      <DropdownMenuItem variant="destructive" onClick={() => onToggle(usr)}>
+      <DropdownMenuItem onClick={() => onToggle(usr)}>
         <UserX />
         Deactivate
       </DropdownMenuItem>

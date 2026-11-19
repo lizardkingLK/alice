@@ -9,7 +9,11 @@ export const WORK_ITEM_DETAILS_PREFS_COOKIE = 'alice_wi_details_prefs_v1';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 const STORAGE_PREFIX = 'alice:work-item-details-prefs:v1:';
 
-export const WORK_ITEM_BANNER_COLOR_SOURCES = ['state', 'type'] as const;
+export const WORK_ITEM_BANNER_COLOR_SOURCES = [
+  'state',
+  'type',
+  'none',
+] as const;
 export type WorkItemBannerColorSource =
   (typeof WORK_ITEM_BANNER_COLOR_SOURCES)[number];
 
@@ -124,6 +128,11 @@ export const BANNER_COLOR_OPTIONS: readonly {
     value: 'type',
     label: 'Type color',
     description: 'Tint the banner from the work-item type',
+  },
+  {
+    value: 'none',
+    label: 'None',
+    description: 'No color tint on the banner',
   },
 ];
 

@@ -35,6 +35,11 @@ import { WorkItemsTableToolbar } from '@/app/work-items/_components/work-item-ta
 import { WorkItemsSearchResultsPanel } from '@/app/work-items/_components/work-item-registry/work-items-search-results-panel';
 import type { DisplayRow } from '@/app/work-items/_components/work-item-table/work-items-table-types';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
+import {
+  buildGlobalFilterHref,
+  projectKeyForId,
+  sprintSlugForId,
+} from '@/app/board/_helpers/global-filter-href';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
 import {
   buildAppliedFilterBadgeItems,
@@ -44,6 +49,7 @@ import {
   applyQueryFilterParam,
   useQueryFilter,
 } from '@/hooks/use-query-filter';
+import { useSoftInvalidateProject } from '@/lib/soft-invalidate/use-soft-invalidate-project';
 import {
   parseWorkItemLabelsFilterParam,
   serializeWorkItemLabelsFilter,
@@ -128,6 +134,12 @@ export default function WorkItemsTable({
   const { setValue: setProjectFilterValue, allValue: projectAllValue } =
     projectQuery;
   const { setValue: setSprintFilterValue } = sprintQuery;
+  const softInvalidateProjectId =
+    lockedProjectId ||
+    (projectQuery.value && projectQuery.value !== projectAllValue
+      ? projectQuery.value
+      : null);
+  useSoftInvalidateProject(softInvalidateProjectId);
   /** Hierarchy browse forest; search keeps a flat match table under the panel. */
   const isHierarchy = listView === 'hierarchy' && hierarchyMode === 'tree';
   // Prefer server cookie bootstrap so the first paint matches saved prefs.
@@ -199,6 +211,48 @@ export default function WorkItemsTable({
     isHierarchy,
   });
 
+  const pushWorkItemGlobalHref = useCallback(
+    (params: URLSearchParams) => {
+      params.set('page', '1');
+      if (isProjectLocked) {
+        const query = params.toString();
+        router.push(query ? `${pathname}?${query}` : pathname);
+        return;
+      }
+      const href = buildGlobalFilterHref({
+        area: 'work-items',
+        projectKey: projectKeyForId(projects, params.get('project')),
+        sprintSlug: sprintSlugForId(sprints, params.get('sprint')),
+        searchParams: params,
+      });
+      router.push(href);
+    },
+    [isProjectLocked, pathname, projects, router, sprints]
+  );
+
+  const seedEntityFiltersFromLocalState = useCallback(
+    (params: URLSearchParams) => {
+      if (isProjectLocked) {
+        return;
+      }
+      if (
+        !params.has('project') &&
+        projectQuery.value &&
+        projectQuery.value !== projectAllValue
+      ) {
+        params.set('project', projectQuery.value);
+      }
+      if (
+        !params.has('sprint') &&
+        sprintQuery.value &&
+        sprintQuery.value !== sprintQuery.allValue
+      ) {
+        params.set('sprint', sprintQuery.value);
+      }
+    },
+    [isProjectLocked, projectAllValue, projectQuery.value, sprintQuery]
+  );
+
   const handleApplyFilters = useCallback(
     (draft: WorkItemsFilterDraft) => {
       setProjectFilterValue(draft.project);
@@ -216,8 +270,7 @@ export default function WorkItemsTable({
         isAssigneeLocked,
         listView,
       });
-      const query = params.toString();
-      router.push(query ? `${pathname}?${query}` : pathname);
+      pushWorkItemGlobalHref(params);
     },
     [
       assigneeQuery,
@@ -225,9 +278,8 @@ export default function WorkItemsTable({
       isProjectLocked,
       labelsQuery,
       listView,
-      pathname,
       projectAllValue,
-      router,
+      pushWorkItemGlobalHref,
       searchParams,
       setProjectFilterValue,
       setSprintFilterValue,
@@ -322,25 +374,22 @@ export default function WorkItemsTable({
     typeQuery.value,
   ]);
 
-  const pushWorkItemParams = useCallback(
-    (params: URLSearchParams) => {
-      params.set('page', '1');
-      const query = params.toString();
-      router.push(query ? `${pathname}?${query}` : pathname);
-    },
-    [pathname, router]
-  );
-
   const handleClearSearch = useCallback(() => {
     setSearchQuery('');
     const params = new URLSearchParams(searchParams.toString());
     if (!params.has('search')) {
       return;
     }
+    seedEntityFiltersFromLocalState(params);
     params.delete('search');
     params.delete('focus');
-    pushWorkItemParams(params);
-  }, [pushWorkItemParams, searchParams, setSearchQuery]);
+    pushWorkItemGlobalHref(params);
+  }, [
+    pushWorkItemGlobalHref,
+    searchParams,
+    seedEntityFiltersFromLocalState,
+    setSearchQuery,
+  ]);
 
   const handleRemoveAppliedFilter = useCallback(
     (chipIds: readonly string[]) => {
@@ -353,6 +402,7 @@ export default function WorkItemsTable({
         canClearProject: !isProjectLocked,
       });
       const params = new URLSearchParams(searchParams.toString());
+      seedEntityFiltersFromLocalState(params);
 
       if (plan.labelsToDrop.size > 0) {
         const nextLabels = activeLabels.filter(
@@ -420,7 +470,7 @@ export default function WorkItemsTable({
         );
       }
 
-      pushWorkItemParams(params);
+      pushWorkItemGlobalHref(params);
     },
     [
       activeLabels,
@@ -430,8 +480,9 @@ export default function WorkItemsTable({
       labelsQuery,
       projectAllValue,
       projectQuery,
-      pushWorkItemParams,
+      pushWorkItemGlobalHref,
       searchParams,
+      seedEntityFiltersFromLocalState,
       setSearchQuery,
       setSprintFilterValue,
       sprintQuery,
@@ -452,11 +503,11 @@ export default function WorkItemsTable({
       lockedProjectId: isProjectLocked ? lockedProjectId : undefined,
       lockedAssigneeId: isAssigneeLocked ? lockedAssigneeId : undefined,
     });
-    const query = next.toString();
-    router.push(query ? `${pathname}?${query}` : pathname);
+    pushWorkItemGlobalHref(next);
   };
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [createIntentKey, setCreateIntentKey] = useState(0);
   const [itemToEdit, setItemToEdit] = useState<DbWorkItem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const lifecycle = useWorkItemLifecycleActions({
@@ -510,6 +561,10 @@ export default function WorkItemsTable({
 
   const openCreateDialog = () => {
     cancelPendingEditClear();
+    if (dialogOpen && itemToEdit == null) {
+      setCreateIntentKey((key) => key + 1);
+      return;
+    }
     setItemToEdit(null);
     setDialogOpen(true);
   };
@@ -714,6 +769,7 @@ export default function WorkItemsTable({
         projectMembers={projectMembers}
         lockProject={isProjectLocked}
         lockAssigneeId={lockedAssigneeId}
+        createIntentKey={createIntentKey}
         onClose={() => handleDialogChange(false)}
         onSuccess={handleFormSuccess}
       />

@@ -35,4 +35,21 @@ describe('HomeFooter', () => {
       '/users'
     );
   });
+
+  it('hides Pricing when hideMarketingAnchors is true', () => {
+    // Arrange / Act
+    render(<HomeFooter hideMarketingAnchors />);
+
+    // Assert
+    expect(screen.queryByRole('link', { name: 'Pricing' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'About' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Contact' })).toBeInTheDocument();
+  });
+
+  it('uses the Product Development Automated tagline', () => {
+    render(<HomeFooter />);
+    expect(
+      screen.getAllByText('Product Development Automated').length
+    ).toBeGreaterThan(0);
+  });
 });

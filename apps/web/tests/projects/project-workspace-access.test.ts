@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getActiveMemberProjectIdsMock = vi.hoisted(() => vi.fn());
 const createClientMock = vi.hoisted(() => vi.fn());
+const createAdminClientMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@/app/board/_services/board.reads.defaults.server', () => ({
   getActiveMemberProjectIds: getActiveMemberProjectIdsMock,
@@ -9,6 +10,10 @@ vi.mock('@/app/board/_services/board.reads.defaults.server', () => ({
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: createClientMock,
+}));
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: createAdminClientMock,
 }));
 
 import {
@@ -19,12 +24,14 @@ import {
 
 type OwnerRow = { id: string } | null;
 
-function mockSupabase(options?: {
+function createTableClient(options?: {
   readonly ownerRow?: OwnerRow;
   readonly ownedIds?: string[];
   readonly email?: string;
   readonly allowedProjectIds?: string[] | null;
   readonly projectsByKey?: Array<{ id: string; key: string }>;
+  /** When true, this client answers allowlist / guest email lookups. */
+  readonly serveAllowlist?: boolean;
 }) {
   const ownerRow = options?.ownerRow ?? null;
   const ownedIds = options?.ownedIds ?? [];
@@ -32,18 +39,19 @@ function mockSupabase(options?: {
   const allowedProjectIds = options?.allowedProjectIds ?? null;
   const projectsByKey = options?.projectsByKey ?? [];
   const hasAllowlistRow = options?.allowedProjectIds !== undefined;
+  const serveAllowlist = options?.serveAllowlist ?? false;
 
-  createClientMock.mockResolvedValue({
+  return {
     from: (table: string) => {
       const chain = {
         select: () => chain,
         eq: () => chain,
         in: () => chain,
         maybeSingle: async () => {
-          if (table === 'users') {
+          if (table === 'users' && serveAllowlist) {
             return { data: { email }, error: null };
           }
-          if (table === 'access_allowlist') {
+          if (table === 'access_allowlist' && serveAllowlist) {
             if (!hasAllowlistRow) {
               return { data: null, error: null };
             }
@@ -52,7 +60,7 @@ function mockSupabase(options?: {
               error: null,
             };
           }
-          if (table === 'projects') {
+          if (table === 'projects' && !serveAllowlist) {
             return { data: ownerRow, error: null };
           }
           return { data: null, error: null };
@@ -61,7 +69,7 @@ function mockSupabase(options?: {
           if (table === 'projects') {
             const listResult = {
               data:
-                projectsByKey.length > 0
+                serveAllowlist && projectsByKey.length > 0
                   ? projectsByKey
                   : ownedIds.map((id) => ({ id })),
               error: null,
@@ -76,7 +84,22 @@ function mockSupabase(options?: {
       };
       return chain;
     },
-  });
+  };
+}
+
+function mockSupabase(options?: {
+  readonly ownerRow?: OwnerRow;
+  readonly ownedIds?: string[];
+  readonly email?: string;
+  readonly allowedProjectIds?: string[] | null;
+  readonly projectsByKey?: Array<{ id: string; key: string }>;
+}) {
+  createClientMock.mockResolvedValue(
+    createTableClient({ ...options, serveAllowlist: false })
+  );
+  createAdminClientMock.mockReturnValue(
+    createTableClient({ ...options, serveAllowlist: true })
+  );
 }
 
 describe('canAccessProjectWorkspace', () => {

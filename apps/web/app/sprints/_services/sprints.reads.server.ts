@@ -6,12 +6,13 @@ import {
   listSprintsPaginatedFromApi,
 } from './sprints.reads.api.server';
 import {
+  getSprintByProjectSlugFromSupabase,
   getSprintFromSupabase,
   listSprintsPaginatedFromSupabase,
 } from './sprints.reads.supabase.server';
 import type { GetSprintsPaginatedOptions } from './sprints.reads.types';
 
-export type { GetSprintsPaginatedOptions } from './sprints.reads.types';
+export type { GetSprintsPaginatedOptions };
 
 const EMPTY_PAGINATION = (
   page: number,
@@ -59,5 +60,12 @@ export const getSprint = cache(
     }
 
     return getSprintFromSupabase(sprintId);
+  }
+);
+
+/** Resolve by `(project_id, slug)` — used for project-tree URL segments. */
+export const getSprintByProjectSlug = cache(
+  async (projectId: string, slug: string): Promise<Sprint | null> => {
+    return getSprintByProjectSlugFromSupabase(projectId, slug);
   }
 );

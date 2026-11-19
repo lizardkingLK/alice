@@ -3,7 +3,8 @@
 Status: **Plan** (product rules locked from brainstorm)
 
 Replaces the custom **board column** designer with a directed **workflow graph**
-(React Flow / XYFlow). Board columns become **states** of the active workflow.
+(React Flow / XYFlow; keep the default canvas attribution unless on React Flow
+Pro). Board columns become **states** of the active workflow.
 Transition rules live on **edges**. Node and edge options live in a **Settings**
 sidebar with info tooltips / click popovers.
 
@@ -25,10 +26,11 @@ exist on disk; runtime reads fall back safely. Historical notes:
 - Single-current work-item **`state`** JSONB + optional per-workflow history.
 - Safe fallback: null / unparsable / schema conflict → **seeded default**
   workflow (and default board behavior) so the project never hard-crashes.
-- Designer UI supports add/connect/delete, multi-workflow manage (Fork / Mark
-  default / Delete / Rename), keyboard shortcuts (add state: **Ctrl/Cmd+Alt+N**),
-  undo, copy/cut/paste states, canvas context menu, live Settings→node sync,
-  Help, and Go to Board — Step 12.
+- Designer UI supports add/connect/delete, multi-workflow manage (Fork / Import /
+  Mark default / Delete / Rename), keyboard shortcuts (add state: **Ctrl/Cmd+Alt+N**),
+  floating **+** FAB, undo, copy/cut/paste states, canvas context menu, live
+  Settings→node sync, Help (keyboard + designer legend), and Go to Board —
+  Step 12 / #639.
 - Alice docked chat can propose designer changes with **Apply / Reject**.
 
 ## Non-goals (MVP)
@@ -62,6 +64,12 @@ exist on disk; runtime reads fall back safely. Historical notes:
 - Seeded default uses **empty** `typeBindings` (owns types via being default) so
   fork + promote cannot leave types stuck on the parent.
 - Fork depth ≤ 1 (Zod + API).
+- **Import** (`POST …/workflow-config/import`) copies a workflow from another
+  **active** project the actor can read into the target as a **new** workflow
+  (`cloneWorkflowForProjectImport`): new `wf-*` id, `forkedFromId: null`, empty
+  `typeBindings`, every edge `allowAnyOf: []`. Optional `markAsDefault` runs
+  `promoteWorkflowToDefault` in the same write. Title is supplied by the client
+  (dialog). Managers/admins only on the **target**.
 - **Save** that removes graph states still referenced by work items
   (`state_workflow_id` + `state_id`) returns **409**
   `WORKFLOW_ORPHANED_STATES` with per-state counts and remaining targets.
@@ -94,15 +102,16 @@ requires project scope) — same constraint as custom boards today.
 
 ## Graph rules
 
-| Rule                     | Detail                                                                        |
-| ------------------------ | ----------------------------------------------------------------------------- |
-| Closed graph             | No edge ⇒ transition **not allowed** (400 validation; not a permission error) |
-| Edge auth                | Non-empty `allowAnyOf` mismatch ⇒ 403 `BOARD_MOVE_FORBIDDEN`                  |
-| Cycles                   | Allowed when both directions are explicit edges                               |
-| Self-loops               | Banned                                                                        |
-| Duplicate directed edges | Banned (`A→B` at most once); `A→B` and `B→A` are fine                         |
-| Layout                   | Separate JSON key from graph semantics (`graph` vs `layout`)                  |
-| Draft                    | Pre-board / start: not a normal lane unless designer adds an equivalent state |
+| Rule                     | Detail                                                                                                                                                         |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Closed graph             | No matching transition ⇒ **not allowed** (400 validation; not a permission error). Matching = explicit edge **or** state wildcards below.                      |
+| State wildcards          | `acceptFromAnyState` (any → this) and `allowToAnyState` (this → any). Explicit edges win for auth / children / escalation. Terminal forbids `allowToAnyState`. |
+| Edge auth                | Non-empty `allowAnyOf` mismatch ⇒ 403 `BOARD_MOVE_FORBIDDEN`                                                                                                   |
+| Cycles                   | Allowed when both directions are explicit edges (or covered by wildcards)                                                                                      |
+| Self-loops               | Banned                                                                                                                                                         |
+| Duplicate directed edges | Banned (`A→B` at most once); `A→B` and `B→A` are fine                                                                                                          |
+| Layout                   | Separate JSON key from graph semantics (`graph` vs `layout`)                                                                                                   |
+| Draft                    | Pre-board / start: not a normal lane unless designer adds an equivalent state                                                                                  |
 
 Shared client helpers cache allowed transitions; API remains source of truth.
 Optimistic moves stay; conflicts surface for the user (toast / revert).
@@ -132,12 +141,14 @@ click popovers on every control.
 
 ### State node
 
-| Control                       | Label (locked) | Effect                                                                                                                                           |
-| ----------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Name / description            | —              | Display                                                                                                                                          |
-| Category                      | —              | `draft` \| `todo` \| `in_progress` \| `done`                                                                                                     |
-| **Lock record in this state** | Locked copy    | While here, record is read-only except state transitions (reopen pattern).                                                                       |
-| **Terminal state**            | Locked copy    | No outbound edges. Checking it **blocks** until outbound edges are removed (confirm / “Remove all outbound and lock”). Never silent auto-delete. |
+| Control                              | Label (locked) | Effect                                                                                                                                                     |
+| ------------------------------------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Name / description                   | —              | Display                                                                                                                                                    |
+| Category                             | —              | `draft` \| `todo` \| `in_progress` \| `done`                                                                                                               |
+| **Lock record in this state**        | Locked copy    | While here, record is read-only except state transitions (reopen pattern).                                                                                 |
+| **Terminal state**                   | Locked copy    | No outbound edges. Checking it **blocks** until outbound edges are removed (confirm / “Remove all outbound and lock”). Never silent auto-delete.           |
+| **Allow transitions from any state** | —              | Any other state may move here without an explicit edge. Explicit edges keep their rules. Canvas chip **From any** uses forward-edge (primary) stroke.      |
+| **Allow transitions to any state**   | —              | This state may move to any other state without an explicit edge. Cleared / disabled when terminal. Canvas chip **To any** uses reverse-edge (dark) stroke. |
 
 Legacy: some older configs may still set `requiresEscalation` on the **state**
 (force every exit). Prefer the **edge** control below.
@@ -205,7 +216,9 @@ Named forms live in `resolutionPresets[]` on each workflow document.
             "category": "todo",
             "lockRecord": false,
             "terminal": false,
-            "requiresEscalation": false
+            "requiresEscalation": false,
+            "acceptFromAnyState": false,
+            "allowToAnyState": false
           }
         ],
         "edges": [
@@ -237,14 +250,14 @@ document (and default board lanes). Optional manager-only soft notice later.
 
 ### As-built — workflow envelope API (Step 2)
 
-| Item           | Detail                                                                                                                                               |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Schema         | `workflowConfigEnvelopeSchema` in `packages/types/src/api/v1/workflow-config.ts`                                                                     |
-| Seeded default | `createSeededDefaultWorkflowConfig()` — board statuses as states, linear path + Testing↔InProgress, Done edges use `all_complete`                    |
-| Resolve        | `resolveWorkflowConfig(raw)` → `{ config, usedFallback }`                                                                                            |
-| Merge          | `mergeWorkflowEnvelopeIntoProjectConfig` preserves `work_item_types` / legacy board keys                                                             |
-| HTTP           | `GET/PUT /api/projects/:id/workflow-config`; `POST …/fork`; `POST …/:workflowId/default`; `DELETE …/:workflowId` (body includes `expectedUpdatedAt`) |
-| Auth           | GET: project member; PUT/default/delete: manager/admin; fork: manager/admin **or** active project team `manager_id`                                  |
+| Item           | Detail                                                                                                                                                                |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Schema         | `workflowConfigEnvelopeSchema` in `packages/types/src/api/v1/workflow-config.ts`                                                                                      |
+| Seeded default | `createSeededDefaultWorkflowConfig()` — board statuses as states, linear path + Testing↔InProgress, Done edges use `all_complete`                                     |
+| Resolve        | `resolveWorkflowConfig(raw)` → `{ config, usedFallback }`                                                                                                             |
+| Merge          | `mergeWorkflowEnvelopeIntoProjectConfig` preserves `work_item_types` / legacy board keys                                                                              |
+| HTTP           | `GET/PUT /api/projects/:id/workflow-config`; `POST …/fork`; `POST …/import`; `POST …/:workflowId/default`; `DELETE …/:workflowId` (body includes `expectedUpdatedAt`) |
+| Auth           | GET: project member; PUT/default/delete/import: manager/admin; fork: manager/admin **or** active project team `manager_id`                                            |
 
 ---
 

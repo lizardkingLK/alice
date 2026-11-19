@@ -15,9 +15,9 @@ import type {
   WorkItemTitleIconSource,
 } from '@/app/work-items/_helpers/work-item-details-preferences';
 import {
-  WORK_ITEM_TYPE_BORDER,
-  WORK_ITEM_TYPE_ICONS,
-  WORK_ITEM_TYPE_TINT,
+  workItemTypeBorder,
+  workItemTypeIconFromDef,
+  workItemTypeTint,
 } from '@/app/work-items/_helpers/work-item-type';
 import {
   resolveStatePresentation,
@@ -27,7 +27,8 @@ import {
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import { UserAvatar } from '@/components/user-avatar';
-import type { WorkItemType } from '@repo/types';
+import { findProjectWorkItemTypeDef, type WorkItemType } from '@repo/types';
+import { typeDefsFromWorkflowConfig } from '@/app/work-items/_helpers/resolve-work-item-type-def-from-projects';
 
 type WorkItemSummaryBannerProps = {
   readonly workItem: DbWorkItem;
@@ -51,7 +52,7 @@ type TitleIconComponent = ComponentType<{
 }>;
 
 function isWorkItemType(value: string): value is WorkItemType {
-  return value in WORK_ITEM_TYPE_ICONS;
+  return value.trim().length > 0;
 }
 
 function resolveBannerSurfaceClasses(params: {
@@ -60,10 +61,16 @@ function resolveBannerSurfaceClasses(params: {
   readonly presentation: StatePresentation;
 }): { readonly borderClass: string; readonly tintClass: string } {
   const { bannerColor, workItemType, presentation } = params;
+  if (bannerColor === 'none') {
+    return {
+      borderClass: '',
+      tintClass: '',
+    };
+  }
   if (bannerColor === 'type' && workItemType) {
     return {
-      borderClass: WORK_ITEM_TYPE_BORDER[workItemType],
-      tintClass: WORK_ITEM_TYPE_TINT[workItemType],
+      borderClass: workItemTypeBorder(workItemType),
+      tintClass: workItemTypeTint(workItemType),
     };
   }
   return {
@@ -116,7 +123,17 @@ export function WorkItemSummaryBanner({
     stateName: picker.currentLabel,
   });
   const workItemType = isWorkItemType(workItem.type) ? workItem.type : null;
-  const TypeIcon = workItemType ? WORK_ITEM_TYPE_ICONS[workItemType] : null;
+  const typeDef = workItemType
+    ? findProjectWorkItemTypeDef(
+        typeDefsFromWorkflowConfig(workflowConfig),
+        workItemType
+      )
+    : null;
+  const TypeIcon = workItemType
+    ? workItemTypeIconFromDef(
+        typeDef ?? { key: workItemType, icon: 'square-check' }
+      )
+    : null;
   const { borderClass: bannerBorderClass, tintClass: bannerTintClass } =
     resolveBannerSurfaceClasses({
       bannerColor: preferences.bannerColor,

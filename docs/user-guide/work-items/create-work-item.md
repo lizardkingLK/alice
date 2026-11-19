@@ -23,6 +23,28 @@ The new item opens in the list and on the board (unless status is **Draft**).
 
 ---
 
+## Modern create dialog chrome
+
+When your preference is the **compact (modern)** create form, the dialog
+supports a few layouts (similar to Jira create):
+
+| Control               | What it does                                                                                                                                                                     |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Minimize**          | Shrink to a small **Create** pill in the corner (from default, expanded, or floating). Click the pill to restore the **previous** layout.                                        |
+| **Float**             | Detach into a bottom-right floating card so the rest of the page stays usable.                                                                                                   |
+| **Expand / Collapse** | Switch between the default centered dialog and a larger expanded panel (fields as a vertical label + control list). From floating, **Expand** returns to the last centered size. |
+| **Close**             | Dismiss the draft.                                                                                                                                                               |
+
+If you click **Add Work-Item** / **Create** again while a draft is still open
+(including floated or minimized), Alice asks whether to **Keep editing** or
+**Discard draft**. Reloading the page while a modern create draft is open also
+prompts the browser that unsaved changes may be lost.
+
+Classic create and edit dialogs stay as blocking centered modals (expand /
+collapse only).
+
+---
+
 ## From a parent item
 
 1. Open a work item that can have children (Epic, Story, or Task).

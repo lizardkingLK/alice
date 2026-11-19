@@ -5,10 +5,10 @@ import {
   buildEscalationResolvedMeta,
   findResolutionPreset,
   boardColumnIdForWorkflowState,
-  findWorkflowEdge,
   findWorkflowState,
   getAllowedChildType,
   getAllowedParentType,
+  escalationResolvedEdgeId,
   getResolutionRequirement,
   legacyStatusFromWorkItemState,
   normalizeBoardConfig,
@@ -17,8 +17,9 @@ import {
   resolveWorkflowForWorkItemType,
   resolveWorkflowGraphState,
   resolveWorkflowPlacementState,
+  resolveWorkflowTransition,
   validateResolutionPayload,
-  type BoardRuleMatcher,
+  doesTransitionRuleAllowActor,
   type RuntimeBoardConfig,
   type WorkItemType,
   type WorkflowConfigEnvelope,
@@ -26,7 +27,9 @@ import {
   type WorkflowEdge,
   type WorkflowResolutionPayload,
   type WorkflowStateNode,
-  CANONICAL_HIERARCHY_ORDER,
+  normalizeProjectWorkItemTypeDefs,
+  resolveProjectTypeKeys,
+  type ProjectWorkItemTypeDef,
   type ProjectWorkflowConfig,
   paginationMeta,
   type ListWorkItemsQuery,
@@ -45,13 +48,14 @@ import {
   type WorkItemLinkListItem,
 } from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { enqueueDestructiveAction } from '../../../lib/enqueue-destructive-action';
+import { OptimisticLockError } from '../../../lib/optimistic-lock';
 import { env } from '../../../config/env';
 import { removeStorageObjects } from '../../../lib/file-helpers';
-import { WorkItemRepository } from './work-items.repository';
-import type {
-  BoardActorContext,
-  DbWorkItem,
-  DbGithubPullRequest,
+import {
+  WorkItemRepository,
+  type DbWorkItem,
+  type DbGithubPullRequest,
 } from './work-items.repository';
 import type { WorkItemPaginatedList } from './work-items.prisma-query';
 import {
@@ -81,6 +85,10 @@ import {
 import { prisma } from '../../../lib/prisma';
 import { decryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
 import { Prisma } from '@repo/types/prisma';
+import type {
+  NotificationsService,
+  PersistedWorkItemNotificationEmail,
+} from '../notifications/notifications.service';
 
 async function requireAdmin(actorId: string) {
   return await requireUserWithRole(
@@ -125,38 +133,41 @@ export const WorkItemDefaults = {
   USER: 'User',
 } as const;
 
-function doesTransitionRuleAllowActor(
-  allowAnyOf: readonly BoardRuleMatcher[],
-  actor: BoardActorContext | null,
-  actorId: string
-): boolean {
-  if (!actor) return false;
-
-  const activeTeamIds = new Set(
-    actor.activeTeamIds.map((teamId) => teamId.toLowerCase())
-  );
-  return allowAnyOf.some((matcher) => {
-    if (matcher.scope === 'role') return matcher.role === actor.role;
-    if (matcher.scope === 'team') {
-      return activeTeamIds.has(matcher.teamId.toLowerCase());
-    }
-    return (
-      actor.isActiveProjectMember &&
-      matcher.userId.toLowerCase() === actorId.toLowerCase()
-    );
-  });
-}
-
 function throwWorkflowConfigLoadError(error: unknown): void {
   if (error) throw error;
+}
+
+function workItemEntityLabel(workItem: DbWorkItem): string {
+  const key = workItem.jira_issue_key ?? workItem.slug;
+  if (key) {
+    return `${workItem.title} (${key})`;
+  }
+  return workItem.title;
 }
 
 export class WorkItemService {
   constructor(
     private readonly workItems: WorkItemRepository,
     private readonly githubService?: GithubService,
-    private readonly activities?: ActivitiesService
+    private readonly activities?: ActivitiesService,
+    private readonly notifications?: Pick<
+      NotificationsService,
+      'createWorkItemMutationNotifications' | 'createWorkItemEmailOutbox'
+    >
   ) {}
+
+  private async runNotificationAtomicMutation<T>(
+    mutation: (client?: Prisma.TransactionClient) => Promise<{
+      result: T;
+      emails: PersistedWorkItemNotificationEmail[];
+    }>
+  ): Promise<T> {
+    const committed = this.notifications
+      ? await prisma.$transaction(mutation)
+      : await mutation();
+    await this.notifications?.createWorkItemEmailOutbox(committed.emails);
+    return committed.result;
+  }
 
   private async resolveGithubHeaders(
     fallbackToken?: string | null
@@ -236,7 +247,7 @@ export class WorkItemService {
   ): Promise<DbWorkItem> {
     await this.workItems.assertCanAccessProject(userId, input.project_id);
 
-    const { allowedTypes, hierarchy, workflowConfig } =
+    const { allowedTypes, hierarchy, typeDefs, workflowConfig } =
       await this.getProjectAllowedTypes(input.project_id);
     if (!allowedTypes.includes(input.type)) {
       throw new WorkItemValidationError(
@@ -250,6 +261,7 @@ export class WorkItemService {
       childType: input.type,
       allowedTypes,
       hierarchy,
+      typeDefs,
     });
 
     const createInput = await this.applySprintInheritanceForCreate(input);
@@ -266,56 +278,71 @@ export class WorkItemService {
       ? resolveWorkflowForWorkItemType(envelope, input.type).id
       : undefined;
 
-    const created = await this.workItems.create({
-      ...createInput,
-      createdBy: userId,
-      workflowId,
+    return await this.runNotificationAtomicMutation(async (client) => {
+      const createRecord = {
+        ...createInput,
+        createdBy: userId,
+        workflowId,
+      };
+      const created = client
+        ? await this.workItems.create(createRecord, client)
+        : await this.workItems.create(createRecord);
+
+      const createdActivity = {
+        workItemId: created.id,
+        actorId: userId,
+      };
+      await (client
+        ? this.activities?.recordCreated({ ...createdActivity, client })
+        : this.activities?.recordCreated(createdActivity));
+
+      if (
+        createInput.sprint_id ||
+        createInput.assignee_id ||
+        createInput.story_points
+      ) {
+        const [sprint, assignee] = await Promise.all([
+          createInput.sprint_id
+            ? (client ?? prisma).sprints.findUnique({
+                where: { id: createInput.sprint_id },
+                select: { name: true },
+              })
+            : Promise.resolve(null),
+          createInput.assignee_id
+            ? (client ?? prisma).users.findUnique({
+                where: { id: createInput.assignee_id },
+                select: { name: true },
+              })
+            : Promise.resolve(null),
+        ]);
+        const sprintName = createInput.sprint_id
+          ? sprint?.name || WorkItemDefaults.SPRINT
+          : WorkItemDefaults.BACKLOG;
+        const assigneeName = createInput.assignee_id
+          ? assignee?.name || WorkItemDefaults.USER
+          : WorkItemDefaults.UNASSIGNED;
+        const comment = `Allocation changed: Assigned to sprint ${sprintName}, Assignee set to ${assigneeName}, Story points set to ${createInput.story_points || 0}.`;
+        await (client ?? prisma).work_item_worklogs.create({
+          data: {
+            work_item_id: created.id,
+            user_id: userId,
+            logged_hours: 0,
+            comment,
+            created_by: userId,
+            updated_by: userId,
+          },
+        });
+      }
+
+      const emails = this.notifications
+        ? await this.notifications.createWorkItemMutationNotifications({
+            actorId: userId,
+            after: created,
+            ...(client ? { client } : {}),
+          })
+        : [];
+      return { result: created, emails };
     });
-
-    await this.activities?.recordCreated({
-      workItemId: created.id,
-      actorId: userId,
-    });
-
-    if (
-      createInput.sprint_id ||
-      createInput.assignee_id ||
-      createInput.story_points
-    ) {
-      const [sprint, assignee] = await Promise.all([
-        createInput.sprint_id
-          ? prisma.sprints.findUnique({
-              where: { id: createInput.sprint_id },
-              select: { name: true },
-            })
-          : Promise.resolve(null),
-        createInput.assignee_id
-          ? prisma.users.findUnique({
-              where: { id: createInput.assignee_id },
-              select: { name: true },
-            })
-          : Promise.resolve(null),
-      ]);
-      const sprintName = createInput.sprint_id
-        ? sprint?.name || WorkItemDefaults.SPRINT
-        : WorkItemDefaults.BACKLOG;
-      const assigneeName = createInput.assignee_id
-        ? assignee?.name || WorkItemDefaults.USER
-        : WorkItemDefaults.UNASSIGNED;
-      const comment = `Allocation changed: Assigned to sprint ${sprintName}, Assignee set to ${assigneeName}, Story points set to ${createInput.story_points || 0}.`;
-      await prisma.work_item_worklogs.create({
-        data: {
-          work_item_id: created.id,
-          user_id: userId,
-          logged_hours: 0,
-          comment,
-          created_by: userId,
-          updated_by: userId,
-        },
-      });
-    }
-
-    return created;
   }
 
   async updateWorkItem(
@@ -349,8 +376,13 @@ export class WorkItemService {
 
     const current = await this.workItems.getById(workItemId);
 
-    const { allowedTypes, hierarchy, workflowConfig, workflowConfigError } =
-      await this.getProjectAllowedTypes(input.project_id);
+    const {
+      allowedTypes,
+      hierarchy,
+      typeDefs,
+      workflowConfig,
+      workflowConfigError,
+    } = await this.getProjectAllowedTypes(input.project_id);
     if (input.type && !allowedTypes.includes(input.type)) {
       throw new WorkItemValidationError(
         `Work item type "${input.type}" is not allowed in this project`
@@ -363,6 +395,7 @@ export class WorkItemService {
       input,
       allowedTypes,
       hierarchy,
+      typeDefs,
       detachChildren: options?.detachChildren === true,
     });
 
@@ -400,6 +433,7 @@ export class WorkItemService {
       workItemId,
       allowedTypes,
       hierarchy,
+      typeDefs,
     });
 
     nextInput = await this.applySprintHierarchyRules(current, nextInput);
@@ -438,66 +472,96 @@ export class WorkItemService {
       current.story_points
     );
 
-    const updated = await this.workItems.update({
-      ...nextInput,
-      id: workItemId,
-      updatedBy: userId,
-      expectedUpdatedAt,
-      current,
-      ...(graphPlacement?.stateOverride
-        ? { stateOverride: graphPlacement.stateOverride }
-        : {}),
-    });
-
     const effectiveParentId =
       nextInput.parent_id !== undefined
         ? nextInput.parent_id
         : current.parent_id;
     const shouldCascadeSprint =
       !effectiveParentId && (sprintChanged || options?.cascadeSprint === true);
-    let cascadedSprintDescendantIds: readonly string[] = [];
-    if (shouldCascadeSprint) {
-      // Cascade immediately after the parent write so activity/worklog
-      // side-effects cannot leave children on the old sprint.
-      cascadedSprintDescendantIds =
-        await this.workItems.updateSprintForDescendants(
-          workItemId,
-          sprintId ?? null,
-          userId
-        );
-    }
-
-    const sideEffects: Promise<void>[] = [
-      this.recordUpdateActivities({
-        userId,
-        workItemId,
+    return await this.runNotificationAtomicMutation(async (client) => {
+      const shouldDetachChildren =
+        options?.detachChildren === true &&
+        nextInput.type !== (current.type as WorkItemType);
+      if (shouldDetachChildren) {
+        if (client) {
+          await this.workItems.detachDirectChildren(workItemId, client);
+        } else {
+          await this.workItems.detachDirectChildren(workItemId);
+        }
+      }
+      const updateRecord = {
+        ...nextInput,
+        id: workItemId,
+        updatedBy: userId,
+        expectedUpdatedAt,
         current,
-        nextInput,
-        workflow,
-        resolutionMeta,
-      }),
-    ];
+        ...(graphPlacement?.stateOverride
+          ? { stateOverride: graphPlacement.stateOverride }
+          : {}),
+      };
+      const updated = client
+        ? await this.workItems.update(updateRecord, client)
+        : await this.workItems.update(updateRecord);
 
-    if (sprintChanged || assigneeChanged || storyPointsChanged) {
-      sideEffects.push(
-        this.createWorkItemUpdateWorklog({
+      let cascadedSprintDescendantIds: readonly string[] = [];
+      if (shouldCascadeSprint) {
+        cascadedSprintDescendantIds = client
+          ? await this.workItems.updateSprintForDescendants(
+              workItemId,
+              sprintId ?? null,
+              userId,
+              client
+            )
+          : await this.workItems.updateSprintForDescendants(
+              workItemId,
+              sprintId ?? null,
+              userId
+            );
+      }
+
+      const sideEffects: Promise<void>[] = [
+        this.recordUpdateActivities({
           userId,
           workItemId,
           current,
-          sprintId,
-          assigneeId,
-          storyPoints,
-          sprintChanged,
-          assigneeChanged,
-          storyPointsChanged,
-        })
-      );
-    }
+          nextInput,
+          workflow,
+          resolutionMeta,
+          ...(client ? { client } : {}),
+        }),
+      ];
 
-    // Await the batch (Vercel freezes the isolate if the handler returns early).
-    await Promise.all(sideEffects);
+      if (sprintChanged || assigneeChanged || storyPointsChanged) {
+        sideEffects.push(
+          this.createWorkItemUpdateWorklog({
+            userId,
+            workItemId,
+            current,
+            sprintId,
+            assigneeId,
+            storyPoints,
+            sprintChanged,
+            assigneeChanged,
+            storyPointsChanged,
+            client: client ?? (prisma as unknown as Prisma.TransactionClient),
+          })
+        );
+      }
+      await Promise.all(sideEffects);
 
-    return { workItem: updated, cascadedSprintDescendantIds };
+      const emails = this.notifications
+        ? await this.notifications.createWorkItemMutationNotifications({
+            actorId: userId,
+            before: current,
+            after: updated,
+            ...(client ? { client } : {}),
+          })
+        : [];
+      return {
+        result: { workItem: updated, cascadedSprintDescendantIds },
+        emails,
+      };
+    });
   }
 
   /**
@@ -560,27 +624,44 @@ export class WorkItemService {
       workflow
     );
 
-    const updated = await this.workItems.update({
-      ...resolvedInput,
-      id: workItemId,
-      updatedBy: userId,
-      expectedUpdatedAt: input.expectedUpdatedAt,
-      current,
-      ...(graphPlacement?.stateOverride
-        ? { stateOverride: graphPlacement.stateOverride }
-        : {}),
-    });
+    return await this.runNotificationAtomicMutation(async (client) => {
+      const updateRecord = {
+        ...resolvedInput,
+        id: workItemId,
+        updatedBy: userId,
+        expectedUpdatedAt: input.expectedUpdatedAt,
+        current,
+        ...(graphPlacement?.stateOverride
+          ? { stateOverride: graphPlacement.stateOverride }
+          : {}),
+      };
+      const updated = client
+        ? await this.workItems.update(updateRecord, client)
+        : await this.workItems.update(updateRecord);
 
-    await this.recordUpdateActivities({
-      userId,
-      workItemId,
-      current,
-      nextInput: resolvedInput,
-      workflow,
-      resolutionMeta,
-    });
+      await this.recordUpdateActivities({
+        userId,
+        workItemId,
+        current,
+        nextInput: resolvedInput,
+        workflow,
+        resolutionMeta,
+        ...(client ? { client } : {}),
+      });
 
-    return { workItem: updated, cascadedSprintDescendantIds: [] };
+      const emails = this.notifications
+        ? await this.notifications.createWorkItemMutationNotifications({
+            actorId: userId,
+            before: current,
+            after: updated,
+            ...(client ? { client } : {}),
+          })
+        : [];
+      return {
+        result: { workItem: updated, cascadedSprintDescendantIds: [] },
+        emails,
+      };
+    });
   }
 
   private buildStatusOnlyUpdateBody(
@@ -665,6 +746,7 @@ export class WorkItemService {
     nextInput: WorkItemUpdateBody;
     workflow: Awaited<ReturnType<WorkItemService['resolveWorkflowValidation']>>;
     resolutionMeta: ReturnType<typeof buildEscalationResolvedMeta> | null;
+    client?: Prisma.TransactionClient;
   }): Promise<void> {
     if (!this.activities) {
       return;
@@ -703,6 +785,7 @@ export class WorkItemService {
       workflowTransition,
       escalationResolved: wroteWorkflowTransition ? resolutionMeta : null,
       fieldChanges,
+      client: params.client,
     });
   }
 
@@ -719,7 +802,8 @@ export class WorkItemService {
 
     const requirement = getResolutionRequirement(
       workflow.edge,
-      workflow.sourceState
+      workflow.sourceState,
+      { viaWildcard: workflow.viaWildcard }
     );
     if (!requirement.required) {
       return null;
@@ -748,7 +832,7 @@ export class WorkItemService {
       preset,
       payload: resolution,
       workflowId: workflow.workflow.id,
-      edgeId: workflow.edge?.id ?? null,
+      edgeId: escalationResolvedEdgeId(workflow.edge, workflow.viaWildcard),
       fromStateId: workflow.sourceState.id,
       toStateId: workflow.destinationState.id,
     });
@@ -760,9 +844,11 @@ export class WorkItemService {
     input: WorkItemUpdateBody;
     allowedTypes: readonly WorkItemType[];
     hierarchy?: Record<string, string | null> | null;
+    typeDefs?: readonly ProjectWorkItemTypeDef[] | null;
     detachChildren: boolean;
   }): Promise<WorkItemUpdateBody> {
-    const { workItemId, current, input, allowedTypes, hierarchy } = params;
+    const { workItemId, current, input, allowedTypes, hierarchy, typeDefs } =
+      params;
     const typeChanged =
       Boolean(input.type) && input.type !== (current.type as WorkItemType);
     if (!typeChanged) {
@@ -774,7 +860,6 @@ export class WorkItemService {
       if (!params.detachChildren) {
         throw new WorkItemHierarchyTypeChangeError(childCount);
       }
-      await this.workItems.detachDirectChildren(workItemId);
     }
 
     return await this.clearParentIfInvalidForNewType({
@@ -782,6 +867,7 @@ export class WorkItemService {
       input,
       allowedTypes,
       hierarchy,
+      typeDefs,
     });
   }
 
@@ -790,8 +876,9 @@ export class WorkItemService {
     input: WorkItemUpdateBody;
     allowedTypes: readonly WorkItemType[];
     hierarchy?: Record<string, string | null> | null;
+    typeDefs?: readonly ProjectWorkItemTypeDef[] | null;
   }): Promise<WorkItemUpdateBody> {
-    const { current, input, allowedTypes, hierarchy } = params;
+    const { current, input, allowedTypes, hierarchy, typeDefs } = params;
     const parentId =
       input.parent_id !== undefined ? input.parent_id : current.parent_id;
     if (!parentId) {
@@ -802,7 +889,8 @@ export class WorkItemService {
     const allowedParent = getAllowedParentType(
       input.type as WorkItemType,
       allowedTypes,
-      hierarchy
+      hierarchy,
+      typeDefs
     );
     if (
       !parent ||
@@ -820,8 +908,16 @@ export class WorkItemService {
     workItemId: string;
     allowedTypes: readonly WorkItemType[];
     hierarchy?: Record<string, string | null> | null;
+    typeDefs?: readonly ProjectWorkItemTypeDef[] | null;
   }): Promise<void> {
-    const { current, nextInput, workItemId, allowedTypes, hierarchy } = params;
+    const {
+      current,
+      nextInput,
+      workItemId,
+      allowedTypes,
+      hierarchy,
+      typeDefs,
+    } = params;
     const parentChanged = !sameNullable(nextInput.parent_id, current.parent_id);
     const typeChanged = Boolean(
       nextInput.type && nextInput.type !== current.type
@@ -840,6 +936,7 @@ export class WorkItemService {
       childId: workItemId,
       allowedTypes,
       hierarchy,
+      typeDefs,
     });
   }
 
@@ -927,6 +1024,7 @@ export class WorkItemService {
         mode: 'workflow';
         workflow: WorkflowDocument;
         edge: WorkflowEdge | null;
+        viaWildcard: boolean;
         sourceState: WorkflowStateNode;
         destinationState: WorkflowStateNode;
       } {
@@ -998,6 +1096,7 @@ export class WorkItemService {
     mode: 'workflow';
     workflow: WorkflowDocument;
     edge: WorkflowEdge | null;
+    viaWildcard: boolean;
     sourceState: WorkflowStateNode;
     destinationState: WorkflowStateNode;
   } {
@@ -1036,15 +1135,20 @@ export class WorkItemService {
       throw new WorkItemValidationError('That state is not on this workflow.');
     }
 
-    const edge =
+    const resolved =
       sourceState.id === destinationState.id
         ? null
-        : findWorkflowEdge(workflow, sourceState.id, destinationState.id);
+        : resolveWorkflowTransition(
+            workflow,
+            sourceState.id,
+            destinationState.id
+          );
 
     return {
       mode: 'workflow',
       workflow,
-      edge,
+      edge: resolved?.edge ?? null,
+      viaWildcard: resolved?.viaWildcard ?? false,
       sourceState,
       destinationState,
     };
@@ -1237,6 +1341,7 @@ export class WorkItemService {
     sprintChanged: boolean;
     assigneeChanged: boolean;
     storyPointsChanged: boolean;
+    client: Prisma.TransactionClient;
   }): Promise<void> {
     const {
       userId,
@@ -1248,29 +1353,30 @@ export class WorkItemService {
       sprintChanged,
       assigneeChanged,
       storyPointsChanged,
+      client,
     } = params;
 
     const [oldSprint, newSprint, oldAssignee, newAssignee] = await Promise.all([
       current.sprint_id
-        ? prisma.sprints.findUnique({
+        ? client.sprints.findUnique({
             where: { id: current.sprint_id },
             select: { name: true },
           })
         : Promise.resolve(null),
       sprintId
-        ? prisma.sprints.findUnique({
+        ? client.sprints.findUnique({
             where: { id: sprintId },
             select: { name: true },
           })
         : Promise.resolve(null),
       current.assignee_id
-        ? prisma.users.findUnique({
+        ? client.users.findUnique({
             where: { id: current.assignee_id },
             select: { name: true },
           })
         : Promise.resolve(null),
       assigneeId
-        ? prisma.users.findUnique({
+        ? client.users.findUnique({
             where: { id: assigneeId },
             select: { name: true },
           })
@@ -1306,7 +1412,7 @@ export class WorkItemService {
 
     const comment = `Allocation change: ${commentParts.join(', ')}.`;
 
-    await prisma.work_item_worklogs.create({
+    await client.work_item_worklogs.create({
       data: {
         work_item_id: workItemId,
         user_id: userId,
@@ -1330,6 +1436,40 @@ export class WorkItemService {
       'archived',
       'Work item is already archived.'
     );
+  }
+
+  /**
+   * Validate sync, accept archive, finish in the background, inbox-notify.
+   * Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueArchiveWorkItem(
+    actorId: string,
+    workItemId: string,
+    expectedUpdatedAt: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    await this.workItems.requireProjectMember(workItemId, actorId);
+    const current = await this.workItems.getById(workItemId);
+    if (current.record_status === 'archived') {
+      throw new WorkItemValidationError('Work item is already archived.');
+    }
+    if (current.updated_at !== expectedUpdatedAt) {
+      throw new OptimisticLockError(
+        current,
+        'This work item was updated by someone else.'
+      );
+    }
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'archive',
+      entityType: 'work_item',
+      entityLabel: workItemEntityLabel(current),
+      relatedItemId: workItemId,
+      detailHref: `/work-items/${workItemId}`,
+      run: async () => {
+        await this.archiveWorkItem(actorId, workItemId, expectedUpdatedAt);
+      },
+    });
   }
 
   async restoreWorkItem(
@@ -1387,6 +1527,37 @@ export class WorkItemService {
       deletedIds: ids,
       descendantCount: Math.max(0, ids.length - 1),
     };
+  }
+
+  /**
+   * Validate sync, accept permanent delete, finish in the background,
+   * inbox-notify. Interim until BullMQ owns destructive jobs.
+   */
+  async enqueuePurgeWorkItem(
+    actorId: string,
+    workItemId: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    await requireAdmin(actorId);
+    await this.workItems.requireProjectMember(workItemId, actorId);
+
+    const current = await this.workItems.getById(workItemId);
+    if (current.record_status !== 'archived') {
+      throw new WorkItemValidationError(
+        'Only archived work items can be permanently deleted.'
+      );
+    }
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'purge',
+      entityType: 'work_item',
+      entityLabel: workItemEntityLabel(current),
+      relatedItemId: null,
+      detailHref: '/work-items?tab=archived',
+      run: async () => {
+        await this.purgeWorkItem(actorId, workItemId);
+      },
+    });
   }
 
   async countDescendants(workItemId: string, actorId: string): Promise<number> {
@@ -1509,6 +1680,7 @@ export class WorkItemService {
   private async getProjectAllowedTypes(projectId: string): Promise<{
     allowedTypes: WorkItemType[];
     hierarchy?: Record<string, string | null> | null;
+    typeDefs: ProjectWorkItemTypeDef[];
     workflowConfig: unknown;
     workflowConfigError: unknown;
   }> {
@@ -1516,20 +1688,22 @@ export class WorkItemService {
       const rawConfig =
         await this.workItems.getProjectWorkflowConfig(projectId);
       const config = rawConfig as ProjectWorkflowConfig | null;
-      const allowedTypes =
-        config?.work_item_types && config.work_item_types.length > 0
-          ? config.work_item_types
-          : [...CANONICAL_HIERARCHY_ORDER];
+      const typeDefs = normalizeProjectWorkItemTypeDefs(
+        config?.work_item_types
+      );
       return {
-        allowedTypes,
+        allowedTypes: resolveProjectTypeKeys(typeDefs),
         hierarchy: config?.hierarchy,
+        typeDefs,
         workflowConfig: rawConfig,
         workflowConfigError: null,
       };
     } catch (error) {
+      const typeDefs = normalizeProjectWorkItemTypeDefs(null);
       return {
-        allowedTypes: [...CANONICAL_HIERARCHY_ORDER],
+        allowedTypes: resolveProjectTypeKeys(typeDefs),
         hierarchy: null,
+        typeDefs,
         workflowConfig: null,
         workflowConfigError: error,
       };
@@ -1543,6 +1717,7 @@ export class WorkItemService {
     childId?: string;
     allowedTypes?: readonly WorkItemType[] | null;
     hierarchy?: Record<string, string | null> | null;
+    typeDefs?: readonly ProjectWorkItemTypeDef[] | null;
   }): Promise<void> {
     const { parentId, projectId, childType, childId } = params;
 
@@ -1567,16 +1742,19 @@ export class WorkItemService {
 
     let allowedTypes = params.allowedTypes;
     let hierarchy = params.hierarchy;
-    if (!allowedTypes) {
+    let typeDefs = params.typeDefs;
+    if (!allowedTypes || !typeDefs) {
       const projectTypes = await this.getProjectAllowedTypes(projectId);
-      allowedTypes = projectTypes.allowedTypes;
-      hierarchy = projectTypes.hierarchy;
+      allowedTypes = allowedTypes ?? projectTypes.allowedTypes;
+      hierarchy = hierarchy ?? projectTypes.hierarchy;
+      typeDefs = typeDefs ?? projectTypes.typeDefs;
     }
 
     const allowedChildType = getAllowedChildType(
       parent.type as WorkItemType,
       allowedTypes,
-      hierarchy
+      hierarchy,
+      typeDefs
     );
     if (!allowedChildType) {
       throw new WorkItemValidationError(

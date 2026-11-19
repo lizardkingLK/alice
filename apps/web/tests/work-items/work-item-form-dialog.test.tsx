@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form/work-item-form-dialog';
 import { getWorkItemById } from '@/app/work-items/_services/work-items.reads.client';
 import {
@@ -58,7 +58,7 @@ describe('WorkItemFormDialog', () => {
     vi.mocked(fetchProjectMembersForForm).mockResolvedValue([]);
   });
 
-  it('loads full work item detail so description is available for edit', async () => {
+  it('opens edit immediately and hydrates full detail in the background', async () => {
     const compactRow = workItemFactory.build({
       id: 'wi-1',
       title: 'Configure build and dev scripts',
@@ -95,7 +95,8 @@ describe('WorkItemFormDialog', () => {
       />
     );
 
-    expect(screen.getByText(/Loading work item/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Loading work item/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId('mock-work-item-form')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(getWorkItemById).toHaveBeenCalledWith('wi-1');
@@ -116,7 +117,7 @@ describe('WorkItemFormDialog', () => {
     expect(screen.getByTestId('form-prefer-sprints')).toHaveTextContent('true');
   });
 
-  it('waits for sprints in parallel before showing the form', async () => {
+  it('prefers bootstrapped sprints once they resolve in the background', async () => {
     const compactRow = workItemFactory.build({ id: 'wi-2' });
     let resolveSprints!: (
       // eslint-disable-next-line no-unused-vars
@@ -147,34 +148,18 @@ describe('WorkItemFormDialog', () => {
       />
     );
 
-    expect(screen.getByText(/Loading work item/i)).toBeInTheDocument();
-    expect(screen.queryByTestId('mock-work-item-form')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Loading work item/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId('mock-work-item-form')).toBeInTheDocument();
+    expect(screen.getByTestId('form-sprint-count')).toHaveTextContent('0');
 
     resolveSprints([{ id: 'sprint-1', name: 'Sprint 1', status: 'active' }]);
 
     await waitFor(() => {
-      expect(screen.getByTestId('mock-work-item-form')).toBeInTheDocument();
+      expect(screen.getByTestId('form-sprint-count')).toHaveTextContent('1');
     });
-    expect(screen.getByTestId('form-sprint-count')).toHaveTextContent('1');
   });
 
-  it('bootstraps sprints and members for create when project is known', async () => {
-    let resolveMembers!: (
-      // eslint-disable-next-line no-unused-vars
-      value: { id: string; name: string; email: string }[]
-    ) => void;
-    const membersPromise = new Promise<
-      { id: string; name: string; email: string }[]
-    >((resolve) => {
-      resolveMembers = resolve;
-    });
-    vi.mocked(fetchProjectMembersForForm).mockReturnValue(
-      membersPromise as ReturnType<typeof fetchProjectMembersForForm>
-    );
-    vi.mocked(fetchProjectSprintsForForm).mockResolvedValue([
-      { id: 'sprint-1', name: 'Sprint 1', status: 'active' },
-    ]);
-
+  it('opens create immediately without a dialog-level bootstrap spinner', () => {
     render(
       <WorkItemFormDialog
         open
@@ -189,23 +174,143 @@ describe('WorkItemFormDialog', () => {
       />
     );
 
-    expect(screen.getByText(/^Loading…$/)).toBeInTheDocument();
+    expect(screen.queryByText(/^Loading…$/)).not.toBeInTheDocument();
+    expect(screen.getByTestId('mock-work-item-form')).toBeInTheDocument();
     expect(getWorkItemById).not.toHaveBeenCalled();
-    expect(fetchProjectSprintsForForm).toHaveBeenCalledWith(projects[0]!.id);
-    expect(fetchProjectMembersForForm).toHaveBeenCalledWith(projects[0]!.id);
+    expect(fetchProjectSprintsForForm).not.toHaveBeenCalled();
+    expect(fetchProjectMembersForForm).not.toHaveBeenCalled();
+    expect(screen.getByTestId('form-prefer-sprints')).toHaveTextContent(
+      'false'
+    );
+  });
 
-    resolveMembers([
-      {
-        id: projectMembers[0]!.id,
-        name: projectMembers[0]!.name,
-        email: projectMembers[0]!.email,
-      },
-    ]);
+  it('exposes expand and close chrome for classic create (no float)', () => {
+    render(
+      <WorkItemFormDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Create Work Item"
+        description="Create a new work item."
+        projects={projects}
+        projectMembers={projectMembers}
+        onSuccess={vi.fn()}
+      />
+    );
 
-    await waitFor(() => {
-      expect(screen.getByTestId('mock-work-item-form')).toBeInTheDocument();
-    });
-    expect(screen.getByTestId('form-prefer-sprints')).toHaveTextContent('true');
-    expect(screen.getByTestId('form-sprint-count')).toHaveTextContent('1');
+    expect(
+      screen.queryByRole('button', { name: /float dialog/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /expand dialog/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /^close$/i })
+    ).toBeInTheDocument();
+  });
+
+  it('exposes minimize, float, and expand chrome for modern create', () => {
+    render(
+      <WorkItemFormDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Create Work Item"
+        description="Create a new work item."
+        projects={projects}
+        projectMembers={projectMembers}
+        createFormMode="modern"
+        onSuccess={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.getByRole('button', { name: /minimize dialog/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /float dialog/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /expand dialog/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /^close$/i })
+    ).toBeInTheDocument();
+  });
+
+  it('restores the previous layout after minimize', () => {
+    render(
+      <WorkItemFormDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Create Work Item"
+        description="Create a new work item."
+        projects={projects}
+        projectMembers={projectMembers}
+        createFormMode="modern"
+        onSuccess={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /minimize dialog/i }));
+    expect(
+      screen.getByRole('button', { name: /restore create dialog/i })
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /restore create dialog/i })
+    );
+
+    expect(
+      screen.getByRole('button', { name: /minimize dialog/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /float dialog/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /restore create dialog/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows draft warning when create is requested again while open', async () => {
+    const { rerender } = render(
+      <WorkItemFormDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Create Work Item"
+        description="Create a new work item."
+        projects={projects}
+        projectMembers={projectMembers}
+        createFormMode="modern"
+        createIntentKey={0}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.queryByRole('alertdialog', { name: /draft work item/i })
+    ).not.toBeInTheDocument();
+
+    rerender(
+      <WorkItemFormDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Create Work Item"
+        description="Create a new work item."
+        projects={projects}
+        projectMembers={projectMembers}
+        createFormMode="modern"
+        createIntentKey={1}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    expect(
+      await screen.findByRole('alertdialog', { name: /draft work item/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /discard draft/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /keep editing/i })
+    ).toBeInTheDocument();
   });
 });

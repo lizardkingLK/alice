@@ -17,6 +17,8 @@ const chatRow: IntegrationWire = {
   id: '11111111-1111-4111-8111-111111111111',
   catalog_id: 'alice-gemini',
   category: 'ai_agent',
+  scope: 'organization',
+  project_id: null,
   provider: 'gemini',
   name: 'Gemini 3.6',
   status: 'active',
@@ -28,6 +30,8 @@ const chatRow: IntegrationWire = {
   },
   is_default: true,
   sort_order: 0,
+  created_by: null,
+  created_by_name: null,
   created_at: new Date('2026-01-01T00:00:00.000Z'),
   updated_at: new Date('2026-01-01T00:00:00.000Z'),
 } satisfies IntegrationWire;
@@ -63,8 +67,8 @@ describe('defaultModelForProvider', () => {
       label: 'GPT-4o',
     });
     expect(defaultModelForProvider('anthropic')).toEqual({
-      value: 'claude-sonnet-4-20250514',
-      label: 'Claude Sonnet 4',
+      value: 'claude-sonnet-4-5-20250929',
+      label: 'Claude Sonnet 4.5',
     });
   });
 });

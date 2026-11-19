@@ -1,7 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { WorkItemType, WorkItemStatus } from '@repo/types';
+import {
+  workItemTypeDisplayName,
+  type ProjectWorkItemTypeDef,
+  type WorkItemType,
+  type WorkItemStatus,
+} from '@repo/types';
 import type {
   WorkItemTypeRemovalPreviewGroup,
   WorkItemTypeRemovalPreviewResponse,
@@ -49,6 +54,11 @@ type ProjectTypeRemovalStrategyDialogProps = {
   readonly previewLoading: boolean;
   readonly previewError: string | null;
   readonly migrateTargets: readonly WorkItemType[];
+  /** Remaining catalog defs for migrate-target labels / icons. */
+  readonly remainingTypeDefs?: readonly ProjectWorkItemTypeDef[];
+  /** Full catalog (incl. types being removed) for group labels. */
+  readonly labelTypeDefs?: readonly ProjectWorkItemTypeDef[];
+  readonly projectId?: string | null;
   readonly isSubmitting: boolean;
   // eslint-disable-next-line no-unused-vars
   readonly onConfirm: (strategies: WorkItemTypeRemovalStrategy[]) => void;
@@ -57,11 +67,17 @@ type ProjectTypeRemovalStrategyDialogProps = {
 function GroupStrategyPanel({
   group,
   migrateTargets,
+  remainingTypeDefs,
+  labelTypeDefs,
+  projectId,
   draft,
   onDraftChange,
 }: Readonly<{
   group: WorkItemTypeRemovalPreviewGroup;
   migrateTargets: readonly WorkItemType[];
+  remainingTypeDefs?: readonly ProjectWorkItemTypeDef[];
+  labelTypeDefs?: readonly ProjectWorkItemTypeDef[];
+  projectId?: string | null;
   draft: StrategyDraft | undefined;
   // eslint-disable-next-line no-unused-vars
   onDraftChange: (next: StrategyDraft) => void;
@@ -69,6 +85,12 @@ function GroupStrategyPanel({
   const [open, setOpen] = useState(group.count > 0);
   const action = draft?.action ?? 'migrate';
   const migrateTo = draft?.migrateTo ?? migrateTargets[0];
+  const labelDefs = labelTypeDefs ?? remainingTypeDefs;
+  const groupDef = labelDefs?.find((def) => def.key === group.type) ?? null;
+  const groupLabel = workItemTypeDisplayName(group.type, labelDefs);
+  const parentSlotLabels = group.childSlotParents
+    .map((parent) => workItemTypeDisplayName(parent, labelDefs))
+    .join(', ');
 
   return (
     <Collapsible
@@ -82,8 +104,12 @@ function GroupStrategyPanel({
           className="hover:bg-muted/40 flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left"
         >
           <div className="flex min-w-0 items-center gap-2.5">
-            <WorkItemTypeBadge type={group.type} />
-            <span className="text-sm font-semibold">{group.type}</span>
+            <WorkItemTypeBadge
+              type={group.type}
+              projectId={projectId}
+              typeDef={groupDef}
+            />
+            <span className="text-sm font-semibold">{groupLabel}</span>
             <Badge variant="secondary" className="tabular-nums">
               {group.count}
             </Badge>
@@ -102,10 +128,8 @@ function GroupStrategyPanel({
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <p>
               Parent links from{' '}
-              <span className="font-semibold">
-                {group.childSlotParents.join(', ')}
-              </span>{' '}
-              to {group.type} will be detached before this change is applied.
+              <span className="font-semibold">{parentSlotLabels}</span> to{' '}
+              {groupLabel} will be detached before this change is applied.
             </p>
           </div>
         ) : null}
@@ -173,7 +197,7 @@ function GroupStrategyPanel({
                   <SelectContent>
                     {migrateTargets.map((target) => (
                       <SelectItem key={target} value={target}>
-                        {target}
+                        {workItemTypeDisplayName(target, remainingTypeDefs)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -249,6 +273,9 @@ export function ProjectTypeRemovalStrategyDialog({
   previewLoading,
   previewError,
   migrateTargets,
+  remainingTypeDefs,
+  labelTypeDefs,
+  projectId = null,
   isSubmitting,
   onConfirm,
 }: Readonly<ProjectTypeRemovalStrategyDialogProps>) {
@@ -335,6 +362,9 @@ export function ProjectTypeRemovalStrategyDialog({
                   key={group.type}
                   group={group}
                   migrateTargets={migrateTargets}
+                  remainingTypeDefs={remainingTypeDefs}
+                  labelTypeDefs={labelTypeDefs}
+                  projectId={projectId}
                   draft={drafts[group.type]}
                   onDraftChange={(next) =>
                     setDrafts((prev) => ({ ...prev, [group.type]: next }))

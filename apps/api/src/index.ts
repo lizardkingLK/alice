@@ -16,7 +16,6 @@ app.disable(poweredBy);
 app.use(corsConfig);
 app.use(jsonConfig);
 app.use(routesConfig);
-
 app.use(errorConfig);
 useServer(app);
 

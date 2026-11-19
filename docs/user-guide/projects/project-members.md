@@ -25,14 +25,14 @@ belong to (membership-scoped). Everyone else is denied.
 1. Go to **Projects** and open a project.
 2. Select the **Members** tab.
 
-You'll see **Allocated members** and, if you have permission, an **Allocate
-member** panel.
+You'll see a registry-style list (search + table) of **Project members**.
+Managers and admins also get **Add Member**.
 
 ---
 
 ## Add a member
 
-1. On **Members**, use **Allocate member** (right panel).
+1. On **Members**, select **Add Member**.
 2. Search for a user by name or email.
 3. Select them and choose **Add to Project**.
 
@@ -47,13 +47,17 @@ manager) and they can work on that project's items.
 
 ## Remove a member
 
-1. On **Members**, find the person in **Allocated members**.
+1. On **Members**, find the person in the members list (use search if needed).
 2. Select the remove action (trash icon).
+3. Confirm in the dialog — they lose project access until added again.
 
 You **cannot** remove the **project owner** or the **project creator** (the
-admin who created the project) from the list. Change the owner in project
+admin who created this project) from the list. Change the owner in project
 settings first if ownership should move. Creator membership is locked by the
 system.
+
+When someone is added, Alice emails them a link to the project using its
+shareable key (`/projects/{KEY}`), not the internal UUID.
 
 ---
 

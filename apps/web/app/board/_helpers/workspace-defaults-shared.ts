@@ -1,7 +1,7 @@
-import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import {
   ALL_PROJECTS_ID,
   readValidatedBoardDefaults,
+  type BoardDefaultsPreference,
 } from '@/app/board/_helpers/board-defaults-storage';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 
@@ -145,9 +145,17 @@ export function resolvePreferenceFromFilterDraft(options: {
   readonly projectValue: string;
   readonly sprintValue: string;
   readonly allValue?: string;
+  readonly projects?: readonly {
+    readonly id: string;
+    readonly key?: string | null;
+  }[];
   readonly sprints: readonly {
     readonly id: string;
-    readonly project?: { readonly id: string } | null;
+    readonly slug?: string | null;
+    readonly project?: {
+      readonly id: string;
+      readonly key?: string | null;
+    } | null;
   }[];
 }): BoardDefaultsPreference | null {
   const allValue = options.allValue ?? 'all';
@@ -155,18 +163,41 @@ export function resolvePreferenceFromFilterDraft(options: {
     !options.projectValue || options.projectValue === allValue;
   const sprintIsAll = !options.sprintValue || options.sprintValue === allValue;
 
+  const projectKeyFor = (projectId: string): string | null => {
+    const fromProjects = options.projects?.find(
+      (project) => project.id === projectId
+    )?.key;
+    if (fromProjects?.trim()) {
+      return fromProjects.trim();
+    }
+    const fromSprint = options.sprints.find(
+      (sprint) => sprint.project?.id === projectId
+    )?.project?.key;
+    return fromSprint?.trim() || null;
+  };
+
   if (options.intent === 'project') {
     if (projectIsAll) {
       return null;
     }
-    return { projectId: options.projectValue, sprintId: null };
+    const projectKey = projectKeyFor(options.projectValue);
+    return {
+      projectId: options.projectValue,
+      sprintId: null,
+      ...(projectKey ? { projectKey } : {}),
+    };
   }
 
   if (sprintIsAll) {
     if (projectIsAll) {
       return null;
     }
-    return { projectId: options.projectValue, sprintId: null };
+    const projectKey = projectKeyFor(options.projectValue);
+    return {
+      projectId: options.projectValue,
+      sprintId: null,
+      ...(projectKey ? { projectKey } : {}),
+    };
   }
 
   const sprint = options.sprints.find(
@@ -179,5 +210,12 @@ export function resolvePreferenceFromFilterDraft(options: {
     return null;
   }
 
-  return { projectId, sprintId: options.sprintValue };
+  const projectKey = projectKeyFor(projectId);
+  const sprintSlug = sprint?.slug?.trim() || null;
+  return {
+    projectId,
+    sprintId: options.sprintValue,
+    ...(projectKey ? { projectKey } : {}),
+    ...(sprintSlug ? { sprintSlug } : {}),
+  };
 }

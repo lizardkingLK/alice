@@ -19,6 +19,12 @@ export function httpStatusFromErrorMessage(
   if (message.startsWith('Invalid integration configuration.')) {
     return 400;
   }
+  if (
+    /^(Cannot |Only |You already|Unknown chat)/.test(message) ||
+    message.startsWith('At least one field is required')
+  ) {
+    return 400;
+  }
   return fallback;
 }
 

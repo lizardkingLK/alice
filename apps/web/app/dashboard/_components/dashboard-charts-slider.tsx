@@ -61,30 +61,117 @@ type DashboardChartsSliderProps = {
   readonly prefetchedChartSeries?: readonly PrefetchedChartSeriesEntry[];
 };
 
+/** Soft chart glyphs for the empty Overview shell (decorative only). */
+export function ChartsOverviewEmptyBackdrop() {
+  return (
+    <div
+      className="dashboard-charts-empty-backdrop pointer-events-none absolute inset-0 overflow-hidden"
+      aria-hidden
+    >
+      <svg
+        className="text-primary/18 absolute top-[12%] left-[8%] size-40 sm:size-48"
+        viewBox="0 0 120 120"
+        fill="none"
+      >
+        <rect x="14" y="58" width="16" height="44" rx="3" fill="currentColor" />
+        <rect x="38" y="34" width="16" height="68" rx="3" fill="currentColor" />
+        <rect x="62" y="46" width="16" height="56" rx="3" fill="currentColor" />
+        <rect x="86" y="22" width="16" height="80" rx="3" fill="currentColor" />
+      </svg>
+      <svg
+        className="text-primary/14 absolute top-[18%] right-[10%] size-36 sm:size-44"
+        viewBox="0 0 120 120"
+        fill="none"
+      >
+        <circle
+          cx="60"
+          cy="60"
+          r="38"
+          stroke="currentColor"
+          strokeWidth="14"
+          strokeDasharray="80 160"
+          strokeLinecap="round"
+        />
+        <circle
+          cx="60"
+          cy="60"
+          r="38"
+          stroke="currentColor"
+          strokeWidth="14"
+          strokeDasharray="45 195"
+          strokeDashoffset="-90"
+          strokeLinecap="round"
+          opacity="0.55"
+        />
+      </svg>
+      <svg
+        className="text-muted-foreground/20 absolute bottom-[14%] left-[18%] size-44 sm:size-52"
+        viewBox="0 0 160 90"
+        fill="none"
+      >
+        <path
+          d="M8 72 C28 72 32 28 52 28 C72 28 76 58 96 58 C116 58 122 18 152 18"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M8 72 C28 72 32 28 52 28 C72 28 76 58 96 58 C116 58 122 18 152 18"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity="0.35"
+          transform="translate(0 10)"
+        />
+      </svg>
+      <svg
+        className="text-primary/12 absolute right-[14%] bottom-[16%] size-32 sm:size-40"
+        viewBox="0 0 100 80"
+        fill="none"
+      >
+        <polyline
+          points="8,62 28,48 48,54 68,28 92,18"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx="28" cy="48" r="3.5" fill="currentColor" />
+        <circle cx="48" cy="54" r="3.5" fill="currentColor" />
+        <circle cx="68" cy="28" r="3.5" fill="currentColor" />
+        <circle cx="92" cy="18" r="3.5" fill="currentColor" />
+      </svg>
+    </div>
+  );
+}
+
 function DashboardChartsSliderEmpty() {
   return (
-    <div className="border-border bg-card mx-auto flex min-h-72 w-full max-w-md flex-1 flex-col justify-between gap-6 rounded-xl border p-6 shadow-none">
-      <div className="space-y-3">
-        <div className="space-y-1">
-          <p className="text-foreground text-base font-semibold tracking-tight">
-            Charts on Overview
-          </p>
-          <p className="text-muted-foreground text-sm">
-            Pin a workspace for the slider
-          </p>
+    <div className="relative z-10 flex min-h-0 w-full flex-1 flex-col items-center justify-center px-4 py-8">
+      <div className="border-border bg-card/90 flex w-full max-w-md flex-col gap-4 rounded-xl border p-5 shadow-none backdrop-blur-sm">
+        <div className="flex items-start gap-3">
+          <div className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-lg">
+            <BarChart3 className="size-5 stroke-[1.5]" aria-hidden />
+          </div>
+          <div className="min-w-0 space-y-1">
+            <p className="text-foreground text-base font-semibold tracking-tight">
+              Charts on Overview
+            </p>
+            <p className="text-muted-foreground text-sm">
+              Pin a workspace for the slider
+            </p>
+          </div>
         </div>
-        <BarChart3
-          className="text-muted-foreground size-8 stroke-[1.5]"
-          aria-hidden
-        />
         <p className="text-muted-foreground text-sm leading-relaxed">
           Pin chart workspaces from Charts → Edit → Show on dashboard to build
           the Overview slider.
         </p>
+        <Button asChild className="w-full cursor-pointer">
+          <Link href="/charts">Open Charts</Link>
+        </Button>
       </div>
-      <Button asChild className="w-full cursor-pointer">
-        <Link href="/charts">Open Charts</Link>
-      </Button>
     </div>
   );
 }

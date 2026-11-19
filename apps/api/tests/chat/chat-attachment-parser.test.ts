@@ -332,82 +332,69 @@ TASK-2\tFeature\tCI/CD Pipeline\tTASK-1\t8\tDevOps`;
       }
     });
 
-    it('downloads and parses Markdown tables when attached as .md', async () => {
-      const mdContent = `| Type | Title | Priority |
-| --- | --- | --- |
-| Task | Readme Documentation | low |`;
-
+    it('rejects image attachments before downloading', async () => {
       const originalFetch = globalThis.fetch;
-      globalThis.fetch = vi.fn().mockResolvedValue(new Response(mdContent));
+      const fetchMock = vi.fn();
+      globalThis.fetch = fetchMock;
 
       try {
-        const result = await fetchAndParseWorkItemAttachment(
-          'https://supabase.co/chat-attachments/tasks.md',
-          'tasks.md',
-          ChatAttachmentFileTypeEnum.Text,
-          'https://supabase.co'
+        await expect(
+          fetchAndParseWorkItemAttachment(
+            'https://supabase.co/chat-attachments/board.png',
+            'board.png',
+            ChatAttachmentFileTypeEnum.Image,
+            'https://supabase.co'
+          )
+        ).rejects.toThrow(
+          'Only JSON (.json) and CSV (.csv) files are supported'
         );
-
-        expect(result.items).toHaveLength(1);
-        expect(result.items[0]?.title).toBe('Readme Documentation');
-        expect(result.items[0]?.type).toBe(WorkItemTypeEnum.Task);
+        expect(fetchMock).not.toHaveBeenCalled();
       } finally {
         globalThis.fetch = originalFetch;
       }
     });
 
-    it('downloads and parses pipe-delimited text files via parser registry fallback', async () => {
-      const pipeContent = `Title|Type|Priority
-Pipe Task|Task|high`;
+    it('rejects markdown/text attachments before downloading', async () => {
+      const originalFetch = globalThis.fetch;
+      const fetchMock = vi.fn();
+      globalThis.fetch = fetchMock;
+
+      try {
+        await expect(
+          fetchAndParseWorkItemAttachment(
+            'https://supabase.co/chat-attachments/tasks.md',
+            'tasks.md',
+            ChatAttachmentFileTypeEnum.Text,
+            'https://supabase.co'
+          )
+        ).rejects.toThrow(
+          'Only JSON (.json) and CSV (.csv) files are supported'
+        );
+        expect(fetchMock).not.toHaveBeenCalled();
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    it('downloads and parses CSV attachments', async () => {
+      const csvContent = `Title,Type,Priority
+CSV Task,Task,high`;
 
       const originalFetch = globalThis.fetch;
-      globalThis.fetch = vi.fn().mockResolvedValue(new Response(pipeContent));
+      globalThis.fetch = vi.fn().mockResolvedValue(new Response(csvContent));
 
       try {
         const result = await fetchAndParseWorkItemAttachment(
-          'https://supabase.co/chat-attachments/items.txt',
-          'items.txt',
-          ChatAttachmentFileTypeEnum.Text,
+          'https://supabase.co/chat-attachments/items.csv',
+          'items.csv',
+          ChatAttachmentFileTypeEnum.Csv,
           'https://supabase.co'
         );
 
         expect(result.items).toHaveLength(1);
-        expect(result.items[0]?.title).toBe('Pipe Task');
+        expect(result.items[0]?.title).toBe('CSV Task');
         expect(result.items[0]?.type).toBe(WorkItemTypeEnum.Task);
         expect(result.items[0]?.priority).toBe('high');
-      } finally {
-        globalThis.fetch = originalFetch;
-      }
-    });
-
-    it('downloads and parses outline colon format with metadata aliases', async () => {
-      const outlineContent = `- Epic: Mobile App (Key: MOB-1, Priority: highest)
-  - Task: Setup React Native (estimate: 8, issuekey: MOB-2, customCol: Mobile)`;
-
-      const originalFetch = globalThis.fetch;
-      globalThis.fetch = vi
-        .fn()
-        .mockResolvedValue(new Response(outlineContent));
-
-      try {
-        const result = await fetchAndParseWorkItemAttachment(
-          'https://supabase.co/chat-attachments/outline.txt',
-          'outline.txt',
-          ChatAttachmentFileTypeEnum.Text,
-          'https://supabase.co'
-        );
-
-        expect(result.items).toHaveLength(2);
-        expect(result.items[0]?.title).toBe('Mobile App');
-        expect(result.items[0]?.type).toBe(WorkItemTypeEnum.Epic);
-        expect(result.items[0]?.jiraIssueKey).toBe('MOB-1');
-        expect(result.items[0]?.priority).toBe('highest');
-
-        expect(result.items[1]?.title).toBe('Setup React Native');
-        expect(result.items[1]?.type).toBe(WorkItemTypeEnum.Task);
-        expect(result.items[1]?.storyPoints).toBe(8);
-        expect(result.items[1]?.jiraIssueKey).toBe('MOB-2');
-        expect(result.items[1]?.dynamicFields).toEqual({ customCol: 'Mobile' });
       } finally {
         globalThis.fetch = originalFetch;
       }

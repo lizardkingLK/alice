@@ -3,7 +3,7 @@
 | Field        | Value                                                                               |
 | ------------ | ----------------------------------------------------------------------------------- |
 | Status       | **Living**                                                                          |
-| Last updated | 2026-10-17                                                                          |
+| Last updated | 2026-10-22                                                                          |
 | Scope        | Kanban status / column moves, client prefs, realtime confirm, toasts                |
 | Performance  | [PERFORMANCE.md §9 W6](../../guides/PERFORMANCE.md#w6--async--realtime-board-moves) |
 
@@ -66,18 +66,33 @@ On background PATCH result
 
 Same destination twice: still settle on one commit; second client toasts once.
 
-## Pending stack
+## Pending stack / serial coalesce
 
-- Keyed by **work-item id** (and client `attemptId`) so multi-card drags do not
-  undo each other.
-- Stores prior `status` / `board_column_id` / `updated_at` for revert.
-- Cleared on success echo, channel overwrite, or explicit failure handling.
+- Per **work-item id** lane via shared `createSerialCoalesceMutationQueue`
+  (`apps/web/lib/work-items/serial-coalesce-mutation-queue.ts`) — same pattern
+  as comment reactions.
+- Optimistic place on every drop; rapid re-drags **coalesce** to the latest
+  desired placement and flush after the previous HTTP settles (not blocked).
+- While a flush is pending, realtime placement rows for that id are ignored so
+  echoes do not clobber local intent.
+- Honest pending UI (`pendingStatusIds` / dim in static mode) + native
+  `beforeunload` / `pagehide` keepalive flush (`usePendingMutationUnload`).
+- Toolbar **Saving…** chrome (`PendingSyncIndicator`) while any status move
+  flush is in flight (realtime and static). Same pattern on calendar due-date
+  DnD and backlog sprint DnD; comment reactions keep their per-row spinner.
+- Cleared when the lane’s pending flush count hits zero; 409 rebases ack to the
+  server row (toast, no merge dialog).
 
 ## Realtime source of truth
 
 **Primary (shipped):** Supabase realtime on `work_items` UPDATE via
 `useBoardWorkItemsRealtime` (status, `board_column_id`, `updated_at`;
 `project_id` filter when the board URL has a concrete project).
+
+**List shape:** Board cards load without `description` (lean list). Channel
+merges and post-PATCH sync use `mergeBoardPlacementRow` / placement field keys
+only — never copy `description` (or other non-placement fields) from the wire
+or status PATCH body — so cards stay visually identical before and after moves.
 
 **Publication (required):** `public.work_items` must be in the
 `supabase_realtime` publication or clients receive no events. Migration:
@@ -118,15 +133,17 @@ where pubname = 'supabase_realtime'
 
 ## Shipped surface
 
-| Piece         | Location                                                        |
-| ------------- | --------------------------------------------------------------- |
-| Prefs storage | `apps/web/app/board/_helpers/board-sync-storage.ts`             |
-| Prefs hook    | `useBoardSyncPrefs`                                             |
-| Menu toggles  | `BoardLayoutMenu` (Realtime / Static + Subscribe to moves)      |
-| Pending stack | `board-move-pending.ts` + kanban `pendingAttempts`              |
-| 409 toast     | `board-move-conflict-toast.ts` (no merge dialog on board moves) |
-| Channel       | `useBoardWorkItemsRealtime`                                     |
-| Publication   | `add_work_items_realtime_publication` migration                 |
+| Piece            | Location                                                         |
+| ---------------- | ---------------------------------------------------------------- |
+| Prefs storage    | `apps/web/app/board/_helpers/board-sync-storage.ts`              |
+| Prefs hook       | `useBoardSyncPrefs`                                              |
+| Menu toggles     | `BoardLayoutMenu` (Realtime / Static + Subscribe to moves)       |
+| Coalesce queue   | `serial-coalesce-mutation-queue.ts` via `use-board-status-moves` |
+| Unload flush     | `use-pending-mutation-unload.ts`                                 |
+| Timestamp helper | `board-move-pending.ts` (`isNewerUpdatedAt`, placement merge)    |
+| 409 toast        | `board-move-conflict-toast.ts` (no merge dialog on board moves)  |
+| Channel          | `useBoardWorkItemsRealtime`                                      |
+| Publication      | `add_work_items_realtime_publication` migration                  |
 
 **Still deferred:** silent inbox notifications (§ Non-goals / prefs).
 

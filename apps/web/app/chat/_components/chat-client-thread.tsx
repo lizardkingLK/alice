@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Loader2 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { ChatRoles } from '@repo/types';
@@ -12,6 +13,8 @@ import ChatUserAvatar from '@/app/chat/_components/chat-client-user-avatar';
 import ChatAliceStatusRow from '@/app/chat/_components/chat-client-alice-status-row';
 import { ChatAssistantNameBlock } from '@/app/chat/_components/chat-assistant-name-block';
 import type { ChatAssistantIdentity } from '@/app/chat/_helpers/use-bound-chat-agent';
+import { isNoChatModelConfiguredError } from '@/app/chat/_components/chat-client-support';
+import { chatAiAgentsIntegrationsHref } from '@/app/chat/_services/chat-integrations-navigation.shared';
 
 type ChatClientThreadProps = {
   readonly isPage: boolean;
@@ -23,6 +26,8 @@ type ChatClientThreadProps = {
   readonly currentUserImageUrl?: string | null;
   readonly assistantIdentity?: ChatAssistantIdentity | null;
   readonly messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  /** Managers/admins can open Settings to add a model. */
+  readonly canConfigureChatModels?: boolean;
 };
 
 function actionKey(
@@ -40,6 +45,145 @@ function actionKey(
   return `${action.type}-${action.entity.id}`;
 }
 
+function ChatThreadMessage({
+  message,
+  currentUserName,
+  currentUserImageUrl,
+  assistantIdentity,
+}: Readonly<{
+  message: ChatMessage;
+  currentUserName?: string | null;
+  currentUserImageUrl?: string | null;
+  assistantIdentity?: ChatAssistantIdentity | null;
+}>) {
+  const isUser = message.role === ChatRoles.User;
+  const attachments = message.attachments ?? [];
+  const actions = message.actions ?? [];
+
+  return (
+    <div className={cn('flex gap-3', isUser ? 'justify-end' : 'justify-start')}>
+      {!isUser ? <ChatBotAvatar identity={assistantIdentity} /> : null}
+
+      <div
+        className={cn(
+          'flex max-w-[min(85%,42rem)] min-w-0 flex-col gap-1.5',
+          isUser ? 'items-end' : 'items-start'
+        )}
+      >
+        {isUser ? (
+          <span className="text-foreground px-1 text-xs font-semibold">
+            You
+          </span>
+        ) : (
+          <ChatAssistantNameBlock
+            identity={assistantIdentity}
+            className="px-1"
+            nameClassName="text-xs"
+            titleClassName="text-[11px]"
+          />
+        )}
+
+        <div
+          className={cn(
+            'w-full rounded-2xl px-4 py-3 text-sm',
+            isUser
+              ? 'bg-primary text-primary-foreground rounded-tr-md font-medium whitespace-pre-wrap'
+              : 'bg-muted/50 border-border text-foreground rounded-tl-md border leading-relaxed'
+          )}
+        >
+          {isUser ? (
+            <div>{message.content}</div>
+          ) : (
+            <ChatMarkdown content={message.content} />
+          )}
+
+          {attachments.length > 0 ? (
+            <div
+              className={cn(
+                'flex flex-wrap gap-1.5',
+                message.content ? 'mt-2.5' : ''
+              )}
+            >
+              {attachments.map((attachment) => (
+                <ChatAttachmentLink
+                  key={attachment.id}
+                  attachment={attachment}
+                  isUser={isUser}
+                />
+              ))}
+            </div>
+          ) : null}
+
+          {actions.length > 0 ? (
+            <div className="border-border/40 mt-3 space-y-2 border-t pt-3">
+              <div className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
+                Executed Actions
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                {actions.map((act) => (
+                  <ChatExecutedActionCard key={actionKey(act)} action={act} />
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {isUser ? (
+        <ChatUserAvatar name={currentUserName} imageUrl={currentUserImageUrl} />
+      ) : null}
+    </div>
+  );
+}
+
+function ChatThreadError({
+  error,
+  assistantIdentity,
+  canConfigureChatModels,
+}: Readonly<{
+  error: string;
+  assistantIdentity?: ChatAssistantIdentity | null;
+  canConfigureChatModels: boolean;
+}>) {
+  if (isNoChatModelConfiguredError(error)) {
+    return (
+      <ChatAliceStatusRow
+        identity={assistantIdentity}
+        bubbleClassName="bg-muted/50 border-border text-foreground flex w-full flex-col gap-2"
+      >
+        <span className="text-sm font-medium">
+          Chat model not configured yet
+        </span>
+        <span className="text-muted-foreground text-sm leading-relaxed">
+          {canConfigureChatModels
+            ? 'Connect an AI chat model in Settings to use Alice here after a fresh seed.'
+            : 'Ask a manager or admin to connect an AI chat model under Settings → Integrations.'}
+        </span>
+        {canConfigureChatModels ? (
+          <Link
+            href={chatAiAgentsIntegrationsHref()}
+            className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+          >
+            Open AI integrations
+          </Link>
+        ) : null}
+      </ChatAliceStatusRow>
+    );
+  }
+
+  return (
+    <ChatAliceStatusRow
+      identity={assistantIdentity}
+      bubbleClassName="bg-destructive/5 border-destructive/20 text-destructive flex w-full flex-col gap-1"
+    >
+      <span className="text-xs font-semibold tracking-wider uppercase">
+        Error Encountered
+      </span>
+      <span>{error}</span>
+    </ChatAliceStatusRow>
+  );
+}
+
 export default function ChatClientThread({
   isPage,
   showEmptyThread,
@@ -50,6 +194,7 @@ export default function ChatClientThread({
   currentUserImageUrl,
   assistantIdentity = null,
   messagesEndRef,
+  canConfigureChatModels = false,
 }: Readonly<ChatClientThreadProps>) {
   return (
     <div className={cn(isPage ? 'p-4 sm:p-6' : 'p-4')}>
@@ -62,97 +207,15 @@ export default function ChatClientThread({
         </div>
       ) : (
         <div className="mx-auto max-w-3xl space-y-6">
-          {messages.map((message) => {
-            const isUser = message.role === ChatRoles.User;
-            return (
-              <div
-                key={message.id}
-                className={cn(
-                  'flex gap-3',
-                  isUser ? 'justify-end' : 'justify-start'
-                )}
-              >
-                {!isUser ? (
-                  <ChatBotAvatar identity={assistantIdentity} />
-                ) : null}
-
-                <div
-                  className={cn(
-                    'flex max-w-[min(85%,42rem)] min-w-0 flex-col gap-1.5',
-                    isUser ? 'items-end' : 'items-start'
-                  )}
-                >
-                  {isUser ? (
-                    <span className="text-foreground px-1 text-xs font-semibold">
-                      You
-                    </span>
-                  ) : (
-                    <ChatAssistantNameBlock
-                      identity={assistantIdentity}
-                      className="px-1"
-                      nameClassName="text-xs"
-                      titleClassName="text-[11px]"
-                    />
-                  )}
-
-                  <div
-                    className={cn(
-                      'w-full rounded-2xl px-4 py-3 text-sm',
-                      isUser
-                        ? 'bg-primary text-primary-foreground rounded-tr-md font-medium whitespace-pre-wrap'
-                        : 'bg-muted/50 border-border text-foreground rounded-tl-md border leading-relaxed'
-                    )}
-                  >
-                    {isUser ? (
-                      <div>{message.content}</div>
-                    ) : (
-                      <ChatMarkdown content={message.content} />
-                    )}
-
-                    {message.attachments && message.attachments.length > 0 ? (
-                      <div
-                        className={cn(
-                          'flex flex-wrap gap-1.5',
-                          message.content ? 'mt-2.5' : ''
-                        )}
-                      >
-                        {message.attachments.map((attachment) => (
-                          <ChatAttachmentLink
-                            key={attachment.id}
-                            attachment={attachment}
-                            isUser={isUser}
-                          />
-                        ))}
-                      </div>
-                    ) : null}
-
-                    {message.actions && message.actions.length > 0 ? (
-                      <div className="border-border/40 mt-3 space-y-2 border-t pt-3">
-                        <div className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
-                          Executed Actions
-                        </div>
-                        <div className="grid grid-cols-1 gap-2">
-                          {message.actions.map((act) => (
-                            <ChatExecutedActionCard
-                              key={actionKey(act)}
-                              action={act}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-
-                {isUser ? (
-                  <ChatUserAvatar
-                    name={currentUserName}
-                    imageUrl={currentUserImageUrl}
-                  />
-                ) : null}
-              </div>
-            );
-          })}
+          {messages.map((message) => (
+            <ChatThreadMessage
+              key={message.id}
+              message={message}
+              currentUserName={currentUserName}
+              currentUserImageUrl={currentUserImageUrl}
+              assistantIdentity={assistantIdentity}
+            />
+          ))}
 
           {isPending ? (
             <ChatAliceStatusRow
@@ -165,15 +228,11 @@ export default function ChatClientThread({
           ) : null}
 
           {error ? (
-            <ChatAliceStatusRow
-              identity={assistantIdentity}
-              bubbleClassName="bg-destructive/5 border-destructive/20 text-destructive flex w-full flex-col gap-1"
-            >
-              <span className="text-xs font-semibold tracking-wider uppercase">
-                Error Encountered
-              </span>
-              <span>{error}</span>
-            </ChatAliceStatusRow>
+            <ChatThreadError
+              error={error}
+              assistantIdentity={assistantIdentity}
+              canConfigureChatModels={canConfigureChatModels}
+            />
           ) : null}
         </div>
       )}

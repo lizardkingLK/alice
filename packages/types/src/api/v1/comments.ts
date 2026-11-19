@@ -32,6 +32,7 @@ export const commentListSelect = {
   author_id: true,
   parent_id: true,
   content: true,
+  reactions: true,
   edited: true,
   status: true,
   created_at: true,

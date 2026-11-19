@@ -44,11 +44,14 @@ import {
   Minimize2,
 } from '@repo/ui/lib/icons';
 import {
-  CANONICAL_HIERARCHY_ORDER,
+  buildDefaultProjectTypeDefs,
+  findDuplicateWorkItemTypeName,
   initialSprintSchema,
   isProductUsableUser,
-  type WorkItemType,
+  normalizeProjectWorkItemTypeDefs,
+  type ProjectWorkItemTypeDef,
 } from '@repo/types';
+import { WorkItemTypeCatalogEditor } from '@/app/projects/_components/work-item-type-catalog-editor';
 import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import type { User } from '@/app/users/_services/users.mutations.client';
@@ -68,10 +71,8 @@ import {
   parseGithubRepoPath,
 } from '@/lib/projects/github-repo-path';
 import {
-  Step2Imports,
-  Step3SourceControl,
-  type Step2ImportsProps,
-  type Step3SourceControlProps,
+  StepIntegrations,
+  type StepIntegrationsProps,
 } from '@/app/projects/_components/project-form-integration-steps';
 import {
   Step5Team,
@@ -84,6 +85,8 @@ import {
   saveProjectCreationDraft,
   type ProjectCreationDraft,
 } from '@/app/projects/_helpers/project-creation-draft-storage';
+import { readProjectCreationDraftAuto } from '@/app/projects/_helpers/project-creation-draft-preference';
+import { mapAiBindingsToIntegrationBindings } from '@/app/projects/_helpers/project-ai-bindings';
 
 interface ProjectFormProps {
   readonly onClose?: () => void;
@@ -95,7 +98,17 @@ interface ProjectFormProps {
   readonly onProjectUpdated?: (project: Project) => void;
   // eslint-disable-next-line no-unused-vars
   readonly onJiraImportToggle?: (isWide: boolean) => void;
+  // eslint-disable-next-line no-unused-vars
+  readonly onMaximizedChange?: (isMaximized: boolean) => void;
 }
+
+const DRAFT_STEP_LABELS = [
+  'Details',
+  'Types',
+  'Integrations',
+  'Sprint',
+  'Team',
+] as const;
 
 function formatDateForInput(dateString?: string | null) {
   if (!dateString) return '';
@@ -153,7 +166,6 @@ function validateStep1({
   todayStr,
   originalStartDate,
   originalEndDate,
-  selectedWorkItemTypes,
 }: {
   name: string;
   key: string;
@@ -164,7 +176,6 @@ function validateStep1({
   todayStr: string;
   originalStartDate?: string;
   originalEndDate?: string;
-  selectedWorkItemTypes: WorkItemType[];
 }): string | null {
   const projectNameError = validateProjectName(name);
   if (projectNameError) return projectNameError;
@@ -193,14 +204,22 @@ function validateStep1({
   );
   if (endDateError) return endDateError;
 
-  if (!selectedWorkItemTypes || selectedWorkItemTypes.length === 0) {
-    return 'At least one work-item type must be selected.';
-  }
-
   return null;
 }
 
-function validateStep2(
+function validateTypesStep(
+  workItemTypeDefs: ProjectWorkItemTypeDef[]
+): string | null {
+  if (!workItemTypeDefs || workItemTypeDefs.length === 0) {
+    return 'At least one work-item type must be configured.';
+  }
+  if (findDuplicateWorkItemTypeName(workItemTypeDefs)) {
+    return 'Type names must be unique. Change a duplicate name.';
+  }
+  return null;
+}
+
+function validateImportsStep(
   importFromJira: boolean,
   jiraConnectionId: string,
   jiraProjectKey: string
@@ -216,7 +235,7 @@ function validateStep2(
   return null;
 }
 
-function validateStep3(
+function validateSourceStep(
   enableGithub: boolean,
   githubOwner: string,
   githubRepoName: string
@@ -277,6 +296,20 @@ function validateTeamStep(
   return null;
 }
 
+function validateIntegrationsStep(
+  importFromJira: boolean,
+  jiraConnectionId: string,
+  jiraProjectKey: string,
+  enableGithub: boolean,
+  githubOwner: string,
+  githubRepoName: string
+): string | null {
+  return (
+    validateImportsStep(importFromJira, jiraConnectionId, jiraProjectKey) ??
+    validateSourceStep(enableGithub, githubOwner, githubRepoName)
+  );
+}
+
 function getStepError(
   currentStep: number,
   fields: {
@@ -289,7 +322,7 @@ function getStepError(
     todayStr: string;
     originalStartDate?: string;
     originalEndDate?: string;
-    selectedWorkItemTypes: WorkItemType[];
+    workItemTypeDefs: ProjectWorkItemTypeDef[];
     importFromJira: boolean;
     jiraConnectionId: string;
     jiraProjectKey: string;
@@ -317,18 +350,16 @@ function getStepError(
       todayStr: fields.todayStr,
       originalStartDate: fields.originalStartDate,
       originalEndDate: fields.originalEndDate,
-      selectedWorkItemTypes: fields.selectedWorkItemTypes,
     });
   }
   if (currentStep === 2) {
-    return validateStep2(
-      fields.importFromJira,
-      fields.jiraConnectionId,
-      fields.jiraProjectKey
-    );
+    return validateTypesStep(fields.workItemTypeDefs);
   }
   if (currentStep === 3) {
-    return validateStep3(
+    return validateIntegrationsStep(
+      fields.importFromJira,
+      fields.jiraConnectionId,
+      fields.jiraProjectKey,
       fields.enableGithub,
       fields.githubOwner,
       fields.githubRepoName
@@ -369,14 +400,17 @@ interface Step1Props {
   setStartDate: (_date: string) => void;
   endDate: string;
   setEndDate: (_date: string) => void;
-  selectedWorkItemTypes: WorkItemType[];
-  setSelectedWorkItemTypes: (_types: WorkItemType[]) => void;
   users: User[];
   isEditMode: boolean;
   getTodayDateString: () => string;
 }
 
+type StepTypesProps = {
+  workItemTypeDefs: ProjectWorkItemTypeDef[];
+  setWorkItemTypeDefs: (_defs: ProjectWorkItemTypeDef[]) => void;
+};
 /* eslint-enable no-unused-vars */
+
 function Step1BasicDetails({
   name,
   setName,
@@ -392,8 +426,6 @@ function Step1BasicDetails({
   setStartDate,
   endDate,
   setEndDate,
-  selectedWorkItemTypes,
-  setSelectedWorkItemTypes,
   users,
   getTodayDateString,
 }: Readonly<Step1Props>) {
@@ -533,49 +565,27 @@ function Step1BasicDetails({
           />
         </div>
       </div>
+    </div>
+  );
+}
 
-      <div className="space-y-3 pt-2">
-        <div>
-          <Label className="text-sm font-medium">Allowed Work-Item Types</Label>
-          <p className="text-muted-foreground text-xs">
-            Select the work-item types available for use within this project.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {CANONICAL_HIERARCHY_ORDER.map((t) => {
-            const isChecked = selectedWorkItemTypes.includes(t);
-            return (
-              <label
-                key={t}
-                className={cn(
-                  'flex cursor-pointer items-center space-x-2 rounded-md border p-2.5 text-sm transition-colors',
-                  isChecked
-                    ? 'border-primary/50 bg-primary/5 font-medium'
-                    : 'border-border text-muted-foreground hover:border-primary/20'
-                )}
-              >
-                <Checkbox
-                  checked={isChecked}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      const next = CANONICAL_HIERARCHY_ORDER.filter(
-                        (item) =>
-                          item === t || selectedWorkItemTypes.includes(item)
-                      );
-                      setSelectedWorkItemTypes(next);
-                    } else {
-                      setSelectedWorkItemTypes(
-                        selectedWorkItemTypes.filter((item) => item !== t)
-                      );
-                    }
-                  }}
-                />
-                <span>{t}</span>
-              </label>
-            );
-          })}
-        </div>
+function StepTypes({
+  workItemTypeDefs,
+  setWorkItemTypeDefs,
+}: Readonly<StepTypesProps>) {
+  return (
+    <div className="animate-in fade-in slide-in-from-left-2 space-y-4 duration-300">
+      <div>
+        <Label className="text-sm font-medium">Work-Item Types</Label>
+        <p className="text-muted-foreground text-xs">
+          Drag to set hierarchy. Names, icons, and colors update the cards
+          instantly.
+        </p>
       </div>
+      <WorkItemTypeCatalogEditor
+        value={workItemTypeDefs}
+        onChange={setWorkItemTypeDefs}
+      />
     </div>
   );
 }
@@ -738,9 +748,9 @@ function ProjectFormStepper({
   isEditMode,
 }: Readonly<{ step: number; isEditMode: boolean }>) {
   const steps = [
-    { number: 1, label: 'Basic Info' },
-    { number: 2, label: 'Imports' },
-    { number: 3, label: 'Source Control' },
+    { number: 1, label: 'Details' },
+    { number: 2, label: 'Types' },
+    { number: 3, label: 'Integrations' },
     ...(!isEditMode
       ? [
           { number: 4, label: 'Sprint' },
@@ -869,40 +879,58 @@ function ProjectDraftCloseDialog({
   );
 }
 
-function ProjectDraftRestoreDialog({
-  open,
+function ProjectDraftResumePanel({
+  draft,
   onResume,
   onStartFresh,
 }: Readonly<{
-  open: boolean;
+  draft: ProjectCreationDraft;
   onResume: () => void;
   onStartFresh: () => void;
 }>) {
-  return (
-    <Dialog open={open}>
-      <DialogContent
-        showCloseButton={false}
-        dismissOnOutsideClick={false}
-        onEscapeKeyDown={(event) => event.preventDefault()}
-      >
-        <DialogHeader>
-          <DialogTitle>Resume saved project draft?</DialogTitle>
-          <DialogDescription>
-            Continue from your saved step, or start fresh. Starting fresh will
-            permanently discard the saved draft.
-          </DialogDescription>
-        </DialogHeader>
+  const savedStepLabel =
+    DRAFT_STEP_LABELS[draft.currentStep - 1] ?? `Step ${draft.currentStep}`;
+  const draftName = draft.basicInfo.name.trim() || 'Untitled project';
+  const draftKey = draft.basicInfo.key.trim() || '—';
 
-        <DialogFooter>
-          <Button type="button" variant="destructive" onClick={onStartFresh}>
-            Start Fresh
-          </Button>
-          <Button type="button" onClick={onResume}>
-            Resume Draft
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+  return (
+    <div className="animate-in fade-in mx-auto flex w-full max-w-lg flex-col gap-6 py-6 duration-300">
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold tracking-tight">
+          Resume saved project draft?
+        </h3>
+        <p className="text-muted-foreground text-sm">
+          Continue from your saved step, or start fresh. Starting fresh will
+          permanently discard the saved draft.
+        </p>
+      </div>
+
+      <div className="bg-muted/40 space-y-2 rounded-lg border p-4 text-sm">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-muted-foreground">Project</span>
+          <span className="truncate font-medium">{draftName}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-muted-foreground">Key</span>
+          <span className="font-mono text-xs font-medium uppercase">
+            {draftKey}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-muted-foreground">Saved step</span>
+          <span className="font-medium">{savedStepLabel}</span>
+        </div>
+      </div>
+
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button type="button" variant="destructive" onClick={onStartFresh}>
+          Start Fresh
+        </Button>
+        <Button type="button" onClick={onResume}>
+          Resume Draft
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -965,9 +993,9 @@ function getProjectFormCardClass(
   return cn(
     'border-border bg-card text-card-foreground relative border shadow-2xl transition-all duration-200',
     isMaximized
-      ? 'fixed inset-0 flex h-screen w-screen flex-col gap-0 overflow-hidden rounded-none'
+      ? 'flex h-full min-h-0 w-full flex-col gap-0 overflow-hidden rounded-none'
       : 'overflow-visible',
-    isMaximized && (isCloseConfirmationOpen ? 'z-40' : 'z-60')
+    isMaximized && (isCloseConfirmationOpen ? 'z-40' : 'z-50')
   );
 }
 
@@ -1039,35 +1067,162 @@ function ProjectFormNavButtons({
   );
 }
 
+type ProjectFormStepBodyProps = {
+  step: number;
+  step1: ComponentProps<typeof Step1BasicDetails>;
+  stepTypes: StepTypesProps;
+  stepIntegrations: StepIntegrationsProps;
+  stepSprint: Step4SprintProps;
+  stepTeam: Step5TeamProps;
+};
+
 function ProjectFormStepBody({
   step,
   step1,
-  step2,
-  step3,
-  step4,
-  step5,
-}: Readonly<{
-  step: number;
-  step1: ComponentProps<typeof Step1BasicDetails>;
-  step2: Step2ImportsProps;
-  step3: Step3SourceControlProps;
-  step4: Step4SprintProps;
-  step5: Step5TeamProps;
-}>) {
+  stepTypes,
+  stepIntegrations,
+  stepSprint,
+  stepTeam,
+}: Readonly<ProjectFormStepBodyProps>) {
   if (step === 1) {
     return <Step1BasicDetails {...step1} />;
   }
   if (step === 2) {
-    return <Step2Imports {...step2} />;
+    return <StepTypes {...stepTypes} />;
   }
   if (step === 3) {
-    return <Step3SourceControl {...step3} />;
+    return <StepIntegrations {...stepIntegrations} />;
   }
   if (step === 4) {
-    return <Step4Sprint {...step4} />;
+    return <Step4Sprint {...stepSprint} />;
   }
 
-  return <Step5Team {...step5} />;
+  return <Step5Team {...stepTeam} />;
+}
+
+function resolveProjectFormHeaderDescription({
+  awaitingDraftChoice,
+  isEditMode,
+}: Readonly<{
+  awaitingDraftChoice: boolean;
+  isEditMode: boolean;
+}>): string {
+  if (awaitingDraftChoice) {
+    return 'A saved draft is available for this account.';
+  }
+  if (isEditMode) {
+    return 'Modify details for the existing project.';
+  }
+  return 'Register a new project workspace to organize tasks and sprints.';
+}
+
+function ProjectFormScrollRegion({
+  isMaximized,
+  className,
+  children,
+}: Readonly<{
+  isMaximized: boolean;
+  className?: string;
+  children: ReactNode;
+}>) {
+  return (
+    <div
+      className={cn(
+        'p-0.5',
+        isMaximized && 'no-scrollbar min-h-0 w-full flex-1 overflow-y-auto'
+      )}
+    >
+      <div
+        className={cn(
+          isMaximized && 'mx-auto w-full max-w-4xl px-1 py-1.5',
+          className
+        )}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ProjectFormContent({
+  awaitingDraftChoice,
+  availableDraft,
+  isMaximized,
+  onResumeDraft,
+  onStartFresh,
+  onSubmit,
+  step,
+  finalStep,
+  isBusy,
+  message,
+  isError,
+  onClose,
+  onBack,
+  submitLabel,
+  stepBodyProps,
+}: Readonly<{
+  awaitingDraftChoice: boolean;
+  availableDraft: ProjectCreationDraft | null;
+  isMaximized: boolean;
+  onResumeDraft: () => void;
+  onStartFresh: () => void;
+  // eslint-disable-next-line no-unused-vars
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  step: number;
+  finalStep: number;
+  isBusy: boolean;
+  message: string | null;
+  isError: boolean;
+  onClose?: () => void;
+  onBack: () => void;
+  submitLabel: ReactNode;
+  stepBodyProps: ProjectFormStepBodyProps;
+}>) {
+  if (awaitingDraftChoice && availableDraft) {
+    return (
+      <ProjectFormScrollRegion isMaximized={isMaximized}>
+        <ProjectDraftResumePanel
+          draft={availableDraft}
+          onResume={onResumeDraft}
+          onStartFresh={onStartFresh}
+        />
+      </ProjectFormScrollRegion>
+    );
+  }
+
+  return (
+    <form
+      noValidate
+      onSubmit={onSubmit}
+      className={cn('space-y-4', isMaximized && 'flex min-h-0 flex-1 flex-col')}
+    >
+      <ProjectFormScrollRegion
+        isMaximized={isMaximized}
+        className={isMaximized ? 'space-y-4' : undefined}
+      >
+        <ProjectFormStepBody {...stepBodyProps} />
+      </ProjectFormScrollRegion>
+
+      <div
+        className={cn(
+          'space-y-3',
+          isMaximized &&
+            'mx-auto mt-auto w-full max-w-4xl shrink-0 border-t pt-3'
+        )}
+      >
+        <FormAlertMessage message={message} isError={isError} />
+        <ProjectFormNavButtons
+          step={step}
+          finalStep={finalStep}
+          isBusy={isBusy}
+          isMaximized={isMaximized}
+          onClose={onClose}
+          onBack={onBack}
+          submitLabel={submitLabel}
+        />
+      </div>
+    </form>
+  );
 }
 
 export function ProjectForm({
@@ -1078,6 +1233,7 @@ export function ProjectForm({
   currentUserId,
   onProjectUpdated,
   onJiraImportToggle,
+  onMaximizedChange,
 }: Readonly<ProjectFormProps>) {
   const isEditMode = !!projectToEdit;
   const { handleMutationError } = useOptimisticLock();
@@ -1089,6 +1245,8 @@ export function ProjectForm({
   const [draftSaveError, setDraftSaveError] = useState<string | null>(null);
   const [availableDraft, setAvailableDraft] =
     useState<ProjectCreationDraft | null>(null);
+  const [autoDraftEnabled, setAutoDraftEnabled] = useState(false);
+  const [draftPrefsHydrated, setDraftPrefsHydrated] = useState(false);
 
   const [name, setName] = useState(projectToEdit?.name ?? '');
   const [key, setKey] = useState(projectToEdit?.key ?? '');
@@ -1109,14 +1267,21 @@ export function ProjectForm({
   );
   const initialWorkflowConfig = projectToEdit?.workflow_config as
     ProjectWorkflowConfig | null | undefined;
-  const [selectedWorkItemTypes, setSelectedWorkItemTypes] = useState<
-    WorkItemType[]
-  >(initialWorkflowConfig?.work_item_types ?? [...CANONICAL_HIERARCHY_ORDER]);
+  const [workItemTypeDefs, setWorkItemTypeDefs] = useState<
+    ProjectWorkItemTypeDef[]
+  >(() =>
+    normalizeProjectWorkItemTypeDefs(initialWorkflowConfig?.work_item_types)
+  );
 
   // Stepper state
   const [step, setStep] = useState(1);
-  const [isMaximized, setIsMaximized] = useState(false);
+  // Create opens fullscreen; edit stays as a centered dialog by default.
+  const [isMaximized, setIsMaximized] = useState(!projectToEdit);
   useBodyScrollLock(isMaximized);
+
+  useEffect(() => {
+    onMaximizedChange?.(isMaximized);
+  }, [isMaximized, onMaximizedChange]);
 
   // Jira Integration States
   const [importFromJira, setImportFromJira] = useState(false);
@@ -1133,6 +1298,15 @@ export function ProjectForm({
   const [githubOwner, setGithubOwner] = useState('');
   const [githubRepoName, setGithubRepoName] = useState('');
   const [githubToken, setGithubToken] = useState('');
+  const [githubConnectionId, setGithubConnectionId] = useState<string | null>(
+    null
+  );
+
+  // AI integration bindings (create mode; bind-by-reference)
+  const [aiBindingIds, setAiBindingIds] = useState<string[]>([]);
+  const [defaultAiIntegrationId, setDefaultAiIntegrationId] = useState<
+    string | null
+  >(null);
 
   // Initial Sprint States (create mode only)
   const [createInitialSprint, setCreateInitialSprint] = useState(false);
@@ -1149,10 +1323,13 @@ export function ProjectForm({
   const [teamMemberIds, setTeamMemberIds] = useState<string[]>([]);
 
   const finalStep = isEditMode ? 3 : 5;
+  const defaultTypeDefs = buildDefaultProjectTypeDefs();
   const usesDefaultWorkItemTypes =
-    selectedWorkItemTypes.length === CANONICAL_HIERARCHY_ORDER.length &&
-    selectedWorkItemTypes.every(
-      (workItemType, index) => workItemType === CANONICAL_HIERARCHY_ORDER[index]
+    workItemTypeDefs.length === defaultTypeDefs.length &&
+    workItemTypeDefs.every(
+      (def, index) =>
+        def.key === defaultTypeDefs[index]?.key &&
+        def.level === defaultTypeDefs[index]?.level
     );
   const hasCreateFormChanges =
     !isEditMode &&
@@ -1172,6 +1349,8 @@ export function ProjectForm({
       githubOwner !== '' ||
       githubRepoName !== '' ||
       githubToken !== '' ||
+      aiBindingIds.length > 0 ||
+      defaultAiIntegrationId !== null ||
       createInitialSprint ||
       sprintName !== '' ||
       sprintGoal !== '' ||
@@ -1195,7 +1374,7 @@ export function ProjectForm({
       status,
       startDate,
       endDate,
-      selectedWorkItemTypes,
+      workItemTypeDefs,
     },
     imports: {
       importFromJira,
@@ -1206,6 +1385,10 @@ export function ProjectForm({
       enableGithub,
       githubOwner,
       githubRepoName,
+    },
+    integrations: {
+      aiBindingIds,
+      defaultAiIntegrationId,
     },
     sprint: {
       createInitialSprint,
@@ -1232,7 +1415,7 @@ export function ProjectForm({
     setStatus('active');
     setStartDate(getTodayDateString());
     setEndDate('');
-    setSelectedWorkItemTypes([...CANONICAL_HIERARCHY_ORDER]);
+    setWorkItemTypeDefs(buildDefaultProjectTypeDefs());
     setStep(1);
     setImportFromJira(false);
     setJiraConnectionId('');
@@ -1241,6 +1424,9 @@ export function ProjectForm({
     setGithubOwner('');
     setGithubRepoName('');
     setGithubToken('');
+    setGithubConnectionId(null);
+    setAiBindingIds([]);
+    setDefaultAiIntegrationId(null);
     setCreateInitialSprint(false);
     setSprintName('');
     setSprintGoal('');
@@ -1257,40 +1443,41 @@ export function ProjectForm({
     onJiraImportToggle?.(false);
   };
 
-  const handleResumeDraft = () => {
-    if (!availableDraft || isEditMode) return;
-
-    const restoredPeople = getRestoredPeople(availableDraft, users);
-    setName(availableDraft.basicInfo.name);
-    setKey(availableDraft.basicInfo.key);
-    setDescription(availableDraft.basicInfo.description);
+  const applyProjectCreationDraft = (draft: ProjectCreationDraft) => {
+    const restoredPeople = getRestoredPeople(draft, users);
+    setName(draft.basicInfo.name);
+    setKey(draft.basicInfo.key);
+    setDescription(draft.basicInfo.description);
     setSelectedOwnerId(restoredPeople.selectedOwnerId);
-    setStatus(availableDraft.basicInfo.status);
-    setStartDate(availableDraft.basicInfo.startDate);
-    setEndDate(availableDraft.basicInfo.endDate);
-    setSelectedWorkItemTypes([
-      ...availableDraft.basicInfo.selectedWorkItemTypes,
-    ]);
-    setImportFromJira(availableDraft.imports.importFromJira);
-    setJiraConnectionId(availableDraft.imports.jiraConnectionId);
-    setJiraProjectKey(availableDraft.imports.jiraProjectKey);
-    setEnableGithub(availableDraft.sourceControl.enableGithub);
-    setGithubOwner(availableDraft.sourceControl.githubOwner);
-    setGithubRepoName(availableDraft.sourceControl.githubRepoName);
+    setStatus(draft.basicInfo.status);
+    setStartDate(draft.basicInfo.startDate);
+    setEndDate(draft.basicInfo.endDate);
+    setWorkItemTypeDefs(
+      normalizeProjectWorkItemTypeDefs(draft.basicInfo.workItemTypeDefs)
+    );
+    setImportFromJira(draft.imports.importFromJira);
+    setJiraConnectionId(draft.imports.jiraConnectionId);
+    setJiraProjectKey(draft.imports.jiraProjectKey);
+    setEnableGithub(draft.sourceControl.enableGithub);
+    setGithubOwner(draft.sourceControl.githubOwner);
+    setGithubRepoName(draft.sourceControl.githubRepoName);
     setGithubToken('');
-    setCreateInitialSprint(availableDraft.sprint.createInitialSprint);
-    setSprintName(availableDraft.sprint.sprintName);
-    setSprintGoal(availableDraft.sprint.sprintGoal);
-    setSprintStartDate(availableDraft.sprint.sprintStartDate);
-    setSprintEndDate(availableDraft.sprint.sprintEndDate);
-    setCreateInitialTeam(availableDraft.team.createInitialTeam);
-    setTeamName(availableDraft.team.teamName);
-    setTeamDescription(availableDraft.team.teamDescription);
+    setGithubConnectionId(null);
+    setAiBindingIds(draft.integrations.aiBindingIds);
+    setDefaultAiIntegrationId(draft.integrations.defaultAiIntegrationId);
+    setCreateInitialSprint(draft.sprint.createInitialSprint);
+    setSprintName(draft.sprint.sprintName);
+    setSprintGoal(draft.sprint.sprintGoal);
+    setSprintStartDate(draft.sprint.sprintStartDate);
+    setSprintEndDate(draft.sprint.sprintEndDate);
+    setCreateInitialTeam(draft.team.createInitialTeam);
+    setTeamName(draft.team.teamName);
+    setTeamDescription(draft.team.teamDescription);
     setTeamManagerId(restoredPeople.teamManagerId);
-    setTeamTechStack(availableDraft.team.teamTechStack);
+    setTeamTechStack(draft.team.teamTechStack);
     setTeamMemberIds(restoredPeople.teamMemberIds);
-    setStep(getSafeDraftStep(availableDraft.currentStep));
-    onJiraImportToggle?.(availableDraft.imports.importFromJira);
+    setStep(getSafeDraftStep(draft.currentStep));
+    onJiraImportToggle?.(draft.imports.importFromJira);
 
     if (restoredPeople.hasUnavailablePeople) {
       setMessage(
@@ -1301,6 +1488,11 @@ export function ProjectForm({
       setMessage(null);
       setIsError(false);
     }
+  };
+
+  const handleResumeDraft = () => {
+    if (!availableDraft || isEditMode) return;
+    applyProjectCreationDraft(availableDraft);
     setAvailableDraft(null);
   };
 
@@ -1322,6 +1514,14 @@ export function ProjectForm({
     if (!onClose || isSubmitting) return;
 
     if (isEditMode || isSuccess || !hasCreateFormChanges) {
+      onClose();
+      return;
+    }
+
+    if (autoDraftEnabled) {
+      if (currentUserId?.trim()) {
+        saveProjectCreationDraft(currentUserId, buildProjectCreationDraft());
+      }
       onClose();
       return;
     }
@@ -1384,7 +1584,7 @@ export function ProjectForm({
       originalEndDate: projectToEdit
         ? formatDateForInput(projectToEdit.end_date)
         : undefined,
-      selectedWorkItemTypes,
+      workItemTypeDefs,
       importFromJira,
       jiraConnectionId,
       jiraProjectKey,
@@ -1411,7 +1611,7 @@ export function ProjectForm({
   useEffect(() => {
     if (!projectToEdit) {
       setStartDate(getTodayDateString());
-      setSelectedWorkItemTypes([...CANONICAL_HIERARCHY_ORDER]);
+      setWorkItemTypeDefs(buildDefaultProjectTypeDefs());
       return;
     }
 
@@ -1424,8 +1624,8 @@ export function ProjectForm({
     setEndDate(formatDateForInput(projectToEdit.end_date));
     const editWorkflowConfig = projectToEdit.workflow_config as
       ProjectWorkflowConfig | null | undefined;
-    setSelectedWorkItemTypes(
-      editWorkflowConfig?.work_item_types ?? [...CANONICAL_HIERARCHY_ORDER]
+    setWorkItemTypeDefs(
+      normalizeProjectWorkItemTypeDefs(editWorkflowConfig?.work_item_types)
     );
 
     const hasJira = Boolean(
@@ -1441,16 +1641,94 @@ export function ProjectForm({
     setGithubOwner(owner);
     setGithubRepoName(repoName);
     setGithubToken('');
+    setGithubConnectionId(projectToEdit.github_connection_id ?? null);
   }, [projectToEdit]);
 
   useEffect(() => {
+    const enabled = readProjectCreationDraftAuto(currentUserId);
+    setAutoDraftEnabled(enabled);
+    setDraftPrefsHydrated(true);
+
     if (isEditMode) {
       setAvailableDraft(null);
       return;
     }
 
-    setAvailableDraft(readProjectCreationDraft(currentUserId));
+    const draft = readProjectCreationDraft(currentUserId);
+    if (!draft) {
+      setAvailableDraft(null);
+      return;
+    }
+
+    if (enabled) {
+      applyProjectCreationDraft(draft);
+      setAvailableDraft(null);
+      return;
+    }
+
+    setAvailableDraft(draft);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hydrate draft once per user/mode
   }, [currentUserId, isEditMode]);
+
+  useEffect(() => {
+    if (
+      !draftPrefsHydrated ||
+      !autoDraftEnabled ||
+      isEditMode ||
+      isSuccess ||
+      isSubmitting ||
+      !currentUserId?.trim() ||
+      !hasCreateFormChanges
+    ) {
+      return;
+    }
+
+    const timer = globalThis.setTimeout(() => {
+      saveProjectCreationDraft(currentUserId, buildProjectCreationDraft());
+    }, 400);
+
+    return () => {
+      globalThis.clearTimeout(timer);
+    };
+    // Persist whenever wizard fields that feed the draft change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional field snapshot
+  }, [
+    draftPrefsHydrated,
+    autoDraftEnabled,
+    isEditMode,
+    isSuccess,
+    isSubmitting,
+    currentUserId,
+    hasCreateFormChanges,
+    step,
+    name,
+    key,
+    description,
+    selectedOwnerId,
+    status,
+    startDate,
+    endDate,
+    workItemTypeDefs,
+    importFromJira,
+    jiraConnectionId,
+    jiraProjectKey,
+    enableGithub,
+    githubOwner,
+    githubRepoName,
+    aiBindingIds,
+    defaultAiIntegrationId,
+    createInitialSprint,
+    sprintName,
+    sprintGoal,
+    sprintStartDate,
+    sprintEndDate,
+    createInitialTeam,
+    teamName,
+    teamDescription,
+    teamManagerId,
+    teamTechStack,
+    teamMemberIds,
+  ]);
 
   const handleProjectUpdate = async (projectData: CreateProjectInput) => {
     if (!projectToEdit) return;
@@ -1468,6 +1746,7 @@ export function ProjectForm({
       jira_connection_id: projectData.jira_connection_id,
       jira_project_key: projectData.jira_project_key,
       github_repo: projectData.github_repo,
+      github_connection_id: projectData.github_connection_id,
       github_token: projectData.github_token,
     };
     const result = await runLockedMutationOrThrow({
@@ -1549,16 +1828,67 @@ export function ProjectForm({
     };
   };
 
+  const resolveIntegrationBindingsInput = (): Pick<
+    CreateProjectInput,
+    'integration_bindings'
+  > => {
+    if (projectToEdit) {
+      return {};
+    }
+
+    const bindings = mapAiBindingsToIntegrationBindings(
+      aiBindingIds,
+      defaultAiIntegrationId
+    );
+    return bindings ? { integration_bindings: bindings } : {};
+  };
+
   const validateFinalStep = (): boolean => {
     if (isEditMode) return true;
 
-    for (const wizardStep of [1, 2, 3, 4, 5]) {
+    for (let wizardStep = 1; wizardStep <= finalStep; wizardStep += 1) {
       if (!validateStep(wizardStep)) {
         setStep(wizardStep);
         return false;
       }
     }
     return true;
+  };
+
+  const buildSubmitProjectData = (): CreateProjectInput => {
+    const linkedJira = Boolean(
+      importFromJira && jiraConnectionId && jiraProjectKey
+    );
+    const existingConfig =
+      typeof projectToEdit?.workflow_config === 'object' &&
+      projectToEdit?.workflow_config !== null
+        ? (projectToEdit.workflow_config as Record<string, unknown>)
+        : {};
+
+    return {
+      name: name.trim(),
+      key: key.toUpperCase().trim(),
+      description: description.trim() || null,
+      owner_id: selectedOwnerId,
+      start_date: startDate || null,
+      end_date: endDate || null,
+      status: status,
+      attributes_config: null,
+      workflow_config: {
+        ...existingConfig,
+        work_item_types: workItemTypeDefs,
+      },
+      jira_connection_id: linkedJira ? jiraConnectionId : null,
+      jira_project_key: linkedJira ? jiraProjectKey.toUpperCase().trim() : null,
+      github_repo: enableGithub
+        ? formatGithubRepoPath(githubOwner, githubRepoName)
+        : null,
+      github_connection_id: enableGithub ? githubConnectionId : null,
+      github_token: resolveGithubToken(),
+      ...resolveInitialSprintInput(),
+      ...resolveInitialTeamInput(),
+      ...resolveIntegrationBindingsInput(),
+    };
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -1588,46 +1918,12 @@ export function ProjectForm({
     }
 
     try {
-      const linkedJira = Boolean(
-        importFromJira && jiraConnectionId && jiraProjectKey
-      );
-      const existingConfig =
-        typeof projectToEdit?.workflow_config === 'object' &&
-        projectToEdit?.workflow_config !== null
-          ? (projectToEdit.workflow_config as Record<string, unknown>)
-          : {};
-
-      const projectData: CreateProjectInput = {
-        name: name.trim(),
-        key: key.toUpperCase().trim(),
-        description: description.trim() || null,
-        owner_id: selectedOwnerId,
-        start_date: startDate || null,
-        end_date: endDate || null,
-        status: status,
-        attributes_config: null,
-        workflow_config: {
-          ...existingConfig,
-          work_item_types: selectedWorkItemTypes,
-        },
-        jira_connection_id: linkedJira ? jiraConnectionId : null,
-        jira_project_key: linkedJira
-          ? jiraProjectKey.toUpperCase().trim()
-          : null,
-        github_repo: enableGithub
-          ? formatGithubRepoPath(githubOwner, githubRepoName)
-          : null,
-        github_token: resolveGithubToken(),
-        ...resolveInitialSprintInput(),
-        ...resolveInitialTeamInput(),
-      };
-
+      const projectData = buildSubmitProjectData();
       if (projectToEdit) {
         await handleProjectUpdate(projectData);
       } else {
         await handleProjectCreate(projectData);
       }
-
       setIsSuccess(true);
     } catch (error) {
       setMessage(resolveSubmitError(error, Boolean(projectToEdit)));
@@ -1645,6 +1941,12 @@ export function ProjectForm({
       return () => clearTimeout(timer);
     }
   }, [isSuccess, onSuccess]);
+
+  const awaitingDraftChoice = !isEditMode && availableDraft !== null;
+  const headerDescription = resolveProjectFormHeaderDescription({
+    awaitingDraftChoice,
+    isEditMode,
+  });
 
   return (
     <Card
@@ -1671,12 +1973,12 @@ export function ProjectForm({
           {isEditMode ? 'Edit Project' : 'Create New Project'}
         </CardTitle>
         <CardDescription className="text-muted-foreground text-sm">
-          {isEditMode
-            ? 'Modify details for the existing project.'
-            : 'Register a new project workspace to organize tasks and sprints.'}
+          {headerDescription}
         </CardDescription>
 
-        <ProjectFormStepper step={step} isEditMode={isEditMode} />
+        {!awaitingDraftChoice ? (
+          <ProjectFormStepper step={step} isEditMode={isEditMode} />
+        ) : null}
       </CardHeader>
       <CardContent
         className={cn(
@@ -1684,111 +1986,97 @@ export function ProjectForm({
             'flex min-h-0 flex-1 flex-col overflow-hidden px-8 sm:px-12 md:px-16 lg:px-24'
         )}
       >
-        <form
-          noValidate
+        <ProjectFormContent
+          awaitingDraftChoice={awaitingDraftChoice}
+          availableDraft={availableDraft}
+          isMaximized={isMaximized}
+          onResumeDraft={handleResumeDraft}
+          onStartFresh={handleStartFresh}
           onSubmit={handleSubmit}
-          className={cn(
-            'space-y-4',
-            isMaximized && 'flex min-h-0 flex-1 flex-col'
-          )}
-        >
-          <div
-            className={cn(
-              'p-0.5',
-              isMaximized &&
-                'no-scrollbar mx-auto min-h-0 w-full max-w-4xl flex-1 space-y-4 overflow-y-auto px-1 py-1.5'
-            )}
-          >
-            <ProjectFormStepBody
-              step={step}
-              step1={{
-                name,
-                setName,
-                keyString: key,
-                setKeyString: setKey,
-                description,
-                setDescription,
-                selectedOwnerId,
-                setSelectedOwnerId,
-                status,
-                setStatus,
-                startDate,
-                setStartDate,
-                endDate,
-                setEndDate,
-                selectedWorkItemTypes,
-                setSelectedWorkItemTypes,
-                users,
-                isEditMode,
-                getTodayDateString,
-              }}
-              step2={{
-                importFromJira,
-                handleJiraCheckboxChange,
-                jiraConnectionId,
-                setJiraConnectionId,
-                jiraProjectKey,
-                setJiraProjectKey,
-              }}
-              step3={{
-                enableGithub,
-                setEnableGithub,
-                githubOwner,
-                setGithubOwner,
-                githubRepoName,
-                setGithubRepoName,
-                githubToken,
-                setGithubToken,
-              }}
-              step4={{
-                createInitialSprint,
-                setCreateInitialSprint,
-                sprintName,
-                setSprintName,
-                sprintGoal,
-                setSprintGoal,
-                sprintStartDate,
-                setSprintStartDate,
-                sprintEndDate,
-                setSprintEndDate,
-              }}
-              step5={{
-                createInitialTeam,
-                setCreateInitialTeam,
-                teamName,
-                setTeamName,
-                teamDescription,
-                setTeamDescription,
-                teamManagerId,
-                setTeamManagerId,
-                teamTechStack,
-                setTeamTechStack,
-                teamMemberIds,
-                setTeamMemberIds,
-                users,
-              }}
-            />
-          </div>
-
-          <div
-            className={cn(
-              'space-y-3',
-              isMaximized &&
-                'mx-auto mt-auto w-full max-w-4xl shrink-0 border-t pt-3'
-            )}
-          >
-            <FormAlertMessage message={message} isError={isError} />
-            <ProjectFormNavButtons
-              step={step}
-              finalStep={finalStep}
-              isBusy={isSubmitting || isSuccess}
-              isMaximized={isMaximized}
-              onClose={closeRequestHandler}
-              onBack={() => setStep((s) => s - 1)}
-              submitLabel={getSubmitButtonContent(isSubmitting, isEditMode)}
-            />
-          </div>
-        </form>
+          step={step}
+          finalStep={finalStep}
+          isBusy={isSubmitting || isSuccess}
+          message={message}
+          isError={isError}
+          onClose={closeRequestHandler}
+          onBack={() => setStep((s) => s - 1)}
+          submitLabel={getSubmitButtonContent(isSubmitting, isEditMode)}
+          stepBodyProps={{
+            step,
+            step1: {
+              name,
+              setName,
+              keyString: key,
+              setKeyString: setKey,
+              description,
+              setDescription,
+              selectedOwnerId,
+              setSelectedOwnerId,
+              status,
+              setStatus,
+              startDate,
+              setStartDate,
+              endDate,
+              setEndDate,
+              users,
+              isEditMode,
+              getTodayDateString,
+            },
+            stepTypes: {
+              workItemTypeDefs,
+              setWorkItemTypeDefs,
+            },
+            stepIntegrations: {
+              importFromJira,
+              handleJiraCheckboxChange,
+              jiraConnectionId,
+              setJiraConnectionId,
+              jiraProjectKey,
+              setJiraProjectKey,
+              enableGithub,
+              setEnableGithub,
+              githubOwner,
+              setGithubOwner,
+              githubRepoName,
+              setGithubRepoName,
+              githubToken,
+              setGithubToken,
+              setGithubConnectionId,
+              aiBindingIds,
+              setAiBindingIds,
+              defaultAiIntegrationId,
+              setDefaultAiIntegrationId,
+              showAiAgents: !isEditMode,
+            },
+            stepSprint: {
+              createInitialSprint,
+              setCreateInitialSprint,
+              sprintName,
+              setSprintName,
+              sprintGoal,
+              setSprintGoal,
+              sprintStartDate,
+              setSprintStartDate,
+              sprintEndDate,
+              setSprintEndDate,
+            },
+            stepTeam: {
+              createInitialTeam,
+              setCreateInitialTeam,
+              teamName,
+              setTeamName,
+              teamDescription,
+              setTeamDescription,
+              teamManagerId,
+              setTeamManagerId,
+              teamTechStack,
+              setTeamTechStack,
+              teamMemberIds,
+              setTeamMemberIds,
+              users,
+            },
+          }}
+        />
       </CardContent>
       <ProjectDraftCloseDialog
         open={isCloseConfirmationOpen}
@@ -1796,11 +2084,6 @@ export function ProjectForm({
         onOpenChange={handleCloseDialogOpenChange}
         onSave={handleSaveDraft}
         onDiscard={handleDiscardChanges}
-      />
-      <ProjectDraftRestoreDialog
-        open={availableDraft !== null}
-        onResume={handleResumeDraft}
-        onStartFresh={handleStartFresh}
       />
     </Card>
   );

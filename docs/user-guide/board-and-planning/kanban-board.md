@@ -11,6 +11,10 @@ See work by status and drag cards to update progress.
 1. In the sidebar under **Platform**, select **Board**.
 2. Ensure the **Board** tab is selected (default at `/board`).
 
+When you filter by project, the address bar uses `/board/projects/{KEY}` (and
+`/sprints/{slug}` when a sprint is selected). From a project workspace, open
+**Board** in the project sidebar for `/projects/{KEY}/board`.
+
 ---
 
 ## Layout
@@ -48,6 +52,10 @@ Managers configure paths, who may move cards, locks, resolution forms, and
 subtask checks in the project [Workflow designer](./workflow-designer.md)
 (**Workflow** tab — not a separate Board designer).
 
+If someone updates the project’s workflow while your board is open, Alice may
+refresh the board for you, or show a short banner asking you to **Refresh** so
+columns and move rules stay current.
+
 ---
 
 ## Update status
@@ -70,6 +78,12 @@ Open **Board settings** (grid icon on the board toolbar). Under **Board sync**:
 | **Realtime** (default) | Cards update live when teammates move items. Your drag does not wait on the save request; the card stays fully opaque while saving. |
 | **Static**             | No live merge from others until you refresh or navigate. Pending saves dim the card (classic behavior).                             |
 | **Subscribe to moves** | Only in Realtime. Turn off to stop applying placement changes over the wire while keeping Realtime mode selected.                   |
+
+While any move save is in flight, a small **Saving…** indicator appears on the
+toolbar (top right). You can re-drag the same card while a save is still running
+— Alice keeps your latest column and finishes the network work in order. If you
+close or refresh the tab with unsaved moves, the browser may warn you and Alice
+tries a last keepalive save.
 
 Preferences are stored in this browser for your account. If someone else moves
 the same card first, you get a short toast (**Someone else moved this item**)

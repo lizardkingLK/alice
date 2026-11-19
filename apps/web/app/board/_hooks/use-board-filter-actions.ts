@@ -1,8 +1,13 @@
 'use client';
 
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { serializeWorkItemLabelsFilter } from '@repo/types';
+import {
+  buildGlobalFilterHref,
+  projectKeyForId,
+  sprintSlugForId,
+} from '@/app/board/_helpers/global-filter-href';
 import {
   applyWorkItemsProjectSprintDraftToSearchParams,
   type WorkItemsFilterDraft,
@@ -22,6 +27,17 @@ type UseBoardFilterActionsOptions = {
   readonly projectFilterActive: boolean;
   readonly sprintFilterActive: boolean;
   readonly hasLabelsFilter: boolean;
+  /** Current local filter values (path URLs omit these from searchParams). */
+  readonly projectFilterValue: string;
+  readonly sprintFilterValue: string;
+  readonly projects: readonly {
+    readonly id: string;
+    readonly key?: string | null;
+  }[];
+  readonly sprints: readonly {
+    readonly id: string;
+    readonly slug?: string | null;
+  }[];
   readonly setSearch: Dispatch<SetStateAction<string>>;
   readonly setPriorityFilter: Dispatch<SetStateAction<string>>;
   readonly setAssigneeFilter: Dispatch<SetStateAction<string | null>>;
@@ -40,7 +56,6 @@ export function useBoardFilterActions(options: UseBoardFilterActionsOptions): {
   /* eslint-enable no-unused-vars */
 } {
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const {
     allowAllFilters,
@@ -51,6 +66,10 @@ export function useBoardFilterActions(options: UseBoardFilterActionsOptions): {
     projectFilterActive,
     sprintFilterActive,
     hasLabelsFilter,
+    projectFilterValue,
+    sprintFilterValue,
+    projects,
+    sprints,
     setSearch,
     setPriorityFilter,
     setAssigneeFilter,
@@ -59,13 +78,40 @@ export function useBoardFilterActions(options: UseBoardFilterActionsOptions): {
     setLabelsFilterValue,
   } = options;
 
+  const seedEntityFiltersFromLocalState = useCallback(
+    (params: URLSearchParams) => {
+      if (
+        !params.has('project') &&
+        projectFilterValue &&
+        projectFilterValue !== projectAllValue
+      ) {
+        params.set('project', projectFilterValue);
+      }
+      if (
+        !params.has('sprint') &&
+        sprintFilterValue &&
+        sprintFilterValue !== sprintAllValue
+      ) {
+        params.set('sprint', sprintFilterValue);
+      }
+    },
+    [projectAllValue, projectFilterValue, sprintAllValue, sprintFilterValue]
+  );
+
   const pushBoardParams = useCallback(
     (params: URLSearchParams) => {
       params.delete('page');
-      const query = params.toString();
-      router.push(query ? `${pathname}?${query}` : pathname);
+      const projectId = params.get('project');
+      const sprintId = params.get('sprint');
+      const href = buildGlobalFilterHref({
+        area: 'board',
+        projectKey: projectKeyForId(projects, projectId),
+        sprintSlug: sprintSlugForId(sprints, sprintId),
+        searchParams: params,
+      });
+      router.push(href);
     },
-    [pathname, router]
+    [projects, router, sprints]
   );
 
   const handleApplyFilters = useCallback(
@@ -170,6 +216,7 @@ export function useBoardFilterActions(options: UseBoardFilterActionsOptions): {
 
       const plan = planAppliedFilterRemovals(chipIds);
       const params = new URLSearchParams(searchParams.toString());
+      seedEntityFiltersFromLocalState(params);
 
       if (plan.labelsToDrop.size > 0) {
         const nextLabels = activeLabels.filter(
@@ -234,6 +281,7 @@ export function useBoardFilterActions(options: UseBoardFilterActionsOptions): {
       projectAllValue,
       pushBoardParams,
       searchParams,
+      seedEntityFiltersFromLocalState,
       setAssigneeFilter,
       setLabelsFilterValue,
       setPriorityFilter,

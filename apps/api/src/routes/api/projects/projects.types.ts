@@ -1,6 +1,7 @@
 import type {
   InitialProjectTeamInput,
   InitialSprintInput,
+  ProjectIntegrationBindingItem,
   ProjectWorkflowConfig,
   WorkItemTypeRemovalStrategy,
 } from '@repo/types/api/v1';
@@ -21,7 +22,9 @@ export type ProjectRow = {
   jira_project_key: string | null;
   jira_connection_id: string | null;
   github_repo: string | null;
+  github_connection_id?: string | null;
   github_token: string | null;
+  figma_url: string | null;
   attributes_config?: unknown;
   workflow_config?: ProjectWorkflowConfig | null;
   logo_url: string | null;
@@ -64,9 +67,11 @@ type ProjectMutationInput = Omit<
   | 'created_by'
   | 'logo_url'
   | 'cover_picture'
+  | 'figma_url'
 > & {
   logo_url?: string | null;
   cover_picture?: string | null;
+  figma_url?: string | null;
   workflow_config?: ProjectWorkflowConfig | null;
 };
 
@@ -74,6 +79,7 @@ type ProjectMutationInput = Omit<
 export type CreateProjectInput = ProjectMutationInput & {
   sprint?: InitialSprintInput;
   team?: InitialProjectTeamInput;
+  integration_bindings?: ProjectIntegrationBindingItem[];
 };
 
 export type UpdateProjectInput = Partial<ProjectMutationInput> & {

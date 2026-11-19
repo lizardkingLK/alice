@@ -3,6 +3,8 @@ import { NotificationsService } from '../routes/api/notifications/notifications.
 import { WorkItemRepository } from '../routes/api/work-items/work-items.repository';
 import { WorkItemService } from '../routes/api/work-items/work-items.service';
 import { createWorkItemsRouter } from '../routes/api/work-items/work-items.route';
+import { WorkItemAiProposalService } from '../routes/api/work-items/work-item-ai-proposals.service';
+import { createWorkItemAiProposalsRouter } from '../routes/api/work-items/work-item-ai-proposals.route';
 import {
   SprintsRepository,
   SprintBurndownRepository,
@@ -12,6 +14,9 @@ import {
   SprintBurndownService,
 } from '../routes/api/sprints/sprints.service';
 import { createSprintsRouter } from '../routes/api/sprints/sprints.route';
+import { SprintEstimationRepository } from '../routes/api/sprints/sprint-estimation.repository';
+import { SprintEstimationAiService } from '../routes/api/sprints/sprint-estimation.ai.service';
+import { SprintEstimationService } from '../routes/api/sprints/sprint-estimation.service';
 import { ChatRepository } from '../routes/api/chat/chat.repository';
 import { ChatAttachmentsRepository } from '../routes/api/chat/chat-attachments.repository';
 import { WorkItemDeduplicationAgent } from '../routes/api/chat/work-item-deduplication.agent';
@@ -36,6 +41,14 @@ import { CommentsService } from '../routes/api/comments/comments.service';
 import { createCommentsRouter } from '../routes/api/comments/comments.route';
 import { createNotificationsRouter } from '../routes/api/notifications/notifications.route';
 import { NotificationsRepository } from '../routes/api/notifications/notifications.repository';
+import { PrismaEmailOutboxRepository } from '../routes/api/notifications/email-outbox.repository';
+import { NotificationEmailReconciler } from '../routes/api/notifications/notification-email-reconciler';
+import { EmailOutboxProcessor } from '../routes/api/notifications/email-outbox-processor';
+import { StoredEventOutboxEmailFactory } from '../routes/api/notifications/outbox-email-factory';
+import {
+  PrismaWeeklyProjectReportStore,
+  WeeklyProjectReportGenerator,
+} from '../routes/api/notifications/weekly-project-report-generator';
 import { HealthRepository } from '../routes/api/health/health.repository';
 import {
   HealthService,
@@ -48,6 +61,11 @@ import {
 import { createRootRouter } from '../routes';
 import { ProjectsRepository } from '../routes/api/projects/projects.repository';
 import { ProjectsService } from '../routes/api/projects/projects.service';
+import {
+  createResendProjectMemberEmailSender,
+  createResendEmailTransport,
+  type ProjectMemberEmailSender,
+} from '../routes/api/projects/project-member-email';
 import { createProjectsRouter } from '../routes/api/projects/projects.route';
 import { JiraRepository } from '../routes/api/jira/jira.repository';
 import { JiraService } from '../routes/api/jira/jira.service';
@@ -73,12 +91,17 @@ import { createChartsRouter } from '../routes/api/charts/charts.route';
 import { IntegrationsRepository } from '../routes/api/integrations/integrations.repository';
 import { IntegrationsService } from '../routes/api/integrations/integrations.service';
 import { createIntegrationsRouter } from '../routes/api/integrations/integrations.route';
+import { ChatAgentsRepository } from '../routes/api/chat-agents/chat-agents.repository';
+import { ChatAgentsService } from '../routes/api/chat-agents/chat-agents.service';
+import { createChatAgentsRouter } from '../routes/api/chat-agents/chat-agents.route';
 import { pusher as pusherClient } from '../lib/pusher';
 import { PusherService } from '../routes/api/pusher/pusher.service';
 import { createPusherRouter } from '../routes/api/pusher/pusher.route';
 import { ReportsRepository } from '../routes/api/reports/reports.repository';
+import { ReportsAiInsightsService } from '../routes/api/reports/reports.ai-insights.service';
 import { ReportsService } from '../routes/api/reports/reports.service';
 import { createReportsRouter } from '../routes/api/reports/reports.route';
+import { env } from './env';
 
 function createRootConfig() {
   const router = createRootRouter();
@@ -89,9 +112,9 @@ function createRootConfig() {
 }
 
 function createAccessAllowlistConfig(
-  accessRequestsService: AccessRequestsService
+  accessRequestsService: AccessRequestsService,
+  accessAllowlistRepository: AccessAllowlistRepository
 ) {
-  const accessAllowlistRepository = new AccessAllowlistRepository(supabase);
   const accessAllowlistService = new AccessAllowlistService(
     accessAllowlistRepository,
     accessRequestsService
@@ -107,12 +130,19 @@ function createAccessAllowlistConfig(
   };
 }
 
-function createAccessRequestsConfig() {
+function createAccessRequestsConfig(grantDeps: {
+  accessAllowlistRepository: AccessAllowlistRepository;
+  projectsRepository: ProjectsRepository;
+  usersRepository: UsersRepository;
+  projectMemberEmailSender: ProjectMemberEmailSender;
+  frontendUrl: string;
+}) {
   const notificationsRepository = new NotificationsRepository(supabase);
   const accessRequestsRepository = new AccessRequestsRepository();
   const accessRequestsService = new AccessRequestsService(
     accessRequestsRepository,
-    notificationsRepository
+    notificationsRepository,
+    grantDeps
   );
   const router = createAccessRequestsRouter({ accessRequestsService });
 
@@ -195,17 +225,48 @@ function createNotificationsConfig(
   accessRequestsService: AccessRequestsService
 ) {
   const notificationsRepository = new NotificationsRepository(supabase);
+  const emailOutboxRepository = new PrismaEmailOutboxRepository();
   const notificationsService = new NotificationsService(
-    notificationsRepository
+    notificationsRepository,
+    emailOutboxRepository
+  );
+  const emailReconciler = new NotificationEmailReconciler(
+    emailOutboxRepository
+  );
+  const emailOutboxProcessor = new EmailOutboxProcessor(
+    emailOutboxRepository,
+    createResendEmailTransport({
+      apiKey: env.RESEND_API_KEY,
+      from: env.TRANSACTIONAL_EMAIL_FROM,
+      missingConfiguration: 'throw',
+    }),
+    new StoredEventOutboxEmailFactory(env.FRONTEND_URL),
+    { workerId: `api-${process.pid}` }
+  );
+  const weeklyProjectReportGenerator = new WeeklyProjectReportGenerator(
+    new PrismaWeeklyProjectReportStore(),
+    emailOutboxRepository
   );
   const router = createNotificationsRouter({
     notificationsService,
     accessRequestsService,
+    emailReconciler,
+    emailOutboxProcessor,
+    emailReconciliationEnabled: env.EMAIL_RECONCILIATION_ENABLED === 'true',
+    emailOutboxProcessingEnabled:
+      env.EMAIL_OUTBOX_PROCESSING_ENABLED === 'true',
+    weeklyProjectReportGenerator,
+    weeklyReportGenerationEnabled:
+      env.WEEKLY_REPORT_GENERATION_ENABLED === 'true',
   });
 
   return {
     notificationsRepository,
+    emailOutboxRepository,
     notificationsService,
+    emailReconciler,
+    emailOutboxProcessor,
+    weeklyProjectReportGenerator,
     router,
   };
 }
@@ -219,11 +280,11 @@ function createWorkItemsConfig(
   const workItemService = new WorkItemService(
     workItemRepository,
     githubService,
-    activitiesService
+    activitiesService,
+    notificationsService
   );
   const router = createWorkItemsRouter({
     workItemService,
-    notificationsService,
   });
 
   return {
@@ -233,9 +294,18 @@ function createWorkItemsConfig(
   };
 }
 
-function createSprintsConfig() {
+function createSprintsConfig(integrationsService: IntegrationsService) {
   const sprintsRepository = new SprintsRepository(supabase);
   const sprintBurndownRepository = new SprintBurndownRepository(supabase);
+  const sprintEstimationRepository = new SprintEstimationRepository();
+  const sprintEstimationAiService = new SprintEstimationAiService(
+    integrationsService
+  );
+  const sprintEstimationService = new SprintEstimationService(
+    sprintsRepository,
+    sprintEstimationRepository,
+    sprintEstimationAiService
+  );
   const sprintsService = new SprintsService(sprintsRepository);
   const sprintBurndownService = new SprintBurndownService(
     sprintBurndownRepository
@@ -243,6 +313,7 @@ function createSprintsConfig() {
   const router = createSprintsRouter({
     sprintsService,
     sprintBurndownService,
+    sprintEstimationService,
   });
 
   return {
@@ -250,6 +321,9 @@ function createSprintsConfig() {
     sprintBurndownRepository,
     sprintsService,
     sprintBurndownService,
+    sprintEstimationRepository,
+    sprintEstimationAiService,
+    sprintEstimationService,
     router,
   };
 }
@@ -280,10 +354,16 @@ function createGithubConfig() {
 
 function createProjectsConfig(
   workItemService: WorkItemService,
-  jiraService: JiraService
+  jiraService: JiraService,
+  projectsRepository: ProjectsRepository,
+  usersRepository: UsersRepository,
+  projectMemberEmailSender: ProjectMemberEmailSender
 ) {
-  const projectsRepository = new ProjectsRepository(supabase);
-  const projectsService = new ProjectsService(projectsRepository);
+  const projectsService = new ProjectsService(
+    projectsRepository,
+    usersRepository,
+    projectMemberEmailSender
+  );
   const router = createProjectsRouter({
     projectsService,
     workItemService,
@@ -297,8 +377,7 @@ function createProjectsConfig(
   };
 }
 
-function createUsersConfig() {
-  const usersRepository = new UsersRepository(supabase);
+function createUsersConfig(usersRepository: UsersRepository) {
   const usersService = new UsersService(usersRepository, supabase);
   const router = createUsersRouter({ usersService });
 
@@ -357,7 +436,8 @@ function createChatConfig(
   sprintsService: SprintsService,
   projectsService: ProjectsService,
   projectsRepository: ProjectsRepository,
-  integrationsService: IntegrationsService
+  integrationsService: IntegrationsService,
+  chatAgentsRepository: ChatAgentsRepository
 ) {
   const chatRepository = new ChatRepository(supabase);
   const chatAttachmentsRepository = new ChatAttachmentsRepository(supabase);
@@ -371,6 +451,7 @@ function createChatConfig(
     projectsService,
     projectsRepository,
     integrationsService,
+    chatAgents: chatAgentsRepository,
   });
   const router = createChatRouter({ chatService });
 
@@ -410,6 +491,36 @@ function createIntegrationsConfig() {
   };
 }
 
+function createChatAgentsConfig() {
+  const chatAgentsRepository = new ChatAgentsRepository();
+  const chatAgentsService = new ChatAgentsService(chatAgentsRepository);
+  const router = createChatAgentsRouter({ chatAgentsService });
+
+  return {
+    chatAgentsRepository,
+    chatAgentsService,
+    router,
+  };
+}
+
+function createWorkItemAiProposalsConfig(
+  workItemRepository: WorkItemRepository,
+  commentsRepository: CommentsRepository,
+  chatAgentsRepository: ChatAgentsRepository,
+  integrationsService: IntegrationsService,
+  workItemService: WorkItemService
+) {
+  const proposalService = new WorkItemAiProposalService(
+    workItemRepository,
+    commentsRepository,
+    chatAgentsRepository,
+    integrationsService,
+    workItemService
+  );
+  const router = createWorkItemAiProposalsRouter({ proposalService });
+  return { proposalService, router };
+}
+
 function createPusherConfig(
   usersRepository: Pick<UsersRepository, 'findById'>
 ) {
@@ -422,12 +533,28 @@ function createPusherConfig(
   };
 }
 
+/** Shared repos needed before access-requests (grant deps). */
+const sharedAccessAllowlistRepository = new AccessAllowlistRepository(supabase);
+const sharedProjectsRepository = new ProjectsRepository(supabase);
+const sharedUsersRepository = new UsersRepository(supabase);
+const projectMemberEmailSender = createResendProjectMemberEmailSender({
+  apiKey: env.RESEND_API_KEY,
+  from: env.TRANSACTIONAL_EMAIL_FROM,
+});
+
 /** Production configs graph (repo → service → router). */
 export const root = createRootConfig();
 export const health = createHealthConfig();
-export const accessRequests = createAccessRequestsConfig();
+export const accessRequests = createAccessRequestsConfig({
+  accessAllowlistRepository: sharedAccessAllowlistRepository,
+  projectsRepository: sharedProjectsRepository,
+  usersRepository: sharedUsersRepository,
+  projectMemberEmailSender,
+  frontendUrl: env.FRONTEND_URL,
+});
 export const accessAllowlist = createAccessAllowlistConfig(
-  accessRequests.accessRequestsService
+  accessRequests.accessRequestsService,
+  sharedAccessAllowlistRepository
 );
 export const notifications = createNotificationsConfig(
   accessRequests.accessRequestsService
@@ -447,13 +574,25 @@ export const comments = createCommentsConfig(
   notifications.notificationsService
 );
 export const worklogs = createWorklogsConfig(workItems.workItemRepository);
-export const sprints = createSprintsConfig();
+export const integrations = createIntegrationsConfig();
+export const chatAgents = createChatAgentsConfig();
+export const workItemAiProposals = createWorkItemAiProposalsConfig(
+  workItems.workItemRepository,
+  comments.commentsRepository,
+  chatAgents.chatAgentsRepository,
+  integrations.integrationsService,
+  workItems.workItemService
+);
+export const sprints = createSprintsConfig(integrations.integrationsService);
 export const jira = createJiraConfig();
 export const projects = createProjectsConfig(
   workItems.workItemService,
-  jira.jiraService
+  jira.jiraService,
+  sharedProjectsRepository,
+  sharedUsersRepository,
+  projectMemberEmailSender
 );
-export const users = createUsersConfig();
+export const users = createUsersConfig(sharedUsersRepository);
 export const teams = createTeamsConfig();
 export const profile = createProfileConfig();
 
@@ -474,20 +613,32 @@ export const savedViews = createSavedViewsConfig(
   charts.chartsRepository
 );
 
-export const integrations = createIntegrationsConfig();
 export const pusher = createPusherConfig(users.usersRepository);
-function createReportsConfig() {
+function createReportsConfig(integrationsService: IntegrationsService) {
   const reportsRepository = new ReportsRepository(supabase);
-  const reportsService = new ReportsService(reportsRepository);
+  const reportsAiInsightsService = new ReportsAiInsightsService(
+    integrationsService
+  );
+  const reportsService = new ReportsService(
+    reportsRepository,
+    undefined,
+    reportsAiInsightsService
+  );
   const router = createReportsRouter({ reportsService });
-  return { reportsRepository, reportsService, router };
+  return {
+    reportsRepository,
+    reportsAiInsightsService,
+    reportsService,
+    router,
+  };
 }
 
-export const reports = createReportsConfig();
+export const reports = createReportsConfig(integrations.integrationsService);
 export const chat = createChatConfig(
   workItems.workItemService,
   sprints.sprintsService,
   projects.projectsService,
   projects.projectsRepository,
-  integrations.integrationsService
+  integrations.integrationsService,
+  chatAgents.chatAgentsRepository
 );

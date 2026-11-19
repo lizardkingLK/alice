@@ -4,12 +4,14 @@ import type {
   ChatLlmResponse,
 } from './chat-provider.types';
 import {
+  AnthropicResponseError,
   aliceChatToolsToAnthropicTools,
   anthropicMessageResponseToChatLlmResponse,
   chatContentsToAnthropicMessages,
 } from './anthropic-chat-adapter';
 import { resolveApprovedChatProviderApiUrl } from './chat-provider-endpoints';
 import { fetchChatProviderWithRetries } from './fetch-chat-provider-with-retries';
+import { logLlmProviderError } from './llm-error-log';
 
 export const ANTHROPIC_API_VERSION = '2023-06-01';
 export const ANTHROPIC_MAX_TOKENS = 4096;
@@ -54,10 +56,12 @@ export class AnthropicChatProvider implements ChatModelProvider {
       modelId: input.model,
       messagesCount: input.contents.length,
       resolveUserFacingError: resolveAnthropicUserFacingError,
+      signal: input.signal,
       fetchOnce: () =>
         fetch(apiUrl, {
           method: 'POST',
           redirect: 'error',
+          ...(input.signal ? { signal: input.signal } : {}),
           headers: {
             'Content-Type': 'application/json',
             'x-api-key': input.apiKey,
@@ -73,6 +77,28 @@ export class AnthropicChatProvider implements ChatModelProvider {
         }),
     });
 
-    return anthropicMessageResponseToChatLlmResponse(response, input.tools);
+    try {
+      return await anthropicMessageResponseToChatLlmResponse(
+        response,
+        input.tools,
+        input.signal
+      );
+    } catch (error: unknown) {
+      if (error instanceof AnthropicResponseError) {
+        // HTTP was OK; body is omitted on purpose — log rejection category only.
+        logLlmProviderError(this.provider, {
+          timestamp: new Date().toISOString(),
+          status: 200,
+          attempt: 1,
+          messagesCount: input.contents.length,
+          responseBodyBytes: 0,
+          rejectionCategory: error.category,
+        });
+        console.error(
+          `Anthropic response rejected after HTTP 200: ${error.category}`
+        );
+      }
+      throw error;
+    }
   }
 }

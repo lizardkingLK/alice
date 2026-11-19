@@ -1,5 +1,11 @@
-import type { Database, Tables } from '@repo/types';
-import { filterProductUsableUsers } from '@repo/types';
+import {
+  CHAT_CONVERSATION_POSTGREST_SELECT,
+  ChatConversationKinds,
+  filterProductUsableUsers,
+  type ChatConversationKind as ChatConversationKindValue,
+  type Database,
+  type Tables,
+} from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { env } from '../../../config/env';
 import { prisma } from '../../../lib/prisma';
@@ -9,7 +15,13 @@ export type ChatConversationRow = Tables<'chat_conversations'>;
 
 export type ChatConversationSummary = Pick<
   ChatConversationRow,
-  'id' | 'title' | 'created_at' | 'updated_at'
+  | 'id'
+  | 'title'
+  | 'created_at'
+  | 'updated_at'
+  | 'is_processing'
+  | 'kind'
+  | 'agent_id'
 >;
 
 export type ChatUserSnapshot = {
@@ -119,8 +131,9 @@ export class ChatRepository {
   async listConversations(userId: string): Promise<ChatConversationSummary[]> {
     const { data, error } = await this.db
       .from('chat_conversations')
-      .select('id, title, created_at, updated_at')
+      .select(CHAT_CONVERSATION_POSTGREST_SELECT)
       .eq('user_id', userId)
+      .eq('kind', ChatConversationKinds.general)
       .order('updated_at', { ascending: false });
 
     if (error) {
@@ -137,12 +150,31 @@ export class ChatRepository {
   async createConversation(
     userId: string,
     title = 'New Chat',
-    isProcessing = false
+    isProcessing = false,
+    kind: ChatConversationKindValue = ChatConversationKinds.general,
+    agentId?: string | null
   ): Promise<string> {
     const created = await prisma.chat_conversations.create({
-      data: { user_id: userId, title, is_processing: isProcessing },
+      data: {
+        user_id: userId,
+        title,
+        is_processing: isProcessing,
+        kind,
+        ...(agentId ? { agent_id: agentId } : {}),
+      },
     });
     return created.id;
+  }
+
+  async getConversationAgentId(
+    userId: string,
+    conversationId: string
+  ): Promise<string | null> {
+    const row = await prisma.chat_conversations.findFirst({
+      where: { id: conversationId, user_id: userId },
+      select: { agent_id: true },
+    });
+    return row?.agent_id ?? null;
   }
 
   async setProcessingStatus(

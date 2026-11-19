@@ -16,10 +16,15 @@ const {
   applyWorkItemTypeRemovalStrategiesMock,
   listAccessibleProjectIdsMock,
   listAccessibleSummariesMock,
+  getDetailByIdMock,
   usersFindManyMock,
   integrationFindFirstMock,
   teamFindFirstMock,
   notificationsCreateMock,
+  findUserByIdMock,
+  sendProjectMemberEmailMock,
+  projectBindingsFindManyMock,
+  versionControlFindFirstMock,
 } = vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
   return {
@@ -38,10 +43,15 @@ const {
     applyWorkItemTypeRemovalStrategiesMock: vi.fn(),
     listAccessibleProjectIdsMock: vi.fn(),
     listAccessibleSummariesMock: vi.fn(),
+    getDetailByIdMock: vi.fn(),
     usersFindManyMock: vi.fn(),
     integrationFindFirstMock: vi.fn(),
     teamFindFirstMock: vi.fn(),
     notificationsCreateMock: vi.fn(),
+    findUserByIdMock: vi.fn(),
+    sendProjectMemberEmailMock: vi.fn(),
+    projectBindingsFindManyMock: vi.fn(),
+    versionControlFindFirstMock: vi.fn(),
   };
 });
 
@@ -63,9 +73,12 @@ vi.mock('../../src/lib/prisma', () => ({
     integrations: { findFirst: integrationFindFirstMock },
     teams: { findFirst: teamFindFirstMock },
     notifications: { create: notificationsCreateMock },
+    project_integration_bindings: { findMany: projectBindingsFindManyMock },
+    version_control_connections: { findFirst: versionControlFindFirstMock },
   },
 }));
 
+import { buildDefaultProjectTypeDefs } from '@repo/types';
 import {
   CreateProjectInput,
   ProjectTeamValidationError,
@@ -90,6 +103,7 @@ const mockProject = {
   jira_connection_id: null,
   github_repo: null,
   github_token: null,
+  figma_url: null,
   logo_url: null,
   cover_picture: null,
 };
@@ -122,9 +136,16 @@ describe('ProjectsService backend tests', () => {
     applyWorkItemTypeRemovalStrategies: applyWorkItemTypeRemovalStrategiesMock,
     listAccessibleProjectIds: listAccessibleProjectIdsMock,
     listAccessibleSummaries: listAccessibleSummariesMock,
+    getDetailById: getDetailByIdMock,
   } as unknown as ProjectsRepository;
 
-  const service = new ProjectsService(projectsRepository);
+  const usersRepository = { findById: findUserByIdMock };
+  const projectMemberEmailSender = { send: sendProjectMemberEmailMock };
+  const service = new ProjectsService(
+    projectsRepository,
+    usersRepository,
+    projectMemberEmailSender
+  );
 
   const createProjectInput = (
     overrides: Partial<CreateProjectInput> = {}
@@ -164,6 +185,12 @@ describe('ProjectsService backend tests', () => {
       findByKeyMock.mockResolvedValue(null);
       createMock.mockResolvedValue(mockProject);
       notificationsCreateMock.mockResolvedValue({});
+      findUserByIdMock.mockResolvedValueOnce({
+        id: 'user-admin',
+        name: 'Admin User',
+        email: 'admin@example.com',
+      });
+      sendProjectMemberEmailMock.mockResolvedValue(undefined);
 
       const accepted = await service.enqueueCreateProject(
         'user-admin',
@@ -185,7 +212,16 @@ describe('ProjectsService backend tests', () => {
             message: `Project [**${mockProject.name}**](/projects/${mockProject.id}) is ready`,
           }),
         });
+        expect(sendProjectMemberEmailMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            to: 'admin@example.com',
+            subject: "You've been added to Alice Project in Alice",
+          })
+        );
       });
+      expect(createMock.mock.invocationCallOrder[0]).toBeLessThan(
+        sendProjectMemberEmailMock.mock.invocationCallOrder[0]!
+      );
     });
 
     it('does not send create_failed when create succeeds but notify fails', async () => {
@@ -224,6 +260,12 @@ describe('ProjectsService backend tests', () => {
       mockActorRole('admin');
       findByKeyMock.mockResolvedValue(null);
       createMock.mockResolvedValue(mockProject);
+      findUserByIdMock.mockResolvedValueOnce({
+        id: 'user-admin',
+        name: 'Admin User',
+        email: 'admin@example.com',
+      });
+      sendProjectMemberEmailMock.mockResolvedValue(undefined);
 
       const input = createProjectInput();
 
@@ -234,12 +276,18 @@ describe('ProjectsService backend tests', () => {
         {
           ...input,
           workflow_config: {
-            work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+            work_item_types: buildDefaultProjectTypeDefs(),
           },
         },
         'user-admin'
       );
       expect(result).toEqual(mockProject);
+      expect(sendProjectMemberEmailMock).toHaveBeenCalledWith(
+        expect.objectContaining({ to: 'admin@example.com' })
+      );
+      expect(createMock.mock.invocationCallOrder[0]).toBeLessThan(
+        sendProjectMemberEmailMock.mock.invocationCallOrder[0]!
+      );
     });
 
     it('creates project with configured work_item_types', async () => {
@@ -249,7 +297,12 @@ describe('ProjectsService backend tests', () => {
 
       const input = createProjectInput({
         workflow_config: {
-          work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+          work_item_types: buildDefaultProjectTypeDefs([
+            'Epic',
+            'Story',
+            'Task',
+            'Issue',
+          ]),
         },
       });
 
@@ -259,7 +312,12 @@ describe('ProjectsService backend tests', () => {
         {
           ...input,
           workflow_config: {
-            work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+            work_item_types: buildDefaultProjectTypeDefs([
+              'Epic',
+              'Story',
+              'Task',
+              'Issue',
+            ]),
           },
         },
         'user-admin'
@@ -295,6 +353,23 @@ describe('ProjectsService backend tests', () => {
         { id: 'team-manager', role: 'manager' },
         { id: 'team-member', role: 'member' },
       ]);
+      findUserByIdMock
+        .mockResolvedValueOnce({
+          id: 'user-admin',
+          name: 'Admin User',
+          email: 'admin@example.com',
+        })
+        .mockResolvedValueOnce({
+          id: 'team-manager',
+          name: 'Team Manager',
+          email: 'manager@example.com',
+        })
+        .mockResolvedValueOnce({
+          id: 'team-member',
+          name: 'Team Member',
+          email: 'member@example.com',
+        });
+      sendProjectMemberEmailMock.mockResolvedValue(undefined);
       const team = {
         name: 'Platform Team',
         description: null,
@@ -318,6 +393,58 @@ describe('ProjectsService backend tests', () => {
         expect.objectContaining({ team }),
         'user-admin'
       );
+      expect(findUserByIdMock).toHaveBeenCalledTimes(3);
+      expect(findUserByIdMock).not.toHaveBeenCalledWith('user-manager');
+      expect(sendProjectMemberEmailMock).toHaveBeenCalledTimes(3);
+      expect(
+        sendProjectMemberEmailMock.mock.calls.map(([message]) => message.to)
+      ).toEqual([
+        'admin@example.com',
+        'manager@example.com',
+        'member@example.com',
+      ]);
+    });
+
+    it('does not notify any member when project persistence fails', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      createMock.mockRejectedValue(new Error('transaction rolled back'));
+
+      await expect(
+        service.createProject('user-admin', createProjectInput())
+      ).rejects.toThrow('transaction rolled back');
+
+      expect(findUserByIdMock).not.toHaveBeenCalled();
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
+    });
+
+    it('keeps the committed project when an initial member email fails', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      createMock.mockResolvedValue(mockProject);
+      findUserByIdMock.mockResolvedValueOnce({
+        id: 'user-admin',
+        name: 'Admin User',
+        email: 'admin@example.com',
+      });
+      sendProjectMemberEmailMock.mockRejectedValueOnce(
+        new Error('provider included admin@example.com in its error')
+      );
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+
+      await expect(
+        service.createProject('user-admin', createProjectInput())
+      ).resolves.toEqual(mockProject);
+
+      expect(consoleError).toHaveBeenCalledWith(
+        'error. project member email notification failed'
+      );
+      expect(consoleError).not.toHaveBeenCalledWith(
+        expect.stringContaining('admin@example.com')
+      );
+      consoleError.mockRestore();
     });
 
     it('rejects an inactive initial team manager', async () => {
@@ -525,6 +652,45 @@ describe('ProjectsService backend tests', () => {
       expect(updateMock).not.toHaveBeenCalled();
     });
 
+    it.each(['manager', 'admin'] as const)(
+      'allows a %s to save a Figma link',
+      async (role) => {
+        mockActorRole(role);
+        const figmaUrl = 'https://www.figma.com/design/file-1/Alice';
+        updateMock.mockResolvedValue({ ...mockProject, figma_url: figmaUrl });
+
+        await service.updateProject(
+          'actor-id',
+          'project-1',
+          { figma_url: figmaUrl },
+          mockProject.updated_at
+        );
+
+        expect(updateMock).toHaveBeenCalledWith(
+          'project-1',
+          { figma_url: figmaUrl },
+          'actor-id',
+          mockProject.updated_at
+        );
+      }
+    );
+
+    it('rejects a member changing a Figma link through the API service', async () => {
+      mockActorRole('member');
+
+      await expect(
+        service.updateProject(
+          'user-member',
+          'project-1',
+          { figma_url: 'https://www.figma.com/design/file-1/Alice' },
+          mockProject.updated_at
+        )
+      ).rejects.toThrow(
+        'Unauthorized. Only admins and managers can manage projects.'
+      );
+      expect(updateMock).not.toHaveBeenCalled();
+    });
+
     it('updates project successfully as manager/admin', async () => {
       mockActorRole('manager');
       findByKeyMock.mockResolvedValue(null);
@@ -555,7 +721,13 @@ describe('ProjectsService backend tests', () => {
       findByIdMock.mockResolvedValue({
         ...mockProject,
         workflow_config: {
-          work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+          work_item_types: buildDefaultProjectTypeDefs([
+            'Epic',
+            'Feature',
+            'Story',
+            'Task',
+            'Issue',
+          ]),
         },
       });
       previewWorkItemTypeRemovalMock.mockResolvedValue({
@@ -576,7 +748,12 @@ describe('ProjectsService backend tests', () => {
           'project-1',
           {
             workflow_config: {
-              work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+              work_item_types: buildDefaultProjectTypeDefs([
+                'Epic',
+                'Story',
+                'Task',
+                'Issue',
+              ]),
             },
           },
           mockProject.updated_at
@@ -593,7 +770,13 @@ describe('ProjectsService backend tests', () => {
       findByIdMock.mockResolvedValue({
         ...mockProject,
         workflow_config: {
-          work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+          work_item_types: buildDefaultProjectTypeDefs([
+            'Epic',
+            'Feature',
+            'Story',
+            'Task',
+            'Issue',
+          ]),
         },
       });
       updateMock.mockResolvedValue(mockProject);
@@ -619,7 +802,12 @@ describe('ProjectsService backend tests', () => {
         'project-1',
         {
           workflow_config: {
-            work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+            work_item_types: buildDefaultProjectTypeDefs([
+              'Epic',
+              'Story',
+              'Task',
+              'Issue',
+            ]),
           },
           typeRemovalStrategies: [
             { type: 'Feature', action: 'migrate', migrateTo: 'Story' },
@@ -632,7 +820,8 @@ describe('ProjectsService backend tests', () => {
         'project-1',
         ['Epic', 'Story', 'Task', 'Issue'],
         [{ type: 'Feature', action: 'migrate', migrateTo: 'Story' }],
-        null
+        null,
+        buildDefaultProjectTypeDefs(['Epic', 'Story', 'Task', 'Issue'])
       );
       expect(result.typeRemoval).toEqual({
         detachedCount: 1,
@@ -681,6 +870,7 @@ describe('ProjectsService backend tests', () => {
         'user-new-owner',
         'user-manager'
       );
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
     });
 
     it('rejects updates for standard members', async () => {
@@ -698,6 +888,129 @@ describe('ProjectsService backend tests', () => {
       );
 
       expect(updateMock).not.toHaveBeenCalled();
+    });
+
+    it('blocks non-owner managers from changing an admin-owned GitHub repo', async () => {
+      mockActorRole('manager');
+      findByKeyMock.mockResolvedValue(null);
+      findByIdMock.mockResolvedValue({
+        ...mockProject,
+        github_repo: 'acme/old-repo',
+        github_connection_id: 'conn-admin-1',
+      });
+      versionControlFindFirstMock.mockResolvedValue({
+        user_id: 'user-admin',
+        user: { role: 'admin' },
+      });
+
+      await expect(
+        service.updateProject(
+          'user-manager',
+          'project-1',
+          { github_repo: 'acme/new-repo' },
+          mockProject.updated_at
+        )
+      ).rejects.toThrow(
+        /GitHub connection was established by an administrator/
+      );
+
+      expect(versionControlFindFirstMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'conn-admin-1' },
+        })
+      );
+      expect(updateMock).not.toHaveBeenCalled();
+    });
+
+    it('allows the admin who owns the GitHub connection to change the repo', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      findByIdMock.mockResolvedValue({
+        ...mockProject,
+        github_repo: 'acme/old-repo',
+        github_connection_id: 'conn-admin-1',
+      });
+      versionControlFindFirstMock.mockResolvedValue({
+        user_id: 'user-admin',
+        user: { role: 'admin' },
+      });
+      updateMock.mockResolvedValue({
+        ...mockProject,
+        github_repo: 'acme/new-repo',
+        github_connection_id: 'conn-admin-1',
+      });
+
+      await service.updateProject(
+        'user-admin',
+        'project-1',
+        { github_repo: 'acme/new-repo' },
+        mockProject.updated_at
+      );
+
+      expect(updateMock).toHaveBeenCalled();
+    });
+  });
+
+  describe('getProjectIntegrationsSummary', () => {
+    it('aggregates SC, PM, and AI binding state for an accessible project', async () => {
+      listAccessibleProjectIdsMock.mockResolvedValue(['project-1']);
+      getDetailByIdMock.mockResolvedValue({
+        ...mockProject,
+        vc_connection_id: '11111111-1111-4111-8111-111111111111',
+        vc_external: { vendor: 'github', repo: 'acme/alice' },
+        pm_connection_id: '22222222-2222-4222-8222-222222222222',
+        pm_external: { vendor: 'jira', project_key: 'ALICE' },
+        figma_url: 'https://www.figma.com/design/file-1/Alice',
+      });
+      projectBindingsFindManyMock.mockResolvedValue([
+        {
+          integration_id: '33333333-3333-4333-8333-333333333333',
+          is_default_for_project: true,
+        },
+        {
+          integration_id: '44444444-4444-4444-8444-444444444444',
+          is_default_for_project: false,
+        },
+      ]);
+
+      const summary = await service.getProjectIntegrationsSummary(
+        'project-1',
+        'user-manager'
+      );
+
+      expect(summary).toEqual({
+        project_id: 'project-1',
+        source_control: {
+          provider: 'github',
+          connected: true,
+          repo: 'acme/alice',
+          connection_id: '11111111-1111-4111-8111-111111111111',
+        },
+        project_management: {
+          provider: 'jira',
+          connected: true,
+          project_key: 'ALICE',
+          connection_id: '22222222-2222-4222-8222-222222222222',
+        },
+        design: {
+          figma: {
+            connected: true,
+            url: 'https://www.figma.com/design/file-1/Alice',
+          },
+        },
+        ai_agents: {
+          binding_count: 2,
+          default_integration_id: '33333333-3333-4333-8333-333333333333',
+        },
+      });
+    });
+
+    it('rejects actors without project access', async () => {
+      listAccessibleProjectIdsMock.mockResolvedValue([]);
+
+      await expect(
+        service.getProjectIntegrationsSummary('project-1', 'user-outsider')
+      ).rejects.toThrow('Unauthorized project workspace access.');
     });
   });
 
@@ -746,6 +1059,39 @@ describe('ProjectsService backend tests', () => {
     });
   });
 
+  describe('enqueueSoftDeleteProject', () => {
+    it('accepts archive and notifies when background archive succeeds', async () => {
+      mockActorRole('manager');
+      findByIdMock.mockResolvedValue(mockProject);
+      updateMock.mockResolvedValue({
+        ...mockProject,
+        status: 'archived',
+        deleted_at: '2026-08-11T00:00:00.000Z',
+      });
+      notificationsCreateMock.mockResolvedValue({});
+
+      const accepted = await service.enqueueSoftDeleteProject(
+        'user-manager',
+        'project-1',
+        mockProject.updated_at
+      );
+
+      expect(accepted.correlationId).toBeTruthy();
+      expect(accepted.message).toMatch(/archive started/i);
+
+      await vi.waitFor(() => {
+        expect(updateMock).toHaveBeenCalled();
+        expect(notificationsCreateMock).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            user_id: 'user-manager',
+            type: 'entity_archived',
+            related_item_id: 'project-1',
+          }),
+        });
+      });
+    });
+  });
+
   describe('restoreProject', () => {
     it('clears deleted_at and sets project to active', async () => {
       mockActorRole('manager');
@@ -788,6 +1134,174 @@ describe('ProjectsService backend tests', () => {
       );
 
       expect(updateMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('addMember', () => {
+    const targetUser = {
+      id: 'user-member',
+      name: 'Taylor Member',
+      email: 'taylor@example.com',
+      role: 'member' as const,
+      active: true,
+      membership_status: 'active' as const,
+      created_at: '2026-01-01T00:00:00.000Z',
+      updated_at: '2026-01-01T00:00:00.000Z',
+    };
+
+    beforeEach(() => {
+      listMembersMock.mockResolvedValue([]);
+      findByIdMock.mockResolvedValue(mockProject);
+      findUserByIdMock.mockResolvedValue(targetUser);
+      addMemberMock.mockResolvedValue(true);
+      sendProjectMemberEmailMock.mockResolvedValue(undefined);
+    });
+
+    it.each(['manager', 'admin'] as const)(
+      'notifies the existing user after an authorized %s persists membership',
+      async (role) => {
+        mockActorRole(role);
+
+        await service.addMember('actor-1', 'project-1', 'user-member');
+
+        expect(addMemberMock).toHaveBeenCalledWith(
+          'project-1',
+          'user-member',
+          'actor-1'
+        );
+        expect(sendProjectMemberEmailMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            to: 'taylor@example.com',
+            subject: "You've been added to Alice Project in Alice",
+          })
+        );
+        expect(sendProjectMemberEmailMock.mock.calls[0]?.[0].text).toContain(
+          'http://localhost:3000/projects/ALICE'
+        );
+        expect(addMemberMock.mock.invocationCallOrder[0]).toBeLessThan(
+          sendProjectMemberEmailMock.mock.invocationCallOrder[0]!
+        );
+      }
+    );
+
+    it('does not write or notify when the user is already a member', async () => {
+      mockActorRole('manager');
+      listMembersMock.mockResolvedValue([{ user_id: 'user-member' }]);
+
+      await expect(
+        service.addMember('actor-1', 'project-1', 'user-member')
+      ).rejects.toThrow('User is already a member of this project.');
+
+      expect(addMemberMock).not.toHaveBeenCalled();
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
+    });
+
+    it('uses a new idempotency key for a legitimate future re-addition', async () => {
+      mockActorRole('manager');
+
+      await service.addMember('actor-1', 'project-1', 'user-member');
+      await service.addMember('actor-1', 'project-1', 'user-member');
+
+      const firstKey =
+        sendProjectMemberEmailMock.mock.calls[0]?.[0].idempotencyKey;
+      const secondKey =
+        sendProjectMemberEmailMock.mock.calls[1]?.[0].idempotencyKey;
+      expect(firstKey).toMatch(/^project-member-added:/);
+      expect(secondKey).toMatch(/^project-member-added:/);
+      expect(secondKey).not.toBe(firstKey);
+    });
+
+    it('does not notify when a concurrent request inserts first', async () => {
+      mockActorRole('manager');
+      addMemberMock.mockResolvedValue(false);
+
+      await expect(
+        service.addMember('actor-1', 'project-1', 'user-member')
+      ).rejects.toThrow('User is already a member of this project.');
+
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
+    });
+
+    it('does not inspect membership or notify after failed authorization', async () => {
+      mockActorRole('member');
+
+      await expect(
+        service.addMember('actor-1', 'project-1', 'user-member')
+      ).rejects.toThrow(
+        'Unauthorized. Only admins and managers can manage projects.'
+      );
+
+      expect(listMembersMock).not.toHaveBeenCalled();
+      expect(addMemberMock).not.toHaveBeenCalled();
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
+    });
+
+    it('does not notify when membership persistence fails', async () => {
+      mockActorRole('manager');
+      addMemberMock.mockRejectedValue(new Error('database unavailable'));
+
+      await expect(
+        service.addMember('actor-1', 'project-1', 'user-member')
+      ).rejects.toThrow('database unavailable');
+
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
+    });
+
+    it('keeps a successful membership when email delivery fails', async () => {
+      mockActorRole('manager');
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      sendProjectMemberEmailMock.mockRejectedValue(
+        new Error('provider included recipient@example.com in its error')
+      );
+
+      await expect(
+        service.addMember('actor-1', 'project-1', 'user-member')
+      ).resolves.toBeUndefined();
+
+      expect(addMemberMock).toHaveBeenCalledOnce();
+      expect(consoleError).toHaveBeenCalledWith(
+        'error. project member email notification failed'
+      );
+      expect(consoleError).not.toHaveBeenCalledWith(
+        expect.stringContaining('recipient@example.com')
+      );
+      consoleError.mockRestore();
+    });
+
+    it('keeps a successful membership when safe template construction fails', async () => {
+      mockActorRole('manager');
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      findUserByIdMock.mockResolvedValue({
+        ...targetUser,
+        email: 'member@example.com\r\nBcc: attacker@example.com',
+      });
+
+      await expect(
+        service.addMember('actor-1', 'project-1', 'user-member')
+      ).resolves.toBeUndefined();
+
+      expect(addMemberMock).toHaveBeenCalledOnce();
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
+      expect(consoleError).toHaveBeenCalledWith(
+        'error. project member email notification failed'
+      );
+      consoleError.mockRestore();
+    });
+
+    it('requires trusted project and user records before persistence', async () => {
+      mockActorRole('manager');
+      findUserByIdMock.mockResolvedValue(null);
+
+      await expect(
+        service.addMember('actor-1', 'project-1', 'missing-user')
+      ).rejects.toThrow('User not found.');
+
+      expect(addMemberMock).not.toHaveBeenCalled();
+      expect(sendProjectMemberEmailMock).not.toHaveBeenCalled();
     });
   });
 
@@ -849,6 +1363,34 @@ describe('ProjectsService backend tests', () => {
       );
 
       expect(deleteMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('enqueueHardDeleteProject', () => {
+    it('accepts purge and notifies when background purge succeeds', async () => {
+      mockActorRole('admin');
+      findByIdMock.mockResolvedValue(mockProject);
+      deleteMock.mockResolvedValue(undefined);
+      notificationsCreateMock.mockResolvedValue({});
+
+      const accepted = await service.enqueueHardDeleteProject(
+        'user-admin',
+        'project-1'
+      );
+
+      expect(accepted.correlationId).toBeTruthy();
+      expect(accepted.message).toMatch(/permanent delete started/i);
+
+      await vi.waitFor(() => {
+        expect(deleteMock).toHaveBeenCalledWith('project-1');
+        expect(notificationsCreateMock).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            user_id: 'user-admin',
+            type: 'entity_purged',
+            related_item_id: null,
+          }),
+        });
+      });
     });
   });
 

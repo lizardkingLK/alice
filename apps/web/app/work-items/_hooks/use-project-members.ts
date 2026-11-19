@@ -45,6 +45,7 @@ export function useProjectMembers({
     selectedId: assigneeId,
     preferProvided: preferProvidedMembers,
     clearWhenMissing: !lockAssignee,
+    cacheScope: 'members',
     onSelectionChange: onAssigneeChange,
     fetchOptions,
     noProjectOptions: projectMembers,

@@ -18,6 +18,7 @@ export const sprintFactory = {
     return {
       id: 'sprint-123',
       name: 'Sprint 1',
+      slug: 'sprint-1',
       goal: 'Achieve project milestone',
       status: 'planned',
       startDate: '2026-07-10',

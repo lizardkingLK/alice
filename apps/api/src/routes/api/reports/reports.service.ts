@@ -6,7 +6,11 @@ import {
   buildDailyReportSnapshot,
   UPCOMING_DEADLINE_DAYS,
 } from './reports.aggregation';
-import { renderDailyReportMarkdown } from './reports.markdown';
+import type { ReportsAiInsightsService } from './reports.ai-insights.service';
+import {
+  appendDailyReportAiInsightsMarkdown,
+  renderDailyReportMarkdown,
+} from './reports.markdown';
 import type { ReportsRepository } from './reports.repository';
 import { dailyReportUtcRange } from './reports.timezone';
 
@@ -20,7 +24,11 @@ export class ReportAccessError extends Error {
 export class ReportsService {
   constructor(
     private readonly repository: ReportsRepository,
-    private readonly now: () => Date = () => new Date()
+    private readonly now: () => Date = () => new Date(),
+    private readonly aiInsightsService?: Pick<
+      ReportsAiInsightsService,
+      'generate'
+    >
   ) {}
 
   async generate(
@@ -57,7 +65,7 @@ export class ReportsService {
       endExclusive,
     });
 
-    return {
+    const report: GenerateReportResponse = {
       snapshot,
       markdown: renderDailyReportMarkdown(snapshot, request.verbosity),
       metadata: {
@@ -73,5 +81,28 @@ export class ReportsService {
         upcomingDeadlineDays: UPCOMING_DEADLINE_DAYS,
       },
     };
+
+    if (!request.includeAiInsights) {
+      return report;
+    }
+
+    if (!this.aiInsightsService) {
+      return { ...report, aiInsightsStatus: 'unavailable' };
+    }
+
+    try {
+      const aiInsights = await this.aiInsightsService.generate(snapshot);
+      return {
+        ...report,
+        markdown: appendDailyReportAiInsightsMarkdown(
+          report.markdown,
+          aiInsights
+        ),
+        aiInsightsStatus: 'generated',
+        aiInsights,
+      };
+    } catch {
+      return { ...report, aiInsightsStatus: 'unavailable' };
+    }
   }
 }

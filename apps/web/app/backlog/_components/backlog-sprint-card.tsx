@@ -1,7 +1,6 @@
 'use client';
 
-import type React from 'react';
-import { useMemo } from 'react';
+import { useMemo, type DragEvent } from 'react';
 import { BacklogDropZone } from '@/app/backlog/_components/backlog-drop-zone';
 import { BacklogItemCount } from '@/app/backlog/_components/backlog-item-count';
 import { BacklogSprintCapacitySummary } from '@/app/backlog/_components/backlog-sprint-capacity-summary';
@@ -38,6 +37,7 @@ import {
   Pencil,
   Play,
   Plus,
+  Sparkles,
 } from '@repo/ui/lib/icons';
 import { sprintReportHref } from '@/app/sprints/_helpers/sprint-report-links';
 
@@ -56,22 +56,27 @@ type BacklogSprintCardProps = {
   readonly onToggle: (sprintId: string) => void;
   readonly onCreateIssue: (sprintId: string) => void;
   readonly onEditSprint: (sprint: Sprint) => void;
+  readonly onEstimateSprint: (sprint: Sprint) => void;
   readonly onStartSprint: (sprintId: string) => void;
   readonly onCompleteSprint: (sprintId: string) => void;
   readonly onSelectItem: (item: DbWorkItem) => void;
-  readonly onItemDragStart: (event: React.DragEvent, id: string) => void;
-  readonly onDragOver: (
-    event: React.DragEvent,
-    targetId: string | null
-  ) => void;
+  readonly pendingSprintMoveIds?: ReadonlySet<string>;
+  readonly onItemDragStart: (event: DragEvent, id: string) => void;
+  readonly onDragOver: (event: DragEvent, targetId: string | null) => void;
   readonly onDragLeave: () => void;
-  readonly onDrop: (event: React.DragEvent, targetId: string | null) => void;
+  readonly onDrop: (event: DragEvent, targetId: string | null) => void;
 };
 /* eslint-enable no-unused-vars */
 
-function openSprintSummaryReport(sprintId: string) {
+function openSprintSummaryReport(
+  sprintId: string,
+  tree?: {
+    readonly projectKey?: string | null;
+    readonly sprintSlug?: string | null;
+  }
+) {
   window.open(
-    sprintReportHref(sprintId, 'backlog'),
+    sprintReportHref(sprintId, 'backlog', tree),
     '_blank',
     'noopener,noreferrer'
   );
@@ -86,6 +91,8 @@ type SprintCardActionsProps = {
   // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onEditSprint: (sprint: Sprint) => void;
   // eslint-disable-next-line no-unused-vars -- callback signature
+  readonly onEstimateSprint: (sprint: Sprint) => void;
+  // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onStartSprint: (sprintId: string) => void;
   // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onCompleteSprint: (sprintId: string) => void;
@@ -97,6 +104,7 @@ function SprintCardActions({
   isManagerOrAdmin,
   onCreateIssue,
   onEditSprint,
+  onEstimateSprint,
   onStartSprint,
   onCompleteSprint,
 }: Readonly<SprintCardActionsProps>) {
@@ -143,7 +151,10 @@ function SprintCardActions({
               aria-label="Summary report"
               onClick={(event) => {
                 event.stopPropagation();
-                openSprintSummaryReport(sprint.id);
+                openSprintSummaryReport(sprint.id, {
+                  projectKey: sprint.project?.key,
+                  sprintSlug: sprint.slug,
+                });
               }}
             >
               <BarChart3 className="size-4" />
@@ -210,6 +221,13 @@ function SprintCardActions({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
+              aria-label="Estimate with AI"
+              onClick={() => onEstimateSprint(sprint)}
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              Estimate with AI
+            </DropdownMenuItem>
+            <DropdownMenuItem
               aria-label="Edit Sprint"
               onClick={() => onEditSprint(sprint)}
             >
@@ -237,9 +255,11 @@ export function BacklogSprintCard({
   onToggle,
   onCreateIssue,
   onEditSprint,
+  onEstimateSprint,
   onStartSprint,
   onCompleteSprint,
   onSelectItem,
+  pendingSprintMoveIds,
   onItemDragStart,
   onDragOver,
   onDragLeave,
@@ -289,6 +309,7 @@ export function BacklogSprintCard({
             isManagerOrAdmin={isManagerOrAdmin}
             onCreateIssue={onCreateIssue}
             onEditSprint={onEditSprint}
+            onEstimateSprint={onEstimateSprint}
             onStartSprint={onStartSprint}
             onCompleteSprint={onCompleteSprint}
           />
@@ -304,6 +325,7 @@ export function BacklogSprintCard({
           isDragOver={isDragOver}
           minHeightClass="min-h-22.5"
           emptyMessage="Plan this sprint by dragging backlog items here"
+          pendingSprintMoveIds={pendingSprintMoveIds}
           onSelectItem={onSelectItem}
           onItemDragStart={onItemDragStart}
           onDragOver={onDragOver}

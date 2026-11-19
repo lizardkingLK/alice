@@ -14,6 +14,7 @@ const {
   updateMock,
   getWorkItemCountMock,
   requireProjectMemberMock,
+  allocateSprintSlugMock,
 } = vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
   return {
@@ -24,6 +25,7 @@ const {
     updateMock: vi.fn(),
     getWorkItemCountMock: vi.fn(),
     requireProjectMemberMock: vi.fn(),
+    allocateSprintSlugMock: vi.fn(),
   };
 });
 
@@ -34,9 +36,14 @@ vi.mock('../../src/lib/auth-helpers', () => ({
   }),
 }));
 
+vi.mock('../../src/lib/entity-slug', () => ({
+  allocateSprintSlug: allocateSprintSlugMock,
+}));
+
 const sprintRow = {
   id: 'sprint-1',
   name: 'Sprint 1',
+  slug: 'sprint-1',
   goal: null,
   status: 'planned' as const,
   start_date: '2026-09-01',
@@ -61,6 +68,7 @@ describe('SprintsService name uniqueness', () => {
     vi.clearAllMocks();
     assertCanAccessProjectMock.mockResolvedValue(undefined);
     requireProjectMemberMock.mockResolvedValue({ projectId: 'project-1' });
+    allocateSprintSlugMock.mockResolvedValue('sprint-1');
     repository = {
       assertCanAccessProject: assertCanAccessProjectMock,
       findById: findByIdMock,
@@ -127,7 +135,17 @@ describe('SprintsService name uniqueness', () => {
     });
 
     expect(result.name).toBe('Sprint 1');
-    expect(createMock).toHaveBeenCalled();
+    expect(allocateSprintSlugMock).toHaveBeenCalledWith(
+      'project-1',
+      'Sprint 1'
+    );
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Sprint 1',
+        slug: 'sprint-1',
+        projectId: 'project-1',
+      })
+    );
   });
 
   it.each(['user-manager', 'user-admin'])(

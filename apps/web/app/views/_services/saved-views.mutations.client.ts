@@ -1,5 +1,6 @@
 import { parseWithZod } from '@/lib/zod/format-zod-error';
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
+import type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 import {
   createSavedViewBodySchema,
   shareSavedViewBodySchema,
@@ -9,6 +10,8 @@ import {
   type ShareSavedViewResponse,
 } from '@repo/types/api/v1';
 import { normalizeSavedViewSearch } from '@repo/types';
+
+export type { DestructiveActionAccepted } from '@/lib/api/destructive-action-accepted';
 
 export type SavedView = SavedViewWire;
 
@@ -57,8 +60,14 @@ export async function createSavedView(
   return response.data;
 }
 
-export async function archiveSavedView(id: string): Promise<SavedView> {
-  return postSavedViewMutation(`/${id}/archive`);
+/** Fire-and-forget archive — API returns 202; inbox notifies when done. */
+export async function archiveSavedView(
+  id: string
+): Promise<DestructiveActionAccepted> {
+  return await apiFetch<DestructiveActionAccepted>(
+    `${savedViewsPath}/${id}/archive`,
+    { method: 'POST', skipDatabaseBusyRetry: true }
+  );
 }
 
 /** Remove a view from Shared with me (deletes the recipient’s share row only). */
@@ -70,8 +79,14 @@ export async function restoreSavedView(id: string): Promise<SavedView> {
   return postSavedViewMutation(`/${id}/restore`);
 }
 
-export async function deleteSavedView(id: string): Promise<void> {
-  await deleteSavedViewMutation(`/${id}`);
+/** Fire-and-forget purge — API returns 202; inbox notifies when done. */
+export async function deleteSavedView(
+  id: string
+): Promise<DestructiveActionAccepted> {
+  return await apiFetch<DestructiveActionAccepted>(`${savedViewsPath}/${id}`, {
+    method: 'DELETE',
+    skipDatabaseBusyRetry: true,
+  });
 }
 
 export type ShareSavedViewClientInput = {

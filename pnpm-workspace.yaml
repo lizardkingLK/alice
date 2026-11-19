@@ -12,13 +12,13 @@ allowBuilds:
 # blocked until then, which makes `@turbo/codemod update` fail with
 # "Expected: x.y.z / Installed: older". Exclude each new version (or wait 24h).
 minimumReleaseAgeExclude:
-  - '@turbo/darwin-64@2.11.3 || 2.11.5 || 2.11.9'
-  - '@turbo/darwin-arm64@2.11.3 || 2.11.5 || 2.11.9'
-  - '@turbo/linux-64@2.11.3 || 2.11.5 || 2.11.9'
-  - '@turbo/linux-arm64@2.11.3 || 2.11.5 || 2.11.9'
-  - '@turbo/windows-64@2.11.3 || 2.11.5 || 2.11.9'
-  - '@turbo/windows-arm64@2.11.3 || 2.11.5 || 2.11.9'
-  - turbo@2.11.3 || 2.11.5 || 2.11.9
+  - '@turbo/darwin-64@2.11.3 || 2.11.5 || 2.11.9 || 2.11.10'
+  - '@turbo/darwin-arm64@2.11.3 || 2.11.5 || 2.11.9 || 2.11.10'
+  - '@turbo/linux-64@2.11.3 || 2.11.5 || 2.11.9 || 2.11.10'
+  - '@turbo/linux-arm64@2.11.3 || 2.11.5 || 2.11.9 || 2.11.10'
+  - '@turbo/windows-64@2.11.3 || 2.11.5 || 2.11.9 || 2.11.10'
+  - '@turbo/windows-arm64@2.11.3 || 2.11.5 || 2.11.9 || 2.11.10'
+  - turbo@2.11.3 || 2.11.5 || 2.11.9 || 2.11.10
   - '@next/env@16.4.2'
   - '@next/swc-darwin-arm64@16.4.2'
   - '@next/swc-darwin-x64@16.4.2'

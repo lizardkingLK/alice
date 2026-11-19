@@ -1,4 +1,6 @@
 import { getActorUser, requireUserWithRole } from '../../../lib/auth-helpers';
+import { enqueueDestructiveAction } from '../../../lib/enqueue-destructive-action';
+import { OptimisticLockError } from '../../../lib/optimistic-lock';
 import {
   ProjectStatusEnum,
   UserRoleEnum,
@@ -9,7 +11,13 @@ import {
   type ProjectDetailRow,
   type ProjectMemberRow,
   type WorkItemType,
-  CANONICAL_HIERARCHY_ORDER,
+  buildDefaultProjectTypeDefs,
+  normalizeProjectWorkItemTypeDefs,
+  resolveProjectTypeKeys,
+  type ProjectWorkItemTypeDef,
+  type ProjectIntegrationsSummary,
+  withGithubProjectDtoFields,
+  withJiraProjectDtoFields,
   type ProjectWorkflowConfig,
   type WorkItemTypeRemovalApplyResult,
   type WorkflowConfigEnvelope,
@@ -17,6 +25,7 @@ import {
   boardColumnIdForWorkflowState,
   buildAvailableStatesByWorkflow,
   buildWorkflowOrphanedStatesConflict,
+  cloneWorkflowForProjectImport,
   findWorkflowById,
   findWorkflowState,
   legacyStatusFromWorkItemState,
@@ -38,17 +47,24 @@ import {
   type WorkflowStateRemap,
 } from '@repo/types';
 import {
+  IntegrationCategory,
+  IntegrationScope,
+  IntegrationStatus,
   NotificationType as NotificationTypeEnum,
   Prisma,
   type ProjectStatus,
-  type IntegrationStatus,
-  type UserRole,
 } from '@repo/types/prisma';
 import { randomUUID } from 'node:crypto';
+import { withBusyRetry } from '@repo/db';
 import { prisma } from '../../../lib/prisma';
+import { env } from '../../../config/env';
 import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
-import { encryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
 import type { ProjectsRepository } from './projects.repository';
+import type { UserRow, UsersRepository } from '../users/users.repository';
+import {
+  buildProjectMemberAddedEmail,
+  type ProjectMemberEmailSender,
+} from './project-member-email';
 import type {
   CreateProjectInput,
   ProjectMemberWithUser,
@@ -58,7 +74,7 @@ import type {
 } from './projects.types';
 import { WorkflowConfigError } from './workflow-config.errors';
 
-export type { CreateProjectInput, UpdateProjectInput } from './projects.types';
+export type { CreateProjectInput, UpdateProjectInput };
 
 export class ProjectTeamValidationError extends Error {
   constructor(message: string) {
@@ -76,6 +92,79 @@ async function requireProjectManager(actorId: string) {
   );
 }
 
+async function assertActiveOrgAiBindings(
+  bindings: CreateProjectInput['integration_bindings']
+): Promise<void> {
+  if (!bindings || bindings.length === 0) {
+    return;
+  }
+
+  // Project create can only seed org-scoped binds (project-scoped rows do not
+  // exist until the project id is known).
+  const ids = bindings.map((row) => row.integration_id);
+  const activeOrgModels = await prisma.integrations.findMany({
+    where: {
+      id: { in: ids },
+      category: IntegrationCategory.ai_agent,
+      scope: IntegrationScope.organization,
+      status: IntegrationStatus.active,
+    },
+    select: { id: true },
+  });
+  if (activeOrgModels.length !== ids.length) {
+    throw new Error(
+      'One or more integrations are not active organization AI models'
+    );
+  }
+}
+
+function promoteWorkflowToDefaultOrThrow(
+  config: WorkflowConfigEnvelope,
+  workflowId: string
+): WorkflowConfigEnvelope {
+  try {
+    return promoteWorkflowToDefault(config, workflowId);
+  } catch (error) {
+    throw new WorkflowConfigError(
+      error instanceof Error ? error.message : 'Failed to mark default.'
+    );
+  }
+}
+
+/** Keep concurrent placement updates under session pool_size (often 15). */
+const WORK_ITEM_PLACEMENT_CHUNK_SIZE = 5;
+
+type WorkItemPlacementChunkRunner<T> = (chunk: readonly T[]) => Promise<void>;
+
+/**
+ * Run placement updates in sequential chunks (pool-safe). Recurses instead of
+ * `for`+`await` so Sonar S9302 stays quiet while order stays intentional.
+ */
+async function mapWorkItemPlacementChunks<T>(
+  items: readonly T[],
+  runChunk: WorkItemPlacementChunkRunner<T>,
+  offset = 0
+): Promise<void> {
+  if (offset >= items.length) {
+    return;
+  }
+
+  const chunk = items.slice(offset, offset + WORK_ITEM_PLACEMENT_CHUNK_SIZE);
+  await withBusyRetry(() => runChunk(chunk), {
+    onRetry: (attempt) => {
+      console.warn(
+        `warn. work-item workflow placement busy; retrying (attempt ${attempt})`
+      );
+    },
+  });
+
+  return mapWorkItemPlacementChunks(
+    items,
+    runChunk,
+    offset + WORK_ITEM_PLACEMENT_CHUNK_SIZE
+  );
+}
+
 async function requireAdmin(actorId: string) {
   return await requireUserWithRole(
     actorId,
@@ -89,28 +178,74 @@ async function requireAdmin(actorId: string) {
  * - create: encrypt non-empty; null clears
  * - update: omit / empty string → leave unchanged; null → clear; non-empty → encrypt
  */
+/**
+ * PAT column removed; drop non-empty wire `github_token` writes
+ * (OAuth lives on `version_control_connections`).
+ */
 function prepareGithubTokenForPersist(
   input: CreateProjectInput | UpdateProjectInput,
-  mode: 'create' | 'update'
+  _mode: 'create' | 'update'
 ): CreateProjectInput | UpdateProjectInput {
-  if (!('github_token' in input) || input.github_token === undefined) {
+  if (
+    !('github_token' in input) ||
+    input.github_token === undefined ||
+    input.github_token === null
+  ) {
     return input;
   }
+  const rest = { ...input };
+  delete rest.github_token;
+  return rest;
+}
 
-  if (mode === 'update' && input.github_token === '') {
-    const rest = { ...input };
-    delete rest.github_token;
-    return rest;
+function assertSingleGithubRepoOrThrow(githubRepo: string): void {
+  const repo = githubRepo.trim();
+  const parts = repo.split('/');
+  if (
+    parts.length !== 2 ||
+    !parts[0] ||
+    !parts[1] ||
+    repo.includes(',') ||
+    repo.includes(' ')
+  ) {
+    throw new Error('Only one GitHub repository is allowed per project.');
+  }
+}
+
+async function assertActorCanChangeLinkedGithubRepo(
+  actorId: string,
+  previous: Pick<ProjectRow, 'github_repo' | 'github_connection_id'> | null,
+  nextGithubRepo: string | null | undefined
+): Promise<void> {
+  if (
+    !previous?.github_repo ||
+    nextGithubRepo === undefined ||
+    nextGithubRepo === previous.github_repo
+  ) {
+    return;
   }
 
-  if (input.github_token === null || input.github_token === '') {
-    return { ...input, github_token: null };
+  const connectionId = previous.github_connection_id;
+  if (!connectionId) {
+    return;
   }
 
-  return {
-    ...input,
-    github_token: encryptSecretIfPresent(input.github_token) ?? null,
-  };
+  const linkedConnection = await prisma.version_control_connections.findFirst({
+    where: { id: connectionId },
+    select: {
+      user_id: true,
+      user: { select: { role: true } },
+    },
+  });
+
+  if (
+    linkedConnection?.user?.role === UserRoleEnum.admin &&
+    linkedConnection.user_id !== actorId
+  ) {
+    throw new Error(
+      'This project’s GitHub connection was established by an administrator and can only be modified or disconnected by that administrator.'
+    );
+  }
 }
 
 type ProjectImageField = 'logo_url' | 'cover_picture';
@@ -123,7 +258,11 @@ type ProjectImageUploadResult = {
 };
 
 export class ProjectsService {
-  constructor(private readonly projectsRepository: ProjectsRepository) {}
+  constructor(
+    private readonly projectsRepository: ProjectsRepository,
+    private readonly usersRepository?: Pick<UsersRepository, 'findById'>,
+    private readonly projectMemberEmailSender?: ProjectMemberEmailSender
+  ) {}
 
   async listProjectsPaginated(
     query: ListProjectsQuery,
@@ -205,6 +344,64 @@ export class ProjectsService {
     return await this.projectsRepository.getDetailById(projectId);
   }
 
+  /**
+   * Unified read model for project Integrations (SC / PM / AI) without moving
+   * OAuth rows into `integrations` (Phase F facade).
+   */
+  async getProjectIntegrationsSummary(
+    projectId: string,
+    actorId: string
+  ): Promise<ProjectIntegrationsSummary> {
+    const project = await this.getProjectDetail(projectId, actorId);
+    if (!project) {
+      throw new Error('Project not found');
+    }
+
+    const bindings = await prisma.project_integration_bindings.findMany({
+      where: {
+        project_id: projectId,
+        integration: {
+          category: IntegrationCategory.ai_agent,
+          status: IntegrationStatus.active,
+        },
+      },
+      select: {
+        integration_id: true,
+        is_default_for_project: true,
+      },
+      orderBy: [{ is_default_for_project: 'desc' }, { created_at: 'asc' }],
+    });
+
+    const projectDefault = bindings.find((row) => row.is_default_for_project);
+    const wire = withGithubProjectDtoFields(withJiraProjectDtoFields(project));
+
+    return {
+      project_id: projectId,
+      source_control: {
+        provider: wire.github_repo ? 'github' : null,
+        connected: Boolean(wire.github_connection_id || wire.github_repo),
+        repo: wire.github_repo,
+        connection_id: wire.github_connection_id,
+      },
+      project_management: {
+        provider: wire.jira_project_key ? 'jira' : null,
+        connected: Boolean(wire.jira_connection_id || wire.jira_project_key),
+        project_key: wire.jira_project_key,
+        connection_id: wire.jira_connection_id,
+      },
+      design: {
+        figma: {
+          connected: Boolean(project.figma_url),
+          url: project.figma_url,
+        },
+      },
+      ai_agents: {
+        binding_count: bindings.length,
+        default_integration_id: projectDefault?.integration_id ?? null,
+      },
+    };
+  }
+
   async listProjectMembersPrisma(
     projectId: string,
     actorId: string
@@ -229,6 +426,69 @@ export class ProjectsService {
     return await this.projectsRepository.listMembers(projectId);
   }
 
+  private async sendProjectMemberAddedEmail(
+    project: Pick<ProjectRow, 'key' | 'name'>,
+    user: Pick<UserRow, 'email' | 'name'>
+  ): Promise<void> {
+    if (!this.projectMemberEmailSender) {
+      throw new Error('Project member notification is not configured.');
+    }
+
+    const email = buildProjectMemberAddedEmail({
+      recipientEmail: user.email,
+      recipientName: user.name,
+      projectKey: project.key,
+      projectName: project.name,
+      frontendUrl: env.FRONTEND_URL,
+      notificationEventId: randomUUID(),
+    });
+    await this.projectMemberEmailSender.send(email);
+  }
+
+  private async notifyInitialProjectMembers(
+    actorId: string,
+    input: CreateProjectInput,
+    project: ProjectRow
+  ): Promise<void> {
+    const initialTeamMembers =
+      input.team?.members ??
+      input.team?.member_ids?.map((user_id) => ({ user_id })) ??
+      [];
+    const memberIds = [
+      ...new Set([
+        actorId,
+        ...(input.team ? [input.team.manager_id] : []),
+        ...initialTeamMembers.map((member) => member.user_id),
+      ]),
+    ].filter((userId) => userId !== input.owner_id);
+
+    await Promise.all(
+      memberIds.map(async (userId) => {
+        try {
+          if (!this.usersRepository) {
+            throw new Error('Project member notification is not configured.');
+          }
+          const user = await this.usersRepository.findById(userId);
+          if (!user) {
+            throw new Error('User not found.');
+          }
+          await this.sendProjectMemberAddedEmail(project, user);
+        } catch {
+          console.error('error. project member email notification failed');
+        }
+      })
+    );
+  }
+
+  private async persistProjectAndNotifyMembers(
+    actorId: string,
+    input: CreateProjectInput
+  ): Promise<ProjectRow> {
+    const project = await this.projectsRepository.create(input, actorId);
+    await this.notifyInitialProjectMembers(actorId, input, project);
+    return project;
+  }
+
   async addMember(
     actorId: string,
     projectId: string,
@@ -241,7 +501,38 @@ export class ProjectsService {
       throw new Error('User is already a member of this project.');
     }
 
-    await this.projectsRepository.addMember(projectId, userId, actorId);
+    if (!this.usersRepository) {
+      throw new Error('Project member notification is not configured.');
+    }
+    if (!this.projectMemberEmailSender) {
+      throw new Error('Project member notification is not configured.');
+    }
+
+    const [project, user] = await Promise.all([
+      this.projectsRepository.findById(projectId),
+      this.usersRepository.findById(userId),
+    ]);
+    if (!project) {
+      throw new Error('Project not found.');
+    }
+    if (!user) {
+      throw new Error('User not found.');
+    }
+
+    const inserted = await this.projectsRepository.addMember(
+      projectId,
+      userId,
+      actorId
+    );
+    if (!inserted) {
+      throw new Error('User is already a member of this project.');
+    }
+
+    try {
+      await this.sendProjectMemberAddedEmail(project, user);
+    } catch {
+      console.error('error. project member email notification failed');
+    }
   }
 
   async removeMember(
@@ -298,6 +589,8 @@ export class ProjectsService {
       }
     }
 
+    await assertActiveOrgAiBindings(input.integration_bindings);
+
     const team = input.team;
 
     if (team) {
@@ -352,8 +645,8 @@ export class ProjectsService {
     const workItemTypes =
       workflowConfig?.work_item_types &&
       workflowConfig.work_item_types.length > 0
-        ? workflowConfig.work_item_types
-        : [...CANONICAL_HIERARCHY_ORDER];
+        ? normalizeProjectWorkItemTypeDefs(workflowConfig.work_item_types)
+        : buildDefaultProjectTypeDefs();
 
     return {
       ...prepared,
@@ -390,7 +683,7 @@ export class ProjectsService {
   ): Promise<void> {
     let project: ProjectRow;
     try {
-      project = await this.projectsRepository.create(prepared, actorId);
+      project = await this.persistProjectAndNotifyMembers(actorId, prepared);
     } catch (error: unknown) {
       const reason =
         error instanceof Error ? error.message : 'Unknown create failure';
@@ -462,7 +755,7 @@ export class ProjectsService {
     input: CreateProjectInput
   ): Promise<ProjectRow> {
     const prepared = await this.prepareCreateProjectInput(actorId, input);
-    return await this.projectsRepository.create(prepared, actorId);
+    return await this.persistProjectAndNotifyMembers(actorId, prepared);
   }
 
   async updateProject(
@@ -477,17 +770,7 @@ export class ProjectsService {
     await requireProjectManager(actorId);
 
     if (input.github_repo !== undefined && input.github_repo !== null) {
-      const repo = input.github_repo.trim();
-      const parts = repo.split('/');
-      if (
-        parts.length !== 2 ||
-        !parts[0] ||
-        !parts[1] ||
-        repo.includes(',') ||
-        repo.includes(' ')
-      ) {
-        throw new Error('Only one GitHub repository is allowed per project.');
-      }
+      assertSingleGithubRepoOrThrow(input.github_repo);
     }
 
     if (input.key) {
@@ -509,28 +792,11 @@ export class ProjectsService {
 
     const previous = await this.projectsRepository.findById(projectId);
 
-    if (
-      previous?.github_repo &&
-      input.github_repo !== undefined &&
-      input.github_repo !== previous.github_repo
-    ) {
-      const activeAdminConn = await prisma.integrations.findFirst({
-        where: {
-          provider: 'github',
-          status: 'active' as IntegrationStatus,
-          created_by_user: {
-            role: 'admin' as UserRole,
-          },
-        },
-        select: { created_by: true },
-      });
-
-      if (activeAdminConn && activeAdminConn.created_by !== actorId) {
-        throw new Error(
-          'This project’s GitHub connection was established by an administrator and can only be modified or disconnected by that administrator.'
-        );
-      }
-    }
+    await assertActorCanChangeLinkedGithubRepo(
+      actorId,
+      previous,
+      input.github_repo
+    );
 
     const removalResult = await this.handleWorkItemTypeMigrationIfNeeded(
       projectId,
@@ -580,11 +846,16 @@ export class ProjectsService {
     const existingConfig =
       (project.workflow_config as ProjectWorkflowConfig | null) ?? null;
 
+    const typeDefs = normalizeProjectWorkItemTypeDefs(
+      existingConfig?.work_item_types
+    );
     return await this.projectsRepository.previewWorkItemTypeRemoval(
       projectId,
       removedTypes,
       keptTypes,
-      existingConfig?.hierarchy ?? null
+      existingConfig?.hierarchy ?? null,
+      100,
+      typeDefs
     );
   }
 
@@ -604,6 +875,37 @@ export class ProjectsService {
       actorId,
       expectedUpdatedAt
     );
+  }
+
+  /**
+   * Validate sync, accept archive, finish in the background, inbox-notify.
+   * Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueSoftDeleteProject(
+    actorId: string,
+    projectId: string,
+    expectedUpdatedAt: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    await requireProjectManager(actorId);
+    const project = await this.getProjectById(projectId);
+    if (project.updated_at !== expectedUpdatedAt) {
+      throw new OptimisticLockError(
+        project,
+        'This project was updated by someone else.'
+      );
+    }
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'archive',
+      entityType: 'project',
+      entityLabel: `${project.name} (${project.key})`,
+      relatedItemId: projectId,
+      detailHref: `/projects/${projectId}`,
+      run: async () => {
+        await this.softDeleteProject(actorId, projectId, expectedUpdatedAt);
+      },
+    });
   }
 
   async restoreProject(
@@ -630,19 +932,45 @@ export class ProjectsService {
     await this.projectsRepository.delete(projectId);
   }
 
+  /**
+   * Validate sync, accept permanent delete, finish in the background,
+   * inbox-notify. Interim until BullMQ owns destructive jobs.
+   */
+  async enqueueHardDeleteProject(
+    actorId: string,
+    projectId: string
+  ): Promise<{ readonly correlationId: string; readonly message: string }> {
+    await requireAdmin(actorId);
+    const project = await this.getProjectById(projectId);
+
+    return enqueueDestructiveAction({
+      actorId,
+      kind: 'purge',
+      entityType: 'project',
+      entityLabel: `${project.name} (${project.key})`,
+      relatedItemId: null,
+      detailHref: '/projects?tab=archived',
+      run: async () => {
+        await this.hardDeleteProject(actorId, projectId);
+      },
+    });
+  }
+
   async linkImportedJiraParents(
     actorId: string,
     projectId: string,
     issues: { key: string; parentKey?: string | null }[],
     hierarchy?: Record<string, string | null> | null,
-    allowedTypes?: WorkItemType[] | null
+    allowedTypes?: WorkItemType[] | null,
+    typeDefs?: ProjectWorkItemTypeDef[] | null
   ): Promise<void> {
     await requireProjectManager(actorId);
     await this.projectsRepository.linkImportedJiraParents(
       projectId,
       issues,
       hierarchy,
-      allowedTypes
+      allowedTypes,
+      typeDefs
     );
   }
 
@@ -744,21 +1072,21 @@ export class ProjectsService {
     }
 
     const newConfig = prepared.workflow_config as ProjectWorkflowConfig;
-    if (!newConfig.work_item_types || newConfig.work_item_types.length === 0) {
+    const newTypeDefs = normalizeProjectWorkItemTypeDefs(
+      newConfig.work_item_types
+    );
+    if (newTypeDefs.length === 0) {
       return null;
     }
+    const newTypeKeys = resolveProjectTypeKeys(newTypeDefs);
 
     const previousConfig = previous?.workflow_config as
       ProjectWorkflowConfig | null | undefined;
-    const previousTypes: WorkItemType[] =
-      previousConfig?.work_item_types &&
-      previousConfig.work_item_types.length > 0
-        ? previousConfig.work_item_types
-        : [...CANONICAL_HIERARCHY_ORDER];
-
-    const removedTypes = previousTypes.filter(
-      (t) => !newConfig.work_item_types!.includes(t)
+    const previousTypes: WorkItemType[] = resolveProjectTypeKeys(
+      previousConfig?.work_item_types
     );
+
+    const removedTypes = previousTypes.filter((t) => !newTypeKeys.includes(t));
 
     if (removedTypes.length === 0) {
       return null;
@@ -767,9 +1095,10 @@ export class ProjectsService {
     const preview = await this.projectsRepository.previewWorkItemTypeRemoval(
       projectId,
       removedTypes,
-      newConfig.work_item_types,
+      newTypeKeys,
       newConfig.hierarchy ?? null,
-      1
+      1,
+      newTypeDefs
     );
 
     const typesWithItems = preview.groups
@@ -779,9 +1108,10 @@ export class ProjectsService {
     if (typesWithItems.length === 0) {
       return await this.projectsRepository.applyWorkItemTypeRemovalStrategies(
         projectId,
-        newConfig.work_item_types,
+        newTypeKeys,
         [],
-        newConfig.hierarchy ?? null
+        newConfig.hierarchy ?? null,
+        newTypeDefs
       );
     }
 
@@ -797,7 +1127,7 @@ export class ProjectsService {
     const invalidMigrate = strategies.filter(
       (s) =>
         s.action === 'migrate' &&
-        (!s.migrateTo || !newConfig.work_item_types!.includes(s.migrateTo))
+        (!s.migrateTo || !newTypeKeys.includes(s.migrateTo))
     );
     if (invalidMigrate.length > 0) {
       throw new Error(
@@ -807,9 +1137,10 @@ export class ProjectsService {
 
     return await this.projectsRepository.applyWorkItemTypeRemovalStrategies(
       projectId,
-      newConfig.work_item_types,
+      newTypeKeys,
       strategies.filter((s) => typesWithItems.includes(s.type)),
-      newConfig.hierarchy ?? null
+      newConfig.hierarchy ?? null,
+      newTypeDefs
     );
   }
 
@@ -963,6 +1294,95 @@ export class ProjectsService {
     };
   }
 
+  async importWorkflow(
+    actorId: string,
+    targetProjectId: string,
+    input: {
+      readonly sourceProjectId: string;
+      readonly sourceWorkflowId?: string;
+      readonly title?: string;
+      readonly description?: string;
+      readonly markAsDefault?: boolean;
+    },
+    expectedUpdatedAt: string
+  ) {
+    await requireProjectManager(actorId);
+
+    if (input.sourceProjectId === targetProjectId) {
+      throw new WorkflowConfigError(
+        'Choose a different project as the import source.',
+        400
+      );
+    }
+
+    await this.assertProjectReadable(input.sourceProjectId, actorId);
+    const sourceProject = await this.requireProjectRow(input.sourceProjectId);
+    if (sourceProject.status !== ProjectStatusEnum.active) {
+      throw new WorkflowConfigError(
+        'Source project must be active to import a workflow.',
+        400
+      );
+    }
+
+    const targetProject = await this.requireProjectRow(targetProjectId);
+    const { config: sourceConfig } = resolveWorkflowConfig(
+      sourceProject.workflow_config
+    );
+    const { config: targetConfig } = resolveWorkflowConfig(
+      targetProject.workflow_config
+    );
+
+    const sourceId = input.sourceWorkflowId ?? sourceConfig.defaultWorkflowId;
+    const source = findWorkflowById(sourceConfig, sourceId);
+    if (!source) {
+      throw new WorkflowConfigError(`Source workflow "${sourceId}" not found.`);
+    }
+
+    const importedId = `wf-${randomUUID()}`;
+    const imported = cloneWorkflowForProjectImport(source, {
+      id: importedId,
+      title: input.title?.trim() || `${source.title} (import)`,
+      description: input.description,
+    });
+
+    let nextEnvelope: WorkflowConfigEnvelope =
+      workflowConfigEnvelopeSchema.parse({
+        ...targetConfig,
+        workflows: [...targetConfig.workflows, imported],
+      });
+
+    const previousDefaultId = nextEnvelope.defaultWorkflowId;
+    if (input.markAsDefault) {
+      nextEnvelope = promoteWorkflowToDefaultOrThrow(nextEnvelope, importedId);
+    }
+
+    const merged = mergeWorkflowEnvelopeIntoProjectConfig(
+      targetProject.workflow_config,
+      nextEnvelope
+    );
+
+    const updated = await this.projectsRepository.update(
+      targetProjectId,
+      { workflow_config: merged as ProjectWorkflowConfig },
+      actorId,
+      expectedUpdatedAt
+    );
+
+    if (input.markAsDefault) {
+      await this.reassignWorkItemsToWorkflow(
+        targetProjectId,
+        previousDefaultId,
+        nextEnvelope.defaultWorkflowId
+      );
+    }
+
+    return {
+      config: resolveWorkflowConfig(updated.workflow_config).config,
+      importedWorkflowId: importedId,
+      updatedAt: updated.updated_at,
+    };
+  }
+
   async setDefaultWorkflow(
     actorId: string,
     projectId: string,
@@ -978,14 +1398,7 @@ export class ProjectsService {
 
     const previousDefaultId = config.defaultWorkflowId;
     const targetBefore = findWorkflowById(config, workflowId);
-    let nextEnvelope: WorkflowConfigEnvelope;
-    try {
-      nextEnvelope = promoteWorkflowToDefault(config, workflowId);
-    } catch (error) {
-      throw new WorkflowConfigError(
-        error instanceof Error ? error.message : 'Failed to mark default.'
-      );
-    }
+    const nextEnvelope = promoteWorkflowToDefaultOrThrow(config, workflowId);
     const merged = mergeWorkflowEnvelopeIntoProjectConfig(
       project.workflow_config,
       nextEnvelope
@@ -1094,32 +1507,35 @@ export class ProjectsService {
   private async applyWorkflowStateRemaps(
     projectId: string,
     envelope: WorkflowConfigEnvelope,
-    remaps: readonly WorkflowStateRemap[]
+    remaps: readonly WorkflowStateRemap[],
+    remapIndex = 0,
+    updatedAt = new Date().toISOString()
   ): Promise<void> {
-    const updatedAt = new Date().toISOString();
-    await Promise.all(
-      remaps.map(async (remap) => {
-        const workflow = findWorkflowById(envelope, remap.workflowId);
-        const target = workflow
-          ? findWorkflowState(workflow, remap.toStateId)
-          : null;
-        if (!workflow || !target) {
-          return;
-        }
+    if (remapIndex >= remaps.length) {
+      return;
+    }
 
-        const items = await this.findWorkItemsForWorkflowPlacement(projectId, {
-          state_workflow_id: remap.workflowId,
-          state_id: remap.fromStateId,
-        });
-        const status = legacyStatusFromWorkItemState({
-          workflowId: workflow.id,
-          stateId: target.id,
-          category: target.category,
-        });
-        const boardColumnId = boardColumnIdForWorkflowState(target);
+    const remap = remaps[remapIndex]!;
+    const workflow = findWorkflowById(envelope, remap.workflowId);
+    const target = workflow
+      ? findWorkflowState(workflow, remap.toStateId)
+      : null;
 
+    if (workflow && target) {
+      const items = await this.findWorkItemsForWorkflowPlacement(projectId, {
+        state_workflow_id: remap.workflowId,
+        state_id: remap.fromStateId,
+      });
+      const status = legacyStatusFromWorkItemState({
+        workflowId: workflow.id,
+        stateId: target.id,
+        category: target.category,
+      });
+      const boardColumnId = boardColumnIdForWorkflowState(target);
+
+      await mapWorkItemPlacementChunks(items, async (chunk) => {
         await Promise.all(
-          items.map((item) =>
+          chunk.map((item) =>
             this.persistWorkItemWorkflowPlacement({
               item,
               lookupWorkflowId: remap.workflowId,
@@ -1132,7 +1548,15 @@ export class ProjectsService {
             })
           )
         );
-      })
+      });
+    }
+
+    return this.applyWorkflowStateRemaps(
+      projectId,
+      envelope,
+      remaps,
+      remapIndex + 1,
+      updatedAt
     );
   }
 
@@ -1157,16 +1581,18 @@ export class ProjectsService {
     }
 
     const updatedAt = new Date().toISOString();
-    await Promise.all(
-      items.map((item) =>
-        this.persistWorkItemWorkflowPlacement({
-          item,
-          lookupWorkflowId: fromWorkflowId,
-          workflowId: toWorkflowId,
-          updatedAt,
-        })
-      )
-    );
+    await mapWorkItemPlacementChunks(items, async (chunk) => {
+      await Promise.all(
+        chunk.map((item) =>
+          this.persistWorkItemWorkflowPlacement({
+            item,
+            lookupWorkflowId: fromWorkflowId,
+            workflowId: toWorkflowId,
+            updatedAt,
+          })
+        )
+      );
+    });
   }
 
   private findWorkItemsForWorkflowPlacement(

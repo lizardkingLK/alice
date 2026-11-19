@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { WorkItemsData } from '@/app/work-items/_components/work-items-data';
 import { RegistryPageSkeleton } from '@/components/registry-page-skeleton';
+import { redirectLegacyGlobalFilterQuery } from '@/app/board/_helpers/redirect-legacy-filter-query';
 import { getDbUser } from '@/lib/auth';
 import { buildLoginPath } from '@/lib/auth-redirect';
 import { getRequestPathForLoginNext } from '@/lib/auth-redirect.server';
@@ -27,6 +28,12 @@ export default async function MemberDashboard({
     redirect(buildLoginPath(await getRequestPathForLoginNext()));
   }
 
+  const resolvedSearchParams = await searchParams;
+  await redirectLegacyGlobalFilterQuery({
+    area: 'member',
+    searchParams: resolvedSearchParams,
+  });
+
   return (
     <DashboardShell
       description={MEMBER_PAGE_DESCRIPTION}
@@ -34,7 +41,7 @@ export default async function MemberDashboard({
     >
       <Suspense fallback={<RegistryPageSkeleton {...MEMBER_PAGE_SKELETON} />}>
         <WorkItemsData
-          searchParams={searchParams}
+          searchParams={Promise.resolve(resolvedSearchParams)}
           lockedAssigneeId={dbUser.id}
           currentUserId={dbUser.id}
         />

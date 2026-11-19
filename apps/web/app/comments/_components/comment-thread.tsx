@@ -1,17 +1,29 @@
 'use client';
 
-import { useState } from 'react';
 import type { JSONContent } from '@tiptap/react';
-import { plainTextToCommentDoc, type Json } from '@repo/types';
+import type { CommentReactionEmoji } from '@repo/types';
 import { X } from '@repo/ui/lib/icons';
 import { CommentEditorFormShell } from '@/app/comments/_components/comment-editor-form-shell';
-import { CommentListItem } from '@/app/comments/_components/comment-list-item';
+import {
+  CommentListItem,
+  type AiSuggestionsRequestHandler,
+} from '@/app/comments/_components/comment-list-item';
+import { canUserHideComment } from '@/app/comments/_helpers/comment-visibility-storage';
+import type { CommentMentionAgent } from '@/app/comments/_components/comment-mention-list';
 import type { CommentUserMentionTarget } from '@/app/comments/_components/comment-content-view';
 import type {
   CommentItem,
   CommentUser,
   CommentWorkItemOption,
 } from '@/app/comments/_services/comments.mutations.shared';
+
+/* eslint-disable no-unused-vars -- documents reaction toggle contract */
+type ReactionToggleHandler = (
+  commentId: string,
+  emoji: CommentReactionEmoji,
+  action: 'add' | 'remove'
+) => void;
+/* eslint-enable no-unused-vars */
 
 type CommentThreadProps = {
   parent: CommentItem;
@@ -22,6 +34,7 @@ type CommentThreadProps = {
   replyingParentId: string | null;
   isSubmitting: boolean;
   users: CommentUser[];
+  agents: CommentMentionAgent[];
   workItems: CommentWorkItemOption[];
   currentUserName?: string | null;
   currentUserImageUrl?: string | null;
@@ -43,6 +56,15 @@ type CommentThreadProps = {
   onRestore: (commentId: string) => void | Promise<void>;
   // eslint-disable-next-line no-unused-vars -- callback signatures
   onPurge: (commentId: string) => void;
+  onToggleReaction: ReactionToggleHandler;
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  isReactionSyncing?: (commentId: string) => boolean;
+  onRequestAiSuggestions?: AiSuggestionsRequestHandler;
+  hiddenCommentIds?: Set<string>;
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  onHideComment?: (commentId: string) => void;
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  onUnhideComment?: (commentId: string) => void;
 };
 
 function bindCommentItemHandlers(options: {
@@ -62,26 +84,43 @@ function bindCommentItemHandlers(options: {
   onRestore: (commentId: string) => void | Promise<void>;
   // eslint-disable-next-line no-unused-vars -- callback signatures
   onPurge: (commentId: string) => void;
-  onBeforeStartReply?: () => void;
+  onToggleReaction: ReactionToggleHandler;
 }) {
   return {
     onStartEdit: () => options.onStartEdit(options.commentId),
     onCancelEdit: options.onCancelEdit,
     onSaveEdit: (doc: JSONContent) => {
-      options.onSaveEdit(options.commentId, doc);
+      Promise.resolve(options.onSaveEdit(options.commentId, doc)).catch(
+        (error: unknown) => {
+          console.error('error. failed to save comment edit:', error);
+        }
+      );
     },
     onStartReply: () => {
-      options.onBeforeStartReply?.();
       options.onStartReply(options.replyParentId);
     },
     onCancelReply: options.onCancelReply,
     onArchive: () => {
-      options.onArchive(options.commentId);
+      Promise.resolve(options.onArchive(options.commentId)).catch(
+        (error: unknown) => {
+          console.error('error. failed to archive comment:', error);
+        }
+      );
     },
     onRestore: () => {
-      options.onRestore(options.commentId);
+      Promise.resolve(options.onRestore(options.commentId)).catch(
+        (error: unknown) => {
+          console.error('error. failed to restore comment:', error);
+        }
+      );
     },
     onPurge: () => options.onPurge(options.commentId),
+    onToggleReaction: (
+      emoji: CommentReactionEmoji,
+      action: 'add' | 'remove'
+    ) => {
+      options.onToggleReaction(options.commentId, emoji, action);
+    },
   };
 }
 
@@ -94,6 +133,7 @@ export function CommentThread({
   replyingParentId,
   isSubmitting,
   users,
+  agents,
   workItems,
   currentUserName,
   currentUserImageUrl,
@@ -107,29 +147,27 @@ export function CommentThread({
   onArchive,
   onRestore,
   onPurge,
+  onToggleReaction,
+  isReactionSyncing,
+  onRequestAiSuggestions,
+  hiddenCommentIds,
+  onHideComment,
+  onUnhideComment,
 }: Readonly<CommentThreadProps>) {
-  const [replySeedEmoji, setReplySeedEmoji] = useState<string | null>(null);
   const isReplying = replyingParentId === parent.id;
-
-  const clearReplySeed = () => {
-    setReplySeedEmoji(null);
-  };
-
-  const handleCancelReply = () => {
-    clearReplySeed();
-    onCancelReply();
-  };
+  const isParentHidden = Boolean(hiddenCommentIds?.has(parent.id));
+  const canHideParent = canUserHideComment(parent, activeUserId, null);
 
   const sharedHandlers = {
     onStartEdit,
     onCancelEdit,
     onSaveEdit,
     onStartReply,
-    onCancelReply: handleCancelReply,
+    onCancelReply,
     onArchive,
     onRestore,
     onPurge,
-    onBeforeStartReply: clearReplySeed,
+    onToggleReaction,
   };
 
   const parentHandlers = bindCommentItemHandlers({
@@ -147,26 +185,27 @@ export function CommentThread({
         isEditing={editingCommentId === parent.id}
         isReplying={isReplying}
         users={users}
+        agents={agents}
         workItems={workItems}
+        isReactionSyncing={isReactionSyncing?.(parent.id)}
+        isHidden={isParentHidden}
+        canHide={canHideParent}
+        isParent
+        onHide={onHideComment ? () => onHideComment(parent.id) : undefined}
+        onUnhide={
+          onUnhideComment ? () => onUnhideComment(parent.id) : undefined
+        }
         {...parentHandlers}
-        onQuickEmoji={(emoji) => {
-          setReplySeedEmoji(emoji);
-          onStartReply(parent.id);
-        }}
+        onRequestAiSuggestions={onRequestAiSuggestions}
         onUserMentionClick={onUserMentionClick}
         replySlot={
           isReplying ? (
             <CommentEditorFormShell
-              key={replySeedEmoji ?? 'reply'}
               className="mt-2"
               users={users}
+              agents={agents}
               workItems={workItems}
               placeholder="Write a reply..."
-              initialContent={
-                replySeedEmoji
-                  ? (plainTextToCommentDoc(replySeedEmoji) as Json)
-                  : undefined
-              }
               avatarName={currentUserName}
               avatarImageUrl={currentUserImageUrl}
               autoFocus
@@ -178,15 +217,11 @@ export function CommentThread({
                 </span>
               }
               isSubmitDisabled={isSubmitting}
-              onCancel={handleCancelReply}
+              onCancel={onCancelReply}
               onSubmit={(doc) => {
-                onPostReply(doc, parent)
-                  .then(() => {
-                    clearReplySeed();
-                  })
-                  .catch((error) => {
-                    console.error('error. failed to post reply', error);
-                  });
+                onPostReply(doc, parent).catch((error) => {
+                  console.error('error. failed to post reply', error);
+                });
               }}
             />
           ) : null
@@ -195,23 +230,43 @@ export function CommentThread({
 
       {replies.length > 0 ? (
         <div className="border-border ml-10 space-y-4 border-l pl-4">
-          {replies.map((reply) => (
-            <CommentListItem
-              key={reply.id}
-              comment={reply}
-              activeUserId={activeUserId}
-              isEditing={editingCommentId === reply.id}
-              isReplying={false}
-              users={users}
-              workItems={workItems}
-              {...bindCommentItemHandlers({
-                commentId: reply.id,
-                replyParentId: parent.id,
-                ...sharedHandlers,
-              })}
-              onUserMentionClick={onUserMentionClick}
-            />
-          ))}
+          {replies.map((reply) => {
+            const isReplyHidden = Boolean(hiddenCommentIds?.has(reply.id));
+            const canHideReply = canUserHideComment(
+              reply,
+              activeUserId,
+              parent
+            );
+            return (
+              <CommentListItem
+                key={reply.id}
+                comment={reply}
+                activeUserId={activeUserId}
+                isEditing={editingCommentId === reply.id}
+                isReplying={false}
+                users={users}
+                agents={agents}
+                workItems={workItems}
+                isReactionSyncing={isReactionSyncing?.(reply.id)}
+                isHidden={isReplyHidden}
+                canHide={canHideReply}
+                isParent={false}
+                onHide={
+                  onHideComment ? () => onHideComment(reply.id) : undefined
+                }
+                onUnhide={
+                  onUnhideComment ? () => onUnhideComment(reply.id) : undefined
+                }
+                {...bindCommentItemHandlers({
+                  commentId: reply.id,
+                  replyParentId: parent.id,
+                  ...sharedHandlers,
+                })}
+                onRequestAiSuggestions={onRequestAiSuggestions}
+                onUserMentionClick={onUserMentionClick}
+              />
+            );
+          })}
         </div>
       ) : null}
     </div>

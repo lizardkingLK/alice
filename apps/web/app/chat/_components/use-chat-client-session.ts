@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   type Dispatch,
   type RefObject,
   type SetStateAction,
@@ -10,6 +11,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import type { ChatMessage } from './chat-client.types';
 import type { ChatConversation } from '../_services/chat.mutations.client';
+import { ChatConversationKinds } from '@repo/types';
 import {
   bootstrapLatestChat,
   loadConversationHistory,
@@ -65,6 +67,9 @@ export function useChatConversationsRealtime(params: {
 
   const handleRealtimeInsert = useCallback(
     (updatedConv: ChatConversation) => {
+      if (updatedConv.kind === ChatConversationKinds.temporary) {
+        return;
+      }
       setConversations((prev) => {
         const exists = prev.some((c) => c.id === updatedConv.id);
         return exists ? prev : [updatedConv, ...prev];
@@ -105,36 +110,48 @@ export function useChatConversationsRealtime(params: {
     [onActiveConversationDeleted, setConversations]
   );
 
+  const activeConversationIdRef = useRef(activeConversationId);
+  activeConversationIdRef.current = activeConversationId;
+  const handleRealtimeInsertRef = useRef(handleRealtimeInsert);
+  handleRealtimeInsertRef.current = handleRealtimeInsert;
+  const handleRealtimeUpdateRef = useRef(handleRealtimeUpdate);
+  handleRealtimeUpdateRef.current = handleRealtimeUpdate;
+  const handleRealtimeDeleteRef = useRef(handleRealtimeDelete);
+  handleRealtimeDeleteRef.current = handleRealtimeDelete;
+
   useEffect(() => {
-    if (!currentUserId) return;
+    if (!currentUserId) {
+      return;
+    }
     const supabase = createClient();
+    // Unique topic per mount — Supabase reuses channels by name, and calling
+    // `.on()` after `subscribe()` (Strict Mode / fast remount) throws.
+    const channelName = `chat_conversations_changes:${currentUserId}:${crypto.randomUUID()}`;
 
     const handleRealtimeChange = async (payload: {
       eventType: string;
       new: unknown;
       old: unknown;
     }) => {
+      const activeId = activeConversationIdRef.current || undefined;
       const updatedConv = payload.new as ChatConversation;
 
       if (payload.eventType === 'INSERT') {
-        handleRealtimeInsert(updatedConv);
+        handleRealtimeInsertRef.current(updatedConv);
         return;
       }
       if (payload.eventType === 'UPDATE') {
-        await handleRealtimeUpdate(
-          updatedConv,
-          activeConversationId || undefined
-        );
+        await handleRealtimeUpdateRef.current(updatedConv, activeId);
         return;
       }
       if (payload.eventType === 'DELETE') {
         const deletedConv = payload.old as { id: string };
-        handleRealtimeDelete(deletedConv.id, activeConversationId || undefined);
+        handleRealtimeDeleteRef.current(deletedConv.id, activeId);
       }
     };
 
     const channel = supabase
-      .channel(`chat_conversations_changes:${currentUserId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -148,15 +165,10 @@ export function useChatConversationsRealtime(params: {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      const teardown = Promise.resolve(supabase.removeChannel(channel));
+      teardown.catch(() => undefined);
     };
-  }, [
-    currentUserId,
-    activeConversationId,
-    handleRealtimeInsert,
-    handleRealtimeUpdate,
-    handleRealtimeDelete,
-  ]);
+  }, [currentUserId]);
 }
 
 export function useChatProcessingPoll(params: {

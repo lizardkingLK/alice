@@ -186,12 +186,5 @@
     "websiteUrl": "github.com/features/copilot",
     "description": "Suggest PR links and code context on tasks (extends project GitHub).",
     "filterTab": "productivity"
-  },
-  {
-    "id": "jira-cloud",
-    "name": "Jira Cloud",
-    "websiteUrl": "atlassian.com/software/jira",
-    "description": "Smart import and duplicate detection (extends project Jira integration).",
-    "filterTab": "productivity"
   }
 ]

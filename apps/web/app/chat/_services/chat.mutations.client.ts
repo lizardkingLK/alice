@@ -1,8 +1,11 @@
 import {
   applyWorkflowPatchBodySchema,
+  ChatConversationKinds,
   postChatMessageBodySchema,
   renameChatConversationBodySchema,
   type ApplyWorkflowPatchBody,
+  type ChatConversationKind as ChatConversationKindValue,
+  type ChatConversationSummaryWire,
   type ChatDeleteResponse,
   type ChatHistoryResponse,
   type ChatMessageWire,
@@ -23,7 +26,7 @@ const chatPath = '/api/v1/chat';
 
 export type ActionItem = ChatToolActionWire;
 export type ChatMessage = ChatMessageWire;
-export type { ChatConversationSummaryWire as ChatConversation } from '@repo/types/api/v1';
+export type ChatConversation = ChatConversationSummaryWire;
 
 export type ApplyWorkflowPatchResponse = {
   readonly config: WorkflowConfigEnvelope;
@@ -31,19 +34,36 @@ export type ApplyWorkflowPatchResponse = {
   readonly updatedAt: string;
 };
 
-export async function sendChatMessage(
-  history: ChatMessage[],
-  conversationId: string | undefined,
-  integrationId: string | undefined,
-  attachments?: ChatAttachmentWire[],
-  viewContext?: ChatViewContext | null
-): Promise<ChatPostResponse> {
+export type SendChatMessageInput = {
+  readonly history: ChatMessage[];
+  readonly conversationId?: string;
+  readonly integrationId?: string;
+  readonly attachments?: ChatAttachmentWire[];
+  readonly viewContext?: ChatViewContext | null;
+  readonly kind?: ChatConversationKindValue;
+  readonly agentId?: string;
+  readonly projectId?: string;
+};
+
+export async function sendChatMessage({
+  history,
+  conversationId,
+  integrationId,
+  attachments,
+  viewContext,
+  kind = ChatConversationKinds.general,
+  agentId,
+  projectId,
+}: SendChatMessageInput): Promise<ChatPostResponse> {
   const parsed = postChatMessageBodySchema.safeParse({
     messages: history,
     conversationId,
     integrationId,
+    projectId,
     attachments,
     viewContext: viewContext ?? undefined,
+    kind,
+    agentId,
   });
   if (!parsed.success) {
     throw new Error(formatZodError(parsed.error));

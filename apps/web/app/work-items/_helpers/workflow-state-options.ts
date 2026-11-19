@@ -3,15 +3,15 @@ import {
   categoryFromWorkItemStatus,
   findResolutionPreset,
   findWorkflowById,
-  findWorkflowEdge,
   findWorkflowState,
   getResolutionRequirement,
+  resolveWorkflowTransition,
   legacyStatusFromWorkItemState,
+  mapToWorkItemType,
   parseWorkflowConfigEnvelope,
   resolveWorkItemState,
   resolveWorkflowForWorkItemType,
   type WorkItemStatus,
-  type WorkItemType,
   type WorkflowDocument,
   type WorkflowResolutionPreset,
   type WorkflowStateCategory,
@@ -106,12 +106,14 @@ export function resolutionPresetForMove(
   fromStateId: string,
   toStateId: string
 ): WorkflowResolutionPreset | null {
-  const edge = findWorkflowEdge(workflow, fromStateId, toStateId);
+  const resolved = resolveWorkflowTransition(workflow, fromStateId, toStateId);
   const source = findWorkflowState(workflow, fromStateId);
-  if (!edge || !source) {
+  if (!resolved || !source) {
     return null;
   }
-  const requirement = getResolutionRequirement(edge, source);
+  const requirement = getResolutionRequirement(resolved.edge, source, {
+    viaWildcard: resolved.viaWildcard,
+  });
   if (!requirement.required || !requirement.presetId) {
     return null;
   }
@@ -124,7 +126,7 @@ export function resolutionPresetForMove(
  */
 export function resolveWorkItemStatePickerModel(params: {
   readonly workflowConfig: unknown;
-  readonly workItemType: WorkItemType | string;
+  readonly workItemType: string;
   readonly status: WorkItemStatus;
   readonly state?: unknown;
   readonly boardColumnId?: string | null;
@@ -154,7 +156,7 @@ export function resolveWorkItemStatePickerModel(params: {
     findWorkflowById(envelope, resolvedState.workflowId) ??
     resolveWorkflowForWorkItemType(
       envelope,
-      params.workItemType as WorkItemType
+      mapToWorkItemType(params.workItemType)
     );
   const options = workflow.graph.states.map((state) =>
     optionFromState(workflow.id, state)
@@ -178,7 +180,7 @@ export function resolveWorkItemStatePickerModel(params: {
 /** Icon + color tokens for a workflow state or legacy status. */
 export function resolveStatePresentation(params: {
   readonly category?: WorkflowStateCategory | null;
-  readonly status?: WorkItemStatus | string | null;
+  readonly status?: string | null;
   readonly stateName?: string | null;
 }): StatePresentation {
   const statusKey =

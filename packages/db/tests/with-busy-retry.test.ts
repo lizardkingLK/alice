@@ -1,6 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DATABASE_BUSY_USER_MESSAGE } from '@repo/types';
+import { DATABASE_BUSY_USER_MESSAGE, isDatabaseBusyMessage } from '@repo/types';
 import { withBusyRetry } from '../src/with-busy-retry';
+
+describe('isDatabaseBusyMessage', () => {
+  it('detects Supabase session pool exhaustion', () => {
+    expect(
+      isDatabaseBusyMessage(
+        '(EMAXCONNSESSION) max clients reached in session mode - max clients are limited to pool_size: 15'
+      )
+    ).toBe(true);
+  });
+
+  it('ignores unrelated database errors', () => {
+    expect(isDatabaseBusyMessage('unique violation')).toBe(false);
+  });
+});
 
 describe('withBusyRetry', () => {
   it('returns on first success', async () => {
@@ -62,5 +76,25 @@ describe('withBusyRetry', () => {
       'unique violation'
     );
     expect(operation).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries on EMAXCONNSESSION then succeeds', async () => {
+    // Arrange
+    const operation = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new Error(
+          "Database error. Code: 'XX000'. Message: '(EMAXCONNSESSION) max clients reached in session mode - max clients are limited to pool_size: 15'"
+        )
+      )
+      .mockResolvedValueOnce('ok');
+
+    // Act
+    await expect(withBusyRetry(operation, { baseDelayMs: 1 })).resolves.toBe(
+      'ok'
+    );
+
+    // Assert
+    expect(operation).toHaveBeenCalledTimes(2);
   });
 });

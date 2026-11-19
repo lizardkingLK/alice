@@ -7,6 +7,7 @@
 | [LABELS.md](./LABELS.md)                                            | JSONB text-array labels, create/details edit, search UX      | Implemented |
 | [ACTIVITY.md](./ACTIVITY.md)                                        | Work-item activity timeline next to Discussion               | Plan        |
 | [REALTIME_DISCUSSION.md](./REALTIME_DISCUSSION.md)                  | Planned realtime for Discussion / Activity / Work Log tabs   | Planned     |
+| [WORKLOG_EXCEL_UPLOAD.md](./WORKLOG_EXCEL_UPLOAD.md)                | Excel template, preview, atomic import, and worklog UI       | Implemented |
 
 > Workflow transitions and escalation resolutions will write to `activities`
 > when [Workflow](../workflow/) ships — see ACTIVITY.md extensions and
@@ -70,6 +71,21 @@ requires `detachChildren: true` (otherwise `409` + `code: HIERARCHY_TYPE_CHANGE`
 When set, children are unlinked, then the type is updated; an incompatible own
 parent link is cleared.
 
+### Modern create dialog layouts
+
+`WorkItemFormDialog` (modern create only) supports Jira-like chrome states:
+
+| Layout       | Behavior                                                                                       |
+| ------------ | ---------------------------------------------------------------------------------------------- |
+| `center`     | Blocking centered modal; compact pill field grid                                               |
+| `fullscreen` | Blocking large centered panel; vertical label+control rows                                     |
+| `floating`   | Non-modal bottom-right card (`modal={false}`, no overlay); detail rows; page stays interactive |
+| `minimized`  | Non-modal corner pill; form stays mounted (draft preserved)                                    |
+
+Expand from floating restores the remembered modal layout (`center` or
+`fullscreen`). Second Create while open bumps `createIntentKey` and shows
+`WorkItemCreateDraftWarning`. Open modern create registers `beforeunload`.
+
 On the work-item details page:
 
 - **Create subtask** (header) opens the shared create form with project and type locked, submits `parent_id`, then refreshes.
@@ -83,8 +99,8 @@ The in-page path above the title (`WorkItemPathBreadcrumb`) shows hierarchy ance
 ### Details layout preferences (client)
 
 Per-user browser prefs (`alice:work-item-details-prefs:v1:<userId>` + cookie
-`alice_wi_details_prefs_v1`) control the summary banner tint (**state** vs
-**type**), title icon (**type** / **state** / **none**), optional sections
+`alice_wi_details_prefs_v1`) control the summary banner tint (**state** /
+**type** / **none**), title icon (**type** / **state** / **none**), optional sections
 (Details, Attachments, Development, Discussion, More fields, Subtasks, Linked
 issues), Details field rows, and More fields items (including short ID and
 created/updated/resolved dates). Defaults match the previous layout plus a
@@ -98,10 +114,10 @@ The dashboard shell breadcrumb on work-item detail is always project-scoped when
 
 `WorkItemsTable` (used on `/work-items`, My Work `/member`, and the project **Work items** tab) supports a URL toggle:
 
-| `view` query        | Behavior                                                                                  |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| _(absent)_ / `flat` | Default: paginated flat list of all matching work items                                   |
-| `hierarchy`         | Paginated **roots only** (`parent_id IS NULL`); expand a row to lazy-load direct children |
+| `view` query        | Behavior                                                                                                                                                 |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _(absent)_ / `flat` | Default: paginated flat list of all matching work items                                                                                                  |
+| `hierarchy`         | Forest page via `loadWorkItemsListPage` (parents + children, budget 100): expand uses SSR-seeded children on Work Items, My Work, and project Work items |
 
 Toolbar (same left / right split as other registries):
 
@@ -110,10 +126,10 @@ Toolbar (same left / right split as other registries):
 - **Right:** **Flat / Hierarchy** segmented control (writes `view`, resets
   `page=1`) → Active / Archived **icon segment** tabs (`RegistryTabSwitcher`) →
   Add Work-Item
-- In hierarchy mode: **Expand all** recursively loads children for expandable
-  types on the current page; **Collapse all** hides nested rows
-- Filters (project, sprint, type, assignee, search) apply to the **root query**
-  only; expanded children are not re-filtered so the tree stays coherent
+- In hierarchy mode: the page returns a **seeded forest** (`childrenByParentId`)
+  so row expand is local; **Expand all** / **Collapse all** toggle that cache
+- Filters (project, sprint, type, assignee, search) apply to the forest query;
+  expanded children are not re-filtered so the tree stays coherent
 - **Project** / **Sprint** cell badges: Project always links to project details
   (new tab). Sprint links to the summary report only for manager+; members get
   a plain badge because `/sprints` is role-gated

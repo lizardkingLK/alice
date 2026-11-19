@@ -99,11 +99,7 @@ export function ChartsWidgetActionsMenu({
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          variant="destructive"
-          className="cursor-pointer gap-2"
-          onSelect={onDelete}
-        >
+        <DropdownMenuItem className="cursor-pointer gap-2" onSelect={onDelete}>
           <Trash2 className="size-4" />
           Delete
         </DropdownMenuItem>

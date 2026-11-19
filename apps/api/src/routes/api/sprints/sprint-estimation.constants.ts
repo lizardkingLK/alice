@@ -1,0 +1,1 @@
+export const SPRINT_ESTIMATION_TARGET_LIMIT = 200;

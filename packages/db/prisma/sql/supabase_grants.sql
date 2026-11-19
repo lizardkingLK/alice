@@ -18,3 +18,27 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT SELECT, INSERT
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO postgres, anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON ROUTINES TO postgres, service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT EXECUTE ON ROUTINES TO anon, authenticated;
+
+-- Hybrid RLS P0: re-lock secrets / admission tables after the blanket GRANTs above.
+-- See docs/guides/RLS_HYBRID_ROLLOUT.md. Idempotent for migrate:deploy / create:migrate.
+REVOKE ALL ON TABLE public.integrations FROM anon, authenticated;
+REVOKE ALL ON TABLE public.project_management_connections FROM anon, authenticated;
+REVOKE ALL ON TABLE public.version_control_connections FROM anon, authenticated;
+REVOKE ALL ON TABLE public.chat_attachments FROM anon, authenticated;
+-- Chat agent catalogs: authenticated may SELECT (RLS); writes via service_role / API.
+REVOKE INSERT, UPDATE, DELETE ON TABLE public.chat_tools FROM anon, authenticated;
+REVOKE INSERT, UPDATE, DELETE ON TABLE public.chat_skills FROM anon, authenticated;
+REVOKE ALL ON TABLE public.access_allowlist FROM anon, authenticated;
+REVOKE ALL ON TABLE public.access_requests FROM anon, authenticated;
+REVOKE ALL ON TABLE public.work_item_links FROM anon, authenticated;
+REVOKE ALL ON TABLE public.work_item_chart_rollups FROM anon, authenticated;
+REVOKE ALL ON TABLE public.work_item_chart_hierarchy_rollups FROM anon, authenticated;
+REVOKE ALL ON TABLE public.sprint_burndown_rollups FROM anon, authenticated;
+REVOKE ALL ON TABLE public.sprint_contribution_rollups FROM anon, authenticated;
+REVOKE ALL ON TABLE public.email_outbox FROM anon, authenticated;
+REVOKE ALL ON TABLE public.notification_email_events FROM PUBLIC, anon, authenticated, service_role, postgres;
+GRANT SELECT, INSERT ON TABLE public.notification_email_events TO postgres;
+REVOKE ALL ON TABLE public.weekly_project_reports FROM anon, authenticated;
+REVOKE ALL ON TABLE public._prisma_migrations FROM anon, authenticated;
+
+REVOKE INSERT, UPDATE, DELETE ON TABLE public.users FROM anon, authenticated;

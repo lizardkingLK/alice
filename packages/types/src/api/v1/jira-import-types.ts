@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { Constants } from '../../generated/supabase/database.types.js';
 
 export enum JiraImportActionEnum {
   Map = 'map',
@@ -14,9 +13,12 @@ export const jiraImportActionSchema = z.enum([
 ]);
 export type JiraImportAction = z.infer<typeof jiraImportActionSchema>;
 
+/** Target is a project catalog type key (arbitrary string). */
+const projectTypeKeySchema = z.string().trim().min(1);
+
 export const jiraImportTypeBehaviorSchema = z.object({
   action: jiraImportActionSchema,
-  targetType: z.enum(Constants.public.Enums.WorkItemType).optional(),
+  targetType: projectTypeKeySchema.optional(),
 });
 export type JiraImportTypeBehavior = z.infer<
   typeof jiraImportTypeBehaviorSchema
@@ -24,6 +26,7 @@ export type JiraImportTypeBehavior = z.infer<
 
 export const jiraImportConfigSchema = z.object({
   typeMappings: z.record(z.string(), jiraImportTypeBehaviorSchema).default({}),
-  hierarchy: z.array(z.enum(Constants.public.Enums.WorkItemType)).optional(),
+  /** Ordered catalog keys (levels = index). */
+  hierarchy: z.array(projectTypeKeySchema).optional(),
 });
 export type JiraImportConfig = z.infer<typeof jiraImportConfigSchema>;

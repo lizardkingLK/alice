@@ -5,6 +5,7 @@ import {
   chartHierarchyDrilldownQuerySchema,
   chartHierarchySeriesQuerySchema,
   chartSeriesQuerySchema,
+  chartSprintContributionQuerySchema,
 } from '@repo/types';
 import {
   requireApiAuth,
@@ -26,7 +27,7 @@ function sendError(res: Response, error: unknown, fallback: string) {
   let status = 500;
   if (message === 'Forbidden') {
     status = 403;
-  } else if (message === 'Chart not found') {
+  } else if (message === 'Chart not found' || message === 'Sprint not found') {
     status = 404;
   } else if (
     message === 'Only active charts can be shared' ||
@@ -124,6 +125,13 @@ export function createChartsRouter(deps: ChartsRouterDeps) {
     (userId, query) => chartsService.getHierarchyDrilldown(userId, query),
     'Failed to load hierarchy chart drilldown'
   );
+  registerChartAnalyticsGet(
+    chartsRouter,
+    '/analytics/sprint-contribution',
+    chartSprintContributionQuerySchema,
+    (userId, query) => chartsService.getSprintContribution(userId, query),
+    'Failed to load sprint contribution'
+  );
 
   chartsRouter.get(
     '/:id',
@@ -188,8 +196,16 @@ export function createChartsRouter(deps: ChartsRouterDeps) {
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const chart = await chartsService.archive(req.userId!, req.params.id!);
-        res.json({ data: chart });
+        const accepted = await chartsService.enqueueArchive(
+          req.userId!,
+          req.params.id!
+        );
+        // 202 — archive finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
       } catch (error) {
         sendError(res, error, 'Failed to archive chart');
       }
@@ -214,8 +230,16 @@ export function createChartsRouter(deps: ChartsRouterDeps) {
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        await chartsService.hardDelete(req.userId!, req.params.id!);
-        res.json({ success: true });
+        const accepted = await chartsService.enqueueHardDelete(
+          req.userId!,
+          req.params.id!
+        );
+        // 202 — purge finishes in the background; inbox notifies on result.
+        res.status(202).json({
+          accepted: true,
+          message: accepted.message,
+          correlationId: accepted.correlationId,
+        });
       } catch (error) {
         sendError(res, error, 'Failed to delete chart');
       }

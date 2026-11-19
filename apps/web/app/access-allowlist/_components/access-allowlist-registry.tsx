@@ -27,8 +27,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
 import {
@@ -38,10 +36,8 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import {
-  AlertTriangle,
   Calendar,
   Globe,
-  Loader2,
   Mail,
   MoreHorizontal,
   Pencil,
@@ -51,10 +47,12 @@ import {
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import { toast } from '@repo/ui/components/ui/sonner';
 import { formatDate } from '@/app/_shared/utility';
 import { DataTable } from '@/components/data-table';
 import { DismissibleError } from '@/components/dismissible-error';
 import { Pagination } from '@/components/pagination';
+import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import { SearchInput } from '@/components/search-input';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
@@ -207,7 +205,6 @@ function ActionsCell({
             Edit
           </DropdownMenuItem>
           <DropdownMenuItem
-            variant="destructive"
             disabled={!canDelete}
             title={canDelete ? undefined : OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE}
             onClick={() => {
@@ -363,7 +360,8 @@ export function AccessAllowlistRegistry({
     }
     setIsBusy(true);
     deleteAccessAllowlistEntry(deletingEntry.id, deletingEntry.updated_at)
-      .then(() => {
+      .then((accepted) => {
+        toast.success(accepted.message);
         setDeletingEntry(null);
         setError(null);
         router.refresh();
@@ -503,52 +501,24 @@ export function AccessAllowlistRegistry({
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={deletingEntry !== null}
-        onOpenChange={(open) => {
-          if (!open && !isBusy) setDeletingEntry(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-rose-500">
-              <AlertTriangle className="size-5 shrink-0" />
-              Delete allowlist entry
-            </DialogTitle>
-            <DialogDescription>
-              {deletingEntry
-                ? `Delete ${deletingEntry.kind} "${deletingEntry.value}"? This cannot be undone. Matching emails will no longer be admitted.`
-                : null}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isBusy}
-              onClick={() => setDeletingEntry(null)}
-              className="cursor-pointer"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={isBusy}
-              onClick={confirmDelete}
-              className="cursor-pointer bg-rose-600 text-white hover:bg-rose-700"
-            >
-              {isBusy ? (
-                <>
-                  <Loader2 className="animate-spin" />
-                  Deleting…
-                </>
-              ) : (
-                'Delete'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {deletingEntry ? (
+        <RegistryConfirmDialog
+          title="Delete allowlist entry"
+          subject={`${deletingEntry.kind} "${deletingEntry.value}"`}
+          detail="This cannot be undone. Matching emails will no longer be admitted."
+          confirmLabel="Delete"
+          pendingLabel="Deleting…"
+          isPending={isBusy}
+          isSoft={false}
+          actionVerb="delete"
+          onCancel={() => {
+            if (!isBusy) {
+              setDeletingEntry(null);
+            }
+          }}
+          onConfirm={confirmDelete}
+        />
+      ) : null}
     </div>
   );
 }

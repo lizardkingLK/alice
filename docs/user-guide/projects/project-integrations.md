@@ -1,6 +1,6 @@
 # Project integrations
 
-Connect GitHub and Jira to a project.
+Connect GitHub and Jira, and bind organization AI chat models to a project.
 
 **Audience:** Managers and admins
 
@@ -11,16 +11,33 @@ Connect GitHub and Jira to a project.
 1. Go to **Projects** and open a project you can access.
 2. Select the **Integrations** tab.
 
-Anyone with project workspace access can view the tab; connecting credentials
-requires appropriate permissions for each integration.
+The tab opens with a short **summary** of source control, project management,
+and AI agent binds, then a Settings-style marketplace: search, category tabs,
+and grouped providers.
+
+**Source control** and **project management** are single-select (**None** or one
+provider). **AI agents** allow multiple organization model binds. Other catalog
+groups show as **Coming soon**.
+
+The **Integrations** tab is available to **managers and admins**. Connecting
+credentials and saving AI binds require those roles.
 
 ---
 
 ## GitHub
 
-Use the **GitHub** card to authorize your GitHub account with OAuth and bind one
-repository (`owner/repo`) to the project. Alice uses that link for pull
-requests, commits, and branch activity on work items.
+On **Source control**, choose **GitHub** (or **None**). Use the **GitHub** card
+to authorize your GitHub account with OAuth and bind one repository
+(`owner/repo`) to the project. Alice uses that link for pull requests, commits,
+and branch activity on work items. After a link is saved, clear it with
+**Disconnect** on the card before **None** stays available.
+
+**Today:** connect with GitHub OAuth and link PRs to work items (often manually).
+**Planned:** install an Alice GitHub App, sync PRs/commits/branches automatically,
+and (later) run in-app workflows that can call agent tools such as Cursor — see
+the engineering plan in
+[GITHUB_INTEGRATION.md](../../features/projects/GITHUB_INTEGRATION.md#phased-delivery-planned).
+Those App install steps are **not** available in the product UI yet.
 
 ### Connect or update
 
@@ -50,7 +67,8 @@ Without a connected account, Alice can only work with **public** repositories.
 
 ## Jira Cloud
 
-Use the **Jira** card to:
+On **Project management**, choose **Jira** (or **None**). Use the **Jira** card
+to:
 
 1. **Connect** with Atlassian OAuth (3LO) as a manager.
 2. Link a Jira site and **project key** to this Alice project.
@@ -64,14 +82,41 @@ connection to link and sync. Only the person who authorized Atlassian can
 
 ---
 
-## Workspace vs project
+## AI agents
 
-| Level         | Where                                   | Examples                  |
-| ------------- | --------------------------------------- | ------------------------- |
-| **Project**   | Project → **Integrations** tab          | GitHub repo, Jira import  |
-| **Workspace** | **Settings** → **Integrations** (admin) | AI providers, Slack mocks |
+Use the **AI agents** card to enable organization chat models and mint
+**project-only** models for Alice Chat.
 
-Project integrations do not replace workspace-level AI settings on your profile.
+Models are grouped by provider (for example Anthropic, Gemini). Expand a group
+to see rows with **Enable**, label, model id, **Scope**, **Owner**, project
+**Default**, and actions. Use **Scope** and **Owner** filters to reduce
+clutter.
+
+1. **Organization** rows — enable or disable for this project. Credentials stay
+   read-only here; edit keys in
+   [Workspace integrations](../profile-and-settings/workspace-integrations.md).
+2. **Project** rows — mint with **+** on a provider group, or edit an existing
+   project model. Each mint stores its own API key for this project only
+   (not shareable to other projects). Optionally **Mark as project default**
+   when connecting.
+3. Star one enabled model as the **project default**.
+4. Select **Save AI models**.
+
+Empty selection clears the project pool — chat falls through to organization
+defaults.
+
+---
+
+## Organization vs project
+
+| Level            | Where                                           | Examples                                                     |
+| ---------------- | ----------------------------------------------- | ------------------------------------------------------------ |
+| **Project**      | Project → **Integrations** tab                  | GitHub repo, Jira import, project AI keys, org model enables |
+| **Organization** | **Settings** → **Integrations** (manager/admin) | Shareable AI vault, Slack (planned)                          |
+
+Organization models are **enabled by reference**. Project models keep their own
+keys on that project. See
+[INTEGRATION_SCOPES.md](../../features/integrations/INTEGRATION_SCOPES.md).
 
 ---
 

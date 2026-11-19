@@ -86,3 +86,26 @@ export async function getSprintFromSupabase(
 
   return mapDbSprintToSprint(data as unknown as DbSprintRelation);
 }
+
+/** Resolve a sprint by project-scoped URL slug. */
+export async function getSprintByProjectSlugFromSupabase(
+  projectId: string,
+  slug: string
+): Promise<Sprint | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('sprints')
+    .select(SPRINT_WITH_PROJECT)
+    .eq('project_id', projectId)
+    .eq('slug', slug)
+    .maybeSingle();
+
+  throwIfError(error, 'failed to find sprint by slug', 'Failed to find sprint');
+
+  if (!data) {
+    return null;
+  }
+
+  return mapDbSprintToSprint(data as unknown as DbSprintRelation);
+}

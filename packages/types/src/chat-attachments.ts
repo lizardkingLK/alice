@@ -155,3 +155,51 @@ export function detectChatAttachmentFileType(
 
   return matchedRule ? matchedRule.type : ChatAttachmentFileTypeEnum.Other;
 }
+
+/** Work-item import attachments are JSON and CSV only (no images/YAML/etc.). */
+export const WORK_ITEM_IMPORT_FILE_TYPES = [
+  ChatAttachmentFileTypeEnum.Json,
+  ChatAttachmentFileTypeEnum.Csv,
+] as const;
+
+export type WorkItemImportFileType =
+  (typeof WORK_ITEM_IMPORT_FILE_TYPES)[number];
+
+/** `accept` value for the chat composer file picker. */
+export const WORK_ITEM_IMPORT_FILE_ACCEPT =
+  '.json,.csv,application/json,text/csv';
+
+export const WORK_ITEM_IMPORT_UNSUPPORTED_MESSAGE =
+  'Only JSON (.json) and CSV (.csv) files are supported for work-item import.';
+
+export function isWorkItemImportFileType(
+  fileType: ChatAttachmentFileTypeEnum
+): fileType is WorkItemImportFileType {
+  return (
+    fileType === ChatAttachmentFileTypeEnum.Json ||
+    fileType === ChatAttachmentFileTypeEnum.Csv
+  );
+}
+
+export function assertWorkItemImportAttachment(
+  fileName: string,
+  mimeType: string
+): WorkItemImportFileType {
+  const fileType = detectChatAttachmentFileType(fileName, mimeType);
+  if (!isWorkItemImportFileType(fileType)) {
+    throw new Error(WORK_ITEM_IMPORT_UNSUPPORTED_MESSAGE);
+  }
+  return fileType;
+}
+
+export function assertWorkItemImportFileType(
+  fileType: ChatAttachmentFileTypeEnum,
+  fileName?: string
+): asserts fileType is WorkItemImportFileType {
+  if (!isWorkItemImportFileType(fileType)) {
+    const label = fileName?.trim() ? `"${fileName.trim()}"` : 'This file';
+    throw new Error(
+      `${label} is not a supported work-item attachment. ${WORK_ITEM_IMPORT_UNSUPPORTED_MESSAGE}`
+    );
+  }
+}

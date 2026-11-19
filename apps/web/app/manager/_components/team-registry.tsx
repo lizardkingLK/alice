@@ -25,14 +25,21 @@ import {
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { TeamForm } from './team-form';
-import { hardDeleteTeam } from './actions';
 import {
   softDeleteTeam as clientSoftDeleteTeam,
   restoreTeam as clientRestoreTeam,
+  hardDeleteTeam as clientHardDeleteTeam,
   type Team,
 } from '../_services/teams.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
-import { runRegistryLockedAction } from '@/lib/optimistic-lock/run-locked-mutation';
+import {
+  runAcceptedDestructiveAction,
+  runLockedAcceptedDestructiveAction,
+} from '@/lib/api/run-accepted-destructive-action';
+import {
+  runRegistryLockedAction,
+  type RunLockedMutationOptions,
+} from '@/lib/optimistic-lock/run-locked-mutation';
 import { replaceEntityInList } from '@/lib/replace-entity-in-list';
 import {
   Users,
@@ -213,6 +220,39 @@ function getTeamRegistryDescription(tab: TeamTab, embedded: boolean) {
   return 'Restore archived teams, or permanently delete them from the database.';
 }
 
+async function runSoftArchive(params: {
+  readonly team: Team;
+  readonly handleMutationError: RunLockedMutationOptions<unknown>['handleMutationError'];
+  readonly currentUserId?: string | null;
+  // eslint-disable-next-line no-unused-vars -- callback option bag
+  readonly onError: (message: string) => void;
+}): Promise<boolean> {
+  const { team, handleMutationError, currentUserId, onError } = params;
+  return runLockedAcceptedDestructiveAction({
+    mutate: () => clientSoftDeleteTeam(team.id, team.updated_at),
+    handleMutationError,
+    entityType: 'team',
+    entityId: team.id,
+    expectedUpdatedAt: team.updated_at,
+    pendingFields: { status: 'archived' },
+    currentUserId,
+    onError,
+    failureFallback: 'Operation failed during soft delete.',
+  });
+}
+
+async function runHardPurge(params: {
+  readonly teamId: string;
+  // eslint-disable-next-line no-unused-vars -- callback option bag
+  readonly onError: (message: string) => void;
+}): Promise<boolean> {
+  return runAcceptedDestructiveAction({
+    mutate: () => clientHardDeleteTeam(params.teamId),
+    onError: params.onError,
+    failureFallback: 'Operation failed during hard delete.',
+  });
+}
+
 export function TeamRegistry({
   teams,
   totalCount,
@@ -307,35 +347,19 @@ export function TeamRegistry({
     if (teamToDelete === null) return;
 
     startTransition(async () => {
-      if (isSoftDelete) {
-        const ok = await runRegistryLockedAction({
-          mutate: () =>
-            clientSoftDeleteTeam(teamToDelete.id, teamToDelete.updated_at),
-          handleMutationError,
-          entityType: 'team',
-          entityId: teamToDelete.id,
-          expectedUpdatedAt: teamToDelete.updated_at,
-          pendingFields: { status: 'archived' },
-          currentUserId,
-          failureFallback: `Operation failed during ${deleteMode} delete.`,
-          onError: setError,
-        });
-        if (!ok) {
-          return;
-        }
-      } else {
-        const actionResult = await hardDeleteTeam(
-          teamToDelete.id,
-          teamToDelete.project_id
-        );
-
-        if (!actionResult.success) {
-          setError(
-            actionResult.error ??
-              `Operation failed during ${deleteMode} delete.`
-          );
-          return;
-        }
+      const ok = isSoftDelete
+        ? await runSoftArchive({
+            team: teamToDelete,
+            handleMutationError,
+            currentUserId,
+            onError: setError,
+          })
+        : await runHardPurge({
+            teamId: teamToDelete.id,
+            onError: setError,
+          });
+      if (!ok) {
+        return;
       }
 
       setTeamToDelete(null);

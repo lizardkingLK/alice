@@ -56,6 +56,7 @@ export type CommentsCountAggregateOutputType = {
   author_id: number
   parent_id: number
   content: number
+  reactions: number
   edited: number
   status: number
   created_by: number
@@ -98,6 +99,7 @@ export type CommentsCountAggregateInputType = {
   author_id?: true
   parent_id?: true
   content?: true
+  reactions?: true
   edited?: true
   status?: true
   created_by?: true
@@ -185,6 +187,7 @@ export type CommentsGroupByOutputType = {
   author_id: string
   parent_id: string | null
   content: runtime.JsonValue
+  reactions: runtime.JsonValue
   edited: boolean
   status: $Enums.RecordStatus
   created_by: string | null
@@ -220,6 +223,7 @@ export type commentsWhereInput = {
   author_id?: Prisma.UuidFilter<"comments"> | string
   parent_id?: Prisma.UuidNullableFilter<"comments"> | string | null
   content?: Prisma.JsonFilter<"comments">
+  reactions?: Prisma.JsonFilter<"comments">
   edited?: Prisma.BoolFilter<"comments"> | boolean
   status?: Prisma.EnumRecordStatusFilter<"comments"> | $Enums.RecordStatus
   created_by?: Prisma.UuidNullableFilter<"comments"> | string | null
@@ -240,6 +244,7 @@ export type commentsOrderByWithRelationInput = {
   author_id?: Prisma.SortOrder
   parent_id?: Prisma.SortOrderInput | Prisma.SortOrder
   content?: Prisma.SortOrder
+  reactions?: Prisma.SortOrder
   edited?: Prisma.SortOrder
   status?: Prisma.SortOrder
   created_by?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -263,6 +268,7 @@ export type commentsWhereUniqueInput = Prisma.AtLeast<{
   author_id?: Prisma.UuidFilter<"comments"> | string
   parent_id?: Prisma.UuidNullableFilter<"comments"> | string | null
   content?: Prisma.JsonFilter<"comments">
+  reactions?: Prisma.JsonFilter<"comments">
   edited?: Prisma.BoolFilter<"comments"> | boolean
   status?: Prisma.EnumRecordStatusFilter<"comments"> | $Enums.RecordStatus
   created_by?: Prisma.UuidNullableFilter<"comments"> | string | null
@@ -283,6 +289,7 @@ export type commentsOrderByWithAggregationInput = {
   author_id?: Prisma.SortOrder
   parent_id?: Prisma.SortOrderInput | Prisma.SortOrder
   content?: Prisma.SortOrder
+  reactions?: Prisma.SortOrder
   edited?: Prisma.SortOrder
   status?: Prisma.SortOrder
   created_by?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -303,6 +310,7 @@ export type commentsScalarWhereWithAggregatesInput = {
   author_id?: Prisma.UuidWithAggregatesFilter<"comments"> | string
   parent_id?: Prisma.UuidNullableWithAggregatesFilter<"comments"> | string | null
   content?: Prisma.JsonWithAggregatesFilter<"comments">
+  reactions?: Prisma.JsonWithAggregatesFilter<"comments">
   edited?: Prisma.BoolWithAggregatesFilter<"comments"> | boolean
   status?: Prisma.EnumRecordStatusWithAggregatesFilter<"comments"> | $Enums.RecordStatus
   created_by?: Prisma.UuidNullableWithAggregatesFilter<"comments"> | string | null
@@ -314,6 +322,7 @@ export type commentsScalarWhereWithAggregatesInput = {
 export type commentsCreateInput = {
   id?: string
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_at?: Date | string
@@ -332,6 +341,7 @@ export type commentsUncheckedCreateInput = {
   author_id: string
   parent_id?: string | null
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_by?: string | null
@@ -344,6 +354,7 @@ export type commentsUncheckedCreateInput = {
 export type commentsUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -362,6 +373,7 @@ export type commentsUncheckedUpdateInput = {
   author_id?: Prisma.StringFieldUpdateOperationsInput | string
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -377,6 +389,7 @@ export type commentsCreateManyInput = {
   author_id: string
   parent_id?: string | null
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_by?: string | null
@@ -388,6 +401,7 @@ export type commentsCreateManyInput = {
 export type commentsUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -400,6 +414,7 @@ export type commentsUncheckedUpdateManyInput = {
   author_id?: Prisma.StringFieldUpdateOperationsInput | string
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -429,6 +444,7 @@ export type commentsCountOrderByAggregateInput = {
   author_id?: Prisma.SortOrder
   parent_id?: Prisma.SortOrder
   content?: Prisma.SortOrder
+  reactions?: Prisma.SortOrder
   edited?: Prisma.SortOrder
   status?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
@@ -692,6 +708,7 @@ export type commentsUncheckedUpdateManyWithoutParentNestedInput = {
 export type commentsCreateWithoutAuthorInput = {
   id?: string
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_at?: Date | string
@@ -708,6 +725,7 @@ export type commentsUncheckedCreateWithoutAuthorInput = {
   work_item_id: string
   parent_id?: string | null
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_by?: string | null
@@ -730,6 +748,7 @@ export type commentsCreateManyAuthorInputEnvelope = {
 export type commentsCreateWithoutCreated_by_userInput = {
   id?: string
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_at?: Date | string
@@ -747,6 +766,7 @@ export type commentsUncheckedCreateWithoutCreated_by_userInput = {
   author_id: string
   parent_id?: string | null
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_at?: Date | string
@@ -768,6 +788,7 @@ export type commentsCreateManyCreated_by_userInputEnvelope = {
 export type commentsCreateWithoutUpdated_by_userInput = {
   id?: string
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_at?: Date | string
@@ -785,6 +806,7 @@ export type commentsUncheckedCreateWithoutUpdated_by_userInput = {
   author_id: string
   parent_id?: string | null
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_by?: string | null
@@ -828,6 +850,7 @@ export type commentsScalarWhereInput = {
   author_id?: Prisma.UuidFilter<"comments"> | string
   parent_id?: Prisma.UuidNullableFilter<"comments"> | string | null
   content?: Prisma.JsonFilter<"comments">
+  reactions?: Prisma.JsonFilter<"comments">
   edited?: Prisma.BoolFilter<"comments"> | boolean
   status?: Prisma.EnumRecordStatusFilter<"comments"> | $Enums.RecordStatus
   created_by?: Prisma.UuidNullableFilter<"comments"> | string | null
@@ -871,6 +894,7 @@ export type commentsUpdateManyWithWhereWithoutUpdated_by_userInput = {
 export type commentsCreateWithoutWork_itemInput = {
   id?: string
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_at?: Date | string
@@ -887,6 +911,7 @@ export type commentsUncheckedCreateWithoutWork_itemInput = {
   author_id: string
   parent_id?: string | null
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_by?: string | null
@@ -925,6 +950,7 @@ export type commentsUpdateManyWithWhereWithoutWork_itemInput = {
 export type commentsCreateWithoutRepliesInput = {
   id?: string
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_at?: Date | string
@@ -942,6 +968,7 @@ export type commentsUncheckedCreateWithoutRepliesInput = {
   author_id: string
   parent_id?: string | null
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_by?: string | null
@@ -958,6 +985,7 @@ export type commentsCreateOrConnectWithoutRepliesInput = {
 export type commentsCreateWithoutParentInput = {
   id?: string
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_at?: Date | string
@@ -974,6 +1002,7 @@ export type commentsUncheckedCreateWithoutParentInput = {
   work_item_id: string
   author_id: string
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_by?: string | null
@@ -1007,6 +1036,7 @@ export type commentsUpdateToOneWithWhereWithoutRepliesInput = {
 export type commentsUpdateWithoutRepliesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1024,6 +1054,7 @@ export type commentsUncheckedUpdateWithoutRepliesInput = {
   author_id?: Prisma.StringFieldUpdateOperationsInput | string
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1053,6 +1084,7 @@ export type commentsCreateManyAuthorInput = {
   work_item_id: string
   parent_id?: string | null
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_by?: string | null
@@ -1067,6 +1099,7 @@ export type commentsCreateManyCreated_by_userInput = {
   author_id: string
   parent_id?: string | null
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_at?: Date | string
@@ -1080,6 +1113,7 @@ export type commentsCreateManyUpdated_by_userInput = {
   author_id: string
   parent_id?: string | null
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_by?: string | null
@@ -1090,6 +1124,7 @@ export type commentsCreateManyUpdated_by_userInput = {
 export type commentsUpdateWithoutAuthorInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1106,6 +1141,7 @@ export type commentsUncheckedUpdateWithoutAuthorInput = {
   work_item_id?: Prisma.StringFieldUpdateOperationsInput | string
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1120,6 +1156,7 @@ export type commentsUncheckedUpdateManyWithoutAuthorInput = {
   work_item_id?: Prisma.StringFieldUpdateOperationsInput | string
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1131,6 +1168,7 @@ export type commentsUncheckedUpdateManyWithoutAuthorInput = {
 export type commentsUpdateWithoutCreated_by_userInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1148,6 +1186,7 @@ export type commentsUncheckedUpdateWithoutCreated_by_userInput = {
   author_id?: Prisma.StringFieldUpdateOperationsInput | string
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1162,6 +1201,7 @@ export type commentsUncheckedUpdateManyWithoutCreated_by_userInput = {
   author_id?: Prisma.StringFieldUpdateOperationsInput | string
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1172,6 +1212,7 @@ export type commentsUncheckedUpdateManyWithoutCreated_by_userInput = {
 export type commentsUpdateWithoutUpdated_by_userInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1189,6 +1230,7 @@ export type commentsUncheckedUpdateWithoutUpdated_by_userInput = {
   author_id?: Prisma.StringFieldUpdateOperationsInput | string
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1203,6 +1245,7 @@ export type commentsUncheckedUpdateManyWithoutUpdated_by_userInput = {
   author_id?: Prisma.StringFieldUpdateOperationsInput | string
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1215,6 +1258,7 @@ export type commentsCreateManyWork_itemInput = {
   author_id: string
   parent_id?: string | null
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_by?: string | null
@@ -1226,6 +1270,7 @@ export type commentsCreateManyWork_itemInput = {
 export type commentsUpdateWithoutWork_itemInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1242,6 +1287,7 @@ export type commentsUncheckedUpdateWithoutWork_itemInput = {
   author_id?: Prisma.StringFieldUpdateOperationsInput | string
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1256,6 +1302,7 @@ export type commentsUncheckedUpdateManyWithoutWork_itemInput = {
   author_id?: Prisma.StringFieldUpdateOperationsInput | string
   parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1269,6 +1316,7 @@ export type commentsCreateManyParentInput = {
   work_item_id: string
   author_id: string
   content: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: boolean
   status?: $Enums.RecordStatus
   created_by?: string | null
@@ -1280,6 +1328,7 @@ export type commentsCreateManyParentInput = {
 export type commentsUpdateWithoutParentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1296,6 +1345,7 @@ export type commentsUncheckedUpdateWithoutParentInput = {
   work_item_id?: Prisma.StringFieldUpdateOperationsInput | string
   author_id?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1310,6 +1360,7 @@ export type commentsUncheckedUpdateManyWithoutParentInput = {
   work_item_id?: Prisma.StringFieldUpdateOperationsInput | string
   author_id?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  reactions?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   edited?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1355,6 +1406,7 @@ export type commentsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   author_id?: boolean
   parent_id?: boolean
   content?: boolean
+  reactions?: boolean
   edited?: boolean
   status?: boolean
   created_by?: boolean
@@ -1376,6 +1428,7 @@ export type commentsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   author_id?: boolean
   parent_id?: boolean
   content?: boolean
+  reactions?: boolean
   edited?: boolean
   status?: boolean
   created_by?: boolean
@@ -1395,6 +1448,7 @@ export type commentsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   author_id?: boolean
   parent_id?: boolean
   content?: boolean
+  reactions?: boolean
   edited?: boolean
   status?: boolean
   created_by?: boolean
@@ -1414,6 +1468,7 @@ export type commentsSelectScalar = {
   author_id?: boolean
   parent_id?: boolean
   content?: boolean
+  reactions?: boolean
   edited?: boolean
   status?: boolean
   created_by?: boolean
@@ -1422,7 +1477,7 @@ export type commentsSelectScalar = {
   updated_at?: boolean
 }
 
-export type commentsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "work_item_id" | "author_id" | "parent_id" | "content" | "edited" | "status" | "created_by" | "created_at" | "updated_by" | "updated_at", ExtArgs["result"]["comments"]>
+export type commentsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "work_item_id" | "author_id" | "parent_id" | "content" | "reactions" | "edited" | "status" | "created_by" | "created_at" | "updated_by" | "updated_at", ExtArgs["result"]["comments"]>
 export type commentsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   work_item?: boolean | Prisma.work_itemsDefaultArgs<ExtArgs>
   author?: boolean | Prisma.usersDefaultArgs<ExtArgs>
@@ -1463,6 +1518,10 @@ export type $commentsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     author_id: string
     parent_id: string | null
     content: runtime.JsonValue
+    /**
+     * Flat reaction entries: [{ user_id, emoji }]. Counts are derived, not stored.
+     */
+    reactions: runtime.JsonValue
     edited: boolean
     status: $Enums.RecordStatus
     created_by: string | null
@@ -1903,6 +1962,7 @@ export interface commentsFieldRefs {
   readonly author_id: Prisma.FieldRef<"comments", 'String'>
   readonly parent_id: Prisma.FieldRef<"comments", 'String'>
   readonly content: Prisma.FieldRef<"comments", 'Json'>
+  readonly reactions: Prisma.FieldRef<"comments", 'Json'>
   readonly edited: Prisma.FieldRef<"comments", 'Boolean'>
   readonly status: Prisma.FieldRef<"comments", 'RecordStatus'>
   readonly created_by: Prisma.FieldRef<"comments", 'String'>

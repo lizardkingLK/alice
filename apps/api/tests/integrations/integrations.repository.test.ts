@@ -24,7 +24,7 @@ describe('IntegrationsRepository.listActiveChatModels', () => {
     vi.clearAllMocks();
   });
 
-  it('selects active AI integrations only, regardless of provider', async () => {
+  it('selects active organization-scoped AI integrations only', async () => {
     findManyMock.mockResolvedValue([]);
 
     await expect(repository.listActiveChatModels()).resolves.toEqual([]);
@@ -32,6 +32,7 @@ describe('IntegrationsRepository.listActiveChatModels', () => {
     expect(findManyMock).toHaveBeenCalledWith({
       where: {
         category: 'ai_agent',
+        scope: 'organization',
         status: 'active',
       },
       select: integrationListSelect,

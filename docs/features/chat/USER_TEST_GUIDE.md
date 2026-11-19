@@ -242,18 +242,17 @@ CORE-4,Task,Write Unit Tests for Login,CORE-3,medium,2,Vitest test cases coverin
 
 ---
 
-### Test Case 6: CSV and Image File Support
+### Test Case 6: CSV support and image rejection
 
-**Goal**: Verify that non-JSON attachments are classified and handled properly.
+**Goal**: Verify CSV import works and unsupported types (images, etc.) fail fast.
 
 1. Upload `test-work-items.csv`:
    - Verify badge displays `CSV`.
    - Ask Alice: _"Parse this CSV file and list the items."_
    - Verify Alice reads the CSV columns and correctly maps Title, Type, Priority, and StoryPoints.
-2. Upload an image (`.png`, `.jpg`, or `.webp`):
-   - Verify badge displays `IMAGE`.
-   - Ask Alice a question about the project.
-   - Verify attachment displays properly without breaking chat flow.
+2. Try uploading an image (`.png`, `.jpg`, or `.webp`):
+   - Upload is rejected before transfer with: only JSON and CSV are supported for work-item import.
+   - No `IMAGE` attachment tile is created.
 
 ---
 
