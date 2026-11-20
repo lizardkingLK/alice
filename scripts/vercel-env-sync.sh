@@ -28,11 +28,25 @@ Usage: scripts/vercel-env-sync.sh --app api|web [--environment production] [--sa
 
 For each basename in the app sample.env allowlist, reads ${PREFIX}_${NAME} from
 the environment, skips empty values, and runs:
-  vercel env add NAME --environment <environment> --yes --force
+  vercel env add NAME --environment <environment> --type … --yes --force
+
+NEXT_PUBLIC_* keys use --type config (browser-exposed by design). Other keys
+use --type secret. CLI 66+ requires this when a NEXT_PUBLIC_ value looks like
+a credential (e.g. Supabase anon JWT).
 
 Requires VERCEL_TOKEN. When VERCEL_ORG_ID is set (CI), VERCEL_PROJECT_ID must
 also be set so the CLI targets the correct project.
 EOF
+}
+
+# Map key name → Vercel env type.
+env_var_type_for_key() {
+  local key="$1"
+
+  case "$key" in
+    NEXT_PUBLIC_*) printf '%s' 'config' ;;
+    *) printf '%s' 'secret' ;;
+  esac
 }
 
 while [[ $# -gt 0 ]]; do
@@ -133,12 +147,14 @@ while IFS= read -r name || [[ -n "$name" ]]; do
     continue
   fi
 
+  env_type="$(env_var_type_for_key "$name")"
   printf '%s' "$value" | vercel env add "$name" \
     --environment "$ENVIRONMENT" \
+    --type "$env_type" \
     --token "$VERCEL_TOKEN" \
     --yes \
     --force
-  echo "info. upserted $name"
+  echo "info. upserted $name ($env_type)"
   upserted=$((upserted + 1))
 done < <(env_list_keys "$APP" "$SAMPLE_ENV")
 
