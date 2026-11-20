@@ -1,9 +1,8 @@
 name: Sync prefixed GitHub secrets to Vercel env
 description: >-
   Upsert unprefixed Vercel project environment variables from prefixed process
-  env (API_* / WEB_*) via the Vercel REST API (avoids CLI .vercel link issues).
-  Call before vercel pull. Expects VERCEL_TOKEN and VERCEL_ORG_ID in the job
-  environment.
+  env (API_* / WEB_*). Call after Vercel CLI install and project link, before
+  vercel pull. Expects VERCEL_TOKEN and VERCEL_ORG_ID in the job environment.
 
 inputs:
   app:
