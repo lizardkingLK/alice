@@ -5,15 +5,11 @@
 # prefix and writes unprefixed keys to Vercel (DATABASE_URL), matching app
 # runtime and existing Vercel project variables.
 #
-# Uses the Vercel REST API (not `vercel env add`) so CI does not depend on a
-# half-linked `.vercel/` directory before `vercel pull`. That CLI path often
-# fails with the misleading "Could not retrieve Project Settings" error.
-#
 # Usage (CI):
 #   export API_DATABASE_URL=...   # from ${{ secrets.API_DATABASE_URL }}
 #   ./scripts/vercel-env-sync.sh --app api --environment production
 #
-# Requires: curl, python3, VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID.
+# Requires: vercel CLI, VERCEL_TOKEN, linked project (.vercel/project.json).
 
 set -euo pipefail
 
@@ -31,67 +27,12 @@ usage() {
 Usage: scripts/vercel-env-sync.sh --app api|web [--environment production] [--sample-env PATH] [--dry-run]
 
 For each basename in the app sample.env allowlist, reads ${PREFIX}_${NAME} from
-the environment, skips empty values, and upserts via:
-  POST /v10/projects/{id}/env?upsert=true&teamId={orgId}
+the environment, skips empty values, and runs:
+  vercel env add NAME --environment <environment> --yes --force
 
-Requires VERCEL_TOKEN, VERCEL_ORG_ID, and VERCEL_PROJECT_ID.
+Requires VERCEL_TOKEN. When VERCEL_ORG_ID is set (CI), VERCEL_PROJECT_ID must
+also be set so the CLI targets the correct project.
 EOF
-}
-
-# Map key name → Vercel env type (NEXT_PUBLIC_* stays readable as plain).
-env_var_type_for_key() {
-  local key="$1"
-
-  case "$key" in
-    NEXT_PUBLIC_*) printf '%s' 'plain' ;;
-    *) printf '%s' 'encrypted' ;;
-  esac
-}
-
-# POST one upsert; prints HTTP status on stdout, body on stderr for failures.
-upsert_vercel_env() {
-  local key="$1"
-  local value="$2"
-  local target="$3"
-  local env_type
-  local payload
-  local url
-  local response_file
-  local http_code
-
-  env_type="$(env_var_type_for_key "$key")"
-  payload="$(
-    KEY="$key" VALUE="$value" TARGET="$target" ENV_TYPE="$env_type" python3 - <<'PY'
-import json, os
-print(json.dumps({
-    "key": os.environ["KEY"],
-    "value": os.environ["VALUE"],
-    "type": os.environ["ENV_TYPE"],
-    "target": [os.environ["TARGET"]],
-}))
-PY
-  )"
-
-  url="https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/env?upsert=true&teamId=${VERCEL_ORG_ID}"
-  response_file="$(mktemp)"
-
-  http_code="$(
-    curl -sS -o "$response_file" -w '%{http_code}' \
-      -X POST "$url" \
-      -H "Authorization: Bearer ${VERCEL_TOKEN}" \
-      -H 'Content-Type: application/json' \
-      -d "$payload"
-  )"
-
-  if [[ "$http_code" != 200 && "$http_code" != 201 ]]; then
-    echo "error. upsert failed for $key (HTTP $http_code)" >&2
-    cat "$response_file" >&2 || true
-    rm -f "$response_file"
-    return 1
-  fi
-
-  rm -f "$response_file"
-  return 0
 }
 
 while [[ $# -gt 0 ]]; do
@@ -155,28 +96,18 @@ if [[ ! -f "$SAMPLE_ENV" ]]; then
 fi
 
 if [[ "$DRY_RUN" -eq 0 ]]; then
+  if ! command -v vercel >/dev/null 2>&1; then
+    echo "error. vercel CLI is not installed" >&2
+    exit 1
+  fi
+
   if [[ -z "${VERCEL_TOKEN:-}" ]]; then
     echo "error. VERCEL_TOKEN is required" >&2
     exit 1
   fi
 
-  if [[ -z "${VERCEL_ORG_ID:-}" ]]; then
-    echo "error. VERCEL_ORG_ID is required" >&2
-    exit 1
-  fi
-
-  if [[ -z "${VERCEL_PROJECT_ID:-}" ]]; then
-    echo "error. VERCEL_PROJECT_ID is required" >&2
-    exit 1
-  fi
-
-  if ! command -v curl >/dev/null 2>&1; then
-    echo "error. curl is required" >&2
-    exit 1
-  fi
-
-  if ! command -v python3 >/dev/null 2>&1; then
-    echo "error. python3 is required to JSON-encode env values" >&2
+  if [[ -n "${VERCEL_ORG_ID:-}" && -z "${VERCEL_PROJECT_ID:-}" ]]; then
+    echo "error. VERCEL_ORG_ID is set but VERCEL_PROJECT_ID is missing" >&2
     exit 1
   fi
 fi
@@ -202,7 +133,11 @@ while IFS= read -r name || [[ -n "$name" ]]; do
     continue
   fi
 
-  upsert_vercel_env "$name" "$value" "$ENVIRONMENT"
+  printf '%s' "$value" | vercel env add "$name" \
+    --environment "$ENVIRONMENT" \
+    --token "$VERCEL_TOKEN" \
+    --yes \
+    --force
   echo "info. upserted $name"
   upserted=$((upserted + 1))
 done < <(env_list_keys "$APP" "$SAMPLE_ENV")
