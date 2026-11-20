@@ -423,6 +423,8 @@ export const ModelName = {
   access_requests: 'access_requests',
   project_management_connections: 'project_management_connections',
   version_control_connections: 'version_control_connections',
+  figma_connections: 'figma_connections',
+  figma_oauth_attempts: 'figma_oauth_attempts',
   chat_conversations: 'chat_conversations',
   chat_attachments: 'chat_attachments',
   chat_tools: 'chat_tools',
@@ -453,7 +455,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "sprint_contribution_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "notification_email_events" | "notification_email_preferences" | "email_outbox" | "weekly_project_report_subscriptions" | "weekly_project_reports" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "chat_conversations" | "chat_attachments" | "chat_tools" | "chat_skills" | "chat_agents" | "chat_agent_tools" | "chat_agent_skills" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "integrations" | "member_chat_model_preferences" | "project_integration_bindings"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "sprint_contribution_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "notification_email_events" | "notification_email_preferences" | "email_outbox" | "weekly_project_report_subscriptions" | "weekly_project_reports" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "figma_connections" | "figma_oauth_attempts" | "chat_conversations" | "chat_attachments" | "chat_tools" | "chat_skills" | "chat_agents" | "chat_agent_tools" | "chat_agent_skills" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "integrations" | "member_chat_model_preferences" | "project_integration_bindings"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2381,6 +2383,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    figma_connections: {
+      payload: Prisma.$figma_connectionsPayload<ExtArgs>
+      fields: Prisma.figma_connectionsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.figma_connectionsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_connectionsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.figma_connectionsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_connectionsPayload>
+        }
+        findFirst: {
+          args: Prisma.figma_connectionsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_connectionsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.figma_connectionsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_connectionsPayload>
+        }
+        findMany: {
+          args: Prisma.figma_connectionsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_connectionsPayload>[]
+        }
+        create: {
+          args: Prisma.figma_connectionsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_connectionsPayload>
+        }
+        createMany: {
+          args: Prisma.figma_connectionsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.figma_connectionsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_connectionsPayload>[]
+        }
+        delete: {
+          args: Prisma.figma_connectionsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_connectionsPayload>
+        }
+        update: {
+          args: Prisma.figma_connectionsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_connectionsPayload>
+        }
+        deleteMany: {
+          args: Prisma.figma_connectionsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.figma_connectionsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.figma_connectionsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_connectionsPayload>[]
+        }
+        upsert: {
+          args: Prisma.figma_connectionsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_connectionsPayload>
+        }
+        aggregate: {
+          args: Prisma.Figma_connectionsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFigma_connections>
+        }
+        groupBy: {
+          args: Prisma.figma_connectionsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Figma_connectionsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.figma_connectionsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Figma_connectionsCountAggregateOutputType> | number
+        }
+      }
+    }
+    figma_oauth_attempts: {
+      payload: Prisma.$figma_oauth_attemptsPayload<ExtArgs>
+      fields: Prisma.figma_oauth_attemptsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.figma_oauth_attemptsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_attemptsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.figma_oauth_attemptsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_attemptsPayload>
+        }
+        findFirst: {
+          args: Prisma.figma_oauth_attemptsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_attemptsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.figma_oauth_attemptsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_attemptsPayload>
+        }
+        findMany: {
+          args: Prisma.figma_oauth_attemptsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_attemptsPayload>[]
+        }
+        create: {
+          args: Prisma.figma_oauth_attemptsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_attemptsPayload>
+        }
+        createMany: {
+          args: Prisma.figma_oauth_attemptsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.figma_oauth_attemptsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_attemptsPayload>[]
+        }
+        delete: {
+          args: Prisma.figma_oauth_attemptsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_attemptsPayload>
+        }
+        update: {
+          args: Prisma.figma_oauth_attemptsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_attemptsPayload>
+        }
+        deleteMany: {
+          args: Prisma.figma_oauth_attemptsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.figma_oauth_attemptsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.figma_oauth_attemptsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_attemptsPayload>[]
+        }
+        upsert: {
+          args: Prisma.figma_oauth_attemptsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_attemptsPayload>
+        }
+        aggregate: {
+          args: Prisma.Figma_oauth_attemptsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFigma_oauth_attempts>
+        }
+        groupBy: {
+          args: Prisma.figma_oauth_attemptsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Figma_oauth_attemptsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.figma_oauth_attemptsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Figma_oauth_attemptsCountAggregateOutputType> | number
+        }
+      }
+    }
     chat_conversations: {
       payload: Prisma.$chat_conversationsPayload<ExtArgs>
       fields: Prisma.chat_conversationsFieldRefs
@@ -3997,6 +4147,40 @@ export const Version_control_connectionsScalarFieldEnum = {
 export type Version_control_connectionsScalarFieldEnum = (typeof Version_control_connectionsScalarFieldEnum)[keyof typeof Version_control_connectionsScalarFieldEnum]
 
 
+export const Figma_connectionsScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  authorized_by: 'authorized_by',
+  figma_user_id: 'figma_user_id',
+  access_token_enc: 'access_token_enc',
+  refresh_token_enc: 'refresh_token_enc',
+  access_token_expires_at: 'access_token_expires_at',
+  scopes: 'scopes',
+  verified_file_key: 'verified_file_key',
+  verified_file_name: 'verified_file_name',
+  verified_at: 'verified_at',
+  verification_error: 'verification_error',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Figma_connectionsScalarFieldEnum = (typeof Figma_connectionsScalarFieldEnum)[keyof typeof Figma_connectionsScalarFieldEnum]
+
+
+export const Figma_oauth_attemptsScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  user_id: 'user_id',
+  nonce_hash: 'nonce_hash',
+  code_verifier_enc: 'code_verifier_enc',
+  expires_at: 'expires_at',
+  consumed_at: 'consumed_at',
+  created_at: 'created_at'
+} as const
+
+export type Figma_oauth_attemptsScalarFieldEnum = (typeof Figma_oauth_attemptsScalarFieldEnum)[keyof typeof Figma_oauth_attemptsScalarFieldEnum]
+
+
 export const Chat_conversationsScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
@@ -4892,6 +5076,8 @@ export type GlobalOmitConfig = {
   access_requests?: Prisma.access_requestsOmit
   project_management_connections?: Prisma.project_management_connectionsOmit
   version_control_connections?: Prisma.version_control_connectionsOmit
+  figma_connections?: Prisma.figma_connectionsOmit
+  figma_oauth_attempts?: Prisma.figma_oauth_attemptsOmit
   chat_conversations?: Prisma.chat_conversationsOmit
   chat_attachments?: Prisma.chat_attachmentsOmit
   chat_tools?: Prisma.chat_toolsOmit

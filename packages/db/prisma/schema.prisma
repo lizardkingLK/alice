@@ -263,6 +263,8 @@ model users {
   updated_chart_shares    chart_shares[]      @relation("ChartShareUpdatedBy")
   project_management_connections project_management_connections[]
   version_control_connections    version_control_connections[]
+  authorized_figma_connections   figma_connections[] @relation("FigmaConnectionAuthorizedBy")
+  figma_oauth_attempts            figma_oauth_attempts[]
   created_integrations    integrations[]      @relation("IntegrationCreatedBy")
   updated_integrations    integrations[]      @relation("IntegrationUpdatedBy")
   created_project_integration_bindings project_integration_bindings[] @relation("ProjectIntegrationBindingCreatedBy")
@@ -321,6 +323,8 @@ model projects {
   saved_views             saved_views[]
   integration_bindings    project_integration_bindings[]
   project_integrations    integrations[] @relation("ProjectIntegrations")
+  figma_connection        figma_connections?
+  figma_oauth_attempts    figma_oauth_attempts[]
   weekly_report_subscriptions weekly_project_report_subscriptions[]
   weekly_project_reports      weekly_project_reports[]
 }
@@ -882,6 +886,48 @@ model version_control_connections {
   @@index([user_id])
   @@index([vendor])
   @@unique([user_id, vendor, external_id])
+}
+
+/// One server-side Figma OAuth connection per Alice project.
+/// OAuth credentials are AES-256-GCM ciphertext and are never selected for wire DTOs.
+model figma_connections {
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id              String   @unique @db.Uuid
+  authorized_by           String   @db.Uuid
+  figma_user_id           String
+  access_token_enc        String
+  refresh_token_enc       String
+  access_token_expires_at DateTime @db.Timestamptz(6)
+  scopes                  String
+  verified_file_key       String?
+  verified_file_name      String?
+  verified_at             DateTime? @db.Timestamptz(6)
+  verification_error      String?
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime @updatedAt @db.Timestamptz(6)
+
+  project            projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  authorized_by_user users    @relation("FigmaConnectionAuthorizedBy", fields: [authorized_by], references: [id], onDelete: Restrict)
+
+  @@index([authorized_by])
+}
+
+/// Short-lived, single-use Figma OAuth attempt. The verifier is encrypted at rest.
+model figma_oauth_attempts {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id        String   @db.Uuid
+  user_id           String   @db.Uuid
+  nonce_hash        String   @unique
+  code_verifier_enc String
+  expires_at        DateTime @db.Timestamptz(6)
+  consumed_at       DateTime? @db.Timestamptz(6)
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+
+  project projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  user    users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([project_id, user_id])
+  @@index([expires_at])
 }
 
 model chat_conversations {

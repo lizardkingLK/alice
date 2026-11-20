@@ -4,6 +4,7 @@ import { utcNow } from '@repo/types';
 export enum IntegrationOAuthProvider {
   Jira = 'jira',
   GitHub = 'github',
+  Figma = 'figma',
 }
 
 export enum OAuthCompletionStatus {

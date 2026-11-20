@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import JiraOAuthDonePage from '@/app/integrations/jira/done/page';
 import GithubOAuthDonePage from '@/app/integrations/github/done/page';
+import FigmaOAuthDonePage from '@/app/integrations/figma/done/page';
 import {
   IntegrationOAuthProvider,
   OAuthCompletionStatus,
@@ -243,6 +244,26 @@ describe('OAuth Completion Pages', () => {
       );
 
       unsubscribe();
+    });
+  });
+
+  describe('FigmaOAuthDonePage (/integrations/figma/done)', () => {
+    it('notifies the project card when Figma connects', () => {
+      mockSearchParams = new URLSearchParams('figma=connected');
+
+      render(<FigmaOAuthDonePage />);
+
+      expect(
+        screen.getByRole('heading', { name: /Connected Successfully/i })
+      ).toBeInTheDocument();
+      expect(postMessageSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: OAuthMessageType.OAuthComplete,
+          provider: IntegrationOAuthProvider.Figma,
+          status: OAuthCompletionStatus.Connected,
+        }),
+        window.location.origin
+      );
     });
   });
 });

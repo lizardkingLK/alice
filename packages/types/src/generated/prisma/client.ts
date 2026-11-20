@@ -176,6 +176,17 @@ export type project_management_connections = Prisma.project_management_connectio
  */
 export type version_control_connections = Prisma.version_control_connectionsModel
 /**
+ * Model figma_connections
+ * One server-side Figma OAuth connection per Alice project.
+ * OAuth credentials are AES-256-GCM ciphertext and are never selected for wire DTOs.
+ */
+export type figma_connections = Prisma.figma_connectionsModel
+/**
+ * Model figma_oauth_attempts
+ * Short-lived, single-use Figma OAuth attempt. The verifier is encrypted at rest.
+ */
+export type figma_oauth_attempts = Prisma.figma_oauth_attemptsModel
+/**
  * Model chat_conversations
  * 
  */

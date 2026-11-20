@@ -77,6 +77,8 @@ export const ModelName = {
   access_requests: 'access_requests',
   project_management_connections: 'project_management_connections',
   version_control_connections: 'version_control_connections',
+  figma_connections: 'figma_connections',
+  figma_oauth_attempts: 'figma_oauth_attempts',
   chat_conversations: 'chat_conversations',
   chat_attachments: 'chat_attachments',
   chat_tools: 'chat_tools',
@@ -575,6 +577,40 @@ export const Version_control_connectionsScalarFieldEnum = {
 } as const
 
 export type Version_control_connectionsScalarFieldEnum = (typeof Version_control_connectionsScalarFieldEnum)[keyof typeof Version_control_connectionsScalarFieldEnum]
+
+
+export const Figma_connectionsScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  authorized_by: 'authorized_by',
+  figma_user_id: 'figma_user_id',
+  access_token_enc: 'access_token_enc',
+  refresh_token_enc: 'refresh_token_enc',
+  access_token_expires_at: 'access_token_expires_at',
+  scopes: 'scopes',
+  verified_file_key: 'verified_file_key',
+  verified_file_name: 'verified_file_name',
+  verified_at: 'verified_at',
+  verification_error: 'verification_error',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Figma_connectionsScalarFieldEnum = (typeof Figma_connectionsScalarFieldEnum)[keyof typeof Figma_connectionsScalarFieldEnum]
+
+
+export const Figma_oauth_attemptsScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  user_id: 'user_id',
+  nonce_hash: 'nonce_hash',
+  code_verifier_enc: 'code_verifier_enc',
+  expires_at: 'expires_at',
+  consumed_at: 'consumed_at',
+  created_at: 'created_at'
+} as const
+
+export type Figma_oauth_attemptsScalarFieldEnum = (typeof Figma_oauth_attemptsScalarFieldEnum)[keyof typeof Figma_oauth_attemptsScalarFieldEnum]
 
 
 export const Chat_conversationsScalarFieldEnum = {

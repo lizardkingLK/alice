@@ -165,6 +165,7 @@ export {
   type ProjectVcExternal,
 } from './vc-external.js';
 export * from './github-integration-types.js';
+export * from './figma-integration-types.js';
 export {
   createWorkItemBodySchema,
   isBlockedPastDueDateChange,
