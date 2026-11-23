@@ -45,16 +45,17 @@ see
 2. If status shows **Not connected**, select **Connect GitHub**. A popup opens
    for GitHub App install (org or user, then repos) — allow popups for Alice if
    the browser blocks it.
-3. After you finish install, the popup returns via
-   `/integrations/github/done`. Close it when prompted; the project page
-   refreshes the connection automatically.
+3. After you finish install, GitHub returns through
+   `/integrations/github/setup`, then the done page. Close the popup when
+   prompted; the project page refreshes the connection automatically.
 4. Pick a repository from the list (or paste a
    `https://github.com/owner/repo` URL).
 5. Select **Save GitHub Configuration**.
 
-You can **Switch Account** to reinstall or reconnect, or **Disconnect** to
-revoke the connection. Only the person who connected GitHub (or an admin who
-owns an admin-established connection) can disconnect it.
+Connected accounts show **GitHub App** or **OAuth**. Use **Reinstall App**
+(App connections) or **Reconnect** (older OAuth connections) to change the
+link, or **Disconnect** to revoke it. Only the person who connected GitHub (or
+an admin who owns an admin-established connection) can disconnect it.
 
 Credentials stay on the server and are never shown in the UI. You do **not**
 paste a personal access token. Older OAuth-only connections still work until you

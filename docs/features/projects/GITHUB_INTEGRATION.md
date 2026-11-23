@@ -147,8 +147,9 @@ returns through Alice. Repo list uses `/installation/repositories` for App
 connections; OAuth path unchanged until Phase 5.
 
 **Web (landed):** **Connect GitHub** calls App install start (popup → GitHub →
-done page). Project bind still uses `vc_*` / repo picker. Optional dedicated
-`/integrations/github/setup` page remains a polish item.
+`/integrations/github/setup` → API callback → done page). Project bind uses
+`vc_*` / repo picker. Linked card shows **GitHub App** vs **OAuth** and
+**Reinstall App** / **Reconnect** as appropriate.
 
 ### Phase 2 — Webhook ingest + domain sync
 
@@ -369,6 +370,7 @@ sequenceDiagram
 | Popup open + navigate   | `apps/web/app/projects/_hooks/use-oauth-popup-manager.ts`                                       |
 | Picker / refresh        | `apps/web/app/projects/_hooks/use-github-connection-picker.ts` (App install)                    |
 | Client API helpers      | `apps/web/app/projects/_services/projects.github.mutations.client.ts` (`startGithubAppInstall`) |
+| Setup URL landing       | `apps/web/app/integrations/github/setup/page.tsx`                                               |
 | Done page               | `apps/web/app/integrations/github/done/page.tsx`                                                |
 | Routes                  | `apps/api/src/routes/api/github/github.route.ts` (`/api/github`)                                |
 | OAuth + App install     | `apps/api/src/routes/api/github/github.service.ts`                                              |

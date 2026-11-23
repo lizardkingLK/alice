@@ -1432,7 +1432,7 @@ describe('ProjectForm Component', () => {
     expect(await screen.findByText('@octocat')).toBeInTheDocument();
     expect(screen.getByText('Connected')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /Switch Account/i })
+      screen.getByRole('button', { name: /Reconnect/i })
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /Disconnect/i })
