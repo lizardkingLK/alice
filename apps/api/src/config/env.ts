@@ -78,10 +78,10 @@ const mock: EnvSchemaType = {
   GITHUB_CLIENT_ID: 'mock-github-client-id',
   GITHUB_CLIENT_SECRET: 'mock-github-client-secret',
   GITHUB_REDIRECT_URI: 'http://localhost:5000/api/github/oauth/callback',
-  GITHUB_APP_ID: 'mock-github-app-id',
-  GITHUB_APP_PRIVATE_KEY:
-    '-----BEGIN RSA PRIVATE KEY-----\nmock\n-----END RSA PRIVATE KEY-----',
-  GITHUB_APP_WEBHOOK_SECRET: 'mock-github-app-webhook-secret',
+  GITHUB_APP_ID: '123456',
+  // Unset in CI mock — App JWT tests generate keys locally / stub auth helpers.
+  GITHUB_APP_PRIVATE_KEY: undefined,
+  GITHUB_APP_WEBHOOK_SECRET: 'ci-github-app-webhook-secret',
   CRON_SECRET: 'mock-cron-secret',
   EMAIL_RECONCILIATION_ENABLED: 'false',
   EMAIL_OUTBOX_PROCESSING_ENABLED: 'false',

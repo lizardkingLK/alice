@@ -12,8 +12,11 @@ import {
   UserRoleEnum,
   utcNow,
   GithubAuthModeEnum,
+  GithubAccountTypeEnum,
   buildGithubProviderConfig,
   tryParseGithubProviderConfig,
+  type GithubAccountType,
+  type GithubProviderConfig,
 } from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import type {
@@ -22,20 +25,29 @@ import type {
   VcConnectionPublic,
 } from './github.repository';
 import {
+  createInstallationAccessToken,
+  fetchGithubAppMetadata,
+  fetchGithubInstallation,
+  requireGithubAppConfig,
+} from './github-app-auth';
+import {
   GithubConnectionStatusEnum,
   GithubInsufficientScopeError,
   GithubReauthorizationRequiredError,
   type GithubApiRepoResponse,
   type GithubConnectionDto,
+  type GithubInstallationRepositoriesResponse,
   type GithubRepoOption,
   type GithubTokenResponse,
   type GithubUserResponse,
 } from './github.types';
 
 const OAUTH_SCOPES = 'repo read:user';
+const APP_INSTALLATION_SCOPES = 'github_app:installation';
 const ACCESS_TOKEN_SKEW_MS = 60 * 1000;
 const GITHUB_API_URL = 'https://api.github.com';
 const GITHUB_OAUTH_URL = 'https://github.com/login/oauth';
+const GITHUB_APP_INSTALL_STATE_PURPOSE = 'sign GitHub App install state (HMAC)';
 
 async function requireGithubManager(actorId: string) {
   return await requireUserWithRole(
@@ -81,19 +93,73 @@ export class GithubService {
 
   async startOAuth(actorId: string): Promise<{ url: string }> {
     await requireGithubManager(actorId);
+    await this.assertCanEstablishConnection(actorId);
+    return { url: this.buildAuthorizeUrl(actorId) };
+  }
 
-    const activeAdminConn =
-      await this.githubRepository.findActiveAdminConnection();
-    if (
-      activeAdminConn?.user_id != null &&
-      activeAdminConn.user_id !== actorId
-    ) {
-      throw new Error(
-        'An administrator has connected GitHub. That administrator must disconnect the existing connection before a different account can be connected.'
-      );
+  buildAppInstallUrl(userId: string, appSlug: string): string {
+    requireGithubAppConfig();
+    const state = createOAuthState(userId, GITHUB_APP_INSTALL_STATE_PURPOSE);
+    const params = new URLSearchParams({ state });
+    return `https://github.com/apps/${encodeURIComponent(appSlug)}/installations/new?${params.toString()}`;
+  }
+
+  async startAppInstall(actorId: string): Promise<{ url: string }> {
+    await requireGithubManager(actorId);
+    await this.assertCanEstablishConnection(actorId);
+    const app = await fetchGithubAppMetadata();
+    if (!app.slug) {
+      throw new Error('GitHub App metadata did not include a slug.');
+    }
+    return { url: this.buildAppInstallUrl(actorId, app.slug) };
+  }
+
+  async handleAppInstallCallback(
+    installationIdRaw: string,
+    state: string
+  ): Promise<GithubConnectionDto> {
+    const { userId } = verifyOAuthState(
+      state,
+      GITHUB_APP_INSTALL_STATE_PURPOSE
+    );
+    const actor = await requireGithubManager(userId);
+    await this.assertCanEstablishConnection(userId);
+
+    const installationId = Number(installationIdRaw);
+    if (!Number.isInteger(installationId) || installationId <= 0) {
+      throw new Error('Invalid GitHub App installation_id.');
     }
 
-    return { url: this.buildAuthorizeUrl(actorId) };
+    const installation = await fetchGithubInstallation(installationId);
+    const account = installation.account;
+    if (!account?.login) {
+      throw new Error('GitHub App installation is missing account metadata.');
+    }
+
+    const accountType = this.parseAccountType(account.type);
+    const minted = await createInstallationAccessToken(installationId);
+    const expiresAt = new Date(minted.expires_at);
+
+    const row = await this.githubRepository.upsertConnection({
+      userId,
+      externalId: String(installationId),
+      displayLabel: `GitHub App (@${account.login})`,
+      providerConfig: buildGithubProviderConfig({
+        auth_mode: GithubAuthModeEnum.app,
+        account_login: account.login,
+        account_name: account.name ?? null,
+        account_avatar_url: account.avatar_url ?? null,
+        account_type: accountType,
+        installation_id: installationId,
+      }),
+      refreshTokenEnc: '',
+      accessTokenEnc: encryptSecret(minted.token),
+      accessTokenExpiresAt: expiresAt,
+      scopes: APP_INSTALLATION_SCOPES,
+      status: VersionControlConnectionStatus.active,
+    });
+
+    return this.toConnectionDto(row, userId, actor.role);
   }
 
   async handleOAuthCallback(
@@ -105,17 +171,7 @@ export class GithubService {
       'sign GitHub OAuth state (HMAC)'
     );
     const actor = await requireGithubManager(userId);
-
-    const activeAdminConn =
-      await this.githubRepository.findActiveAdminConnection();
-    if (
-      activeAdminConn?.user_id != null &&
-      activeAdminConn.user_id !== userId
-    ) {
-      throw new Error(
-        'An administrator has connected GitHub. That administrator must disconnect the existing connection before a different account can be connected.'
-      );
-    }
+    await this.assertCanEstablishConnection(userId);
 
     const tokens = await this.exchangeAuthorizationCode(code);
     const userInfo = await this.fetchUserProfile(tokens.access_token);
@@ -200,6 +256,11 @@ export class GithubService {
       );
     }
 
+    const config = tryParseGithubProviderConfig(connection.provider_config);
+    if (config?.auth_mode === GithubAuthModeEnum.app) {
+      return await this.getValidInstallationToken(connection, config);
+    }
+
     if (!connection.access_token_enc) {
       throw new GithubReauthorizationRequiredError(
         'GitHub access token is missing. Please reconnect GitHub.'
@@ -241,18 +302,25 @@ export class GithubService {
     connectionId?: string
   ): Promise<GithubRepoOption[]> {
     await requireGithubManager(actorId);
+
+    const connection = connectionId
+      ? await this.githubRepository.findById(connectionId)
+      : await this.githubRepository.findActive();
+    const config = tryParseGithubProviderConfig(connection?.provider_config);
     const accessToken = await this.getValidAccessToken(connectionId);
 
-    const response = await fetch(
-      `${GITHUB_API_URL}/user/repos?per_page=100&sort=updated`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: 'application/vnd.github.v3+json',
-          'User-Agent': 'Alice-App',
-        },
-      }
-    );
+    const listUrl =
+      config?.auth_mode === GithubAuthModeEnum.app
+        ? `${GITHUB_API_URL}/installation/repositories?per_page=100`
+        : `${GITHUB_API_URL}/user/repos?per_page=100&sort=updated`;
+
+    const response = await fetch(listUrl, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'Alice-App',
+      },
+    });
 
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
@@ -266,8 +334,43 @@ export class GithubService {
       );
     }
 
+    if (config?.auth_mode === GithubAuthModeEnum.app) {
+      const payload =
+        (await response.json()) as GithubInstallationRepositoriesResponse;
+      return (payload.repositories ?? []).map((repo) => this.mapApiRepo(repo));
+    }
+
     const data = (await response.json()) as GithubApiRepoResponse[];
-    return data.map((repo) => ({
+    return data.map((repo) => this.mapApiRepo(repo));
+  }
+
+  private async assertCanEstablishConnection(actorId: string): Promise<void> {
+    const activeAdminConn =
+      await this.githubRepository.findActiveAdminConnection();
+    if (
+      activeAdminConn?.user_id != null &&
+      activeAdminConn.user_id !== actorId
+    ) {
+      throw new Error(
+        'An administrator has connected GitHub. That administrator must disconnect the existing connection before a different account can be connected.'
+      );
+    }
+  }
+
+  private parseAccountType(
+    value: string | null | undefined
+  ): GithubAccountType | null {
+    if (value === GithubAccountTypeEnum.User) {
+      return GithubAccountTypeEnum.User;
+    }
+    if (value === GithubAccountTypeEnum.Organization) {
+      return GithubAccountTypeEnum.Organization;
+    }
+    return null;
+  }
+
+  private mapApiRepo(repo: GithubApiRepoResponse): GithubRepoOption {
+    return {
       id: repo.id,
       name: repo.name,
       full_name: repo.full_name,
@@ -279,11 +382,59 @@ export class GithubService {
       html_url: repo.html_url,
       default_branch: repo.default_branch,
       description: repo.description,
-    }));
+    };
+  }
+
+  private async getValidInstallationToken(
+    connection: VcConnectionFull,
+    config: GithubProviderConfig
+  ): Promise<string> {
+    const installationId = config.installation_id;
+    if (installationId == null) {
+      throw new GithubReauthorizationRequiredError(
+        'GitHub App installation_id is missing. Please reinstall the GitHub App.'
+      );
+    }
+
+    const expiresAt = connection.access_token_expires_at
+      ? connection.access_token_expires_at.getTime()
+      : null;
+    const isExpired =
+      expiresAt === null ||
+      expiresAt <= utcNow().getTime() + ACCESS_TOKEN_SKEW_MS;
+
+    if (!isExpired && connection.access_token_enc) {
+      return decryptSecret(connection.access_token_enc);
+    }
+
+    try {
+      const minted = await createInstallationAccessToken(installationId);
+      const nextExpiresAt = new Date(minted.expires_at);
+      await this.githubRepository.updateTokens(connection.id, {
+        accessTokenEnc: encryptSecret(minted.token),
+        refreshTokenEnc: '',
+        accessTokenExpiresAt: nextExpiresAt,
+        scopes: APP_INSTALLATION_SCOPES,
+      });
+      return minted.token;
+    } catch (error) {
+      await this.githubRepository.updateStatus(
+        connection.id,
+        VersionControlConnectionStatus.expired
+      );
+      const detail =
+        error instanceof Error ? error.message : 'Unknown minting error';
+      throw new GithubReauthorizationRequiredError(
+        `Failed to mint GitHub App installation token. Reinstall the GitHub App. (${detail})`
+      );
+    }
   }
 
   private hasRequiredScopes(grantedScope?: string): boolean {
     if (!grantedScope) {
+      return true;
+    }
+    if (grantedScope === APP_INSTALLATION_SCOPES) {
       return true;
     }
     const scopes = new Set(

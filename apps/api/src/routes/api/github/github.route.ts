@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import {
   requireApiAuth,
   type AuthenticatedRequest,
@@ -15,6 +15,52 @@ export type GithubRouterDeps = {
   githubService: GithubService;
 };
 
+type GithubDoneStatus = 'connected' | 'denied' | 'error';
+
+function githubDoneBase(): string {
+  return `${env.FRONTEND_URL.replace(/\/$/, '')}/integrations/github/done`;
+}
+
+function redirectGithubDone(
+  res: Response,
+  status: GithubDoneStatus,
+  error?: string
+) {
+  const doneBase = githubDoneBase();
+  if (status === 'denied') {
+    const suffix = error
+      ? `?github=denied&error=${encodeURIComponent(error)}`
+      : '?github=denied';
+    return res.redirect(`${doneBase}${suffix}`);
+  }
+  if (status === 'connected') {
+    return res.redirect(`${doneBase}?github=connected`);
+  }
+  return res.redirect(`${doneBase}?github=error`);
+}
+
+function wantsAuthorizeRedirect(req: AuthenticatedRequest): boolean {
+  return req.query.redirect === '1' || req.query.redirect === 'true';
+}
+
+async function respondWithAuthorizeUrl(
+  req: AuthenticatedRequest,
+  res: Response,
+  getUrl: (userId: string) => Promise<{ url: string }>,
+  errorLabel: string
+) {
+  try {
+    const { url } = await getUrl(req.userId!);
+    if (wantsAuthorizeRedirect(req)) {
+      return res.redirect(url);
+    }
+    return res.json({ url });
+  } catch (error) {
+    const { status, error: message } = jsonErrorFromCaught(error, errorLabel);
+    return res.status(status).json({ error: message });
+  }
+}
+
 export function createGithubRouter(deps: GithubRouterDeps) {
   const { githubService } = deps;
   const githubRouter: Router = Router();
@@ -22,21 +68,13 @@ export function createGithubRouter(deps: GithubRouterDeps) {
   githubRouter.get(
     '/oauth/start',
     requireApiAuth,
-    async (req: AuthenticatedRequest, res) => {
-      try {
-        const { url } = await githubService.startOAuth(req.userId!);
-        if (req.query.redirect === '1' || req.query.redirect === 'true') {
-          return res.redirect(url);
-        }
-        return res.json({ url });
-      } catch (error) {
-        const { status, error: message } = jsonErrorFromCaught(
-          error,
-          'Failed to start GitHub OAuth'
-        );
-        return res.status(status).json({ error: message });
-      }
-    }
+    async (req: AuthenticatedRequest, res) =>
+      respondWithAuthorizeUrl(
+        req,
+        res,
+        (userId) => githubService.startOAuth(userId),
+        'Failed to start GitHub OAuth'
+      )
   );
 
   githubRouter.get('/oauth/callback', async (req, res) => {
@@ -45,25 +83,62 @@ export function createGithubRouter(deps: GithubRouterDeps) {
     const oauthError =
       typeof req.query.error === 'string' ? req.query.error : '';
 
-    const frontendBase = env.FRONTEND_URL.replace(/\/$/, '');
-    const doneBase = `${frontendBase}/integrations/github/done`;
-
     if (oauthError) {
-      return res.redirect(
-        `${doneBase}?github=denied&error=${encodeURIComponent(oauthError)}`
-      );
+      return redirectGithubDone(res, 'denied', oauthError);
     }
 
     if (!code || !state) {
-      return res.redirect(`${doneBase}?github=error`);
+      return redirectGithubDone(res, 'error');
     }
 
     try {
       await githubService.handleOAuthCallback(code, state);
-      return res.redirect(`${doneBase}?github=connected`);
+      return redirectGithubDone(res, 'connected');
     } catch (error) {
       console.error('error. github oauth callback failed:', error);
-      return res.redirect(`${doneBase}?github=error`);
+      return redirectGithubDone(res, 'error');
+    }
+  });
+
+  githubRouter.get(
+    '/app/install/start',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) =>
+      respondWithAuthorizeUrl(
+        req,
+        res,
+        (userId) => githubService.startAppInstall(userId),
+        'Failed to start GitHub App install'
+      )
+  );
+
+  /**
+   * Post-install redirect target. Point the GitHub App **Setup URL** here until
+   * the web `/integrations/github/setup` page owns the flow.
+   */
+  githubRouter.get('/app/callback', async (req, res) => {
+    const installationId =
+      typeof req.query.installation_id === 'string'
+        ? req.query.installation_id
+        : '';
+    const state = typeof req.query.state === 'string' ? req.query.state : '';
+    const setupAction =
+      typeof req.query.setup_action === 'string' ? req.query.setup_action : '';
+
+    if (setupAction === 'request') {
+      return redirectGithubDone(res, 'denied', 'setup_request');
+    }
+
+    if (!installationId || !state) {
+      return redirectGithubDone(res, 'error');
+    }
+
+    try {
+      await githubService.handleAppInstallCallback(installationId, state);
+      return redirectGithubDone(res, 'connected');
+    } catch (error) {
+      console.error('error. github app install callback failed:', error);
+      return redirectGithubDone(res, 'error');
     }
   });
 

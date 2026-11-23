@@ -193,12 +193,12 @@ GITHUB_APP_WEBHOOK_SECRET="<same secret as the GitHub App webhook form>"
 
 Suggested **dev** App URLs when registering:
 
-| Field        | Local / dev example                                                  |
-| ------------ | -------------------------------------------------------------------- |
-| Homepage URL | `http://localhost:3000`                                              |
-| Callback URL | `http://localhost:5000/api/github/app/callback`                      |
-| Setup URL    | `http://localhost:3000/integrations/github/setup`                    |
-| Webhook URL  | Public HTTPS API, e.g. `https://<your-api-host>/api/github/webhooks` |
+| Field        | Local / dev example                                                                                                                                                    |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Homepage URL | `http://localhost:3000`                                                                                                                                                |
+| Callback URL | `http://localhost:5000/api/github/app/callback`                                                                                                                        |
+| Setup URL    | Prefer API callback for Phase 1: `http://localhost:5000/api/github/app/callback` (move to `http://localhost:3000/integrations/github/setup` when web install UX lands) |
+| Webhook URL  | Public HTTPS API, e.g. `https://<your-api-host>/api/github/webhooks`                                                                                                   |
 
 Leave **Request user authorization during installation** and **Device Flow**
 unchecked for Phase 0–2. Keep **Expire user authorization tokens** on.

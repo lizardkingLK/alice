@@ -48,6 +48,41 @@ export interface GithubUserResponse {
   avatar_url?: string | null;
 }
 
+export interface GithubAppMetadataResponse {
+  id: number;
+  slug: string;
+  name?: string;
+  html_url?: string;
+}
+
+export interface GithubInstallationAccount {
+  id: number;
+  login: string;
+  avatar_url?: string | null;
+  type: 'User' | 'Organization';
+  name?: string | null;
+}
+
+export interface GithubInstallationResponse {
+  id: number;
+  account: GithubInstallationAccount | null;
+  app_id?: number;
+  target_type?: string | null;
+  permissions?: Record<string, string>;
+}
+
+export interface GithubInstallationAccessTokenResponse {
+  token: string;
+  expires_at: string;
+  permissions?: Record<string, string>;
+  repository_selection?: string;
+}
+
+export interface GithubInstallationRepositoriesResponse {
+  total_count: number;
+  repositories: GithubApiRepoResponse[];
+}
+
 export interface GithubApiRepoResponse {
   id: number;
   name: string;
