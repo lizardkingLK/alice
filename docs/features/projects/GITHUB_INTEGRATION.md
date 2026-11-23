@@ -141,10 +141,14 @@ in Phase 1–2; storing them in Day One env is still the Phase 0 outcome.
 **API (landed):** `GET /api/github/app/install/start` (auth) returns the GitHub
 install URL with HMAC `state`; `GET /api/github/app/callback` verifies `state`,
 loads the installation, mints an installation token, upserts
-`version_control_connections` with `auth_mode: app`. Until the web setup page
-exists, set the GitHub App **Setup URL** to the API callback
-(`…/api/github/app/callback`). Repo list uses `/installation/repositories` for
-App connections; OAuth path unchanged.
+`version_control_connections` with `auth_mode: app`. Set the GitHub App
+**Setup URL** to the API callback (`…/api/github/app/callback`) so install
+returns through Alice. Repo list uses `/installation/repositories` for App
+connections; OAuth path unchanged until Phase 5.
+
+**Web (landed):** **Connect GitHub** calls App install start (popup → GitHub →
+done page). Project bind still uses `vc_*` / repo picker. Optional dedicated
+`/integrations/github/setup` page remains a polish item.
 
 ### Phase 2 — Webhook ingest + domain sync
 
@@ -360,18 +364,18 @@ sequenceDiagram
 
 ## Source map
 
-| Step                    | Location                                                              |
-| ----------------------- | --------------------------------------------------------------------- |
-| Popup open + navigate   | `apps/web/app/projects/_hooks/use-oauth-popup-manager.ts`             |
-| Picker / refresh        | `apps/web/app/projects/_hooks/use-github-connection-picker.ts`        |
-| Client API helpers      | `apps/web/app/projects/_services/projects.github.mutations.client.ts` |
-| Done page               | `apps/web/app/integrations/github/done/page.tsx`                      |
-| Routes                  | `apps/api/src/routes/api/github/github.route.ts` (`/api/github`)      |
-| OAuth + App install     | `apps/api/src/routes/api/github/github.service.ts`                    |
-| App JWT + install token | `apps/api/src/routes/api/github/github-app-auth.ts`                   |
-| Persistence             | `apps/api/src/routes/api/github/github.repository.ts`                 |
-| Signed `state`          | `apps/api/src/lib/secrets/oauth-state.ts`                             |
-| Encrypt / decrypt       | `apps/api/src/lib/secrets/token-crypto.ts`                            |
+| Step                    | Location                                                                                        |
+| ----------------------- | ----------------------------------------------------------------------------------------------- |
+| Popup open + navigate   | `apps/web/app/projects/_hooks/use-oauth-popup-manager.ts`                                       |
+| Picker / refresh        | `apps/web/app/projects/_hooks/use-github-connection-picker.ts` (App install)                    |
+| Client API helpers      | `apps/web/app/projects/_services/projects.github.mutations.client.ts` (`startGithubAppInstall`) |
+| Done page               | `apps/web/app/integrations/github/done/page.tsx`                                                |
+| Routes                  | `apps/api/src/routes/api/github/github.route.ts` (`/api/github`)                                |
+| OAuth + App install     | `apps/api/src/routes/api/github/github.service.ts`                                              |
+| App JWT + install token | `apps/api/src/routes/api/github/github-app-auth.ts`                                             |
+| Persistence             | `apps/api/src/routes/api/github/github.repository.ts`                                           |
+| Signed `state`          | `apps/api/src/lib/secrets/oauth-state.ts`                                                       |
+| Encrypt / decrypt       | `apps/api/src/lib/secrets/token-crypto.ts`                                                      |
 
 ---
 

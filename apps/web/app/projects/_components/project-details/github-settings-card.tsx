@@ -58,12 +58,14 @@ function resolveAuthSummary(
   hasGithubToken?: boolean
 ): string {
   if (activeConnection) {
+    const modeLabel =
+      activeConnection.auth_mode === 'app' ? 'GitHub App' : 'OAuth';
     return activeConnection.account_login
-      ? `@${activeConnection.account_login} (OAuth 2.1)`
-      : `${activeConnection.name} (OAuth 2.1)`;
+      ? `@${activeConnection.account_login} (${modeLabel})`
+      : `${activeConnection.name} (${modeLabel})`;
   }
   if (hasGithubToken) {
-    return 'Legacy PAT (OAuth recommended)';
+    return 'Legacy PAT (reconnect recommended)';
   }
   return 'Not connected (Public repos only)';
 }
@@ -107,7 +109,7 @@ function GithubSummaryView({
             mono: false,
           },
           {
-            label: 'OAuth Status',
+            label: 'Connection Status',
             value: activeConnection ? 'Connected' : 'Not Connected',
           },
         ]}

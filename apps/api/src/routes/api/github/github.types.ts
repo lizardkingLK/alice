@@ -1,4 +1,13 @@
-import type { GithubRepoOption } from '@repo/types/api/v1';
+import {
+  GithubConnectionStatusEnum,
+  type GithubConnectionDto,
+  type GithubConnectionStatus,
+  type GithubRepoOption,
+  type GithubRepoOwner,
+  type GithubRepositoriesResponse,
+  type GithubConnectionsResponse,
+  type GithubOAuthStartResponse,
+} from '@repo/types/api/v1';
 
 export {
   GithubConnectionStatusEnum,
@@ -9,7 +18,7 @@ export {
   type GithubRepositoriesResponse,
   type GithubConnectionsResponse,
   type GithubOAuthStartResponse,
-} from '@repo/types/api/v1';
+};
 
 export class GithubReauthorizationRequiredError extends Error {
   readonly code = 'GITHUB_REAUTHORIZATION_REQUIRED' as const;

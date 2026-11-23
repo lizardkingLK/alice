@@ -350,7 +350,7 @@ export function GithubConnectionFields({
   setGithubRepoName,
   onDisconnect,
   isDisconnecting = false,
-  emptyHint = 'Authorize GitHub once to link repositories, pull requests, and commit activity.',
+  emptyHint = 'Install the Alice GitHub App once to link repositories, pull requests, and commit activity.',
   footerHint,
   showConnectChrome = true,
   canManage = true,
@@ -385,7 +385,7 @@ export function GithubConnectionFields({
 
   return (
     <div className="space-y-4">
-      {/* OAuth Connection Status & Identity Card */}
+      {/* Connection status & identity */}
       <GithubConnectionStatusCard
         isLoading={isLoadingConnections}
         activeConnection={activeConnection}

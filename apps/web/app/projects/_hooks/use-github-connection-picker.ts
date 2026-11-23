@@ -7,14 +7,14 @@ import {
   listGithubConnections,
   listGithubRepositories,
   setCachedGithubRepositories,
-  startGithubOAuth,
+  startGithubAppInstall,
   type GithubConnectionDto,
   type GithubRepoOption,
 } from '@/app/projects/_services/projects.github.mutations.client';
 import { IntegrationOAuthProvider } from '@/app/integrations/_types/oauth-completion.types';
 import { useOAuthPopupManager } from './use-oauth-popup-manager';
 
-const OAUTH_WINDOW_NAME = 'alice-github-oauth';
+const APP_INSTALL_WINDOW_NAME = 'alice-github-app-install';
 
 export type UseGithubConnectionPickerResult = {
   connections: GithubConnectionDto[];
@@ -33,10 +33,10 @@ export type UseGithubConnectionPickerResult = {
 };
 
 /**
- * Shared load/connect state for GitHub OAuth connection + repository pickers
+ * Shared load/connect state for GitHub App install + repository pickers
  * (create wizard Source Control step and project details Integrations card).
  *
- * Connect opens GitHub consent in a **new tab/window** so modal create
+ * Connect opens GitHub App install in a **new tab/window** so modal create
  * dialogs stay open; connections refresh when this window regains focus.
  */
 export function useGithubConnectionPicker(
@@ -83,8 +83,8 @@ export function useGithubConnectionPicker(
     useOAuthPopupManager({
       provider: IntegrationOAuthProvider.GitHub,
       providerName: 'GitHub',
-      windowName: OAUTH_WINDOW_NAME,
-      startOAuth: startGithubOAuth,
+      windowName: APP_INSTALL_WINDOW_NAME,
+      startOAuth: startGithubAppInstall,
       onRefresh: () => refreshConnections(true),
       loadError,
       setLoadError,

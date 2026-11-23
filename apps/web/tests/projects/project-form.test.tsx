@@ -256,6 +256,11 @@ function mockJiraApiFetch(options?: {
     if (path.startsWith('/api/github/repositories')) {
       return { repositories: githubRepos };
     }
+    if (path === '/api/github/app/install/start') {
+      return {
+        url: 'https://github.com/apps/alice-dev/installations/new',
+      };
+    }
     if (path === '/api/github/oauth/start') {
       return { url: 'https://github.com/login/oauth/authorize' };
     }

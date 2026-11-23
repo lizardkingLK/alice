@@ -19,6 +19,11 @@ vi.mock(
       ...actual,
       listGithubConnections: vi.fn(),
       listGithubRepositories: vi.fn().mockResolvedValue([]),
+      startGithubAppInstall: vi
+        .fn()
+        .mockResolvedValue(
+          'https://github.com/apps/alice-dev/installations/new'
+        ),
       startGithubOAuth: vi
         .fn()
         .mockResolvedValue('https://github.com/login/oauth/authorize'),

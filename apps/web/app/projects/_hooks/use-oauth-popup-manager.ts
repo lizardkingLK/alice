@@ -134,7 +134,7 @@ export function useOAuthPopupManager({
         setLoadError(
           err instanceof Error
             ? err.message
-            : `Failed to start ${providerName} OAuth`
+            : `Failed to start ${providerName} connection`
         );
       });
   }, [windowName, providerName, startOAuth, setLoadError]);

@@ -27,39 +27,39 @@ credentials and saving AI binds require those roles.
 ## GitHub
 
 On **Source control**, choose **GitHub** (or **None**). Use the **GitHub** card
-to authorize your GitHub account with OAuth and bind one repository
-(`owner/repo`) to the project. Alice uses that link for pull requests, commits,
-and branch activity on work items. After a link is saved, clear it with
-**Disconnect** on the card before **None** stays available.
+to install the Alice GitHub App and bind one repository (`owner/repo`) to the
+project. Alice uses that link for pull requests, commits, and branch activity
+on work items. After a link is saved, clear it with **Disconnect** on the card
+before **None** stays available.
 
-**Today:** connect with GitHub OAuth and link PRs to work items (often manually).
-**Planned:** install an Alice GitHub App, sync PRs/commits/branches automatically,
-and (later) run in-app workflows that can call agent tools such as Cursor — see
-the engineering plan in
+**Today:** install the Alice GitHub App, bind a repo, and link PRs to work items
+(often manually). **Planned:** sync PRs/commits/branches from webhooks
+automatically, then in-app workflows that can call agent tools such as Cursor —
+see
 [GITHUB_INTEGRATION.md](../../features/projects/GITHUB_INTEGRATION.md#phased-delivery-planned).
-Those App install steps are **not** available in the product UI yet.
 
 ### Connect or update
 
 1. Select **Modify GitHub Settings** (or **Connect GitHub** if nothing is linked
    yet).
 2. If status shows **Not connected**, select **Connect GitHub**. A popup opens
-   for GitHub consent — allow popups for Alice if the browser blocks it.
-3. After you approve access, the popup returns via
+   for GitHub App install (org or user, then repos) — allow popups for Alice if
+   the browser blocks it.
+3. After you finish install, the popup returns via
    `/integrations/github/done`. Close it when prompted; the project page
    refreshes the connection automatically.
 4. Pick a repository from the list (or paste a
    `https://github.com/owner/repo` URL).
 5. Select **Save GitHub Configuration**.
 
-You can **Switch Account** to reconnect with a different GitHub user, or
-**Disconnect** to revoke the OAuth connection. Only the person who authorized
-GitHub (or an admin who owns an admin-established connection) can disconnect
-it.
+You can **Switch Account** to reinstall or reconnect, or **Disconnect** to
+revoke the connection. Only the person who connected GitHub (or an admin who
+owns an admin-established connection) can disconnect it.
 
-Tokens stay on the server and are never shown in the UI. You do **not** paste a
-personal access token for the OAuth path. Projects that still have a legacy PAT
-are labeled as such until you reconnect with OAuth.
+Credentials stay on the server and are never shown in the UI. You do **not**
+paste a personal access token. Older OAuth-only connections still work until you
+reconnect with the GitHub App; legacy PAT projects are labeled until you
+reconnect.
 
 Without a connected account, Alice can only work with **public** repositories.
 

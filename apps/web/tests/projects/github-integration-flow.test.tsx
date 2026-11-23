@@ -86,9 +86,7 @@ describe('GitHub Project Integration & Ownership Flow', () => {
 
     // Summary fields
     expect(screen.getByText('acme/apollo')).toBeInTheDocument();
-    expect(
-      screen.getByText(/@admin-octocat \(OAuth 2.1\)/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/@admin-octocat \(OAuth\)/)).toBeInTheDocument();
 
     // Modify and Disconnect buttons must be present
     expect(
@@ -132,9 +130,7 @@ describe('GitHub Project Integration & Ownership Flow', () => {
 
     // Summary reference data is displayed
     expect(screen.getByText('acme/apollo')).toBeInTheDocument();
-    expect(
-      screen.getByText(/@admin-octocat \(OAuth 2.1\)/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/@admin-octocat \(OAuth\)/)).toBeInTheDocument();
 
     // Admin-lock banner must be displayed
     expect(
@@ -182,7 +178,7 @@ describe('GitHub Project Integration & Ownership Flow', () => {
     );
 
     expect(screen.getByText('acme/apollo')).toBeInTheDocument();
-    expect(screen.getByText(/@mgr-octocat \(OAuth 2.1\)/)).toBeInTheDocument();
+    expect(screen.getByText(/@mgr-octocat \(OAuth\)/)).toBeInTheDocument();
 
     // No modify, disconnect, or connect buttons for member
     expect(
