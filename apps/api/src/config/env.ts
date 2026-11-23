@@ -34,6 +34,13 @@ const serverSchema = z.object({
   GITHUB_CLIENT_ID: z.string().min(1).optional(),
   GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
   GITHUB_REDIRECT_URI: z.string().min(1).optional(),
+  /**
+   * GitHub App credentials (install identity + webhooks) — optional until
+   * Phase 1 install / Phase 2 webhook handlers consume them.
+   */
+  GITHUB_APP_ID: z.string().min(1).optional(),
+  GITHUB_APP_PRIVATE_KEY: z.string().min(1).optional(),
+  GITHUB_APP_WEBHOOK_SECRET: z.string().min(1).optional(),
   /** All cron routes require `Authorization: Bearer <CRON_SECRET>`. */
   CRON_SECRET: z.string().min(1),
   EMAIL_RECONCILIATION_ENABLED: z.enum(['true', 'false']).default('false'),
@@ -71,6 +78,10 @@ const mock: EnvSchemaType = {
   GITHUB_CLIENT_ID: 'mock-github-client-id',
   GITHUB_CLIENT_SECRET: 'mock-github-client-secret',
   GITHUB_REDIRECT_URI: 'http://localhost:5000/api/github/oauth/callback',
+  GITHUB_APP_ID: 'mock-github-app-id',
+  GITHUB_APP_PRIVATE_KEY:
+    '-----BEGIN RSA PRIVATE KEY-----\nmock\n-----END RSA PRIVATE KEY-----',
+  GITHUB_APP_WEBHOOK_SECRET: 'mock-github-app-webhook-secret',
   CRON_SECRET: 'mock-cron-secret',
   EMAIL_RECONCILIATION_ENABLED: 'false',
   EMAIL_OUTBOX_PROCESSING_ENABLED: 'false',
@@ -105,6 +116,9 @@ const processEnv = {
   GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
   GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
   GITHUB_REDIRECT_URI: process.env.GITHUB_REDIRECT_URI,
+  GITHUB_APP_ID: process.env.GITHUB_APP_ID,
+  GITHUB_APP_PRIVATE_KEY: process.env.GITHUB_APP_PRIVATE_KEY,
+  GITHUB_APP_WEBHOOK_SECRET: process.env.GITHUB_APP_WEBHOOK_SECRET,
   CRON_SECRET: process.env.CRON_SECRET,
   EMAIL_RECONCILIATION_ENABLED: process.env.EMAIL_RECONCILIATION_ENABLED,
   EMAIL_OUTBOX_PROCESSING_ENABLED: process.env.EMAIL_OUTBOX_PROCESSING_ENABLED,

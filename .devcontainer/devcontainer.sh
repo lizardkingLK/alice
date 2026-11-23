@@ -37,7 +37,7 @@ if ! grep -q 'HOME/.local/bin' ~/.bashrc; then
 fi
 
 if ! command -v gh >/dev/null 2>&1; then
-    echo "error. GitHub CLI (gh) is missing. Rebuild the devcontainer so the github-cli feature installs (see .devcontainer/devcontainer.json)."
+    echo "error. GitHub CLI (gh) is missing. Rebuild the devcontainer so the github-cli feature installs (see .devcontainer/devcontainer.json)." >&2
     exit 1
 fi
 
