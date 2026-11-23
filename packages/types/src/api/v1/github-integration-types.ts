@@ -6,6 +6,30 @@ export enum GithubConnectionStatusEnum {
   expired = 'expired',
 }
 
+/** How Alice authenticated the VC connection — user OAuth App vs GitHub App install. */
+export enum GithubAuthModeEnum {
+  oauth = 'oauth',
+  app = 'app',
+}
+
+export const githubAuthModeSchema = z.enum([
+  GithubAuthModeEnum.oauth,
+  GithubAuthModeEnum.app,
+]);
+export type GithubAuthMode = z.infer<typeof githubAuthModeSchema>;
+
+/** GitHub App installation account type (`account.type` on the install payload). */
+export enum GithubAccountTypeEnum {
+  User = 'User',
+  Organization = 'Organization',
+}
+
+export const githubAccountTypeSchema = z.enum([
+  GithubAccountTypeEnum.User,
+  GithubAccountTypeEnum.Organization,
+]);
+export type GithubAccountType = z.infer<typeof githubAccountTypeSchema>;
+
 export const githubConnectionStatusSchema = z.enum([
   GithubConnectionStatusEnum.active,
   GithubConnectionStatusEnum.revoked,
@@ -34,13 +58,17 @@ export const githubRepoOptionSchema = z.object({
 export type GithubRepoOption = z.infer<typeof githubRepoOptionSchema>;
 
 export const githubConnectionDtoSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   name: z.string(),
   status: githubConnectionStatusSchema,
+  /** Omitted on older clients; treat as `oauth`. */
+  auth_mode: githubAuthModeSchema.optional(),
   account_login: z.string(),
   account_id: z.union([z.string(), z.number()]).optional(),
   account_name: z.string().optional(),
   account_avatar_url: z.string().optional(),
+  account_type: githubAccountTypeSchema.nullable().optional(),
+  installation_id: z.number().int().positive().nullable().optional(),
   scope: z.string().optional(),
   expires_at: z.string().nullable().optional(),
   has_access_token: z.boolean(),

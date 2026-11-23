@@ -11,6 +11,7 @@ import { VersionControlConnectionStatus } from '@repo/types/prisma';
 import {
   UserRoleEnum,
   utcNow,
+  GithubAuthModeEnum,
   buildGithubProviderConfig,
   tryParseGithubProviderConfig,
 } from '@repo/types';
@@ -128,6 +129,7 @@ export class GithubService {
       externalId: String(userInfo.id),
       displayLabel: `GitHub (@${userInfo.login})`,
       providerConfig: buildGithubProviderConfig({
+        auth_mode: GithubAuthModeEnum.oauth,
         account_login: userInfo.login,
         account_name: userInfo.name ?? null,
         account_avatar_url: userInfo.avatar_url ?? null,
@@ -437,10 +439,13 @@ export class GithubService {
         row.status === VersionControlConnectionStatus.active
           ? GithubConnectionStatusEnum.active
           : GithubConnectionStatusEnum.revoked,
+      auth_mode: config?.auth_mode ?? GithubAuthModeEnum.oauth,
       account_login: config?.account_login || 'unknown',
       account_id: row.external_id,
       account_name: config?.account_name ?? undefined,
       account_avatar_url: config?.account_avatar_url ?? undefined,
+      account_type: config?.account_type ?? null,
+      installation_id: config?.installation_id ?? null,
       scope: row.scopes,
       expires_at: expiresAt,
       has_access_token: hasTokenFields
