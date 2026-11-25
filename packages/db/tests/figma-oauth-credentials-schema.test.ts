@@ -30,11 +30,7 @@ describe('GI-666 shared Figma OAuth credential foundation', () => {
     const credential = prismaModel('figma_oauth_credentials');
 
     expect(schema).toContain('enum FigmaOAuthCredentialStatus {');
-    for (const status of [
-      'unknown',
-      'active',
-      'reauthorization_required',
-    ]) {
+    for (const status of ['unknown', 'active', 'reauthorization_required']) {
       expect(schema).toMatch(new RegExp(`\\n  ${status}\\n`));
       expect(migration).toContain(`'${status}'`);
     }
@@ -57,18 +53,14 @@ describe('GI-666 shared Figma OAuth credential foundation', () => {
       expect(migration).toContain(`"${field}"`);
     }
 
-    expect(credential).toContain(
-      '@@unique([oauth_app_key, figma_user_id])'
-    );
+    expect(credential).toContain('@@unique([oauth_app_key, figma_user_id])');
     expect(migration).toContain(
       'figma_oauth_credentials_oauth_app_key_figma_user_id_key'
     );
     expect(migration).toContain(
       '"status" "FigmaOAuthCredentialStatus" NOT NULL DEFAULT \'unknown\''
     );
-    expect(migration).toContain(
-      '"token_version" INTEGER NOT NULL DEFAULT 1'
-    );
+    expect(migration).toContain('"token_version" INTEGER NOT NULL DEFAULT 1');
     expect(migration).toContain(
       'figma_oauth_credentials_last_authorized_by_fkey'
     );
@@ -107,9 +99,7 @@ describe('GI-666 shared Figma OAuth credential foundation', () => {
       expect(connection).toMatch(new RegExp(`\\n  ${legacyField}\\s`));
     }
 
-    expect(migration).toMatch(
-      /ADD COLUMN "credential_id" UUID;\s*\n/
-    );
+    expect(migration).toMatch(/ADD COLUMN "credential_id" UUID;\s*\n/);
     expect(migration).toContain('ON DELETE RESTRICT ON UPDATE CASCADE');
   });
 

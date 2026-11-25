@@ -1,0 +1,475 @@
+import { FigmaOAuthCredentialStatus } from '@repo/types/prisma';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const {
+  connectionDeleteManyMock,
+  connectionFindUniqueMock,
+  connectionUpsertMock,
+  credentialCreateMock,
+  credentialFindUniqueMock,
+  queryRawMock,
+  transactionMock,
+} = vi.hoisted(() => ({
+  connectionDeleteManyMock: vi.fn(),
+  connectionFindUniqueMock: vi.fn(),
+  connectionUpsertMock: vi.fn(),
+  credentialCreateMock: vi.fn(),
+  credentialFindUniqueMock: vi.fn(),
+  queryRawMock: vi.fn(),
+  transactionMock: vi.fn(),
+}));
+
+const transactionClient = {
+  $queryRaw: queryRawMock,
+  figma_oauth_credentials: {
+    create: credentialCreateMock,
+    findUnique: credentialFindUniqueMock,
+  },
+  figma_connections: {
+    upsert: connectionUpsertMock,
+  },
+};
+
+vi.mock('../../src/lib/prisma', () => ({
+  prisma: {
+    $transaction: transactionMock,
+    figma_oauth_credentials: {
+      findUnique: credentialFindUniqueMock,
+    },
+    figma_connections: {
+      deleteMany: connectionDeleteManyMock,
+      findUnique: connectionFindUniqueMock,
+    },
+  },
+}));
+
+import {
+  FigmaCredentialReplacementDeferredError,
+  FigmaCredentialVersionConflictError,
+  FigmaOAuthAppMismatchError,
+  FigmaRepository,
+  type FigmaCanonicalCredentialFull,
+  type FigmaCanonicalCredentialMetadata,
+  type FigmaConnectionPublic,
+  type UpsertFigmaCredentialAndBindingInput,
+} from '../../src/routes/api/figma/figma.repository';
+
+const now = new Date('2026-11-25T06:00:00.000Z');
+const expiresAt = new Date('2026-11-25T07:00:00.000Z');
+
+function publicConnection(projectId: string): FigmaConnectionPublic {
+  return {
+    id: `connection-${projectId}`,
+    project_id: projectId,
+    authorized_by: 'alice-user-1',
+    figma_user_id: 'figma-user-1',
+    scopes: 'file_metadata:read',
+    access_token_expires_at: expiresAt,
+    verified_file_key: 'file-key-1',
+    verified_file_name: 'Design system',
+    verified_at: now,
+    verification_error: null,
+    created_at: now,
+    updated_at: now,
+    authorized_by_user: { id: 'alice-user-1', name: 'Alice Manager' },
+  };
+}
+
+function credentialMetadata(
+  id = 'credential-1',
+  figmaUserId = 'figma-user-1'
+): FigmaCanonicalCredentialMetadata {
+  return {
+    id,
+    oauth_app_key: 'figma-app:client-1',
+    figma_user_id: figmaUserId,
+    access_token_expires_at: expiresAt,
+    scopes: 'file_metadata:read',
+    status: FigmaOAuthCredentialStatus.active,
+    token_version: 2,
+    last_validated_at: now,
+    last_authorized_by: 'alice-user-1',
+    created_at: now,
+    updated_at: now,
+  };
+}
+
+function fullCredential(
+  id = 'credential-1',
+  figmaUserId = 'figma-user-1'
+): FigmaCanonicalCredentialFull {
+  return {
+    ...credentialMetadata(id, figmaUserId),
+    access_token_enc: `canonical-access-${id}`,
+    refresh_token_enc: `canonical-refresh-${id}`,
+  };
+}
+
+function authorizationInput(
+  overrides: Partial<UpsertFigmaCredentialAndBindingInput> = {}
+): UpsertFigmaCredentialAndBindingInput {
+  return {
+    oauthAppKey: 'figma-app:client-1',
+    projectId: 'project-1',
+    authorizedBy: 'alice-user-1',
+    figmaUserId: 'figma-user-1',
+    accessTokenEnc: 'new-access-ciphertext',
+    refreshTokenEnc: 'new-refresh-ciphertext',
+    accessTokenExpiresAt: expiresAt,
+    scopes: 'file_metadata:read',
+    status: FigmaOAuthCredentialStatus.active,
+    expectedTokenVersion: null,
+    lastValidatedAt: now,
+    verification: {
+      verifiedFileKey: 'file-key-1',
+      verifiedFileName: 'Design system',
+      verifiedAt: now,
+      verificationError: null,
+    },
+    ...overrides,
+  };
+}
+
+describe('FigmaRepository shared credentials', () => {
+  const repository = new FigmaRepository();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    transactionMock.mockImplementation(
+      async (operation: (tx: typeof transactionClient) => unknown) =>
+        operation(transactionClient)
+    );
+    queryRawMock.mockResolvedValue([{ pg_advisory_xact_lock: null }]);
+  });
+
+  it('finds one canonical credential by OAuth app and Figma user identity', async () => {
+    credentialFindUniqueMock.mockResolvedValue(fullCredential());
+
+    await expect(
+      repository.findCanonicalCredentialByIdentity(
+        'figma-app:client-1',
+        'figma-user-1'
+      )
+    ).resolves.toMatchObject({ id: 'credential-1' });
+
+    expect(credentialFindUniqueMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          oauth_app_key_figma_user_id: {
+            oauth_app_key: 'figma-app:client-1',
+            figma_user_id: 'figma-user-1',
+          },
+        },
+      })
+    );
+  });
+
+  it('prefers canonical tokens while preserving project verification fields', async () => {
+    connectionFindUniqueMock.mockResolvedValue({
+      ...publicConnection('project-1'),
+      credential_id: 'credential-1',
+      access_token_enc: 'stale-legacy-access',
+      refresh_token_enc: 'stale-legacy-refresh',
+      credential: fullCredential(),
+    });
+
+    const result = await repository.findCredentialByProjectBinding(
+      'project-1',
+      'figma-app:client-1'
+    );
+
+    expect(result).toMatchObject({
+      credential_id: 'credential-1',
+      credential_source: 'canonical',
+      oauth_app_verified: true,
+      access_token_enc: 'canonical-access-credential-1',
+      refresh_token_enc: 'canonical-refresh-credential-1',
+      verified_file_key: 'file-key-1',
+      verified_file_name: 'Design system',
+      authorized_by: 'alice-user-1',
+    });
+  });
+
+  it('rejects a project credential issued by another OAuth app', async () => {
+    connectionFindUniqueMock.mockResolvedValue({
+      ...publicConnection('project-1'),
+      credential_id: 'credential-1',
+      access_token_enc: 'legacy-access',
+      refresh_token_enc: 'legacy-refresh',
+      credential: fullCredential(),
+    });
+
+    await expect(
+      repository.findCredentialByProjectBinding(
+        'project-1',
+        'figma-app:client-2'
+      )
+    ).rejects.toBeInstanceOf(FigmaOAuthAppMismatchError);
+  });
+
+  it('falls back to legacy credentials for an unbackfilled connection', async () => {
+    connectionFindUniqueMock.mockResolvedValue({
+      ...publicConnection('legacy-project'),
+      credential_id: null,
+      access_token_enc: 'legacy-access',
+      refresh_token_enc: 'legacy-refresh',
+      credential: null,
+    });
+
+    const result = await repository.findCredentialByProjectBinding(
+      'legacy-project',
+      'figma-app:client-1'
+    );
+
+    expect(result).toMatchObject({
+      credential_id: null,
+      credential_source: 'legacy',
+      oauth_app_verified: false,
+      access_token_enc: 'legacy-access',
+      refresh_token_enc: 'legacy-refresh',
+      oauth_app_key: null,
+      token_version: null,
+    });
+  });
+
+  it('binds two projects to one credential and keeps legacy columns populated', async () => {
+    credentialFindUniqueMock.mockResolvedValue(fullCredential());
+    connectionUpsertMock
+      .mockResolvedValueOnce(publicConnection('project-1'))
+      .mockResolvedValueOnce(publicConnection('project-2'));
+
+    await repository.upsertProjectCredentialBinding({
+      credentialId: 'credential-1',
+      expectedOAuthAppKey: 'figma-app:client-1',
+      projectId: 'project-1',
+      authorizedBy: 'alice-user-1',
+    });
+    await repository.upsertProjectCredentialBinding({
+      credentialId: 'credential-1',
+      expectedOAuthAppKey: 'figma-app:client-1',
+      projectId: 'project-2',
+      authorizedBy: 'alice-user-2',
+    });
+
+    expect(connectionUpsertMock).toHaveBeenCalledTimes(2);
+    for (const call of connectionUpsertMock.mock.calls) {
+      expect(call[0].create).toMatchObject({
+        credential_id: 'credential-1',
+        access_token_enc: 'canonical-access-credential-1',
+        refresh_token_enc: 'canonical-refresh-credential-1',
+      });
+      expect(call[0].update).not.toHaveProperty('verified_file_key');
+      expect(call[0].update).not.toHaveProperty('verified_file_name');
+      expect(call[0].update).not.toHaveProperty('verified_at');
+      expect(call[0].update).not.toHaveProperty('verification_error');
+    }
+    expect(connectionUpsertMock.mock.calls[0]?.[0].where).toEqual({
+      project_id: 'project-1',
+    });
+    expect(connectionUpsertMock.mock.calls[1]?.[0].where).toEqual({
+      project_id: 'project-2',
+    });
+  });
+
+  it('rejects binding a credential from another OAuth app', async () => {
+    credentialFindUniqueMock.mockResolvedValue(fullCredential());
+
+    await expect(
+      repository.upsertProjectCredentialBinding({
+        credentialId: 'credential-1',
+        expectedOAuthAppKey: 'figma-app:client-2',
+        projectId: 'project-1',
+        authorizedBy: 'alice-user-1',
+      })
+    ).rejects.toBeInstanceOf(FigmaOAuthAppMismatchError);
+
+    expect(queryRawMock).toHaveBeenCalledOnce();
+    expect(connectionUpsertMock).not.toHaveBeenCalled();
+  });
+
+  it('locks before reading tokens copied into a project binding', async () => {
+    credentialFindUniqueMock.mockResolvedValue(fullCredential());
+    connectionUpsertMock.mockResolvedValue(publicConnection('project-1'));
+
+    await repository.upsertProjectCredentialBinding({
+      credentialId: 'credential-1',
+      expectedOAuthAppKey: 'figma-app:client-1',
+      projectId: 'project-1',
+      authorizedBy: 'alice-user-1',
+    });
+
+    expect(queryRawMock).toHaveBeenCalledTimes(2);
+    expect(queryRawMock).toHaveBeenCalledBefore(credentialFindUniqueMock);
+    expect(queryRawMock.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      connectionUpsertMock.mock.invocationCallOrder[0] ?? 0
+    );
+    expect(connectionUpsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          access_token_enc: 'canonical-access-credential-1',
+          refresh_token_enc: 'canonical-refresh-credential-1',
+        }),
+      })
+    );
+  });
+
+  it('keeps different Figma accounts in separate canonical credentials', async () => {
+    credentialFindUniqueMock.mockResolvedValue(null);
+    credentialCreateMock
+      .mockResolvedValueOnce(credentialMetadata('credential-1', 'figma-user-1'))
+      .mockResolvedValueOnce(
+        credentialMetadata('credential-2', 'figma-user-2')
+      );
+    connectionUpsertMock
+      .mockResolvedValueOnce(publicConnection('project-1'))
+      .mockResolvedValueOnce(publicConnection('project-2'));
+
+    await repository.upsertCredentialAndProjectBinding(authorizationInput());
+    await repository.upsertCredentialAndProjectBinding(
+      authorizationInput({
+        projectId: 'project-2',
+        figmaUserId: 'figma-user-2',
+      })
+    );
+
+    expect(credentialCreateMock.mock.calls[0]?.[0].data).toMatchObject({
+      oauth_app_key: 'figma-app:client-1',
+      figma_user_id: 'figma-user-1',
+    });
+    expect(credentialCreateMock.mock.calls[1]?.[0].data).toMatchObject({
+      oauth_app_key: 'figma-app:client-1',
+      figma_user_id: 'figma-user-2',
+    });
+  });
+
+  it('does not share one Figma account across different OAuth apps', async () => {
+    credentialFindUniqueMock.mockResolvedValue(null);
+    credentialCreateMock
+      .mockResolvedValueOnce(credentialMetadata('credential-app-1'))
+      .mockResolvedValueOnce(credentialMetadata('credential-app-2'));
+    connectionUpsertMock
+      .mockResolvedValueOnce(publicConnection('project-1'))
+      .mockResolvedValueOnce(publicConnection('project-2'));
+
+    await repository.upsertCredentialAndProjectBinding(authorizationInput());
+    await repository.upsertCredentialAndProjectBinding(
+      authorizationInput({
+        oauthAppKey: 'figma-app:client-2',
+        projectId: 'project-2',
+      })
+    );
+
+    expect(credentialCreateMock.mock.calls[0]?.[0].data).toMatchObject({
+      oauth_app_key: 'figma-app:client-1',
+      figma_user_id: 'figma-user-1',
+    });
+    expect(credentialCreateMock.mock.calls[1]?.[0].data).toMatchObject({
+      oauth_app_key: 'figma-app:client-2',
+      figma_user_id: 'figma-user-1',
+    });
+  });
+
+  it('rejects a stale token version inside the protected transaction', async () => {
+    credentialFindUniqueMock
+      .mockResolvedValueOnce({ id: 'credential-1' })
+      .mockResolvedValueOnce(credentialMetadata());
+
+    await expect(
+      repository.upsertCredentialAndProjectBinding(
+        authorizationInput({ expectedTokenVersion: 1 })
+      )
+    ).rejects.toBeInstanceOf(FigmaCredentialVersionConflictError);
+
+    expect(queryRawMock).toHaveBeenCalledTimes(2);
+    expect(credentialCreateMock).not.toHaveBeenCalled();
+    expect(connectionUpsertMock).not.toHaveBeenCalled();
+  });
+
+  it('defers replacement even when the expected token version is current', async () => {
+    credentialFindUniqueMock
+      .mockResolvedValueOnce({ id: 'credential-1' })
+      .mockResolvedValueOnce(credentialMetadata());
+
+    await expect(
+      repository.upsertCredentialAndProjectBinding(
+        authorizationInput({ expectedTokenVersion: 2 })
+      )
+    ).rejects.toBeInstanceOf(FigmaCredentialReplacementDeferredError);
+
+    expect(credentialCreateMock).not.toHaveBeenCalled();
+    expect(connectionUpsertMock).not.toHaveBeenCalled();
+  });
+
+  it('writes a new credential and binding in one protected transaction', async () => {
+    credentialFindUniqueMock.mockResolvedValue(null);
+    credentialCreateMock.mockResolvedValue(credentialMetadata());
+    connectionUpsertMock.mockResolvedValue(publicConnection('project-1'));
+
+    const result =
+      await repository.upsertCredentialAndProjectBinding(authorizationInput());
+
+    expect(transactionMock).toHaveBeenCalledOnce();
+    expect(queryRawMock).toHaveBeenCalledTimes(2);
+    expect(queryRawMock).toHaveBeenCalledBefore(credentialFindUniqueMock);
+    expect(credentialFindUniqueMock).toHaveBeenCalledBefore(
+      credentialCreateMock
+    );
+    expect(credentialCreateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          access_token_enc: 'new-access-ciphertext',
+          refresh_token_enc: 'new-refresh-ciphertext',
+        }),
+      })
+    );
+    expect(connectionUpsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          credential_id: 'credential-1',
+          verified_file_key: 'file-key-1',
+        }),
+      })
+    );
+    expect(result.credential).not.toHaveProperty('access_token_enc');
+    expect(result.credential).not.toHaveProperty('refresh_token_enc');
+  });
+
+  it('propagates a binding failure from the atomic transaction', async () => {
+    credentialFindUniqueMock.mockResolvedValue(null);
+    credentialCreateMock.mockResolvedValue(credentialMetadata());
+    connectionUpsertMock.mockRejectedValue(new Error('binding failed'));
+
+    await expect(
+      repository.upsertCredentialAndProjectBinding(authorizationInput())
+    ).rejects.toThrow('binding failed');
+
+    expect(transactionMock).toHaveBeenCalledOnce();
+  });
+
+  it('deletes only the requested project binding', async () => {
+    connectionDeleteManyMock.mockResolvedValue({ count: 1 });
+
+    await expect(repository.deleteProjectBinding('project-1')).resolves.toBe(
+      true
+    );
+
+    expect(connectionDeleteManyMock).toHaveBeenCalledWith({
+      where: { project_id: 'project-1' },
+    });
+    expect(credentialFindUniqueMock).not.toHaveBeenCalled();
+    expect(credentialCreateMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps encrypted credential fields out of public connection reads', async () => {
+    connectionFindUniqueMock.mockResolvedValue(publicConnection('project-1'));
+
+    const result = await repository.findConnectionByProjectId('project-1');
+    const query = connectionFindUniqueMock.mock.calls[0]?.[0];
+
+    expect(result).not.toHaveProperty('access_token_enc');
+    expect(result).not.toHaveProperty('refresh_token_enc');
+    expect(query.select).not.toHaveProperty('access_token_enc');
+    expect(query.select).not.toHaveProperty('refresh_token_enc');
+    expect(query.select).not.toHaveProperty('credential');
+  });
+});
