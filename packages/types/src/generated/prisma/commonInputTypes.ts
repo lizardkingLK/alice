@@ -735,6 +735,23 @@ export type EnumVersionControlConnectionStatusWithAggregatesFilter<$PrismaModel 
   _max?: Prisma.NestedEnumVersionControlConnectionStatusFilter<$PrismaModel>
 }
 
+export type EnumFigmaOAuthCredentialStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.FigmaOAuthCredentialStatus | Prisma.EnumFigmaOAuthCredentialStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.FigmaOAuthCredentialStatus[] | Prisma.ListEnumFigmaOAuthCredentialStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FigmaOAuthCredentialStatus[] | Prisma.ListEnumFigmaOAuthCredentialStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFigmaOAuthCredentialStatusFilter<$PrismaModel> | $Enums.FigmaOAuthCredentialStatus
+}
+
+export type EnumFigmaOAuthCredentialStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.FigmaOAuthCredentialStatus | Prisma.EnumFigmaOAuthCredentialStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.FigmaOAuthCredentialStatus[] | Prisma.ListEnumFigmaOAuthCredentialStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FigmaOAuthCredentialStatus[] | Prisma.ListEnumFigmaOAuthCredentialStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFigmaOAuthCredentialStatusWithAggregatesFilter<$PrismaModel> | $Enums.FigmaOAuthCredentialStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumFigmaOAuthCredentialStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumFigmaOAuthCredentialStatusFilter<$PrismaModel>
+}
+
 export type EnumChatConversationKindFilter<$PrismaModel = never> = {
   equals?: $Enums.ChatConversationKind | Prisma.EnumChatConversationKindFieldRefInput<$PrismaModel>
   in?: $Enums.ChatConversationKind[] | Prisma.ListEnumChatConversationKindFieldRefInput<$PrismaModel>
@@ -1489,6 +1506,23 @@ export type NestedEnumVersionControlConnectionStatusWithAggregatesFilter<$Prisma
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumVersionControlConnectionStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumVersionControlConnectionStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumFigmaOAuthCredentialStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.FigmaOAuthCredentialStatus | Prisma.EnumFigmaOAuthCredentialStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.FigmaOAuthCredentialStatus[] | Prisma.ListEnumFigmaOAuthCredentialStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FigmaOAuthCredentialStatus[] | Prisma.ListEnumFigmaOAuthCredentialStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFigmaOAuthCredentialStatusFilter<$PrismaModel> | $Enums.FigmaOAuthCredentialStatus
+}
+
+export type NestedEnumFigmaOAuthCredentialStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.FigmaOAuthCredentialStatus | Prisma.EnumFigmaOAuthCredentialStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.FigmaOAuthCredentialStatus[] | Prisma.ListEnumFigmaOAuthCredentialStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FigmaOAuthCredentialStatus[] | Prisma.ListEnumFigmaOAuthCredentialStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFigmaOAuthCredentialStatusWithAggregatesFilter<$PrismaModel> | $Enums.FigmaOAuthCredentialStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumFigmaOAuthCredentialStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumFigmaOAuthCredentialStatusFilter<$PrismaModel>
 }
 
 export type NestedEnumChatConversationKindFilter<$PrismaModel = never> = {

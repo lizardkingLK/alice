@@ -164,6 +164,12 @@ enum VersionControlConnectionStatus {
   expired
 }
 
+enum FigmaOAuthCredentialStatus {
+  unknown
+  active
+  reauthorization_required
+}
+
 enum IntegrationCategory {
   ai_agent
   communication
@@ -264,6 +270,7 @@ model users {
   project_management_connections project_management_connections[]
   version_control_connections    version_control_connections[]
   authorized_figma_connections   figma_connections[] @relation("FigmaConnectionAuthorizedBy")
+  last_authorized_figma_credentials figma_oauth_credentials[] @relation("FigmaCredentialLastAuthorizedBy")
   figma_oauth_attempts            figma_oauth_attempts[]
   created_integrations    integrations[]      @relation("IntegrationCreatedBy")
   updated_integrations    integrations[]      @relation("IntegrationUpdatedBy")
@@ -888,11 +895,38 @@ model version_control_connections {
   @@unique([user_id, vendor, external_id])
 }
 
+/// Canonical server-side OAuth credentials for one Figma user and OAuth app.
+/// Tokens are AES-256-GCM ciphertext and are never selected for wire DTOs.
+model figma_oauth_credentials {
+  id                      String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  oauth_app_key           String
+  figma_user_id           String
+  access_token_enc        String
+  refresh_token_enc       String
+  access_token_expires_at DateTime                   @db.Timestamptz(6)
+  scopes                  String
+  status                  FigmaOAuthCredentialStatus @default(unknown)
+  token_version           Int                        @default(1)
+  last_validated_at       DateTime?                  @db.Timestamptz(6)
+  last_authorized_by      String?                    @db.Uuid
+  created_at              DateTime                   @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime                   @updatedAt @db.Timestamptz(6)
+
+  last_authorized_by_user users?              @relation("FigmaCredentialLastAuthorizedBy", fields: [last_authorized_by], references: [id], onDelete: SetNull)
+  project_connections     figma_connections[]
+
+  @@unique([oauth_app_key, figma_user_id])
+  @@index([status])
+  @@index([access_token_expires_at])
+  @@index([last_authorized_by])
+}
+
 /// One server-side Figma OAuth connection per Alice project.
-/// OAuth credentials are AES-256-GCM ciphertext and are never selected for wire DTOs.
+/// Legacy project-level credential columns remain during the expand-only migration phase.
 model figma_connections {
   id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   project_id              String   @unique @db.Uuid
+  credential_id           String?  @db.Uuid
   authorized_by           String   @db.Uuid
   figma_user_id           String
   access_token_enc        String
@@ -906,9 +940,11 @@ model figma_connections {
   created_at              DateTime @default(now()) @db.Timestamptz(6)
   updated_at              DateTime @updatedAt @db.Timestamptz(6)
 
-  project            projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  authorized_by_user users    @relation("FigmaConnectionAuthorizedBy", fields: [authorized_by], references: [id], onDelete: Restrict)
+  project            projects                 @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  credential         figma_oauth_credentials? @relation(fields: [credential_id], references: [id], onDelete: Restrict)
+  authorized_by_user users                    @relation("FigmaConnectionAuthorizedBy", fields: [authorized_by], references: [id], onDelete: Restrict)
 
+  @@index([credential_id])
   @@index([authorized_by])
 }
 

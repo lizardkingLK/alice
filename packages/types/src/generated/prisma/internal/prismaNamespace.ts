@@ -423,6 +423,7 @@ export const ModelName = {
   access_requests: 'access_requests',
   project_management_connections: 'project_management_connections',
   version_control_connections: 'version_control_connections',
+  figma_oauth_credentials: 'figma_oauth_credentials',
   figma_connections: 'figma_connections',
   figma_oauth_attempts: 'figma_oauth_attempts',
   chat_conversations: 'chat_conversations',
@@ -455,7 +456,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "sprint_contribution_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "notification_email_events" | "notification_email_preferences" | "email_outbox" | "weekly_project_report_subscriptions" | "weekly_project_reports" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "figma_connections" | "figma_oauth_attempts" | "chat_conversations" | "chat_attachments" | "chat_tools" | "chat_skills" | "chat_agents" | "chat_agent_tools" | "chat_agent_skills" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "integrations" | "member_chat_model_preferences" | "project_integration_bindings"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "sprint_contribution_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "notification_email_events" | "notification_email_preferences" | "email_outbox" | "weekly_project_report_subscriptions" | "weekly_project_reports" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "figma_oauth_credentials" | "figma_connections" | "figma_oauth_attempts" | "chat_conversations" | "chat_attachments" | "chat_tools" | "chat_skills" | "chat_agents" | "chat_agent_tools" | "chat_agent_skills" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "integrations" | "member_chat_model_preferences" | "project_integration_bindings"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2383,6 +2384,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    figma_oauth_credentials: {
+      payload: Prisma.$figma_oauth_credentialsPayload<ExtArgs>
+      fields: Prisma.figma_oauth_credentialsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.figma_oauth_credentialsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_credentialsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.figma_oauth_credentialsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_credentialsPayload>
+        }
+        findFirst: {
+          args: Prisma.figma_oauth_credentialsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_credentialsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.figma_oauth_credentialsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_credentialsPayload>
+        }
+        findMany: {
+          args: Prisma.figma_oauth_credentialsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_credentialsPayload>[]
+        }
+        create: {
+          args: Prisma.figma_oauth_credentialsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_credentialsPayload>
+        }
+        createMany: {
+          args: Prisma.figma_oauth_credentialsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.figma_oauth_credentialsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_credentialsPayload>[]
+        }
+        delete: {
+          args: Prisma.figma_oauth_credentialsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_credentialsPayload>
+        }
+        update: {
+          args: Prisma.figma_oauth_credentialsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_credentialsPayload>
+        }
+        deleteMany: {
+          args: Prisma.figma_oauth_credentialsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.figma_oauth_credentialsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.figma_oauth_credentialsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_credentialsPayload>[]
+        }
+        upsert: {
+          args: Prisma.figma_oauth_credentialsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$figma_oauth_credentialsPayload>
+        }
+        aggregate: {
+          args: Prisma.Figma_oauth_credentialsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFigma_oauth_credentials>
+        }
+        groupBy: {
+          args: Prisma.figma_oauth_credentialsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Figma_oauth_credentialsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.figma_oauth_credentialsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Figma_oauth_credentialsCountAggregateOutputType> | number
+        }
+      }
+    }
     figma_connections: {
       payload: Prisma.$figma_connectionsPayload<ExtArgs>
       fields: Prisma.figma_connectionsFieldRefs
@@ -4147,9 +4222,29 @@ export const Version_control_connectionsScalarFieldEnum = {
 export type Version_control_connectionsScalarFieldEnum = (typeof Version_control_connectionsScalarFieldEnum)[keyof typeof Version_control_connectionsScalarFieldEnum]
 
 
+export const Figma_oauth_credentialsScalarFieldEnum = {
+  id: 'id',
+  oauth_app_key: 'oauth_app_key',
+  figma_user_id: 'figma_user_id',
+  access_token_enc: 'access_token_enc',
+  refresh_token_enc: 'refresh_token_enc',
+  access_token_expires_at: 'access_token_expires_at',
+  scopes: 'scopes',
+  status: 'status',
+  token_version: 'token_version',
+  last_validated_at: 'last_validated_at',
+  last_authorized_by: 'last_authorized_by',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Figma_oauth_credentialsScalarFieldEnum = (typeof Figma_oauth_credentialsScalarFieldEnum)[keyof typeof Figma_oauth_credentialsScalarFieldEnum]
+
+
 export const Figma_connectionsScalarFieldEnum = {
   id: 'id',
   project_id: 'project_id',
+  credential_id: 'credential_id',
   authorized_by: 'authorized_by',
   figma_user_id: 'figma_user_id',
   access_token_enc: 'access_token_enc',
@@ -4817,6 +4912,20 @@ export type ListEnumVersionControlConnectionStatusFieldRefInput<$PrismaModel> = 
 
 
 /**
+ * Reference to a field of type 'FigmaOAuthCredentialStatus'
+ */
+export type EnumFigmaOAuthCredentialStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FigmaOAuthCredentialStatus'>
+
+
+
+/**
+ * Reference to a field of type 'FigmaOAuthCredentialStatus[]'
+ */
+export type ListEnumFigmaOAuthCredentialStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FigmaOAuthCredentialStatus[]'>
+
+
+
+/**
  * Reference to a field of type 'ChatConversationKind'
  */
 export type EnumChatConversationKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ChatConversationKind'>
@@ -5076,6 +5185,7 @@ export type GlobalOmitConfig = {
   access_requests?: Prisma.access_requestsOmit
   project_management_connections?: Prisma.project_management_connectionsOmit
   version_control_connections?: Prisma.version_control_connectionsOmit
+  figma_oauth_credentials?: Prisma.figma_oauth_credentialsOmit
   figma_connections?: Prisma.figma_connectionsOmit
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsOmit
   chat_conversations?: Prisma.chat_conversationsOmit

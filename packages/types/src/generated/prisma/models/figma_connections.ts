@@ -15,7 +15,7 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 /**
  * Model figma_connections
  * One server-side Figma OAuth connection per Alice project.
- * OAuth credentials are AES-256-GCM ciphertext and are never selected for wire DTOs.
+ * Legacy project-level credential columns remain during the expand-only migration phase.
  */
 export type figma_connectionsModel = runtime.Types.Result.DefaultSelection<Prisma.$figma_connectionsPayload>
 
@@ -28,6 +28,7 @@ export type AggregateFigma_connections = {
 export type Figma_connectionsMinAggregateOutputType = {
   id: string | null
   project_id: string | null
+  credential_id: string | null
   authorized_by: string | null
   figma_user_id: string | null
   access_token_enc: string | null
@@ -45,6 +46,7 @@ export type Figma_connectionsMinAggregateOutputType = {
 export type Figma_connectionsMaxAggregateOutputType = {
   id: string | null
   project_id: string | null
+  credential_id: string | null
   authorized_by: string | null
   figma_user_id: string | null
   access_token_enc: string | null
@@ -62,6 +64,7 @@ export type Figma_connectionsMaxAggregateOutputType = {
 export type Figma_connectionsCountAggregateOutputType = {
   id: number
   project_id: number
+  credential_id: number
   authorized_by: number
   figma_user_id: number
   access_token_enc: number
@@ -81,6 +84,7 @@ export type Figma_connectionsCountAggregateOutputType = {
 export type Figma_connectionsMinAggregateInputType = {
   id?: true
   project_id?: true
+  credential_id?: true
   authorized_by?: true
   figma_user_id?: true
   access_token_enc?: true
@@ -98,6 +102,7 @@ export type Figma_connectionsMinAggregateInputType = {
 export type Figma_connectionsMaxAggregateInputType = {
   id?: true
   project_id?: true
+  credential_id?: true
   authorized_by?: true
   figma_user_id?: true
   access_token_enc?: true
@@ -115,6 +120,7 @@ export type Figma_connectionsMaxAggregateInputType = {
 export type Figma_connectionsCountAggregateInputType = {
   id?: true
   project_id?: true
+  credential_id?: true
   authorized_by?: true
   figma_user_id?: true
   access_token_enc?: true
@@ -205,6 +211,7 @@ export type figma_connectionsGroupByArgs<ExtArgs extends runtime.Types.Extension
 export type Figma_connectionsGroupByOutputType = {
   id: string
   project_id: string
+  credential_id: string | null
   authorized_by: string
   figma_user_id: string
   access_token_enc: string
@@ -243,6 +250,7 @@ export type figma_connectionsWhereInput = {
   NOT?: Prisma.figma_connectionsWhereInput | Prisma.figma_connectionsWhereInput[]
   id?: Prisma.UuidFilter<"figma_connections"> | string
   project_id?: Prisma.UuidFilter<"figma_connections"> | string
+  credential_id?: Prisma.UuidNullableFilter<"figma_connections"> | string | null
   authorized_by?: Prisma.UuidFilter<"figma_connections"> | string
   figma_user_id?: Prisma.StringFilter<"figma_connections"> | string
   access_token_enc?: Prisma.StringFilter<"figma_connections"> | string
@@ -256,12 +264,14 @@ export type figma_connectionsWhereInput = {
   created_at?: Prisma.DateTimeFilter<"figma_connections"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"figma_connections"> | Date | string
   project?: Prisma.XOR<Prisma.ProjectsScalarRelationFilter, Prisma.projectsWhereInput>
+  credential?: Prisma.XOR<Prisma.Figma_oauth_credentialsNullableScalarRelationFilter, Prisma.figma_oauth_credentialsWhereInput> | null
   authorized_by_user?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
 }
 
 export type figma_connectionsOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
+  credential_id?: Prisma.SortOrderInput | Prisma.SortOrder
   authorized_by?: Prisma.SortOrder
   figma_user_id?: Prisma.SortOrder
   access_token_enc?: Prisma.SortOrder
@@ -275,6 +285,7 @@ export type figma_connectionsOrderByWithRelationInput = {
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   project?: Prisma.projectsOrderByWithRelationInput
+  credential?: Prisma.figma_oauth_credentialsOrderByWithRelationInput
   authorized_by_user?: Prisma.usersOrderByWithRelationInput
 }
 
@@ -284,6 +295,7 @@ export type figma_connectionsWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.figma_connectionsWhereInput | Prisma.figma_connectionsWhereInput[]
   OR?: Prisma.figma_connectionsWhereInput[]
   NOT?: Prisma.figma_connectionsWhereInput | Prisma.figma_connectionsWhereInput[]
+  credential_id?: Prisma.UuidNullableFilter<"figma_connections"> | string | null
   authorized_by?: Prisma.UuidFilter<"figma_connections"> | string
   figma_user_id?: Prisma.StringFilter<"figma_connections"> | string
   access_token_enc?: Prisma.StringFilter<"figma_connections"> | string
@@ -297,12 +309,14 @@ export type figma_connectionsWhereUniqueInput = Prisma.AtLeast<{
   created_at?: Prisma.DateTimeFilter<"figma_connections"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"figma_connections"> | Date | string
   project?: Prisma.XOR<Prisma.ProjectsScalarRelationFilter, Prisma.projectsWhereInput>
+  credential?: Prisma.XOR<Prisma.Figma_oauth_credentialsNullableScalarRelationFilter, Prisma.figma_oauth_credentialsWhereInput> | null
   authorized_by_user?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
 }, "id" | "project_id">
 
 export type figma_connectionsOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
+  credential_id?: Prisma.SortOrderInput | Prisma.SortOrder
   authorized_by?: Prisma.SortOrder
   figma_user_id?: Prisma.SortOrder
   access_token_enc?: Prisma.SortOrder
@@ -326,6 +340,7 @@ export type figma_connectionsScalarWhereWithAggregatesInput = {
   NOT?: Prisma.figma_connectionsScalarWhereWithAggregatesInput | Prisma.figma_connectionsScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"figma_connections"> | string
   project_id?: Prisma.UuidWithAggregatesFilter<"figma_connections"> | string
+  credential_id?: Prisma.UuidNullableWithAggregatesFilter<"figma_connections"> | string | null
   authorized_by?: Prisma.UuidWithAggregatesFilter<"figma_connections"> | string
   figma_user_id?: Prisma.StringWithAggregatesFilter<"figma_connections"> | string
   access_token_enc?: Prisma.StringWithAggregatesFilter<"figma_connections"> | string
@@ -354,12 +369,14 @@ export type figma_connectionsCreateInput = {
   created_at?: Date | string
   updated_at?: Date | string
   project: Prisma.projectsCreateNestedOneWithoutFigma_connectionInput
+  credential?: Prisma.figma_oauth_credentialsCreateNestedOneWithoutProject_connectionsInput
   authorized_by_user: Prisma.usersCreateNestedOneWithoutAuthorized_figma_connectionsInput
 }
 
 export type figma_connectionsUncheckedCreateInput = {
   id?: string
   project_id: string
+  credential_id?: string | null
   authorized_by: string
   figma_user_id: string
   access_token_enc: string
@@ -388,12 +405,14 @@ export type figma_connectionsUpdateInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project?: Prisma.projectsUpdateOneRequiredWithoutFigma_connectionNestedInput
+  credential?: Prisma.figma_oauth_credentialsUpdateOneWithoutProject_connectionsNestedInput
   authorized_by_user?: Prisma.usersUpdateOneRequiredWithoutAuthorized_figma_connectionsNestedInput
 }
 
 export type figma_connectionsUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  credential_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorized_by?: Prisma.StringFieldUpdateOperationsInput | string
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -411,6 +430,7 @@ export type figma_connectionsUncheckedUpdateInput = {
 export type figma_connectionsCreateManyInput = {
   id?: string
   project_id: string
+  credential_id?: string | null
   authorized_by: string
   figma_user_id: string
   access_token_enc: string
@@ -443,6 +463,7 @@ export type figma_connectionsUpdateManyMutationInput = {
 export type figma_connectionsUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  credential_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorized_by?: Prisma.StringFieldUpdateOperationsInput | string
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -475,6 +496,7 @@ export type Figma_connectionsNullableScalarRelationFilter = {
 export type figma_connectionsCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
+  credential_id?: Prisma.SortOrder
   authorized_by?: Prisma.SortOrder
   figma_user_id?: Prisma.SortOrder
   access_token_enc?: Prisma.SortOrder
@@ -492,6 +514,7 @@ export type figma_connectionsCountOrderByAggregateInput = {
 export type figma_connectionsMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
+  credential_id?: Prisma.SortOrder
   authorized_by?: Prisma.SortOrder
   figma_user_id?: Prisma.SortOrder
   access_token_enc?: Prisma.SortOrder
@@ -509,6 +532,7 @@ export type figma_connectionsMaxOrderByAggregateInput = {
 export type figma_connectionsMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
+  credential_id?: Prisma.SortOrder
   authorized_by?: Prisma.SortOrder
   figma_user_id?: Prisma.SortOrder
   access_token_enc?: Prisma.SortOrder
@@ -597,6 +621,48 @@ export type figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.figma_connectionsUpdateToOneWithWhereWithoutProjectInput, Prisma.figma_connectionsUpdateWithoutProjectInput>, Prisma.figma_connectionsUncheckedUpdateWithoutProjectInput>
 }
 
+export type figma_connectionsCreateNestedManyWithoutCredentialInput = {
+  create?: Prisma.XOR<Prisma.figma_connectionsCreateWithoutCredentialInput, Prisma.figma_connectionsUncheckedCreateWithoutCredentialInput> | Prisma.figma_connectionsCreateWithoutCredentialInput[] | Prisma.figma_connectionsUncheckedCreateWithoutCredentialInput[]
+  connectOrCreate?: Prisma.figma_connectionsCreateOrConnectWithoutCredentialInput | Prisma.figma_connectionsCreateOrConnectWithoutCredentialInput[]
+  createMany?: Prisma.figma_connectionsCreateManyCredentialInputEnvelope
+  connect?: Prisma.figma_connectionsWhereUniqueInput | Prisma.figma_connectionsWhereUniqueInput[]
+}
+
+export type figma_connectionsUncheckedCreateNestedManyWithoutCredentialInput = {
+  create?: Prisma.XOR<Prisma.figma_connectionsCreateWithoutCredentialInput, Prisma.figma_connectionsUncheckedCreateWithoutCredentialInput> | Prisma.figma_connectionsCreateWithoutCredentialInput[] | Prisma.figma_connectionsUncheckedCreateWithoutCredentialInput[]
+  connectOrCreate?: Prisma.figma_connectionsCreateOrConnectWithoutCredentialInput | Prisma.figma_connectionsCreateOrConnectWithoutCredentialInput[]
+  createMany?: Prisma.figma_connectionsCreateManyCredentialInputEnvelope
+  connect?: Prisma.figma_connectionsWhereUniqueInput | Prisma.figma_connectionsWhereUniqueInput[]
+}
+
+export type figma_connectionsUpdateManyWithoutCredentialNestedInput = {
+  create?: Prisma.XOR<Prisma.figma_connectionsCreateWithoutCredentialInput, Prisma.figma_connectionsUncheckedCreateWithoutCredentialInput> | Prisma.figma_connectionsCreateWithoutCredentialInput[] | Prisma.figma_connectionsUncheckedCreateWithoutCredentialInput[]
+  connectOrCreate?: Prisma.figma_connectionsCreateOrConnectWithoutCredentialInput | Prisma.figma_connectionsCreateOrConnectWithoutCredentialInput[]
+  upsert?: Prisma.figma_connectionsUpsertWithWhereUniqueWithoutCredentialInput | Prisma.figma_connectionsUpsertWithWhereUniqueWithoutCredentialInput[]
+  createMany?: Prisma.figma_connectionsCreateManyCredentialInputEnvelope
+  set?: Prisma.figma_connectionsWhereUniqueInput | Prisma.figma_connectionsWhereUniqueInput[]
+  disconnect?: Prisma.figma_connectionsWhereUniqueInput | Prisma.figma_connectionsWhereUniqueInput[]
+  delete?: Prisma.figma_connectionsWhereUniqueInput | Prisma.figma_connectionsWhereUniqueInput[]
+  connect?: Prisma.figma_connectionsWhereUniqueInput | Prisma.figma_connectionsWhereUniqueInput[]
+  update?: Prisma.figma_connectionsUpdateWithWhereUniqueWithoutCredentialInput | Prisma.figma_connectionsUpdateWithWhereUniqueWithoutCredentialInput[]
+  updateMany?: Prisma.figma_connectionsUpdateManyWithWhereWithoutCredentialInput | Prisma.figma_connectionsUpdateManyWithWhereWithoutCredentialInput[]
+  deleteMany?: Prisma.figma_connectionsScalarWhereInput | Prisma.figma_connectionsScalarWhereInput[]
+}
+
+export type figma_connectionsUncheckedUpdateManyWithoutCredentialNestedInput = {
+  create?: Prisma.XOR<Prisma.figma_connectionsCreateWithoutCredentialInput, Prisma.figma_connectionsUncheckedCreateWithoutCredentialInput> | Prisma.figma_connectionsCreateWithoutCredentialInput[] | Prisma.figma_connectionsUncheckedCreateWithoutCredentialInput[]
+  connectOrCreate?: Prisma.figma_connectionsCreateOrConnectWithoutCredentialInput | Prisma.figma_connectionsCreateOrConnectWithoutCredentialInput[]
+  upsert?: Prisma.figma_connectionsUpsertWithWhereUniqueWithoutCredentialInput | Prisma.figma_connectionsUpsertWithWhereUniqueWithoutCredentialInput[]
+  createMany?: Prisma.figma_connectionsCreateManyCredentialInputEnvelope
+  set?: Prisma.figma_connectionsWhereUniqueInput | Prisma.figma_connectionsWhereUniqueInput[]
+  disconnect?: Prisma.figma_connectionsWhereUniqueInput | Prisma.figma_connectionsWhereUniqueInput[]
+  delete?: Prisma.figma_connectionsWhereUniqueInput | Prisma.figma_connectionsWhereUniqueInput[]
+  connect?: Prisma.figma_connectionsWhereUniqueInput | Prisma.figma_connectionsWhereUniqueInput[]
+  update?: Prisma.figma_connectionsUpdateWithWhereUniqueWithoutCredentialInput | Prisma.figma_connectionsUpdateWithWhereUniqueWithoutCredentialInput[]
+  updateMany?: Prisma.figma_connectionsUpdateManyWithWhereWithoutCredentialInput | Prisma.figma_connectionsUpdateManyWithWhereWithoutCredentialInput[]
+  deleteMany?: Prisma.figma_connectionsScalarWhereInput | Prisma.figma_connectionsScalarWhereInput[]
+}
+
 export type figma_connectionsCreateWithoutAuthorized_by_userInput = {
   id?: string
   figma_user_id: string
@@ -611,11 +677,13 @@ export type figma_connectionsCreateWithoutAuthorized_by_userInput = {
   created_at?: Date | string
   updated_at?: Date | string
   project: Prisma.projectsCreateNestedOneWithoutFigma_connectionInput
+  credential?: Prisma.figma_oauth_credentialsCreateNestedOneWithoutProject_connectionsInput
 }
 
 export type figma_connectionsUncheckedCreateWithoutAuthorized_by_userInput = {
   id?: string
   project_id: string
+  credential_id?: string | null
   figma_user_id: string
   access_token_enc: string
   refresh_token_enc: string
@@ -661,6 +729,7 @@ export type figma_connectionsScalarWhereInput = {
   NOT?: Prisma.figma_connectionsScalarWhereInput | Prisma.figma_connectionsScalarWhereInput[]
   id?: Prisma.UuidFilter<"figma_connections"> | string
   project_id?: Prisma.UuidFilter<"figma_connections"> | string
+  credential_id?: Prisma.UuidNullableFilter<"figma_connections"> | string | null
   authorized_by?: Prisma.UuidFilter<"figma_connections"> | string
   figma_user_id?: Prisma.StringFilter<"figma_connections"> | string
   access_token_enc?: Prisma.StringFilter<"figma_connections"> | string
@@ -688,11 +757,13 @@ export type figma_connectionsCreateWithoutProjectInput = {
   verification_error?: string | null
   created_at?: Date | string
   updated_at?: Date | string
+  credential?: Prisma.figma_oauth_credentialsCreateNestedOneWithoutProject_connectionsInput
   authorized_by_user: Prisma.usersCreateNestedOneWithoutAuthorized_figma_connectionsInput
 }
 
 export type figma_connectionsUncheckedCreateWithoutProjectInput = {
   id?: string
+  credential_id?: string | null
   authorized_by: string
   figma_user_id: string
   access_token_enc: string
@@ -736,11 +807,13 @@ export type figma_connectionsUpdateWithoutProjectInput = {
   verification_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  credential?: Prisma.figma_oauth_credentialsUpdateOneWithoutProject_connectionsNestedInput
   authorized_by_user?: Prisma.usersUpdateOneRequiredWithoutAuthorized_figma_connectionsNestedInput
 }
 
 export type figma_connectionsUncheckedUpdateWithoutProjectInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  credential_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorized_by?: Prisma.StringFieldUpdateOperationsInput | string
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -755,9 +828,70 @@ export type figma_connectionsUncheckedUpdateWithoutProjectInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+export type figma_connectionsCreateWithoutCredentialInput = {
+  id?: string
+  figma_user_id: string
+  access_token_enc: string
+  refresh_token_enc: string
+  access_token_expires_at: Date | string
+  scopes: string
+  verified_file_key?: string | null
+  verified_file_name?: string | null
+  verified_at?: Date | string | null
+  verification_error?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  project: Prisma.projectsCreateNestedOneWithoutFigma_connectionInput
+  authorized_by_user: Prisma.usersCreateNestedOneWithoutAuthorized_figma_connectionsInput
+}
+
+export type figma_connectionsUncheckedCreateWithoutCredentialInput = {
+  id?: string
+  project_id: string
+  authorized_by: string
+  figma_user_id: string
+  access_token_enc: string
+  refresh_token_enc: string
+  access_token_expires_at: Date | string
+  scopes: string
+  verified_file_key?: string | null
+  verified_file_name?: string | null
+  verified_at?: Date | string | null
+  verification_error?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+}
+
+export type figma_connectionsCreateOrConnectWithoutCredentialInput = {
+  where: Prisma.figma_connectionsWhereUniqueInput
+  create: Prisma.XOR<Prisma.figma_connectionsCreateWithoutCredentialInput, Prisma.figma_connectionsUncheckedCreateWithoutCredentialInput>
+}
+
+export type figma_connectionsCreateManyCredentialInputEnvelope = {
+  data: Prisma.figma_connectionsCreateManyCredentialInput | Prisma.figma_connectionsCreateManyCredentialInput[]
+  skipDuplicates?: boolean
+}
+
+export type figma_connectionsUpsertWithWhereUniqueWithoutCredentialInput = {
+  where: Prisma.figma_connectionsWhereUniqueInput
+  update: Prisma.XOR<Prisma.figma_connectionsUpdateWithoutCredentialInput, Prisma.figma_connectionsUncheckedUpdateWithoutCredentialInput>
+  create: Prisma.XOR<Prisma.figma_connectionsCreateWithoutCredentialInput, Prisma.figma_connectionsUncheckedCreateWithoutCredentialInput>
+}
+
+export type figma_connectionsUpdateWithWhereUniqueWithoutCredentialInput = {
+  where: Prisma.figma_connectionsWhereUniqueInput
+  data: Prisma.XOR<Prisma.figma_connectionsUpdateWithoutCredentialInput, Prisma.figma_connectionsUncheckedUpdateWithoutCredentialInput>
+}
+
+export type figma_connectionsUpdateManyWithWhereWithoutCredentialInput = {
+  where: Prisma.figma_connectionsScalarWhereInput
+  data: Prisma.XOR<Prisma.figma_connectionsUpdateManyMutationInput, Prisma.figma_connectionsUncheckedUpdateManyWithoutCredentialInput>
+}
+
 export type figma_connectionsCreateManyAuthorized_by_userInput = {
   id?: string
   project_id: string
+  credential_id?: string | null
   figma_user_id: string
   access_token_enc: string
   refresh_token_enc: string
@@ -785,11 +919,13 @@ export type figma_connectionsUpdateWithoutAuthorized_by_userInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project?: Prisma.projectsUpdateOneRequiredWithoutFigma_connectionNestedInput
+  credential?: Prisma.figma_oauth_credentialsUpdateOneWithoutProject_connectionsNestedInput
 }
 
 export type figma_connectionsUncheckedUpdateWithoutAuthorized_by_userInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  credential_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
   refresh_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -806,6 +942,75 @@ export type figma_connectionsUncheckedUpdateWithoutAuthorized_by_userInput = {
 export type figma_connectionsUncheckedUpdateManyWithoutAuthorized_by_userInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  credential_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
+  refresh_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token_expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scopes?: Prisma.StringFieldUpdateOperationsInput | string
+  verified_file_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verified_file_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verified_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verification_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type figma_connectionsCreateManyCredentialInput = {
+  id?: string
+  project_id: string
+  authorized_by: string
+  figma_user_id: string
+  access_token_enc: string
+  refresh_token_enc: string
+  access_token_expires_at: Date | string
+  scopes: string
+  verified_file_key?: string | null
+  verified_file_name?: string | null
+  verified_at?: Date | string | null
+  verification_error?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+}
+
+export type figma_connectionsUpdateWithoutCredentialInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
+  refresh_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token_expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scopes?: Prisma.StringFieldUpdateOperationsInput | string
+  verified_file_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verified_file_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verified_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verification_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  project?: Prisma.projectsUpdateOneRequiredWithoutFigma_connectionNestedInput
+  authorized_by_user?: Prisma.usersUpdateOneRequiredWithoutAuthorized_figma_connectionsNestedInput
+}
+
+export type figma_connectionsUncheckedUpdateWithoutCredentialInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  authorized_by?: Prisma.StringFieldUpdateOperationsInput | string
+  figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
+  refresh_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
+  access_token_expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scopes?: Prisma.StringFieldUpdateOperationsInput | string
+  verified_file_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verified_file_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verified_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verification_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type figma_connectionsUncheckedUpdateManyWithoutCredentialInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  authorized_by?: Prisma.StringFieldUpdateOperationsInput | string
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
   refresh_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -824,6 +1029,7 @@ export type figma_connectionsUncheckedUpdateManyWithoutAuthorized_by_userInput =
 export type figma_connectionsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   project_id?: boolean
+  credential_id?: boolean
   authorized_by?: boolean
   figma_user_id?: boolean
   access_token_enc?: boolean
@@ -837,12 +1043,14 @@ export type figma_connectionsSelect<ExtArgs extends runtime.Types.Extensions.Int
   created_at?: boolean
   updated_at?: boolean
   project?: boolean | Prisma.projectsDefaultArgs<ExtArgs>
+  credential?: boolean | Prisma.figma_connections$credentialArgs<ExtArgs>
   authorized_by_user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["figma_connections"]>
 
 export type figma_connectionsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   project_id?: boolean
+  credential_id?: boolean
   authorized_by?: boolean
   figma_user_id?: boolean
   access_token_enc?: boolean
@@ -856,12 +1064,14 @@ export type figma_connectionsSelectCreateManyAndReturn<ExtArgs extends runtime.T
   created_at?: boolean
   updated_at?: boolean
   project?: boolean | Prisma.projectsDefaultArgs<ExtArgs>
+  credential?: boolean | Prisma.figma_connections$credentialArgs<ExtArgs>
   authorized_by_user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["figma_connections"]>
 
 export type figma_connectionsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   project_id?: boolean
+  credential_id?: boolean
   authorized_by?: boolean
   figma_user_id?: boolean
   access_token_enc?: boolean
@@ -875,12 +1085,14 @@ export type figma_connectionsSelectUpdateManyAndReturn<ExtArgs extends runtime.T
   created_at?: boolean
   updated_at?: boolean
   project?: boolean | Prisma.projectsDefaultArgs<ExtArgs>
+  credential?: boolean | Prisma.figma_connections$credentialArgs<ExtArgs>
   authorized_by_user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["figma_connections"]>
 
 export type figma_connectionsSelectScalar = {
   id?: boolean
   project_id?: boolean
+  credential_id?: boolean
   authorized_by?: boolean
   figma_user_id?: boolean
   access_token_enc?: boolean
@@ -895,17 +1107,20 @@ export type figma_connectionsSelectScalar = {
   updated_at?: boolean
 }
 
-export type figma_connectionsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "project_id" | "authorized_by" | "figma_user_id" | "access_token_enc" | "refresh_token_enc" | "access_token_expires_at" | "scopes" | "verified_file_key" | "verified_file_name" | "verified_at" | "verification_error" | "created_at" | "updated_at", ExtArgs["result"]["figma_connections"]>
+export type figma_connectionsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "project_id" | "credential_id" | "authorized_by" | "figma_user_id" | "access_token_enc" | "refresh_token_enc" | "access_token_expires_at" | "scopes" | "verified_file_key" | "verified_file_name" | "verified_at" | "verification_error" | "created_at" | "updated_at", ExtArgs["result"]["figma_connections"]>
 export type figma_connectionsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.projectsDefaultArgs<ExtArgs>
+  credential?: boolean | Prisma.figma_connections$credentialArgs<ExtArgs>
   authorized_by_user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }
 export type figma_connectionsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.projectsDefaultArgs<ExtArgs>
+  credential?: boolean | Prisma.figma_connections$credentialArgs<ExtArgs>
   authorized_by_user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }
 export type figma_connectionsIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.projectsDefaultArgs<ExtArgs>
+  credential?: boolean | Prisma.figma_connections$credentialArgs<ExtArgs>
   authorized_by_user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }
 
@@ -913,11 +1128,13 @@ export type $figma_connectionsPayload<ExtArgs extends runtime.Types.Extensions.I
   name: "figma_connections"
   objects: {
     project: Prisma.$projectsPayload<ExtArgs>
+    credential: Prisma.$figma_oauth_credentialsPayload<ExtArgs> | null
     authorized_by_user: Prisma.$usersPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     project_id: string
+    credential_id: string | null
     authorized_by: string
     figma_user_id: string
     access_token_enc: string
@@ -1325,6 +1542,7 @@ readonly fields: figma_connectionsFieldRefs;
 export interface Prisma__figma_connectionsClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   project<T extends Prisma.projectsDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projectsDefaultArgs<ExtArgs>>): Prisma.Prisma__projectsClient<runtime.Types.Result.GetResult<Prisma.$projectsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  credential<T extends Prisma.figma_connections$credentialArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.figma_connections$credentialArgs<ExtArgs>>): Prisma.Prisma__figma_oauth_credentialsClient<runtime.Types.Result.GetResult<Prisma.$figma_oauth_credentialsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   authorized_by_user<T extends Prisma.usersDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.usersDefaultArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1357,6 +1575,7 @@ export interface Prisma__figma_connectionsClient<T, Null = never, ExtArgs extend
 export interface figma_connectionsFieldRefs {
   readonly id: Prisma.FieldRef<"figma_connections", 'String'>
   readonly project_id: Prisma.FieldRef<"figma_connections", 'String'>
+  readonly credential_id: Prisma.FieldRef<"figma_connections", 'String'>
   readonly authorized_by: Prisma.FieldRef<"figma_connections", 'String'>
   readonly figma_user_id: Prisma.FieldRef<"figma_connections", 'String'>
   readonly access_token_enc: Prisma.FieldRef<"figma_connections", 'String'>
@@ -1767,6 +1986,25 @@ export type figma_connectionsDeleteManyArgs<ExtArgs extends runtime.Types.Extens
    * Limit how many figma_connections to delete.
    */
   limit?: number
+}
+
+/**
+ * figma_connections.credential
+ */
+export type figma_connections$credentialArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the figma_oauth_credentials
+   */
+  select?: Prisma.figma_oauth_credentialsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the figma_oauth_credentials
+   */
+  omit?: Prisma.figma_oauth_credentialsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.figma_oauth_credentialsInclude<ExtArgs> | null
+  where?: Prisma.figma_oauth_credentialsWhereInput
 }
 
 /**

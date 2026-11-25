@@ -195,7 +195,8 @@ describe('projects unused Prisma GET routes', () => {
 
       expect(response.status).toBe(403);
       await expect(response.json()).resolves.toEqual({
-        error: 'Unauthorized. You do not have permission to manage this project.',
+        error:
+          'Unauthorized. You do not have permission to manage this project.',
       });
     });
 

@@ -224,6 +224,15 @@ export const VersionControlConnectionStatus = {
 export type VersionControlConnectionStatus = (typeof VersionControlConnectionStatus)[keyof typeof VersionControlConnectionStatus]
 
 
+export const FigmaOAuthCredentialStatus = {
+  unknown: 'unknown',
+  active: 'active',
+  reauthorization_required: 'reauthorization_required'
+} as const
+
+export type FigmaOAuthCredentialStatus = (typeof FigmaOAuthCredentialStatus)[keyof typeof FigmaOAuthCredentialStatus]
+
+
 export const IntegrationCategory = {
   ai_agent: 'ai_agent',
   communication: 'communication',
