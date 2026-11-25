@@ -3,12 +3,18 @@ import {
   JOB_KINDS,
   QUEUE_NAMES,
   createRedisConnection,
+  type GithubSyncBranchPayload,
   type GithubSyncPullRequestPayload,
+  type GithubSyncPushPayload,
   type GithubWebhookIngestPayload,
+  type WorkflowRunPayload,
 } from '@repo/jobs';
 import { env } from '../config/env';
+import { handleGithubSyncBranch } from './github-sync-branch';
 import { handleGithubSyncPullRequest } from './github-sync-pull-request';
+import { handleGithubSyncPush } from './github-sync-push';
 import { handleGithubWebhookIngest } from './github-webhook.ingest';
+import { handleWorkflowRun } from './workflow-run';
 
 let defaultWorker: Worker | null = null;
 
@@ -20,6 +26,21 @@ async function processDefaultJob(job: Job): Promise<void> {
 
   if (job.name === JOB_KINDS.githubSyncPullRequest) {
     await handleGithubSyncPullRequest(job.data as GithubSyncPullRequestPayload);
+    return;
+  }
+
+  if (job.name === JOB_KINDS.githubSyncPush) {
+    await handleGithubSyncPush(job.data as GithubSyncPushPayload);
+    return;
+  }
+
+  if (job.name === JOB_KINDS.githubSyncBranch) {
+    await handleGithubSyncBranch(job.data as GithubSyncBranchPayload);
+    return;
+  }
+
+  if (job.name === JOB_KINDS.workflowRun) {
+    await handleWorkflowRun(job.data as WorkflowRunPayload, job.id);
     return;
   }
 

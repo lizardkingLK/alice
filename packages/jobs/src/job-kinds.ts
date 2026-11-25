@@ -7,6 +7,8 @@ export const JOB_KINDS = {
   githubSyncPullRequest: 'github.sync.pull_request',
   githubSyncPush: 'github.sync.push',
   githubSyncBranch: 'github.sync.branch',
+  /** Phase 4 orchestrator parent — consumes SC domain events. */
+  workflowRun: 'workflow.run',
 } as const;
 
 export type JobKind = (typeof JOB_KINDS)[keyof typeof JOB_KINDS];

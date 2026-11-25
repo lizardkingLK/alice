@@ -1,61 +1,23 @@
 import {
+  emitScDomainEvent,
   githubSyncPullRequestPayloadSchema,
+  mapPullRequestSyncToDomainEvent,
   type GithubSyncPullRequestPayload,
 } from '@repo/jobs';
-import { prisma } from '../lib/prisma';
+import { env } from '../config/env';
 import {
   findProjectsBoundToGithubRepo,
   type BoundGithubProject,
 } from './github/find-bound-projects';
-import { extractWorkItemCandidates } from './github/resolve-work-item-from-branch';
+import { resolveWorkItemIdForProject } from './github/resolve-work-item-id';
 import {
   refreshExistingLinkedPullRequests,
   upsertLinkedPullRequest,
   type UpsertLinkedPrResult,
 } from './github/upsert-linked-pr';
 
-async function resolveWorkItemId(
-  projectId: string,
-  projectKey: string,
-  payload: GithubSyncPullRequestPayload
-): Promise<string | null> {
-  const { slugs, ids } = extractWorkItemCandidates(
-    projectKey,
-    payload.branchName,
-    payload.prTitle
-  );
-
-  if (ids.length > 0) {
-    const byId = await prisma.work_items.findFirst({
-      where: {
-        project_id: projectId,
-        record_status: 'active',
-        id: { in: ids },
-      },
-      select: { id: true },
-    });
-    if (byId) {
-      return byId.id;
-    }
-  }
-
-  if (slugs.length === 0) {
-    return null;
-  }
-
-  const bySlug = await prisma.work_items.findFirst({
-    where: {
-      project_id: projectId,
-      record_status: 'active',
-      slug: { in: slugs, mode: 'insensitive' },
-    },
-    select: { id: true },
-  });
-
-  return bySlug?.id ?? null;
-}
-
 type AutoLinkAttempt = {
+  projectId: string;
   projectKey: string;
   result: UpsertLinkedPrResult | null;
 };
@@ -64,9 +26,14 @@ async function tryAutoLinkProject(
   project: BoundGithubProject,
   payload: GithubSyncPullRequestPayload
 ): Promise<AutoLinkAttempt> {
-  const workItemId = await resolveWorkItemId(project.id, project.key, payload);
+  const workItemId = await resolveWorkItemIdForProject(
+    project.id,
+    project.key,
+    payload.branchName,
+    payload.prTitle
+  );
   if (!workItemId) {
-    return { projectKey: project.key, result: null };
+    return { projectId: project.id, projectKey: project.key, result: null };
   }
 
   const [owner, name] = project.repo.split('/');
@@ -75,7 +42,30 @@ async function tryAutoLinkProject(
     name: name ?? payload.repoName,
   });
 
-  return { projectKey: project.key, result };
+  return { projectId: project.id, projectKey: project.key, result };
+}
+
+async function emitPrEvents(
+  payload: GithubSyncPullRequestPayload,
+  links: Array<{
+    projectId?: string;
+    workItemId: string;
+    prId: string;
+  }>
+): Promise<void> {
+  await Promise.all(
+    links.map((link) =>
+      emitScDomainEvent(
+        mapPullRequestSyncToDomainEvent({
+          payload,
+          projectId: link.projectId,
+          workItemId: link.workItemId,
+          prId: link.prId,
+        }),
+        { redisUrl: env.REDIS_URL }
+      )
+    )
+  );
 }
 
 /**
@@ -97,6 +87,7 @@ export async function handleGithubSyncPullRequest(
         links: refreshed.length,
       })
     );
+    await emitPrEvents(payload, refreshed);
     return;
   }
 
@@ -126,7 +117,13 @@ export async function handleGithubSyncPullRequest(
     if (!attempt.result) {
       return [];
     }
-    return [{ projectKey: attempt.projectKey, result: attempt.result }];
+    return [
+      {
+        projectId: attempt.projectId,
+        projectKey: attempt.projectKey,
+        result: attempt.result,
+      },
+    ];
   });
 
   for (const { projectKey, result } of linked) {
@@ -152,5 +149,15 @@ export async function handleGithubSyncPullRequest(
         projects: projects.map((project) => project.key),
       })
     );
+    return;
   }
+
+  await emitPrEvents(
+    payload,
+    linked.map(({ projectId, result }) => ({
+      projectId,
+      workItemId: result.workItemId,
+      prId: result.prId,
+    }))
+  );
 }

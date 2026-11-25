@@ -323,6 +323,8 @@ model projects {
   project_integrations    integrations[] @relation("ProjectIntegrations")
   weekly_report_subscriptions weekly_project_report_subscriptions[]
   weekly_project_reports      weekly_project_reports[]
+  version_control_branches    version_control_branches[]
+  version_control_commits     version_control_commits[]
 }
 
 model project_members {
@@ -466,6 +468,8 @@ model work_items {
   worklogs             work_item_worklogs[]
   activities           activities[]
   version_control_pull_requests version_control_pull_requests[]
+  version_control_branches      version_control_branches[]
+  version_control_commits       version_control_commits[]
   chart_hierarchy_rollup work_item_chart_hierarchy_rollups?
   links_as_source      work_item_links[] @relation("WorkItemLinkSource")
   links_as_target      work_item_links[] @relation("WorkItemLinkTarget")
@@ -1151,6 +1155,86 @@ model version_control_pull_requests {
 
   @@unique([work_item_id, vendor, repo_owner, repo_name, pr_number])
   @@index([work_item_id])
+}
+
+/// Synced branch tips for a project-bound repo (webhook `push` / `create` / `delete`).
+/// `work_item_id` is optional (auto-link from branch name when resolvable).
+model version_control_branches {
+  id           String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id   String               @db.Uuid
+  work_item_id String?              @db.Uuid
+  vendor       VersionControlVendor @default(github)
+  repo_owner   String
+  repo_name    String
+  name         String
+  head_sha     String?
+  deleted_at   DateTime?            @db.Timestamptz(6)
+  created_at   DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime             @updatedAt @db.Timestamptz(6)
+
+  project   projects    @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  work_item work_items? @relation(fields: [work_item_id], references: [id], onDelete: SetNull)
+
+  @@unique([project_id, vendor, repo_owner, repo_name, name])
+  @@index([project_id])
+  @@index([work_item_id])
+}
+
+/// Synced commits for a project-bound repo (webhook `push`).
+/// `work_item_id` is optional (auto-link from branch / message when resolvable).
+model version_control_commits {
+  id            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id    String               @db.Uuid
+  work_item_id  String?              @db.Uuid
+  vendor        VersionControlVendor @default(github)
+  repo_owner    String
+  repo_name     String
+  sha           String
+  message       String?
+  author_login  String?
+  author_name   String?
+  author_email  String?
+  committed_at  DateTime?            @db.Timestamptz(6)
+  html_url      String?
+  branch_name   String?
+  created_at    DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime             @updatedAt @db.Timestamptz(6)
+
+  project   projects    @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  work_item work_items? @relation(fields: [work_item_id], references: [id], onDelete: SetNull)
+
+  @@unique([project_id, vendor, repo_owner, repo_name, sha])
+  @@index([project_id])
+  @@index([work_item_id])
+  @@index([branch_name])
+}
+
+/// Product tracking for BullMQ jobs (operational queue ≠ product SoT).
+/// Phase 3–4: SC domain events enqueue `workflow.run` rows here.
+model job_runs {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  parent_id     String?   @db.Uuid
+  kind          String
+  status        String
+  bullmq_job_id String?
+  event_id      String?
+  event_type    String?
+  delivery_id   String?
+  project_id    String?   @db.Uuid
+  payload       Json      @default("{}")
+  error         String?
+  started_at    DateTime? @db.Timestamptz(6)
+  finished_at   DateTime? @db.Timestamptz(6)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @updatedAt @db.Timestamptz(6)
+
+  parent   job_runs?  @relation("JobRunTree", fields: [parent_id], references: [id], onDelete: SetNull)
+  children job_runs[] @relation("JobRunTree")
+
+  @@unique([event_id])
+  @@index([kind, status])
+  @@index([delivery_id])
+  @@index([parent_id])
 }
 
 /// Workspace-level integration instance (chat models, Slack, Figma, etc.).

@@ -63,6 +63,7 @@ flowchart TB
 | **3** | Normalized SC domain events + job kinds aligned with [WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md) | 2                   |
 | **4** | Workflow orchestrator MVP; agent tools (e.g. Cursor) with human-in-the-loop                                              | 3                   |
 | **5** | Migrate off user OAuth; optional write-back (checks/comments); Issues policy TBD                                         | 4                   |
+| **6** | Deploy `apps/worker` on **Oracle Cloud Always Free** (systemd + CI SSH/deploy hook)                                      | 2+ (ops last)       |
 
 ### Phase 0 — Foundations
 
@@ -156,19 +157,21 @@ connections; OAuth path unchanged until Phase 5.
 
 ### Phase 2 — Webhook ingest + domain sync
 
-**Ingest + PR sync (landed):**
+**Ingest + PR / push / branch sync (landed):**
 
 - `POST /api/github/webhooks` — verify `X-Hub-Signature-256` against raw body,
   idempotent BullMQ enqueue (`jobId = github-delivery-<X-GitHub-Delivery>`),
   respond **202** `{ accepted, jobId, duplicate }`. Missing secret / `REDIS_URL`
   → **503** (GitHub retries).
-- Shared `@repo/jobs`: queue names, `github.webhook.ingest` +
-  `github.sync.pull_request` payloads/enqueue helpers.
-- Worker: ingest fans out `pull_request` → `github.sync.pull_request`.
-  Sync refreshes any existing `version_control_pull_requests` links for that
-  PR; otherwise auto-links when a bound project’s work item can be resolved
-  from the branch/title (see conventions below). Unresolved PRs are skipped
-  (manual link remains the fallback). Rows still require `work_item_id`.
+- Shared `@repo/jobs`: `github.webhook.ingest`, `github.sync.pull_request`,
+  `github.sync.push`, `github.sync.branch`.
+- Worker fan-out:
+  - `pull_request` → refresh/auto-link `version_control_pull_requests`
+    (`work_item_id` still required; unresolved PRs skipped — manual link OK).
+  - `push` → upsert `version_control_branches` tip + `version_control_commits`
+    for bound projects (`project_id` required; optional `work_item_id`).
+  - `create` / `delete` (branch refs) → upsert/soft-delete
+    `version_control_branches`.
 - Set App **Webhook URL** to `https://<api-host>/api/github/webhooks` and the
   same webhook secret as `GITHUB_APP_WEBHOOK_SECRET`. Set `REDIS_URL` on both
   `api` and `worker`.
@@ -181,37 +184,65 @@ connections; OAuth path unchanged until Phase 5.
 | `{projectKey}/{slug}`    | `ALICE/fix-login`         |
 | Work-item UUID in branch | `chore/<uuid>-tweaks`     |
 
-Also scans the PR title for the same `{projectKey}-…` / `{projectKey}/…` forms.
+Scans PR title, branch name, and commit messages for the same forms.
 
-**Still open in Phase 2:**
+**Still open in Phase 2 (optional):**
 
-- `github.sync.push` / `github.sync.branch` + commit/branch tables (not in
-  schema yet).
-- Optional: nullable `work_item_id` (or link table) for synced-but-unlinked PR
-  inventory; commit trailers as an extra auto-link signal.
-- **Out of scope:** GitHub Issues → Alice work items (avoids dual ontology with
-  Jira import). Revisit as an explicit product choice later.
+- Nullable `work_item_id` on PRs (synced-but-unlinked inventory).
+- Explicit commit-trailer parser beyond message substring match.
+- **Out of scope:** GitHub Issues → Alice work items.
 
 ### Phase 3 — Normalized SC events + worker bridge
 
-- Emit Alice domain events (e.g. `PullRequestOpened`, `PushReceived`, later
-  `ReviewCommentReceived`) as orchestrator inputs — not raw GitHub payloads.
-- Queue names / `job_runs` follow WORKER_AND_STREAMER; API never runs agent
-  loops or BullMQ `Worker` processes.
+**Landed:**
+
+- After successful sync, worker emits typed Alice SC domain events via
+  `@repo/jobs` (`emitScDomainEvent` + Zod discriminated union) — not raw
+  GitHub payloads. Types: `PullRequestOpened` / `Updated` / `Closed` /
+  `Merged`, `PushReceived`, `BranchCreated` / `Updated` / `Deleted`.
+- Emit enqueues `workflow.run` when `REDIS_URL` is passed; `job_runs` table
+  tracks product status (BullMQ remains operational only).
+- Later optional: `ReviewCommentReceived` when review-comment sync exists.
 
 ### Phase 4 — Workflow orchestrator + agent tools
 
-- In-app workflows subscribe to SC events; enqueue agent steps on `apps/worker`.
-- Cursor (and peers) live as **org agent integrations/tools** (Settings vault /
-  agent connectors), **not** columns on `version_control_connections`.
-- Default **human-in-the-loop** for “resolve from PR comment” and architecture
-  proposals; optional post-back to GitHub when write permissions exist.
+**MVP landed:**
+
+- Worker handles `workflow.run`: upserts `job_runs`, then parks at
+  `awaiting_human` (HITL stub — no agent tools yet).
+- Structured log `workflow.run.hitl_required`.
+
+**Still open in Phase 4:**
+
+- In-app workflow designer / approval UI; enqueue agent steps (e.g. Cursor) on
+  `apps/worker`.
+- Cursor (and peers) as **org agent integrations/tools** (Settings vault), not
+  columns on `version_control_connections`.
+- Optional post-back to GitHub when write permissions exist.
 
 ### Phase 5 — Migration + write-back
 
-- Migrate or require re-install off user OAuth App connections.
+**Landed (App-only new connects):**
+
+- `GET /api/github/oauth/start` returns **410** (`github_oauth_retired`); prefer
+  `/api/github/app/install/start`.
+- Web connect path already uses App install; `startGithubOAuth` redirects to
+  App install.
+- Legacy OAuth **callback** + existing `auth_mode: oauth` connections still work
+  until operators reinstall with the App.
+
+**Still open in Phase 5:**
+
+- Forced migrate / delete oauth rows; drop `GITHUB_CLIENT_*` env.
 - Expand App permissions for checks / PR comments as workflows need.
-- Optional GitHub Issues policy (link vs import) as a separate decision.
+- Optional GitHub Issues policy (link vs import).
+
+### Phase 6 — Worker host (ops last)
+
+- Deploy `apps/worker` on **Oracle Cloud Always Free** (long-lived VM +
+  systemd; CI via SSH after GitHub Actions). Product sync does not depend on
+  this host being live in every environment — local/dev can run the worker
+  beside `api`.
 
 ### Locks
 

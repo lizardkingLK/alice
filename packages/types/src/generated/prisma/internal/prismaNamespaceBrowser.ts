@@ -89,6 +89,9 @@ export const ModelName = {
   charts: 'charts',
   chart_shares: 'chart_shares',
   version_control_pull_requests: 'version_control_pull_requests',
+  version_control_branches: 'version_control_branches',
+  version_control_commits: 'version_control_commits',
+  job_runs: 'job_runs',
   integrations: 'integrations',
   member_chat_model_preferences: 'member_chat_model_preferences',
   project_integration_bindings: 'project_integration_bindings'
@@ -768,6 +771,66 @@ export const Version_control_pull_requestsScalarFieldEnum = {
 } as const
 
 export type Version_control_pull_requestsScalarFieldEnum = (typeof Version_control_pull_requestsScalarFieldEnum)[keyof typeof Version_control_pull_requestsScalarFieldEnum]
+
+
+export const Version_control_branchesScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  work_item_id: 'work_item_id',
+  vendor: 'vendor',
+  repo_owner: 'repo_owner',
+  repo_name: 'repo_name',
+  name: 'name',
+  head_sha: 'head_sha',
+  deleted_at: 'deleted_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Version_control_branchesScalarFieldEnum = (typeof Version_control_branchesScalarFieldEnum)[keyof typeof Version_control_branchesScalarFieldEnum]
+
+
+export const Version_control_commitsScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  work_item_id: 'work_item_id',
+  vendor: 'vendor',
+  repo_owner: 'repo_owner',
+  repo_name: 'repo_name',
+  sha: 'sha',
+  message: 'message',
+  author_login: 'author_login',
+  author_name: 'author_name',
+  author_email: 'author_email',
+  committed_at: 'committed_at',
+  html_url: 'html_url',
+  branch_name: 'branch_name',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Version_control_commitsScalarFieldEnum = (typeof Version_control_commitsScalarFieldEnum)[keyof typeof Version_control_commitsScalarFieldEnum]
+
+
+export const Job_runsScalarFieldEnum = {
+  id: 'id',
+  parent_id: 'parent_id',
+  kind: 'kind',
+  status: 'status',
+  bullmq_job_id: 'bullmq_job_id',
+  event_id: 'event_id',
+  event_type: 'event_type',
+  delivery_id: 'delivery_id',
+  project_id: 'project_id',
+  payload: 'payload',
+  error: 'error',
+  started_at: 'started_at',
+  finished_at: 'finished_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Job_runsScalarFieldEnum = (typeof Job_runsScalarFieldEnum)[keyof typeof Job_runsScalarFieldEnum]
 
 
 export const IntegrationsScalarFieldEnum = {

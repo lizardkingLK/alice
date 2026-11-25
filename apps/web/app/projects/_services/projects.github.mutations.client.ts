@@ -42,9 +42,12 @@ export async function startGithubAppInstall(): Promise<string> {
   return startGithubAuthorizeUrl('/api/github/app/install/start');
 }
 
-/** Legacy user OAuth App connect — kept until Phase 5 migration. */
+/**
+ * @deprecated Phase 5 — user OAuth start is retired (API returns 410).
+ * Prefer `startGithubAppInstall`.
+ */
 export async function startGithubOAuth(): Promise<string> {
-  return startGithubAuthorizeUrl('/api/github/oauth/start');
+  return startGithubAppInstall();
 }
 
 export async function listGithubRepositories(

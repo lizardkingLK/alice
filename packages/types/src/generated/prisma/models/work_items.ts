@@ -389,6 +389,8 @@ export type work_itemsWhereInput = {
   worklogs?: Prisma.Work_item_worklogsListRelationFilter
   activities?: Prisma.ActivitiesListRelationFilter
   version_control_pull_requests?: Prisma.Version_control_pull_requestsListRelationFilter
+  version_control_branches?: Prisma.Version_control_branchesListRelationFilter
+  version_control_commits?: Prisma.Version_control_commitsListRelationFilter
   chart_hierarchy_rollup?: Prisma.XOR<Prisma.Work_item_chart_hierarchy_rollupsNullableScalarRelationFilter, Prisma.work_item_chart_hierarchy_rollupsWhereInput> | null
   links_as_source?: Prisma.Work_item_linksListRelationFilter
   links_as_target?: Prisma.Work_item_linksListRelationFilter
@@ -435,6 +437,8 @@ export type work_itemsOrderByWithRelationInput = {
   worklogs?: Prisma.work_item_worklogsOrderByRelationAggregateInput
   activities?: Prisma.activitiesOrderByRelationAggregateInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsOrderByRelationAggregateInput
+  version_control_branches?: Prisma.version_control_branchesOrderByRelationAggregateInput
+  version_control_commits?: Prisma.version_control_commitsOrderByRelationAggregateInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsOrderByWithRelationInput
   links_as_source?: Prisma.work_item_linksOrderByRelationAggregateInput
   links_as_target?: Prisma.work_item_linksOrderByRelationAggregateInput
@@ -485,6 +489,8 @@ export type work_itemsWhereUniqueInput = Prisma.AtLeast<{
   worklogs?: Prisma.Work_item_worklogsListRelationFilter
   activities?: Prisma.ActivitiesListRelationFilter
   version_control_pull_requests?: Prisma.Version_control_pull_requestsListRelationFilter
+  version_control_branches?: Prisma.Version_control_branchesListRelationFilter
+  version_control_commits?: Prisma.Version_control_commitsListRelationFilter
   chart_hierarchy_rollup?: Prisma.XOR<Prisma.Work_item_chart_hierarchy_rollupsNullableScalarRelationFilter, Prisma.work_item_chart_hierarchy_rollupsWhereInput> | null
   links_as_source?: Prisma.Work_item_linksListRelationFilter
   links_as_target?: Prisma.Work_item_linksListRelationFilter
@@ -592,6 +598,8 @@ export type work_itemsCreateInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
@@ -631,6 +639,8 @@ export type work_itemsUncheckedCreateInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
@@ -670,6 +680,8 @@ export type work_itemsUpdateInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
@@ -709,6 +721,8 @@ export type work_itemsUncheckedUpdateInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
@@ -1342,6 +1356,38 @@ export type work_itemsUpdateOneRequiredWithoutVersion_control_pull_requestsNeste
   update?: Prisma.XOR<Prisma.XOR<Prisma.work_itemsUpdateToOneWithWhereWithoutVersion_control_pull_requestsInput, Prisma.work_itemsUpdateWithoutVersion_control_pull_requestsInput>, Prisma.work_itemsUncheckedUpdateWithoutVersion_control_pull_requestsInput>
 }
 
+export type work_itemsCreateNestedOneWithoutVersion_control_branchesInput = {
+  create?: Prisma.XOR<Prisma.work_itemsCreateWithoutVersion_control_branchesInput, Prisma.work_itemsUncheckedCreateWithoutVersion_control_branchesInput>
+  connectOrCreate?: Prisma.work_itemsCreateOrConnectWithoutVersion_control_branchesInput
+  connect?: Prisma.work_itemsWhereUniqueInput
+}
+
+export type work_itemsUpdateOneWithoutVersion_control_branchesNestedInput = {
+  create?: Prisma.XOR<Prisma.work_itemsCreateWithoutVersion_control_branchesInput, Prisma.work_itemsUncheckedCreateWithoutVersion_control_branchesInput>
+  connectOrCreate?: Prisma.work_itemsCreateOrConnectWithoutVersion_control_branchesInput
+  upsert?: Prisma.work_itemsUpsertWithoutVersion_control_branchesInput
+  disconnect?: Prisma.work_itemsWhereInput | boolean
+  delete?: Prisma.work_itemsWhereInput | boolean
+  connect?: Prisma.work_itemsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.work_itemsUpdateToOneWithWhereWithoutVersion_control_branchesInput, Prisma.work_itemsUpdateWithoutVersion_control_branchesInput>, Prisma.work_itemsUncheckedUpdateWithoutVersion_control_branchesInput>
+}
+
+export type work_itemsCreateNestedOneWithoutVersion_control_commitsInput = {
+  create?: Prisma.XOR<Prisma.work_itemsCreateWithoutVersion_control_commitsInput, Prisma.work_itemsUncheckedCreateWithoutVersion_control_commitsInput>
+  connectOrCreate?: Prisma.work_itemsCreateOrConnectWithoutVersion_control_commitsInput
+  connect?: Prisma.work_itemsWhereUniqueInput
+}
+
+export type work_itemsUpdateOneWithoutVersion_control_commitsNestedInput = {
+  create?: Prisma.XOR<Prisma.work_itemsCreateWithoutVersion_control_commitsInput, Prisma.work_itemsUncheckedCreateWithoutVersion_control_commitsInput>
+  connectOrCreate?: Prisma.work_itemsCreateOrConnectWithoutVersion_control_commitsInput
+  upsert?: Prisma.work_itemsUpsertWithoutVersion_control_commitsInput
+  disconnect?: Prisma.work_itemsWhereInput | boolean
+  delete?: Prisma.work_itemsWhereInput | boolean
+  connect?: Prisma.work_itemsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.work_itemsUpdateToOneWithWhereWithoutVersion_control_commitsInput, Prisma.work_itemsUpdateWithoutVersion_control_commitsInput>, Prisma.work_itemsUncheckedUpdateWithoutVersion_control_commitsInput>
+}
+
 export type work_itemsCreateWithoutAssigneeInput = {
   id?: string
   title: string
@@ -1375,6 +1421,8 @@ export type work_itemsCreateWithoutAssigneeInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
@@ -1413,6 +1461,8 @@ export type work_itemsUncheckedCreateWithoutAssigneeInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
@@ -1461,6 +1511,8 @@ export type work_itemsCreateWithoutReporterInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
@@ -1499,6 +1551,8 @@ export type work_itemsUncheckedCreateWithoutReporterInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
@@ -1547,6 +1601,8 @@ export type work_itemsCreateWithoutCreated_by_userInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
@@ -1585,6 +1641,8 @@ export type work_itemsUncheckedCreateWithoutCreated_by_userInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
@@ -1633,6 +1691,8 @@ export type work_itemsCreateWithoutUpdated_by_userInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
@@ -1671,6 +1731,8 @@ export type work_itemsUncheckedCreateWithoutUpdated_by_userInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
@@ -1816,6 +1878,8 @@ export type work_itemsCreateWithoutProjectInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
@@ -1854,6 +1918,8 @@ export type work_itemsUncheckedCreateWithoutProjectInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
@@ -1918,6 +1984,8 @@ export type work_itemsCreateWithoutSprintInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
@@ -1956,6 +2024,8 @@ export type work_itemsUncheckedCreateWithoutSprintInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
@@ -2020,6 +2090,8 @@ export type work_itemsCreateWithoutChildrenInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
@@ -2058,6 +2130,8 @@ export type work_itemsUncheckedCreateWithoutChildrenInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
@@ -2101,6 +2175,8 @@ export type work_itemsCreateWithoutParentInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
@@ -2139,6 +2215,8 @@ export type work_itemsUncheckedCreateWithoutParentInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
@@ -2198,6 +2276,8 @@ export type work_itemsUpdateWithoutChildrenInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
@@ -2236,6 +2316,8 @@ export type work_itemsUncheckedUpdateWithoutChildrenInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
@@ -2291,6 +2373,8 @@ export type work_itemsCreateWithoutLinks_as_sourceInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
   links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
@@ -2329,6 +2413,8 @@ export type work_itemsUncheckedCreateWithoutLinks_as_sourceInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
   links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
@@ -2372,6 +2458,8 @@ export type work_itemsCreateWithoutLinks_as_targetInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
 }
@@ -2410,6 +2498,8 @@ export type work_itemsUncheckedCreateWithoutLinks_as_targetInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
 }
@@ -2464,6 +2554,8 @@ export type work_itemsUpdateWithoutLinks_as_sourceInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
   links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
@@ -2502,6 +2594,8 @@ export type work_itemsUncheckedUpdateWithoutLinks_as_sourceInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
   links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
@@ -2551,6 +2645,8 @@ export type work_itemsUpdateWithoutLinks_as_targetInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
 }
@@ -2589,6 +2685,8 @@ export type work_itemsUncheckedUpdateWithoutLinks_as_targetInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
 }
@@ -2626,6 +2724,8 @@ export type work_itemsCreateWithoutActivitiesInput = {
   attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
@@ -2664,6 +2764,8 @@ export type work_itemsUncheckedCreateWithoutActivitiesInput = {
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
@@ -2718,6 +2820,8 @@ export type work_itemsUpdateWithoutActivitiesInput = {
   attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
@@ -2756,6 +2860,8 @@ export type work_itemsUncheckedUpdateWithoutActivitiesInput = {
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
@@ -2795,6 +2901,8 @@ export type work_itemsCreateWithoutChart_hierarchy_rollupInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
 }
@@ -2833,6 +2941,8 @@ export type work_itemsUncheckedCreateWithoutChart_hierarchy_rollupInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
 }
@@ -2887,6 +2997,8 @@ export type work_itemsUpdateWithoutChart_hierarchy_rollupInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
 }
@@ -2925,6 +3037,8 @@ export type work_itemsUncheckedUpdateWithoutChart_hierarchy_rollupInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
 }
@@ -2962,6 +3076,8 @@ export type work_itemsCreateWithoutWorklogsInput = {
   attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
@@ -3000,6 +3116,8 @@ export type work_itemsUncheckedCreateWithoutWorklogsInput = {
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
@@ -3054,6 +3172,8 @@ export type work_itemsUpdateWithoutWorklogsInput = {
   attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
@@ -3092,6 +3212,8 @@ export type work_itemsUncheckedUpdateWithoutWorklogsInput = {
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
@@ -3130,6 +3252,8 @@ export type work_itemsCreateWithoutCommentsInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
@@ -3168,6 +3292,8 @@ export type work_itemsUncheckedCreateWithoutCommentsInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
@@ -3222,6 +3348,8 @@ export type work_itemsUpdateWithoutCommentsInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
@@ -3260,6 +3388,8 @@ export type work_itemsUncheckedUpdateWithoutCommentsInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
@@ -3298,6 +3428,8 @@ export type work_itemsCreateWithoutAttachmentsInput = {
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
@@ -3336,6 +3468,8 @@ export type work_itemsUncheckedCreateWithoutAttachmentsInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
@@ -3390,6 +3524,8 @@ export type work_itemsUpdateWithoutAttachmentsInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
@@ -3428,6 +3564,8 @@ export type work_itemsUncheckedUpdateWithoutAttachmentsInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
@@ -3466,6 +3604,8 @@ export type work_itemsCreateWithoutVersion_control_pull_requestsInput = {
   attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
@@ -3504,6 +3644,8 @@ export type work_itemsUncheckedCreateWithoutVersion_control_pull_requestsInput =
   attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
   worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
   activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
   links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
   links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
@@ -3558,6 +3700,8 @@ export type work_itemsUpdateWithoutVersion_control_pull_requestsInput = {
   attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
@@ -3596,6 +3740,360 @@ export type work_itemsUncheckedUpdateWithoutVersion_control_pull_requestsInput =
   attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
+  chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
+}
+
+export type work_itemsCreateWithoutVersion_control_branchesInput = {
+  id?: string
+  title: string
+  slug: string
+  type: string
+  priority?: $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  due_date?: Date | string | null
+  story_points?: number | null
+  status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
+  record_status?: $Enums.RecordStatus
+  done_at?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  project: Prisma.projectsCreateNestedOneWithoutWork_itemsInput
+  sprint?: Prisma.sprintsCreateNestedOneWithoutWork_itemsInput
+  parent?: Prisma.work_itemsCreateNestedOneWithoutChildrenInput
+  children?: Prisma.work_itemsCreateNestedManyWithoutParentInput
+  assignee?: Prisma.usersCreateNestedOneWithoutAssigned_work_itemsInput
+  reporter?: Prisma.usersCreateNestedOneWithoutReported_work_itemsInput
+  created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_work_itemsInput
+  updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_work_itemsInput
+  comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
+  attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
+  worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
+  version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutWork_itemInput
+  chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
+}
+
+export type work_itemsUncheckedCreateWithoutVersion_control_branchesInput = {
+  id?: string
+  project_id: string
+  sprint_id?: string | null
+  parent_id?: string | null
+  title: string
+  slug: string
+  type: string
+  priority?: $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  assignee_id?: string | null
+  reporter_id?: string | null
+  due_date?: Date | string | null
+  story_points?: number | null
+  status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
+  record_status?: $Enums.RecordStatus
+  done_at?: Date | string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  children?: Prisma.work_itemsUncheckedCreateNestedManyWithoutParentInput
+  comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
+  attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
+  worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutWork_itemInput
+  chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
+}
+
+export type work_itemsCreateOrConnectWithoutVersion_control_branchesInput = {
+  where: Prisma.work_itemsWhereUniqueInput
+  create: Prisma.XOR<Prisma.work_itemsCreateWithoutVersion_control_branchesInput, Prisma.work_itemsUncheckedCreateWithoutVersion_control_branchesInput>
+}
+
+export type work_itemsUpsertWithoutVersion_control_branchesInput = {
+  update: Prisma.XOR<Prisma.work_itemsUpdateWithoutVersion_control_branchesInput, Prisma.work_itemsUncheckedUpdateWithoutVersion_control_branchesInput>
+  create: Prisma.XOR<Prisma.work_itemsCreateWithoutVersion_control_branchesInput, Prisma.work_itemsUncheckedCreateWithoutVersion_control_branchesInput>
+  where?: Prisma.work_itemsWhereInput
+}
+
+export type work_itemsUpdateToOneWithWhereWithoutVersion_control_branchesInput = {
+  where?: Prisma.work_itemsWhereInput
+  data: Prisma.XOR<Prisma.work_itemsUpdateWithoutVersion_control_branchesInput, Prisma.work_itemsUncheckedUpdateWithoutVersion_control_branchesInput>
+}
+
+export type work_itemsUpdateWithoutVersion_control_branchesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
+  record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  project?: Prisma.projectsUpdateOneRequiredWithoutWork_itemsNestedInput
+  sprint?: Prisma.sprintsUpdateOneWithoutWork_itemsNestedInput
+  parent?: Prisma.work_itemsUpdateOneWithoutChildrenNestedInput
+  children?: Prisma.work_itemsUpdateManyWithoutParentNestedInput
+  assignee?: Prisma.usersUpdateOneWithoutAssigned_work_itemsNestedInput
+  reporter?: Prisma.usersUpdateOneWithoutReported_work_itemsNestedInput
+  created_by_user?: Prisma.usersUpdateOneWithoutCreated_work_itemsNestedInput
+  updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_work_itemsNestedInput
+  comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
+  attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
+  worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
+  version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
+  chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
+}
+
+export type work_itemsUncheckedUpdateWithoutVersion_control_branchesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  assignee_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reporter_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
+  record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  children?: Prisma.work_itemsUncheckedUpdateManyWithoutParentNestedInput
+  comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
+  attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
+  worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
+  chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
+}
+
+export type work_itemsCreateWithoutVersion_control_commitsInput = {
+  id?: string
+  title: string
+  slug: string
+  type: string
+  priority?: $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  due_date?: Date | string | null
+  story_points?: number | null
+  status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
+  record_status?: $Enums.RecordStatus
+  done_at?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  project: Prisma.projectsCreateNestedOneWithoutWork_itemsInput
+  sprint?: Prisma.sprintsCreateNestedOneWithoutWork_itemsInput
+  parent?: Prisma.work_itemsCreateNestedOneWithoutChildrenInput
+  children?: Prisma.work_itemsCreateNestedManyWithoutParentInput
+  assignee?: Prisma.usersCreateNestedOneWithoutAssigned_work_itemsInput
+  reporter?: Prisma.usersCreateNestedOneWithoutReported_work_itemsInput
+  created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_work_itemsInput
+  updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_work_itemsInput
+  comments?: Prisma.commentsCreateNestedManyWithoutWork_itemInput
+  attachments?: Prisma.attachmentsCreateNestedManyWithoutWork_itemInput
+  worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesCreateNestedManyWithoutWork_itemInput
+  version_control_pull_requests?: Prisma.version_control_pull_requestsCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutWork_itemInput
+  chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksCreateNestedManyWithoutTargetInput
+}
+
+export type work_itemsUncheckedCreateWithoutVersion_control_commitsInput = {
+  id?: string
+  project_id: string
+  sprint_id?: string | null
+  parent_id?: string | null
+  title: string
+  slug: string
+  type: string
+  priority?: $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  assignee_id?: string | null
+  reporter_id?: string | null
+  due_date?: Date | string | null
+  story_points?: number | null
+  status?: $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: string | null
+  status_category?: string
+  state_id?: string
+  state_workflow_id?: string
+  record_status?: $Enums.RecordStatus
+  done_at?: Date | string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  children?: Prisma.work_itemsUncheckedCreateNestedManyWithoutParentInput
+  comments?: Prisma.commentsUncheckedCreateNestedManyWithoutWork_itemInput
+  attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutWork_itemInput
+  worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutWork_itemInput
+  activities?: Prisma.activitiesUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedCreateNestedManyWithoutWork_itemInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutWork_itemInput
+  chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedOneWithoutWork_itemInput
+  links_as_source?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutSourceInput
+  links_as_target?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutTargetInput
+}
+
+export type work_itemsCreateOrConnectWithoutVersion_control_commitsInput = {
+  where: Prisma.work_itemsWhereUniqueInput
+  create: Prisma.XOR<Prisma.work_itemsCreateWithoutVersion_control_commitsInput, Prisma.work_itemsUncheckedCreateWithoutVersion_control_commitsInput>
+}
+
+export type work_itemsUpsertWithoutVersion_control_commitsInput = {
+  update: Prisma.XOR<Prisma.work_itemsUpdateWithoutVersion_control_commitsInput, Prisma.work_itemsUncheckedUpdateWithoutVersion_control_commitsInput>
+  create: Prisma.XOR<Prisma.work_itemsCreateWithoutVersion_control_commitsInput, Prisma.work_itemsUncheckedCreateWithoutVersion_control_commitsInput>
+  where?: Prisma.work_itemsWhereInput
+}
+
+export type work_itemsUpdateToOneWithWhereWithoutVersion_control_commitsInput = {
+  where?: Prisma.work_itemsWhereInput
+  data: Prisma.XOR<Prisma.work_itemsUpdateWithoutVersion_control_commitsInput, Prisma.work_itemsUncheckedUpdateWithoutVersion_control_commitsInput>
+}
+
+export type work_itemsUpdateWithoutVersion_control_commitsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
+  record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  project?: Prisma.projectsUpdateOneRequiredWithoutWork_itemsNestedInput
+  sprint?: Prisma.sprintsUpdateOneWithoutWork_itemsNestedInput
+  parent?: Prisma.work_itemsUpdateOneWithoutChildrenNestedInput
+  children?: Prisma.work_itemsUpdateManyWithoutParentNestedInput
+  assignee?: Prisma.usersUpdateOneWithoutAssigned_work_itemsNestedInput
+  reporter?: Prisma.usersUpdateOneWithoutReported_work_itemsNestedInput
+  created_by_user?: Prisma.usersUpdateOneWithoutCreated_work_itemsNestedInput
+  updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_work_itemsNestedInput
+  comments?: Prisma.commentsUpdateManyWithoutWork_itemNestedInput
+  attachments?: Prisma.attachmentsUpdateManyWithoutWork_itemNestedInput
+  worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
+  version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
+  links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
+  links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
+}
+
+export type work_itemsUncheckedUpdateWithoutVersion_control_commitsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  sprint_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parent_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  priority?: Prisma.EnumWorkItemPriorityFieldUpdateOperationsInput | $Enums.WorkItemPriority
+  description?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  labels?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  assignee_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reporter_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  due_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  story_points?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  status?: Prisma.EnumWorkItemStatusFieldUpdateOperationsInput | $Enums.WorkItemStatus
+  state?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  board_column_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status_category?: Prisma.StringFieldUpdateOperationsInput | string
+  state_id?: Prisma.StringFieldUpdateOperationsInput | string
+  state_workflow_id?: Prisma.StringFieldUpdateOperationsInput | string
+  record_status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  done_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  children?: Prisma.work_itemsUncheckedUpdateManyWithoutParentNestedInput
+  comments?: Prisma.commentsUncheckedUpdateManyWithoutWork_itemNestedInput
+  attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput
+  worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
+  activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
@@ -3750,6 +4248,8 @@ export type work_itemsUpdateWithoutAssigneeInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
@@ -3788,6 +4288,8 @@ export type work_itemsUncheckedUpdateWithoutAssigneeInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
@@ -3855,6 +4357,8 @@ export type work_itemsUpdateWithoutReporterInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
@@ -3893,6 +4397,8 @@ export type work_itemsUncheckedUpdateWithoutReporterInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
@@ -3960,6 +4466,8 @@ export type work_itemsUpdateWithoutCreated_by_userInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
@@ -3998,6 +4506,8 @@ export type work_itemsUncheckedUpdateWithoutCreated_by_userInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
@@ -4065,6 +4575,8 @@ export type work_itemsUpdateWithoutUpdated_by_userInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
@@ -4103,6 +4615,8 @@ export type work_itemsUncheckedUpdateWithoutUpdated_by_userInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
@@ -4199,6 +4713,8 @@ export type work_itemsUpdateWithoutProjectInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
@@ -4237,6 +4753,8 @@ export type work_itemsUncheckedUpdateWithoutProjectInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
@@ -4333,6 +4851,8 @@ export type work_itemsUpdateWithoutSprintInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
@@ -4371,6 +4891,8 @@ export type work_itemsUncheckedUpdateWithoutSprintInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
@@ -4467,6 +4989,8 @@ export type work_itemsUpdateWithoutParentInput = {
   worklogs?: Prisma.work_item_worklogsUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUpdateManyWithoutTargetNestedInput
@@ -4505,6 +5029,8 @@ export type work_itemsUncheckedUpdateWithoutParentInput = {
   worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutWork_itemNestedInput
   activities?: Prisma.activitiesUncheckedUpdateManyWithoutWork_itemNestedInput
   version_control_pull_requests?: Prisma.version_control_pull_requestsUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutWork_itemNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutWork_itemNestedInput
   chart_hierarchy_rollup?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateOneWithoutWork_itemNestedInput
   links_as_source?: Prisma.work_item_linksUncheckedUpdateManyWithoutSourceNestedInput
   links_as_target?: Prisma.work_item_linksUncheckedUpdateManyWithoutTargetNestedInput
@@ -4551,6 +5077,8 @@ export type Work_itemsCountOutputType = {
   worklogs: number
   activities: number
   version_control_pull_requests: number
+  version_control_branches: number
+  version_control_commits: number
   links_as_source: number
   links_as_target: number
 }
@@ -4562,6 +5090,8 @@ export type Work_itemsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extens
   worklogs?: boolean | Work_itemsCountOutputTypeCountWorklogsArgs
   activities?: boolean | Work_itemsCountOutputTypeCountActivitiesArgs
   version_control_pull_requests?: boolean | Work_itemsCountOutputTypeCountVersion_control_pull_requestsArgs
+  version_control_branches?: boolean | Work_itemsCountOutputTypeCountVersion_control_branchesArgs
+  version_control_commits?: boolean | Work_itemsCountOutputTypeCountVersion_control_commitsArgs
   links_as_source?: boolean | Work_itemsCountOutputTypeCountLinks_as_sourceArgs
   links_as_target?: boolean | Work_itemsCountOutputTypeCountLinks_as_targetArgs
 }
@@ -4621,6 +5151,20 @@ export type Work_itemsCountOutputTypeCountVersion_control_pull_requestsArgs<ExtA
 /**
  * Work_itemsCountOutputType without action
  */
+export type Work_itemsCountOutputTypeCountVersion_control_branchesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.version_control_branchesWhereInput
+}
+
+/**
+ * Work_itemsCountOutputType without action
+ */
+export type Work_itemsCountOutputTypeCountVersion_control_commitsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.version_control_commitsWhereInput
+}
+
+/**
+ * Work_itemsCountOutputType without action
+ */
 export type Work_itemsCountOutputTypeCountLinks_as_sourceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.work_item_linksWhereInput
 }
@@ -4674,6 +5218,8 @@ export type work_itemsSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   worklogs?: boolean | Prisma.work_items$worklogsArgs<ExtArgs>
   activities?: boolean | Prisma.work_items$activitiesArgs<ExtArgs>
   version_control_pull_requests?: boolean | Prisma.work_items$version_control_pull_requestsArgs<ExtArgs>
+  version_control_branches?: boolean | Prisma.work_items$version_control_branchesArgs<ExtArgs>
+  version_control_commits?: boolean | Prisma.work_items$version_control_commitsArgs<ExtArgs>
   chart_hierarchy_rollup?: boolean | Prisma.work_items$chart_hierarchy_rollupArgs<ExtArgs>
   links_as_source?: boolean | Prisma.work_items$links_as_sourceArgs<ExtArgs>
   links_as_target?: boolean | Prisma.work_items$links_as_targetArgs<ExtArgs>
@@ -4799,6 +5345,8 @@ export type work_itemsInclude<ExtArgs extends runtime.Types.Extensions.InternalA
   worklogs?: boolean | Prisma.work_items$worklogsArgs<ExtArgs>
   activities?: boolean | Prisma.work_items$activitiesArgs<ExtArgs>
   version_control_pull_requests?: boolean | Prisma.work_items$version_control_pull_requestsArgs<ExtArgs>
+  version_control_branches?: boolean | Prisma.work_items$version_control_branchesArgs<ExtArgs>
+  version_control_commits?: boolean | Prisma.work_items$version_control_commitsArgs<ExtArgs>
   chart_hierarchy_rollup?: boolean | Prisma.work_items$chart_hierarchy_rollupArgs<ExtArgs>
   links_as_source?: boolean | Prisma.work_items$links_as_sourceArgs<ExtArgs>
   links_as_target?: boolean | Prisma.work_items$links_as_targetArgs<ExtArgs>
@@ -4839,6 +5387,8 @@ export type $work_itemsPayload<ExtArgs extends runtime.Types.Extensions.Internal
     worklogs: Prisma.$work_item_worklogsPayload<ExtArgs>[]
     activities: Prisma.$activitiesPayload<ExtArgs>[]
     version_control_pull_requests: Prisma.$version_control_pull_requestsPayload<ExtArgs>[]
+    version_control_branches: Prisma.$version_control_branchesPayload<ExtArgs>[]
+    version_control_commits: Prisma.$version_control_commitsPayload<ExtArgs>[]
     chart_hierarchy_rollup: Prisma.$work_item_chart_hierarchy_rollupsPayload<ExtArgs> | null
     links_as_source: Prisma.$work_item_linksPayload<ExtArgs>[]
     links_as_target: Prisma.$work_item_linksPayload<ExtArgs>[]
@@ -5295,6 +5845,8 @@ export interface Prisma__work_itemsClient<T, Null = never, ExtArgs extends runti
   worklogs<T extends Prisma.work_items$worklogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$worklogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$work_item_worklogsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   activities<T extends Prisma.work_items$activitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$activitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$activitiesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   version_control_pull_requests<T extends Prisma.work_items$version_control_pull_requestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$version_control_pull_requestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$version_control_pull_requestsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  version_control_branches<T extends Prisma.work_items$version_control_branchesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$version_control_branchesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$version_control_branchesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  version_control_commits<T extends Prisma.work_items$version_control_commitsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$version_control_commitsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$version_control_commitsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   chart_hierarchy_rollup<T extends Prisma.work_items$chart_hierarchy_rollupArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$chart_hierarchy_rollupArgs<ExtArgs>>): Prisma.Prisma__work_item_chart_hierarchy_rollupsClient<runtime.Types.Result.GetResult<Prisma.$work_item_chart_hierarchy_rollupsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   links_as_source<T extends Prisma.work_items$links_as_sourceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$links_as_sourceArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$work_item_linksPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   links_as_target<T extends Prisma.work_items$links_as_targetArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.work_items$links_as_targetArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$work_item_linksPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -6010,6 +6562,54 @@ export type work_items$version_control_pull_requestsArgs<ExtArgs extends runtime
   take?: number
   skip?: number
   distinct?: Prisma.Version_control_pull_requestsScalarFieldEnum | Prisma.Version_control_pull_requestsScalarFieldEnum[]
+}
+
+/**
+ * work_items.version_control_branches
+ */
+export type work_items$version_control_branchesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the version_control_branches
+   */
+  select?: Prisma.version_control_branchesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the version_control_branches
+   */
+  omit?: Prisma.version_control_branchesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.version_control_branchesInclude<ExtArgs> | null
+  where?: Prisma.version_control_branchesWhereInput
+  orderBy?: Prisma.version_control_branchesOrderByWithRelationInput | Prisma.version_control_branchesOrderByWithRelationInput[]
+  cursor?: Prisma.version_control_branchesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Version_control_branchesScalarFieldEnum | Prisma.Version_control_branchesScalarFieldEnum[]
+}
+
+/**
+ * work_items.version_control_commits
+ */
+export type work_items$version_control_commitsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the version_control_commits
+   */
+  select?: Prisma.version_control_commitsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the version_control_commits
+   */
+  omit?: Prisma.version_control_commitsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.version_control_commitsInclude<ExtArgs> | null
+  where?: Prisma.version_control_commitsWhereInput
+  orderBy?: Prisma.version_control_commitsOrderByWithRelationInput | Prisma.version_control_commitsOrderByWithRelationInput[]
+  cursor?: Prisma.version_control_commitsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Version_control_commitsScalarFieldEnum | Prisma.Version_control_commitsScalarFieldEnum[]
 }
 
 /**

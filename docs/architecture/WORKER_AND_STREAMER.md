@@ -29,7 +29,10 @@ Introduce two long-lived deployables beside the existing Vercel apps:
 
 1. **Do not combine** streamer and worker into one process.
 2. **Queue stack:** BullMQ + Upstash Redis (`ioredis`).
-3. **Deploy:** `apps/worker` on Render (Background Worker). `apps/api` on Vercel **enqueues only**.
+3. **Deploy:** `apps/worker` on **Oracle Cloud Always Free** (long-lived
+   VM / systemd; see Phase ops below). `apps/api` on Vercel **enqueues only**.
+   (Render Background Worker was the earlier plan; Always Free avoids paid
+   worker tiers that require a card.)
 4. **Parent / child jobs:** BullMQ `FlowProducer` (or parent opts) + Postgres `job_runs` for product tracking.
 5. **QStash is not the primary** job system (optional later for simple HTTP schedules only).
 
@@ -200,7 +203,7 @@ When picking up worker jobs for these kinds:
 
 - [x] Scaffold `apps/worker` (Render entrypoint, BullMQ workers, env for Upstash Redis)
 - [x] Add `@repo/jobs` (queue names, Zod payloads; Flow helpers later); api produces, worker consumes
-- [ ] Design and migrate `job_runs` (parent/child) in Supabase
+- [x] Design and migrate `job_runs` (parent/child column; FlowProducer later) in Supabase
 - [x] First real job kind + 202 enqueue path from `apps/api` (`github.webhook.ingest`)
 - [ ] Lock streamer approach (Pusher/Ably vs native WS); scaffold `apps/streamer` when needed
 - [ ] Update [TRD.md](./TRD.md) deployment section when apps exist
@@ -218,9 +221,10 @@ job kinds. Product phases live in
 | ------------------------------- | ----- | -------------------------------------------------------------------------------- |
 | `github.webhook.ingest`         | 2     | After API HMAC verify — normalize payload, idempotency key, fan-out (**landed**) |
 | `github.sync.pull_request`      | 2     | Upsert PR (+ link work item when resolvable) (**landed**)                        |
-| `github.sync.push`              | 2     | Commits / branch tip updates (deferred — no table yet)                           |
-| `github.sync.branch`            | 2     | Branch create/delete (deferred — no table yet)                                   |
-| `workflow.run`                  | 4     | Orchestrator parent flow (FlowProducer)                                          |
+| `github.sync.push`              | 2     | Commits / branch tip upserts (**landed**)                                        |
+| `github.sync.branch`            | 2     | Branch create/delete upserts (**landed**)                                        |
+| SC domain events                | 3     | Emit after sync + enqueue `workflow.run` (**landed**)                            |
+| `workflow.run`                  | 4     | Persist `job_runs`, HITL park (`awaiting_human`) (**MVP landed**; agents later)  |
 | `agent.tool.cursor` (and peers) | 4     | Long agent tool execution; never on `apps/api`                                   |
 
 Webhook HTTP handlers on `apps/api` **verify + enqueue only**. Agent tool loops

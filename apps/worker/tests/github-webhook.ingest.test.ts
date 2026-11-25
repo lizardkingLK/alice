@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const enqueueGithubSyncPullRequest = vi.fn();
+const enqueueGithubSyncPush = vi.fn();
+const enqueueGithubSyncBranch = vi.fn();
 
 vi.mock('@repo/jobs', async () => {
   const actual =
@@ -9,6 +11,10 @@ vi.mock('@repo/jobs', async () => {
     ...actual,
     enqueueGithubSyncPullRequest: (...args: unknown[]) =>
       enqueueGithubSyncPullRequest(...args),
+    enqueueGithubSyncPush: (...args: unknown[]) =>
+      enqueueGithubSyncPush(...args),
+    enqueueGithubSyncBranch: (...args: unknown[]) =>
+      enqueueGithubSyncBranch(...args),
   };
 });
 
@@ -22,9 +28,16 @@ import { handleGithubWebhookIngest } from '../src/jobs/github-webhook.ingest';
 
 describe('handleGithubWebhookIngest', () => {
   beforeEach(() => {
-    enqueueGithubSyncPullRequest.mockReset();
-    enqueueGithubSyncPullRequest.mockResolvedValue({
+    enqueueGithubSyncPullRequest.mockReset().mockResolvedValue({
       jobId: 'github-sync-pr-d1',
+      duplicate: false,
+    });
+    enqueueGithubSyncPush.mockReset().mockResolvedValue({
+      jobId: 'github-sync-push-d1',
+      duplicate: false,
+    });
+    enqueueGithubSyncBranch.mockReset().mockResolvedValue({
+      jobId: 'github-sync-branch-d1',
       duplicate: false,
     });
   });
@@ -40,24 +53,11 @@ describe('handleGithubWebhookIngest', () => {
     });
 
     expect(enqueueGithubSyncPullRequest).not.toHaveBeenCalled();
+    expect(enqueueGithubSyncPush).not.toHaveBeenCalled();
     log.mockRestore();
   });
 
-  it('skips events that are not pull_request yet', async () => {
-    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
-
-    await handleGithubWebhookIngest({
-      deliveryId: 'd-push',
-      event: 'push',
-      receivedAt: '2026-01-01T00:00:00.000Z',
-      payload: {},
-    });
-
-    expect(enqueueGithubSyncPullRequest).not.toHaveBeenCalled();
-    log.mockRestore();
-  });
-
-  it('fans out pull_request events to github.sync.pull_request', async () => {
+  it('fans out pull_request events', async () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
     await handleGithubWebhookIngest({
@@ -83,15 +83,56 @@ describe('handleGithubWebhookIngest', () => {
       },
     });
 
-    expect(enqueueGithubSyncPullRequest).toHaveBeenCalledWith(
+    expect(enqueueGithubSyncPullRequest).toHaveBeenCalled();
+    log.mockRestore();
+  });
+
+  it('fans out push events', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    await handleGithubWebhookIngest({
+      deliveryId: 'd-push',
+      event: 'push',
+      installationId: 7,
+      receivedAt: '2026-01-01T00:00:00.000Z',
+      payload: {
+        ref: 'refs/heads/main',
+        before: 'a',
+        after: 'b',
+        created: false,
+        deleted: false,
+        commits: [],
+        repository: { name: 'app', owner: { login: 'acme' } },
+        installation: { id: 7 },
+      },
+    });
+
+    expect(enqueueGithubSyncPush).toHaveBeenCalledWith(
       'redis://localhost:6379',
-      expect.objectContaining({
-        deliveryId: 'd1',
-        installationId: 7,
-        prNumber: 4,
-        branchName: 'ALICE-hello',
-        status: 'open',
-      })
+      expect.objectContaining({ branchName: 'main' })
+    );
+    log.mockRestore();
+  });
+
+  it('fans out branch create events', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    await handleGithubWebhookIngest({
+      deliveryId: 'd-create',
+      event: 'create',
+      installationId: 7,
+      receivedAt: '2026-01-01T00:00:00.000Z',
+      payload: {
+        ref: 'feature/x',
+        ref_type: 'branch',
+        repository: { name: 'app', owner: { login: 'acme' } },
+        installation: { id: 7 },
+      },
+    });
+
+    expect(enqueueGithubSyncBranch).toHaveBeenCalledWith(
+      'redis://localhost:6379',
+      expect.objectContaining({ action: 'create', branchName: 'feature/x' })
     );
     log.mockRestore();
   });

@@ -24,6 +24,13 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT EXECUTE ON ROU
 REVOKE ALL ON TABLE public.integrations FROM anon, authenticated;
 REVOKE ALL ON TABLE public.project_management_connections FROM anon, authenticated;
 REVOKE ALL ON TABLE public.version_control_connections FROM anon, authenticated;
+REVOKE ALL ON TABLE public.version_control_branches FROM anon, authenticated;
+REVOKE ALL ON TABLE public.version_control_commits FROM anon, authenticated;
+REVOKE ALL ON TABLE public.job_runs FROM anon, authenticated;
+REVOKE ALL ON TABLE public.job_runs FROM anon, authenticated;
+REVOKE ALL ON TABLE public.job_runs FROM anon, authenticated;
+REVOKE ALL ON TABLE public.job_runs FROM anon, authenticated;
+REVOKE ALL ON TABLE public.job_runs FROM anon, authenticated;
 REVOKE ALL ON TABLE public.chat_attachments FROM anon, authenticated;
 -- Chat agent catalogs: authenticated may SELECT (RLS); writes via service_role / API.
 REVOKE INSERT, UPDATE, DELETE ON TABLE public.chat_tools FROM anon, authenticated;

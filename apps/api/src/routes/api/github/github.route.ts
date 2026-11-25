@@ -101,17 +101,18 @@ export function createGithubRouter(deps: GithubRouterDeps) {
     }
   });
 
-  githubRouter.get(
-    '/oauth/start',
-    requireApiAuth,
-    async (req: AuthenticatedRequest, res) =>
-      respondWithAuthorizeUrl(
-        req,
-        res,
-        (userId) => githubService.startOAuth(userId),
-        'Failed to start GitHub OAuth'
-      )
-  );
+  /**
+   * Phase 5: new connects use GitHub App install only.
+   * Legacy OAuth callback + existing oauth rows still work.
+   */
+  githubRouter.get('/oauth/start', requireApiAuth, async (_req, res) => {
+    return res.status(410).json({
+      error:
+        'GitHub user OAuth connect is retired. Use GitHub App install instead.',
+      prefer: '/api/github/app/install/start',
+      code: 'github_oauth_retired',
+    });
+  });
 
   githubRouter.get('/oauth/callback', async (req, res) => {
     const code = typeof req.query.code === 'string' ? req.query.code : '';
