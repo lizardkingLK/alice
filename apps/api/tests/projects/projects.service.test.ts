@@ -166,6 +166,7 @@ describe('ProjectsService backend tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    listAccessibleProjectIdsMock.mockResolvedValue([mockProject.id]);
   });
 
   function mockActorRole(role: 'admin' | 'manager' | 'member' | null) {
@@ -611,6 +612,109 @@ describe('ProjectsService backend tests', () => {
   });
 
   describe('updateProject', () => {
+    it('allows a manager to update a project they can access', async () => {
+      mockActorRole('manager');
+      updateMock.mockResolvedValue({ ...mockProject, name: 'Updated name' });
+
+      await service.updateProject(
+        'user-manager',
+        mockProject.id,
+        { name: 'Updated name' },
+        mockProject.updated_at
+      );
+
+      expect(listAccessibleProjectIdsMock).toHaveBeenCalledWith('user-manager');
+      expect(updateMock).toHaveBeenCalledWith(
+        mockProject.id,
+        { name: 'Updated name' },
+        'user-manager',
+        mockProject.updated_at
+      );
+    });
+
+    it('rejects a manager before side effects when the project is inaccessible', async () => {
+      mockActorRole('manager');
+      listAccessibleProjectIdsMock.mockResolvedValue([]);
+
+      await expect(
+        service.updateProject(
+          'user-manager',
+          'other-project',
+          { name: 'Changed by outsider', key: 'OTHER' },
+          mockProject.updated_at
+        )
+      ).rejects.toThrow(
+        'Unauthorized. You do not have permission to manage this project.'
+      );
+
+      expect(findByKeyMock).not.toHaveBeenCalled();
+      expect(findByIdMock).not.toHaveBeenCalled();
+      expect(previewWorkItemTypeRemovalMock).not.toHaveBeenCalled();
+      expect(applyWorkItemTypeRemovalStrategiesMock).not.toHaveBeenCalled();
+      expect(updateMock).not.toHaveBeenCalled();
+      expect(ensureOwnerIsMemberMock).not.toHaveBeenCalled();
+      expect(versionControlFindFirstMock).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      {
+        action: 'change',
+        figmaUrl: 'https://www.figma.com/design/other-file/Other',
+      },
+      { action: 'remove', figmaUrl: null },
+    ] as const)(
+      'does not allow a manager to $action another project Figma link',
+      async ({ figmaUrl }) => {
+        mockActorRole('manager');
+        listAccessibleProjectIdsMock.mockResolvedValue([]);
+
+        await expect(
+          service.updateProject(
+            'user-manager',
+            'other-project',
+            { figma_url: figmaUrl },
+            mockProject.updated_at
+          )
+        ).rejects.toThrow(
+          'Unauthorized. You do not have permission to manage this project.'
+        );
+
+        expect(updateMock).not.toHaveBeenCalled();
+      }
+    );
+
+    it('allows an administrator to update a project they can access', async () => {
+      mockActorRole('admin');
+      updateMock.mockResolvedValue({ ...mockProject, name: 'Admin update' });
+
+      await service.updateProject(
+        'user-admin',
+        mockProject.id,
+        { name: 'Admin update' },
+        mockProject.updated_at
+      );
+
+      expect(updateMock).toHaveBeenCalled();
+    });
+
+    it('does not give an administrator implicit access to every project', async () => {
+      mockActorRole('admin');
+      listAccessibleProjectIdsMock.mockResolvedValue([]);
+
+      await expect(
+        service.updateProject(
+          'user-admin',
+          'other-project',
+          { name: 'Admin update' },
+          mockProject.updated_at
+        )
+      ).rejects.toThrow(
+        'Unauthorized. You do not have permission to manage this project.'
+      );
+
+      expect(updateMock).not.toHaveBeenCalled();
+    });
+
     it.each(['manager', 'admin'] as const)(
       'allows a %s to save workflow configuration',
       async (role) => {
