@@ -109,6 +109,9 @@ GITHUB_APP_ID="<numeric App ID>"
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
 GITHUB_APP_WEBHOOK_SECRET="<webhook secret from the App form>"
 
+# Phase 2+ BullMQ broker (Upstash Redis) — api produces, worker consumes
+REDIS_URL="rediss://default:...@....upstash.io:6379"
+
 # Shipped today — user OAuth App (keep until Phase 5)
 GITHUB_CLIENT_ID="..."
 GITHUB_CLIENT_SECRET="..."
@@ -153,11 +156,39 @@ connections; OAuth path unchanged until Phase 5.
 
 ### Phase 2 — Webhook ingest + domain sync
 
-- Signed webhook endpoint on `apps/api` → verify → idempotent enqueue → **202**.
-- Worker job kinds upsert into `version_control_pull_requests` (and
-  commit/branch tables as designed).
-- Auto and/or manual link to Alice work items (branch naming / commit trailers
-  where possible). Manual PR link remains as fallback.
+**Ingest + PR sync (landed):**
+
+- `POST /api/github/webhooks` — verify `X-Hub-Signature-256` against raw body,
+  idempotent BullMQ enqueue (`jobId = github-delivery-<X-GitHub-Delivery>`),
+  respond **202** `{ accepted, jobId, duplicate }`. Missing secret / `REDIS_URL`
+  → **503** (GitHub retries).
+- Shared `@repo/jobs`: queue names, `github.webhook.ingest` +
+  `github.sync.pull_request` payloads/enqueue helpers.
+- Worker: ingest fans out `pull_request` → `github.sync.pull_request`.
+  Sync refreshes any existing `version_control_pull_requests` links for that
+  PR; otherwise auto-links when a bound project’s work item can be resolved
+  from the branch/title (see conventions below). Unresolved PRs are skipped
+  (manual link remains the fallback). Rows still require `work_item_id`.
+- Set App **Webhook URL** to `https://<api-host>/api/github/webhooks` and the
+  same webhook secret as `GITHUB_APP_WEBHOOK_SECRET`. Set `REDIS_URL` on both
+  `api` and `worker`.
+
+**Auto-link conventions (case-insensitive):**
+
+| Pattern                  | Example                   |
+| ------------------------ | ------------------------- |
+| `{projectKey}-{slug}`    | `feature/ALICE-fix-login` |
+| `{projectKey}/{slug}`    | `ALICE/fix-login`         |
+| Work-item UUID in branch | `chore/<uuid>-tweaks`     |
+
+Also scans the PR title for the same `{projectKey}-…` / `{projectKey}/…` forms.
+
+**Still open in Phase 2:**
+
+- `github.sync.push` / `github.sync.branch` + commit/branch tables (not in
+  schema yet).
+- Optional: nullable `work_item_id` (or link table) for synced-but-unlinked PR
+  inventory; commit trailers as an extra auto-link signal.
 - **Out of scope:** GitHub Issues → Alice work items (avoids dual ontology with
   Jira import). Revisit as an explicit product choice later.
 

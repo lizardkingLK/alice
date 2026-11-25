@@ -1,7 +1,8 @@
 # Worker and streamer (jobs + realtime)
 
-Status: **Plan** — architecture locks from brainstorm; not implemented.
-Open for further enrich before scaffolding `apps/worker` / `apps/streamer`.
+Status: **Partial** — `apps/worker` health shell + `@repo/jobs` + first
+`github.webhook.ingest` producer/consumer slice landed. Streamer and
+`job_runs` still plan-only.
 
 Related:
 
@@ -197,10 +198,10 @@ When picking up worker jobs for these kinds:
 
 ## Implementation checklist (when picked up)
 
-- [ ] Scaffold `apps/worker` (Render entrypoint, BullMQ workers, env for Upstash Redis)
-- [ ] Add `@repo/jobs` (queue names, Zod payloads, Flow helpers); api produces, worker consumes
+- [x] Scaffold `apps/worker` (Render entrypoint, BullMQ workers, env for Upstash Redis)
+- [x] Add `@repo/jobs` (queue names, Zod payloads; Flow helpers later); api produces, worker consumes
 - [ ] Design and migrate `job_runs` (parent/child) in Supabase
-- [ ] First real job kind + 202 enqueue path from `apps/api`
+- [x] First real job kind + 202 enqueue path from `apps/api` (`github.webhook.ingest`)
 - [ ] Lock streamer approach (Pusher/Ably vs native WS); scaffold `apps/streamer` when needed
 - [ ] Update [TRD.md](./TRD.md) deployment section when apps exist
 - [ ] Align charts Tier 2 wording with BullMQ + Upstash Redis
@@ -213,14 +214,14 @@ job kinds. Product phases live in
 [GITHUB_INTEGRATION.md](../features/projects/GITHUB_INTEGRATION.md)
 (Phased delivery). Draft names (finalize in `@repo/jobs`):
 
-| Kind (draft)                    | Phase | Role                                                                |
-| ------------------------------- | ----- | ------------------------------------------------------------------- |
-| `github.webhook.ingest`         | 2     | After API HMAC verify — normalize payload, idempotency key, fan-out |
-| `github.sync.pull_request`      | 2     | Upsert PR (+ link work item when resolvable)                        |
-| `github.sync.push`              | 2     | Commits / branch tip updates                                        |
-| `github.sync.branch`            | 2     | Branch create/delete                                                |
-| `workflow.run`                  | 4     | Orchestrator parent flow (FlowProducer)                             |
-| `agent.tool.cursor` (and peers) | 4     | Long agent tool execution; never on `apps/api`                      |
+| Kind (draft)                    | Phase | Role                                                                             |
+| ------------------------------- | ----- | -------------------------------------------------------------------------------- |
+| `github.webhook.ingest`         | 2     | After API HMAC verify — normalize payload, idempotency key, fan-out (**landed**) |
+| `github.sync.pull_request`      | 2     | Upsert PR (+ link work item when resolvable) (**landed**)                        |
+| `github.sync.push`              | 2     | Commits / branch tip updates (deferred — no table yet)                           |
+| `github.sync.branch`            | 2     | Branch create/delete (deferred — no table yet)                                   |
+| `workflow.run`                  | 4     | Orchestrator parent flow (FlowProducer)                                          |
+| `agent.tool.cursor` (and peers) | 4     | Long agent tool execution; never on `apps/api`                                   |
 
 Webhook HTTP handlers on `apps/api` **verify + enqueue only**. Agent tool loops
 and sync apply logic run on `apps/worker`.

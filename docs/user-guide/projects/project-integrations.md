@@ -32,10 +32,12 @@ project. Alice uses that link for pull requests, commits, and branch activity
 on work items. After a link is saved, clear it with **Disconnect** on the card
 before **None** stays available.
 
-**Today:** install the Alice GitHub App, bind a repo, and link PRs to work items
-(often manually). **Planned:** sync PRs/commits/branches from webhooks
-automatically, then in-app workflows that can call agent tools such as Cursor —
-see
+**Today:** install the Alice GitHub App, bind a repo, and link PRs to work items.
+Open/updated pull requests on the bound repo also sync when the branch or title
+includes `{projectKey}-{slug}` (for example `feature/ALICE-fix-login`),
+`{projectKey}/{slug}`, or the work-item UUID — otherwise link a PR manually on
+the work item. **Still planned:** commit/branch sync tables and in-app workflows
+that can call agent tools such as Cursor — see
 [GITHUB_INTEGRATION.md](../../features/projects/GITHUB_INTEGRATION.md#phased-delivery-planned).
 
 ### Connect or update

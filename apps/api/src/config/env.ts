@@ -41,6 +41,11 @@ const serverSchema = z.object({
   GITHUB_APP_ID: z.string().min(1).optional(),
   GITHUB_APP_PRIVATE_KEY: z.string().min(1).optional(),
   GITHUB_APP_WEBHOOK_SECRET: z.string().min(1).optional(),
+  /**
+   * Upstash (or local) Redis URL for BullMQ producers — optional until
+   * webhook enqueue / other 202 job paths are enabled.
+   */
+  REDIS_URL: z.string().min(1).optional(),
   /** All cron routes require `Authorization: Bearer <CRON_SECRET>`. */
   CRON_SECRET: z.string().min(1),
   EMAIL_RECONCILIATION_ENABLED: z.enum(['true', 'false']).default('false'),
@@ -82,6 +87,7 @@ const mock: EnvSchemaType = {
   // Unset in CI mock — App JWT tests generate keys locally / stub auth helpers.
   GITHUB_APP_PRIVATE_KEY: undefined,
   GITHUB_APP_WEBHOOK_SECRET: 'ci-github-app-webhook-secret',
+  REDIS_URL: undefined,
   CRON_SECRET: 'mock-cron-secret',
   EMAIL_RECONCILIATION_ENABLED: 'false',
   EMAIL_OUTBOX_PROCESSING_ENABLED: 'false',
@@ -119,6 +125,7 @@ const processEnv = {
   GITHUB_APP_ID: process.env.GITHUB_APP_ID,
   GITHUB_APP_PRIVATE_KEY: process.env.GITHUB_APP_PRIVATE_KEY,
   GITHUB_APP_WEBHOOK_SECRET: process.env.GITHUB_APP_WEBHOOK_SECRET,
+  REDIS_URL: process.env.REDIS_URL,
   CRON_SECRET: process.env.CRON_SECRET,
   EMAIL_RECONCILIATION_ENABLED: process.env.EMAIL_RECONCILIATION_ENABLED,
   EMAIL_OUTBOX_PROCESSING_ENABLED: process.env.EMAIL_OUTBOX_PROCESSING_ENABLED,

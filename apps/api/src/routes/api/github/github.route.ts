@@ -4,8 +4,10 @@ import {
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { env } from '../../../config/env';
+import { getRawBody } from '../../../lib/raw-body';
 import { jsonErrorFromCaught } from '../../../lib/http-error-status';
 import type { GithubService } from './github.service';
+import { ingestGithubWebhook } from './github-webhook.ingest';
 import {
   GithubInsufficientScopeError,
   GithubReauthorizationRequiredError,
@@ -64,6 +66,40 @@ async function respondWithAuthorizeUrl(
 export function createGithubRouter(deps: GithubRouterDeps) {
   const { githubService } = deps;
   const githubRouter: Router = Router();
+
+  /**
+   * GitHub App webhook receiver — HMAC verify + enqueue only (no sync apply).
+   * Point the App **Webhook URL** at `/api/github/webhooks`.
+   */
+  githubRouter.post('/webhooks', async (req, res) => {
+    const rawBody = getRawBody(req);
+    if (!rawBody || rawBody.length === 0) {
+      return res.status(400).json({ error: 'Missing raw request body' });
+    }
+
+    try {
+      const outcome = await ingestGithubWebhook({
+        rawBody,
+        signatureHeader:
+          typeof req.headers['x-hub-signature-256'] === 'string'
+            ? req.headers['x-hub-signature-256']
+            : undefined,
+        deliveryId:
+          typeof req.headers['x-github-delivery'] === 'string'
+            ? req.headers['x-github-delivery']
+            : undefined,
+        event:
+          typeof req.headers['x-github-event'] === 'string'
+            ? req.headers['x-github-event']
+            : undefined,
+        body: req.body,
+      });
+      return res.status(outcome.status).json(outcome.body);
+    } catch (error) {
+      console.error('error. github webhook ingest failed:', error);
+      return res.status(500).json({ error: 'Failed to enqueue webhook' });
+    }
+  });
 
   githubRouter.get(
     '/oauth/start',

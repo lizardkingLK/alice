@@ -4,6 +4,8 @@ const workerServerSchema = z.object({
   PORT: z.coerce.number(),
   DATABASE_URL: z.string().min(1),
   FRONTEND_URL: z.string().min(1),
+  /** Upstash Redis for BullMQ — optional until workers are enabled. */
+  REDIS_URL: z.string().min(1).optional(),
 });
 
 type EnvSchemaType = z.infer<typeof workerServerSchema>;
@@ -12,12 +14,14 @@ const mock: EnvSchemaType = {
   PORT: 5001,
   DATABASE_URL: 'postgresql://localhost:5432/postgres',
   FRONTEND_URL: 'http://localhost:3000',
+  REDIS_URL: undefined,
 };
 
 const processEnv = {
   PORT: process.env.PORT,
   DATABASE_URL: process.env.DATABASE_URL,
   FRONTEND_URL: process.env.FRONTEND_URL,
+  REDIS_URL: process.env.REDIS_URL,
 };
 
 let data: EnvSchemaType;
