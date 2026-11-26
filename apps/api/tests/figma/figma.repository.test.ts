@@ -1,4 +1,7 @@
-import { FigmaOAuthCredentialStatus } from '@repo/types/prisma';
+import {
+  FigmaOAuthCredentialStatus,
+  FigmaOAuthOperationResolution,
+} from '@repo/types/prisma';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
@@ -10,8 +13,13 @@ const {
   credentialFindUniqueMock,
   attemptFindFirstMock,
   attemptUpdateManyMock,
-  queryRawMock,
+  executeRawMock,
   transactionMock,
+  projectUpdateMock,
+  operationUpdateManyMock,
+  operationFindFirstMock,
+  operationFindManyMock,
+  credentialUpdateManyMock,
 } = vi.hoisted(() => ({
   connectionDeleteManyMock: vi.fn(),
   connectionFindUniqueMock: vi.fn(),
@@ -21,23 +29,41 @@ const {
   credentialFindUniqueMock: vi.fn(),
   attemptFindFirstMock: vi.fn(),
   attemptUpdateManyMock: vi.fn(),
-  queryRawMock: vi.fn(),
+  // GI-666: advisory-lock helper now uses $executeRaw (not $queryRaw) so that
+  // Prisma does not attempt to deserialize the void result returned by
+  // pg_advisory_xact_lock().
+  executeRawMock: vi.fn(),
   transactionMock: vi.fn(),
+  projectUpdateMock: vi.fn(),
+  operationUpdateManyMock: vi.fn(),
+  operationFindFirstMock: vi.fn(),
+  operationFindManyMock: vi.fn(),
+  credentialUpdateManyMock: vi.fn(),
 }));
 
 const transactionClient = {
-  $queryRaw: queryRawMock,
+  $executeRaw: executeRawMock,
   figma_oauth_credentials: {
     create: credentialCreateMock,
     findUnique: credentialFindUniqueMock,
+    updateMany: credentialUpdateManyMock,
   },
   figma_connections: {
+    deleteMany: connectionDeleteManyMock,
     findUnique: transactionConnectionFindUniqueMock,
     upsert: connectionUpsertMock,
   },
   figma_oauth_attempts: {
     findFirst: attemptFindFirstMock,
     updateMany: attemptUpdateManyMock,
+  },
+  projects: {
+    update: projectUpdateMock,
+  },
+  figma_oauth_operations: {
+    findFirst: operationFindFirstMock,
+    findMany: operationFindManyMock,
+    updateMany: operationUpdateManyMock,
   },
 };
 
@@ -50,6 +76,9 @@ vi.mock('../../src/lib/prisma', () => ({
     figma_connections: {
       deleteMany: connectionDeleteManyMock,
       findUnique: connectionFindUniqueMock,
+    },
+    figma_oauth_operations: {
+      updateMany: operationUpdateManyMock,
     },
   },
 }));
@@ -150,7 +179,7 @@ describe('FigmaRepository shared credentials', () => {
       async (operation: (tx: typeof transactionClient) => unknown) =>
         operation(transactionClient)
     );
-    queryRawMock.mockResolvedValue([{ pg_advisory_xact_lock: null }]);
+    executeRawMock.mockResolvedValue(0); // GI-666: $executeRaw returns row count, not void column array;
     transactionConnectionFindUniqueMock.mockResolvedValue(null);
   });
 
@@ -345,7 +374,7 @@ describe('FigmaRepository shared credentials', () => {
       where: { project_id: 'project-1' },
       select: { credential_id: true },
     });
-    expect(queryRawMock.mock.invocationCallOrder.at(-1)).toBeLessThan(
+    expect(executeRawMock.mock.invocationCallOrder.at(-1)).toBeLessThan(
       transactionConnectionFindUniqueMock.mock.invocationCallOrder[0] ?? 0
     );
     expect(connectionUpsertMock).toHaveBeenCalledWith(
@@ -432,7 +461,7 @@ describe('FigmaRepository shared credentials', () => {
       })
     ).rejects.toBeInstanceOf(FigmaOAuthAppMismatchError);
 
-    expect(queryRawMock).toHaveBeenCalledOnce();
+    expect(executeRawMock).toHaveBeenCalledOnce();
     expect(connectionUpsertMock).not.toHaveBeenCalled();
   });
 
@@ -447,9 +476,9 @@ describe('FigmaRepository shared credentials', () => {
       authorizedBy: 'alice-user-1',
     });
 
-    expect(queryRawMock).toHaveBeenCalledTimes(2);
-    expect(queryRawMock).toHaveBeenCalledBefore(credentialFindUniqueMock);
-    expect(queryRawMock.mock.invocationCallOrder.at(-1)).toBeLessThan(
+    expect(executeRawMock).toHaveBeenCalledTimes(2);
+    expect(executeRawMock).toHaveBeenCalledBefore(credentialFindUniqueMock);
+    expect(executeRawMock.mock.invocationCallOrder.at(-1)).toBeLessThan(
       connectionUpsertMock.mock.invocationCallOrder[0] ?? 0
     );
     expect(connectionUpsertMock).toHaveBeenCalledWith(
@@ -529,7 +558,7 @@ describe('FigmaRepository shared credentials', () => {
       )
     ).rejects.toBeInstanceOf(FigmaCredentialVersionConflictError);
 
-    expect(queryRawMock).toHaveBeenCalledTimes(2);
+    expect(executeRawMock).toHaveBeenCalledTimes(2);
     expect(credentialCreateMock).not.toHaveBeenCalled();
     expect(connectionUpsertMock).not.toHaveBeenCalled();
   });
@@ -558,8 +587,8 @@ describe('FigmaRepository shared credentials', () => {
       await repository.upsertCredentialAndProjectBinding(authorizationInput());
 
     expect(transactionMock).toHaveBeenCalledOnce();
-    expect(queryRawMock).toHaveBeenCalledTimes(2);
-    expect(queryRawMock).toHaveBeenCalledBefore(credentialFindUniqueMock);
+    expect(executeRawMock).toHaveBeenCalledTimes(2);
+    expect(executeRawMock).toHaveBeenCalledBefore(credentialFindUniqueMock);
     expect(credentialFindUniqueMock).toHaveBeenCalledBefore(
       credentialCreateMock
     );
@@ -605,8 +634,133 @@ describe('FigmaRepository shared credentials', () => {
     expect(connectionDeleteManyMock).toHaveBeenCalledWith({
       where: { project_id: 'project-1' },
     });
+    expect(projectUpdateMock).toHaveBeenCalledWith({
+      where: { id: 'project-1' },
+      data: { figma_binding_generation: { increment: 1 } },
+    });
     expect(credentialFindUniqueMock).not.toHaveBeenCalled();
     expect(credentialCreateMock).not.toHaveBeenCalled();
+  });
+
+  it('requires the exact worker token for a response transition', async () => {
+    operationUpdateManyMock.mockResolvedValue({ count: 1 });
+
+    await repository.recordOperationResponse({
+      operationId: 'operation-1',
+      workerToken: '55555555-5555-4555-8555-555555555555',
+      encryptedEnvelope: 'v1:encrypted-envelope',
+      envelopeKeyVersion: 1,
+      accessTokenExpiresAt: expiresAt,
+      pendingScopes: 'file_metadata:read',
+      envelopeExpiresAt: expiresAt,
+      providerHttpStatus: 200,
+      figmaUserId: 'figma-user-1',
+    });
+
+    expect(operationUpdateManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'operation-1',
+          status: 'requesting',
+          worker_token: '55555555-5555-4555-8555-555555555555',
+        },
+        data: expect.objectContaining({
+          status: 'response_received',
+          worker_token: null,
+          pending_token_response_enc: 'v1:encrypted-envelope',
+        }),
+      })
+    );
+  });
+
+  it('rejects a stale worker transition that updates no row', async () => {
+    operationUpdateManyMock.mockResolvedValue({ count: 0 });
+    operationFindFirstMock.mockResolvedValue({ credential_id: null });
+
+    await expect(
+      repository.recordOperationOutcomeUnknown({
+        operationId: 'operation-1',
+        workerToken: '66666666-6666-4666-8666-666666666666',
+        failureCode: 'transport_outcome_unknown',
+      })
+    ).rejects.toThrow('stale or is owned by another worker');
+  });
+
+  it('marks the affected credential unknown for an ambiguous refresh', async () => {
+    operationFindFirstMock.mockResolvedValue({
+      credential_id: 'credential-1',
+    });
+    operationUpdateManyMock.mockResolvedValue({ count: 1 });
+
+    await repository.recordOperationOutcomeUnknown({
+      operationId: 'operation-1',
+      workerToken: '77777777-7777-4777-8777-777777777777',
+      failureCode: 'transport_outcome_unknown',
+    });
+
+    expect(credentialUpdateManyMock).toHaveBeenCalledWith({
+      where: { id: 'credential-1' },
+      data: { status: FigmaOAuthCredentialStatus.unknown },
+    });
+  });
+
+  it('resolves ambiguity only from outcome_unknown and fences the credential', async () => {
+    operationFindFirstMock.mockResolvedValue({
+      credential_id: 'credential-1',
+      kind: 'token_refresh',
+    });
+    operationUpdateManyMock.mockResolvedValue({ count: 1 });
+
+    await repository.resolveAmbiguousOperation({
+      operationId: 'operation-1',
+      oauthAppKey: 'figma-app:client-1',
+      resolution: FigmaOAuthOperationResolution.provider_access_revoked,
+      resolvedBy: 'alice-admin-1',
+    });
+
+    expect(credentialUpdateManyMock).toHaveBeenCalledWith({
+      where: { id: 'credential-1' },
+      data: {
+        status: FigmaOAuthCredentialStatus.reauthorization_required,
+      },
+    });
+    expect(operationUpdateManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ status: 'outcome_unknown' }),
+        data: expect.objectContaining({
+          status: 'superseded',
+          resolution: 'provider_access_revoked',
+          resolved_by: 'alice-admin-1',
+        }),
+      })
+    );
+  });
+
+  it('turns an overdue requesting worker into a durable ambiguity barrier', async () => {
+    operationFindManyMock.mockResolvedValue([
+      { credential_id: 'credential-1' },
+    ]);
+    operationUpdateManyMock.mockResolvedValue({ count: 1 });
+
+    await repository.recoverOverdueRequestingOperations('figma-app:client-1');
+
+    expect(operationUpdateManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          oauth_app_key: 'figma-app:client-1',
+          status: 'requesting',
+        }),
+        data: expect.objectContaining({
+          status: 'outcome_unknown',
+          worker_token: null,
+          failure_code: 'worker_deadline_exceeded',
+        }),
+      })
+    );
+    expect(credentialUpdateManyMock).toHaveBeenCalledWith({
+      where: { id: { in: ['credential-1'] } },
+      data: { status: FigmaOAuthCredentialStatus.unknown },
+    });
   });
 
   it('keeps encrypted credential fields out of public connection reads', async () => {
@@ -620,5 +774,24 @@ describe('FigmaRepository shared credentials', () => {
     expect(query.select).not.toHaveProperty('access_token_enc');
     expect(query.select).not.toHaveProperty('refresh_token_enc');
     expect(query.select).not.toHaveProperty('credential');
+  });
+
+  // GI-666 regression: pg_advisory_xact_lock() returns void. Prisma's
+  // $queryRaw tries to deserialize columns and throws
+  // "Failed to deserialize column of type 'void'". The advisory-lock helper
+  // must use $executeRaw, which discards the result set entirely.
+  it('uses $executeRaw (not $queryRaw) for advisory locks so void results are never deserialized', async () => {
+    credentialFindUniqueMock.mockResolvedValue(null);
+    credentialCreateMock.mockResolvedValue(credentialMetadata());
+    connectionUpsertMock.mockResolvedValue(publicConnection('project-1'));
+
+    await repository.upsertCredentialAndProjectBinding(authorizationInput());
+
+    // $executeRaw must have been called (advisory lock)
+    expect(executeRawMock).toHaveBeenCalled();
+    // The transaction client must NOT have $queryRaw defined — if the
+    // implementation regresses to $queryRaw, the call would throw because
+    // the mock client does not expose it, surfacing the bug early.
+    expect(transactionClient).not.toHaveProperty('$queryRaw');
   });
 });

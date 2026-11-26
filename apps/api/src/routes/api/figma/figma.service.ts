@@ -14,15 +14,20 @@ import {
 import type { ProjectsRepository } from '../projects/projects.repository';
 import {
   FigmaRepository,
+  type FigmaCanonicalCredentialFull,
   type FigmaConnectionFull,
   type FigmaConnectionPublic,
   type FigmaEffectiveConnection,
   type FigmaVerificationFields,
 } from './figma.repository';
 import {
+  FigmaTokenCoordinator,
+  type TrustedFigmaAuthorizationContext,
+} from './figma-token-coordinator';
+import { FigmaTokenClient } from './figma-token-client';
+import {
   FigmaOAuthStateError,
   type FigmaFileMetadataResponse,
-  type FigmaOAuthTokenResponse,
 } from './figma.types';
 
 const FIGMA_AUTHORIZE_URL = 'https://www.figma.com/oauth';
@@ -31,6 +36,7 @@ const FIGMA_SCOPE = 'file_metadata:read';
 const FIGMA_STATE_PURPOSE = 'sign Figma OAuth state (HMAC)';
 const FIGMA_STATE_TTL_MS = 5 * 60 * 1000;
 const TOKEN_EXPIRY_SKEW_MS = 60 * 1000;
+const RESOURCE_REQUEST_TIMEOUT_MS = 10_000;
 const FIGMA_FILE_PATH_TYPES = new Set([
   'design',
   'file',
@@ -101,13 +107,32 @@ export function figmaFileKeyFromUrl(value: string | null): string | null {
 }
 
 export class FigmaService {
+  private readonly sharedOAuthEnabled: boolean;
+  private readonly recovery401Enabled: boolean;
+  private tokenClient?: FigmaTokenClient;
+  private tokenCoordinator?: FigmaTokenCoordinator;
+
   constructor(
     private readonly figmaRepository: FigmaRepository,
     private readonly projectsRepository: Pick<
       ProjectsRepository,
       'listAccessibleProjectIds'
-    >
-  ) {}
+    >,
+    options: {
+      sharedOAuthEnabled?: boolean;
+      recovery401Enabled?: boolean;
+      tokenClient?: FigmaTokenClient;
+      tokenCoordinator?: FigmaTokenCoordinator;
+    } = {}
+  ) {
+    this.sharedOAuthEnabled =
+      options.sharedOAuthEnabled ?? env.FIGMA_SHARED_OAUTH_ENABLED === 'true';
+    this.recovery401Enabled =
+      options.recovery401Enabled ??
+      env.FIGMA_SHARED_OAUTH_401_RECOVERY_ENABLED === 'true';
+    this.tokenClient = options.tokenClient;
+    this.tokenCoordinator = options.tokenCoordinator;
+  }
 
   async startOAuth(
     actorId: string,
@@ -122,13 +147,21 @@ export class FigmaService {
       { projectId, ttlMs: FIGMA_STATE_TTL_MS }
     );
 
-    await this.figmaRepository.createOAuthAttempt({
+    const attempt = {
       projectId,
       userId: actorId,
       nonceHash: sha256(payload.nonce),
       codeVerifierEnc: encryptSecret(codeVerifier),
       expiresAt: new Date(payload.exp),
-    });
+    };
+    if (this.sharedOAuthEnabled) {
+      await this.figmaRepository.createCoordinatedOAuthAttempt({
+        ...attempt,
+        oauthAppKey: figmaOAuthAppKey(clientId),
+      });
+    } else {
+      await this.figmaRepository.createOAuthAttempt(attempt);
+    }
 
     const params = new URLSearchParams({
       client_id: clientId,
@@ -146,18 +179,17 @@ export class FigmaService {
     code: string,
     state: string
   ): Promise<FigmaConnectionStatusDto> {
+    if (this.sharedOAuthEnabled) {
+      return this.handleSharedOAuthCallback(code, state);
+    }
+
     const { payload, codeVerifier } = await this.consumeState(state);
     await this.requireCanManageProject(payload.userId, payload.projectId);
 
-    const tokens = await this.exchangeAuthorizationCode(code, codeVerifier);
-    if (
-      !tokens.access_token ||
-      !tokens.refresh_token ||
-      !tokens.user_id_string ||
-      !tokens.expires_in
-    ) {
-      throw new Error('Figma token response was incomplete. Please try again.');
-    }
+    const tokens = await this.getTokenClient().exchangeAuthorizationCode(
+      code,
+      codeVerifier
+    );
 
     const project = await this.requireProject(payload.projectId);
     const verification = await this.verifySavedDesign(
@@ -202,17 +234,31 @@ export class FigmaService {
   ): Promise<FigmaConnectionStatusDto> {
     await this.requireCanManageProject(actorId, projectId);
     const project = await this.requireProject(projectId);
-    const connection =
-      await this.figmaRepository.findFullConnectionByProjectId(projectId);
-    if (!connection) {
-      throw new Error('Figma connection not found. Connect Figma first.');
+    let verification: FigmaVerificationFields;
+    if (this.sharedOAuthEnabled) {
+      const connection =
+        await this.figmaRepository.findCredentialByProjectBinding(
+          projectId,
+          figmaOAuthAppKey()
+        );
+      if (!connection) {
+        throw new Error('Figma connection not found. Connect Figma first.');
+      }
+      verification = await this.verifySavedDesignWithRecovery(
+        connection,
+        project.figma_url
+      );
+    } else {
+      const connection =
+        await this.figmaRepository.findFullConnectionByProjectId(projectId);
+      if (!connection) {
+        throw new Error('Figma connection not found. Connect Figma first.');
+      }
+      verification = await this.verifySavedDesign(
+        await this.getValidAccessToken(connection),
+        project.figma_url
+      );
     }
-
-    const accessToken = await this.getValidAccessToken(connection);
-    const verification = await this.verifySavedDesign(
-      accessToken,
-      project.figma_url
-    );
     const updated = await this.figmaRepository.updateVerification(
       projectId,
       verification
@@ -326,29 +372,78 @@ export class FigmaService {
     };
   }
 
-  private async exchangeAuthorizationCode(
+  private verifyTrustedState(state: string): {
+    userId: string;
+    projectId: string;
+    nonce: string;
+  } {
+    let verified: ReturnType<typeof verifyOAuthState>;
+    try {
+      verified = verifyOAuthState(state, FIGMA_STATE_PURPOSE);
+    } catch {
+      throw new FigmaOAuthStateError();
+    }
+    if (!verified.projectId) throw new FigmaOAuthStateError();
+    return {
+      userId: verified.userId,
+      projectId: verified.projectId,
+      nonce: verified.nonce,
+    };
+  }
+
+  private async handleSharedOAuthCallback(
     code: string,
-    codeVerifier: string
-  ): Promise<FigmaOAuthTokenResponse> {
-    const config = requireFigmaConfig();
-    return this.requestToken('/oauth/token', config, {
-      redirect_uri: config.redirectUri,
-      code,
-      grant_type: 'authorization_code',
-      code_verifier: codeVerifier,
-    });
+    state: string
+  ): Promise<FigmaConnectionStatusDto> {
+    const payload = this.verifyTrustedState(state);
+    await this.requireCanManageProject(payload.userId, payload.projectId);
+    const context: TrustedFigmaAuthorizationContext = {
+      oauthAppKey: figmaOAuthAppKey(),
+      projectId: payload.projectId,
+      userId: payload.userId,
+      nonceHash: sha256(payload.nonce),
+      authorizationCode: code,
+    };
+    const result = await this.getTokenCoordinator().exchangeAuthorizationCode(
+      context,
+      async () => {
+        await this.requireCanManageProject(payload.userId, payload.projectId);
+        return true;
+      }
+    );
+    if (!result.bound) {
+      throw new Error(
+        'The Figma authorization completed, but the project connection changed before it could be applied.'
+      );
+    }
+    const project = await this.requireProject(payload.projectId);
+    const connection =
+      await this.figmaRepository.findCredentialByProjectBinding(
+        payload.projectId,
+        context.oauthAppKey
+      );
+    if (!connection) {
+      throw new Error(
+        'Figma connection could not be loaded after authorization.'
+      );
+    }
+    const verification = await this.verifySavedDesignWithRecovery(
+      connection,
+      project.figma_url
+    );
+    const updated = await this.figmaRepository.updateVerification(
+      payload.projectId,
+      verification
+    );
+    return this.toStatusDto(payload.projectId, project.figma_url, updated);
   }
 
   private async refreshAccessToken(
     connection: FigmaConnectionFull
   ): Promise<string> {
-    const config = requireFigmaConfig();
-    const tokens = await this.requestToken('/oauth/refresh', config, {
-      refresh_token: decryptSecret(connection.refresh_token_enc),
-    });
-    if (!tokens.access_token || !tokens.expires_in) {
-      throw new Error('Figma token refresh response was incomplete.');
-    }
+    const tokens = await this.getTokenClient().refresh(
+      decryptSecret(connection.refresh_token_enc)
+    );
     const expiresAt = new Date(utcNow().getTime() + tokens.expires_in * 1000);
     await this.figmaRepository.updateTokens(connection.project_id, {
       accessTokenEnc: encryptSecret(tokens.access_token),
@@ -357,28 +452,19 @@ export class FigmaService {
     return tokens.access_token;
   }
 
-  private async requestToken(
-    path: string,
-    config: FigmaConfig,
-    fields: Record<string, string>
-  ): Promise<FigmaOAuthTokenResponse> {
-    const response = await fetch(`${FIGMA_API_URL}${path}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${Buffer.from(
-          `${config.clientId}:${config.clientSecret}`
-        ).toString('base64')}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams(fields),
+  private getTokenClient(): FigmaTokenClient {
+    this.tokenClient ??= new FigmaTokenClient(requireFigmaConfig(), {
+      fetch: (input, init) => fetch(input, init),
     });
-    const data = (await response.json()) as FigmaOAuthTokenResponse;
-    if (!response.ok || data.error) {
-      throw new Error(
-        `Figma OAuth token request failed: ${data.message || data.error || response.statusText}`
-      );
-    }
-    return data;
+    return this.tokenClient;
+  }
+
+  private getTokenCoordinator(): FigmaTokenCoordinator {
+    this.tokenCoordinator ??= new FigmaTokenCoordinator(
+      this.figmaRepository,
+      this.getTokenClient()
+    );
+    return this.tokenCoordinator;
   }
 
   private async getValidAccessToken(
@@ -393,35 +479,143 @@ export class FigmaService {
     return this.refreshAccessToken(connection);
   }
 
+  private async getValidCanonicalCredential(
+    connection: FigmaEffectiveConnection,
+    forceRefresh: boolean
+  ): Promise<FigmaCanonicalCredentialFull> {
+    if (
+      !connection.credential_id ||
+      connection.token_version === null ||
+      connection.oauth_app_key !== figmaOAuthAppKey()
+    ) {
+      throw new Error(
+        'The Figma project does not have a trusted shared credential.'
+      );
+    }
+    return this.getTokenCoordinator().refreshCredential({
+      oauthAppKey: connection.oauth_app_key,
+      credentialId: connection.credential_id,
+      expectedTokenVersion: connection.token_version,
+      force: forceRefresh,
+    });
+  }
+
+  private async verifySavedDesignWithRecovery(
+    connection: FigmaEffectiveConnection,
+    figmaUrl: string | null
+  ): Promise<FigmaVerificationFields> {
+    if (connection.credential_source !== 'canonical') {
+      return this.verifySavedDesign(
+        await this.getValidAccessToken(connection),
+        figmaUrl
+      );
+    }
+    if (connection.credential_status !== 'active') {
+      throw new Error(
+        'The Figma credential needs to be reauthorized before it can be used.'
+      );
+    }
+
+    let credential: FigmaCanonicalCredentialFull;
+    if (
+      connection.access_token_expires_at.getTime() <=
+      utcNow().getTime() + TOKEN_EXPIRY_SKEW_MS
+    ) {
+      credential = await this.getValidCanonicalCredential(connection, false);
+    } else {
+      credential = {
+        id: connection.credential_id!,
+        oauth_app_key: connection.oauth_app_key!,
+        figma_user_id: connection.figma_user_id,
+        access_token_enc: connection.access_token_enc,
+        refresh_token_enc: connection.refresh_token_enc,
+        access_token_expires_at: connection.access_token_expires_at,
+        scopes: connection.scopes,
+        status: connection.credential_status!,
+        token_version: connection.token_version!,
+        last_validated_at: connection.last_validated_at,
+        last_authorized_by: null,
+        created_at: connection.created_at,
+        updated_at: connection.updated_at,
+      };
+    }
+
+    const first = await this.requestSavedDesign(
+      decryptSecret(credential.access_token_enc),
+      figmaUrl
+    );
+    if (
+      first.responseStatus !== 401 ||
+      !this.recovery401Enabled ||
+      !this.sharedOAuthEnabled
+    ) {
+      return first.verification;
+    }
+
+    const refreshed = await this.getTokenCoordinator().refreshCredential({
+      oauthAppKey: credential.oauth_app_key,
+      credentialId: credential.id,
+      expectedTokenVersion: credential.token_version,
+      force: true,
+    });
+    const retried = await this.requestSavedDesign(
+      decryptSecret(refreshed.access_token_enc),
+      figmaUrl
+    );
+    return retried.verification;
+  }
+
   private async verifySavedDesign(
     accessToken: string,
     figmaUrl: string | null
   ): Promise<FigmaVerificationFields> {
+    return (await this.requestSavedDesign(accessToken, figmaUrl)).verification;
+  }
+
+  private async requestSavedDesign(
+    accessToken: string,
+    figmaUrl: string | null
+  ): Promise<{
+    verification: FigmaVerificationFields;
+    responseStatus: number | null;
+  }> {
     if (!figmaUrl) {
       return {
-        verifiedFileKey: null,
-        verifiedFileName: null,
-        verifiedAt: null,
-        verificationError: null,
+        verification: {
+          verifiedFileKey: null,
+          verifiedFileName: null,
+          verifiedAt: null,
+          verificationError: null,
+        },
+        responseStatus: null,
       };
     }
     const fileKey = figmaFileKeyFromUrl(figmaUrl);
     if (!fileKey) {
-      return this.failedVerification(
-        'The saved Figma link does not identify a supported design file.'
-      );
+      return {
+        verification: this.failedVerification(
+          'The saved Figma link does not identify a supported design file.'
+        ),
+        responseStatus: null,
+      };
     }
 
     let response: Response;
     try {
       response = await fetch(
         `${FIGMA_API_URL}/files/${encodeURIComponent(fileKey)}/meta`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          signal: AbortSignal.timeout(RESOURCE_REQUEST_TIMEOUT_MS),
+        }
       );
     } catch {
-      return this.failedVerification(
-        'Figma design access could not be verified. Try again.'
-      );
+      return {
+        verification: this.failedVerification(
+          'Figma design access could not be verified. Try again.'
+        ),
+        responseStatus: null,
+      };
     }
     let data: FigmaFileMetadataResponse = {};
     try {
@@ -431,23 +625,37 @@ export class FigmaService {
     }
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
-        return this.failedVerification(
-          'The connected Figma account cannot access the saved design link.'
-        );
+        return {
+          verification: this.failedVerification(
+            'The connected Figma account cannot access the saved design link.'
+          ),
+          responseStatus: response.status,
+        };
       }
       if (response.status === 404) {
-        return this.failedVerification('The saved Figma design was not found.');
+        return {
+          verification: this.failedVerification(
+            'The saved Figma design was not found.'
+          ),
+          responseStatus: response.status,
+        };
       }
-      return this.failedVerification(
-        data.message || data.err || 'Figma design access could not be verified.'
-      );
+      return {
+        verification: this.failedVerification(
+          'Figma design access could not be verified.'
+        ),
+        responseStatus: response.status,
+      };
     }
 
     return {
-      verifiedFileKey: fileKey,
-      verifiedFileName: data.file?.name ?? null,
-      verifiedAt: utcNow(),
-      verificationError: null,
+      verification: {
+        verifiedFileKey: fileKey,
+        verifiedFileName: data.file?.name ?? null,
+        verifiedAt: utcNow(),
+        verificationError: null,
+      },
+      responseStatus: response.status,
     };
   }
 

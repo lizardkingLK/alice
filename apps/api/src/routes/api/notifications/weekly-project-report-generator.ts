@@ -285,7 +285,9 @@ export class PrismaWeeklyProjectReportStore implements WeeklyProjectReportStore 
     try {
       const persisted = await this.client.$transaction(async (tx) => {
         const lockKey = `${input.candidate.projectId}:${dateOnly(input.periodStart)}`;
-        await tx.$queryRaw(
+        // pg_advisory_xact_lock() returns void; $executeRaw discards the
+        // result set instead of trying to deserialize a void column (GI-666).
+        await tx.$executeRaw(
           Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`
         );
         const existing = await tx.weekly_project_reports.findFirst({

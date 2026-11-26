@@ -8,6 +8,7 @@ dns.setDefaultResultOrder('ipv4first');
 const globalForPrisma = globalThis as {
   prisma?: PrismaClient;
   prismaConnectionString?: string;
+  prismaPool?: Pool;
 };
 
 export type { PrismaClient };
@@ -69,6 +70,14 @@ function logPrismaPoolError(err: Error) {
  * we set a timeout so a bad URL fails the request instead of hanging the UI.
  */
 export function createPrismaClient(connectionString: string): PrismaClient {
+  const pool = createPostgresPool(connectionString);
+  const adapter = new PrismaPg(pool, {
+    onPoolError: logPrismaPoolError,
+  });
+  return new PrismaClient({ adapter });
+}
+
+function createPostgresPool(connectionString: string): Pool {
   const pool = new Pool({
     connectionString: connectionStringForPgAdapter(connectionString),
     max: PG_POOL_MAX,
@@ -81,10 +90,7 @@ export function createPrismaClient(connectionString: string): PrismaClient {
     },
   });
   pool.on('error', logPrismaPoolError);
-  const adapter = new PrismaPg(pool, {
-    onPoolError: logPrismaPoolError,
-  });
-  return new PrismaClient({ adapter });
+  return pool;
 }
 
 /** Process-wide singleton — reuse across serverless invocations in the same isolate. */
@@ -95,7 +101,19 @@ export function getPrismaClient(connectionString: string): PrismaClient {
   ) {
     return globalForPrisma.prisma;
   }
-  globalForPrisma.prisma = createPrismaClient(connectionString);
+  const pool = createPostgresPool(connectionString);
+  const adapter = new PrismaPg(pool, { onPoolError: logPrismaPoolError });
+  globalForPrisma.prisma = new PrismaClient({ adapter });
+  globalForPrisma.prismaPool = pool;
   globalForPrisma.prismaConnectionString = connectionString;
   return globalForPrisma.prisma;
+}
+
+/** The session-affine pool backing the process-wide Prisma client. */
+export function getPostgresPool(connectionString: string): Pool {
+  getPrismaClient(connectionString);
+  if (!globalForPrisma.prismaPool) {
+    throw new Error('The PostgreSQL pool was not initialized.');
+  }
+  return globalForPrisma.prismaPool;
 }

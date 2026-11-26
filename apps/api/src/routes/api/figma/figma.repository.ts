@@ -1,4 +1,11 @@
-import { Prisma, type FigmaOAuthCredentialStatus } from '@repo/types/prisma';
+import {
+  FigmaOAuthCredentialStatus,
+  FigmaOAuthOperationKind,
+  FigmaOAuthOperationResolution,
+  FigmaOAuthOperationStatus,
+  FigmaOAuthProjectBindingStatus,
+  Prisma,
+} from '@repo/types/prisma';
 import { prisma } from '../../../lib/prisma';
 
 const CREDENTIAL_METADATA_SELECT = {
@@ -47,6 +54,27 @@ const CONNECTION_WITH_CREDENTIAL_SELECT = {
   ...CONNECTION_FULL_SELECT,
   credential_id: true,
   credential: { select: CREDENTIAL_FULL_SELECT },
+} as const;
+
+const OPERATION_SELECT = {
+  id: true,
+  journal_sequence: true,
+  kind: true,
+  status: true,
+  oauth_app_key: true,
+  oauth_attempt_id: true,
+  project_id: true,
+  project_binding_generation: true,
+  initiated_by: true,
+  credential_id: true,
+  figma_user_id: true,
+  expected_token_version: true,
+  pending_token_response_enc: true,
+  pending_token_key_version: true,
+  pending_access_token_expires_at: true,
+  pending_scopes: true,
+  pending_token_expires_at: true,
+  project_binding_status: true,
 } as const;
 
 export type FigmaConnectionPublic = {
@@ -104,6 +132,32 @@ export type ConsumedFigmaOAuthAttempt = {
   project_id: string;
   user_id: string;
   code_verifier_enc: string;
+};
+
+export type PreparedFigmaOAuthOperation = {
+  id: string;
+  journal_sequence: bigint;
+  kind: FigmaOAuthOperationKind;
+  status: FigmaOAuthOperationStatus;
+  oauth_app_key: string;
+  oauth_attempt_id: string | null;
+  project_id: string | null;
+  project_binding_generation: number | null;
+  initiated_by: string | null;
+  credential_id: string | null;
+  figma_user_id: string | null;
+  expected_token_version: number | null;
+  pending_token_response_enc: string | null;
+  pending_token_key_version: number | null;
+  pending_access_token_expires_at: Date | null;
+  pending_scopes: string | null;
+  pending_token_expires_at: Date | null;
+  project_binding_status: FigmaOAuthProjectBindingStatus;
+};
+
+export type PreparedFigmaAuthorizationOperation = {
+  operation: PreparedFigmaOAuthOperation;
+  codeVerifierEnc: string;
 };
 
 export type FigmaVerificationFields = {
@@ -164,6 +218,22 @@ export class FigmaOAuthAppMismatchError extends Error {
   }
 }
 
+export class FigmaOAuthOperationBlockedError extends Error {
+  constructor() {
+    super(
+      'A previous Figma token operation needs explicit resolution before another token request is safe.'
+    );
+    this.name = 'FigmaOAuthOperationBlockedError';
+  }
+}
+
+export class FigmaOAuthOperationStaleError extends Error {
+  constructor() {
+    super('The Figma token operation is stale or is owned by another worker.');
+    this.name = 'FigmaOAuthOperationStaleError';
+  }
+}
+
 function credentialIdentityLockKey(
   oauthAppKey: string,
   figmaUserId: string
@@ -187,7 +257,10 @@ async function acquireAdvisoryLock(
   tx: Prisma.TransactionClient,
   lockKey: string
 ): Promise<void> {
-  await tx.$queryRaw(
+  // pg_advisory_xact_lock() returns void; $queryRaw cannot deserialize void
+  // columns (GI-666). Use $executeRaw, which discards the result set and only
+  // returns the affected-row count (always 0 for advisory locks).
+  await tx.$executeRaw(
     Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`
   );
 }
@@ -272,6 +345,44 @@ export class FigmaRepository {
         },
       }),
     ]);
+  }
+
+  async createCoordinatedOAuthAttempt(input: {
+    oauthAppKey: string;
+    projectId: string;
+    userId: string;
+    nonceHash: string;
+    codeVerifierEnc: string;
+    expiresAt: Date;
+  }): Promise<number> {
+    return prisma.$transaction(async (tx) => {
+      await acquireAdvisoryLock(tx, projectBindingLockKey(input.projectId));
+      const project = await tx.projects.update({
+        where: { id: input.projectId },
+        data: { figma_binding_generation: { increment: 1 } },
+        select: { figma_binding_generation: true },
+      });
+      await tx.figma_oauth_attempts.deleteMany({
+        where: {
+          OR: [
+            { expires_at: { lte: new Date() } },
+            { consumed_at: { not: null } },
+          ],
+        },
+      });
+      await tx.figma_oauth_attempts.create({
+        data: {
+          project_id: input.projectId,
+          user_id: input.userId,
+          oauth_app_key: input.oauthAppKey,
+          project_binding_generation: project.figma_binding_generation,
+          nonce_hash: input.nonceHash,
+          code_verifier_enc: input.codeVerifierEnc,
+          expires_at: input.expiresAt,
+        },
+      });
+      return project.figma_binding_generation;
+    });
   }
 
   async consumeOAuthAttempt(input: {
@@ -600,9 +711,725 @@ export class FigmaRepository {
   }
 
   async deleteProjectBinding(projectId: string): Promise<boolean> {
-    const result = await prisma.figma_connections.deleteMany({
-      where: { project_id: projectId },
+    return prisma.$transaction(async (tx) => {
+      await acquireAdvisoryLock(tx, projectBindingLockKey(projectId));
+      await tx.projects.update({
+        where: { id: projectId },
+        data: { figma_binding_generation: { increment: 1 } },
+      });
+      const result = await tx.figma_connections.deleteMany({
+        where: { project_id: projectId },
+      });
+      return result.count === 1;
     });
-    return result.count === 1;
+  }
+
+  findCanonicalCredentialById(
+    credentialId: string,
+    oauthAppKey: string
+  ): Promise<FigmaCanonicalCredentialFull | null> {
+    return prisma.figma_oauth_credentials.findFirst({
+      where: { id: credentialId, oauth_app_key: oauthAppKey },
+      select: CREDENTIAL_FULL_SELECT,
+    });
+  }
+
+  findRecoverableAuthorizationOperation(input: {
+    oauthAppKey: string;
+    projectId: string;
+    userId: string;
+    nonceHash: string;
+    authorizationCodeHash: string;
+  }): Promise<PreparedFigmaOAuthOperation | null> {
+    return prisma.figma_oauth_operations.findFirst({
+      where: {
+        oauth_app_key: input.oauthAppKey,
+        project_id: input.projectId,
+        initiated_by: input.userId,
+        oauth_attempt_nonce_hash: input.nonceHash,
+        authorization_code_hash: input.authorizationCodeHash,
+        status: FigmaOAuthOperationStatus.response_received,
+      },
+      select: OPERATION_SELECT,
+    });
+  }
+
+  findRecoverableRefreshOperation(input: {
+    oauthAppKey: string;
+    credentialId: string;
+  }): Promise<PreparedFigmaOAuthOperation | null> {
+    return prisma.figma_oauth_operations.findFirst({
+      where: {
+        oauth_app_key: input.oauthAppKey,
+        credential_id: input.credentialId,
+        kind: FigmaOAuthOperationKind.token_refresh,
+        status: FigmaOAuthOperationStatus.response_received,
+      },
+      orderBy: { journal_sequence: 'desc' },
+      select: OPERATION_SELECT,
+    });
+  }
+
+  async prepareAuthorizationCodeOperation(input: {
+    oauthAppKey: string;
+    projectId: string;
+    userId: string;
+    nonceHash: string;
+    authorizationCodeHash: string;
+    retentionExpiresAt: Date;
+  }): Promise<PreparedFigmaAuthorizationOperation | null> {
+    return prisma.$transaction(async (tx) => {
+      const attempt = await tx.figma_oauth_attempts.findFirst({
+        where: {
+          project_id: input.projectId,
+          user_id: input.userId,
+          oauth_app_key: input.oauthAppKey,
+          nonce_hash: input.nonceHash,
+          consumed_at: null,
+          expires_at: { gt: new Date() },
+        },
+        select: {
+          id: true,
+          code_verifier_enc: true,
+          project_binding_generation: true,
+        },
+      });
+      if (
+        !attempt?.code_verifier_enc ||
+        attempt.project_binding_generation === null
+      ) {
+        return null;
+      }
+      const project = await tx.projects.findUnique({
+        where: { id: input.projectId },
+        select: { figma_binding_generation: true },
+      });
+      if (
+        !project ||
+        project.figma_binding_generation !== attempt.project_binding_generation
+      ) {
+        return null;
+      }
+      const consumed = await tx.figma_oauth_attempts.updateMany({
+        where: { id: attempt.id, consumed_at: null },
+        data: { consumed_at: new Date(), code_verifier_enc: null },
+      });
+      if (consumed.count !== 1) return null;
+
+      const operation = await tx.figma_oauth_operations.create({
+        data: {
+          kind: FigmaOAuthOperationKind.authorization_code_exchange,
+          oauth_app_key: input.oauthAppKey,
+          oauth_attempt_id: attempt.id,
+          oauth_attempt_nonce_hash: input.nonceHash,
+          authorization_code_hash: input.authorizationCodeHash,
+          project_id: input.projectId,
+          project_binding_generation: attempt.project_binding_generation,
+          initiated_by: input.userId,
+          project_binding_status: FigmaOAuthProjectBindingStatus.pending,
+          retention_expires_at: input.retentionExpiresAt,
+        },
+        select: OPERATION_SELECT,
+      });
+      return { operation, codeVerifierEnc: attempt.code_verifier_enc };
+    });
+  }
+
+  async prepareRefreshOperation(input: {
+    oauthAppKey: string;
+    credentialId: string;
+    figmaUserId: string;
+    expectedTokenVersion: number;
+    sourceRefreshTokenHash: string;
+    retentionExpiresAt: Date;
+  }): Promise<PreparedFigmaOAuthOperation> {
+    return prisma.figma_oauth_operations.create({
+      data: {
+        kind: FigmaOAuthOperationKind.token_refresh,
+        oauth_app_key: input.oauthAppKey,
+        source_refresh_token_hash: input.sourceRefreshTokenHash,
+        credential_id: input.credentialId,
+        figma_user_id: input.figmaUserId,
+        expected_token_version: input.expectedTokenVersion,
+        project_binding_status: FigmaOAuthProjectBindingStatus.not_applicable,
+        retention_expires_at: input.retentionExpiresAt,
+      },
+      select: OPERATION_SELECT,
+    });
+  }
+
+  async assertNoConflictingTokenOperation(
+    oauthAppKey: string,
+    excludeOperationId?: string
+  ): Promise<void> {
+    const conflict = await prisma.figma_oauth_operations.findFirst({
+      where: {
+        oauth_app_key: oauthAppKey,
+        id: excludeOperationId ? { not: excludeOperationId } : undefined,
+        status: {
+          in: [
+            FigmaOAuthOperationStatus.requesting,
+            FigmaOAuthOperationStatus.response_received,
+            FigmaOAuthOperationStatus.outcome_unknown,
+          ],
+        },
+      },
+      select: { id: true },
+    });
+    if (conflict) throw new FigmaOAuthOperationBlockedError();
+  }
+
+  async recoverOverdueRequestingOperations(oauthAppKey: string): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      const now = new Date();
+      const overdue = await tx.figma_oauth_operations.findMany({
+        where: {
+          oauth_app_key: oauthAppKey,
+          status: FigmaOAuthOperationStatus.requesting,
+          request_deadline_at: { lte: now },
+        },
+        select: { credential_id: true },
+      });
+      if (overdue.length === 0) return;
+      await tx.figma_oauth_operations.updateMany({
+        where: {
+          oauth_app_key: oauthAppKey,
+          status: FigmaOAuthOperationStatus.requesting,
+          request_deadline_at: { lte: now },
+        },
+        data: {
+          status: FigmaOAuthOperationStatus.outcome_unknown,
+          worker_token: null,
+          failure_code: 'worker_deadline_exceeded',
+          outcome_unknown_at: now,
+        },
+      });
+      const credentialIds = [
+        ...new Set(
+          overdue
+            .map((operation) => operation.credential_id)
+            .filter((id): id is string => Boolean(id))
+        ),
+      ];
+      if (credentialIds.length > 0) {
+        await tx.figma_oauth_credentials.updateMany({
+          where: { id: { in: credentialIds } },
+          data: { status: FigmaOAuthCredentialStatus.unknown },
+        });
+      }
+    });
+  }
+
+  async markOperationRequesting(input: {
+    operationId: string;
+    workerToken: string;
+    requestDeadlineAt: Date;
+  }): Promise<void> {
+    const result = await prisma.figma_oauth_operations.updateMany({
+      where: {
+        id: input.operationId,
+        status: FigmaOAuthOperationStatus.prepared,
+        worker_token: null,
+      },
+      data: {
+        status: FigmaOAuthOperationStatus.requesting,
+        worker_token: input.workerToken,
+        request_started_at: new Date(),
+        request_deadline_at: input.requestDeadlineAt,
+      },
+    });
+    if (result.count !== 1) throw new FigmaOAuthOperationStaleError();
+  }
+
+  async recordOperationResponse(input: {
+    operationId: string;
+    workerToken: string;
+    encryptedEnvelope: string;
+    envelopeKeyVersion: number;
+    accessTokenExpiresAt: Date;
+    pendingScopes: string;
+    envelopeExpiresAt: Date;
+    providerHttpStatus: number;
+    figmaUserId?: string;
+  }): Promise<void> {
+    const result = await prisma.figma_oauth_operations.updateMany({
+      where: {
+        id: input.operationId,
+        status: FigmaOAuthOperationStatus.requesting,
+        worker_token: input.workerToken,
+      },
+      data: {
+        status: FigmaOAuthOperationStatus.response_received,
+        worker_token: null,
+        pending_token_response_enc: input.encryptedEnvelope,
+        pending_token_key_version: input.envelopeKeyVersion,
+        pending_access_token_expires_at: input.accessTokenExpiresAt,
+        pending_scopes: input.pendingScopes,
+        pending_token_expires_at: input.envelopeExpiresAt,
+        response_received_at: new Date(),
+        provider_http_status: input.providerHttpStatus,
+        figma_user_id: input.figmaUserId,
+        figma_identity_verified_at: input.figmaUserId ? new Date() : undefined,
+      },
+    });
+    if (result.count !== 1) throw new FigmaOAuthOperationStaleError();
+  }
+
+  async recordOperationOutcomeUnknown(input: {
+    operationId: string;
+    workerToken: string;
+    failureCode: string;
+  }): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      const operation = await tx.figma_oauth_operations.findFirst({
+        where: {
+          id: input.operationId,
+          status: FigmaOAuthOperationStatus.requesting,
+          worker_token: input.workerToken,
+        },
+        select: { credential_id: true },
+      });
+      if (!operation) throw new FigmaOAuthOperationStaleError();
+      const result = await tx.figma_oauth_operations.updateMany({
+        where: {
+          id: input.operationId,
+          status: FigmaOAuthOperationStatus.requesting,
+          worker_token: input.workerToken,
+        },
+        data: {
+          status: FigmaOAuthOperationStatus.outcome_unknown,
+          worker_token: null,
+          failure_code: input.failureCode,
+          outcome_unknown_at: new Date(),
+        },
+      });
+      if (result.count !== 1) throw new FigmaOAuthOperationStaleError();
+      if (operation.credential_id) {
+        await tx.figma_oauth_credentials.updateMany({
+          where: { id: operation.credential_id },
+          data: { status: FigmaOAuthCredentialStatus.unknown },
+        });
+      }
+    });
+  }
+
+  async recordOperationProviderRejected(input: {
+    operationId: string;
+    workerToken: string;
+    providerHttpStatus: number;
+    failureCode: string;
+    markCredentialReauthorizationRequired: boolean;
+  }): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      const operation = await tx.figma_oauth_operations.findFirst({
+        where: {
+          id: input.operationId,
+          status: FigmaOAuthOperationStatus.requesting,
+          worker_token: input.workerToken,
+        },
+        select: { credential_id: true },
+      });
+      if (!operation) throw new FigmaOAuthOperationStaleError();
+      const result = await tx.figma_oauth_operations.updateMany({
+        where: {
+          id: input.operationId,
+          status: FigmaOAuthOperationStatus.requesting,
+          worker_token: input.workerToken,
+        },
+        data: {
+          status: FigmaOAuthOperationStatus.provider_rejected,
+          worker_token: null,
+          provider_http_status: input.providerHttpStatus,
+          failure_code: input.failureCode,
+          completed_at: new Date(),
+          project_binding_status: operation.credential_id
+            ? undefined
+            : FigmaOAuthProjectBindingStatus.skipped,
+          project_binding_completed_at: operation.credential_id
+            ? undefined
+            : new Date(),
+          project_binding_skip_reason: operation.credential_id
+            ? undefined
+            : 'provider_rejected',
+        },
+      });
+      if (result.count !== 1) throw new FigmaOAuthOperationStaleError();
+      if (
+        input.markCredentialReauthorizationRequired &&
+        operation.credential_id
+      ) {
+        await tx.figma_oauth_credentials.updateMany({
+          where: { id: operation.credential_id },
+          data: {
+            status: FigmaOAuthCredentialStatus.reauthorization_required,
+          },
+        });
+      }
+    });
+  }
+
+  async resolveAmbiguousOperation(input: {
+    operationId: string;
+    oauthAppKey: string;
+    resolution: FigmaOAuthOperationResolution;
+    resolvedBy: string;
+  }): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      const operation = await tx.figma_oauth_operations.findFirst({
+        where: {
+          id: input.operationId,
+          oauth_app_key: input.oauthAppKey,
+          status: FigmaOAuthOperationStatus.outcome_unknown,
+        },
+        select: { credential_id: true, kind: true },
+      });
+      if (!operation) throw new FigmaOAuthOperationStaleError();
+      if (
+        input.resolution ===
+        FigmaOAuthOperationResolution.oauth_app_credentials_rotated
+      ) {
+        await tx.figma_oauth_credentials.updateMany({
+          where: { oauth_app_key: input.oauthAppKey },
+          data: {
+            status: FigmaOAuthCredentialStatus.reauthorization_required,
+          },
+        });
+      } else if (operation.credential_id) {
+        await acquireAdvisoryLock(
+          tx,
+          credentialIdLockKey(operation.credential_id)
+        );
+        await tx.figma_oauth_credentials.updateMany({
+          where: { id: operation.credential_id },
+          data: {
+            status: FigmaOAuthCredentialStatus.reauthorization_required,
+          },
+        });
+      }
+      const providerRejected =
+        input.resolution ===
+        FigmaOAuthOperationResolution.provider_rejection_confirmed;
+      const result = await tx.figma_oauth_operations.updateMany({
+        where: {
+          id: input.operationId,
+          oauth_app_key: input.oauthAppKey,
+          status: FigmaOAuthOperationStatus.outcome_unknown,
+        },
+        data: {
+          status: providerRejected
+            ? FigmaOAuthOperationStatus.provider_rejected
+            : FigmaOAuthOperationStatus.superseded,
+          resolution: input.resolution,
+          resolved_at: new Date(),
+          resolved_by: input.resolvedBy,
+          completed_at: new Date(),
+          project_binding_status:
+            operation.kind ===
+            FigmaOAuthOperationKind.authorization_code_exchange
+              ? FigmaOAuthProjectBindingStatus.skipped
+              : undefined,
+          project_binding_completed_at:
+            operation.kind ===
+            FigmaOAuthOperationKind.authorization_code_exchange
+              ? new Date()
+              : undefined,
+          project_binding_skip_reason:
+            operation.kind ===
+            FigmaOAuthOperationKind.authorization_code_exchange
+              ? 'ambiguous_operation_resolved'
+              : undefined,
+        },
+      });
+      if (result.count !== 1) throw new FigmaOAuthOperationStaleError();
+    });
+  }
+
+  async finalizeAuthorizationOperation(input: {
+    operationId: string;
+    oauthAppKey: string;
+    figmaUserId: string;
+    accessTokenEnc: string;
+    refreshTokenEnc: string;
+    accessTokenExpiresAt: Date;
+    scopes: string;
+    allowProjectBinding: boolean;
+    expectedEnvelopeEnc: string;
+  }): Promise<{
+    credential: FigmaCanonicalCredentialMetadata;
+    bound: boolean;
+  }> {
+    return prisma.$transaction(async (tx) => {
+      const operation = await tx.figma_oauth_operations.findUnique({
+        where: { id: input.operationId },
+        select: OPERATION_SELECT,
+      });
+      if (
+        !operation ||
+        operation.status !== FigmaOAuthOperationStatus.response_received ||
+        operation.kind !==
+          FigmaOAuthOperationKind.authorization_code_exchange ||
+        operation.oauth_app_key !== input.oauthAppKey ||
+        operation.figma_user_id !== input.figmaUserId ||
+        operation.pending_token_response_enc !== input.expectedEnvelopeEnc ||
+        operation.pending_token_key_version !== 1 ||
+        !operation.pending_token_expires_at ||
+        operation.pending_token_expires_at <= new Date()
+      ) {
+        throw new FigmaOAuthOperationStaleError();
+      }
+      await acquireAdvisoryLock(
+        tx,
+        credentialIdentityLockKey(input.oauthAppKey, input.figmaUserId)
+      );
+      const existing = await tx.figma_oauth_credentials.findUnique({
+        where: {
+          oauth_app_key_figma_user_id: {
+            oauth_app_key: input.oauthAppKey,
+            figma_user_id: input.figmaUserId,
+          },
+        },
+        select: {
+          ...CREDENTIAL_METADATA_SELECT,
+          last_token_operation_sequence: true,
+        },
+      });
+      if (existing) {
+        await acquireAdvisoryLock(tx, credentialIdLockKey(existing.id));
+      }
+      if (
+        existing &&
+        existing.last_token_operation_sequence >= operation.journal_sequence
+      ) {
+        await tx.figma_oauth_operations.update({
+          where: { id: operation.id },
+          data: {
+            status: FigmaOAuthOperationStatus.superseded,
+            pending_token_response_enc: null,
+            pending_token_key_version: null,
+            pending_access_token_expires_at: null,
+            pending_scopes: null,
+            pending_token_expires_at: null,
+            completed_at: new Date(),
+            project_binding_status: FigmaOAuthProjectBindingStatus.skipped,
+            project_binding_completed_at: new Date(),
+            project_binding_skip_reason: 'stale_token_operation',
+          },
+        });
+        return { credential: existing, bound: false };
+      }
+
+      const tokenData = {
+        access_token_enc: input.accessTokenEnc,
+        refresh_token_enc: input.refreshTokenEnc,
+        access_token_expires_at: input.accessTokenExpiresAt,
+        scopes: input.scopes,
+        status: FigmaOAuthCredentialStatus.active,
+        last_validated_at: new Date(),
+        last_authorized_by: operation.initiated_by,
+        last_token_operation_sequence: operation.journal_sequence,
+        last_token_operation_id: operation.id,
+      };
+      const credential = existing
+        ? await tx.figma_oauth_credentials.update({
+            where: { id: existing.id },
+            data: { ...tokenData, token_version: { increment: 1 } },
+            select: CREDENTIAL_METADATA_SELECT,
+          })
+        : await tx.figma_oauth_credentials.create({
+            data: {
+              oauth_app_key: input.oauthAppKey,
+              figma_user_id: input.figmaUserId,
+              ...tokenData,
+            },
+            select: CREDENTIAL_METADATA_SELECT,
+          });
+
+      const legacyTokenData = {
+        figma_user_id: input.figmaUserId,
+        access_token_enc: input.accessTokenEnc,
+        refresh_token_enc: input.refreshTokenEnc,
+        access_token_expires_at: input.accessTokenExpiresAt,
+        scopes: input.scopes,
+        credential_token_version: credential.token_version,
+      };
+      await tx.figma_connections.updateMany({
+        where: { credential_id: credential.id },
+        data: legacyTokenData,
+      });
+
+      let bound = false;
+      let skipReason: string | null = null;
+      if (
+        input.allowProjectBinding &&
+        operation.project_id &&
+        operation.project_binding_generation !== null &&
+        operation.initiated_by
+      ) {
+        await acquireAdvisoryLock(
+          tx,
+          projectBindingLockKey(operation.project_id)
+        );
+        const project = await tx.projects.findUnique({
+          where: { id: operation.project_id },
+          select: { figma_binding_generation: true },
+        });
+        if (
+          project?.figma_binding_generation ===
+          operation.project_binding_generation
+        ) {
+          const clearedVerification = verificationData({
+            verifiedFileKey: null,
+            verifiedFileName: null,
+            verifiedAt: null,
+            verificationError: null,
+          });
+          await tx.figma_connections.upsert({
+            where: { project_id: operation.project_id },
+            create: {
+              project_id: operation.project_id,
+              credential_id: credential.id,
+              binding_generation: operation.project_binding_generation,
+              authorized_by: operation.initiated_by,
+              ...legacyTokenData,
+              ...clearedVerification,
+            },
+            update: {
+              credential_id: credential.id,
+              binding_generation: operation.project_binding_generation,
+              authorized_by: operation.initiated_by,
+              ...legacyTokenData,
+              ...clearedVerification,
+            },
+          });
+          bound = true;
+        } else {
+          skipReason = 'project_binding_generation_changed';
+        }
+      } else {
+        skipReason = 'project_authorization_changed';
+      }
+
+      await tx.figma_oauth_operations.update({
+        where: { id: operation.id },
+        data: {
+          status: FigmaOAuthOperationStatus.finalized,
+          credential_id: credential.id,
+          pending_token_response_enc: null,
+          pending_token_key_version: null,
+          pending_access_token_expires_at: null,
+          pending_scopes: null,
+          pending_token_expires_at: null,
+          completed_at: new Date(),
+          project_binding_status: bound
+            ? FigmaOAuthProjectBindingStatus.applied
+            : FigmaOAuthProjectBindingStatus.skipped,
+          project_binding_completed_at: new Date(),
+          project_binding_skip_reason: skipReason,
+        },
+      });
+      return { credential, bound };
+    });
+  }
+
+  async finalizeRefreshOperation(input: {
+    operationId: string;
+    oauthAppKey: string;
+    accessTokenEnc: string;
+    refreshTokenEnc: string;
+    accessTokenExpiresAt: Date;
+    scopes: string;
+    expectedEnvelopeEnc: string;
+  }): Promise<FigmaCanonicalCredentialFull> {
+    return prisma.$transaction(async (tx) => {
+      const operation = await tx.figma_oauth_operations.findUnique({
+        where: { id: input.operationId },
+        select: OPERATION_SELECT,
+      });
+      if (
+        !operation ||
+        operation.status !== FigmaOAuthOperationStatus.response_received ||
+        operation.kind !== FigmaOAuthOperationKind.token_refresh ||
+        operation.oauth_app_key !== input.oauthAppKey ||
+        !operation.credential_id ||
+        operation.expected_token_version === null ||
+        operation.pending_token_response_enc !== input.expectedEnvelopeEnc ||
+        operation.pending_token_key_version !== 1 ||
+        !operation.pending_token_expires_at ||
+        operation.pending_token_expires_at <= new Date()
+      ) {
+        throw new FigmaOAuthOperationStaleError();
+      }
+      await acquireAdvisoryLock(
+        tx,
+        credentialIdLockKey(operation.credential_id)
+      );
+      const current = await tx.figma_oauth_credentials.findUnique({
+        where: { id: operation.credential_id },
+        select: {
+          ...CREDENTIAL_FULL_SELECT,
+          last_token_operation_sequence: true,
+        },
+      });
+      if (!current || current.oauth_app_key !== input.oauthAppKey) {
+        throw new FigmaOAuthOperationStaleError();
+      }
+      if (
+        current.token_version !== operation.expected_token_version ||
+        current.last_token_operation_sequence >= operation.journal_sequence
+      ) {
+        await tx.figma_oauth_operations.update({
+          where: { id: operation.id },
+          data: {
+            status: FigmaOAuthOperationStatus.superseded,
+            pending_token_response_enc: null,
+            pending_token_key_version: null,
+            pending_access_token_expires_at: null,
+            pending_scopes: null,
+            pending_token_expires_at: null,
+            completed_at: new Date(),
+          },
+        });
+        return current;
+      }
+      const credential = await tx.figma_oauth_credentials.update({
+        where: { id: current.id },
+        data: {
+          access_token_enc: input.accessTokenEnc,
+          refresh_token_enc: input.refreshTokenEnc,
+          access_token_expires_at: input.accessTokenExpiresAt,
+          scopes: input.scopes,
+          status: FigmaOAuthCredentialStatus.active,
+          token_version: { increment: 1 },
+          last_validated_at: new Date(),
+          last_token_operation_sequence: operation.journal_sequence,
+          last_token_operation_id: operation.id,
+        },
+        select: CREDENTIAL_FULL_SELECT,
+      });
+      await tx.figma_connections.updateMany({
+        where: { credential_id: credential.id },
+        data: {
+          figma_user_id: credential.figma_user_id,
+          access_token_enc: credential.access_token_enc,
+          refresh_token_enc: credential.refresh_token_enc,
+          access_token_expires_at: credential.access_token_expires_at,
+          scopes: credential.scopes,
+          credential_token_version: credential.token_version,
+        },
+      });
+      await tx.figma_oauth_operations.update({
+        where: { id: operation.id },
+        data: {
+          status: FigmaOAuthOperationStatus.finalized,
+          pending_token_response_enc: null,
+          pending_token_key_version: null,
+          pending_access_token_expires_at: null,
+          pending_scopes: null,
+          pending_token_expires_at: null,
+          completed_at: new Date(),
+        },
+      });
+      return credential;
+    });
   }
 }

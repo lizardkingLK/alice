@@ -18,6 +18,7 @@ import {
   figmaOAuthAppKey,
   FigmaService,
 } from '../../src/routes/api/figma/figma.service';
+import type { FigmaTokenCoordinator } from '../../src/routes/api/figma/figma-token-coordinator';
 
 const { requireUserWithRoleMock } = vi.hoisted(() => ({
   requireUserWithRoleMock: vi.fn(),
@@ -228,6 +229,7 @@ describe('FigmaService', () => {
             user_id_string: 'figma-user-1',
             access_token: 'figma-access-token',
             refresh_token: 'figma-refresh-token',
+            token_type: 'bearer',
             expires_in: 3600,
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -394,6 +396,7 @@ describe('FigmaService', () => {
             user_id_string: 'figma-user-1',
             access_token: 'figma-access-token',
             refresh_token: 'figma-refresh-token',
+            token_type: 'bearer',
             expires_in: 3600,
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -411,5 +414,62 @@ describe('FigmaService', () => {
     expect(upsertConnection).toHaveBeenCalledOnce();
     expect(findCredentialByProjectBinding).not.toHaveBeenCalled();
     expect(deleteProjectBinding).not.toHaveBeenCalled();
+  });
+
+  it('coordinates one refresh and retries the resource once after a 401', async () => {
+    findCredentialByProjectBinding.mockResolvedValue(effectiveConnection());
+    updateVerification.mockImplementation(async (_projectId, verification) =>
+      publicConnection({
+        verified_file_key: verification.verifiedFileKey,
+        verified_file_name: verification.verifiedFileName,
+        verified_at: verification.verifiedAt,
+        verification_error: verification.verificationError,
+      })
+    );
+    const refreshCredential = vi.fn().mockResolvedValue({
+      ...effectiveConnection(),
+      id: CREDENTIAL_ID,
+      oauth_app_key: EXPECTED_OAUTH_APP_KEY,
+      access_token_enc: encryptSecret('refreshed-access-token'),
+      refresh_token_enc: encryptSecret('canonical-refresh-token'),
+      status: FigmaOAuthCredentialStatus.active,
+      token_version: 2,
+      last_authorized_by: USER_ID,
+    });
+    const sharedService = new FigmaService(repository, projectsRepository, {
+      sharedOAuthEnabled: true,
+      recovery401Enabled: true,
+      tokenCoordinator: {
+        refreshCredential,
+      } as unknown as FigmaTokenCoordinator,
+    });
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ message: 'expired' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ file: { name: 'Alice Design' } }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+    const result = await sharedService.verifyCurrentDesign(USER_ID, PROJECT_ID);
+
+    expect(result.design_access_verified).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(refreshCredential).toHaveBeenCalledOnce();
+    expect(refreshCredential).toHaveBeenCalledWith({
+      oauthAppKey: EXPECTED_OAUTH_APP_KEY,
+      credentialId: CREDENTIAL_ID,
+      expectedTokenVersion: 1,
+      force: true,
+    });
+    expect(fetchMock.mock.calls[1]?.[1]?.headers).toEqual({
+      Authorization: 'Bearer refreshed-access-token',
+    });
   });
 });

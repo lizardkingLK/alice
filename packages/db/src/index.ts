@@ -1,6 +1,7 @@
 export {
   connectionStringForPgAdapter,
   createPrismaClient,
+  getPostgresPool,
   getPrismaClient,
   type PrismaClient,
 } from './client.js';

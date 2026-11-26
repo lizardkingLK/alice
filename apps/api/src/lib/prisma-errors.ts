@@ -15,6 +15,22 @@ export function isPrismaUniqueConflict(error: unknown): boolean {
   );
 }
 
+/**
+ * True when the error originates from Prisma's own client (known request
+ * errors, unknown request errors, validation errors, initialization errors,
+ * or Rust-engine panics). These carry internal DB/schema details that must
+ * never reach the frontend.
+ */
+export function isPrismaClientError(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError ||
+    error instanceof Prisma.PrismaClientUnknownRequestError ||
+    error instanceof Prisma.PrismaClientValidationError ||
+    error instanceof Prisma.PrismaClientInitializationError ||
+    error instanceof Prisma.PrismaClientRustPanicError
+  );
+}
+
 /** Map pool / transaction-start failures to a stable API payload (alice#562). */
 export function databaseBusyJsonError(): {
   status: typeof DATABASE_BUSY_HTTP_STATUS;
